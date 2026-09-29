@@ -57,6 +57,7 @@ install_data(
   'j.syntax',
   'jal.syntax',
   'java.syntax',
+  'jinja2.syntax',
   'js.syntax',
   'json.syntax',
   'kotlin.syntax',
