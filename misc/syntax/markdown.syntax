@@ -110,6 +110,9 @@ context linestart ```make*\n linestart ``` cyan
 context linestart ```menu*\n linestart ``` cyan
     embed User\smenu
 
+context linestart ```mermaid*\n linestart ``` cyan
+    embed Mermaid\sDiagram
+
 # a fence that names no language known above
 context linestart ``` linestart ``` cyan
 

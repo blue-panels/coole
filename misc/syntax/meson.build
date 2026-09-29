@@ -72,6 +72,7 @@ install_data(
   'mail.syntax',
   'makefile.syntax',
   'markdown.syntax',
+  'mermaid.syntax',
   'meson.syntax',
   'ml.syntax',
   'muttrc.syntax',
