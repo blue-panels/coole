@@ -124,9 +124,8 @@ edit_publish_runtime_open (WEdit *edit)
     snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_OPEN);
     snapshot->data.editor_open.editor =
         mc_runtime_handle_for_object (MC_RUNTIME_HANDLE_EDITOR, edit);
-    snapshot->data.editor_open.path = edit->filename_vpath != NULL
-        ? vfs_path_to_str_flags (edit->filename_vpath, 0, VPF_STRIP_PASSWORD)
-        : g_strdup ("");
+    snapshot->data.editor_open.path =
+        edit->filename != NULL ? g_strdup (edit->filename) : g_strdup ("");
     snapshot->data.editor_open.readonly = FALSE;
     snapshot->data.editor_open.line = (guint) MAX (edit->buffer.curs_line, 0) + 1;
     snapshot->data.editor_open.column = (guint) MAX (edit->curs_col, 0) + 1;
@@ -272,21 +271,10 @@ editor_host_get_current_file_impl (mc_editor_host_t *host, void *edit)
 
     (void) host;
 
-    if (e == NULL || e->filename_vpath == NULL)
+    if (e == NULL || e->filename == NULL)
         return NULL;
 
-    if (e->filename_vpath->relative && e->dir_vpath != NULL)
-    {
-        vfs_path_t *vpath;
-        char *result;
-
-        vpath = vfs_path_append_vpath_new (e->dir_vpath, e->filename_vpath, NULL);
-        result = g_strdup (vfs_path_as_str (vpath));
-        vfs_path_free (vpath, TRUE);
-        return result;
-    }
-
-    return g_strdup (vfs_path_as_str (e->filename_vpath));
+    return g_strdup (e->filename);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -317,7 +305,6 @@ editor_host_jump_to_impl (mc_editor_host_t *host, void *edit, const char *file, 
 {
     WEdit *e = (WEdit *) edit;
     WDialog *dlg;
-    vfs_path_t *vpath;
     gboolean ret;
 
     (void) host;
@@ -331,11 +318,12 @@ editor_host_jump_to_impl (mc_editor_host_t *host, void *edit, const char *file, 
      * touching the navigation stack -- we are not navigating away. */
     if (e->modified != 0)
     {
-        vpath = vfs_path_from_str (file);
+        char *path = mc_path_absolute (file);
         edit_arg_t arg;
-        edit_arg_init (&arg, vpath, line);
+
+        edit_arg_init (&arg, path, line);
         ret = edit_load_file_from_filename (dlg, &arg);
-        vfs_path_free (vpath, TRUE);
+        g_free (path);
         return ret;
     }
 
@@ -343,17 +331,10 @@ editor_host_jump_to_impl (mc_editor_host_t *host, void *edit, const char *file, 
         return FALSE;
 
     /* Save current position */
-    if (e->filename_vpath != NULL)
+    if (e->filename != NULL)
     {
-        vfs_path_t *cur_vpath;
-
-        if (e->filename_vpath->relative && e->dir_vpath != NULL)
-            cur_vpath = vfs_path_append_vpath_new (e->dir_vpath, e->filename_vpath, NULL);
-        else
-            cur_vpath = vfs_path_clone (e->filename_vpath);
-
         edit_update_curs_col (e);
-        edit_arg_assign (&edit_history_moveto[edit_stack_iterator], cur_vpath,
+        edit_arg_assign (&edit_history_moveto[edit_stack_iterator], g_strdup (e->filename),
                          e->start_line + e->curs_row + 1);
         edit_history_moveto[edit_stack_iterator].column = e->curs_col;
         edit_history_moveto[edit_stack_iterator].start_line = e->start_line;
@@ -361,8 +342,7 @@ editor_host_jump_to_impl (mc_editor_host_t *host, void *edit, const char *file, 
 
     /* Push target and jump */
     edit_stack_iterator++;
-    vpath = vfs_path_from_str (file);
-    edit_arg_assign (&edit_history_moveto[edit_stack_iterator], vpath, line);
+    edit_arg_assign (&edit_history_moveto[edit_stack_iterator], mc_path_absolute (file), line);
     return edit_reload_line (e, &edit_history_moveto[edit_stack_iterator]);
 }
 
@@ -1160,11 +1140,10 @@ edit_window_list (const WDialog *h)
             WEdit *e = EDIT (w->data);
             char *fname;
 
-            if (e->filename_vpath == NULL)
+            if (e->filename == NULL)
                 fname = g_strdup_printf ("%c [%s]", e->modified != 0 ? '*' : ' ', _ ("NoName"));
             else
-                fname = g_strdup_printf ("%c%s", e->modified != 0 ? '*' : ' ',
-                                         vfs_path_as_str (e->filename_vpath));
+                fname = g_strdup_printf ("%c%s", e->modified != 0 ? '*' : ' ', e->filename);
 
             listbox_add_item (listbox->list, LISTBOX_APPEND_AT_END, get_hotkey (i++),
                               str_term_trim (fname, WIDGET (listbox->list)->rect.cols - 2), e,
@@ -1213,10 +1192,10 @@ edit_get_title (const WDialog *h, const ssize_t width)
 
     const ssize_t width1 = width - strlen (modified);
 
-    if (edit->filename_vpath == NULL)
+    if (edit->filename == NULL)
         filename = g_strdup (_ ("[NoName]"));
     else
-        filename = g_strdup (vfs_path_as_str (edit->filename_vpath));
+        filename = g_strdup (edit->filename);
 
     file_label = str_term_trim (filename, width1 - str_term_width1 (_ ("Edit: ")));
     g_free (filename);
@@ -2214,8 +2193,7 @@ edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 /**
  * Edit one file.
  *
- * @param file_vpath file object
- * @param line       line number
+ * @param arg the file and the line number
  * @return TRUE if no errors was occurred, FALSE otherwise
  */
 
@@ -2236,16 +2214,18 @@ edit_file (const edit_arg_t *arg)
 /**
  * Edit a file in a screen of its own, on top of the current one.
  *
- * @param file_vpath file object
+ * @param file_name file name
  * @param start_line line number
  */
 
 void
-edit_file_at_line (const vfs_path_t *file_vpath, long start_line)
+edit_file_at_line (const char *file_name, long start_line)
 {
-    const edit_arg_t arg = { (vfs_path_t *) file_vpath, start_line, 0, -1 };
+    char *path = mc_path_absolute (file_name);
+    const edit_arg_t arg = { path, start_line, 0, -1 };
 
     (void) edit_file (&arg);
+    g_free (path);
     dialog_switch_process_pending ();
 }
 

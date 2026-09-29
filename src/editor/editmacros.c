@@ -906,13 +906,11 @@ edit_macro_explorer_cmd (WEdit *edit)
     else if (ret == B_EDIT_MACRO && state.hotkey != 0)
     {
         char *fname = mc_config_get_full_path (MC_MACRO_FILE);
-        vfs_path_t *vpath = vfs_path_from_str (fname);
         edit_arg_t arg;
 
-        g_free (fname);
-        edit_arg_init (&arg, vpath, mexpl_macro_file_line (state.hotkey));
+        edit_arg_init (&arg, fname, mexpl_macro_file_line (state.hotkey));
         edit_load_file_from_filename (DIALOG (WIDGET (edit)->owner), &arg);
-        vfs_path_free (vpath, TRUE);
+        g_free (fname);
     }
 }
 

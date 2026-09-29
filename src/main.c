@@ -51,12 +51,9 @@
 #include "lib/strutil.h"
 #include "lib/util.h"
 #include "lib/extension-runtime.h"
-#include "lib/vfs/vfs.h"  // vfs_init(), vfs_shut()
 #include "lib/widget.h"
 
 #include "editor/edit.h"  // edit_files(), edit_arg_free()
-
-#include "vfs/plugins_init.h"
 
 #include "events_init.h"
 #include "args.h"
@@ -149,8 +146,6 @@ run_editor (void)
     if (auto_save_setup)
         (void) save_setup ();
 
-    vfs_stamp_path (vfs_get_raw_current_dir ());
-
     edit_stack_free ();
 
     tty_clear_screen ();
@@ -226,9 +221,6 @@ main (int argc, char *argv[])
         goto startup_exit_falure;
     }
 
-    vfs_init ();
-    vfs_plugins_init ();
-
     load_setup ();
 
     if (mc_args__no_lua || !mc_config_get_bool (mc_global.main_config, "Lua", "enabled", TRUE))
@@ -236,30 +228,19 @@ main (int argc, char *argv[])
 
     if (!mc_runtime_plugins_load (&mcerror))
     {
-        vfs_plugins_done ();
-        vfs_shut ();
         done_setup ();
         events_deinit (NULL);
         goto startup_exit_falure;
     }
 
-    // Must be done after load_setup because depends on mc_global.vfs.cd_symlinks
-    vfs_setup_work_dir ();
-
-    // Set up temporary directory after VFS initialization
     tmpdir = mc_tmpdir ();
 
-    // do this after vfs initialization and vfs working directory setup
     if (!mc_setup_by_args (argc, argv, &mcerror))
     {
-        /* At exit, do this before vfs_shut():
-           normally, temporary directory should be empty */
-        vfs_expire (TRUE);
+        // normally, temporary directory should be empty
         (void) rmdir (tmpdir);
 
         mc_runtime_plugins_shutdown ();
-        vfs_plugins_done ();
-        vfs_shut ();
         done_setup ();
         events_deinit (NULL);
         goto startup_exit_falure;
@@ -308,15 +289,10 @@ main (int argc, char *argv[])
 
     keymap_free ();
 
-    /* At exit, do this before vfs_shut():
-       normally, temporary directory should be empty */
-    vfs_expire (TRUE);
+    // normally, temporary directory should be empty
     (void) rmdir (tmpdir);
 
-    // Virtual File System shutdown
     mc_runtime_plugins_shutdown ();
-    vfs_plugins_done ();
-    vfs_shut ();
 
     mc_skin_deinit ();
     tty_colors_done ();

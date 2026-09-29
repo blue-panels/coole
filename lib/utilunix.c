@@ -64,7 +64,6 @@
 #include "lib/global.h"
 
 #include "lib/unixcompat.h"
-#include "lib/vfs/vfs.h"  // VFS_ENCODING_PREFIX
 #include "lib/strutil.h"  // str_move(), str_tokenize()
 #include "lib/util.h"
 #include "lib/widget.h"  // message()
@@ -772,7 +771,6 @@ canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
 {
     char *p, *s;
     char *lpath = path;  // path without leading UNC part
-    const size_t url_delim_len = strlen (VFS_PATH_URL_DELIMITER);
 
     // Detect and preserve UNC paths: //server/...
     if ((flags & CANON_PATH_GUARDUNC) != 0 && IS_PATH_SEP (path[0]) && IS_PATH_SEP (path[1]))
@@ -790,7 +788,7 @@ canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
     {
         // Collapse multiple slashes
         for (p = lpath; *p != '\0'; p++)
-            if (IS_PATH_SEP (p[0]) && IS_PATH_SEP (p[1]) && (p == lpath || *(p - 1) != ':'))
+            if (IS_PATH_SEP (p[0]) && IS_PATH_SEP (p[1]))
             {
                 s = p + 1;
                 while (IS_PATH_SEP (*(++s)))
@@ -812,12 +810,7 @@ canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
 
         // Remove trailing slashes
         for (p = lpath + strlen (lpath) - 1; p > lpath && IS_PATH_SEP (*p); p--)
-        {
-            if (p >= lpath + url_delim_len - 1
-                && strncmp (p - url_delim_len + 1, VFS_PATH_URL_DELIMITER, url_delim_len) == 0)
-                break;
             *p = '\0';
-        }
 
         // Remove leading "./"
         if (lpath[0] == '.' && IS_PATH_SEP (lpath[1]))
@@ -836,10 +829,7 @@ canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
         if (len < 2)
             return;
 
-        if (IS_PATH_SEP (lpath[len - 1])
-            && (len < url_delim_len
-                || strncmp (lpath + len - url_delim_len, VFS_PATH_URL_DELIMITER, url_delim_len)
-                    != 0))
+        if (IS_PATH_SEP (lpath[len - 1]))
             lpath[len - 1] = '\0';
         else if (lpath[len - 1] == '.' && IS_PATH_SEP (lpath[len - 2]))
         {
@@ -856,8 +846,6 @@ canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
     // Collapse "/.." with the previous part of path
     if ((flags & CANON_PATH_REMDOUBLEDOTS) != 0)
     {
-        const size_t enc_prefix_len = strlen (VFS_ENCODING_PREFIX);
-
         for (p = lpath; p[0] != '\0' && p[1] != '\0' && p[2] != '\0';)
         {
             if (!IS_PATH_SEP (p[0]) || p[1] != '.' || p[2] != '.'
@@ -868,45 +856,8 @@ canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
             }
 
             // search for the previous token
-            s = p - 1;
-            if (s >= lpath + url_delim_len - 2
-                && strncmp (s - url_delim_len + 2, VFS_PATH_URL_DELIMITER, url_delim_len) == 0)
-            {
-                s -= (url_delim_len - 2);
-                while (s >= lpath && !IS_PATH_SEP (*s--))
-                    ;
-            }
-
-            while (s >= lpath)
-            {
-                if (s - url_delim_len > lpath
-                    && strncmp (s - url_delim_len, VFS_PATH_URL_DELIMITER, url_delim_len) == 0)
-                {
-                    char *vfs_prefix = s - url_delim_len;
-                    vfs_class *vclass;
-
-                    while (vfs_prefix > lpath && !IS_PATH_SEP (*--vfs_prefix))
-                        ;
-                    if (IS_PATH_SEP (*vfs_prefix))
-                        vfs_prefix++;
-                    *(s - url_delim_len) = '\0';
-
-                    vclass = vfs_prefix_to_class (vfs_prefix);
-                    *(s - url_delim_len) = *VFS_PATH_URL_DELIMITER;
-
-                    if (vclass != NULL && (vclass->flags & VFSF_REMOTE) != 0)
-                    {
-                        s = vfs_prefix;
-                        continue;
-                    }
-                }
-
-                if (IS_PATH_SEP (*s))
-                    break;
-
-                s--;
-            }
-
+            for (s = p - 1; s >= lpath && !IS_PATH_SEP (*s); s--)
+                ;
             s++;
 
             // If the previous token is "..", we cannot collapse it
@@ -926,22 +877,7 @@ canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
                 else
                 {
                     // "token/../foo" -> "foo"
-                    if (strncmp (s, VFS_ENCODING_PREFIX, enc_prefix_len) == 0)
-                    {
-                        char *enc;
-
-                        enc = vfs_get_encoding (s, -1);
-
-                        if (is_supported_encoding (enc))
-                            // special case: remove encoding
-                            str_move (s, p + 1);
-                        else
-                            str_move (s, p + 4);
-
-                        g_free (enc);
-                    }
-                    else
-                        str_move (s, p + 4);
+                    str_move (s, p + 4);
                 }
 
                 p = s > lpath ? s - 1 : s;
@@ -961,40 +897,8 @@ canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
                 // "foo/token/.." -> "foo"
                 if (s == lpath + 1)
                     s[0] = '\0';
-                else if (strncmp (s, VFS_ENCODING_PREFIX, enc_prefix_len) == 0)
-                {
-                    char *enc;
-                    gboolean ok;
-
-                    enc = vfs_get_encoding (s, -1);
-                    ok = is_supported_encoding (enc);
-                    g_free (enc);
-
-                    if (!ok)
-                        goto last;
-
-                    // special case: remove encoding
-                    s[0] = '.';
-                    s[1] = '.';
-                    s[2] = '\0';
-
-                    // search for the previous token
-                    // IS_PATH_SEP (s[-1])
-                    for (p = s - 1; p >= lpath && !IS_PATH_SEP (*p); p--)
-                        ;
-
-                    if (p >= lpath)
-                        continue;
-                }
                 else
-                {
-                last:
-                    if (s >= lpath + url_delim_len
-                        && strncmp (s - url_delim_len, VFS_PATH_URL_DELIMITER, url_delim_len) == 0)
-                        *s = '\0';
-                    else
-                        s[-1] = '\0';
-                }
+                    s[-1] = '\0';
             }
 
             break;
@@ -1007,29 +911,6 @@ canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
 char *
 mc_realpath (const char *path, char *resolved_path)
 {
-    const char *p = path;
-    gboolean absolute_path = FALSE;
-
-    if (IS_PATH_SEP (*p))
-    {
-        absolute_path = TRUE;
-        p++;
-    }
-
-    // ignore encoding: skip "#enc:"
-    if (g_str_has_prefix (p, VFS_ENCODING_PREFIX))
-    {
-        p += strlen (VFS_ENCODING_PREFIX);
-        p = strchr (p, PATH_SEP);
-        if (p != NULL)
-        {
-            if (!absolute_path && p[1] != '\0')
-                p++;
-
-            path = p;
-        }
-    }
-
 #ifdef HAVE_REALPATH
     return realpath (path, resolved_path);
 #else
@@ -1183,8 +1064,142 @@ mc_realpath (const char *path, char *resolved_path)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
+ * Make a path absolute and canonical: a relative path is taken relative to
+ * the current directory.
+ *
+ * @param path path to file, or NULL
+ *
+ * @return newly allocated string, or NULL if @path is NULL; an empty @path stays empty
+ */
+
+char *
+mc_path_absolute (const char *path)
+{
+    char *result;
+
+    if (path == NULL)
+        return NULL;
+
+    if (*path == '\0' || IS_PATH_SEP (*path))
+        result = g_strdup (path);
+    else
+    {
+        char *cwd;
+
+        cwd = g_get_current_dir ();
+        result = g_build_filename (cwd, path, (char *) NULL);
+        g_free (cwd);
+    }
+
+    canonicalize_pathname (result);
+
+    return result;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Return the directory where coole should keep its temporary files.
+ * This directory is (in Bourne shell terms) "${TMPDIR=/tmp}/coole-XXXXXX"
+ * When called the first time, the directory is created if needed.
+ * The first call should be done early, since we are using fprintf()
+ * and not message() to report possible problems.
+ */
+
+const char *
+mc_tmpdir (void)
+{
+    static char buffer[PATH_MAX];
+    static const char *tmpdir = NULL;
+    const char *sys_tmp;
+    gchar *template;
+
+    // Check if already correctly initialized
+    if (tmpdir != NULL)
+    {
+        struct stat st;
+
+        if (lstat (tmpdir, &st) == 0 && S_ISDIR (st.st_mode) && st.st_uid == getuid ()
+            && (st.st_mode & 0777) == 0700)
+            return tmpdir;
+    }
+
+    sys_tmp = getenv ("COOLE_TMPDIR");
+    if (sys_tmp == NULL || !IS_PATH_SEP (sys_tmp[0]))
+    {
+        sys_tmp = getenv ("TMPDIR");
+        if (sys_tmp == NULL || !IS_PATH_SEP (sys_tmp[0]))
+            sys_tmp = TMPDIR_DEFAULT;
+    }
+
+    template = g_build_filename (sys_tmp, "coole-XXXXXX", (char *) NULL);
+    g_strlcpy (buffer, template, sizeof (buffer));
+    g_free (template);
+
+    tmpdir = g_mkdtemp (buffer);
+    if (tmpdir != NULL)
+        g_setenv ("COOLE_TMPDIR", tmpdir, TRUE);
+    else
+    {
+        fprintf (stderr,
+                 _ ("Cannot create temporary directory %s: %s.\n"
+                    "Temporary files will not be created\n"),
+                 buffer, unix_error_string (errno));
+        g_snprintf (buffer, sizeof (buffer), "%s", "/dev/null/");
+        fprintf (stderr, "%s\n", _ ("Press any key to continue..."));
+        getc (stdin);
+    }
+
+    return tmpdir;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Create a temporary file and open it.
+ *
+ * pname (output) - pointer to the name of the temp file (needs g_free).
+ *                  NULL if the function fails.
+ * prefix - part of the filename before the random part.
+ *          Prepend $TMPDIR or /tmp if there are no path separators.
+ * suffix - if not NULL, part of the filename after the random part.
+ *
+ * Result:
+ * handle of the open file or -1 if couldn't open any.
+ */
+
+int
+mc_mkstemps (char **pname, const char *prefix, const char *suffix)
+{
+    char *p1, *p2;
+    int fd;
+
+    if (strchr (prefix, PATH_SEP) != NULL)
+        p1 = g_strdup (prefix);
+    else
+    {
+        // Add prefix first to find the position of XXXXXX
+        p1 = g_build_filename (mc_tmpdir (), prefix, (char *) NULL);
+    }
+
+    p2 = g_strconcat (p1, "XXXXXX", suffix, (char *) NULL);
+    g_free (p1);
+
+    fd = g_mkstemp (p2);
+    if (fd >= 0)
+        *pname = p2;
+    else
+    {
+        *pname = NULL;
+        g_free (p2);
+        fd = -1;
+    }
+
+    return fd;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
  * Build filename from arguments.
- * Like to g_build_filename(), but respect VFS_PATH_URL_DELIMITER
+ * Like g_build_filename(), but the result is canonicalized
  */
 
 char *
@@ -1236,7 +1251,7 @@ mc_build_filenamev (const char *first_element, va_list args)
 /* --------------------------------------------------------------------------------------------- */
 /**
  * Build filename from arguments.
- * Like to g_build_filename(), but respect VFS_PATH_URL_DELIMITER
+ * Like g_build_filename(), but the result is canonicalized
  */
 
 char *

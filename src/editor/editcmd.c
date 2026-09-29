@@ -55,7 +55,6 @@
 #include "lib/fileloc.h"
 #include "lib/lock.h"
 #include "lib/util.h"  // tilde_expand(), x_basename()
-#include "lib/vfs/vfs.h"
 #include "lib/widget.h"
 #include "lib/event.h"  // mc_event_raise()
 #include "lib/charsets.h"
@@ -118,9 +117,8 @@ edit_publish_runtime_save (WEdit *edit, const char *previous_path, gboolean save
     snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_SAVE);
     snapshot->data.editor_save.editor =
         mc_runtime_handle_for_object (MC_RUNTIME_HANDLE_EDITOR, edit);
-    snapshot->data.editor_save.path = edit->filename_vpath != NULL
-        ? vfs_path_to_str_flags (edit->filename_vpath, 0, VPF_STRIP_PASSWORD)
-        : g_strdup ("");
+    snapshot->data.editor_save.path =
+        edit->filename != NULL ? g_strdup (edit->filename) : g_strdup ("");
     snapshot->data.editor_save.previous_path = g_strdup (previous_path);
     snapshot->data.editor_save.save_as = save_as;
 
@@ -153,24 +151,13 @@ edit_save_mode_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, 
 
 /* --------------------------------------------------------------------------------------------- */
 
-static vfs_path_t *
-edit_get_real_filename_vpath (const WEdit *edit, const vfs_path_t *filename_vpath)
+static char *
+edit_get_real_filename (const char *filename)
 {
-    const char *start_filename;
-    const vfs_path_element_t *vpath_element;
-
-    vpath_element = vfs_path_get_by_index (filename_vpath, 0);
-    if (vpath_element == NULL)
+    if (filename == NULL || *filename == '\0')
         return NULL;
 
-    start_filename = vpath_element->path;
-    if (*start_filename == '\0')
-        return NULL;
-
-    if (!IS_PATH_SEP (*start_filename) && edit->dir_vpath != NULL)
-        return vfs_path_append_vpath_new (edit->dir_vpath, filename_vpath, NULL);
-
-    return vfs_path_clone (filename_vpath);
+    return mc_path_absolute (filename);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -256,17 +243,11 @@ static int
 edit_try_sudo_save_cmd (WEdit *edit)
 {
     int result = 0;
-    vfs_path_t *real_filename_vpath;
+    char *real_filename_path;
 
-    real_filename_vpath = edit_get_real_filename_vpath (edit, edit->filename_vpath);
-    if (real_filename_vpath == NULL)
+    real_filename_path = edit_get_real_filename (edit->filename);
+    if (real_filename_path == NULL)
         return 0;
-
-    if (!vfs_file_is_local (real_filename_vpath))
-    {
-        vfs_path_free (real_filename_vpath, TRUE);
-        return 0;
-    }
 
     for (;;)
     {
@@ -279,9 +260,9 @@ edit_try_sudo_save_cmd (WEdit *edit)
             break;
         }
 
-        if (edit_save_with_sudo (edit, vfs_path_as_str (real_filename_vpath), password))
+        if (edit_save_with_sudo (edit, real_filename_path, password))
         {
-            (void) mc_stat (real_filename_vpath, &edit->stat1);
+            (void) stat (real_filename_path, &edit->stat1);
             memset (password, 0, strlen (password));
             g_free (password);
             result = 1;
@@ -302,7 +283,7 @@ edit_try_sudo_save_cmd (WEdit *edit)
         }
     }
 
-    vfs_path_free (real_filename_vpath, TRUE);
+    g_free (real_filename_path);
     return result;
 }
 
@@ -360,38 +341,31 @@ edit_register_builtin_plugins (void)
 /* returns 0 on error, -1 on abort */
 
 static int
-edit_save_file (WEdit *edit, const vfs_path_t *filename_vpath)
+edit_save_file (WEdit *edit, const char *filename_path)
 {
     char *p;
     off_t filelen = 0;
     int this_save_mode, rv, fd = -1;
-    vfs_path_t *real_filename_vpath;
-    vfs_path_t *savename_vpath = NULL;
+    char *real_filename_path;
+    char *savename_path = NULL;
     struct stat sb;
 
-    real_filename_vpath = edit_get_real_filename_vpath (edit, filename_vpath);
-    if (real_filename_vpath == NULL)
+    real_filename_path = edit_get_real_filename (filename_path);
+    if (real_filename_path == NULL)
         return 0;
 
     this_save_mode = edit_options.save_mode;
     if (this_save_mode != EDIT_QUICK_SAVE)
     {
-        if (!vfs_file_is_local (real_filename_vpath))
+        fd = open (real_filename_path, O_RDONLY | O_BINARY);
+        if (fd == -1)
             // The file does not exists yet, so no safe save or backup are necessary.
             this_save_mode = EDIT_QUICK_SAVE;
         else
-        {
-            fd = mc_open (real_filename_vpath, O_RDONLY | O_BINARY);
-            if (fd == -1)
-                // The file does not exists yet, so no safe save or backup are necessary.
-                this_save_mode = EDIT_QUICK_SAVE;
-        }
-
-        if (fd != -1)
-            mc_close (fd);
+            close (fd);
     }
 
-    rv = mc_stat (real_filename_vpath, &sb);
+    rv = stat (real_filename_path, &sb);
     if (rv == 0)
     {
         if (this_save_mode == EDIT_QUICK_SAVE && edit->skip_detach_prompt == 0 && sb.st_nlink > 1)
@@ -408,7 +382,7 @@ edit_save_file (WEdit *edit, const vfs_path_t *filename_vpath)
                 edit->skip_detach_prompt = 1;
                 break;
             default:
-                vfs_path_free (real_filename_vpath, TRUE);
+                g_free (real_filename_path);
                 return -1;
             }
         }
@@ -424,56 +398,48 @@ edit_save_file (WEdit *edit, const vfs_path_t *filename_vpath)
                                      _ ("&Yes"), _ ("&Cancel"));
             if (rv != 0)
             {
-                vfs_path_free (real_filename_vpath, TRUE);
+                g_free (real_filename_path);
                 return -1;
             }
         }
     }
 
     if (this_save_mode == EDIT_QUICK_SAVE)
-        savename_vpath = vfs_path_clone (real_filename_vpath);
+        savename_path = g_strdup (real_filename_path);
     else
     {
         char *savedir, *saveprefix;
 
-        savedir = vfs_path_tokens_get (real_filename_vpath, 0, -1);
-        if (savedir == NULL)
-            savedir = g_strdup (".");
-
-        // Token-related function never return leading slash, so we need add it manually
-        saveprefix = mc_build_filename (PATH_SEP_STR, savedir, "cooledit", (char *) NULL);
+        savedir = g_path_get_dirname (real_filename_path);
+        saveprefix = g_build_filename (savedir, "cooledit", (char *) NULL);
         g_free (savedir);
-        fd = mc_mkstemps (&savename_vpath, saveprefix, NULL);
+        fd = mc_mkstemps (&savename_path, saveprefix, NULL);
         g_free (saveprefix);
-        if (savename_vpath == NULL)
+        if (savename_path == NULL)
         {
-            vfs_path_free (real_filename_vpath, TRUE);
+            g_free (real_filename_path);
             return 0;
         }
-        /* FIXME:
-         * Close for now because mc_mkstemps use pure open system call
-         * to create temporary file and it needs to be reopened by
-         * VFS-aware mc_open().
-         */
+        // reopened below with the mode of the edited file
         close (fd);
     }
 
-    (void) mc_chown (savename_vpath, edit->stat1.st_uid, edit->stat1.st_gid);
-    (void) mc_chmod (savename_vpath, edit->stat1.st_mode);
-    if (edit->attrs_ok)
-        (void) mc_fsetflags (savename_vpath, edit->attrs);
+    // keep the owner if we may; a failure leaves the file ours
+    if (chown (savename_path, edit->stat1.st_uid, edit->stat1.st_gid) != 0)
+        errno = 0;
+    (void) chmod (savename_path, edit->stat1.st_mode);
 
-    fd = mc_open (savename_vpath, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, edit->stat1.st_mode);
+    fd = open (savename_path, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, edit->stat1.st_mode);
     if (fd == -1)
         goto error_save;
 
     // pipe save
-    p = edit_get_write_filter (savename_vpath, real_filename_vpath);
+    p = edit_get_write_filter (savename_path, real_filename_path);
     if (p != NULL)
     {
         FILE *file;
 
-        mc_close (fd);
+        close (fd);
         file = (FILE *) popen (p, "w");
 
         if (file != NULL)
@@ -504,15 +470,15 @@ edit_save_file (WEdit *edit, const vfs_path_t *filename_vpath)
 
         if (filelen != edit->buffer.size)
         {
-            mc_close (fd);
+            close (fd);
             goto error_save;
         }
 
-        if (mc_close (fd) != 0)
+        if (close (fd) != 0)
             goto error_save;
 
         // Update the file information, especially the mtime.
-        if (mc_stat (savename_vpath, &edit->stat1) == -1)
+        if (stat (savename_path, &edit->stat1) == -1)
             goto error_save;
     }
     else
@@ -520,9 +486,9 @@ edit_save_file (WEdit *edit, const vfs_path_t *filename_vpath)
         FILE *file;
         const char *savename;
 
-        mc_close (fd);
+        close (fd);
 
-        savename = vfs_path_get_last_path_str (savename_vpath);
+        savename = savename_path;
         file = (FILE *) fopen (savename, "w");
         if (file != NULL)
         {
@@ -541,40 +507,32 @@ edit_save_file (WEdit *edit, const vfs_path_t *filename_vpath)
 
     if (this_save_mode == EDIT_DO_BACKUP)
     {
-        char *tmp_store_filename;
-        vfs_path_element_t *last_vpath_element;
-        vfs_path_t *tmp_vpath;
+        char *backup_path;
         gboolean ok;
 
         g_assert (edit_options.backup_ext != NULL);
 
         // add backup extension to the path
-        tmp_vpath = vfs_path_clone (real_filename_vpath);
-        last_vpath_element = (vfs_path_element_t *) vfs_path_get_by_index (tmp_vpath, -1);
-        tmp_store_filename = last_vpath_element->path;
-        last_vpath_element->path =
-            g_strdup_printf ("%s%s", tmp_store_filename, edit_options.backup_ext);
-        g_free (tmp_store_filename);
-
-        ok = (mc_rename (real_filename_vpath, tmp_vpath) != -1);
-        vfs_path_free (tmp_vpath, TRUE);
+        backup_path = g_strconcat (real_filename_path, edit_options.backup_ext, (char *) NULL);
+        ok = (rename (real_filename_path, backup_path) != -1);
+        g_free (backup_path);
         if (!ok)
             goto error_save;
     }
 
-    if (this_save_mode != EDIT_QUICK_SAVE && mc_rename (savename_vpath, real_filename_vpath) == -1)
+    if (this_save_mode != EDIT_QUICK_SAVE && rename (savename_path, real_filename_path) == -1)
         goto error_save;
 
-    vfs_path_free (real_filename_vpath, TRUE);
-    vfs_path_free (savename_vpath, TRUE);
+    g_free (real_filename_path);
+    g_free (savename_path);
     return 1;
 error_save:
     /*  FIXME: Is this safe ?
      *  if (this_save_mode != EDIT_QUICK_SAVE)
-     *      mc_unlink (savename);
+     *      unlink (savename);
      */
-    vfs_path_free (real_filename_vpath, TRUE);
-    vfs_path_free (savename_vpath, TRUE);
+    g_free (real_filename_path);
+    g_free (savename_path);
     return 0;
 }
 
@@ -593,12 +551,12 @@ edit_check_newline (const edit_buffer_t *buf)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static vfs_path_t *
+static char *
 edit_get_save_file_as (WEdit *edit)
 {
     static LineBreaks cur_lb = LB_ASIS;
     char *filename_res = NULL;
-    vfs_path_t *ret_vpath = NULL;
+    char *ret_path = NULL;
 
     const char *lb_names[LB_NAMES] = {
         _ ("&Do not change"),
@@ -608,9 +566,8 @@ edit_get_save_file_as (WEdit *edit)
     };
 
     quick_widget_t quick_widgets[] = {
-        QUICK_LABELED_INPUT (_ ("Enter file name:"), input_label_above,
-                             vfs_path_as_str (edit->filename_vpath), "save-as", &filename_res, NULL,
-                             FALSE, FALSE, INPUT_COMPLETE_FILENAMES),
+        QUICK_LABELED_INPUT (_ ("Enter file name:"), input_label_above, edit->filename, "save-as",
+                             &filename_res, NULL, FALSE, FALSE, INPUT_COMPLETE_FILENAMES),
         QUICK_SEPARATOR (TRUE),
         QUICK_LABEL (_ ("Change line breaks to:"), NULL),
         QUICK_RADIO (LB_NAMES, lb_names, (int *) &cur_lb, NULL),
@@ -637,11 +594,11 @@ edit_get_save_file_as (WEdit *edit)
         edit->lb = cur_lb;
         fname = tilde_expand (filename_res);
         g_free (filename_res);
-        ret_vpath = vfs_path_from_str (fname);
+        ret_path = mc_path_absolute (fname);
         g_free (fname);
     }
 
-    return ret_vpath;
+    return ret_path;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -655,14 +612,14 @@ edit_save_cmd (WEdit *edit)
     int save_errno = 0;
 
     if (edit->locked == 0 && edit->delete_file == 0)
-        save_lock = lock_file (edit->filename_vpath);
+        save_lock = lock_file (edit->filename);
 
-    const int res = edit_save_file (edit, edit->filename_vpath);
+    const int res = edit_save_file (edit, edit->filename);
     save_errno = errno;
 
     // Maintain modify (not save) lock on failure
     if ((res > 0 && edit->locked != 0) || save_lock != 0)
-        edit->locked = unlock_file (edit->filename_vpath);
+        edit->locked = unlock_file (edit->filename);
 
     // On failure try 'save as', it does locking on its own
     if (res == 0)
@@ -1031,29 +988,22 @@ editcmd_dialog_raw_key_query_cb (Widget *w, Widget *sender, widget_msg_t msg, in
 /* --------------------------------------------------------------------------------------------- */
 
 static gboolean
-editcmd_check_and_create_user_syntax_directory (const vfs_path_t *user_syntax_file_vpath)
+editcmd_check_and_create_user_syntax_directory (const char *user_syntax_file_path)
 {
     gboolean ret;
     struct stat st;
 
-    ret = mc_stat (user_syntax_file_vpath, &st) == 0;
+    ret = stat (user_syntax_file_path, &st) == 0;
     if (!ret)
     {
-        // file doesn't exist -- check why
-        const char *user_syntax_file_path = vfs_path_as_str (user_syntax_file_vpath);
-
-        // check directory
-        const char *user_syntax_file_basename = x_basename (user_syntax_file_path);
+        // file doesn't exist -- check the directory
         char *user_syntax_dir;
-        vfs_path_t *user_syntax_vpath;
 
-        user_syntax_dir =
-            g_strndup (user_syntax_file_path, user_syntax_file_basename - user_syntax_file_path);
-        user_syntax_vpath = vfs_path_from_str (user_syntax_dir);
+        user_syntax_dir = g_path_get_dirname (user_syntax_file_path);
 
-        ret = mc_stat (user_syntax_vpath, &st) == 0;
+        ret = stat (user_syntax_dir, &st) == 0;
         if (!ret)
-            ret = mc_mkdir (user_syntax_vpath, 0700) == 0;
+            ret = mkdir (user_syntax_dir, 0700) == 0;
         else if (!S_ISDIR (st.st_mode))
         {
             ret = FALSE;
@@ -1064,7 +1014,6 @@ editcmd_check_and_create_user_syntax_directory (const vfs_path_t *user_syntax_fi
         if (!ret)
             file_error_message (_ ("Cannot create directory\n%s"), user_syntax_dir);
 
-        vfs_path_free (user_syntax_vpath, TRUE);
         g_free (user_syntax_dir);
     }
 
@@ -1205,13 +1154,10 @@ edit_save_mode_cmd (void)
 /* --------------------------------------------------------------------------------------------- */
 
 void
-edit_set_filename (WEdit *edit, const vfs_path_t *name_vpath)
+edit_set_filename (WEdit *edit, const char *name)
 {
-    vfs_path_free (edit->filename_vpath, TRUE);
-    edit->filename_vpath = vfs_path_clone (name_vpath);
-
-    if (edit->dir_vpath == NULL)
-        edit->dir_vpath = vfs_path_clone (vfs_get_raw_current_dir ());
+    g_free (edit->filename);
+    edit->filename = mc_path_absolute (name);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1222,7 +1168,7 @@ gboolean
 edit_save_as_cmd (WEdit *edit)
 {
     // This heads the 'Save As' dialog box
-    vfs_path_t *exp_vpath;
+    char *exp_path;
     int save_lock = 0;
     gboolean different_filename = FALSE;
     gboolean ret = FALSE;
@@ -1231,55 +1177,54 @@ edit_save_as_cmd (WEdit *edit)
     if (!edit_check_newline (&edit->buffer))
         return FALSE;
 
-    if (edit->filename_vpath != NULL)
-        previous_path = vfs_path_to_str_flags (edit->filename_vpath, 0, VPF_STRIP_PASSWORD);
+    if (edit->filename != NULL)
+        previous_path = g_strdup (edit->filename);
 
-    exp_vpath = edit_get_save_file_as (edit);
+    exp_path = edit_get_save_file_as (edit);
     edit_push_undo_action (edit, KEY_PRESS + edit->start_display);
 
-    if (exp_vpath != NULL && vfs_path_len (exp_vpath) != 0)
+    if (exp_path != NULL && strlen (exp_path) != 0)
     {
         int rv;
 
-        if (!vfs_path_equal (edit->filename_vpath, exp_vpath))
+        if (g_strcmp0 (edit->filename, exp_path) != 0)
         {
             int file;
             struct stat sb;
 
-            if (mc_stat (exp_vpath, &sb) == 0 && !S_ISREG (sb.st_mode))
+            if (stat (exp_path, &sb) == 0 && !S_ISREG (sb.st_mode))
             {
-                file_error_message (_ ("Cannot save\n%s:\nnot a regular file"),
-                                    vfs_path_as_str (exp_vpath));
+                file_error_message (_ ("Cannot save\n%s:\nnot a regular file"), exp_path);
                 goto ret;
             }
 
             different_filename = TRUE;
-            file = mc_open (exp_vpath, O_RDONLY | O_BINARY);
+            file = open (exp_path, O_RDONLY | O_BINARY);
 
             if (file == -1)
                 edit->stat1.st_mode |= S_IWUSR;
             else
             {
                 // the file exists
-                mc_close (file);
+                close (file);
                 // Overwrite the current file or cancel the operation
                 if (edit_query_dialog2 (_ ("Warning"), _ ("A file already exists with this name"),
                                         _ ("&Overwrite"), _ ("&Cancel")))
                     goto ret;
             }
 
-            save_lock = lock_file (exp_vpath);
+            save_lock = lock_file (exp_path);
         }
         else if (edit->locked == 0 && edit->delete_file == 0)
             // filenames equal, check if already locked
-            save_lock = lock_file (exp_vpath);
+            save_lock = lock_file (exp_path);
 
         if (different_filename)
             /* Allow user to write into saved (under another name) file
              * even if original file had r/o user permissions. */
             edit->stat1.st_mode |= S_IWUSR;
 
-        rv = edit_save_file (edit, exp_vpath);
+        rv = edit_save_file (edit, exp_path);
         switch (rv)
         {
         case 1:
@@ -1287,16 +1232,16 @@ edit_save_as_cmd (WEdit *edit)
             if (different_filename)
             {
                 if (save_lock != 0)
-                    unlock_file (exp_vpath);
+                    unlock_file (exp_path);
                 if (edit->locked != 0)
-                    edit->locked = unlock_file (edit->filename_vpath);
+                    edit->locked = unlock_file (edit->filename);
             }
             else if (edit->locked != 0 || save_lock != 0)
-                edit->locked = unlock_file (edit->filename_vpath);
+                edit->locked = unlock_file (edit->filename);
 
-            edit_set_filename (edit, exp_vpath);
+            edit_set_filename (edit, exp_path);
             if (edit->lb != LB_ASIS)
-                edit_reload (edit, exp_vpath);
+                edit_reload (edit, exp_path);
             edit->modified = 0;
             edit->undo_content_saved = edit->undo_content_seq;
             edit->undo_content_saved_gen = edit->undo_content_gen;
@@ -1314,14 +1259,14 @@ edit_save_as_cmd (WEdit *edit)
         case -1:
             // Failed, so maintain modify (not save) lock
             if (save_lock != 0)
-                unlock_file (exp_vpath);
+                unlock_file (exp_path);
             break;
         }
     }
 
 ret:
     g_free (previous_path);
-    vfs_path_free (exp_vpath, TRUE);
+    g_free (exp_path);
     edit->force |= REDRAW_COMPLETELY;
     return ret;
 }
@@ -1332,7 +1277,7 @@ ret:
 gboolean
 edit_save_confirm_cmd (WEdit *edit)
 {
-    if (edit->filename_vpath == NULL)
+    if (edit->filename == NULL)
         return edit_save_as_cmd (edit);
 
     if (!edit_check_newline (&edit->buffer))
@@ -1343,8 +1288,7 @@ edit_save_confirm_cmd (WEdit *edit)
         char *f;
         gboolean ok;
 
-        f = g_strdup_printf (_ ("Confirm save file: \"%s\""),
-                             vfs_path_as_str (edit->filename_vpath));
+        f = g_strdup_printf (_ ("Confirm save file: \"%s\""), edit->filename);
         ok = (edit_query_dialog2 (_ ("Save file"), f, _ ("&Save"), _ ("&Cancel")) == 0);
         g_free (f);
         if (!ok)
@@ -1372,13 +1316,13 @@ edit_load_cmd (WDialog *h)
 
     if (exp != NULL && *exp != '\0')
     {
-        vfs_path_t *exp_vpath;
+        char *exp_path;
         edit_arg_t arg;
 
-        exp_vpath = vfs_path_from_str (exp);
-        edit_arg_init (&arg, exp_vpath, 0);
+        exp_path = mc_path_absolute (exp);
+        edit_arg_init (&arg, exp_path, 0);
         ret = edit_load_file_from_filename (h, &arg);
-        vfs_path_free (exp_vpath, TRUE);
+        g_free (exp_path);
     }
 
     g_free (exp);
@@ -1391,8 +1335,7 @@ edit_load_cmd (WDialog *h)
  * Load file content
  *
  * @param h screen the owner of editor window
- * @param vpath vfs file path
- * @param line line number
+ * @param arg the file and the line number
  *
  * @return TRUE if file content was successfully loaded, FALSE otherwise
  */
@@ -1424,13 +1367,13 @@ edit_load_file_from_history (WDialog *h)
     exp = show_file_history (CONST_WIDGET (h), &action);
     if (exp != NULL && (action == CK_Edit || action == CK_Enter))
     {
-        vfs_path_t *exp_vpath;
+        char *exp_path;
         edit_arg_t arg;
 
-        exp_vpath = vfs_path_from_str (exp);
-        edit_arg_init (&arg, exp_vpath, 0);
+        exp_path = mc_path_absolute (exp);
+        edit_arg_init (&arg, exp_path, 0);
         ret = edit_load_file_from_filename (h, &arg);
-        vfs_path_free (exp_vpath, TRUE);
+        g_free (exp_path);
     }
 
     g_free (exp);
@@ -1448,7 +1391,7 @@ edit_load_file_from_history (WDialog *h)
 gboolean
 edit_load_syntax_file (WDialog *h)
 {
-    vfs_path_t *extdir_vpath;
+    char *extdir_path;
     int dir = 0;
     edit_arg_t arg;
     gboolean ret = FALSE;
@@ -1457,37 +1400,35 @@ edit_load_syntax_file (WDialog *h)
         dir = query_dialog (_ ("Syntax file edit"), _ ("Which syntax file you want to edit?"),
                             D_NORMAL, 2, _ ("&User"), _ ("&System wide"));
 
-    extdir_vpath =
-        vfs_path_build_filename (mc_global.sysconfig_dir, EDIT_SYNTAX_FILE, (char *) NULL);
-    if (!exist_file (vfs_path_get_last_path_str (extdir_vpath)))
+    extdir_path = mc_build_filename (mc_global.sysconfig_dir, EDIT_SYNTAX_FILE, (char *) NULL);
+    if (!exist_file (extdir_path))
     {
-        vfs_path_free (extdir_vpath, TRUE);
-        extdir_vpath =
-            vfs_path_build_filename (mc_global.share_data_dir, EDIT_SYNTAX_FILE, (char *) NULL);
+        g_free (extdir_path);
+        extdir_path = mc_build_filename (mc_global.share_data_dir, EDIT_SYNTAX_FILE, (char *) NULL);
     }
 
     if (dir == 0)
     {
-        vfs_path_t *user_syntax_file_vpath;
+        char *user_syntax_file_path;
 
-        user_syntax_file_vpath = mc_config_get_full_vpath (EDIT_SYNTAX_FILE);
+        user_syntax_file_path = mc_config_get_full_path (EDIT_SYNTAX_FILE);
 
-        if (editcmd_check_and_create_user_syntax_directory (user_syntax_file_vpath))
+        if (editcmd_check_and_create_user_syntax_directory (user_syntax_file_path))
         {
-            check_for_default (extdir_vpath, user_syntax_file_vpath);
-            edit_arg_init (&arg, user_syntax_file_vpath, 0);
+            check_for_default (extdir_path, user_syntax_file_path);
+            edit_arg_init (&arg, user_syntax_file_path, 0);
             ret = edit_load_file_from_filename (h, &arg);
         }
 
-        vfs_path_free (user_syntax_file_vpath, TRUE);
+        g_free (user_syntax_file_path);
     }
     else if (dir == 1)
     {
-        edit_arg_init (&arg, extdir_vpath, 0);
+        edit_arg_init (&arg, extdir_path, 0);
         ret = edit_load_file_from_filename (h, &arg);
     }
 
-    vfs_path_free (extdir_vpath, TRUE);
+    g_free (extdir_path);
 
     return ret;
 }
@@ -1502,8 +1443,8 @@ edit_load_syntax_file (WDialog *h)
 gboolean
 edit_load_menu_file (WDialog *h)
 {
-    vfs_path_t *buffer_vpath;
-    vfs_path_t *menufile_vpath;
+    char *buffer_path;
+    char *menufile_path;
     int dir;
     edit_arg_t arg;
     gboolean ret;
@@ -1512,49 +1453,47 @@ edit_load_menu_file (WDialog *h)
     dir = query_dialog (_ ("Menu edit"), _ ("Which menu file do you want to edit?"), D_NORMAL,
                         geteuid () != 0 ? 2 : 3, _ ("&Local"), _ ("&User"), _ ("&System wide"));
 
-    menufile_vpath =
-        vfs_path_build_filename (mc_global.sysconfig_dir, EDIT_GLOBAL_MENU, (char *) NULL);
-    if (!exist_file (vfs_path_get_last_path_str (menufile_vpath)))
+    menufile_path = mc_build_filename (mc_global.sysconfig_dir, EDIT_GLOBAL_MENU, (char *) NULL);
+    if (!exist_file (menufile_path))
     {
-        vfs_path_free (menufile_vpath, TRUE);
-        menufile_vpath =
-            vfs_path_build_filename (mc_global.share_data_dir, EDIT_GLOBAL_MENU, (char *) NULL);
+        g_free (menufile_path);
+        menufile_path =
+            mc_build_filename (mc_global.share_data_dir, EDIT_GLOBAL_MENU, (char *) NULL);
     }
 
     switch (dir)
     {
     case 0:
-        buffer_vpath = vfs_path_from_str (EDIT_LOCAL_MENU);
-        check_for_default (menufile_vpath, buffer_vpath);
-        chmod (vfs_path_get_last_path_str (buffer_vpath), 0600);
+        buffer_path = mc_path_absolute (EDIT_LOCAL_MENU);
+        check_for_default (menufile_path, buffer_path);
+        chmod (buffer_path, 0600);
         break;
 
     case 1:
-        buffer_vpath = mc_config_get_full_vpath (EDIT_HOME_MENU);
-        check_for_default (menufile_vpath, buffer_vpath);
+        buffer_path = mc_config_get_full_path (EDIT_HOME_MENU);
+        check_for_default (menufile_path, buffer_path);
         break;
 
     case 2:
-        buffer_vpath =
-            vfs_path_build_filename (mc_global.sysconfig_dir, EDIT_GLOBAL_MENU, (char *) NULL);
-        if (!exist_file (vfs_path_get_last_path_str (buffer_vpath)))
+        buffer_path = mc_build_filename (mc_global.sysconfig_dir, EDIT_GLOBAL_MENU, (char *) NULL);
+        if (!exist_file (buffer_path))
         {
-            vfs_path_free (buffer_vpath, TRUE);
-            buffer_vpath =
-                vfs_path_build_filename (mc_global.share_data_dir, EDIT_GLOBAL_MENU, (char *) NULL);
+            g_free (buffer_path);
+            buffer_path =
+                mc_build_filename (mc_global.share_data_dir, EDIT_GLOBAL_MENU, (char *) NULL);
         }
         break;
 
     default:
-        vfs_path_free (menufile_vpath, TRUE);
+        g_free (menufile_path);
         return FALSE;
     }
 
-    edit_arg_init (&arg, buffer_vpath, 0);
+    edit_arg_init (&arg, buffer_path, 0);
     ret = edit_load_file_from_filename (h, &arg);
 
-    vfs_path_free (buffer_vpath, TRUE);
-    vfs_path_free (menufile_vpath, TRUE);
+    g_free (buffer_path);
+    g_free (menufile_path);
 
     return ret;
 }
@@ -1579,7 +1518,7 @@ edit_close_cmd (WEdit *edit)
         WGroup *g = w->owner;
 
         if (edit->locked != 0)
-            edit->locked = unlock_file (edit->filename_vpath);
+            edit->locked = unlock_file (edit->filename);
 
         group_remove_widget (w);
         widget_destroy (w);
@@ -1786,8 +1725,8 @@ edit_ok_to_quit (WEdit *edit)
     if (edit->modified == 0)
         return TRUE;
 
-    if (edit->filename_vpath != NULL)
-        fname = vfs_path_as_str (edit->filename_vpath);
+    if (edit->filename != NULL)
+        fname = edit->filename;
     else
         fname = _ ("[NoName]");
 
@@ -1840,13 +1779,10 @@ edit_save_block_sum (WEdit *edit, const char *filename, off_t start, off_t finis
                      const gboolean marker, GChecksum *sum)
 {
     int file;
-    vfs_path_t *vpath;
     off_t len = 1;
 
-    vpath = vfs_path_from_str (filename);
-    file = mc_open (vpath, O_CREAT | O_WRONLY | O_TRUNC,
-                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH | O_BINARY);
-    vfs_path_free (vpath, TRUE);
+    file = open (filename, O_CREAT | O_WRONLY | O_TRUNC,
+                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH | O_BINARY);
     if (file == -1)
         return FALSE;
 
@@ -1855,7 +1791,7 @@ edit_save_block_sum (WEdit *edit, const char *filename, off_t start, off_t finis
         int r = 1;
 
         if (marker)
-            r = mc_write (file, VERTICAL_MAGIC, sizeof (VERTICAL_MAGIC));
+            r = write (file, VERTICAL_MAGIC, sizeof (VERTICAL_MAGIC));
         if (r > 0)
         {
             GString *block;
@@ -1901,7 +1837,7 @@ edit_save_block_sum (WEdit *edit, const char *filename, off_t start, off_t finis
 
             while (len != 0)
             {
-                r = mc_write (file, p, len);
+                r = write (file, p, len);
                 if (r < 0)
                     break;
                 p += r;
@@ -1927,12 +1863,12 @@ edit_save_block_sum (WEdit *edit, const char *filename, off_t start, off_t finis
                 buf[i - start] = edit_buffer_get_byte (&edit->buffer, i);
             if (sum != NULL)
                 g_checksum_update (sum, buf, end - start);
-            len -= mc_write (file, (char *) buf, end - start);
+            len -= write (file, (char *) buf, end - start);
             start = end;
         }
         g_free (buf);
     }
-    mc_close (file);
+    close (file);
 
     return (len == 0);
 }
@@ -2030,14 +1966,14 @@ edit_cut_to_X_buf_cmd (WEdit *edit)
 gboolean
 edit_paste_from_X_buf_cmd (WEdit *edit)
 {
-    vfs_path_t *tmp;
+    char *tmp;
     gboolean ret;
 
     // try use external clipboard utility
     mc_event_raise (MCEVENT_GROUP_CORE, "clipboard_file_from_ext_clip", NULL);
-    tmp = mc_config_get_full_vpath (EDIT_HOME_CLIP_FILE);
+    tmp = mc_config_get_full_path (EDIT_HOME_CLIP_FILE);
     ret = (edit_insert_file (edit, tmp) >= 0);
-    vfs_path_free (tmp, TRUE);
+    g_free (tmp);
 
     return ret;
 }
@@ -2136,11 +2072,11 @@ edit_insert_file_cmd (WEdit *edit)
 
     if (exp != NULL && *exp != '\0')
     {
-        vfs_path_t *exp_vpath;
+        char *exp_path;
 
-        exp_vpath = vfs_path_from_str (exp);
-        ret = (edit_insert_file (edit, exp_vpath) >= 0);
-        vfs_path_free (exp_vpath, TRUE);
+        exp_path = mc_path_absolute (exp);
+        ret = (edit_insert_file (edit, exp_path) >= 0);
+        g_free (exp_path);
 
         if (!ret)
             message (D_ERROR, MSG_ERROR, "%s", _ ("Cannot insert file"));
@@ -2206,7 +2142,7 @@ edit_load_forward_cmd (WEdit *edit)
         return FALSE;
 
     edit_stack_iterator++;
-    if (edit_history_moveto[edit_stack_iterator].file_vpath != NULL)
+    if (edit_history_moveto[edit_stack_iterator].file_name != NULL)
         return edit_reload_line (edit, &edit_history_moveto[edit_stack_iterator]);
 
     return FALSE;
@@ -2233,7 +2169,7 @@ edit_load_back_cmd (WEdit *edit)
         return FALSE;
 
     edit_stack_iterator--;
-    if (edit_history_moveto[edit_stack_iterator].file_vpath != NULL)
+    if (edit_history_moveto[edit_stack_iterator].file_name != NULL)
         return edit_reload_line (edit, &edit_history_moveto[edit_stack_iterator]);
 
     return FALSE;

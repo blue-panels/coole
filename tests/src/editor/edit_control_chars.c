@@ -25,7 +25,6 @@
 #include "tests/mctest.h"
 
 #include "lib/charsets.h"
-#include "src/vfs/local/local.c"
 #include "src/selcodepage.h"
 
 #include "src/editor/editwidget.h"
@@ -46,10 +45,6 @@ setup (void)
     WRect r;
 
     str_init_strings (NULL);
-
-    vfs_init ();
-    vfs_init_localfs ();
-    vfs_setup_work_dir ();
 
     mc_global.sysconfig_dir = (char *) TEST_SHARE_DIR;
     load_codepages_list ();

@@ -18,8 +18,6 @@ lib/tty/tty-slang.c
 lib/tty/tty.c
 lib/util.c
 lib/utilunix.c
-lib/vfs/interface.c
-lib/vfs/utilvfs.c
 lib/widget/dialog-switch.c
 lib/widget/history.c
 lib/widget/input.c

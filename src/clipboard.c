@@ -34,6 +34,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #include "lib/global.h"
@@ -41,8 +43,6 @@
 #include "lib/mcconfig.h"
 #include "lib/util.h"
 #include "lib/event.h"
-
-#include "lib/vfs/vfs.h"
 
 #include "src/execute.h"
 
@@ -169,24 +169,24 @@ clipboard_file_from_ext_clip (const gchar *event_group_name, const gchar *event_
 
             if (file < 0)
             {
-                vfs_path_t *fname_vpath;
+                char *fname;
 
-                fname_vpath = mc_config_get_full_vpath (EDIT_HOME_CLIP_FILE);
-                file = mc_open (fname_vpath, clip_open_flags, clip_open_mode);
-                vfs_path_free (fname_vpath, TRUE);
+                fname = mc_config_get_full_path (EDIT_HOME_CLIP_FILE);
+                file = open (fname, clip_open_flags, clip_open_mode);
+                g_free (fname);
 
                 if (file < 0)
                     break;
             }
 
-            nwrite = mc_write (file, p->out.buf, p->out.len);
+            nwrite = write (file, p->out.buf, p->out.len);
             (void) nwrite;
         }
     }
 
     if (file >= 0)
     {
-        mc_close (file);
+        close (file);
         clip_info_drop_home ();
     }
 
@@ -203,7 +203,7 @@ clipboard_text_to_file (const gchar *event_group_name, const gchar *event_name, 
                         gpointer data)
 {
     int file;
-    vfs_path_t *fname_vpath = NULL;
+    char *fname = NULL;
     size_t str_len;
     const char *text = (const char *) data;
 
@@ -214,25 +214,22 @@ clipboard_text_to_file (const gchar *event_group_name, const gchar *event_name, 
     if (text == NULL)
         return FALSE;
 
-    fname_vpath = mc_config_get_full_vpath (EDIT_HOME_CLIP_FILE);
-    file = mc_open (fname_vpath, clip_open_flags, clip_open_mode);
+    fname = mc_config_get_full_path (EDIT_HOME_CLIP_FILE);
+    file = open (fname, clip_open_flags, clip_open_mode);
 
     if (file == -1)
     {
         // The editor makes this directory, and it may never have run.
         char *dir;
-        vfs_path_t *dir_vpath;
 
-        dir = g_path_get_dirname (vfs_path_as_str (fname_vpath));
-        dir_vpath = vfs_path_from_str (dir);
-        mc_mkdir (dir_vpath, 0700);
-        vfs_path_free (dir_vpath, TRUE);
+        dir = g_path_get_dirname (fname);
+        mkdir (dir, 0700);
         g_free (dir);
 
-        file = mc_open (fname_vpath, clip_open_flags, clip_open_mode);
+        file = open (fname, clip_open_flags, clip_open_mode);
     }
 
-    vfs_path_free (fname_vpath, TRUE);
+    g_free (fname);
 
     if (file == -1)
         return TRUE;
@@ -241,10 +238,10 @@ clipboard_text_to_file (const gchar *event_group_name, const gchar *event_name, 
     {
         ssize_t ret;
 
-        ret = mc_write (file, text, str_len);
+        ret = write (file, text, str_len);
         (void) ret;
     }
-    mc_close (file);
+    close (file);
     clip_info_drop_home ();
 
     return TRUE;

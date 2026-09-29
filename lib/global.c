@@ -68,9 +68,6 @@ mc_global_t mc_global = {
              .ugly_line_drawing = FALSE,
              .old_mouse = FALSE,
              .alternate_plus_minus = FALSE },
-
-    .vfs = { .cd_symlinks = TRUE }
-
 };
 
 /*** file scope macro definitions ****************************************************************/

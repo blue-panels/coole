@@ -33,7 +33,6 @@
 
 #include "lib/global.h"
 #include "lib/fileloc.h"
-#include "lib/vfs/vfs.h"
 #include "lib/util.h"  // unix_error_string()
 
 #include "lib/mcconfig.h"
@@ -276,28 +275,6 @@ mc_config_get_full_path (const char *config_name)
                                      mc_config_files_reference[rule_index].filename, (char *) NULL);
 
     return NULL;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-/**
- * Get full path to config file by short name.
- *
- * @param config_name short name
- * @return object with full path to config file
- */
-
-vfs_path_t *
-mc_config_get_full_vpath (const char *config_name)
-{
-    vfs_path_t *ret_vpath;
-    char *str_path;
-
-    str_path = mc_config_get_full_path (config_name);
-
-    ret_vpath = vfs_path_from_str (str_path);
-    g_free (str_path);
-
-    return ret_vpath;
 }
 
 /* --------------------------------------------------------------------------------------------- */

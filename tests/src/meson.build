@@ -6,7 +6,6 @@ foreach name : ['clipboard_info', 'input_clip_text', 'file_history', 'keymap_rel
       c_args: test_c_args + [
         '-DTEST_SHARE_DIR="@0@"'.format(meson.current_source_dir() / 'fixtures'),
       ],
-      include_directories: include_directories('../../lib/vfs'),
       dependencies: test_src_deps),
     workdir: meson.current_build_dir(),
     suite: 'src')

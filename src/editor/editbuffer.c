@@ -35,10 +35,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <unistd.h>  // read(), write()
 
 #include "lib/global.h"
-
-#include "lib/vfs/vfs.h"
 
 #include "edit-impl.h"
 #include "editbuffer.h"
@@ -789,7 +788,7 @@ edit_buffer_read_file (edit_buffer_t *buf, int fd, off_t size,
         b = g_malloc0 (EDIT_BUF_SIZE);
         g_ptr_array_add (buf->b2, b);
         b = (char *) b + EDIT_BUF_SIZE - data_size;
-        ret = mc_read (fd, b, data_size);
+        ret = read (fd, b, data_size);
 
         // count lines
         for (j = 0; j < ret; j++)
@@ -814,7 +813,7 @@ edit_buffer_read_file (edit_buffer_t *buf, int fd, off_t size,
 
         b = g_malloc0 (data_size);
         g_ptr_array_add (buf->b2, b);
-        sz = mc_read (fd, b, data_size);
+        sz = read (fd, b, data_size);
         if (sz >= 0)
             ret += sz;
 
@@ -906,7 +905,7 @@ edit_buffer_write_file (edit_buffer_t *buf, int fd)
         for (i = 0; i < (off_t) buf->b1->len - 1; i++)
         {
             b = g_ptr_array_index (buf->b1, i);
-            sz = mc_write (fd, b, data_size);
+            sz = write (fd, b, data_size);
             if (sz >= 0)
                 ret += sz;
             else if (i == 0)
@@ -918,7 +917,7 @@ edit_buffer_write_file (edit_buffer_t *buf, int fd)
         // write last partially filled part of b1
         data_size = ((buf->curs1 - 1) & M_EDIT_BUF_SIZE) + 1;
         b = g_ptr_array_index (buf->b1, i);
-        sz = mc_write (fd, b, data_size);
+        sz = write (fd, b, data_size);
         if (sz >= 0)
             ret += sz;
         if (sz != data_size)
@@ -932,7 +931,7 @@ edit_buffer_write_file (edit_buffer_t *buf, int fd)
         i = buf->b2->len - 1;
         b = g_ptr_array_index (buf->b2, i);
         data_size = ((buf->curs2 - 1) & M_EDIT_BUF_SIZE) + 1;
-        sz = mc_write (fd, (char *) b + EDIT_BUF_SIZE - data_size, data_size);
+        sz = write (fd, (char *) b + EDIT_BUF_SIZE - data_size, data_size);
         if (sz >= 0)
             ret += sz;
 
@@ -943,7 +942,7 @@ edit_buffer_write_file (edit_buffer_t *buf, int fd)
             while (--i >= 0)
             {
                 b = g_ptr_array_index (buf->b2, i);
-                sz = mc_write (fd, b, data_size);
+                sz = write (fd, b, data_size);
                 if (sz >= 0)
                     ret += sz;
                 if (sz != data_size)

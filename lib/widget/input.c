@@ -187,7 +187,7 @@ do_show_hist (WInput *in)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Strip password from incomplete url (just user:pass@host without VFS prefix).
+ * Strip password from incomplete url (user:pass@host).
  *
  * @param url partial URL
  * @return newly allocated string without password
@@ -204,9 +204,9 @@ input_history_strip_password (char *url)
 
     // TODO: handle ':' and '@' in password
 
-    delim = strstr (url, VFS_PATH_URL_DELIMITER);
+    delim = strstr (url, "://");
     if (delim != NULL)
-        colon = strchr (delim + strlen (VFS_PATH_URL_DELIMITER), ':');
+        colon = strchr (delim + 3, ':');
     else
         colon = strchr (url, ':');
 
@@ -239,11 +239,6 @@ input_push_history (WInput *in)
 
         if (in->history.name != NULL && in->strip_password)
         {
-            /*
-               We got string user:pass@host without any VFS prefixes
-               and vfs_path_to_str_flags (t, VPF_STRIP_PASSWORD) doesn't work.
-               Therefore we want to strip password in separate algorithm
-             */
             char *url_with_stripped_password;
 
             url_with_stripped_password = input_history_strip_password (t);

@@ -51,28 +51,26 @@
 /* --------------------------------------------------------------------------------------------- */
 
 gboolean
-check_for_default (const vfs_path_t *default_file_vpath, const vfs_path_t *file_vpath)
+check_for_default (const char *default_file_path, const char *file_path)
 {
-    if (!exist_file (vfs_path_as_str (file_vpath)))
+    if (!exist_file (file_path))
     {
         GError *error = NULL;
         char *contents = NULL;
         gsize length = 0;
         gboolean ok;
 
-        if (!exist_file (vfs_path_as_str (default_file_vpath)))
+        if (!exist_file (default_file_path))
             return FALSE;
 
-        ok = g_file_get_contents (vfs_path_as_str (default_file_vpath), &contents, &length, &error)
-            && g_file_set_contents (vfs_path_as_str (file_vpath), contents, (gssize) length,
-                                    &error);
+        ok = g_file_get_contents (default_file_path, &contents, &length, &error)
+            && g_file_set_contents (file_path, contents, (gssize) length, &error);
         g_free (contents);
 
         if (!ok)
         {
-            message (D_ERROR, MSG_ERROR, _ ("Cannot copy %s to %s:\n%s"),
-                     vfs_path_as_str (default_file_vpath), vfs_path_as_str (file_vpath),
-                     error->message);
+            message (D_ERROR, MSG_ERROR, _ ("Cannot copy %s to %s:\n%s"), default_file_path,
+                     file_path, error->message);
             g_error_free (error);
             return FALSE;
         }

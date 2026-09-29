@@ -56,10 +56,8 @@ prefs_path (void)
 static mc_config_t *
 prefs_get (void)
 {
-    /* Plugins may be registered before VFS/config runtime is initialised
-       (e.g. in unit tests that don't set up VFS).  mc_config_init()
-       depends on that runtime, and mc_global.main_config is set in
-       setup.c right after vfs_init(). */
+    /* Plugins may be registered before the configuration is loaded
+       (e.g. in unit tests); mc_global.main_config is set by load_setup(). */
     if (mc_global.main_config == NULL)
         return NULL;
 

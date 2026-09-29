@@ -59,11 +59,6 @@ libmc_sources = files(
   'tty/tty.c',
   'tty/win.c',
 
-  'vfs/gc.c',
-  'vfs/interface.c',
-  'vfs/path.c',
-  'vfs/utilvfs.c',
-  'vfs/vfs.c',
 
   'widget/background.c',
   'widget/button.c',

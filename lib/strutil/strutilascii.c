@@ -227,16 +227,6 @@ str_ascii_conv_gerror_message (GError *mcerror, const char *def_msg)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static estr_t
-str_ascii_vfs_convert_to (GIConv coder, const char *string, int size, GString *buffer)
-{
-    (void) coder;
-    g_string_append_len (buffer, string, size);
-    return ESTR_SUCCESS;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 static const char *
 str_ascii_term_form (const char *text)
 {
@@ -750,7 +740,6 @@ str_ascii_init (void)
     struct str_class result;
 
     result.conv_gerror_message = str_ascii_conv_gerror_message;
-    result.vfs_convert_to = str_ascii_vfs_convert_to;
     result.insert_replace_char = str_ascii_insert_replace_char;
     result.is_valid_string = str_ascii_is_valid_string;
     result.is_valid_char = str_ascii_is_valid_char;

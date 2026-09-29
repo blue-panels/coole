@@ -13,8 +13,9 @@
 #ifndef MC__EDIT_H
 #define MC__EDIT_H
 
-#include "lib/global.h"   // PATH_SEP_STR
-#include "lib/vfs/vfs.h"  // vfs_path_t
+#include <sys/types.h>  // off_t
+
+#include "lib/global.h"  // PATH_SEP_STR
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
@@ -68,7 +69,7 @@ typedef struct
 
 typedef struct
 {
-    vfs_path_t *file_vpath;
+    char *file_name;
     long line_number;
     long column;     /* 0 = not saved */
     long start_line; /* -1 = not saved; scroll offset (first visible line) */
@@ -87,13 +88,12 @@ void edit_stack_free (void);
 /* The editor settings */
 
 gboolean edit_file (const edit_arg_t *arg);
-void edit_file_at_line (const vfs_path_t *file_vpath, long start_line);
+void edit_file_at_line (const char *file_name, long start_line);
 gboolean edit_files (const GList *files);
 
-edit_arg_t *edit_arg_vpath_new (vfs_path_t *file_vpath, long line_number);
 edit_arg_t *edit_arg_new (const char *file_name, long line_number);
-void edit_arg_init (edit_arg_t *arg, vfs_path_t *vpath, long line);
-void edit_arg_assign (edit_arg_t *arg, vfs_path_t *vpath, long line);
+void edit_arg_init (edit_arg_t *arg, char *file_name, long line);
+void edit_arg_assign (edit_arg_t *arg, char *file_name, long line);
 void edit_arg_free (edit_arg_t *arg);
 
 const char *edit_get_file_name (const WEdit *edit);

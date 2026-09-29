@@ -376,20 +376,11 @@ editcmd_dialog_select_definition_show (WEdit *edit, char *match_expr, GPtrArray 
 
         if (curr != NULL && do_moveto && edit_stack_iterator + 1 < MAX_HISTORY_MOVETO)
         {
-            vfs_path_t *vpath;
-
-            // Is file path absolute? Prepend with dir_vpath if necessary
-            if (edit->filename_vpath != NULL && edit->filename_vpath->relative
-                && edit->dir_vpath != NULL)
-                vpath = vfs_path_append_vpath_new (edit->dir_vpath, edit->filename_vpath, NULL);
-            else
-                vpath = vfs_path_clone (edit->filename_vpath);
-
-            edit_arg_assign (&edit_history_moveto[edit_stack_iterator], vpath,
+            edit_arg_assign (&edit_history_moveto[edit_stack_iterator], g_strdup (edit->filename),
                              edit->start_line + edit->curs_row + 1);
             edit_stack_iterator++;
             edit_arg_assign (&edit_history_moveto[edit_stack_iterator],
-                             vfs_path_from_str ((char *) curr_def->fullpath), curr_def->line);
+                             mc_path_absolute (curr_def->fullpath), curr_def->line);
             edit_reload_line (edit, &edit_history_moveto[edit_stack_iterator]);
         }
     }

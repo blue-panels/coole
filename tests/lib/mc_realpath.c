@@ -28,8 +28,6 @@
 #include "tests/mctest.h"
 
 #include "lib/strutil.h"
-#include "lib/vfs/vfs.h"  // VFS_ENCODING_PREFIX, vfs_init(), vfs_shut()
-#include "src/vfs/local/local.c"
 
 #include "lib/util.h"  // mc_realpath()
 
@@ -44,16 +42,12 @@ static void
 setup (void)
 {
     str_init_strings (NULL);
-    vfs_init ();
-    vfs_init_localfs ();
-    vfs_setup_work_dir ();
 }
 
 /* @After */
 static void
 teardown (void)
 {
-    vfs_shut ();
     str_uninit_strings ();
 }
 
@@ -68,13 +62,9 @@ static const struct data_source
     // absolute paths
     { "/", "/" },
     { "/usr/bin", "/usr/bin" },
-    { "/" VFS_ENCODING_PREFIX "UTF-8/", "/" },
-    { "/" VFS_ENCODING_PREFIX "UTF-8/usr/bin", "/usr/bin" },
 
     // relative paths are relative to /
     { "usr/bin", "/usr/bin" },
-    { VFS_ENCODING_PREFIX "UTF-8/", "/" },
-    { VFS_ENCODING_PREFIX "UTF-8/usr/bin", "/usr/bin" },
 };
 
 /* @Test(dataSource = "data_source") */

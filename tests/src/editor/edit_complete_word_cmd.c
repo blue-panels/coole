@@ -31,9 +31,9 @@
 #include <ctype.h>
 
 #include "lib/charsets.h"
+#include "lib/util.h"  // mc_path_absolute()
 #include "lib/strutil.h"
 
-#include "src/vfs/local/local.c"
 #include "src/selcodepage.h"
 #include "src/editor/editwidget.h"
 #include "src/editor/editmacros.h"  // edit_load_macro_cmd()
@@ -150,14 +150,10 @@ static void
 my_setup (void)
 {
     WRect r;
-    vfs_path_t *vpath;
+    char *file_name;
     edit_arg_t arg;
 
     str_init_strings (NULL);
-
-    vfs_init ();
-    vfs_init_localfs ();
-    vfs_setup_work_dir ();
 
     mc_global.sysconfig_dir = (char *) TEST_SHARE_DIR;
     load_codepages_list ();
@@ -169,10 +165,10 @@ my_setup (void)
     edit_options.filesize_threshold = (char *) "64M";
 
     rect_init (&r, 0, 0, 24, 80);
-    vpath = vfs_path_from_str ("edit_complete_word_cmd_test_data.txt");
-    edit_arg_init (&arg, vpath, 1);
+    file_name = mc_path_absolute ("edit_complete_word_cmd_test_data.txt");
+    edit_arg_init (&arg, file_name, 1);
     test_edit = edit_init (NULL, &r, &arg);
-    vfs_path_free (vpath, TRUE);
+    g_free (file_name);
     memset (&owner, 0, sizeof (owner));
     group_add_widget (&owner.group, WIDGET (test_edit));
     edit_completion_dialog_show__init ();
@@ -191,7 +187,6 @@ my_teardown (void)
 
     mc_config_deinit (mc_global.main_config);
     free_codepages_list ();
-    vfs_shut ();
     str_uninit_strings ();
 }
 

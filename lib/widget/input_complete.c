@@ -47,7 +47,6 @@
 
 #include "lib/tty/tty.h"
 #include "lib/tty/key.h"  // XCTRL and ALT macros
-#include "lib/vfs/vfs.h"
 #include "lib/strutil.h"
 #include "lib/util.h"
 #include "lib/widget.h"
@@ -138,10 +137,9 @@ filename_completion_function (const char *text, int state, input_complete_t flag
     static char *dirname = NULL;
     static char *users_dirname = NULL;
     static size_t filename_len = 0;
-    static vfs_path_t *dirname_vpath = NULL;
 
     gboolean isdir = TRUE, isexec = FALSE;
-    struct vfs_dirent *entry = NULL;
+    struct dirent *entry = NULL;
 
     SHOW_C_CTX ("filename_completion_function");
 
@@ -170,7 +168,6 @@ filename_completion_function (const char *text, int state, input_complete_t flag
         g_free (dirname);
         g_free (filename);
         g_free (users_dirname);
-        vfs_path_free (dirname_vpath, TRUE);
 
         if ((*text != '\0') && (temp = strrchr (text, PATH_SEP)) != NULL)
         {
@@ -189,19 +186,18 @@ filename_completion_function (const char *text, int state, input_complete_t flag
         users_dirname = dirname;
         dirname = tilde_expand (dirname);
         canonicalize_pathname (dirname);
-        dirname_vpath = vfs_path_from_str (dirname);
 
         /* Here we should do something with variable expansion
            and `command`.
            Maybe a dream - UNIMPLEMENTED yet. */
 
-        directory = mc_opendir (dirname_vpath);
+        directory = opendir (dirname);
         filename_len = strlen (filename);
     }
 
     // Now that we have some state, we can read the directory.
 
-    while (directory != NULL && (entry = mc_readdir (directory)) != NULL)
+    while (directory != NULL && (entry = readdir (directory)) != NULL)
     {
         if (!str_is_valid_string (entry->d_name))
             continue;
@@ -217,7 +213,7 @@ filename_completion_function (const char *text, int state, input_complete_t flag
         {
             /* Otherwise, if these match up to the length of filename, then
                it may be a match. */
-            if (entry->d_name[0] != filename[0] || entry->d_len < filename_len
+            if (entry->d_name[0] != filename[0] || strlen (entry->d_name) < filename_len
                 || strncmp (filename, entry->d_name, filename_len) != 0)
                 continue;
         }
@@ -227,12 +223,12 @@ filename_completion_function (const char *text, int state, input_complete_t flag
 
         {
             struct stat tempstat;
-            vfs_path_t *tmp_vpath;
+            char *tmp_path;
 
-            tmp_vpath = vfs_path_build_filename (dirname, entry->d_name, (char *) NULL);
+            tmp_path = g_build_filename (dirname, entry->d_name, (char *) NULL);
 
             // Unix version
-            if (mc_stat (tmp_vpath, &tempstat) == 0)
+            if (stat (tmp_path, &tempstat) == 0)
             {
                 uid_t my_uid;
                 gid_t my_gid;
@@ -256,7 +252,7 @@ filename_completion_function (const char *text, int state, input_complete_t flag
                 // stat failed, strange. not a dir in any case
                 isdir = FALSE;
             }
-            vfs_path_free (tmp_vpath, TRUE);
+            g_free (tmp_path);
         }
 
         if ((flags & INPUT_COMPLETE_COMMANDS) != 0 && (isexec || isdir))
@@ -271,12 +267,10 @@ filename_completion_function (const char *text, int state, input_complete_t flag
     {
         if (directory != NULL)
         {
-            mc_closedir (directory);
+            closedir (directory);
             directory = NULL;
         }
         MC_PTR_FREE (dirname);
-        vfs_path_free (dirname_vpath, TRUE);
-        dirname_vpath = NULL;
         MC_PTR_FREE (filename);
         MC_PTR_FREE (users_dirname);
         return NULL;
@@ -295,7 +289,7 @@ filename_completion_function (const char *text, int state, input_complete_t flag
             if (!IS_PATH_SEP (temp->str[temp->len - 1]))
                 g_string_append_c (temp, PATH_SEP);
         }
-        g_string_append_len (temp, entry->d_name, entry->d_len);
+        g_string_append (temp, entry->d_name);
         if (isdir)
             g_string_append_c (temp, PATH_SEP);
 

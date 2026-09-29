@@ -12,8 +12,6 @@
 
 #include "lib/global.h"  // include <glib.h>
 
-#include "lib/vfs/vfs.h"
-
 /*** typedefs(not structures) and defined constants **********************************************/
 
 #ifndef MAXSYMLINKS
@@ -94,21 +92,6 @@ typedef enum
     CANON_PATH_ALL = CANON_PATH_JOINSLASHES | CANON_PATH_REMSLASHDOTS | CANON_PATH_REMDOUBLEDOTS
         | CANON_PATH_GUARDUNC  // All flags
 } canon_path_flags_t;
-
-enum compression_type
-{
-    COMPRESSION_NONE,
-    COMPRESSION_ZIP,
-    COMPRESSION_GZIP,
-    COMPRESSION_BZIP,
-    COMPRESSION_BZIP2,
-    COMPRESSION_LZIP,
-    COMPRESSION_LZ4,
-    COMPRESSION_LZMA,
-    COMPRESSION_LZO,
-    COMPRESSION_XZ,
-    COMPRESSION_ZSTD,
-};
 
 /* stdout or stderr stream of child process */
 typedef struct
@@ -235,19 +218,19 @@ char *tilde_expand (const char *directory);
 void canonicalize_pathname_custom (char *path, canon_path_flags_t flags);
 
 char *mc_realpath (const char *path, char *resolved_path);
+char *mc_path_absolute (const char *path);
 
-/* Looks for "magic" bytes at the start of the VFS file to guess the
- * compression type. Side effect: modifies the file position. */
-const char *decompress_extension (int type);
+const char *mc_tmpdir (void);
+int mc_mkstemps (char **pname, const char *prefix, const char *suffix);
 
 GList *list_append_unique (GList *list, char *text);
 
 /* Position saving and restoring */
 /* Load position for the given filename */
-void load_file_position (const vfs_path_t *filename_vpath, long *line, long *column, off_t *offset,
+void load_file_position (const char *filename, long *line, long *column, off_t *offset,
                          GArray **bookmarks);
 /* Save position for the given filename */
-void save_file_position (const vfs_path_t *filename_vpath, long line, long column, off_t offset,
+void save_file_position (const char *filename, long line, long column, off_t offset,
                          GArray *bookmarks);
 
 /* if ch is in [A-Za-z], returns the corresponding control character,

@@ -46,9 +46,9 @@ run_mc_build_filename (int iteration)
     case 3:
         return mc_build_filename ("/test", "#vfsprefix:", "path  ", (char *) NULL);
     case 4:
-        return mc_build_filename ("/test", "vfsprefix://", "path  ", (char *) NULL);
+        return mc_build_filename ("/test", "a//b/", "path", (char *) NULL);
     case 5:
-        return mc_build_filename ("/test", "vfs/../prefix:///", "p\\///ath", (char *) NULL);
+        return mc_build_filename ("/test", "a/../b/", "./path", (char *) NULL);
     case 6:
         return mc_build_filename ("/test", "path", "..", "/test", "path/", (char *) NULL);
     case 7:
@@ -73,12 +73,13 @@ static const struct test_mc_build_filename_ds
 {
     const char *expected_result;
 } test_mc_build_filename_ds[] = {
+    // clang-format off
     { "test/path" },
     { "/test/path" },
     { "/test/pa/th" },
     { "/test/#vfsprefix:/path  " },
-    { "/test/vfsprefix://path  " },
-    { "/test/prefix://p\\/ath" },
+    { "/test/a/b/path" },
+    { "/test/b/path" },
     { "/test/test/path" },
     { "path" },
     { "path" },
@@ -86,6 +87,7 @@ static const struct test_mc_build_filename_ds
     { "/path" },
     { "pa/th" },
     { "/pa/th" },
+    // clang-format on
 };
 
 /* @Test(dataSource = "test_mc_build_filename_ds") */

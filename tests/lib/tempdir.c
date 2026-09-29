@@ -1,5 +1,5 @@
 /*
-   lib/vfs - manipulations with temp files and  dirs
+   lib - manipulations with temp files and dirs
 
    Copyright (C) 2012-2025
    Free Software Foundation, Inc.
@@ -23,15 +23,12 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#define TEST_SUITE_NAME "/lib/vfs"
+#define TEST_SUITE_NAME "/lib"
 
 #include "tests/mctest.h"
 
-#include "lib/charsets.h"
 #include "lib/strutil.h"
-#include "lib/vfs/path.h"
-
-#include "src/vfs/local/local.c"
+#include "lib/util.h"
 
 /* --------------------------------------------------------------------------------------------- */
 
@@ -43,10 +40,6 @@ setup (void)
     g_unsetenv ("COOLE_TMPDIR");
 
     str_init_strings (NULL);
-
-    vfs_init ();
-    vfs_init_localfs ();
-    vfs_setup_work_dir ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -55,7 +48,6 @@ setup (void)
 static void
 teardown (void)
 {
-    vfs_shut ();
     str_uninit_strings ();
 }
 
@@ -88,21 +80,19 @@ END_TEST
 START_TEST (test_mc_mkstemps)
 {
     // given
-    vfs_path_t *pname_vpath = NULL;
+    char *pname = NULL;
     const char *tmpdir;
     char *begin_pname;
     int fd;
 
     // when
-    fd = mc_mkstemps (&pname_vpath, "mctest-", NULL);
+    fd = mc_mkstemps (&pname, "mctest-", NULL);
     tmpdir = mc_tmpdir ();
     begin_pname = g_build_filename (tmpdir, "mctest-", (char *) NULL);
 
     // then
     close (fd);
     ck_assert_int_ne (fd, -1);
-
-    const char *pname = vfs_path_as_str (pname_vpath);
 
     ck_assert_msg (g_file_test (pname, G_FILE_TEST_EXISTS)
                        && g_file_test (pname, G_FILE_TEST_IS_REGULAR),
@@ -111,7 +101,7 @@ START_TEST (test_mc_mkstemps)
     rmdir (tmpdir);
     ck_assert_msg (strncmp (pname, begin_pname, strlen (begin_pname)) == 0,
                    "\nstart of %s should be equal to %s\n", pname, begin_pname);
-    vfs_path_free (pname_vpath, TRUE);
+    g_free (pname);
     g_free (begin_pname);
 }
 END_TEST

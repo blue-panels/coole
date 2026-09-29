@@ -29,8 +29,6 @@
 
 #include "lib/mcconfig.h"
 #include "lib/strutil.h"
-#include "lib/vfs/vfs.h"
-#include "src/vfs/local/local.c"
 
 static mc_config_t *mc_config;
 static char *ini_filename;
@@ -78,8 +76,6 @@ static void
 setup (void)
 {
     str_init_strings ("KOI8-R");
-    vfs_init ();
-    vfs_init_localfs ();
 
     config_object__init ();
 }
@@ -92,7 +88,6 @@ teardown (void)
 {
     config_object__deinit ();
 
-    vfs_shut ();
     str_uninit_strings ();
 }
 

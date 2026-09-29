@@ -26,9 +26,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>  // extern int errno
+#include <fcntl.h>
 
 #include "lib/global.h"
-#include "lib/vfs/vfs.h"  // mc_stat
 #include "lib/util.h"
 
 #include "lib/mcconfig.h"
@@ -55,7 +55,6 @@ mc_config_new_or_override_file (mc_config_t *mc_config, const gchar *ini_path, G
     gboolean ret;
     int fd;
     ssize_t cur_written;
-    vfs_path_t *ini_vpath;
 
     mc_return_val_if_error (mcerror, FALSE);
 
@@ -69,9 +68,7 @@ mc_config_new_or_override_file (mc_config_t *mc_config, const gchar *ini_path, G
 
     mc_util_make_backup_if_possible (ini_path, "~");
 
-    ini_vpath = vfs_path_from_str (ini_path);
-    fd = mc_open (ini_vpath, O_WRONLY | O_TRUNC, 0);
-    vfs_path_free (ini_vpath, TRUE);
+    fd = open (ini_path, O_WRONLY | O_TRUNC, 0);
 
     if (fd == -1)
     {
@@ -81,11 +78,11 @@ mc_config_new_or_override_file (mc_config_t *mc_config, const gchar *ini_path, G
     }
 
     for (written_data = data, total_written = len;
-         (cur_written = mc_write (fd, (const void *) written_data, total_written)) > 0;
+         (cur_written = write (fd, (const void *) written_data, total_written)) > 0;
          written_data += cur_written, total_written -= cur_written)
         ;
 
-    mc_close (fd);
+    close (fd);
     g_free (data);
 
     if (cur_written == -1)
@@ -123,22 +120,15 @@ mc_config_init (const gchar *ini_path, gboolean read_only)
     if (ini_path == NULL)
         return mc_config;
 
-    if (exist_file (ini_path))
+    if (exist_file (ini_path) && stat (ini_path, &st) == 0 && st.st_size != 0)
     {
-        vfs_path_t *vpath;
+        GKeyFileFlags flags = G_KEY_FILE_NONE;
 
-        vpath = vfs_path_from_str (ini_path);
-        if (mc_stat (vpath, &st) == 0 && st.st_size != 0)
-        {
-            GKeyFileFlags flags = G_KEY_FILE_NONE;
+        if (!read_only)
+            flags |= G_KEY_FILE_KEEP_COMMENTS;
 
-            if (!read_only)
-                flags |= G_KEY_FILE_KEEP_COMMENTS;
-
-            // file exists and not empty
-            g_key_file_load_from_file (mc_config->handle, ini_path, flags, NULL);
-        }
-        vfs_path_free (vpath, TRUE);
+        // file exists and not empty
+        g_key_file_load_from_file (mc_config->handle, ini_path, flags, NULL);
     }
 
     mc_config->ini_path = g_strdup (ini_path);

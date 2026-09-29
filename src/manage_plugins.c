@@ -344,7 +344,6 @@ mp_lua_script_edit (const mp_lua_scripts_ctx_t *ctx)
 {
     const mp_lua_script_t *script;
     char *entry_path;
-    vfs_path_t *entry_vpath;
     int row;
 
     if (ctx == NULL || ctx->table == NULL || ctx->scripts == NULL)
@@ -362,9 +361,7 @@ mp_lua_script_edit (const mp_lua_scripts_ctx_t *ctx)
         return;
     }
 
-    entry_vpath = vfs_path_from_str (entry_path);
-    edit_file_at_line (entry_vpath, 0);
-    vfs_path_free (entry_vpath, TRUE);
+    edit_file_at_line (entry_path, 0);
     g_free (entry_path);
 }
 
