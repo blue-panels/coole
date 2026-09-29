@@ -39,6 +39,7 @@
 #include <stdlib.h>  // atoi(), NULL
 
 #include "lib/global.h"
+#include "lib/tty/key.h"  // old_esc_mode_timeout
 #include "lib/widget.h"
 
 #include "editwidget.h"
@@ -149,8 +150,8 @@ edit_reload_syntax (void *data, void *user_data)
 void
 edit_options_dialog (void)
 {
-    char wrap_length[16], tab_spacing[16];
-    char *p, *q;
+    char wrap_length[16], tab_spacing[16], esc_timeout[16];
+    char *p, *q, *e;
     int wrap_mode = 0;
     gboolean old_syntax_hl;
     gboolean old_show_control_chars;
@@ -170,6 +171,8 @@ edit_options_dialog (void)
 
     g_snprintf (wrap_length, sizeof (wrap_length), "%d", edit_options.word_wrap_line_length);
     g_snprintf (tab_spacing, sizeof (tab_spacing), "%d", TAB_SIZE);
+    // kept in microseconds, asked for in milliseconds
+    g_snprintf (esc_timeout, sizeof (esc_timeout), "%d", old_esc_mode_timeout / 1000);
 
     if (edit_options.auto_para_formatting)
         wrap_mode = 1;
@@ -185,8 +188,6 @@ edit_options_dialog (void)
                 QUICK_START_GROUPBOX (_ ("Wrap mode")),
                     QUICK_RADIO (3, wrap_str, &wrap_mode, NULL),
                 QUICK_STOP_GROUPBOX,
-                QUICK_SEPARATOR (FALSE),
-                QUICK_SEPARATOR (FALSE),
                 QUICK_START_GROUPBOX (_ ("Tabulation")),
                     QUICK_CHECKBOX (_ ("&Fake half tabs"), &edit_options.fake_half_tabs, NULL),
                     QUICK_CHECKBOX (_ ("&Backspace through tabs"),
@@ -195,6 +196,11 @@ edit_options_dialog (void)
                                     &edit_options.fill_tabs_with_spaces, NULL),
                     QUICK_LABELED_INPUT (_ ("Tab spacing:"), input_label_left, tab_spacing,
                                          "edit-tab-spacing", &q, NULL, FALSE, FALSE,
+                                         INPUT_COMPLETE_NONE),
+                QUICK_STOP_GROUPBOX,
+                QUICK_START_GROUPBOX (_ ("Keyboard")),
+                    QUICK_LABELED_INPUT (_ ("Esc timeout, ms:"), input_label_left, esc_timeout,
+                                         "edit-esc-timeout", &e, NULL, FALSE, FALSE,
                                          INPUT_COMPLETE_NONE),
                 QUICK_STOP_GROUPBOX,
             QUICK_NEXT_COLUMN,
@@ -259,6 +265,15 @@ edit_options_dialog (void)
         if (TAB_SIZE <= 0)
             TAB_SIZE = DEFAULT_TAB_SPACING;
         g_free (q);
+    }
+
+    // a single Esc waits this long for the rest of a key before it counts as Esc
+    {
+        const int ms = atoi (e);
+
+        if (ms > 0 && ms <= G_MAXINT / 1000)
+            old_esc_mode_timeout = ms * 1000;
+        g_free (e);
     }
 
     if (wrap_mode == 1)

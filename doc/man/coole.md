@@ -833,6 +833,14 @@ One undo takes back a run of the same kind of change, not a single key.
 *Word wrap line length.*
 The column the wrap modes break a line at. 72 by default.
 
+*Esc timeout, ms.*
+How long a single Esc waits for the rest of a key before it counts as Esc,
+in milliseconds. 1000 by default. It is written to the ini file as
+*old_esc_mode_timeout*,
+in microseconds, and the
+**KEYBOARD_KEY_TIMEOUT_US**
+variable overrides it when the editor starts.
+
 ### Edit Save Mode <a id="edit-save-mode"></a>
 
 How a file is written, the same three modes the
