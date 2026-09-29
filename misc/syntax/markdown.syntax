@@ -107,6 +107,9 @@ context linestart ```diff*\n linestart ``` cyan
 context linestart ```make*\n linestart ``` cyan
     embed Makefile
 
+context linestart ```menu*\n linestart ``` cyan
+    embed User\smenu
+
 # a fence that names no language known above
 context linestart ``` linestart ``` cyan
 
