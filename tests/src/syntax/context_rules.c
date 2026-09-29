@@ -493,6 +493,31 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+START_TEST (test_context_oneline)
+{
+    load ("context default\n"
+          "  keyword int red\n"
+          "context oneline `` `` green\n"
+          "context exclusive oneline < > yellow\n");
+
+    // a single backtick inside is no end of the context
+    check_mask ("a ``b ` c`` int", "..ggggggggg.rrr");
+    // left open, the context ends with its line
+    check_mask ("a ``b\nint ``c``",
+                "..gggg"
+                "rrr.ggggg");
+    check_mask ("x <a\nint",
+                "...yy"
+                "rrr");
+    // and the next line can start a context on its first byte
+    check_mask ("``a\n``b``",
+                "gggg"
+                "ggggg");
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 START_TEST (test_context_linestart)
 {
     load ("context default\n"
@@ -627,6 +652,19 @@ START_TEST (test_keyword_at_context_start)
 
     // the context turns on and a keyword of it starts on the same byte
     check_mask ("a<xy>", ".rrgg");
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_context_over_keyword_starting_with_it)
+{
+    load ("context default\n"
+          "  keyword << red\n"
+          "context <<< >>> green\n");
+
+    // the longer context wins over the keyword, and is entered
+    check_mask ("a<<<x>>>b<<c", ".ggggggg.rr.");
 }
 END_TEST
 
@@ -880,6 +918,8 @@ START_TEST (test_truncated_context_and_keyword_lines)
 {
     // a context line that stops before every word of it has been read
     ck_assert_int_eq (load_result ("context default\ncontext exclusive\n"), 2);
+    ck_assert_int_eq (load_result ("context default\ncontext oneline\n"), 2);
+    ck_assert_int_eq (load_result ("context default\ncontext exclusive oneline\n"), 2);
     ck_assert_int_eq (load_result ("context default\ncontext whole\n"), 2);
     ck_assert_int_eq (load_result ("context default\ncontext linestart\n"), 2);
     ck_assert_int_eq (load_result ("context default\ncontext <\n"), 2);
@@ -1440,6 +1480,7 @@ add_tests (TCase *tc_core)
     tcase_add_test (tc_core, test_case_insensitive);
     tcase_add_test (tc_core, test_context);
     tcase_add_test (tc_core, test_context_exclusive);
+    tcase_add_test (tc_core, test_context_oneline);
     tcase_add_test (tc_core, test_context_linestart);
     tcase_add_test (tc_core, test_keyword_in_context);
     tcase_add_test (tc_core, test_plus_corners);
@@ -1450,6 +1491,7 @@ add_tests (TCase *tc_core)
     tcase_add_test (tc_core, test_exclusive_first_byte);
     tcase_add_test (tc_core, test_newline_keyword_in_newline_context);
     tcase_add_test (tc_core, test_keyword_at_context_start);
+    tcase_add_test (tc_core, test_context_over_keyword_starting_with_it);
     tcase_add_test (tc_core, test_newline_keyword_at_context_start);
     tcase_add_test (tc_core, test_wholechars);
     tcase_add_test (tc_core, test_context_word_borders);
