@@ -1,0 +1,2825 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Appukonrad <appukonrad@gmail.com>, 2024
+# Appukonrad <appukonrad@gmail.com>, 2015,2017
+# k3dar, 2020-2021
+# Karel Kopecky <kdkopx@protonmail.com>, 2017
+# Pavel Borecki <pavel.borecki@gmail.com>, 2017-2023,2025
+# Radek Valášek <valin@buchlovice.org>, 2014
+# Robin Kriebel <kriebel.robin@gmail.com>, 2016
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# Yury V. Zaytsev <yury@shurup.com>, 2025
+# Betacart <betacart@noreply.codeberg.org>, 2026.
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Czech <https://translate.codeberg.org/projects/mc6/mc6/cs/>\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n "
+"<= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr "Bez překladu"
+
+msgid "Warning: cannot load codepages list"
+msgstr "Varování: nelze načíst seznam znakových sad"
+
+msgid "7-bit ASCII"
+msgstr "7bitové ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Nelze přeložit z %s na %s"
+
+msgid "Event system already initialized"
+msgstr "Systém událostí je již inicializován"
+
+msgid "Failed to initialize event system"
+msgstr "Nepodařilo se inicializovat systém událostí"
+
+msgid "Event system not initialized"
+msgstr "Systém událostí není inicializován"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Zkontrolujte vstupní data! Některé parametry nejsou vyplněné!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Nelze vytvořit skupinu \"%s\" pro události!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Nelze vytvořit událost \"%s\"!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr "Copyright © 1996-%zu, Free Software Foundation"
+
+msgid "Half page up"
+msgstr "Půlka stránky nahoře"
+
+msgid "Half page down"
+msgstr "Půlka stránky dole"
+
+msgid "Go to top"
+msgstr "Přejít nahoru"
+
+msgid "Go to bottom"
+msgstr "Přejít dolů"
+
+msgid "Top of screen"
+msgstr "Vrch obrazovky"
+
+msgid "Bottom of screen"
+msgstr "Spodek obrazovky"
+
+msgid "Word left"
+msgstr "Slovo vlevo"
+
+msgid "Word right"
+msgstr "Slovo vpravo"
+
+msgid "Copy file(s)"
+msgstr "Kopírovat soubor"
+
+msgid "Move/rename file(s)"
+msgstr "Přesunout/Přejmenovat soubor"
+
+msgid "Delete"
+msgstr "Smazat"
+
+msgid "Main menu"
+msgstr "Hlavní menu"
+
+msgid "User-defined menu"
+msgstr "Menu definované uživatelem"
+
+msgid "Edit user menu"
+msgstr "Upravit uživatelské menu"
+
+msgid "Search next"
+msgstr "Hledat další"
+
+msgid "Replace next"
+msgstr "Nahradit další"
+
+msgid "Show help"
+msgstr "Zobrazit nápovědu"
+
+msgid "Terminal"
+msgstr "Terminál"
+
+msgid "Edit file"
+msgstr "Upravit soubor"
+
+msgid "Edit new file"
+msgstr "Upravit nový soubor"
+
+msgid "Select charset"
+msgstr "Vybrat znakovou sadu"
+
+msgid "Command history"
+msgstr "Historie příkazů"
+
+msgid "Next in history"
+msgstr "Další v historii"
+
+msgid "Previous in history"
+msgstr "Předchozí v historii"
+
+msgid "Auto-complete"
+msgstr "Automatické dokončování"
+
+msgid "Save as..."
+msgstr "Uložit jako…"
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Přejít na řádek"
+
+msgid "Refresh screen"
+msgstr "Obnovit obrazovku"
+
+msgid "Suspend to shell"
+msgstr "Uspat do shellu"
+
+msgid "List open screens"
+msgstr "Seznam otevřených obrazovek"
+
+msgid "Next screen"
+msgstr "Další obrazovka"
+
+msgid "Previous screen"
+msgstr "Předchozí obrazovka"
+
+msgid "Next file"
+msgstr "Další soubor"
+
+msgid "Previous file"
+msgstr "Předchozí soubor"
+
+msgid "Delete to line start"
+msgstr "Smazat k začátku řádku"
+
+msgid "Delete to line end"
+msgstr "Smazat ke konci řádku"
+
+msgid "Delete to word start"
+msgstr "Smazat k začátku slova"
+
+msgid "Delete to word end"
+msgstr "Smazat ke konci slova"
+
+msgid "Cut to clipboard"
+msgstr "Vystřihnout do schránky"
+
+msgid "Copy to clipboard"
+msgstr "Zkopírovat do schránky"
+
+msgid "Paste from clipboard"
+msgstr "Vložit ze schránky"
+
+msgid "Toggle selection"
+msgstr "Přepnout výběr"
+
+msgid "Select left"
+msgstr "Vybrat vlevo"
+
+msgid "Select right"
+msgstr "Vybrat vpravo"
+
+msgid "Select up"
+msgstr "Vybrat nahoře"
+
+msgid "Select down"
+msgstr "Vybrat dole"
+
+msgid "Select to word start"
+msgstr "Vybrat k začátku slova"
+
+msgid "Select to word end"
+msgstr "Vybrat ke konci slova"
+
+msgid "Select to line start"
+msgstr "Vybrat k začátku řádku"
+
+msgid "Select to line end"
+msgstr "Vybrat ke konci řádku"
+
+msgid "Sort order..."
+msgstr "Pořadí řazení…"
+
+msgid "General options"
+msgstr "Obecné volby"
+
+msgid "Learn terminal keys"
+msgstr "Naučit klávesy terminálu"
+
+msgid "Key bindings"
+msgstr "Mapování kláves"
+
+msgid "Key sniffer"
+msgstr "Čtečka kláves"
+
+msgid "Manage plugins"
+msgstr "Spravovat doplňky"
+
+msgid "Set bookmark"
+msgstr "Nastavit záložku"
+
+msgid "Quit program"
+msgstr "Ukončit program"
+
+msgid "Extended key prefix"
+msgstr "Rozšířená předpona klíče"
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "Najít deklaraci"
+
+msgid "Appearance settings"
+msgstr "Nastavení vzhledu"
+
+msgid "Save setup"
+msgstr "Uložit nastavení"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Předchozí"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Volné uzly:"
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Předchozí"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Zrušit výběr"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Vy&brat skupinu"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Výběr jazyka"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Zavřít soubor"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Upravit akce k příponám"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Výběr"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Výběr jazyka"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Výběr"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "&Ve výběru"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Uložit blok"
+
+msgid "Insert file"
+msgstr "Vložit soubor"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "Přepnou&t vklád/přep"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "Vložit &datum/čas"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Mazání"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "soubor1 soubor2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "&Historie příkazů"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "Pře&formátovat odstavec"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Levá hranatá závorka"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Opakovat poslední příkazy"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "Kontrola &pravopisu"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "Kontrola &pravopisu"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Výběr jazyka"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "&Zrušit záložky"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "&Další záložka"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "&Předchozí záložka"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Najít všechny"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "Přepnout &zobrazení řádků"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Změny souboru byly ztraceny"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Vyberte metodu porovnání:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Vyberte metodu porovnání:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Vyberte metodu porovnání:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Vy&brat skupinu"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Vy&brat skupinu"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "Zrušit výběr skupi&ny"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "Zrušit výběr skupi&ny"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "&Ve výběru"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "Zrušit výběr skupi&ny"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "Pře&formátovat odstavec"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "&Viditelné mezery na konci"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Přepnout zvýraznění syntaxe"
+
+msgid "Choose syntax highlighting"
+msgstr "Vyberte zvýraznění syntaxe"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "Vyp/zap. přesah vpravo"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Nastavení panelu"
+
+#, fuzzy
+msgid "About editor"
+msgstr "S vestavěným editorem"
+
+#, fuzzy
+msgid "Execute script"
+msgstr "Sp&ustitelné první"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "&Změna velikosti"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "&Přepnout celou obrazovku"
+
+#, fuzzy
+msgid "Window list"
+msgstr "&Okno"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Předchozí"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Soubor „%s“ už je upravován.\n"
+"Uživatel: %s\n"
+"Identifikátor procesu: %d"
+
+msgid "File locked"
+msgstr "Soubor uzamčen"
+
+msgid "&Grab lock"
+msgstr "&Převzít zámek"
+
+msgid "&Ignore lock"
+msgstr "&Ignorovat zámek"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Nebylo možné vytvořit složku %s"
+
+msgid "FATAL: not a directory:"
+msgstr "FATÁLNÍ: není složkou:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Číslo je mimo rozsah (mělo by být v bajtovém rozsahu, 0 <= n <= 0xFF, "
+"zapsaném šestnáctkově)"
+
+msgid "Invalid character"
+msgstr "Neplatný znak"
+
+msgid "Unmatched quotes character"
+msgstr "Neuzavřené uvozovky"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Chyba v šestnáctkovém zápisu na pozici %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Hledaný řetězec nenalezen"
+
+msgid "Not implemented yet"
+msgstr "Zatím neimplementováno"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Počet tokenů k nahrazení neodpovídá počtu těch nalezených"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Chybný počet tokenů %d"
+
+msgid "Regular expression error"
+msgstr "Chyba regulárního výrazu"
+
+msgid "No&rmal"
+msgstr "No&rmálně"
+
+msgid "Re&gular expression"
+msgstr "Re&gulární výraz"
+
+msgid "He&xadecimal"
+msgstr "He&xadecimání"
+
+msgid "Wil&dcard search"
+msgstr "Hle&dání pomocí zástupných znaků"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Nepodařilo se zpracovat schéma vzhledu „%s“.\n"
+"Náhradně bylo nahráno to výchozí"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Nepodařilo se použít schéma vzhledu „%s“ s podporou 24 bitových barev:\n"
+"%s\n"
+"Náhradně bylo nahráno výchozí schéma vzhledu"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Nepodařilo se použít schéma vzhledu „%s“ s podporou 256 barev:\n"
+"%s\n"
+"Náhradně bylo nahráno výchozí schéma vzhledu"
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Nepodařilo se načíst schéma vzhledu „%s“.\n"
+"Náhradně bylo načteno to výchozí"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+"\n"
+"Pokud vámi používaný terminál podporuje 256 barev, je třeba nastavit "
+"proměnnou prostředí TERM\n"
+"tak, aby odpovídala vašemu terminálu – nejspíše pomocí varianty *-256color "
+"nebo *-direct256\n"
+"Pokud chcete vypsat veškeré varianty, které jsou v systému k dispozici, "
+"použijte příkaz „toe -a“.\n"
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+"Pro podporu true color je zapotřebí knihovny ncurses verze 6.1 a novější s "
+"podporou širokých znaků a ABI 6.\n"
+"Zaktualizujte svůj systém.\n"
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+"\n"
+"Pokud vámi používaný terminál podporuje true color, je třeba nastavit "
+"proměnnou prostředí TERM\n"
+"na variantu *-direct256, *-direct16, nebo *-direct\n"
+"Pokud chcete vypsat veškeré varianty, které jsou v systému k dispozici, "
+"použijte příkaz „toe -a“.\n"
+
+msgid "True color not supported in this slang version."
+msgstr "24 bitové barvy nejsou podporovány v tomto nářečí."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+"\n"
+"Pokud vámi používaný terminál podporuje true color, je třeba nastavit "
+"proměnnou prostředí TERM\n"
+"na variantu *-direct256, *-direct16, nebo *-direct\n"
+"Pokud chcete vypsat veškeré varianty, které jsou v systému k dispozici, "
+"použijte příkaz „toe -a“.\n"
+"Alternativně je možné nastavit COLORTERM=truecolor.\n"
+
+msgid "Escape"
+msgstr "Escape"
+
+msgid "Function key 1"
+msgstr "Funkční klávesa 1"
+
+msgid "Function key 2"
+msgstr "Funkční klávesa 2"
+
+msgid "Function key 3"
+msgstr "Funkční klávesa 3"
+
+msgid "Function key 4"
+msgstr "Funkční klávesa 4"
+
+msgid "Function key 5"
+msgstr "Funkční klávesa 5"
+
+msgid "Function key 6"
+msgstr "Funkční klávesa 6"
+
+msgid "Function key 7"
+msgstr "Funkční klávesa 7"
+
+msgid "Function key 8"
+msgstr "Funkční klávesa 8"
+
+msgid "Function key 9"
+msgstr "Funkční klávesa 9"
+
+msgid "Function key 10"
+msgstr "Funkční klávesa 10"
+
+msgid "Function key 11"
+msgstr "Funkční klávesa 11"
+
+msgid "Function key 12"
+msgstr "Funkční klávesa 12"
+
+msgid "Function key 13"
+msgstr "Funkční klávesa 13"
+
+msgid "Function key 14"
+msgstr "Funkční klávesa 14"
+
+msgid "Function key 15"
+msgstr "Funkční klávesa 15"
+
+msgid "Function key 16"
+msgstr "Funkční klávesa 16"
+
+msgid "Function key 17"
+msgstr "Funkční klávesa 17"
+
+msgid "Function key 18"
+msgstr "Funkční klávesa 18"
+
+msgid "Function key 19"
+msgstr "Funkční klávesa 19"
+
+msgid "Function key 20"
+msgstr "Funkční klávesa 20"
+
+msgid "Completion/M-tab"
+msgstr "Doplňování/M-tab"
+
+msgid "BackTab/S-tab"
+msgstr "Zpětný Tab/S Tab"
+
+msgid "Backspace"
+msgstr "Backspace"
+
+msgid "Up arrow"
+msgstr "Šipka nahoru"
+
+msgid "Down arrow"
+msgstr "Šipka dolů"
+
+msgid "Left arrow"
+msgstr "Šipka vlevo"
+
+msgid "Right arrow"
+msgstr "Šipka vpravo"
+
+msgid "Insert"
+msgstr "Insert"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr "Klávesa End"
+
+msgid "Page Up"
+msgstr "Page Up"
+
+msgid "Page Down"
+msgstr "Page Down"
+
+msgid "/ on keypad"
+msgstr "/ na num. klávesnici"
+
+msgid "* on keypad"
+msgstr "* na num. klávesnici"
+
+msgid "- on keypad"
+msgstr "- na num. klávesnici"
+
+msgid "+ on keypad"
+msgstr "+ na num. klávesnici"
+
+msgid "Left arrow keypad"
+msgstr "Šipka vlevo na num. klávesnici"
+
+msgid "Right arrow keypad"
+msgstr "Šipka vpravo na num. klávesnici"
+
+msgid "Up arrow keypad"
+msgstr "Šipka nahoru na num. klávesnici"
+
+msgid "Down arrow keypad"
+msgstr "Šipka dolů na numerické klávesnici"
+
+msgid "Home on keypad"
+msgstr "Home na numerické klávesnici"
+
+msgid "End on keypad"
+msgstr "End na numerické klávesnici"
+
+msgid "Page Down keypad"
+msgstr "Page Down na numerické klávesnici"
+
+msgid "Page Up keypad"
+msgstr "Page Up na numerické klávesnici"
+
+msgid "Insert on keypad"
+msgstr "Insert na numerické klávesnici"
+
+msgid "Delete on keypad"
+msgstr "Delete na numerické klávesnici"
+
+msgid "Enter on keypad"
+msgstr "Enter na numerické klávesnici"
+
+msgid "Function key 21"
+msgstr "Funkční klávesa 21"
+
+msgid "Function key 22"
+msgstr "Funkční klávesa 22"
+
+msgid "Function key 23"
+msgstr "Funkční klávesa 23"
+
+msgid "Function key 24"
+msgstr "Funkční klávesa 24"
+
+msgid "A1 key"
+msgstr "Klávesa A1"
+
+msgid "C1 key"
+msgstr "Klávesa C1"
+
+msgid "Asterisk"
+msgstr "Hvězdička"
+
+msgid "Minus"
+msgstr "Mínus"
+
+msgid "Plus"
+msgstr "Plus"
+
+msgid "Dot"
+msgstr "Tečka"
+
+msgid "Less than"
+msgstr "Menší než"
+
+msgid "Great than"
+msgstr "Větší než"
+
+msgid "Equal"
+msgstr "Rovná se"
+
+msgid "Comma"
+msgstr "Čárka"
+
+msgid "Apostrophe"
+msgstr "Apostrof"
+
+msgid "Colon"
+msgstr "Dvojtečka"
+
+msgid "Semicolon"
+msgstr "Středník"
+
+msgid "Exclamation mark"
+msgstr "Vykřičník"
+
+msgid "Question mark"
+msgstr "Otazník"
+
+msgid "Ampersand"
+msgstr "Ampersand"
+
+msgid "Dollar sign"
+msgstr "Znak dolaru"
+
+msgid "Quotation mark"
+msgstr "Uvozovky"
+
+msgid "Percent sign"
+msgstr "Znak procenta"
+
+msgid "Caret"
+msgstr "Stříška"
+
+msgid "Tilda"
+msgstr "Vlnovka"
+
+msgid "Prime"
+msgstr "Stupeň"
+
+msgid "Underline"
+msgstr "Podtržení"
+
+msgid "Understrike"
+msgstr "Podtržení"
+
+msgid "Pipe"
+msgstr "Roura"
+
+msgid "Left parenthesis"
+msgstr "Levá závorka"
+
+msgid "Right parenthesis"
+msgstr "Pravá závorka"
+
+msgid "Left bracket"
+msgstr "Levá hranatá závorka"
+
+msgid "Right bracket"
+msgstr "Pravá hranatá závorka"
+
+msgid "Left brace"
+msgstr "Levá složená závorka"
+
+msgid "Right brace"
+msgstr "Pravá složená závorka"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "Tabulátor"
+
+msgid "Space key"
+msgstr "Mezerník"
+
+msgid "Slash key"
+msgstr "Lomítko"
+
+msgid "Backslash key"
+msgstr "Zpětné lomítko"
+
+msgid "Number sign #"
+msgstr "Křížek"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "Zavináč"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Nedaří se vytvořit rouru pro signál SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Nedaří se nastavit zápisovou část roury pro signál SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Nedaří se nastavit čtecí část roury pro signál SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Velikost obrazovky %d×%d není podporovaná.\n"
+"Prověřte nastavení proměnné prostředí TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "Proměnná prostředí TERM není nastavena!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Nedaří se zkontrolovat rouru SIGWINCH"
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Nelze vytvořit popisovač roury"
+
+msgid "Cannot create pipe streams"
+msgstr "Nelze vytvořit sekvence příkazů (pipe streams)"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Nečekaná chyba v select() čtoucím data z podprocesu:\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr "Nedaří se zavřít popisovač pajpy (p == NULL)"
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Neočekávaná chyba ve waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Změny souboru byly ztraceny"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+"Nedaří se vytvořit dočasnou složku %s: %s.\n"
+"Dočasné soubory nebudou vytvořeny\n"
+
+msgid "Press any key to continue..."
+msgstr "Pokračujte stiskem libovolné klávesy…"
+
+msgid "Internal error:"
+msgstr "Vnitřní chyba:"
+
+msgid "Screens"
+msgstr "Obrazovky"
+
+msgid "History"
+msgstr "Historie"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Ano"
+
+msgid "&No"
+msgstr "&Ne"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "DialogTitle|Smazání historie"
+
+msgid "Do you want clean this history?"
+msgstr "Chcete smazat tuto historii?"
+
+msgid "&OK"
+msgstr "&OK"
+
+msgid "&Cancel"
+msgstr "&Storno"
+
+msgid "Error"
+msgstr "Chyba"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Přerušit"
+
+msgid "< Default >"
+msgstr "< Výchozí >"
+
+msgid "Skins"
+msgstr "Schémata vzhledu"
+
+msgid "Skin:"
+msgstr "Schéma vzhledu:"
+
+msgid "&Shadows"
+msgstr "&Stíny"
+
+msgid "Appearance"
+msgstr "Vzhled"
+
+msgid "Displays the current version"
+msgstr "Zobrazí stávající verzi"
+
+msgid "Print data directory"
+msgstr "Vypsat obsah složky"
+
+msgid "Print extended info about used data directories"
+msgstr "Zobrazit rozšířené informace o použitých složkách"
+
+msgid "Print configure options"
+msgstr "Vypsat volby nastavení"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Vypne podporu X11"
+
+msgid "Forces xterm features"
+msgstr "Vynutí použití možností Xtermu"
+
+msgid "Disable X11 support"
+msgstr "Vypne podporu X11"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Pokusí se použít staré zvýraznění myši"
+
+msgid "Disable mouse support in text version"
+msgstr "V textové verzi vypne podporu myši"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Zkusí použít databázi termcap, nikoli terminfo"
+
+msgid "To run on slow terminals"
+msgstr "Pro provozování na pomalém terminálu"
+
+msgid "Use stickchars to draw"
+msgstr "Pro vykreslení použít ascii znaky"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Nahrát definice klávesových zkratek ze zadaného souboru"
+
+msgid "<file>"
+msgstr "<file>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr "Nenačítat definice klávesových zkratek ze souboru, použít standartní"
+
+msgid "Requests to run in black and white"
+msgstr "Vyžádá spuštění v černobílém režimu"
+
+msgid "Request to run in color mode"
+msgstr "Vyžádat spuštění v barevném režimu"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Zobrazit mc se zadaným tématem vzhledu"
+
+msgid "<string>"
+msgstr "<string>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+lineno] file1[:lineno] [file2[:lineno]…]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+"\n"
+"Hlášení chyb (společně s výstupem z příkazu „%s -V“)\n"
+"posílejte jako požadavky prostřednictvím %s\n"
+
+msgid "Main options"
+msgstr "Hlavní nastavení"
+
+msgid "Terminal options"
+msgstr "Nastavení terminálu"
+
+msgid "Color options"
+msgstr "Možnosti barev"
+
+msgid "Arguments parse error!"
+msgstr "Chyba vyhodnocování argumentů!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Nastavení…"
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Změna nastavení"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "&Rozliš. malá/velká písmena"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+"Nebylo možné změnit práva\n"
+"%sn%s"
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "Přejít k deklaraci"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "Najít deklaraci"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "„%s“ není symbolický odkaz"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Není možné vytvořit dočasný rozdílový soubor"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Nelze uložit soubor"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"Nepodařilo se spustit:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "V %s nebyly nalezeny odpovídající položky"
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Hledání dokončeno"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Hledání dokončeno"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "&Doplňování: ukázat vše"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Nepodařilo se číst data z podřízeného standardního výstupu"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Nebylo možné vytvořit cílový soubor\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Nebylo možné převést z %s na %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Kořenová složka profilu:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Nedaří vytvořit událost „%s“!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Čtení se nezdařilo"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Navigace"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "Přejít k deklaraci"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "&Doplňování: ukázat vše"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Navigace"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Hledání dokončeno"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Hledání dokončeno"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Název symbolického odkazu:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Načíst soubor se syntaxí"
+
+msgid "Manage repositories"
+msgstr ""
+
+#, fuzzy
+msgid "Reindex repository"
+msgstr "Indexovaná složka"
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Potvrzování"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "Přejít k deklaraci"
+
+msgid "&Find declaration"
+msgstr "Najít deklaraci"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Navigace"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Hledat"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Název symbolického odkazu:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "&Doplňování: ukázat vše"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Výběr"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Název symbolického odkazu:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Název souboru:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Načíst soubor"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Zavřít"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Varování"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Tento text byl změněn, ale změny nebyly uloženy.\n"
+"Pokračováním se změny ztratí."
+
+msgid "C&ontinue"
+msgstr "P&okračovat"
+
+msgid "&Add word"
+msgstr "&Přidat slovo"
+
+msgid "&Replace"
+msgstr "Nah&radit"
+
+msgid "&Skip"
+msgstr "Pře&skočit"
+
+msgid "Language"
+msgstr "Jazyk"
+
+msgid "Misspelled"
+msgstr "Chybně napsáno"
+
+msgid "Check word"
+msgstr "Kontrola slova"
+
+msgid "Suggest"
+msgstr "Navrhnout"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Přidat slovo"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Chybně napsáno"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Jazyk"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Výběr"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Výběr jazyka"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Načítání: %3d%%"
+
+msgid "Loading..."
+msgstr "Načítání…"
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+"Není možné otevřít\n"
+"%s"
+
+msgid "Load file"
+msgstr "Načíst soubor"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Chyba při čtení %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+"Nebylo možné získat metadata (stat)\n"
+"%s"
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+"%s\n"
+"není běžný soubor"
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Soubor „%s“ je příliš velký.\n"
+"Přesto otevřít?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Chyba při čtení z roury: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+"Rouru nebylo možné otevřít pro čtení\n"
+"%s"
+
+#, fuzzy
+msgid "Undo"
+msgstr "&Zpět"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Zkusit znovu"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Soubor má pevné odkazy. Odpojit před uložením?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Soubor byl mezitím změněn. Opravdu uložit?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Chyba při zápisu do roury: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+"Nebylo možné otevřít soubor\n"
+"%s\n"
+"pro zápis"
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Soubor, který ukládáte, nekončí novým řádkem."
+
+msgid "&Do not change"
+msgstr "&Neměnit"
+
+msgid "&Unix format (LF)"
+msgstr "Formát &Unix (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "Formát &Windows/DOS (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "Formát &Macintosh (CR)"
+
+msgid "Enter file name:"
+msgstr "Zadejte název souboru:"
+
+msgid "Change line breaks to:"
+msgstr "Změnit konce řádků na:"
+
+msgid "Save As"
+msgstr "Uložit jako"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+"Nebylo možné vytvořit složku\n"
+"%s"
+
+msgid "&Quick save"
+msgstr "&Rychlé ukládání "
+
+msgid "&Safe save"
+msgstr "&Bezpečné ukládání "
+
+msgid "&Do backups with following extension:"
+msgstr "&Vytvářet zálohy s příponou:"
+
+msgid "Check &POSIX new line"
+msgstr "Kontrolovat nový řádek &POSIX"
+
+msgid "Edit Save Mode"
+msgstr "Upravit ukládací režim"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+"Nebylo možné uložit\n"
+"%s:\n"
+"nejedná se o běžný soubor"
+
+msgid "A file already exists with this name"
+msgstr "Takto nazvaný soubor už existuje"
+
+msgid "&Overwrite"
+msgstr "&Přepsat"
+
+msgid "Cannot save file"
+msgstr "Chyba při zápisu do souboru"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Potvrďte uložení souboru: „%s“"
+
+msgid "Save file"
+msgstr "Uložit soubor"
+
+msgid "&Save"
+msgstr "&Uložit"
+
+msgid "Load"
+msgstr "Načíst"
+
+msgid "Syntax file edit"
+msgstr "Úpravy souboru se syntaxí"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Který soubor se syntaxí chcete upravit?"
+
+msgid "&User"
+msgstr "&Uživatelský"
+
+msgid "&System wide"
+msgstr "Pro celý &systém"
+
+msgid "Menu edit"
+msgstr "Úpravy nabídky"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Soubor které nabídky chcete upravit?"
+
+msgid "&Local"
+msgstr "&Lokální"
+
+msgid "[NoName]"
+msgstr "[beze názvu]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Soubor %s byl upraven.\n"
+"Uložit před uzavřením?"
+
+msgid "Close file"
+msgstr "Zavřít soubor"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+"%s je vypínán.\n"
+"Uložit změněný soubor %s?"
+
+msgid "Quit"
+msgstr "Ukončit"
+
+msgid "This function is not implemented"
+msgstr "Tato funkce není implementována"
+
+msgid "Unable to save to file"
+msgstr "Nelze uložit soubor"
+
+msgid "Goto line"
+msgstr "Přejít na řádek"
+
+msgid "Enter line:"
+msgstr "Zadejte číslo řádku:"
+
+msgid "Save block"
+msgstr "Uložit blok"
+
+msgid "Cannot save block"
+msgstr "Nebylo možné uložit blok"
+
+msgid "Cannot insert file"
+msgstr "Chyba při vkládání souboru"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <předmět> -c <kopie> <komu>"
+
+msgid "To"
+msgstr "Komu"
+
+msgid "Subject"
+msgstr "Předmět"
+
+msgid "Copies to"
+msgstr "Kopie na"
+
+msgid "Mail"
+msgstr "E-mail"
+
+msgid "Cancel"
+msgstr "Storno"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Smazat %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Nahradit"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Historie"
+
+msgid "Collect completions"
+msgstr "Sbírat dokončení"
+
+msgid "NoName"
+msgstr "Beze názvu"
+
+msgid "Save macro"
+msgstr "Uložit makro"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Stiskněte novou hotkey pro makro:"
+
+msgid "Repeat last commands"
+msgstr "Opakovat poslední příkazy"
+
+msgid "Repeat times:"
+msgstr "Kolikrát opakovat:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Smazat makro"
+
+msgid "Delete macro"
+msgstr "Smazat makro"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "Ruština"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Zavřít"
+
+msgid "&Open file..."
+msgstr "&Otevřít soubor…"
+
+msgid "&New"
+msgstr "&Nový"
+
+msgid "&History..."
+msgstr "&Historie…"
+
+msgid "Save &as..."
+msgstr "Uložit j&ako…"
+
+msgid "&Insert file..."
+msgstr "Vlož&it soubor…"
+
+msgid "Cop&y to file..."
+msgstr "Zkopírovat do &souboru…"
+
+msgid "&User menu..."
+msgstr "&Uživatelská nabídka…"
+
+msgid "A&bout..."
+msgstr "&O aplikaci…"
+
+msgid "&Quit"
+msgstr "&Konec"
+
+msgid "&Undo"
+msgstr "&Zpět"
+
+msgid "&Redo"
+msgstr "&Znovu"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "&Historie…"
+
+msgid "&Toggle ins/overw"
+msgstr "Přepnou&t vklád/přep"
+
+msgid "To&ggle mark"
+msgstr "&Přepnout označení"
+
+msgid "&Mark columns"
+msgstr "&Označit sloupce"
+
+msgid "Mark &all"
+msgstr "Ozn&ačit vše"
+
+msgid "Unmar&k"
+msgstr "Zr&ušit označení"
+
+msgid "Cop&y"
+msgstr "&Kopírovat"
+
+msgid "Mo&ve"
+msgstr "&Přesun"
+
+msgid "&Delete"
+msgstr "&Smazat"
+
+msgid "Co&py to clipfile"
+msgstr "Zko&pírovat do ústřižku"
+
+msgid "&Cut to clipfile"
+msgstr "&Vyjmout do ústřižku"
+
+msgid "Pa&ste from clipfile"
+msgstr "Vložit z ú&střižku"
+
+msgid "&Beginning"
+msgstr "&Začátek"
+
+msgid "&End"
+msgstr "Kon&ec"
+
+msgid "&Search..."
+msgstr "&Hledat…"
+
+msgid "Search &again"
+msgstr "Hled&at znovu"
+
+msgid "&Replace..."
+msgstr "Nah&radit…"
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "Přepnout &zobrazení řádků"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "&vlastník zapisovat"
+
+msgid "&Toggle bookmark"
+msgstr "Přepnou&t záložku"
+
+msgid "&Next bookmark"
+msgstr "&Další záložka"
+
+msgid "&Prev bookmark"
+msgstr "&Předchozí záložka"
+
+msgid "&Flush bookmarks"
+msgstr "&Zrušit záložky"
+
+msgid "&Go to line..."
+msgstr "&Přejít na řádek…"
+
+msgid "&Toggle line state"
+msgstr "Přepnout &zobrazení řádků"
+
+msgid "Go to matching &bracket"
+msgstr "Přejít na pá&rovou závorku"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Přepnout zvýraznění syntaxe"
+
+msgid "Togg&le right margin"
+msgstr "Vyp/zap. přesah vpravo"
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "&Kódování…"
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Najít všechny"
+
+msgid "&Refresh screen"
+msgstr "Přek&reslit obrazovku"
+
+msgid "&Start/Stop record macro"
+msgstr "&Spuštění/Zastavení záznamu makra"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "Z&aznamenat/Opakovat kroky"
+
+msgid "&Move"
+msgstr "&Přesun"
+
+msgid "&Resize"
+msgstr "&Změna velikosti"
+
+msgid "&Toggle fullscreen"
+msgstr "&Přepnout celou obrazovku"
+
+msgid "&Next"
+msgstr "&Další"
+
+msgid "&Previous"
+msgstr "&Předchozí"
+
+msgid "&List..."
+msgstr "&Výpis…"
+
+msgid "&General..."
+msgstr "&Obecné…"
+
+msgid "Save &mode..."
+msgstr "Reži&m ukládání…"
+
+msgid "Syntax &highlighting..."
+msgstr "Zvýraznění synta&xe…"
+
+msgid "&Appearance..."
+msgstr "&Vzhled…"
+
+msgid "Learn &keys..."
+msgstr "Učení &kláves…"
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "&Kódování…"
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "Čtečka kláves"
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "Nastavení &panelu…"
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "Soubor se s&yntaxí"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "Soubor s nabídkou"
+
+msgid "&Save setup"
+msgstr "Uložit na&stavení"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Soubor"
+
+msgid "&Edit"
+msgstr "&Upravit"
+
+msgid "&Search"
+msgstr "&Hledat"
+
+msgid "&Command"
+msgstr "&Příkaz"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Navigace"
+
+msgid "&Window"
+msgstr "&Okno"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Nastavení"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Odsazování"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Čtení se nezdařilo"
+
+msgid "&None"
+msgstr "&Žádný"
+
+msgid "&Dynamic paragraphing"
+msgstr "&Dynamické odstavce"
+
+msgid "Type &writer wrap"
+msgstr "&Zalamování jako na psacím stroji"
+
+msgid "Wrap mode"
+msgstr "Režim zalamování"
+
+msgid "Tabulation"
+msgstr "Odsazování"
+
+msgid "&Fake half tabs"
+msgstr "&Falešné poloviční tabulátory"
+
+msgid "&Backspace through tabs"
+msgstr "&Backspace přes tabulátory"
+
+msgid "Fill tabs with &spaces"
+msgstr "Měnit tabulátory na &mezery"
+
+msgid "Tab spacing:"
+msgstr "Velikost tabulátoru:"
+
+msgid "Other options"
+msgstr "Další nastavení"
+
+msgid "&Return does autoindent"
+msgstr "&Enter automaticky odsadí"
+
+msgid "Confir&m before saving"
+msgstr "Potvrdit před uložení&m"
+
+msgid "Save file &position"
+msgstr "Uložit &pozici v souboru"
+
+msgid "&Visible trailing spaces"
+msgstr "&Viditelné mezery na konci"
+
+msgid "Visible &tabs"
+msgstr "Viditelné &tabulátory"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "Zvýraznění synta&xe"
+
+msgid "C&ursor after inserted block"
+msgstr "K&urzor po vloženém bloku"
+
+msgid "Pers&istent selection"
+msgstr "&Trvalý výběr"
+
+msgid "Cursor be&yond end of line"
+msgstr "&Kurzor za koncem řádku"
+
+msgid "&Group undo"
+msgstr "&Skupinové vzetí zpět"
+
+msgid "Word wrap line length:"
+msgstr "Délka řádku pro zalomení slova:"
+
+msgid "Editor options"
+msgstr "Nastavení editoru"
+
+msgid "Enter search string:"
+msgstr "Zadejte hledaný text:"
+
+msgid "Cas&e sensitive"
+msgstr "Rozliš. malá/velká písm&ena"
+
+msgid "&Backwards"
+msgstr "Po&zpátku"
+
+msgid "In se&lection"
+msgstr "&Ve výběru"
+
+msgid "&Whole words"
+msgstr "Pouze &celá slova"
+
+msgid "&All charsets"
+msgstr "Všechny zn&akové sady"
+
+msgid "&Find all"
+msgstr "&Najít všechny"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Hledat"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Hledání %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Hledání %s"
+
+msgid "Enter replacement string:"
+msgstr "Zadejte nahrazující text:"
+
+msgid "Replace"
+msgstr "Nahradit"
+
+msgid "Replace with:"
+msgstr "Nahradit textem:"
+
+msgid "A&ll"
+msgstr "&Všechny"
+
+msgid "Confirm replace"
+msgstr "Potvrdit nahrazení"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "Provedeno %ld nahrazení"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+"Uživatelsky přívětivý textový editor\n"
+"napsaný pro %s."
+
+msgid "About"
+msgstr "O programu"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Otevřít soubory"
+
+msgid "Edit: "
+msgstr "Upravit: "
+
+msgid "ButtonBar|Help"
+msgstr "ButtonBar|Nápověda"
+
+msgid "ButtonBar|Save"
+msgstr "ButtonBar|Uložit"
+
+msgid "ButtonBar|Mark"
+msgstr "ButtonBar|Označ"
+
+msgid "ButtonBar|Replac"
+msgstr "ButtonBar|Nahraď"
+
+msgid "ButtonBar|Copy"
+msgstr "ButtonBar|Kopie"
+
+msgid "ButtonBar|Move"
+msgstr "ButtonBar|Přesun"
+
+msgid "ButtonBar|Search"
+msgstr "ButtonBar|Hledat"
+
+msgid "ButtonBar|Delete"
+msgstr "ButtonBar|Smazat"
+
+msgid "ButtonBar|PullDn"
+msgstr "ButtonBar|Hl. nabíd"
+
+msgid "ButtonBar|Quit"
+msgstr "ButtonBar|Konec"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Hledání %s: %3d%%"
+
+msgid "Filter"
+msgstr "Filtr"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Auto >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Znovu načíst aktuální syntaxi >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+"Nebylo možné otevřít soubor\n"
+"%s"
+
+msgid "Load syntax file"
+msgstr "Načíst soubor se syntaxí"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Chyba v souboru %s na řádku %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Nejedná se o xterm nebo linuxovou konzoli;\n"
+"podshell není možné přepnout."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr "Do %s se vrátíte zadáním příkazu „exit“"
+
+msgid "Help file format error\n"
+msgstr "Chybný formát souboru s nápovědou\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Vnitřní závada: zdvojený začátek oblasti odkazu"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Sekci %s se nedaří v souboru s nápovědou najít"
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Nápověda"
+
+msgid "ButtonBar|Index"
+msgstr "ButtonBar|Index"
+
+msgid "ButtonBar|Prev"
+msgstr "ButtonBar|Předch"
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Funkční klávesa 1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Navigace"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Naučit klávesy"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Potvrzování"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+"Nebylo možné přijmout tento klíč.\n"
+"Zadali jste „%s“"
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Upravit uživatelskou &nabídku"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&E-mail…"
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "Soubor s nabídkou"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&Výpis…"
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Nápověda"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "&Upravit"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "Klávesa A1"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Pokračujte stiskem libovolné klávesy…"
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "Po&zpátku"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Upravit uživatelskou &nabídku"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Nepodařilo se spustit:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Popis umístění domovské složky není zadaný od té kořenové"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Nezdar při zavírání:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "VFS zásuvné moduly a skripty:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Neznámá chyba v podřízeném procesu"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "Nastavení VFS"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Čtení se nezdařilo"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: chyba"
+
+msgid "Choose codepage"
+msgstr "Zvolte znakovou sadu"
+
+msgid "-  < No translation >"
+msgstr "–  < Bez převodu >"
+
+msgid "Setup"
+msgstr "Nastavení"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Nastavení uloženo do %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Nastavení se nedaří uložit do %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "S volitelnou podporou podřízeného shellu"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "S podporou myši v Xterm a Linux konzolích"
+
+msgid "With mouse support on xterm"
+msgstr "S podporou myši v Xterm konzoli"
+
+msgid "With support for X11 events"
+msgstr "S podporou X11 událostí"
+
+msgid "With internationalization support"
+msgstr "S podporou pro místní jazyky a zvyklosti"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr "Sestaveno s GLib %d.%d.%d (s použitím GLib %u.%u.%u)\n"
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr "Sestaveno s využitím S-Lang"
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr "a databází terminfo (pomocí S-Lang %s)\n"
+
+#, c-format
+msgid "Built with %s"
+msgstr "Sestaveno s využitím %s"
+
+#, c-format
+msgid " (using %s)\n"
+msgstr " (pomocí %s)\n"
+
+msgid "Data types:"
+msgstr "Typy dat:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Hledaný řetězec nenalezen"
+
+msgid "Home directory:"
+msgstr "Domovská složka:"
+
+msgid "Profile root directory:"
+msgstr "Kořenová složka profilu:"
+
+msgid "System data"
+msgstr "Systémová data"
+
+msgid "Config directory:"
+msgstr "Složka s nastaveními:"
+
+msgid "Data directory:"
+msgstr "Složka s daty:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Nastavení editoru"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "VFS zásuvné moduly a skripty:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Uživatelská data"
+
+msgid "Cache directory:"
+msgstr "Složka mezipaměti:"
+
+msgid "Debug"
+msgstr "Ladit"
+
+msgid "ERROR:"
+msgstr "CHYBA:"
+
+msgid "True:"
+msgstr "Ano:"
+
+msgid "False:"
+msgstr "Ne:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "Není možné vytvořit dočasný rozdílový soubor"
+
+msgid "Error calling program"
+msgstr "Chyba při volání programu"
+
+msgid "Cannot create temporary command file"
+msgstr "Nebylo možné vytvořit dočasný soubor příkazu"
+
+msgid "Parameter"
+msgstr "Parametr"
+
+msgid "Warning -- ignoring file"
+msgstr "Varování – soubor ignorován"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Soubor %s není vlastněn uživatelem root nebo vámi, případně do něj mohou "
+"zapisovat všichni. Jeho použití může zhoršit zabezpečení"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr ""
+"Pokud nepracujete se soubory, nacházejícími se v tomto počítači, nelze "
+"spouštět žádné příkazy"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "V %s nebyly nalezeny odpovídající položky"
+
+msgid "User menu"
+msgstr "Uživatelská nabídka"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Nebylo možné převést z %s na %s"

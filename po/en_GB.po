@@ -1,0 +1,2847 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Andi Chandler <andi@gowling.com>, 2016-2017,2020,2022-2025
+# Yury V. Zaytsev <yury@shurup.com>, 2025
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: English (United Kingdom) <https://translate.codeberg.org/"
+"projects/mc6/mc6/en_GB/>\n"
+"Language: en_GB\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr "No translation"
+
+msgid "Warning: cannot load codepages list"
+msgstr "Warning: cannot load codepages list"
+
+msgid "7-bit ASCII"
+msgstr "7-bit ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Cannot translate from %s to %s"
+
+msgid "Event system already initialized"
+msgstr "Event system already initialised"
+
+msgid "Failed to initialize event system"
+msgstr "Failed to initialise event system"
+
+msgid "Event system not initialized"
+msgstr "Event system not initialised"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Check input data! Some of parameters are NULL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Unable to create group '%s' for events!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Unable to create event '%s'!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr "Copyright (C) 1996-%zu the Free Software Foundation"
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Page Down"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "&Toggle fullscreen"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "C&ompare files"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "&User defined:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "User menu"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Search done"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Replace"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Terminal options"
+
+msgid "Edit file"
+msgstr "Edit file"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Edit file"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&All charsets"
+
+#, fuzzy
+msgid "Command history"
+msgstr "Command &history"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "Save &as..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Goto line"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "&Refresh screen"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "Setup saved to %s"
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "&Refresh screen"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Previous"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Insert file"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Previous"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "&Toggle line state"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Delete on keypad"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Delete on keypad"
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "&Cut to clipfile"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "Co&py to clipfile"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "Pa&ste from clipfile"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "In se&lection"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Select"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Select"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Select &group"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Select"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Select compare method:"
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "&Toggle line state"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Select language"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "&Sort order..."
+
+#, fuzzy
+msgid "General options"
+msgstr "Panel options"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Learn keys"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "&Next bookmark"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "&Find declaration"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Appearance"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "&Save setup"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Previous"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Free nodes:"
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Previous"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Unselect"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Select &group"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Select language"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Close file"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Extension file edit"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Select"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Select language"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Select"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "In se&lection"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Save block"
+
+msgid "Insert file"
+msgstr "Insert file"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "&Toggle ins/overw"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "Insert &date/time"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Deleting"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "file1 file2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "Command &history"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "&Format paragraph"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Left bracket"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Repeat last commands"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "S&pell check"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "S&pell check"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Select language"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "&Flush bookmarks"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "&Next bookmark"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "&Prev bookmark"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Find all"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "&Toggle line state"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Changes to file lost"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Select compare method:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Select compare method:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Select compare method:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Select &group"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Select &group"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "U&nselect group"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "U&nselect group"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "In se&lection"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "U&nselect group"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "&Format paragraph"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "&Visible trailing spaces"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Toggle s&yntax highlighting"
+
+msgid "Choose syntax highlighting"
+msgstr "Choose syntax highlighting"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "Togg&le right margin"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Panel options"
+
+#, fuzzy
+msgid "About editor"
+msgstr "With builtin editor"
+
+#, fuzzy
+msgid "Execute script"
+msgstr "Executable &first"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "&Resize"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "&Toggle fullscreen"
+
+#, fuzzy
+msgid "Window list"
+msgstr "&Window"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Previous"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+
+msgid "File locked"
+msgstr "File locked"
+
+msgid "&Grab lock"
+msgstr "&Grab lock"
+
+msgid "&Ignore lock"
+msgstr "&Ignore lock"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Cannot create %s directory"
+
+msgid "FATAL: not a directory:"
+msgstr "FATAL: not a directory:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+
+msgid "Invalid character"
+msgstr "Invalid character"
+
+msgid "Unmatched quotes character"
+msgstr "Unmatched quotes character"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Hex pattern error at position %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Search string not found"
+
+msgid "Not implemented yet"
+msgstr "Not implemented yet"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Num of replace tokens not equal to num of found tokens"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Invalid token number %d"
+
+msgid "Regular expression error"
+msgstr "Regular expression error"
+
+msgid "No&rmal"
+msgstr "No&rmal"
+
+msgid "Re&gular expression"
+msgstr "Re&gular expression"
+
+msgid "He&xadecimal"
+msgstr "He&xadecimal"
+
+msgid "Wil&dcard search"
+msgstr "Wil&dcard search"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Unable to use '%s' skin with true colours support:\n"
+"%s\n"
+"Default skin has been loaded"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Unable to use '%s' skin with 256 colours support:\n"
+"%s\n"
+"Default skin has been loaded"
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+"\n"
+"If your terminal supports 256 colours, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+"For true colour support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+"\n"
+"If your terminal supports true colours, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+
+msgid "True color not supported in this slang version."
+msgstr "True colour not supported in this slang version."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+"\n"
+"If your terminal supports true colours, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+
+msgid "Escape"
+msgstr "Escape"
+
+msgid "Function key 1"
+msgstr "Function key 1"
+
+msgid "Function key 2"
+msgstr "Function key 2"
+
+msgid "Function key 3"
+msgstr "Function key 3"
+
+msgid "Function key 4"
+msgstr "Function key 4"
+
+msgid "Function key 5"
+msgstr "Function key 5"
+
+msgid "Function key 6"
+msgstr "Function key 6"
+
+msgid "Function key 7"
+msgstr "Function key 7"
+
+msgid "Function key 8"
+msgstr "Function key 8"
+
+msgid "Function key 9"
+msgstr "Function key 9"
+
+msgid "Function key 10"
+msgstr "Function key 10"
+
+msgid "Function key 11"
+msgstr "Function key 11"
+
+msgid "Function key 12"
+msgstr "Function key 12"
+
+msgid "Function key 13"
+msgstr "Function key 13"
+
+msgid "Function key 14"
+msgstr "Function key 14"
+
+msgid "Function key 15"
+msgstr "Function key 15"
+
+msgid "Function key 16"
+msgstr "Function key 16"
+
+msgid "Function key 17"
+msgstr "Function key 17"
+
+msgid "Function key 18"
+msgstr "Function key 18"
+
+msgid "Function key 19"
+msgstr "Function key 19"
+
+msgid "Function key 20"
+msgstr "Function key 20"
+
+msgid "Completion/M-tab"
+msgstr "Completion/M-tab"
+
+msgid "BackTab/S-tab"
+msgstr "BackTab/S-tab"
+
+msgid "Backspace"
+msgstr "Backspace"
+
+msgid "Up arrow"
+msgstr "Up arrow"
+
+msgid "Down arrow"
+msgstr "Down arrow"
+
+msgid "Left arrow"
+msgstr "Left arrow"
+
+msgid "Right arrow"
+msgstr "Right arrow"
+
+msgid "Insert"
+msgstr "Insert"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr "End key"
+
+msgid "Page Up"
+msgstr "Page Up"
+
+msgid "Page Down"
+msgstr "Page Down"
+
+msgid "/ on keypad"
+msgstr "/ on keypad"
+
+msgid "* on keypad"
+msgstr "* on keypad"
+
+msgid "- on keypad"
+msgstr "- on keypad"
+
+msgid "+ on keypad"
+msgstr "+ on keypad"
+
+msgid "Left arrow keypad"
+msgstr "Left arrow keypad"
+
+msgid "Right arrow keypad"
+msgstr "Right arrow keypad"
+
+msgid "Up arrow keypad"
+msgstr "Up arrow keypad"
+
+msgid "Down arrow keypad"
+msgstr "Down arrow keypad"
+
+msgid "Home on keypad"
+msgstr "Home on keypad"
+
+msgid "End on keypad"
+msgstr "End on keypad"
+
+msgid "Page Down keypad"
+msgstr "Page Down keypad"
+
+msgid "Page Up keypad"
+msgstr "Page Up keypad"
+
+msgid "Insert on keypad"
+msgstr "Insert on keypad"
+
+msgid "Delete on keypad"
+msgstr "Delete on keypad"
+
+msgid "Enter on keypad"
+msgstr "Enter on keypad"
+
+msgid "Function key 21"
+msgstr "Function key 21"
+
+msgid "Function key 22"
+msgstr "Function key 22"
+
+msgid "Function key 23"
+msgstr "Function key 23"
+
+msgid "Function key 24"
+msgstr "Function key 24"
+
+msgid "A1 key"
+msgstr "A1 key"
+
+msgid "C1 key"
+msgstr "C1 key"
+
+msgid "Asterisk"
+msgstr "Asterisk"
+
+msgid "Minus"
+msgstr "Minus"
+
+msgid "Plus"
+msgstr "Plus"
+
+msgid "Dot"
+msgstr "Dot"
+
+msgid "Less than"
+msgstr "Less than"
+
+msgid "Great than"
+msgstr "Great than"
+
+msgid "Equal"
+msgstr "Equal"
+
+msgid "Comma"
+msgstr "Comma"
+
+msgid "Apostrophe"
+msgstr "Apostrophe"
+
+msgid "Colon"
+msgstr "Colon"
+
+msgid "Semicolon"
+msgstr "Semicolon"
+
+msgid "Exclamation mark"
+msgstr "Exclamation mark"
+
+msgid "Question mark"
+msgstr "Question mark"
+
+msgid "Ampersand"
+msgstr "Ampersand"
+
+msgid "Dollar sign"
+msgstr "Dollar sign"
+
+msgid "Quotation mark"
+msgstr "Quotation mark"
+
+msgid "Percent sign"
+msgstr "Percent sign"
+
+msgid "Caret"
+msgstr "Caret"
+
+msgid "Tilda"
+msgstr "Tilda"
+
+msgid "Prime"
+msgstr "Prime"
+
+msgid "Underline"
+msgstr "Underline"
+
+msgid "Understrike"
+msgstr "Understrike"
+
+msgid "Pipe"
+msgstr "Pipe"
+
+msgid "Left parenthesis"
+msgstr "Left parenthesis"
+
+msgid "Right parenthesis"
+msgstr "Right parenthesis"
+
+msgid "Left bracket"
+msgstr "Left bracket"
+
+msgid "Right bracket"
+msgstr "Right bracket"
+
+msgid "Left brace"
+msgstr "Left brace"
+
+msgid "Right brace"
+msgstr "Right brace"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "Tab key"
+
+msgid "Space key"
+msgstr "Space key"
+
+msgid "Slash key"
+msgstr "Slash key"
+
+msgid "Backslash key"
+msgstr "Backslash key"
+
+msgid "Number sign #"
+msgstr "Number sign #"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "At sign"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "The TERM environment variable is unset!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Cannot check SIGWINCH pipe"
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Cannot create pipe descriptor"
+
+msgid "Cannot create pipe streams"
+msgstr "Cannot create pipe streams"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr "Cannot close pipe descriptor (p == NULL)"
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Unexpected error in waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Changes to file lost"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+
+msgid "Press any key to continue..."
+msgstr "Press any key to continue..."
+
+msgid "Internal error:"
+msgstr "Internal error:"
+
+msgid "Screens"
+msgstr "Screens"
+
+msgid "History"
+msgstr "History"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Yes"
+
+msgid "&No"
+msgstr "&No"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "DialogTitle|History cleanup"
+
+msgid "Do you want clean this history?"
+msgstr "Do you want clean this history?"
+
+msgid "&OK"
+msgstr "&OK"
+
+msgid "&Cancel"
+msgstr "&Cancel"
+
+msgid "Error"
+msgstr "Error"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Abort"
+
+msgid "< Default >"
+msgstr "< Default >"
+
+msgid "Skins"
+msgstr "Skins"
+
+msgid "Skin:"
+msgstr "Skin:"
+
+msgid "&Shadows"
+msgstr "&Shadows"
+
+msgid "Appearance"
+msgstr "Appearance"
+
+msgid "Displays the current version"
+msgstr "Displays the current version"
+
+msgid "Print data directory"
+msgstr "Print data directory"
+
+msgid "Print extended info about used data directories"
+msgstr "Print extended info about used data directories"
+
+msgid "Print configure options"
+msgstr "Print configure options"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Disable X11 support"
+
+msgid "Forces xterm features"
+msgstr "Forces xterm features"
+
+msgid "Disable X11 support"
+msgstr "Disable X11 support"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Tries to use an old highlight mouse tracking"
+
+msgid "Disable mouse support in text version"
+msgstr "Disable mouse support in text version"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Tries to use termcap instead of terminfo"
+
+msgid "To run on slow terminals"
+msgstr "To run on slow terminals"
+
+msgid "Use stickchars to draw"
+msgstr "Use stickchars to draw"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Load definitions of key bindings from specified file"
+
+msgid "<file>"
+msgstr "<file>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr "Don't load definitions of key bindings from file, use defaults"
+
+msgid "Requests to run in black and white"
+msgstr "Requests to run in black and white"
+
+msgid "Request to run in color mode"
+msgstr "Request to run in colour mode"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Show mc with specified skin"
+
+msgid "<string>"
+msgstr "<string>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+lineno] file1[:lineno] [file2[:lineno]...]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+
+msgid "Main options"
+msgstr "Main options"
+
+msgid "Terminal options"
+msgstr "Terminal options"
+
+msgid "Color options"
+msgstr "Colour options"
+
+msgid "Arguments parse error!"
+msgstr "Arguments parse error!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Configuration..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Configure options"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "&Case sensitive"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+"Cannot chmod\n"
+"%sn%s"
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "For&ward to declaration"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "&Find declaration"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "'%s' is not a symbolic link"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Cannot create temporary diff file"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Unable to save to file"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"Failed to run:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "No suitable entries found in %s"
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Search done"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Search done"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "Co&mplete: show all"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Failed to read data from child stdout"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Cannot create target file\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Cannot translate from %s to %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Profile root directory:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Unable to create event '%s'!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Reading failed"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Navigation"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "For&ward to declaration"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "Co&mplete: show all"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Navigation"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Search done"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Search done"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Symbolic link filename:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Load syntax file"
+
+msgid "Manage repositories"
+msgstr ""
+
+#, fuzzy
+msgid "Reindex repository"
+msgstr "Indexed directory"
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Confirmation"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "For&ward to declaration"
+
+msgid "&Find declaration"
+msgstr "&Find declaration"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Navigation"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Search"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Symbolic link filename:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "Co&mplete: show all"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Select"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Symbolic link filename:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "File name:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Load file"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Close"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Warning"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+
+msgid "C&ontinue"
+msgstr "C&ontinue"
+
+msgid "&Add word"
+msgstr "&Add word"
+
+msgid "&Replace"
+msgstr "&Replace"
+
+msgid "&Skip"
+msgstr "&Skip"
+
+msgid "Language"
+msgstr "Language"
+
+msgid "Misspelled"
+msgstr "Misspelt"
+
+msgid "Check word"
+msgstr "Check word"
+
+msgid "Suggest"
+msgstr "Suggest"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Add word"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Misspelt"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Language"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Select"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Select language"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Loading: %3d%%"
+
+msgid "Loading..."
+msgstr "Loading..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+"Cannot open\n"
+"%s"
+
+msgid "Load file"
+msgstr "Load file"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Error reading %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+"Cannot stat\n"
+"%s"
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+"%s\n"
+"is not a regular file"
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Error reading from pipe: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+"Cannot open pipe for reading\n"
+"%s"
+
+#, fuzzy
+msgid "Undo"
+msgstr "&Undo"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Retry"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "File has hard-links. Detach before saving?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "The file has been modified in the meantime. Save anyway?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Error writing to pipe: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+
+msgid "The file you are saving does not end with a newline."
+msgstr "The file you are saving does not end with a newline."
+
+msgid "&Do not change"
+msgstr "&Do not change"
+
+msgid "&Unix format (LF)"
+msgstr "&Unix format (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Windows/DOS format (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Macintosh format (CR)"
+
+msgid "Enter file name:"
+msgstr "Enter file name:"
+
+msgid "Change line breaks to:"
+msgstr "Change line breaks to:"
+
+msgid "Save As"
+msgstr "Save As"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+"Cannot create directory\n"
+"%s"
+
+msgid "&Quick save"
+msgstr "&Quick save"
+
+msgid "&Safe save"
+msgstr "&Safe save"
+
+msgid "&Do backups with following extension:"
+msgstr "&Do backups with following extension:"
+
+msgid "Check &POSIX new line"
+msgstr "Check &POSIX new line"
+
+msgid "Edit Save Mode"
+msgstr "Edit Save Mode"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+
+msgid "A file already exists with this name"
+msgstr "A file already exists with this name"
+
+msgid "&Overwrite"
+msgstr "&Overwrite"
+
+msgid "Cannot save file"
+msgstr "Cannot save file"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Confirm save file: \"%s\""
+
+msgid "Save file"
+msgstr "Save file"
+
+msgid "&Save"
+msgstr "&Save"
+
+msgid "Load"
+msgstr "Load"
+
+msgid "Syntax file edit"
+msgstr "Syntax file edit"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Which syntax file you want to edit?"
+
+msgid "&User"
+msgstr "&User"
+
+msgid "&System wide"
+msgstr "&System wide"
+
+msgid "Menu edit"
+msgstr "Menu edit"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Which menu file do you want to edit?"
+
+msgid "&Local"
+msgstr "&Local"
+
+msgid "[NoName]"
+msgstr "[NoName]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"File %s was modified.\n"
+"Save before close?"
+
+msgid "Close file"
+msgstr "Close file"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+
+msgid "Quit"
+msgstr "Quit"
+
+msgid "This function is not implemented"
+msgstr "This function is not implemented"
+
+msgid "Unable to save to file"
+msgstr "Unable to save to file"
+
+msgid "Goto line"
+msgstr "Goto line"
+
+msgid "Enter line:"
+msgstr "Enter line:"
+
+msgid "Save block"
+msgstr "Save block"
+
+msgid "Cannot save block"
+msgstr "Cannot save block"
+
+msgid "Cannot insert file"
+msgstr "Cannot insert file"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <subject> -c <cc> <to>"
+
+msgid "To"
+msgstr "To"
+
+msgid "Subject"
+msgstr "Subject"
+
+msgid "Copies to"
+msgstr "Copies to"
+
+msgid "Mail"
+msgstr "Mail"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Delete %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Replace"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "History"
+
+msgid "Collect completions"
+msgstr "Collect completions"
+
+msgid "NoName"
+msgstr "NoName"
+
+msgid "Save macro"
+msgstr "Save macro"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Press the macro's new hotkey:"
+
+msgid "Repeat last commands"
+msgstr "Repeat last commands"
+
+msgid "Repeat times:"
+msgstr "Repeat times:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Delete macro"
+
+msgid "Delete macro"
+msgstr "Delete macro"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "Russian"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Close"
+
+msgid "&Open file..."
+msgstr "&Open file..."
+
+msgid "&New"
+msgstr "&New"
+
+msgid "&History..."
+msgstr "&History..."
+
+msgid "Save &as..."
+msgstr "Save &as..."
+
+msgid "&Insert file..."
+msgstr "&Insert file..."
+
+msgid "Cop&y to file..."
+msgstr "Cop&y to file..."
+
+msgid "&User menu..."
+msgstr "&User menu..."
+
+msgid "A&bout..."
+msgstr "A&bout..."
+
+msgid "&Quit"
+msgstr "&Quit"
+
+msgid "&Undo"
+msgstr "&Undo"
+
+msgid "&Redo"
+msgstr "&Redo"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "&History..."
+
+msgid "&Toggle ins/overw"
+msgstr "&Toggle ins/overw"
+
+msgid "To&ggle mark"
+msgstr "To&ggle mark"
+
+msgid "&Mark columns"
+msgstr "&Mark columns"
+
+msgid "Mark &all"
+msgstr "Mark &all"
+
+msgid "Unmar&k"
+msgstr "Unmar&k"
+
+msgid "Cop&y"
+msgstr "Cop&y"
+
+msgid "Mo&ve"
+msgstr "Mo&ve"
+
+msgid "&Delete"
+msgstr "&Delete"
+
+msgid "Co&py to clipfile"
+msgstr "Co&py to clipfile"
+
+msgid "&Cut to clipfile"
+msgstr "&Cut to clipfile"
+
+msgid "Pa&ste from clipfile"
+msgstr "Pa&ste from clipfile"
+
+msgid "&Beginning"
+msgstr "&Beginning"
+
+msgid "&End"
+msgstr "&End"
+
+msgid "&Search..."
+msgstr "&Search..."
+
+msgid "Search &again"
+msgstr "Search &again"
+
+msgid "&Replace..."
+msgstr "&Replace..."
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "&Toggle line state"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "&write by owner"
+
+msgid "&Toggle bookmark"
+msgstr "&Toggle bookmark"
+
+msgid "&Next bookmark"
+msgstr "&Next bookmark"
+
+msgid "&Prev bookmark"
+msgstr "&Prev bookmark"
+
+msgid "&Flush bookmarks"
+msgstr "&Flush bookmarks"
+
+msgid "&Go to line..."
+msgstr "&Go to line..."
+
+msgid "&Toggle line state"
+msgstr "&Toggle line state"
+
+msgid "Go to matching &bracket"
+msgstr "Go to matching &bracket"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Toggle s&yntax highlighting"
+
+msgid "Togg&le right margin"
+msgstr "Togg&le right margin"
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "Encod&ing..."
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Find all"
+
+msgid "&Refresh screen"
+msgstr "&Refresh screen"
+
+msgid "&Start/Stop record macro"
+msgstr "&Start/Stop record macro"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "Record/Repeat &actions"
+
+msgid "&Move"
+msgstr "&Move"
+
+msgid "&Resize"
+msgstr "&Resize"
+
+msgid "&Toggle fullscreen"
+msgstr "&Toggle fullscreen"
+
+msgid "&Next"
+msgstr "&Next"
+
+msgid "&Previous"
+msgstr "&Previous"
+
+msgid "&List..."
+msgstr "&List..."
+
+msgid "&General..."
+msgstr "&General..."
+
+msgid "Save &mode..."
+msgstr "Save &mode..."
+
+msgid "Syntax &highlighting..."
+msgstr "Syntax &highlighting..."
+
+msgid "&Appearance..."
+msgstr "&Appearance..."
+
+msgid "Learn &keys..."
+msgstr "Learn &keys..."
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "&Encoding..."
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "&Encoding..."
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "&Panel options..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "S&yntax file"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "&Menu file"
+
+msgid "&Save setup"
+msgstr "&Save setup"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&File"
+
+msgid "&Edit"
+msgstr "&Edit"
+
+msgid "&Search"
+msgstr "&Search"
+
+msgid "&Command"
+msgstr "&Command"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Navigation"
+
+msgid "&Window"
+msgstr "&Window"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Options"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Tabulation"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Reading failed"
+
+msgid "&None"
+msgstr "&None"
+
+msgid "&Dynamic paragraphing"
+msgstr "&Dynamic paragraphing"
+
+msgid "Type &writer wrap"
+msgstr "Type &writer wrap"
+
+msgid "Wrap mode"
+msgstr "Wrap mode"
+
+msgid "Tabulation"
+msgstr "Tabulation"
+
+msgid "&Fake half tabs"
+msgstr "&Fake half tabs"
+
+msgid "&Backspace through tabs"
+msgstr "&Backspace through tabs"
+
+msgid "Fill tabs with &spaces"
+msgstr "Fill tabs with &spaces"
+
+msgid "Tab spacing:"
+msgstr "Tab spacing:"
+
+msgid "Other options"
+msgstr "Other options"
+
+msgid "&Return does autoindent"
+msgstr "&Return does autoindent"
+
+msgid "Confir&m before saving"
+msgstr "Confir&m before saving"
+
+msgid "Save file &position"
+msgstr "Save file &position"
+
+msgid "&Visible trailing spaces"
+msgstr "&Visible trailing spaces"
+
+msgid "Visible &tabs"
+msgstr "Visible &tabs"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "Synta&x highlighting"
+
+msgid "C&ursor after inserted block"
+msgstr "C&ursor after inserted block"
+
+msgid "Pers&istent selection"
+msgstr "Pers&istent selection"
+
+msgid "Cursor be&yond end of line"
+msgstr "Cursor be&yond end of line"
+
+msgid "&Group undo"
+msgstr "&Group undo"
+
+msgid "Word wrap line length:"
+msgstr "Word wrap line length:"
+
+msgid "Editor options"
+msgstr "Editor options"
+
+msgid "Enter search string:"
+msgstr "Enter search string:"
+
+msgid "Cas&e sensitive"
+msgstr "Cas&e sensitive"
+
+msgid "&Backwards"
+msgstr "&Backwards"
+
+msgid "In se&lection"
+msgstr "In se&lection"
+
+msgid "&Whole words"
+msgstr "&Whole words"
+
+msgid "&All charsets"
+msgstr "&All charsets"
+
+msgid "&Find all"
+msgstr "&Find all"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Search"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Searching %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Searching %s"
+
+msgid "Enter replacement string:"
+msgstr "Enter replacement string:"
+
+msgid "Replace"
+msgstr "Replace"
+
+msgid "Replace with:"
+msgstr "Replace with:"
+
+msgid "A&ll"
+msgstr "A&ll"
+
+msgid "Confirm replace"
+msgstr "Confirm replace"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "%ld replacements made"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+"A user friendly text editor\n"
+"written for the %s."
+
+msgid "About"
+msgstr "About"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Open files"
+
+msgid "Edit: "
+msgstr "Edit: "
+
+msgid "ButtonBar|Help"
+msgstr "ButtonBar|Help"
+
+msgid "ButtonBar|Save"
+msgstr "ButtonBar|Save"
+
+msgid "ButtonBar|Mark"
+msgstr "ButtonBar|Mark"
+
+msgid "ButtonBar|Replac"
+msgstr "ButtonBar|Replac"
+
+msgid "ButtonBar|Copy"
+msgstr "ButtonBar|Copy"
+
+msgid "ButtonBar|Move"
+msgstr "ButtonBar|Move"
+
+msgid "ButtonBar|Search"
+msgstr "ButtonBar|Search"
+
+msgid "ButtonBar|Delete"
+msgstr "ButtonBar|Delete"
+
+msgid "ButtonBar|PullDn"
+msgstr "ButtonBar|PullDn"
+
+msgid "ButtonBar|Quit"
+msgstr "ButtonBar|Quit"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Searching %s: %3d%%"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Auto >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Reload Current Syntax >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+"Cannot open file\n"
+"%s"
+
+msgid "Load syntax file"
+msgstr "Load syntax file"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Error in file %s on line %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Not an xterm or Linux console;\n"
+"the subshell cannot be toggled."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr "Type 'exit' to return to the %s"
+
+msgid "Help file format error\n"
+msgstr "Help file format error\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Internal bug: Double start of link area"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Cannot find node %s in help file"
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Help"
+
+msgid "ButtonBar|Index"
+msgstr "ButtonBar|Index"
+
+msgid "ButtonBar|Prev"
+msgstr "ButtonBar|Prev"
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Function key 1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Navigation"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Learn keys"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Confirmation"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+"Cannot accept this key.\n"
+"You have entered \"%s\""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Edit &menu file"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&Mail..."
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "&Menu file"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&List..."
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Help"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "&Edit"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "A1 key"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Press any key to continue..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "&Backwards"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Edit &menu file"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Failed to run:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Home directory path is not absolute"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "VFS plugins and scripts:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Unknown error in child"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Set"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Reading failed"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: error"
+
+msgid "Choose codepage"
+msgstr "Choose codepage"
+
+msgid "-  < No translation >"
+msgstr "-  < No translation >"
+
+msgid "Setup"
+msgstr "Setup"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Setup saved to %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Unable to save setup to %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "With optional subshell support"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "With mouse support on xterm and Linux console"
+
+msgid "With mouse support on xterm"
+msgstr "With mouse support on xterm"
+
+msgid "With support for X11 events"
+msgstr "With support for X11 events"
+
+msgid "With internationalization support"
+msgstr "With internationalisation support"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr "Built with S-Lang"
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr " and terminfo database (using S-Lang %s)\n"
+
+#, c-format
+msgid "Built with %s"
+msgstr "Built with %s"
+
+#, c-format
+msgid " (using %s)\n"
+msgstr " (using %s)\n"
+
+msgid "Data types:"
+msgstr "Data types:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Search string not found"
+
+msgid "Home directory:"
+msgstr "Home directory:"
+
+msgid "Profile root directory:"
+msgstr "Profile root directory:"
+
+msgid "System data"
+msgstr "System data"
+
+msgid "Config directory:"
+msgstr "Config directory:"
+
+msgid "Data directory:"
+msgstr "Data directory:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Editor options"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "VFS plugins and scripts:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "User data"
+
+msgid "Cache directory:"
+msgstr "Cache directory:"
+
+msgid "Debug"
+msgstr "Debug"
+
+msgid "ERROR:"
+msgstr "ERROR:"
+
+msgid "True:"
+msgstr "True:"
+
+msgid "False:"
+msgstr "False:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "Cannot create temporary diff file"
+
+msgid "Error calling program"
+msgstr "Error calling program"
+
+msgid "Cannot create temporary command file"
+msgstr "Cannot create temporary command file"
+
+msgid "Parameter"
+msgstr "Parameter"
+
+msgid "Warning -- ignoring file"
+msgstr "Warning -- ignoring file"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "Cannot execute commands on non-local filesystems"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "No suitable entries found in %s"
+
+msgid "User menu"
+msgstr "User menu"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Cannot translate from %s to %s"

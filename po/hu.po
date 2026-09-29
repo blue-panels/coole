@@ -1,0 +1,2782 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# 6bdcf737f9bcb6037ecba892a70fb951_e9eeb40 <b76b5e2faba6aa74d4498ee4c87ab010_661337>, 2020
+# Mátyás Demeter <mathias.demeter@gmail.com>, 2014
+# Rezső Páder <rezso@rezso.net>, 2012-2017,2019
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# Szabo Attila, 2013
+# Yury V. Zaytsev <yury@shurup.com>, 2025
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Hungarian <https://translate.codeberg.org/projects/mc6/mc6/hu/"
+">\n"
+"Language: hu\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "Figyelem: A kódlapok listája nem tölthető be"
+
+msgid "7-bit ASCII"
+msgstr "7-bit ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Nem lehetséges a konvertálás erről: \"%s\" erre: \"%s\""
+
+msgid "Event system already initialized"
+msgstr "Az eseménykezelő már elindítva"
+
+msgid "Failed to initialize event system"
+msgstr "Az eseménykezelő nem indítható"
+
+msgid "Event system not initialized"
+msgstr "Az eseménykezelő nincs elindítva"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Néhány paraméter hiányzik, ellenőrizze a bemeneti adatokat!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Nem hozható létre a(z) '%s' csoport az eseményekhez"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "%s esemény nem hozható létre"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Page Down"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "&Teljes képernyő váltás"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "Fájl&ok összehasonlítása"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "Sa&ját:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "Felhasználói menü"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Keresés kész"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Csere"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Terminál opciók"
+
+msgid "Edit file"
+msgstr "Fájl szerkesztése"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Fájl szerkesztése"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&Minden karakterkészlet"
+
+#, fuzzy
+msgid "Command history"
+msgstr "Ko&rábbi parancsok"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "Mentés m&ásként"
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Ugrás adott sorra"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "&Képernyő frissítése"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "A beállítások elmentve ide: %s"
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "&Képernyő frissítése"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Előző"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Fájl beszúrása"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Előző"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "Sor&számok"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "\"Delete\" - numer."
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "\"Delete\" - numer."
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "Ki&vágás vágólapra"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "Máso&lás vágólapra"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "&Beillesztés vágólapról"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "Kijelöltben"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Kiválaszt"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Kiválaszt"
+
+#, fuzzy
+msgid "Select up"
+msgstr "&Csoport kijelölése"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Kiválaszt"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Összehasonlítási mód:"
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "Sor&számok"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Nyelv kiválasztása"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "Rendezési mód"
+
+#, fuzzy
+msgid "General options"
+msgstr "Panelbeállítások"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Billentyűk beállítása"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "&Követk. könyvjelző"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "Deklaráció &keresése"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Megjelenítés"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "Beállítások m&entése"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Előző"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Szabad csomópont:"
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Előző"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Kijelölések megszüntetése"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "&Csoport kijelölése"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Nyelv kiválasztása"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Fájl bezárása"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Kiterjesztésfájl szerkesztése"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Kiválaszt"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Nyelv kiválasztása"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Kiválaszt"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "Kijelöltben"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Blokk mentése"
+
+msgid "Insert file"
+msgstr "Fájl beszúrása"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "&Beszúrás/átírás"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "&Dátum/idő beszúrása"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Törlés"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "&Könyvtárak a fájlok között"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "Ko&rábbi parancsok"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "Bekezdés &formázása"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Bal szögletes zárójel"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Utolsó parancsok ismétlése"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "He&lyesírás-ellenőrzés"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "He&lyesírás-ellenőrzés"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Nyelv kiválasztása"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "Könyvjelzők &törlése"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "&Követk. könyvjelző"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "&Előző könyvjelző"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "Min&det"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "Sor&számok"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "A fájl módosításai elvesztek"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Összehasonlítási mód:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Összehasonlítási mód:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Összehasonlítási mód:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "&Csoport kijelölése"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "&Csoport kijelölése"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "Kijelölések megszüntetése"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "Kijelölések megszüntetése"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "Kijelöltben"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "Kijelölések megszüntetése"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "Bekezdés &formázása"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "&Látható sorvégi szóközök"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Szintaktikus sz&övegkiemelés ki/be"
+
+msgid "Choose syntax highlighting"
+msgstr "Válasszon szintaktikus szövegkiemelést"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "&Inverz kijelölés"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Panelbeállítások"
+
+msgid "About editor"
+msgstr ""
+
+#, fuzzy
+msgid "Execute script"
+msgstr "Futtatható fent"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "Átmé&retezés"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "&Teljes képernyő váltás"
+
+#, fuzzy
+msgid "Window list"
+msgstr "&Ablak"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Előző"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"\"%s\" már szerkesztés alatt van.\n"
+"Felhasználó: %s\n"
+"Folyamatazonosító: %d"
+
+msgid "File locked"
+msgstr "A fájl zárolva van"
+
+msgid "&Grab lock"
+msgstr "Zárolás át&vétele"
+
+msgid "&Ignore lock"
+msgstr "&Nem érdekes, tovább"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "A(z) %s könyvtár nem létrehozható"
+
+msgid "FATAL: not a directory:"
+msgstr "HIBA: nem könyvtár:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+
+msgid "Invalid character"
+msgstr "Érvénytelen karakter"
+
+msgid "Unmatched quotes character"
+msgstr ""
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+
+msgid "Search string not found"
+msgstr "A keresett szöveg nem található"
+
+msgid "Not implemented yet"
+msgstr "Még nincs megvalósítva"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Kicserélt és talált elemek száma különbözik"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Hibás elem szám %d"
+
+msgid "Regular expression error"
+msgstr "reguláris kifejezés hiba"
+
+msgid "No&rmal"
+msgstr "No&rmál"
+
+msgid "Re&gular expression"
+msgstr "&Reguláris kifejezés"
+
+msgid "He&xadecimal"
+msgstr "He&xadecimális"
+
+msgid "Wil&dcard search"
+msgstr "Wil&dcard keresés"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Az '%s' borítás nem értelmezhető.\n"
+"Alapértelmezett borítás betöltve"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Az '%s' borítás nem betölthető.\n"
+"Alapértelmezett borítás betöltve"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "Escape"
+
+msgid "Function key 1"
+msgstr " F1 "
+
+msgid "Function key 2"
+msgstr " F2 "
+
+msgid "Function key 3"
+msgstr " F3 "
+
+msgid "Function key 4"
+msgstr " F4 "
+
+msgid "Function key 5"
+msgstr " F5 "
+
+msgid "Function key 6"
+msgstr " F6 "
+
+msgid "Function key 7"
+msgstr " F7 "
+
+msgid "Function key 8"
+msgstr " F8 "
+
+msgid "Function key 9"
+msgstr " F9 "
+
+msgid "Function key 10"
+msgstr " F10"
+
+msgid "Function key 11"
+msgstr " F11"
+
+msgid "Function key 12"
+msgstr " F12"
+
+msgid "Function key 13"
+msgstr " F13"
+
+msgid "Function key 14"
+msgstr " F14"
+
+msgid "Function key 15"
+msgstr " F15"
+
+msgid "Function key 16"
+msgstr " F16"
+
+msgid "Function key 17"
+msgstr " F17"
+
+msgid "Function key 18"
+msgstr " F18"
+
+msgid "Function key 19"
+msgstr " F19"
+
+msgid "Function key 20"
+msgstr " F20"
+
+msgid "Completion/M-tab"
+msgstr " Kieg./M-Tab"
+
+msgid "BackTab/S-tab"
+msgstr "Shift+Tab"
+
+msgid "Backspace"
+msgstr "Backspace"
+
+msgid "Up arrow"
+msgstr " <Fel> "
+
+msgid "Down arrow"
+msgstr " <Le> "
+
+msgid "Left arrow"
+msgstr " <Balra> "
+
+msgid "Right arrow"
+msgstr " <Jobbra> "
+
+msgid "Insert"
+msgstr "Insert"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr " \"End\""
+
+msgid "Page Up"
+msgstr "Page Up"
+
+msgid "Page Down"
+msgstr "Page Down"
+
+msgid "/ on keypad"
+msgstr "/ numerikus"
+
+msgid "* on keypad"
+msgstr " * numerikus"
+
+msgid "- on keypad"
+msgstr " - numerikus"
+
+msgid "+ on keypad"
+msgstr " + numerikus"
+
+msgid "Left arrow keypad"
+msgstr "<Jobbra> - numer."
+
+msgid "Right arrow keypad"
+msgstr "<Balra> - numer."
+
+msgid "Up arrow keypad"
+msgstr "<Fel> - numer."
+
+msgid "Down arrow keypad"
+msgstr "<Le> - numerikus"
+
+msgid "Home on keypad"
+msgstr "\"Home\" - numer."
+
+msgid "End on keypad"
+msgstr "\"End\" - numer."
+
+msgid "Page Down keypad"
+msgstr "\"PgDn\" - numer."
+
+msgid "Page Up keypad"
+msgstr "\"PgUp\" - numer."
+
+msgid "Insert on keypad"
+msgstr "\"Insert\" - numer."
+
+msgid "Delete on keypad"
+msgstr "\"Delete\" - numer."
+
+msgid "Enter on keypad"
+msgstr "\"Enter\" - numer."
+
+msgid "Function key 21"
+msgstr "Funkcióbill. F21"
+
+msgid "Function key 22"
+msgstr "Funkcióbill. F22"
+
+msgid "Function key 23"
+msgstr "Funkcióbill. F23"
+
+msgid "Function key 24"
+msgstr "Funkcióbill. F24"
+
+msgid "A1 key"
+msgstr "A1 billentyű"
+
+msgid "C1 key"
+msgstr "C1 billentyű"
+
+msgid "Asterisk"
+msgstr "Csillag"
+
+msgid "Minus"
+msgstr "Mínusz"
+
+msgid "Plus"
+msgstr "Plusz"
+
+msgid "Dot"
+msgstr "Pont"
+
+msgid "Less than"
+msgstr "Kisebb"
+
+msgid "Great than"
+msgstr "Nagyobb"
+
+msgid "Equal"
+msgstr "Egyenlő"
+
+msgid "Comma"
+msgstr "Vessző"
+
+msgid "Apostrophe"
+msgstr "Aposztróf"
+
+msgid "Colon"
+msgstr "Kettőspont"
+
+msgid "Semicolon"
+msgstr "Pontosvessző"
+
+msgid "Exclamation mark"
+msgstr "Felkiáltójel"
+
+msgid "Question mark"
+msgstr "Kérdőjel"
+
+msgid "Ampersand"
+msgstr "És jel"
+
+msgid "Dollar sign"
+msgstr "Dollárjel"
+
+msgid "Quotation mark"
+msgstr "Idézőjel"
+
+msgid "Percent sign"
+msgstr "Százalékjel"
+
+msgid "Caret"
+msgstr "Kalap"
+
+msgid "Tilda"
+msgstr "Hullám"
+
+msgid "Prime"
+msgstr "Tompa ékezet"
+
+msgid "Underline"
+msgstr "Aláhúzás"
+
+msgid "Understrike"
+msgstr "Aláhúzás"
+
+msgid "Pipe"
+msgstr "Cső"
+
+msgid "Left parenthesis"
+msgstr "Bal zárójel"
+
+msgid "Right parenthesis"
+msgstr "Jobb zárójel"
+
+msgid "Left bracket"
+msgstr "Bal szögletes zárójel"
+
+msgid "Right bracket"
+msgstr "Jobb szögletes zárójel"
+
+msgid "Left brace"
+msgstr "Bal kapcsos zárójel"
+
+msgid "Right brace"
+msgstr "Jobb kapcsos zárójel"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "Tabuátor"
+
+msgid "Space key"
+msgstr "Szóköz"
+
+msgid "Slash key"
+msgstr "Törtvonal"
+
+msgid "Backslash key"
+msgstr "Fordított törtvonal"
+
+msgid "Number sign #"
+msgstr "Kettőskereszt"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "Kukac"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"A(z) %dx%d képernyőméret nem támogatott.\n"
+"Ellenőrizze a TERM környezeti változót.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "Nincs beállítva a TERM környezeti változó.\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr ""
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr ""
+
+msgid "Cannot create pipe streams"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+
+msgid "Changes to file lost"
+msgstr "A fájl módosításai elvesztek"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "Nyomjon meg egy billentyűt..."
+
+msgid "Internal error:"
+msgstr "Belső programhiba:"
+
+msgid "Screens"
+msgstr "Képernyők"
+
+msgid "History"
+msgstr "Előzmények"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Igen"
+
+msgid "&No"
+msgstr "&Nem"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "DialogTitle|Előzmények törlése"
+
+msgid "Do you want clean this history?"
+msgstr "Előzmények törlése?"
+
+msgid "&OK"
+msgstr "&OK"
+
+msgid "&Cancel"
+msgstr "&Mégsem"
+
+msgid "Error"
+msgstr "Hiba"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Megszakítás"
+
+msgid "< Default >"
+msgstr "< Alapértelmezett >"
+
+msgid "Skins"
+msgstr ""
+
+msgid "Skin:"
+msgstr ""
+
+msgid "&Shadows"
+msgstr ""
+
+msgid "Appearance"
+msgstr "Megjelenítés"
+
+msgid "Displays the current version"
+msgstr "Verzióinformáció megjelenítése"
+
+msgid "Print data directory"
+msgstr "Az adatkönyvtár megjelenítése"
+
+msgid "Print extended info about used data directories"
+msgstr "Bővebb információ a használt adatkönyvtárakról"
+
+msgid "Print configure options"
+msgstr "Beállítások kiíratása"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "X11 támogatás letiltása"
+
+msgid "Forces xterm features"
+msgstr "Xterm-funkciók kikényszerítése"
+
+msgid "Disable X11 support"
+msgstr "X11 támogatás letiltása"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Régi típusú egérkezelés használata, ha lehetséges"
+
+msgid "Disable mouse support in text version"
+msgstr "Egérkezelés letiltása a szöveges változatban"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "A \"Termcap\" használata a \"Terminfo\" helyett, ha lehet"
+
+msgid "To run on slow terminals"
+msgstr "Lassú terminálon futtatáshoz"
+
+msgid "Use stickchars to draw"
+msgstr "Rajzolás 7 bites ASCII karakterekkel"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Gyorsbillentyűk betöltése megadott fájlból"
+
+msgid "<file>"
+msgstr ""
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr ""
+"A gyorsbillentyű definíciók betöltése fájlból sikertelen, az "
+"alapértelmezések használata"
+
+msgid "Requests to run in black and white"
+msgstr "Fekete-fehér üzemmód kérése"
+
+msgid "Request to run in color mode"
+msgstr "Színes üzemmód kérése"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "MC a megadott borítással"
+
+msgid "<string>"
+msgstr ""
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "Alapbeállítások"
+
+msgid "Terminal options"
+msgstr "Terminál opciók"
+
+msgid "Color options"
+msgstr "Színbeállítások"
+
+msgid "Arguments parse error!"
+msgstr "Argumentum feldolgozási hiba!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Alapbeállítások..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Alapbeállítások"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "&Kis-/nagybetű számít"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "Vissza a deklaráció&hoz"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "Deklaráció &keresése"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "\"%s\" nem szimbolikus link"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Fájl mentése sikertelen"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Fájl mentése sikertelen"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"Nem futtatható:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "Nincsenek megfelelő bejegyzések ebben: %s"
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Keresés kész"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Keresés kész"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "Kie&gészítésnél teljes lista"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Fájl mentése sikertelen"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Az fájl nem menthető:\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Nem lehetséges a konvertálás erről: \"%s\" erre: \"%s\""
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Profil gyökérkönyvtár:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "%s esemény nem hozható létre"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Sikertelen olvasás"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Navigálás"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "Vissza a deklaráció&hoz"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "Kie&gészítésnél teljes lista"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Navigálás"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Keresés kész"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Keresés kész"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Szimbolikus link neve:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Szintaxisfájl betöltése"
+
+msgid "Manage repositories"
+msgstr ""
+
+msgid "Reindex repository"
+msgstr ""
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Rákérdezés"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "Vissza a deklaráció&hoz"
+
+msgid "&Find declaration"
+msgstr "Deklaráció &keresése"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Navigálás"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Keresés"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Szimbolikus link neve:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "Kie&gészítésnél teljes lista"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Kiválaszt"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Szimbolikus link neve:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Fájlnév:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Fájl betöltése"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Bezárás"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Figyelem"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"A szöveg módosult a legutóbbi mentés óta. \n"
+"Ha továbblép, ezek a változások elvesznek."
+
+msgid "C&ontinue"
+msgstr "&Tovább"
+
+msgid "&Add word"
+msgstr "Szó hozzá&adása"
+
+msgid "&Replace"
+msgstr "&Csere"
+
+msgid "&Skip"
+msgstr "&Kihagyás"
+
+msgid "Language"
+msgstr "Nyelv"
+
+msgid "Misspelled"
+msgstr "Hibás"
+
+msgid "Check word"
+msgstr "Szó ellenőrzése"
+
+msgid "Suggest"
+msgstr "Ajánlat"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "Szó hozzá&adása"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Hibás"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Nyelv"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Kiválaszt"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Nyelv kiválasztása"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Betöltés: %3d%%"
+
+msgid "Loading..."
+msgstr "Betöltés..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "Fájl betöltése"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "%s nem olvasható:"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+" \"%s\" fájl túl nagy.\n"
+"Mindenképp megnyitja?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Hiba a cső olvasásakor: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+#, fuzzy
+msgid "Undo"
+msgstr "&Vissza"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "Új&ra"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "A fájlban \"hard-link\" van. Leválaszt mentés előtt?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "A fájl időközben módosult. Mentés mindenképpen?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Hiba a cső írásakor: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr "A mentendő fájl nem soremeléssel ér véget."
+
+msgid "&Do not change"
+msgstr "&Ne változtass"
+
+msgid "&Unix format (LF)"
+msgstr "&Unix fomátum (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Windows/DOS formátum (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Macintosh formátum (CR)"
+
+msgid "Enter file name:"
+msgstr "Fájlnév:"
+
+msgid "Change line breaks to:"
+msgstr "Sortörés formátum:"
+
+msgid "Save As"
+msgstr "Mentés másként"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "Gyors mentés"
+
+msgid "&Safe save"
+msgstr "Biztonságos mentés"
+
+msgid "&Do backups with following extension:"
+msgstr "Biztonsági másolatok az alábbi kiterjesztéssel:"
+
+msgid "Check &POSIX new line"
+msgstr "&POSIX soremelés vizsgálata"
+
+msgid "Edit Save Mode"
+msgstr "Mentési mód"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "Már létezik ilyen nevű fájl."
+
+msgid "&Overwrite"
+msgstr "&Felülírás"
+
+msgid "Cannot save file"
+msgstr "Nem sikerült a mentés."
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Valóban menti: %s ?"
+
+msgid "Save file"
+msgstr "Fájl mentése"
+
+msgid "&Save"
+msgstr "M&entés"
+
+msgid "Load"
+msgstr "Betöltés"
+
+msgid "Syntax file edit"
+msgstr "Szintaxisfájl szerkesztése"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Melyik szintaxisfájlt kívánja szerkeszteni?"
+
+msgid "&User"
+msgstr "&Sajátomat"
+
+msgid "&System wide"
+msgstr "Rend&szerszintű"
+
+msgid "Menu edit"
+msgstr "Menüszerkesztés"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Melyik menüfájlt kívánja szerkeszteni?"
+
+msgid "&Local"
+msgstr "&Könyvtárét (helyi)"
+
+msgid "[NoName]"
+msgstr "[Névtelen]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"%s fájl megváltozott.\n"
+"Menti a bezárás előtt?"
+
+msgid "Close file"
+msgstr "Fájl bezárása"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "Kilép"
+
+msgid "This function is not implemented"
+msgstr "Ez a funkció nincs megvalósítva."
+
+msgid "Unable to save to file"
+msgstr "Fájl mentése sikertelen"
+
+msgid "Goto line"
+msgstr "Ugrás adott sorra"
+
+msgid "Enter line:"
+msgstr "Sor száma:"
+
+msgid "Save block"
+msgstr "Blokk mentése"
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr "Fájl beszúrása sikertelen"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <tárgy> -c <másolat> <címzett>"
+
+msgid "To"
+msgstr "Címzett"
+
+msgid "Subject"
+msgstr "Tárgy"
+
+msgid "Copies to"
+msgstr "Másolat"
+
+msgid "Mail"
+msgstr "E-mail"
+
+msgid "Cancel"
+msgstr "Mégsem"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "%s törlése?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Csere"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Előzmények"
+
+msgid "Collect completions"
+msgstr ""
+
+msgid "NoName"
+msgstr "Névtelen"
+
+msgid "Save macro"
+msgstr "Makró mentése"
+
+msgid "Press the macro's new hotkey:"
+msgstr "A makró új gyorsbillentyűje:"
+
+msgid "Repeat last commands"
+msgstr "Utolsó parancsok ismétlése"
+
+msgid "Repeat times:"
+msgstr "Ismétlések száma:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Makró törlése"
+
+msgid "Delete macro"
+msgstr "Makró törlése"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "orosz"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Bezárás"
+
+msgid "&Open file..."
+msgstr "&Megnyitás..."
+
+msgid "&New"
+msgstr "&Új"
+
+msgid "&History..."
+msgstr ""
+
+msgid "Save &as..."
+msgstr "Mentés m&ásként"
+
+msgid "&Insert file..."
+msgstr "Fájl &beszúrása..."
+
+msgid "Cop&y to file..."
+msgstr "Másolat fájlba..."
+
+msgid "&User menu..."
+msgstr "Felhasz&nálói menü"
+
+msgid "A&bout..."
+msgstr "Névjegy..."
+
+msgid "&Quit"
+msgstr "&Kilépés"
+
+msgid "&Undo"
+msgstr "&Vissza"
+
+msgid "&Redo"
+msgstr "&Újra"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "Ko&rábbi parancsok"
+
+msgid "&Toggle ins/overw"
+msgstr "&Beszúrás/átírás"
+
+msgid "To&ggle mark"
+msgstr "&Inverz kijelölés"
+
+msgid "&Mark columns"
+msgstr "&Oszlopkijelölés"
+
+msgid "Mark &all"
+msgstr "&Összes kijelöl"
+
+msgid "Unmar&k"
+msgstr "&Nem jelöl"
+
+msgid "Cop&y"
+msgstr "&Másol"
+
+msgid "Mo&ve"
+msgstr "Át&helyez"
+
+msgid "&Delete"
+msgstr "&Töröl"
+
+msgid "Co&py to clipfile"
+msgstr "Máso&lás vágólapra"
+
+msgid "&Cut to clipfile"
+msgstr "Ki&vágás vágólapra"
+
+msgid "Pa&ste from clipfile"
+msgstr "&Beillesztés vágólapról"
+
+msgid "&Beginning"
+msgstr "&Eleje"
+
+msgid "&End"
+msgstr "&Vége"
+
+msgid "&Search..."
+msgstr "&Keresés"
+
+msgid "Search &again"
+msgstr "Keresés &tovább"
+
+msgid "&Replace..."
+msgstr "&Csere"
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "Sor&számok"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "tulajdonos í&rhatja"
+
+msgid "&Toggle bookmark"
+msgstr "Könyvjelző ki/&be"
+
+msgid "&Next bookmark"
+msgstr "&Követk. könyvjelző"
+
+msgid "&Prev bookmark"
+msgstr "&Előző könyvjelző"
+
+msgid "&Flush bookmarks"
+msgstr "Könyvjelzők &törlése"
+
+msgid "&Go to line..."
+msgstr "U&grás sorra..."
+
+msgid "&Toggle line state"
+msgstr "Sor&számok"
+
+msgid "Go to matching &bracket"
+msgstr "Ugrás &zárójel párjára"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Szintaktikus sz&övegkiemelés ki/be"
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "&Kódolás..."
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "Min&det"
+
+msgid "&Refresh screen"
+msgstr "&Képernyő frissítése"
+
+msgid "&Start/Stop record macro"
+msgstr "Makró rögzíté&sének indítása/leállítása"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "&Akciók felvétele/ismétlése"
+
+msgid "&Move"
+msgstr "Át&helyezés"
+
+msgid "&Resize"
+msgstr "Átmé&retezés"
+
+msgid "&Toggle fullscreen"
+msgstr "&Teljes képernyő váltás"
+
+msgid "&Next"
+msgstr "&Következő"
+
+msgid "&Previous"
+msgstr "&Előző"
+
+msgid "&List..."
+msgstr "&Lista"
+
+msgid "&General..."
+msgstr "Á&ltalános..."
+
+msgid "Save &mode..."
+msgstr "&Mentési mód..."
+
+msgid "Syntax &highlighting..."
+msgstr "&Szintaktikus szövegkiemelés"
+
+msgid "&Appearance..."
+msgstr "&Megjelenítés..."
+
+msgid "Learn &keys..."
+msgstr "&Billentyűk..."
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "&Kódolás..."
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "&Kódolás..."
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "&Panelbeállítások..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "Szintaxisfájl szerkesztése"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "Me&nüfájl szerkesztése"
+
+msgid "&Save setup"
+msgstr "Beállítások m&entése"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Fájl"
+
+msgid "&Edit"
+msgstr "Sz&erkeszt"
+
+msgid "&Search"
+msgstr "&Keresés"
+
+msgid "&Command"
+msgstr "&Parancs"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Navigálás"
+
+msgid "&Window"
+msgstr "&Ablak"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "Beállítás&ok"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Tabulálás"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Sikertelen olvasás"
+
+msgid "&None"
+msgstr "&Nincs"
+
+msgid "&Dynamic paragraphing"
+msgstr "&Dinamikus bekezdések"
+
+msgid "Type &writer wrap"
+msgstr "Sortörés"
+
+msgid "Wrap mode"
+msgstr "Tördelés"
+
+msgid "Tabulation"
+msgstr "Tabulálás"
+
+msgid "&Fake half tabs"
+msgstr "Hamis &fél-tabulátorok"
+
+msgid "&Backspace through tabs"
+msgstr "&Backspace: tabokat egyszerre"
+
+msgid "Fill tabs with &spaces"
+msgstr "&Tabulálás szóközökkel"
+
+msgid "Tab spacing:"
+msgstr "Tabulátor méret:"
+
+msgid "Other options"
+msgstr "További opciók"
+
+msgid "&Return does autoindent"
+msgstr "Új sor &auto. behúzás"
+
+msgid "Confir&m before saving"
+msgstr "M&entés előtt megerősítés"
+
+msgid "Save file &position"
+msgstr "Fájlbeli &pozíció mentése"
+
+msgid "&Visible trailing spaces"
+msgstr "&Látható sorvégi szóközök"
+
+msgid "Visible &tabs"
+msgstr "Látható tabulátorok"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "&Szintaktikus szövegkiemelés"
+
+msgid "C&ursor after inserted block"
+msgstr "Kurzor a beillesztett blokk után"
+
+msgid "Pers&istent selection"
+msgstr "Tartós kijelölés"
+
+msgid "Cursor be&yond end of line"
+msgstr "Kurzor a sor _vége mögött"
+
+msgid "&Group undo"
+msgstr "C&soportos visszavonás"
+
+msgid "Word wrap line length:"
+msgstr "Sortörési pozíció:"
+
+msgid "Editor options"
+msgstr "A szövegszerkesztő beállításai"
+
+msgid "Enter search string:"
+msgstr "Keresendő szöveg:"
+
+msgid "Cas&e sensitive"
+msgstr "&Kis-/nagybetű számít"
+
+msgid "&Backwards"
+msgstr "&Visszafelé"
+
+msgid "In se&lection"
+msgstr "Kijelöltben"
+
+msgid "&Whole words"
+msgstr "Csak &teljes szót"
+
+msgid "&All charsets"
+msgstr "&Minden karakterkészlet"
+
+msgid "&Find all"
+msgstr "Min&det"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Keresés"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "%s keresése: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "\"%s\" keresése"
+
+msgid "Enter replacement string:"
+msgstr "Új szöveg:"
+
+msgid "Replace"
+msgstr "Csere"
+
+msgid "Replace with:"
+msgstr "Csere erre:"
+
+msgid "A&ll"
+msgstr "Min&det"
+
+msgid "Confirm replace"
+msgstr "Csere megerősítése"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "%ld csere történt."
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "Névjegy"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Nyitott fájlok"
+
+msgid "Edit: "
+msgstr "Szerkeszt:"
+
+msgid "ButtonBar|Help"
+msgstr "Súgó"
+
+msgid "ButtonBar|Save"
+msgstr "Ment"
+
+msgid "ButtonBar|Mark"
+msgstr "Jelöl"
+
+msgid "ButtonBar|Replac"
+msgstr "Csere"
+
+msgid "ButtonBar|Copy"
+msgstr "Másol"
+
+msgid "ButtonBar|Move"
+msgstr "Áthelyez"
+
+msgid "ButtonBar|Search"
+msgstr "Keres"
+
+msgid "ButtonBar|Delete"
+msgstr "Töröl"
+
+msgid "ButtonBar|PullDn"
+msgstr "Főmenü"
+
+msgid "ButtonBar|Quit"
+msgstr "Kilép"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "%s keresése: %3d%%"
+
+msgid "Filter"
+msgstr "Szűrő"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Automatikus >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Aktuális szintaktika újratöltése >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr "Szintaxisfájl betöltése"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Hiba a(z) %s fájl %d. sorában"
+
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr "Hibás súgófájl formátum\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Belső programhiba: linkterület duplán kezdve"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Nem található \"%s\" bejegyzés a súgóban"
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Súgó"
+
+msgid "ButtonBar|Index"
+msgstr "Tartalom"
+
+msgid "ButtonBar|Prev"
+msgstr "Előző"
+
+#, fuzzy
+msgid "Function keys"
+msgstr " F1 "
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Navigálás"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Billentyűk beállítása"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Rákérdezés"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Me&nüfájl szerkesztése"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&Mail..."
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "Me&nüfájl szerkesztése"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&Lista"
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Súgó"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "Sz&erkeszt"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "A1 billentyű"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Nyomjon meg egy billentyűt..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "&Visszafelé"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Me&nüfájl szerkesztése"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Nem futtatható:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "A Home könyvtár elérési útja nem abszolút"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Hiba a bezáráskor:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "VFS pluginek és scriptek:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Ismeretlen hiba a futtatott programban"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Beállít"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Sikertelen olvasás"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: hiba"
+
+msgid "Choose codepage"
+msgstr "Válasszon kódlapot"
+
+msgid "-  < No translation >"
+msgstr "-  < Nincs konverzió >"
+
+msgid "Setup"
+msgstr "Beállítások"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "A beállítások elmentve ide: %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "A beállítások nem menthetők el ide: %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Háttér-shell használatának letiltása"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr ""
+
+msgid "With mouse support on xterm"
+msgstr ""
+
+msgid "With support for X11 events"
+msgstr ""
+
+msgid "With internationalization support"
+msgstr ""
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr "Adattípusok:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "A keresett szöveg nem található"
+
+msgid "Home directory:"
+msgstr "Saját könyvtár:"
+
+msgid "Profile root directory:"
+msgstr "Profil gyökérkönyvtár:"
+
+msgid "System data"
+msgstr "Rendszer adatok"
+
+msgid "Config directory:"
+msgstr "Beállítások könyvtára:"
+
+msgid "Data directory:"
+msgstr "Adatok könyvtára:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "A szövegszerkesztő beállításai"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "VFS pluginek és scriptek:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Felhasználói adatok"
+
+msgid "Cache directory:"
+msgstr "Gyorsítótár könyvtára:"
+
+msgid "Debug"
+msgstr "Nyomkövetés"
+
+msgid "ERROR:"
+msgstr "HIBA:"
+
+msgid "True:"
+msgstr "Igaz:"
+
+msgid "False:"
+msgstr "Hamis:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr ""
+"Az fájl nem menthető:\n"
+"%s"
+
+msgid "Error calling program"
+msgstr "Programhívási hiba"
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr "Paraméter"
+
+msgid "Warning -- ignoring file"
+msgstr "Figyelem: a fájl figyelmen kívül hagyva"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"A(z) \"%s\" fájl sem a rendszergazdáé, sem az Öné,\n"
+"vagy mindenki által írható. Használata gyengítheti a biztonságot."
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "Távoli fájlrendszeren nem lehet végrehajtani a parancsokat"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "Nincsenek megfelelő bejegyzések ebben: %s"
+
+msgid "User menu"
+msgstr "Felhasználói menü"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Nem lehetséges a konvertálás erről: \"%s\" erre: \"%s\""

@@ -1,0 +1,86 @@
+name: Merge checks
+
+# The commits of a branch must be ready to go into master as they are: no
+# fixup! or squash! commits left, no merge commits, no two commits with the
+# same message. The result is the "Merge checks / Result" commit status.
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request_target:
+
+jobs:
+  merge-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+
+    permissions:
+      contents: read
+      statuses: write
+
+    steps:
+      - name: Merge checks
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const STATUS_NAME = "Merge checks / Result";
+            const { owner, repo } = context.repo;
+            const head_sha = context.eventName === "pull_request_target"
+              ? context.payload.pull_request.head.sha
+              : context.sha;
+            const target_url =
+              `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+
+            const setStatus = (state, description) =>
+              github.rest.repos.createCommitStatus({
+                owner, repo, sha: head_sha, state, target_url,
+                context: STATUS_NAME, description: description.slice(0, 140),
+              });
+
+            await setStatus("pending", "Merge checks running");
+
+            try {
+              const { data: repository } = await github.rest.repos.get({ owner, repo });
+              const { data: branch } = await github.rest.repos.getBranch({
+                owner, repo, branch: repository.default_branch,
+              });
+
+              const commits = await github.paginate(
+                "GET /repos/{owner}/{repo}/compare/{basehead}",
+                { owner, repo, basehead: `${branch.commit.sha}...${head_sha}`, per_page: 100 },
+                (response) => response.data.commits,
+              );
+
+              const messages = commits.map((c) => c.commit.message);
+              core.info(`Commit messages in the branch:\n  ${messages.join("\n  ")}`);
+
+              const marker = (message) =>
+                message.replace(/^Revert "/, "").replace(/"$/, "").split(/\s+/, 1)[0];
+              const fixups = messages.filter((m) => marker(m) === "fixup!").length;
+              const squashes = messages.filter((m) => marker(m) === "squash!").length;
+              const duplicated = [...new Set(
+                messages.filter((m, i) => messages.indexOf(m) !== i),
+              )];
+
+              let failure = null;
+              if (fixups || squashes)
+                failure = `${fixups} fixup and ${squashes} squash commits found`;
+              else if (commits.some((c) => c.parents.length > 1))
+                failure = "Contains merge commits";
+              else if (duplicated.length) {
+                core.info(`Duplicated commit message(s):\n  ${duplicated.join("\n  ")}`);
+                failure = "Duplicated commit messages found";
+              }
+
+              if (failure) {
+                await setStatus("failure", failure);
+                core.setFailed(failure);
+              } else
+                await setStatus("success", "All checks passed");
+            } catch (error) {
+              await setStatus("error", `Merge checks failed to run: ${error.message}`);
+              throw error;
+            }

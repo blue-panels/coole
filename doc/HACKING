@@ -1,0 +1,328 @@
+This document
+=============
+
+This document is a guide how to develop coole, a console text editor,
+a continuation of cooledit.  It's
+quite incomplete, but may be worth reading anyway.
+
+The document was written for GNU Midnight Commander by Miguel de Icaza
+and reworked by Pavel Roskin and later from Patrick Winnertz.  Some
+parts were taken from the messages posted in the mailing lists.
+
+
+Compiling from GIT
+==================
+
+The full list of requirements is listed in the INSTALL file.
+
+coole is built with meson in a build directory outside the source tree:
+
+meson setup build
+meson compile -C build
+
+The distribution archive is created by `meson dist -C build', which also
+builds and tests what it packs.  This command can take a while.
+
+The version is taken from the Git tags: version.sh runs
+`git describe --match 'coole-*'', and the build writes it into
+mc-version.h.  A release archive keeps it in .tarball-version.
+
+
+Working with coole
+==================
+
+Please use the GIT version.  It may be quite different from the released
+versions.
+
+If you add or remove any files, please change the meson.build in the same
+directory accordingly: meson lists every source file by name.  When doing
+significant changes in the tree structure, "meson dist -C build" is
+strongly recommended.
+
+Every build directory has a configuration of its own, so several of them
+can be tested at once:
+
+meson setup build-debug   --buildtype=debug
+meson setup build-release --buildtype=release
+meson setup build-asan    -Db_sanitize=address
+meson setup build-ncurses -Dscreen=ncurses
+
+The unit tests use the check library and are run by `meson test -C build'.
+They live in tests/, in a tree that mirrors lib/ and src/.
+
+Please use the same indentation as other developers.  We enforce our
+indentation style with clang-format.  If your IDE doesn't have a
+suitable itegration, make sure to run the formatter yourself:
+
+meson compile -C build indent
+
+Strings shown to the user are marked for translation with _() (or N_()
+where the string is translated later).  po/POTFILES.in lists the sources
+that contain such strings: add a new one there.
+
+
+Code structure - outline
+========================
+
+The code is located in following directories.
+
+lib - the common library (libmc).
+
+    tty/         terminal input and output on top of S-Lang or ncurses,
+                 keys, mouse, colors, the X11 connection for modifiers
+    widget/      the dialog manager and the widgets
+    skin/        skins
+    strutil/     string and charset utilities
+    mcconfig/    ini files and the user and system paths
+    vfs/         the file access layer; coole has only the local file
+                 system (src/vfs/local).  Use the wrappers named "mc_"
+                 plus the standard name of the function, e.g. mc_open()
+    event/       the event system
+    search/      search: normal, regex, glob, hex
+    editor-plugin.[ch]
+                 the editor plugin API and loader, see doc/PLUGINS
+    extension-runtime.[ch], runtime-events.[ch]
+                 the runtime plugins, such as the Lua runtime
+
+src - the program.
+
+    main.c, args.c, setup.c
+                 start-up, the command line, the configuration
+    keymap.c, keybind_dialog.c, key_learn.c, key_sniffer.c
+                 key bindings and the dialogs that edit and learn them
+    help.c, help_md.c
+                 the help window, which reads the markdown of the manual
+    usermenu.c   the user menu (coole.menu, .coole.menu)
+    manage_plugins.c
+                 the Manage Plugins dialog
+    runtime-host.c, runtime-screen.c
+                 what the editor offers to the runtime plugins
+    editor/      the editor itself
+    editor-plugins/
+                 the ctags, etags and spell plugins, built into the
+                 editor
+    syntax/      the syntax highlighting engine
+    lua/         the Lua runtime plugin and the Lua scripts
+    vfs/local/   the local file system
+
+The editor code has been written by Paul Sheer, the author of
+Cooledit, and developed further by many contributors over the years.
+
+misc - data: skins, syntax files, keymaps, coole.menu.in,
+defaults.ini, macros.d examples.
+
+tests - unit tests.
+
+Code structure - details
+========================
+
+coole uses extensively the dialog manager written by
+Radek Doulik.  To understand how the dialog manager works, please read
+lib/widget/dialog.c and lib/widget/group.c.  You will find the basic
+widgets in the other files of lib/widget.  Some more high-level
+functions, e.g. to display a message box, are located in
+lib/widget/wtools.c; lib/widget/quick.c contains the Quick Dialog code,
+which makes it easier to create complex dialogs.
+
+The files lib/util.c and lib/utilunix.c have a lot of utility functions.  Get
+familiar with them, they are very simple.
+
+glib is used for memory allocation and for some utility functions, such
+as manipulation with lists and trees.  gmodule (part of the glib
+distribution) is used to load some libraries dynamically at the run
+time.
+
+Thanks to glib, the code has almost no hardcoded limits, since there are
+many ways to avoid them.  For example, when you want to concatenate
+strings, use the g_strconcat() function:
+
+	new_text = g_strconcat (username, " ", password, (char *)0);
+
+This allocates new memory for the string, so you should use g_free() on
+the result.
+
+Every editor window is a widget in the editor dialog, together with the
+menu and the button bar.
+
+
+Input handling
+==============
+
+The routines for input handling in coole are:
+getch, get_key_code, mi_getch and get_event.
+
+getch is an interface to the low level system input mechanism.  It
+does not deal with the mouse.  
+
+    In the case of ncurses, this is a function implemented in the
+    ncurses library that translates key sequences to key codes (\E[A to
+    something like KEY_UP and so on).
+
+    In the case of S-Lang there is no such conversion, that's why we
+    load a set of extra definitions.
+
+The get_key_code routine converts the data from getch to the
+constants coole uses.
+
+    In the case of S-Lang, it will actually do all the jobs that getch
+    does for curses.  In the case of curses it patches a couple of
+    sequences that are not available on some terminal databases.  This
+    routine is the one you want to use if you want a character without
+    the mouse support.
+
+get_event is the routine you want to use if you want to handle mouse
+events, it will return 0 on a mouse event, -1 if no input is available
+or a key code if there is some input available.  This routine in turn
+uses get_key_code to decode the input stream and convert it to useful
+constants.
+
+mi_getch is just a wrapper around get_event that ignores all the mouse
+events.  It's used only in a couple of places, this routine may return
+-1 if no input is available (if you have set the nodelay option of
+ncurses or S-Lang with nodelay) or a character code if no such option is
+available. 
+
+
+Mouse support
+=============
+
+The mouse support in coole is based on the get_event
+routine.  The core of the mouse event dispatching is in
+lib/widget/dialog.c and lib/widget/mouse.c.
+
+
+ncurses
+=======
+
+Although S-Lang is now used by default, we still support ncurses.  We
+basically are using a small subset of ncurses because we want to be
+compatible with Slang.
+
+
+The Dialog manager and the Widgets
+==================================
+
+The Dialog manager and the Widget structure are implemented in
+lib/widget/dialog.c, lib/widget/group.c and lib/widget/widget-common.c.
+Everything shown on screen is a dialog.  Dialogs contain widgets, but
+not everything on screen is a widget.  Dialogs can draw themselves.
+
+The running dialogs are kept in the top_dlg list
+(lib/widget/dialog-switch.c).
+
+A dialog is created by dlg_create().  Then it's populated by widgets
+using group_add_widget().  Then the dialog is run by calling dlg_run(),
+which returns the id of the button selected by the user.  Finally, the
+dialog is destroyed by calling widget_destroy().
+
+Pressing Tab moves focus to the next widget, pressing Shift-Tab moves
+focus to the previous one.  The tab order is equal to the add order.
+
+The initial widget to get focus can be selected by calling
+widget_select().
+
+When creating a dialog, you may want to use a callback that would
+intercept some dialog events.  However, many widgets will do the right
+thing by default, so some dialogs can work just fine without callbacks.
+
+There are also widget events, which are sent by the dialog to individual
+widgets.  Some widgets also have user callbacks.
+
+To create your own widget, use widget_init().  In this case, you must
+provide a callback function.  Please note that it's not the same as the
+user callback in some widgets.
+
+
+Where to Find Bug Reports
+=========================
+
+The place for bug reports is:
+
+    https://github.com/blue-panels/coole/issues
+
+
+
+Programming Tips
+================
+
+(This list should be sorted alphabetically.)
+
+?: This operator has a precedence that is easy to use the wrong way. You
+	might think that
+
+		int right = 25 + have_frame() ? 1 : 0; /* WRONG */
+
+	results in either 25 or 26. This is not the case. The C compiler
+	sees this as:
+
+		int right = (25 + have_frame()) ? 1 : 0; /* WRONG */
+
+	To avoid this, put the ?: in parentheses, like this
+
+		int right = 25 + (have_frame() ? 1 : 0); /* RIGHT */
+
+	If the condition is more complicated, put it in additional
+	parentheses:
+
+		int right = 25 + ((have_frame()) ? 1 : 0); /* RIGHT */
+
+const: For every function taking a string argument, decide whether you
+	(as a user of the function) would expect that the string is modi-
+	fied by the function. If not, declare the string argument as
+	"const char *". If your implementation needs to modify the string,
+	use g_strdup to create a local copy.
+
+const_cast: Has been replaced by str_unconst.
+
+g_free: g_free handles NULL argument too, no need for the comparison.
+	Bad way:
+	    if (old_dir) g_free (old_dir);
+	Right way:
+	    g_free (old_dir);
+
+g_strdup: When you use g_strdup to create a local copy of a string, use
+	the following pattern to keep the reference.
+
+	char * const pathref = g_strdup(argument);
+	/* ... */
+	g_free (pathref);
+
+	The "const" will make the pointer unmodifiable (pathref++
+	is not possible), but you can still modify the string contents.
+
+NULL: When you pass NULL as an argument of a varargs function, cast the
+	0 to the appropriate data type. If a system #defines NULL to
+	be 0 (at least NetBSD and OpenBSD do), and the sizes of int and
+	a pointer are different, the argument will be passed as int 0,
+	not as a pointer.
+
+	This tip applies at least to execl(3), execle(3), execlp(3),
+	g_strconcat (glib) and mc_build_filename (lib/util.h).
+
+	example:
+	char *path = g_strconcat("dir", "/", "file", (char *)0);
+
+size_t: This data type is suitable for expressing sizes of memory or the
+	length of strings. This type is unsigned, so you need not check
+	if the value is >= 0.
+
+strncpy: Don't use this function in newly created code. It is slow, insecure
+	and hard to use. A much better alternative is g_strlcpy (see there).
+
+str_unconst: We use many libraries that do not know about "const char *"
+	and thus declare their functions to require "char *". If you
+	know for sure that an external function does not modify the
+	string, you can "unconst" a string using the function
+	str_unconst(). If you are not sure whether the function modifies
+	the string, you should use g_strdup() to pass a copy of a string
+	to the function. Don't forget to call g_free() after work is done.
+
+unused: Unused arguments of a function can be marked like this:
+
+	void do_nothing(int data)
+	{
+	    (void) &data;
+	}
+
+	This tells the GNU C Compiler not to emit a warning, and has no
+	side effects for other compilers.

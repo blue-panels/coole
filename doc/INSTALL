@@ -1,0 +1,218 @@
+Build requirements for coole
+----------------------------
+
+- glibc or uClibc or musl
+  - https://www.gnu.org/software/libc/
+  - https://uclibc.org
+  - https://www.musl-libc.org
+- gcc or clang
+  - https://gcc.gnu.org
+  - https://clang.llvm.org
+- meson >= 0.61 and ninja (on the machine that builds)
+  - https://mesonbuild.com
+  - https://ninja-build.org
+- pkg-config
+  - https://pkg-config.freedesktop.org/wiki/
+- glib2 >= 2.58, with gmodule
+  - https://www.gtk.org
+  - Check the API baseline with: meson compile -C build check-glib-api
+    (or sh maint/check-glib-api.sh).  This uses Docker to build and run
+    the tests against the real GLib 2.58 headers and library from
+    Debian 10.  Sources are mounted read only; build files and logs stay
+    in a temporary directory.  Meson options can be passed to the script.
+- S-Lang >= 2.0 or ncurses screen library
+  - https://www.jedsoft.org/slang/
+  - https://invisible-island.net/ncurses/ncurses.html
+- gettext >= 0.18.2
+  - https://www.gnu.org/software/gettext/
+
+Optional:
+
+- gpm (general purpose mouse daemon as an alternative to xterm mouse,
+  Linux only)
+  - https://www.nico.schottelius.org/software/gpm/
+- X11 client library (reads the state of the keyboard modifiers when
+  running in a terminal emulator under X11)
+- Lua >= 5.3 (the Lua runtime plugin that runs editor scripts)
+  - https://www.lua.org
+- check >= 0.9.10 (unit tests)
+  - https://libcheck.github.io/check/
+
+Spell checking needs neither aspell nor hunspell at build time: the
+built-in spell plugin opens libaspell or libhunspell at run time through
+gmodule, and its settings dialog selects the engine and the language.
+
+
+Installation instructions for coole
+-----------------------------------
+
+coole is built with meson, always in a build directory of its own,
+outside the source tree.  A Git checkout and a release archive are built
+the same way.
+
+In short:
+
+    meson setup build
+    meson compile -C build
+    meson test -C build           # optional, needs the check library
+    meson install -C build
+
+Several build directories can live side by side, each with its own
+configuration:
+
+    meson setup build-debug   --buildtype=debug
+    meson setup build-release --buildtype=release
+    meson setup build-asan    -Db_sanitize=address
+
+The default build type is debugoptimized.  A debug build also turns on
+the debug log (see COOLE_LOG_ENABLE in the manual page).
+
+By default, "meson install" installs the files under /usr/local.  Use
+--prefix to choose another place, and --sysconfdir for the system
+configuration, e.g.
+
+    meson setup build --prefix=/usr --sysconfdir=/etc
+
+An existing build directory can be changed the same way.  The
+directories are compiled into the program, so build it again as
+yourself before installing; "sudo meson install" would otherwise
+rebuild as root and leave root-owned files in the build directory:
+
+    meson configure build --prefix=/usr --sysconfdir=/etc
+    meson compile -C build
+    sudo meson install -C build
+
+"ninja -C build uninstall" (with sudo for a system directory) removes
+the files the last "meson install" put in place and the directories it
+created.
+
+DESTDIR, or "meson install --destdir DIR", stages the installation in
+another directory, as packages do.
+
+"meson install" installs:
+
+    $(bindir)/coole                       the program
+    $(sysconfdir)/coole/                  keymaps, coole.menu, edit.indent.rc
+    $(datadir)/coole/                     defaults.ini, charsets, help,
+                                          skins, syntax, examples
+    $(libdir)/coole/runtime-plugins/      the Lua runtime plugin
+    $(datadir)/coole/lua/                 the Lua scripts
+    $(mandir)/man1/coole.1                the manual page
+
+The options of coole are given to "meson setup" as -Dname=value, and
+can be changed later with "meson configure build -Dname=value".
+"meson configure build" lists them all with their current values; the
+meson built-in options (buildtype, prefix, b_sanitize, werror, ...) are
+listed there as well.
+
+-Dscreen=slang|ncurses
+     Choose the library used to manage interaction with the terminal.
+     S-Lang is the default, and it is tested better than ncurses.
+
+-Dgpm=auto|enabled|disabled
+     On GNU/Linux, coole uses the gpm library if it is found.  `enabled'
+     makes a missing gpm an error, and `disabled' turns gpm mouse
+     support off (e.g. to use the mouse only in terminal emulators).
+
+-Dx11=auto|enabled|disabled
+     By default, coole connects to the X Window System to query the
+     status of the keyboard modifiers, such as Control, Shift and Alt,
+     when it runs in a terminal emulator under X11.  This is necessary
+     (but not always sufficient) to recognize some optional but handy
+     key combinations like Ctrl-Home and Shift-Cursor keys.  With
+     gmodule, libX11 is opened at run time and only its headers are
+     needed to build.
+
+-Dlua=auto|enabled|disabled
+     The Lua runtime plugin (auto: when Lua 5.3 or newer and GModule
+     are found).  `enabled' makes a missing Lua an error.
+
+-Dspell=auto|enabled|disabled
+     Spell checking through aspell or hunspell, opened at run time; it
+     needs GModule.
+
+-Dnls=auto|enabled|disabled
+     Translations of the messages.
+
+-Dtests=auto|enabled|disabled
+     The unit tests (auto: when the check library is found, and never in
+     a cross build).  They are run with "meson test".
+
+-Dassert=true|false
+     Keep the GLib assertions (on by default).
+
+-Deditor_plugins_dir=DIR
+     The directory where coole looks for dynamic editor plugins at run
+     time [default=LIBDIR/coole/editor-plugins].  A dynamic editor
+     plugin is a shared object that exports the
+     mc_editor_plugin_register symbol; see doc/PLUGINS.
+
+-Druntime_plugins_dir=DIR
+     The directory of the runtime plugins, such as the Lua runtime
+     [default=LIBDIR/coole/runtime-plugins].
+
+-Dlua_scripts_dir=DIR
+     The directory of the system Lua scripts
+     [default=DATADIR/coole/lua/scripts].
+
+-Dlua_modules_dir=DIR
+     The directory of the system shared Lua modules
+     [default=DATADIR/coole/lua/lib].
+
+-Dwerror=true
+     Handle all compiler warnings as errors (a meson built-in option).
+
+A Lua installed in an unusual place is found through pkg-config: set
+PKG_CONFIG_PATH to its lib/pkgconfig.  Compiler and linker flags of your
+own go into CFLAGS, CPPFLAGS and LDFLAGS when "meson setup" runs, or
+into -Dc_args and -Dc_link_args.
+
+
+Maintainer targets
+------------------
+
+    meson compile -C build coole-pot         remake po/coole.pot
+    meson compile -C build coole-update-po   merge the po/*.po files with it
+    meson compile -C build indent            format the sources (clang-format)
+    meson compile -C build man-in            remake doc/man/**/roff/*.1.in
+                                             from the markdown (go-md2man)
+    meson compile -C build buildcheck        what the ubuntu CI job does, in
+                                             a container (Docker)
+    meson dist -C build                      the release archive
+
+
+Cross compiling
+---------------
+
+meson runs on the build machine and compiles for the target with the
+toolchain named in a cross file, for instance for a little endian MIPS
+router:
+
+    [binaries]
+    c = 'mipsel-linux-gcc'
+    strip = 'mipsel-linux-strip'
+    pkg-config = 'pkg-config'
+
+    [host_machine]
+    system = 'linux'
+    cpu_family = 'mips'
+    cpu = 'mipsel'
+    endian = 'little'
+
+    meson setup build-mipsel --cross-file mipsel.ini -Dlua=disabled
+
+The unit tests are not built in a cross build.  PKG_CONFIG_LIBDIR (or
+the pkg-config named in the cross file) must point at the pkg-config
+files of the target's glib and screen library.  OpenWrt, Buildroot and
+Yocto write the cross file themselves.
+
+
+Terminal database
+-----------------
+
+There are many incomplete terminal databases out there, however, a
+complete terminfo is bundled with ncurses.  (It is simple to generate
+the termcap database using the infocmp utility in ncurses).
+
+If you want to run coole on xterm/color_xterm/ansi_xterm (not rxvt),
+then you might read contrib/README.xterm for further information.

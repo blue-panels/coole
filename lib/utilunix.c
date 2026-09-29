@@ -1,0 +1,1257 @@
+/*
+   Various utilities - Unix variants
+
+   Copyright (C) 1994-2025
+   Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
+
+   Written by:
+   Miguel de Icaza, 1994, 1995, 1996
+   Janne Kukonlehto, 1994, 1995, 1996
+   Dugan Porter, 1994, 1995, 1996
+   Jakub Jelinek, 1994, 1995, 1996
+   Mauricio Plaza, 1994, 1995, 1996
+   Andrew Borodin <aborodin@vmail.ru> 2010-2024
+   Ilia Maslakov <il.smind@gmail.com>, 2012, 2026
+
+   The mc_realpath routine is mostly from uClibc package, written
+   by Rick Sladkey <jrs@world.std.com>
+
+   This file is part of coole,
+   a text editor based on GNU Midnight Commander.
+
+   coole is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   coole is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/** \file utilunix.c
+ *  \brief Source: various utilities - Unix variant
+ */
+
+#include <config.h>
+
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+#include <sys/wait.h>
+#include <pwd.h>
+#include <grp.h>
+
+#include "lib/global.h"
+
+#include "lib/unixcompat.h"
+#include "lib/vfs/vfs.h"  // VFS_ENCODING_PREFIX
+#include "lib/strutil.h"  // str_move(), str_tokenize()
+#include "lib/util.h"
+#include "lib/widget.h"  // message()
+#include "lib/charsets.h"
+
+/*** global variables ****************************************************************************/
+
+struct sigaction startup_handler;
+
+/*** file scope macro definitions ****************************************************************/
+
+/*** file scope type declarations ****************************************************************/
+
+typedef enum
+{
+    FORK_ERROR = -1,
+    FORK_CHILD,
+    FORK_PARENT,
+} my_fork_state_t;
+
+typedef struct
+{
+    struct sigaction intr;
+    struct sigaction quit;
+    struct sigaction stop;
+} my_system_sigactions_t;
+
+/*** forward declarations (file scope functions) *************************************************/
+
+/*** file scope variables ************************************************************************/
+
+/* --------------------------------------------------------------------------------------------- */
+/*** file scope functions ************************************************************************/
+
+/* --------------------------------------------------------------------------------------------- */
+
+static my_fork_state_t
+my_fork_state (void)
+{
+    pid_t pid;
+
+    pid = my_fork ();
+
+    if (pid < 0)
+    {
+        fprintf (stderr, "\n\nfork () = -1\n");
+        return FORK_ERROR;
+    }
+
+    if (pid == 0)
+        return FORK_CHILD;
+
+    while (TRUE)
+    {
+        int status = 0;
+
+        if (waitpid (pid, &status, 0) > 0)
+            return WEXITSTATUS (status) == 0 ? FORK_PARENT : FORK_ERROR;
+
+        if (errno != EINTR)
+            return FORK_ERROR;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+my_system__save_sigaction_handlers (my_system_sigactions_t *sigactions)
+{
+    struct sigaction ignore;
+
+    memset (&ignore, 0, sizeof (ignore));
+    ignore.sa_handler = SIG_IGN;
+    sigemptyset (&ignore.sa_mask);
+
+    my_sigaction (SIGINT, &ignore, &sigactions->intr);
+    my_sigaction (SIGQUIT, &ignore, &sigactions->quit);
+
+    // Restore the original SIGTSTP handler, we don't want ncurses'
+    // handler messing the screen after the SIGCONT
+    my_sigaction (SIGTSTP, &startup_handler, &sigactions->stop);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+my_system__restore_sigaction_handlers (my_system_sigactions_t *sigactions)
+{
+    my_sigaction (SIGINT, &sigactions->intr, NULL);
+    my_sigaction (SIGQUIT, &sigactions->quit, NULL);
+    my_sigaction (SIGTSTP, &sigactions->stop, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static GPtrArray *
+my_system_make_arg_array (int flags, const char *shell)
+{
+    GPtrArray *args_array;
+
+    /* Everything in here belongs to the array and goes when it does: the words a
+       command is cut into have nowhere else to be freed. */
+    if ((flags & EXECUTE_AS_SHELL) != 0)
+    {
+        args_array = g_ptr_array_new_with_free_func (g_free);
+        g_ptr_array_add (args_array, g_strdup (shell));
+        g_ptr_array_add (args_array, g_strdup ("-c"));
+    }
+    else if (shell == NULL || *shell == '\0')
+    {
+        args_array = g_ptr_array_new_with_free_func (g_free);
+        g_ptr_array_add (args_array, NULL);
+    }
+    else
+    {
+        args_array = str_tokenize (shell);
+        if (args_array == NULL)
+        {
+            // a command of nothing but blanks is no command at all
+            args_array = g_ptr_array_new_with_free_func (g_free);
+            g_ptr_array_add (args_array, NULL);
+        }
+        else
+            g_ptr_array_set_free_func (args_array, g_free);
+    }
+
+    return args_array;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+mc_pread_stream (mc_pipe_stream_t *ps, const fd_set *fds)
+{
+    size_t buf_len;
+    ssize_t read_len;
+
+    if (!FD_ISSET (ps->fd, fds))
+    {
+        ps->len = MC_PIPE_STREAM_UNREAD;
+        return;
+    }
+
+    buf_len = (size_t) ps->len;
+
+    if (buf_len >= MC_PIPE_BUFSIZE)
+        buf_len = ps->null_term ? MC_PIPE_BUFSIZE - 1 : MC_PIPE_BUFSIZE;
+
+    do
+    {
+        read_len = read (ps->fd, ps->buf, buf_len);
+    }
+    while (read_len < 0 && errno == EINTR);
+
+    if (read_len < 0)
+    {
+        // reading error
+        ps->len = MC_PIPE_ERROR_READ;
+        ps->error = errno;
+    }
+    else if (read_len == 0)
+        // EOF
+        ps->len = MC_PIPE_STREAM_EOF;
+    else
+    {
+        // success
+        ps->len = read_len;
+
+        if (ps->null_term)
+            ps->buf[(size_t) ps->len] = '\0';
+    }
+
+    ps->pos = 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/*** public functions ****************************************************************************/
+
+/* --------------------------------------------------------------------------------------------- */
+/* Since ncurses uses a handler that automatically refreshes the */
+/* screen after a SIGCONT, and we don't want this behavior when */
+/* spawning a child, we save the original handler here */
+
+void
+save_stop_handler (void)
+{
+    my_sigaction (SIGTSTP, NULL, &startup_handler);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Wrapper for _exit() system call.
+ * The _exit() function has gcc's attribute 'noreturn', and this is reason why we can't
+ * mock the call.
+ *
+ * @param status exit code
+ */
+
+void
+/* __attribute__ ((noreturn)) */
+my_exit (int status)
+{
+    _exit (status);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Wrapper for signal() system call.
+ */
+
+sighandler_t
+my_signal (int signum, sighandler_t handler)
+{
+    return signal (signum, handler);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Wrapper for sigaction() system call.
+ */
+
+int
+my_sigaction (int signum, const struct sigaction *act, struct sigaction *oldact)
+{
+    return sigaction (signum, act, oldact);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Wrapper for fork() system call.
+ */
+
+pid_t
+my_fork (void)
+{
+    return fork ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Wrapper for execvp() system call.
+ */
+
+int
+my_execvp (const char *file, char *const argv[])
+{
+    return execvp (file, argv);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Wrapper for g_get_current_dir() library function.
+ */
+
+char *
+my_get_current_dir (void)
+{
+    return g_get_current_dir ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Call external programs.
+ *
+ * @parameter flags   addition conditions for running external programs.
+ * @parameter shell   shell (if flags contain EXECUTE_AS_SHELL), command to run otherwise.
+ *                    Shell (or command) will be found in paths described in PATH variable
+ *                    (if shell parameter doesn't begin from path delimiter)
+ * @parameter command Command for shell (or first parameter for command, if flags contain
+ * EXECUTE_AS_SHELL)
+ * @return 0 if successful, -1 otherwise
+ */
+
+int
+my_system (int flags, const char *shell, const char *command)
+{
+    return my_systeml (flags, shell, command, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Call external programs with various parameters number.
+ *
+ * @parameter flags addition conditions for running external programs.
+ * @parameter shell shell (if flags contain EXECUTE_AS_SHELL), command to run otherwise.
+ *                  Shell (or command) will be found in paths described in PATH variable
+ *                  (if shell parameter doesn't begin from path delimiter)
+ * @parameter ...   Command for shell with addition parameters for shell
+ *                  (or parameters for command, if flags contain EXECUTE_AS_SHELL).
+ *                  Should be NULL terminated.
+ * @return 0 if successful, -1 otherwise
+ */
+
+int
+my_systeml (int flags, const char *shell, ...)
+{
+    GPtrArray *args_array;
+    int status = 0;
+    va_list vargs;
+    char *one_arg;
+
+    args_array = g_ptr_array_new ();
+
+    va_start (vargs, shell);
+    while ((one_arg = va_arg (vargs, char *)) != NULL)
+        g_ptr_array_add (args_array, one_arg);
+    va_end (vargs);
+
+    g_ptr_array_add (args_array, NULL);
+    status = my_systemv_flags (flags, shell, (char *const *) args_array->pdata);
+
+    g_ptr_array_free (args_array, TRUE);
+
+    return status;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Call external programs with array of strings as parameters.
+ *
+ * @parameter command command to run. Command will be found in paths described in PATH variable
+ *                    (if command parameter doesn't begin from path delimiter)
+ * @parameter argv    Array of strings (NULL-terminated) with parameters for command
+ * @return 0 if successful, -1 otherwise
+ */
+
+int
+my_systemv (const char *command, char *const argv[])
+{
+    my_fork_state_t fork_state;
+    int status = 0;
+    my_system_sigactions_t sigactions;
+
+    my_system__save_sigaction_handlers (&sigactions);
+
+    fork_state = my_fork_state ();
+    switch (fork_state)
+    {
+    case FORK_ERROR:
+        status = -1;
+        break;
+    case FORK_CHILD:
+    {
+        my_signal (SIGINT, SIG_DFL);
+        my_signal (SIGQUIT, SIG_DFL);
+        my_signal (SIGTSTP, SIG_DFL);
+        my_signal (SIGCHLD, SIG_DFL);
+
+        my_execvp (command, argv);
+        my_exit (127);  // Exec error
+    }
+        MC_FALLTHROUGH;
+        // no break here, or unreachable-code warning by no returning my_exit()
+    default:
+        status = 0;
+        break;
+    }
+    my_system__restore_sigaction_handlers (&sigactions);
+
+    return status;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Call external programs with flags and with array of strings as parameters.
+ *
+ * @parameter flags   addition conditions for running external programs.
+ * @parameter command shell (if flags contain EXECUTE_AS_SHELL), command to run otherwise.
+ *                    Shell (or command) will be found in paths described in PATH variable
+ *                    (if shell parameter doesn't begin from path delimiter)
+ * @parameter argv    Array of strings (NULL-terminated) with parameters for command
+ * @return 0 if successful, -1 otherwise
+ */
+
+int
+my_systemv_flags (int flags, const char *command, char *const argv[])
+{
+    const char *execute_name;
+    GPtrArray *args_array;
+    int status = 0;
+
+    args_array = my_system_make_arg_array (flags, command);
+
+    execute_name = g_ptr_array_index (args_array, 0);
+
+    for (; argv != NULL && *argv != NULL; argv++)
+        g_ptr_array_add (args_array, g_strdup (*argv));
+
+    g_ptr_array_add (args_array, NULL);
+    status = my_systemv (execute_name, (char *const *) args_array->pdata);
+
+    g_ptr_array_free (args_array, TRUE);
+
+    return status;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Create pipe and run child process.
+ *
+ * @parameter command command line of child process
+ * @parameter read_out do or don't read the stdout of child process
+ * @parameter read_err do or don't read the stderr of child process
+ * @parameter error contains pointer to object to handle error code and message
+ *
+ * @return newly created object of mc_pipe_t class in success, NULL otherwise
+ */
+
+mc_pipe_t *
+mc_popen_argv (const char *const *argv, const char *cwd, gboolean read_out, gboolean read_err,
+               GError **error)
+{
+    mc_pipe_t *p;
+
+    p = g_try_new (mc_pipe_t, 1);
+    if (p == NULL)
+    {
+        mc_replace_error (error, MC_PIPE_ERROR_CREATE_PIPE, "%s",
+                          _ ("Cannot create pipe descriptor"));
+        goto ret_err;
+    }
+
+    p->out.fd = -1;
+    p->err.fd = -1;
+
+    if (argv == NULL || argv[0] == NULL
+        || !g_spawn_async_with_pipes (
+            cwd, (gchar **) argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH, NULL, NULL,
+            &p->child_pid, NULL, read_out ? &p->out.fd : NULL, read_err ? &p->err.fd : NULL, error))
+    {
+        mc_replace_error (error, MC_PIPE_ERROR_CREATE_PIPE_STREAM, "%s",
+                          _ ("Cannot create pipe streams"));
+        goto ret_err;
+    }
+
+    p->out.buf[0] = '\0';
+    p->out.len = MC_PIPE_BUFSIZE;
+    p->out.null_term = FALSE;
+
+    p->err.buf[0] = '\0';
+    p->err.len = MC_PIPE_BUFSIZE;
+    p->err.null_term = FALSE;
+
+    return p;
+
+ret_err:
+    g_free (p);
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+mc_pipe_t *
+mc_popen (const char *command, gboolean read_out, gboolean read_err, GError **error)
+{
+    const char *const argv[] = { "/bin/sh", "-c", command, NULL };
+    mc_pipe_t *pipe;
+
+    pipe = mc_popen_argv (argv, NULL, read_out, read_err, error);
+    return pipe;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Read stdout and stderr of pipe asynchronously.
+ *
+ * @parameter p pipe descriptor
+ *
+ * The lengths of read data contain in p->out.len and p->err.len.
+ *
+ * Before read, p->xxx.len is an input. It defines the number of data to read.
+ * Should not be greater than MC_PIPE_BUFSIZE.
+ *
+ * After read, p->xxx.len is an output and contains the following:
+ *   p->xxx.len > 0: an actual length of read data stored in p->xxx.buf;
+ *   p->xxx.len == MC_PIPE_STREAM_EOF: EOF of stream p->xxx;
+ *   p->xxx.len == MC_PIPE_STREAM_UNREAD: stream p->xxx was not read;
+ *   p->xxx.len == MC_PIPE_ERROR_READ: reading error, and p->xxx.errno is set appropriately.
+ *
+ * @parameter error contains pointer to object to handle error code and message
+ */
+
+void
+mc_pread (mc_pipe_t *p, GError **error)
+{
+    gboolean read_out, read_err;
+    fd_set fds;
+    int maxfd = 0;
+    int res;
+
+    if (error != NULL)
+        *error = NULL;
+
+    read_out = p->out.fd >= 0;
+    read_err = p->err.fd >= 0;
+
+    if (!read_out && !read_err)
+    {
+        p->out.len = MC_PIPE_STREAM_UNREAD;
+        p->err.len = MC_PIPE_STREAM_UNREAD;
+        return;
+    }
+
+    /* A signal leaves the sets with no meaning, so the wait starts again with
+       sets of its own. Reading a stream select() has not named blocks until
+       the child writes to it, and a child that is busy filling the other pipe
+       never gets there. */
+    do
+    {
+        maxfd = 0;
+        FD_ZERO (&fds);
+        if (read_out)
+        {
+            FD_SET (p->out.fd, &fds);
+            maxfd = p->out.fd;
+        }
+
+        if (read_err)
+        {
+            FD_SET (p->err.fd, &fds);
+            maxfd = MAX (maxfd, p->err.fd);
+        }
+
+        // no timeout
+        res = select (maxfd + 1, &fds, NULL, NULL, NULL);
+    }
+    while (res < 0 && errno == EINTR);
+
+    if (res < 0)
+    {
+        mc_propagate_error (
+            error, MC_PIPE_ERROR_READ,
+            _ ("Unexpected error in select() reading data from a child process:\n%s"),
+            unix_error_string (errno));
+        return;
+    }
+
+    if (read_out)
+        mc_pread_stream (&p->out, &fds);
+    else
+        p->out.len = MC_PIPE_STREAM_UNREAD;
+
+    if (read_err)
+        mc_pread_stream (&p->err, &fds);
+    else
+        p->err.len = MC_PIPE_STREAM_UNREAD;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Reads a line from @stream. Reading stops after an EOL or a newline. If a newline is read,
+ * it is appended to the line.
+ *
+ * @stream mc_pipe_stream_t object
+ *
+ * @return newly created GString or NULL in case of EOL;
+ */
+
+GString *
+mc_pstream_get_string (mc_pipe_stream_t *ps)
+{
+    char *s;
+    size_t size, i;
+    gboolean escape = FALSE;
+
+    g_return_val_if_fail (ps != NULL, NULL);
+
+    if (ps->len < 0)
+        return NULL;
+
+    size = ps->len - ps->pos;
+
+    if (size == 0)
+        return NULL;
+
+    s = ps->buf + ps->pos;
+
+    if (s[0] == '\0')
+        return NULL;
+
+    // find '\0' or unescaped '\n'
+    for (i = 0; i < size && !(s[i] == '\0' || (s[i] == '\n' && !escape)); i++)
+        escape = s[i] == '\\' ? !escape : FALSE;
+
+    if (i != size && s[i] == '\n')
+        i++;
+
+    ps->pos += i;
+
+    return g_string_new_len (s, i);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Close pipe, wait for the child and destroy the pipe descriptor.
+ *
+ * @parameter p pipe descriptor
+ * @parameter error contains pointer to object to handle error code and message
+ * @return raw waitpid() status, or -1 on failure
+ */
+
+int
+mc_pclose_status (mc_pipe_t *p, GError **error)
+{
+    int res;
+    int status = -1;
+
+    if (p == NULL)
+    {
+        mc_replace_error (error, MC_PIPE_ERROR_READ, "%s",
+                          _ ("Cannot close pipe descriptor (p == NULL)"));
+        return -1;
+    }
+
+    if (p->out.fd >= 0)
+        res = close (p->out.fd);
+    if (p->err.fd >= 0)
+        res = close (p->err.fd);
+
+    do
+    {
+        res = waitpid (p->child_pid, &status, 0);
+    }
+    while (res < 0 && errno == EINTR);
+
+    if (res < 0)
+        mc_replace_error (error, MC_PIPE_ERROR_READ, _ ("Unexpected error in waitpid():\n%s"),
+                          unix_error_string (errno));
+
+    g_free (p);
+    return res < 0 ? -1 : status;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+mc_pclose (mc_pipe_t *p, GError **error)
+{
+    (void) mc_pclose_status (p, error);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/**
+ * Perform tilde expansion if possible.
+ *
+ * @param directory pointer to the path
+ *
+ * @return newly allocated string, even if it's unchanged.
+ */
+
+char *
+tilde_expand (const char *directory)
+{
+    struct passwd *passwd;
+    const char *p, *q;
+
+    if (*directory != '~')
+        return g_strdup (directory);
+
+    p = directory + 1;
+
+    // d = "~" or d = "~/"
+    if (*p == '\0' || IS_PATH_SEP (*p))
+    {
+        passwd = getpwuid (geteuid ());
+        q = IS_PATH_SEP (*p) ? p + 1 : "";
+    }
+    else
+    {
+        q = strchr (p, PATH_SEP);
+        if (q == NULL)
+            passwd = getpwnam (p);
+        else
+        {
+            char *name;
+
+            name = g_strndup (p, q - p);
+            passwd = getpwnam (name);
+            q++;
+            g_free (name);
+        }
+    }
+
+    // If we can't figure the user name, leave tilde unexpanded
+    if (passwd == NULL)
+        return g_strdup (directory);
+
+    return g_strconcat (passwd->pw_dir, PATH_SEP_STR, q, (char *) NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Canonicalize path.
+ *
+ * @param path path to file
+ * @param flags canonicalization flags
+ *
+ * All modifications of @path are made in place.
+ * Well formed UNC paths are modified only in the local part.
+ */
+
+void
+canonicalize_pathname_custom (char *path, canon_path_flags_t flags)
+{
+    char *p, *s;
+    char *lpath = path;  // path without leading UNC part
+    const size_t url_delim_len = strlen (VFS_PATH_URL_DELIMITER);
+
+    // Detect and preserve UNC paths: //server/...
+    if ((flags & CANON_PATH_GUARDUNC) != 0 && IS_PATH_SEP (path[0]) && IS_PATH_SEP (path[1]))
+    {
+        for (p = path + 2; p[0] != '\0' && !IS_PATH_SEP (p[0]); p++)
+            ;
+        if (IS_PATH_SEP (p[0]) && p > path + 2)
+            lpath = p;
+    }
+
+    if (lpath[0] == '\0' || lpath[1] == '\0')
+        return;
+
+    if ((flags & CANON_PATH_JOINSLASHES) != 0)
+    {
+        // Collapse multiple slashes
+        for (p = lpath; *p != '\0'; p++)
+            if (IS_PATH_SEP (p[0]) && IS_PATH_SEP (p[1]) && (p == lpath || *(p - 1) != ':'))
+            {
+                s = p + 1;
+                while (IS_PATH_SEP (*(++s)))
+                    ;
+                str_move (p + 1, s);
+            }
+
+        // Collapse "/./" -> "/"
+        for (p = lpath; *p != '\0';)
+            if (IS_PATH_SEP (p[0]) && p[1] == '.' && IS_PATH_SEP (p[2]))
+                str_move (p, p + 2);
+            else
+                p++;
+    }
+
+    if ((flags & CANON_PATH_REMSLASHDOTS) != 0)
+    {
+        size_t len;
+
+        // Remove trailing slashes
+        for (p = lpath + strlen (lpath) - 1; p > lpath && IS_PATH_SEP (*p); p--)
+        {
+            if (p >= lpath + url_delim_len - 1
+                && strncmp (p - url_delim_len + 1, VFS_PATH_URL_DELIMITER, url_delim_len) == 0)
+                break;
+            *p = '\0';
+        }
+
+        // Remove leading "./"
+        if (lpath[0] == '.' && IS_PATH_SEP (lpath[1]))
+        {
+            if (lpath[2] == '\0')
+            {
+                lpath[1] = '\0';
+                return;
+            }
+
+            str_move (lpath, lpath + 2);
+        }
+
+        // Remove trailing "/" or "/."
+        len = strlen (lpath);
+        if (len < 2)
+            return;
+
+        if (IS_PATH_SEP (lpath[len - 1])
+            && (len < url_delim_len
+                || strncmp (lpath + len - url_delim_len, VFS_PATH_URL_DELIMITER, url_delim_len)
+                    != 0))
+            lpath[len - 1] = '\0';
+        else if (lpath[len - 1] == '.' && IS_PATH_SEP (lpath[len - 2]))
+        {
+            if (len == 2)
+            {
+                lpath[1] = '\0';
+                return;
+            }
+
+            lpath[len - 2] = '\0';
+        }
+    }
+
+    // Collapse "/.." with the previous part of path
+    if ((flags & CANON_PATH_REMDOUBLEDOTS) != 0)
+    {
+        const size_t enc_prefix_len = strlen (VFS_ENCODING_PREFIX);
+
+        for (p = lpath; p[0] != '\0' && p[1] != '\0' && p[2] != '\0';)
+        {
+            if (!IS_PATH_SEP (p[0]) || p[1] != '.' || p[2] != '.'
+                || (!IS_PATH_SEP (p[3]) && p[3] != '\0'))
+            {
+                p++;
+                continue;
+            }
+
+            // search for the previous token
+            s = p - 1;
+            if (s >= lpath + url_delim_len - 2
+                && strncmp (s - url_delim_len + 2, VFS_PATH_URL_DELIMITER, url_delim_len) == 0)
+            {
+                s -= (url_delim_len - 2);
+                while (s >= lpath && !IS_PATH_SEP (*s--))
+                    ;
+            }
+
+            while (s >= lpath)
+            {
+                if (s - url_delim_len > lpath
+                    && strncmp (s - url_delim_len, VFS_PATH_URL_DELIMITER, url_delim_len) == 0)
+                {
+                    char *vfs_prefix = s - url_delim_len;
+                    vfs_class *vclass;
+
+                    while (vfs_prefix > lpath && !IS_PATH_SEP (*--vfs_prefix))
+                        ;
+                    if (IS_PATH_SEP (*vfs_prefix))
+                        vfs_prefix++;
+                    *(s - url_delim_len) = '\0';
+
+                    vclass = vfs_prefix_to_class (vfs_prefix);
+                    *(s - url_delim_len) = *VFS_PATH_URL_DELIMITER;
+
+                    if (vclass != NULL && (vclass->flags & VFSF_REMOTE) != 0)
+                    {
+                        s = vfs_prefix;
+                        continue;
+                    }
+                }
+
+                if (IS_PATH_SEP (*s))
+                    break;
+
+                s--;
+            }
+
+            s++;
+
+            // If the previous token is "..", we cannot collapse it
+            if (s[0] == '.' && s[1] == '.' && s + 2 == p)
+            {
+                p += 3;
+                continue;
+            }
+
+            if (p[3] != '\0')
+            {
+                if (s == lpath && IS_PATH_SEP (*s))
+                {
+                    // "/../foo" -> "/foo"
+                    str_move (s + 1, p + 4);
+                }
+                else
+                {
+                    // "token/../foo" -> "foo"
+                    if (strncmp (s, VFS_ENCODING_PREFIX, enc_prefix_len) == 0)
+                    {
+                        char *enc;
+
+                        enc = vfs_get_encoding (s, -1);
+
+                        if (is_supported_encoding (enc))
+                            // special case: remove encoding
+                            str_move (s, p + 1);
+                        else
+                            str_move (s, p + 4);
+
+                        g_free (enc);
+                    }
+                    else
+                        str_move (s, p + 4);
+                }
+
+                p = s > lpath ? s - 1 : s;
+                continue;
+            }
+
+            // trailing ".."
+            if (s == lpath)
+            {
+                // "token/.." -> "."
+                if (!IS_PATH_SEP (lpath[0]))
+                    lpath[0] = '.';
+                lpath[1] = '\0';
+            }
+            else
+            {
+                // "foo/token/.." -> "foo"
+                if (s == lpath + 1)
+                    s[0] = '\0';
+                else if (strncmp (s, VFS_ENCODING_PREFIX, enc_prefix_len) == 0)
+                {
+                    char *enc;
+                    gboolean ok;
+
+                    enc = vfs_get_encoding (s, -1);
+                    ok = is_supported_encoding (enc);
+                    g_free (enc);
+
+                    if (!ok)
+                        goto last;
+
+                    // special case: remove encoding
+                    s[0] = '.';
+                    s[1] = '.';
+                    s[2] = '\0';
+
+                    // search for the previous token
+                    // IS_PATH_SEP (s[-1])
+                    for (p = s - 1; p >= lpath && !IS_PATH_SEP (*p); p--)
+                        ;
+
+                    if (p >= lpath)
+                        continue;
+                }
+                else
+                {
+                last:
+                    if (s >= lpath + url_delim_len
+                        && strncmp (s - url_delim_len, VFS_PATH_URL_DELIMITER, url_delim_len) == 0)
+                        *s = '\0';
+                    else
+                        s[-1] = '\0';
+                }
+            }
+
+            break;
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+mc_realpath (const char *path, char *resolved_path)
+{
+    const char *p = path;
+    gboolean absolute_path = FALSE;
+
+    if (IS_PATH_SEP (*p))
+    {
+        absolute_path = TRUE;
+        p++;
+    }
+
+    // ignore encoding: skip "#enc:"
+    if (g_str_has_prefix (p, VFS_ENCODING_PREFIX))
+    {
+        p += strlen (VFS_ENCODING_PREFIX);
+        p = strchr (p, PATH_SEP);
+        if (p != NULL)
+        {
+            if (!absolute_path && p[1] != '\0')
+                p++;
+
+            path = p;
+        }
+    }
+
+#ifdef HAVE_REALPATH
+    return realpath (path, resolved_path);
+#else
+    {
+        char copy_path[PATH_MAX];
+        char got_path[PATH_MAX];
+        char *new_path = got_path;
+        char *max_path;
+#ifdef S_IFLNK
+        char link_path[PATH_MAX];
+        int readlinks = 0;
+        int n;
+#endif
+
+        // Make a copy of the source path since we may need to modify it.
+        if (strlen (path) >= PATH_MAX - 2)
+        {
+            errno = ENAMETOOLONG;
+            return NULL;
+        }
+
+        strcpy (copy_path, path);
+        path = copy_path;
+        max_path = copy_path + PATH_MAX - 2;
+        // If it's a relative pathname use getwd for starters.
+        if (!IS_PATH_SEP (*path))
+        {
+            new_path = my_get_current_dir ();
+            if (new_path == NULL)
+                strcpy (got_path, "");
+            else
+            {
+                g_snprintf (got_path, sizeof (got_path), "%s", new_path);
+                g_free (new_path);
+                new_path = got_path;
+            }
+
+            new_path += strlen (got_path);
+            if (!IS_PATH_SEP (new_path[-1]))
+                *new_path++ = PATH_SEP;
+        }
+        else
+        {
+            *new_path++ = PATH_SEP;
+            path++;
+        }
+        // Expand each slash-separated pathname component.
+        while (*path != '\0')
+        {
+            // Ignore stray "/"
+            if (IS_PATH_SEP (*path))
+            {
+                path++;
+                continue;
+            }
+            if (*path == '.')
+            {
+                // Ignore ".".
+                if (path[1] == '\0' || IS_PATH_SEP (path[1]))
+                {
+                    path++;
+                    continue;
+                }
+                if (path[1] == '.')
+                {
+                    if (path[2] == '\0' || IS_PATH_SEP (path[2]))
+                    {
+                        path += 2;
+                        // Ignore ".." at root.
+                        if (new_path == got_path + 1)
+                            continue;
+                        // Handle ".." by backing up.
+                        while (!IS_PATH_SEP ((--new_path)[-1]))
+                            ;
+                        continue;
+                    }
+                }
+            }
+            // Safely copy the next pathname component.
+            while (*path != '\0' && !IS_PATH_SEP (*path))
+            {
+                if (path > max_path)
+                {
+                    errno = ENAMETOOLONG;
+                    return NULL;
+                }
+                *new_path++ = *path++;
+            }
+#ifdef S_IFLNK
+            // Protect against infinite loops.
+            if (readlinks++ > MAXSYMLINKS)
+            {
+                errno = ELOOP;
+                return NULL;
+            }
+            // See if latest pathname component is a symlink.
+            *new_path = '\0';
+            n = readlink (got_path, link_path, PATH_MAX - 1);
+            if (n < 0)
+            {
+                // EINVAL means the file exists but isn't a symlink.
+                if (errno != EINVAL)
+                {
+                    // Make sure it's null terminated.
+                    *new_path = '\0';
+                    strcpy (resolved_path, got_path);
+                    return NULL;
+                }
+            }
+            else
+            {
+                // Note: readlink doesn't add the null byte.
+                link_path[n] = '\0';
+                if (IS_PATH_SEP (*link_path))
+                    // Start over for an absolute symlink.
+                    new_path = got_path;
+                else
+                    // Otherwise back up over this component.
+                    while (!IS_PATH_SEP (*(--new_path)))
+                        ;
+                // Safe sex check.
+                if (strlen (path) + n >= PATH_MAX - 2)
+                {
+                    errno = ENAMETOOLONG;
+                    return NULL;
+                }
+                // Insert symlink contents into path.
+                strcat (link_path, path);
+                strcpy (copy_path, link_path);
+                path = copy_path;
+            }
+#endif
+            *new_path++ = PATH_SEP;
+        }
+        // Delete trailing slash but don't whomp a lone slash.
+        if (new_path != got_path + 1 && IS_PATH_SEP (new_path[-1]))
+            new_path--;
+        // Make sure it's null terminated.
+        *new_path = '\0';
+        strcpy (resolved_path, got_path);
+        return resolved_path;
+    }
+#endif
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Return the index of the permissions triplet
+ *
+ */
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Build filename from arguments.
+ * Like to g_build_filename(), but respect VFS_PATH_URL_DELIMITER
+ */
+
+char *
+mc_build_filenamev (const char *first_element, va_list args)
+{
+    gboolean absolute;
+    const char *element = first_element;
+    GString *path;
+    char *ret;
+
+    if (first_element == NULL)
+        return NULL;
+
+    absolute = IS_PATH_SEP (*first_element);
+
+    path = g_string_new (absolute ? PATH_SEP_STR : "");
+
+    do
+    {
+        if (*element == '\0')
+            element = va_arg (args, char *);
+        else
+        {
+            char *tmp_element;
+            const char *start;
+
+            tmp_element = g_strdup (element);
+
+            element = va_arg (args, char *);
+
+            canonicalize_pathname (tmp_element);
+            start = IS_PATH_SEP (tmp_element[0]) ? tmp_element + 1 : tmp_element;
+
+            g_string_append (path, start);
+            if (!IS_PATH_SEP (path->str[path->len - 1]) && element != NULL)
+                g_string_append_c (path, PATH_SEP);
+
+            g_free (tmp_element);
+        }
+    }
+    while (element != NULL);
+
+    ret = g_string_free (path, FALSE);
+    canonicalize_pathname (ret);
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Build filename from arguments.
+ * Like to g_build_filename(), but respect VFS_PATH_URL_DELIMITER
+ */
+
+char *
+mc_build_filename (const char *first_element, ...)
+{
+    va_list args;
+    char *ret;
+
+    if (first_element == NULL)
+        return NULL;
+
+    va_start (args, first_element);
+    ret = mc_build_filenamev (first_element, args);
+    va_end (args);
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */

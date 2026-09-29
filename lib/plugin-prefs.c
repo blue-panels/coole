@@ -1,0 +1,262 @@
+/*
+   Per-user enable/disable state for editor plugins and Lua scripts.
+
+   Copyright (C) 2025-2026
+   Free Software Foundation, Inc.
+
+   Written by:
+   Ilia Maslakov <il.smind@gmail.com>, 2026
+
+   This file is part of the Midnight Commander.
+
+   The Midnight Commander is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   The Midnight Commander is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include <config.h>
+
+#include "lib/global.h"
+#include "lib/mcconfig.h"
+#include "lib/tty/key.h"
+
+#include "plugin-prefs.h"
+
+/*** file scope macro definitions ****************************************************************/
+
+#define PLUGINS_PREFS_FILE "plugins.ini"
+#define DISABLED_GROUP     "DisabledPlugins"
+
+/*** file scope variables ************************************************************************/
+
+static mc_config_t *prefs_config = NULL;
+
+/*** file scope functions ************************************************************************/
+
+static char *
+prefs_path (void)
+{
+    const char *base;
+
+    base = mc_config_get_path ();
+    if (base == NULL)
+        return NULL;
+    return g_build_filename (base, PLUGINS_PREFS_FILE, (char *) NULL);
+}
+
+static mc_config_t *
+prefs_get (void)
+{
+    /* Plugins may be registered before VFS/config runtime is initialised
+       (e.g. in unit tests that don't set up VFS).  mc_config_init()
+       depends on that runtime, and mc_global.main_config is set in
+       setup.c right after vfs_init(). */
+    if (mc_global.main_config == NULL)
+        return NULL;
+
+    if (prefs_config == NULL)
+    {
+        char *path = prefs_path ();
+        if (path == NULL)
+            return NULL;
+        prefs_config = mc_config_init (path, FALSE);
+        g_free (path);
+    }
+    return prefs_config;
+}
+
+static const char *
+kind_prefix (mc_plugin_kind_t kind)
+{
+    switch (kind)
+    {
+    case MC_PLUGIN_KIND_EDITOR:
+        return "editor/";
+    case MC_PLUGIN_KIND_LUA:
+        return "lua/";
+    default:
+        return "?/";
+    }
+}
+
+static char *
+kind_key (mc_plugin_kind_t kind, const char *plugin_name)
+{
+    return g_strconcat (kind_prefix (kind), plugin_name, (char *) NULL);
+}
+
+/*** public functions ****************************************************************************/
+
+gboolean
+mc_plugin_prefs_is_disabled (mc_plugin_kind_t kind, const char *plugin_name)
+{
+    mc_config_t *cfg;
+    char *key;
+    gboolean result;
+
+    if (plugin_name == NULL || *plugin_name == '\0')
+        return FALSE;
+
+    cfg = prefs_get ();
+    if (cfg == NULL)
+        return FALSE;
+
+    key = kind_key (kind, plugin_name);
+    result = mc_config_has_param (cfg, DISABLED_GROUP, key);
+    g_free (key);
+    return result;
+}
+
+gchar **
+mc_plugin_prefs_list_disabled (mc_plugin_kind_t kind)
+{
+    mc_config_t *cfg;
+    gchar **all;
+    GPtrArray *out;
+    const char *prefix;
+    gsize prefix_len;
+    gsize i, len = 0;
+
+    cfg = prefs_get ();
+    if (cfg == NULL)
+        return NULL;
+
+    all = mc_config_get_keys (cfg, DISABLED_GROUP, &len);
+    prefix = kind_prefix (kind);
+    prefix_len = strlen (prefix);
+
+    out = g_ptr_array_new ();
+    for (i = 0; i < len; i++)
+        if (strncmp (all[i], prefix, prefix_len) == 0)
+            g_ptr_array_add (out, g_strdup (all[i] + prefix_len));
+    g_ptr_array_add (out, NULL);
+    g_strfreev (all);
+
+    return (gchar **) g_ptr_array_free (out, FALSE);
+}
+
+int
+mc_plugin_prefs_parse_hotkey (const char *value, const char *fallback_text, int fallback_key,
+                              char **label)
+{
+    int key;
+
+    if (label != NULL)
+        *label = NULL;
+
+    if (value == NULL || value[0] == '\0')
+        value = fallback_text;
+
+    if (value == NULL || value[0] == '\0')
+        return fallback_key;
+
+    if (g_ascii_strcasecmp (value, "none") == 0)
+        return 0;
+
+    key = tty_keyname_to_keycode (value, label);
+    if (key != 0)
+        return tty_normalize_keycode (key);
+
+    // unrecognized key name: fall back to the builtin default (code and label)
+    if (fallback_text != NULL && g_strcmp0 (fallback_text, value) != 0)
+    {
+        key = tty_keyname_to_keycode (fallback_text, label);
+        if (key != 0)
+            return tty_normalize_keycode (key);
+    }
+
+    return fallback_key;
+}
+
+char *
+mc_plugin_prefs_read_config_string (const char *path, const char *group, const char *key)
+{
+    mc_config_t *cfg;
+    char *value;
+
+    if (path == NULL || group == NULL || key == NULL)
+        return NULL;
+
+    if (!g_file_test (path, G_FILE_TEST_IS_REGULAR))
+        return NULL;
+
+    cfg = mc_config_init (path, TRUE);
+    if (cfg == NULL)
+        return NULL;
+
+    value = mc_config_get_string (cfg, group, key, NULL);
+    mc_config_deinit (cfg);
+
+    if (value == NULL)
+        return NULL;
+
+    g_strstrip (value);
+    if (value[0] == '\0')
+    {
+        g_free (value);
+        return NULL;
+    }
+
+    return value;
+}
+
+int
+mc_plugin_prefs_load_hotkey (const char *basename, const char *group, const char *key,
+                             const char *fallback_text, int fallback_key, char **label)
+{
+    char *path;
+    char *value;
+    int hotkey;
+
+    path = g_build_filename (mc_config_get_path (), basename, (char *) NULL);
+    value = mc_plugin_prefs_read_config_string (path, group, key);
+    g_free (path);
+
+    if (value == NULL && mc_global.sysconfig_dir != NULL)
+    {
+        path = g_build_filename (mc_global.sysconfig_dir, basename, (char *) NULL);
+        value = mc_plugin_prefs_read_config_string (path, group, key);
+        g_free (path);
+    }
+
+    hotkey = mc_plugin_prefs_parse_hotkey (value, fallback_text, fallback_key, label);
+    g_free (value);
+    return hotkey;
+}
+
+void
+mc_plugin_prefs_set_disabled (mc_plugin_kind_t kind, const char *plugin_name, gboolean disabled)
+{
+    mc_config_t *cfg;
+    char *path, *key;
+
+    if (plugin_name == NULL || *plugin_name == '\0')
+        return;
+
+    cfg = prefs_get ();
+    if (cfg == NULL)
+        return;
+
+    key = kind_key (kind, plugin_name);
+    if (disabled)
+        mc_config_set_string (cfg, DISABLED_GROUP, key, "true");
+    else
+        mc_config_del_key (cfg, DISABLED_GROUP, key);
+    g_free (key);
+
+    path = prefs_path ();
+    if (path != NULL)
+    {
+        mc_config_save_to_file (cfg, path, NULL);
+        g_free (path);
+    }
+}

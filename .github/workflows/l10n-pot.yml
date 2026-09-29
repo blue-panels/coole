@@ -1,0 +1,83 @@
+name: l10n-pot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install gettext
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gettext
+
+      - name: Rebuild the template
+        id: pot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # po/POTFILES.in: every source file with a translatable string.
+          xgettext --keyword=_ --keyword=N_ --keyword=Q_ --output=- \
+            $(git ls-files 'lib/*.[ch]' 'src/*.[ch]') \
+            | sed -ne '/^#:/{s/#://;s/:[0-9]*/\n/g;s/ //g;p;}' \
+            | grep -v '^$' | sort | uniq > po/POTFILES.in
+
+          # What "meson compile coole-pot" does, without needing a configured
+          # build tree.
+          xgettext --default-domain=coole --directory=. \
+            --add-comments=TRANSLATORS: --keyword=_ --keyword=N_ --keyword=Q_ \
+            --files-from=po/POTFILES.in \
+            --copyright-holder='Free Software Foundation, Inc.' \
+            --package-name='coole' \
+            --package-version="$(./version.sh .)" \
+            --msgid-bugs-address='https://github.com/blue-panels/coole/issues' \
+            --output=po/coole.pot.new
+
+          # Neither the creation date nor the version string is a change:
+          # the version carries the commit count and moves on every push.
+          strip() {
+            grep -v -e '^"POT-Creation-Date:' -e '^"Project-Id-Version:' "$1"
+          }
+          if strip po/coole.pot > old.pot && strip po/coole.pot.new > new.pot \
+             && cmp -s old.pot new.pot && git diff --quiet -- po/POTFILES.in; then
+            echo "The template is up to date." >> "$GITHUB_STEP_SUMMARY"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          mv po/coole.pot.new po/coole.pot
+          rm -f old.pot new.pot
+          git switch -C l10n/pot
+          git add po/coole.pot po/POTFILES.in
+          git commit -m "po: update coole.pot"
+          git push --force origin l10n/pot
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "Strings in the template: $(grep -c '^msgid ' po/coole.pot)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Point at the branch
+        if: steps.pot.outputs.changed == 'true'
+        run: |
+          title='po: update coole.pot'
+          body=$'The gettext template no longer matches the sources.\n\nOnce this lands in master, Weblate pulls the template over the webhook and spreads the new strings over the po files.'
+          url="https://github.com/${GITHUB_REPOSITORY}/compare/master...l10n/pot"
+          url="${url}?expand=1&labels=Chore,infra,Docs"
+          url="${url}&title=$(jq -rn --arg s "$title" '$s|@uri')"
+          url="${url}&body=$(jq -rn --arg s "$body" '$s|@uri')"
+          {
+            echo
+            echo "Open the pull request, the title, text and label are filled in:"
+            echo "$url"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,2852 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Ivar Smolin <okul@linux.ee>, 2021
+# Kristjan Räts <kristjanrats@gmail.com>, 2013-2016,2018-2019,2024-2026
+# Priit Jõerüüt <transifex@joeruut.com>, 2020-2021,2023-2025
+# vaba <vaba@riseup.net>, 2020
+# vaba <vaba@riseup.net>, 2020
+# Yury V. Zaytsev <yury@shurup.com>, 2025
+# Priit Jõerüüt <jrtcdbrg@noreply.codeberg.org>, 2026.
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Estonian <https://translate.codeberg.org/projects/mc6/mc6/et/"
+">\n"
+"Language: et\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr "Tõlkimata"
+
+msgid "Warning: cannot load codepages list"
+msgstr "Hoiatus: kooditabelide laadimine nurjus"
+
+msgid "7-bit ASCII"
+msgstr "7-bitine ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Ei saa tõlkida keelest %s keelde %s"
+
+msgid "Event system already initialized"
+msgstr "Sündmuste süsteem on juba lähtestatud"
+
+msgid "Failed to initialize event system"
+msgstr "Sündmuste süsteemi lähtestamine nurjus"
+
+msgid "Event system not initialized"
+msgstr "Sündmuste süsteem ei ole lähtestatud"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Kontrolli sisendandmeid! Mõned parameetrid on NULLid!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Nurjus grupi \"%s\" loomine sündmustele!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Sündmust \"%s\" ei õnnestunud luua!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr "Autoriõigused (C) 1996-%zu the Free Software Foundation"
+
+msgid "Half page up"
+msgstr "Pool lehte üles"
+
+msgid "Half page down"
+msgstr "Pool lehte alla"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "&Lülita täisekraan"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "Võ&rdle faile"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Kustuta"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "&Kasutaja määratud:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "Kasutaja menüü"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Otsing lõpetatud"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Asenda"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Terminali suvandid"
+
+msgid "Edit file"
+msgstr "Muuda faili"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Muuda faili"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&Kõik märgistikud"
+
+#, fuzzy
+msgid "Command history"
+msgstr "Käskude a&jalugu"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "Salvesta &kui..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Mine reale"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "&Värskenda kuva"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "Seaded salvestati faili %s"
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "&Värskenda kuva"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Eelmine"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Lisa fail"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Eelmine"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "Lülita &rea olek"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Numbristiku Del"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Numbristiku Del"
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "Lõika f&aili"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "Kopeeri &faili"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "A&seta failist"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "&Valikus"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Vali"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Vali"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Vali g&rupp"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Vali"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Vali võrdlusmeetod:"
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "Lülita &rea olek"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Vali keel"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "Järje&stusviis..."
+
+#, fuzzy
+msgid "General options"
+msgstr "Paneeli suvandid"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Klahvide õppimine"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "&Järgmine järjehoidja"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "&Leia deklaratsioon"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Välimus"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "&Salvesta häälestus"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Eelmine"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Vabad kirjed:"
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Eelmine"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Tühista valik"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Vali g&rupp"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Vali keel"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Sulge fail"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Laiendite faili muutmine"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Vali"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Vali keel"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Vali"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "&Valikus"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Salvesta plokk"
+
+msgid "Insert file"
+msgstr "Lisa fail"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "&Lülita lisa/ülek"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "Sisesta &kuupäev/kellaaeg"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Kustutatakse"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "fail1 fail2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "Käskude a&jalugu"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "&Vorminda lõik"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Vasak nurksulg"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Korda viimaseid käske"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "Õ&igekirja kontroll"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "Õ&igekirja kontroll"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Vali keel"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "&Tühjenda kohaviidad"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "&Järgmine järjehoidja"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "&Eelmine järjehoidja"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Otsi kõikjalt"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "Lülita &rea olek"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Faili muudatused unustati"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Vali võrdlusmeetod:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Vali võrdlusmeetod:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Vali võrdlusmeetod:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Vali g&rupp"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Vali g&rupp"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "Tü&hista grupi valik"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "Tü&hista grupi valik"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "&Valikus"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "Tü&hista grupi valik"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "&Vorminda lõik"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "&Nähtavad lõputühikud"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Lülita &süntaksi esiletõst"
+
+msgid "Choose syntax highlighting"
+msgstr "Valsi süntaksi esiletoomine"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "&Lülita parem veeris sisse/välja"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Paneeli suvandid"
+
+#, fuzzy
+msgid "About editor"
+msgstr "Sisseehitatud tekstitoimetiga"
+
+#, fuzzy
+msgid "Execute script"
+msgstr "Käivitatavad &esimestena"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "Suu&ruse muutmine"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "&Lülita täisekraan"
+
+#, fuzzy
+msgid "Window list"
+msgstr "&Aken"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Eelmine"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Fail \"%s\" on muutmiseks juba avatud.\n"
+"Kasutaja: %s\n"
+"Protsess: %d"
+
+msgid "File locked"
+msgstr "Fail on lukustatud"
+
+msgid "&Grab lock"
+msgstr "&Haara lukk"
+
+msgid "&Ignore lock"
+msgstr "&Eira lukku"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "%s kausta loomine ei õnnestunud"
+
+msgid "FATAL: not a directory:"
+msgstr "Viga: see pole kaust:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Väärtus ei ole oodatud vahemikus (peab olema bait vahemikus 0x00 <= x <= "
+"0xFF, 16-süsteemis)"
+
+msgid "Invalid character"
+msgstr "Vigane märk"
+
+msgid "Unmatched quotes character"
+msgstr "Paariliseta jutumärk"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"16-numbri mustri viga kohal %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Otsitavat stringi ei leitud"
+
+msgid "Not implemented yet"
+msgstr "Veel teostamata"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Asendatavate sõnede arv erineb leitud sõnede arvust"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Vigane sõnede arv %d"
+
+msgid "Regular expression error"
+msgstr "Regulaaravaldise viga"
+
+msgid "No&rmal"
+msgstr "&Harilik"
+
+msgid "Re&gular expression"
+msgstr "&Regulaaravaldis"
+
+msgid "He&xadecimal"
+msgstr "Kuueteistkümnend"
+
+msgid "Wil&dcard search"
+msgstr "&Metamärkidega otsing"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Naha '%s' parsimine nurjus.\n"
+"Laadisime vaikimisi naha"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Nahka '%s' ei saa tõeliste värvide toega kasutada:\n"
+"%s\n"
+"Laadisime vaikimisi naha"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Nahka '%s' ei saa 256 värvi toega kasutada:\n"
+"%s\n"
+"Laadisime vaikimisi naha"
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Naha '%s' laadimine nurjus.\n"
+"Laadisime vaikimisi naha"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+"\n"
+"Kui su terminal on 256 värvi  toega, siis pead vastavalt väärtustama\n"
+"keskkonnamuutuja TERM, näiteks *-256color või *-direct256. Käsuga\n"
+"'toe -a' näed kõiki oma süsteemis tuntud terminale.\n"
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+"Täisvärvide kasutamiseks on vaja teegi ncurses versiooni 6.1\n"
+"(või uuem), mis toetab mitmebaidiseid sümboleid ja millel on\n"
+"vähemalt ABI 6 tugi. Palun värskenda oma süsteemi.\n"
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+"\n"
+"Kui su terminal on 256 värvi toega, siis pead vastavalt väärtustama\n"
+"keskkonnamuutuja TERM, näiteks *-direct256, *-direct16 või *-direct.\n"
+"Käsuga 'toe -a' näed kõiki oma süsteemis tuntud terminale.\n"
+
+msgid "True color not supported in this slang version."
+msgstr "Tõelised värvid ei ole teegi slang selle versiooniga toetatud."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+"\n"
+"Kui su terminal on 256 värvi toega, siis pead vastavalt väärtustama\n"
+"keskkonnamuutuja TERM, näiteks *-direct256, *-direct16 või *-direct.\n"
+"Käsuga 'toe -a' näed kõiki oma süsteemis tuntud terminale.\n"
+"Alternatiivina võid määrata COLORTERM=truecolor.\n"
+
+msgid "Escape"
+msgstr "Paoklahv"
+
+msgid "Function key 1"
+msgstr "Klahv F1"
+
+msgid "Function key 2"
+msgstr "Klahv F2"
+
+msgid "Function key 3"
+msgstr "Klahv F3"
+
+msgid "Function key 4"
+msgstr "Klahv F4"
+
+msgid "Function key 5"
+msgstr "Klahv F5"
+
+msgid "Function key 6"
+msgstr "Klahv F6"
+
+msgid "Function key 7"
+msgstr "Klahv F7"
+
+msgid "Function key 8"
+msgstr "Klahv F8"
+
+msgid "Function key 9"
+msgstr "Klahv F9"
+
+msgid "Function key 10"
+msgstr "Klahv F10"
+
+msgid "Function key 11"
+msgstr "Klahv F11"
+
+msgid "Function key 12"
+msgstr "Klahv F12"
+
+msgid "Function key 13"
+msgstr "Klahv F13"
+
+msgid "Function key 14"
+msgstr "Klahv F14"
+
+msgid "Function key 15"
+msgstr "Klahv F15"
+
+msgid "Function key 16"
+msgstr "Klahv F16"
+
+msgid "Function key 17"
+msgstr "Klahv F17"
+
+msgid "Function key 18"
+msgstr "Klahv F18"
+
+msgid "Function key 19"
+msgstr "Klahv F19"
+
+msgid "Function key 20"
+msgstr "Klahv F20"
+
+msgid "Completion/M-tab"
+msgstr "Lõpetamine/M-Tab"
+
+msgid "BackTab/S-tab"
+msgstr "TagasiTab/S-tab"
+
+msgid "Backspace"
+msgstr "Tagasisamm"
+
+msgid "Up arrow"
+msgstr "Klahv nool üles"
+
+msgid "Down arrow"
+msgstr "Klahv nool alla"
+
+msgid "Left arrow"
+msgstr "Klahv nool vasakule"
+
+msgid "Right arrow"
+msgstr "Klahv nool paremale"
+
+msgid "Insert"
+msgstr "Klahv Insert"
+
+msgid "Home"
+msgstr "Klahv Home"
+
+msgid "End key"
+msgstr "Klahv End"
+
+msgid "Page Up"
+msgstr "Klahv Page Up"
+
+msgid "Page Down"
+msgstr "Klahv Page Down"
+
+msgid "/ on keypad"
+msgstr "Numbristiku /"
+
+msgid "* on keypad"
+msgstr "Numbristiku *"
+
+msgid "- on keypad"
+msgstr "Numbristiku -"
+
+msgid "+ on keypad"
+msgstr "Numbristiku +"
+
+msgid "Left arrow keypad"
+msgstr "Numbristiku nool vasakule"
+
+msgid "Right arrow keypad"
+msgstr "Numbristiku nool paremale"
+
+msgid "Up arrow keypad"
+msgstr "Numbristiku nool üles"
+
+msgid "Down arrow keypad"
+msgstr "Numbristiku nool alla"
+
+msgid "Home on keypad"
+msgstr "Numbristiku Home"
+
+msgid "End on keypad"
+msgstr "Numbristiku End"
+
+msgid "Page Down keypad"
+msgstr "Numbristiku PgDn"
+
+msgid "Page Up keypad"
+msgstr "Numbristiku PgUp"
+
+msgid "Insert on keypad"
+msgstr "Numbristiku Ins"
+
+msgid "Delete on keypad"
+msgstr "Numbristiku Del"
+
+msgid "Enter on keypad"
+msgstr "Numbristiku Enter"
+
+msgid "Function key 21"
+msgstr "Klahv F21"
+
+msgid "Function key 22"
+msgstr "Klahv F22"
+
+msgid "Function key 23"
+msgstr "Klahv F23"
+
+msgid "Function key 24"
+msgstr "Klahv F24"
+
+msgid "A1 key"
+msgstr "Klahv A1"
+
+msgid "C1 key"
+msgstr "Klahv C1"
+
+msgid "Asterisk"
+msgstr "Tärn *"
+
+msgid "Minus"
+msgstr "Miinus -"
+
+msgid "Plus"
+msgstr "Pluss +"
+
+msgid "Dot"
+msgstr "Punkt ."
+
+msgid "Less than"
+msgstr "Väiksem kui <"
+
+msgid "Great than"
+msgstr "Suurem kui >"
+
+msgid "Equal"
+msgstr "Võrdub ="
+
+msgid "Comma"
+msgstr "Koma ,"
+
+msgid "Apostrophe"
+msgstr "Ülakoma '"
+
+msgid "Colon"
+msgstr "Koolon :"
+
+msgid "Semicolon"
+msgstr "Semikoolon"
+
+msgid "Exclamation mark"
+msgstr "Hüüumärk !"
+
+msgid "Question mark"
+msgstr "Küsimärk ?"
+
+msgid "Ampersand"
+msgstr "Ampersand &"
+
+msgid "Dollar sign"
+msgstr "Dollar $"
+
+msgid "Quotation mark"
+msgstr "Jutumärk \""
+
+msgid "Percent sign"
+msgstr "Protsendi märk"
+
+msgid "Caret"
+msgstr "Katus ^"
+
+msgid "Tilda"
+msgstr "Tilde ~"
+
+msgid "Prime"
+msgstr "Priim ´"
+
+msgid "Underline"
+msgstr "Alljoon _"
+
+msgid "Understrike"
+msgstr "Läbilöök"
+
+msgid "Pipe"
+msgstr "Toru |"
+
+msgid "Left parenthesis"
+msgstr "Vasak sulg"
+
+msgid "Right parenthesis"
+msgstr "Parem sulg"
+
+msgid "Left bracket"
+msgstr "Vasak nurksulg"
+
+msgid "Right bracket"
+msgstr "Parem nurksulg"
+
+msgid "Left brace"
+msgstr "Vasak looksulg"
+
+msgid "Right brace"
+msgstr "Parem looksulg"
+
+msgid "Enter"
+msgstr "Klahv Enter"
+
+msgid "Tab key"
+msgstr "Klahv Tab"
+
+msgid "Space key"
+msgstr "Klahv Space"
+
+msgid "Slash key"
+msgstr "Kaldkriips /"
+
+msgid "Backslash key"
+msgstr "Tagurpidi kaldkriips \\"
+
+msgid "Number sign #"
+msgstr "Klahv #"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "Klahv @"
+
+msgid "Ctrl"
+msgstr "Klahv Ctrl"
+
+msgid "Alt"
+msgstr "Klahv Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Klahv Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"SIGWINCHi jaoks ei saa toru luua: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"SIGWINCH saatmispoolt ei saa\n"
+"konfigureerida: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"SIGWINCH lugemispoolt ei saa\n"
+"konfigureerida: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Ekraani suurus %dx%d ei ole toetatud.\n"
+"Kontrolli keskkonna muutujat TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "Keskkonnamuutujat TERM on määramata!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "SIGWINCH toru ei saa kontrollida"
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Nurjus torupideme loomine"
+
+msgid "Cannot create pipe streams"
+msgstr "Nurjus toru voogude loomine"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Ootamatu viga tütarprotsessist andmete lugemisel funktsioonis select():\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr "Toru deskriptor ei saa sulgeda (p == NULL)"
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Tundmatu viga funktsioonis waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Faili muudatused unustati"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+"Ei õnnestu luua ajutust kausta %s:%s.\n"
+"Ajutised failid jäävad loomata\n"
+
+msgid "Press any key to continue..."
+msgstr "Jätkamiseks vajuta suvalist klahvi..."
+
+msgid "Internal error:"
+msgstr "Sisemine viga:"
+
+msgid "Screens"
+msgstr "Ekraanid"
+
+msgid "History"
+msgstr "Ajalugu"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Jah"
+
+msgid "&No"
+msgstr "&Ei"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "DialogTitle|Ajaloo kustutamine"
+
+msgid "Do you want clean this history?"
+msgstr "Kas sa soovid kustutada selle ajaloo?"
+
+msgid "&OK"
+msgstr "&Olgu"
+
+msgid "&Cancel"
+msgstr "&Tühista"
+
+msgid "Error"
+msgstr "Viga"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Katkesta"
+
+msgid "< Default >"
+msgstr "< Vaikimisi >"
+
+msgid "Skins"
+msgstr "Nahad"
+
+msgid "Skin:"
+msgstr "Nahk:"
+
+msgid "&Shadows"
+msgstr "&Varjud"
+
+msgid "Appearance"
+msgstr "Välimus"
+
+msgid "Displays the current version"
+msgstr "Kuvab praeguse versiooni"
+
+msgid "Print data directory"
+msgstr "Trüki andmete kaust"
+
+msgid "Print extended info about used data directories"
+msgstr "Trüki laiendatud informatsioon andmete kaustade kasutamisest"
+
+msgid "Print configure options"
+msgstr "Trüki häälestuse suvandid"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Keela X11 tugi"
+
+msgid "Forces xterm features"
+msgstr "Sunnib xterm'i tunnused"
+
+msgid "Disable X11 support"
+msgstr "Keela X11 tugi"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Proovitakse kasutada vana esiletõstu hiire rada"
+
+msgid "Disable mouse support in text version"
+msgstr "Keela hiire tugi tekstirežiimis"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Proovib kasutada terminfo asemel termcap-i"
+
+msgid "To run on slow terminals"
+msgstr "Tööks aeglastel terminalidel"
+
+msgid "Use stickchars to draw"
+msgstr "Joonista joonestusmärkidega"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Laadi klahvide seosed määratud failist"
+
+msgid "<file>"
+msgstr "<file>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr "Ära laadi klahvide seoseid failist, vaid kasuta vaikeseadistust"
+
+msgid "Requests to run in black and white"
+msgstr "Keelab värvide kasutamise"
+
+msgid "Request to run in color mode"
+msgstr "Nõuab värvide kasutamist"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Kuva mc määratud nahaga"
+
+msgid "<string>"
+msgstr "<string>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+reanr] fail1[:reanr] [fail2[:reanr]...]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+"\n"
+"Palun saada kõik vearaportid (ja käsu '%s -V' väljund)\n"
+"aadressile %s\n"
+
+msgid "Main options"
+msgstr "Põhisuvandid"
+
+msgid "Terminal options"
+msgstr "Terminali suvandid"
+
+msgid "Color options"
+msgstr "Värvi suvandid"
+
+msgid "Arguments parse error!"
+msgstr "Parameetrite parsimise viga!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Häälestus..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Häälestuse suvandid"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "&Tõstutundlik"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+"chmod-i käivitamine ei õnnestu\n"
+"%sn%s"
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "D&eklaratsioonile edasi"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "&Leia deklaratsioon"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "„%s“ ei ole sümbollink"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Ajutise erinevuste faili loomine ei õnnestunud"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Faili ei saa salvestada"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"Käivitamine nurjus:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "Failist %s ei leitud sobivaid kirjeid"
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Otsing lõpetatud"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Otsing lõpetatud"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "&Lõpetamine: kuva kõik"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Järglasprotsessi standardväljundi andmete lugemine ei õnnestunud"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Sihtfaili loomine ei õnnestu\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Ei saa tõlkida keelest %s keelde %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Profiili juurkaust:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Sündmust \"%s\" ei õnnestunud luua!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Lugemine nurjus"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Navigeerimine"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "D&eklaratsioonile edasi"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "&Lõpetamine: kuva kõik"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Navigeerimine"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Otsing lõpetatud"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Otsing lõpetatud"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Sümbollingi nimi:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Laadi süntaksi fail"
+
+msgid "Manage repositories"
+msgstr ""
+
+#, fuzzy
+msgid "Reindex repository"
+msgstr "Indekseeritud kaust"
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Küsi kinnitust"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "D&eklaratsioonile edasi"
+
+msgid "&Find declaration"
+msgstr "&Leia deklaratsioon"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Navigeerimine"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Otsi"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Sümbollingi nimi:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "&Lõpetamine: kuva kõik"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Vali"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Sümbollingi nimi:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Faili nimi:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Laadi fail"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Sulge"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Hoiatus"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Teksti on muudetud faili salvestamata.\n"
+"Jätkamine viskab muudatused ära."
+
+msgid "C&ontinue"
+msgstr "&Jätka"
+
+msgid "&Add word"
+msgstr "&Lisa sõna"
+
+msgid "&Replace"
+msgstr "&Asenda"
+
+msgid "&Skip"
+msgstr "&Jäta vahele"
+
+msgid "Language"
+msgstr "Keel"
+
+msgid "Misspelled"
+msgstr "Vigane"
+
+msgid "Check word"
+msgstr "Kontrolli sõna"
+
+msgid "Suggest"
+msgstr "Soovita"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Lisa sõna"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Vigane"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Keel"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Vali"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Vali keel"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Laaditakse: %3d%%"
+
+msgid "Loading..."
+msgstr "Laaditakse..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+"Avamine ei õnnestunud\n"
+"%s"
+
+msgid "Load file"
+msgstr "Laadi fail"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Viga %s lugemisel"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+"Attribuutide stat-päring ei õnnestunud\n"
+"%s"
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+"%s\n"
+"pole tavaline fail"
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Fail \"%s\" on liiga suur.\n"
+"Kas avame ta ikkagi?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Viga torust lugemisel: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+"Konveieri avamine lugemiseks ei õnnestunud:\n"
+"%s"
+
+#, fuzzy
+msgid "Undo"
+msgstr "&Võta tagasi"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Proovi uuesti"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Failil on jäiku viitasid. Kas võtame need enne salvestamist lahti?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Faili on vahepeal muudetud. Kas ikkagi salvestame?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Viga torusse kirjutamisel: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+"%s\n"
+"Faili ei õnnestunud\n"
+"avada lugemiseks"
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Fail, mida sa salvestad, ei lõppe reavahetusega."
+
+msgid "&Do not change"
+msgstr "Ä&ra muuda"
+
+msgid "&Unix format (LF)"
+msgstr "&Unixi formaat (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Windowsi/DOSi formaat (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Macintoshi formaat (CR)"
+
+msgid "Enter file name:"
+msgstr "Sisesta faili nimi:"
+
+msgid "Change line breaks to:"
+msgstr "Vaheta reavahetused:"
+
+msgid "Save As"
+msgstr "Salvesta kui"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+"%s\n"
+"kausta loomine ei õnnestu"
+
+msgid "&Quick save"
+msgstr "&Kiirsalvestus"
+
+msgid "&Safe save"
+msgstr "Kindel &salvestus"
+
+msgid "&Do backups with following extension:"
+msgstr "&Varukoopia faili laiend:"
+
+msgid "Check &POSIX new line"
+msgstr "Kontrolli &POSIXi uus rida"
+
+msgid "Edit Save Mode"
+msgstr "Muuda salvestusrežiim"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+"Salvestamine pole võimalik\n"
+"%s:\n"
+"see pole harilik fail"
+
+msgid "A file already exists with this name"
+msgstr "Sellise nimega fail on juba olemas"
+
+msgid "&Overwrite"
+msgstr "K&irjuta üle"
+
+msgid "Cannot save file"
+msgstr "Faili salvestamine nurjus"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Kinnita faili salvestamine: \"%s\""
+
+msgid "Save file"
+msgstr "Salvesta fail"
+
+msgid "&Save"
+msgstr "&Salvesta"
+
+msgid "Load"
+msgstr "Laadi"
+
+msgid "Syntax file edit"
+msgstr "Süntaksifaili muutmine"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Millist süntaksifaili soovid muuta?"
+
+msgid "&User"
+msgstr "&Kasutaja"
+
+msgid "&System wide"
+msgstr "&Süsteemne"
+
+msgid "Menu edit"
+msgstr "Menüü muutmine"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Millist menüü failidi soovid muuta?"
+
+msgid "&Local"
+msgstr "&Kohalik"
+
+msgid "[NoName]"
+msgstr "[Nimetu]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Faili %s on muudetud.\n"
+"Kas salvestame enne sulgemist?"
+
+msgid "Close file"
+msgstr "Sulge fail"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+"%s on väljalülitumas.\n"
+"Kas salvestan muudetud faili „%s“?"
+
+msgid "Quit"
+msgstr "Välju"
+
+msgid "This function is not implemented"
+msgstr "See funktsioon ei ole valmis"
+
+msgid "Unable to save to file"
+msgstr "Faili ei saa salvestada"
+
+msgid "Goto line"
+msgstr "Mine reale"
+
+msgid "Enter line:"
+msgstr "Sisesta rida:"
+
+msgid "Save block"
+msgstr "Salvesta plokk"
+
+msgid "Cannot save block"
+msgstr "Ploki salvestamine ei õnnestu"
+
+msgid "Cannot insert file"
+msgstr "Faili lisamine nurjus"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <teema> -c <koopia> <saaja>"
+
+msgid "To"
+msgstr "Saaja"
+
+msgid "Subject"
+msgstr "Teema"
+
+msgid "Copies to"
+msgstr "Koopiad"
+
+msgid "Mail"
+msgstr "E-post"
+
+msgid "Cancel"
+msgstr "Tühista"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Klahv Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Kas kustutada %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Asenda"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Ajalugu"
+
+msgid "Collect completions"
+msgstr "Koonda lõpetamised"
+
+msgid "NoName"
+msgstr "Nimetu"
+
+msgid "Save macro"
+msgstr "Salvesta makro"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Vajuta makro uus kiirklahv:"
+
+msgid "Repeat last commands"
+msgstr "Korda viimaseid käske"
+
+msgid "Repeat times:"
+msgstr "Korduste arv:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Kustuta makro"
+
+msgid "Delete macro"
+msgstr "Kustuta makro"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "vene keel"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Sulge"
+
+msgid "&Open file..."
+msgstr "&Ava fail..."
+
+msgid "&New"
+msgstr "&Uus"
+
+msgid "&History..."
+msgstr "&Ajalugu..."
+
+msgid "Save &as..."
+msgstr "Salvesta &kui..."
+
+msgid "&Insert file..."
+msgstr "&Sisesta fail..."
+
+msgid "Cop&y to file..."
+msgstr "K&opeeri faili..."
+
+msgid "&User menu..."
+msgstr "&Kasutaja menüü..."
+
+msgid "A&bout..."
+msgstr "&Programmist..."
+
+msgid "&Quit"
+msgstr "&Välju"
+
+msgid "&Undo"
+msgstr "&Võta tagasi"
+
+msgid "&Redo"
+msgstr "&Tee uuesti"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "&Ajalugu..."
+
+msgid "&Toggle ins/overw"
+msgstr "&Lülita lisa/ülek"
+
+msgid "To&ggle mark"
+msgstr "Lül&ita märkimine"
+
+msgid "&Mark columns"
+msgstr "&Märgi veerud"
+
+msgid "Mark &all"
+msgstr "Märgi &kõik"
+
+msgid "Unmar&k"
+msgstr "&Tühista märkimine"
+
+msgid "Cop&y"
+msgstr "&Kopeeri"
+
+msgid "Mo&ve"
+msgstr "&Teisalda"
+
+msgid "&Delete"
+msgstr "K&ustuta"
+
+msgid "Co&py to clipfile"
+msgstr "Kopeeri &faili"
+
+msgid "&Cut to clipfile"
+msgstr "Lõika f&aili"
+
+msgid "Pa&ste from clipfile"
+msgstr "A&seta failist"
+
+msgid "&Beginning"
+msgstr "&Algusesse"
+
+msgid "&End"
+msgstr "&Lõppu"
+
+msgid "&Search..."
+msgstr "&Otsi..."
+
+msgid "Search &again"
+msgstr "Otsi &uuesti"
+
+msgid "&Replace..."
+msgstr "&Asenda..."
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "Lülita &rea olek"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "omanik võib &kirjutada"
+
+msgid "&Toggle bookmark"
+msgstr "&Lülita järjehoidja"
+
+msgid "&Next bookmark"
+msgstr "&Järgmine järjehoidja"
+
+msgid "&Prev bookmark"
+msgstr "&Eelmine järjehoidja"
+
+msgid "&Flush bookmarks"
+msgstr "&Tühjenda kohaviidad"
+
+msgid "&Go to line..."
+msgstr "&Mine reale..."
+
+msgid "&Toggle line state"
+msgstr "Lülita &rea olek"
+
+msgid "Go to matching &bracket"
+msgstr "Mine vastavale &nurksulule"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Lülita &süntaksi esiletõst"
+
+msgid "Togg&le right margin"
+msgstr "&Lülita parem veeris sisse/välja"
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "&Kodeering..."
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Otsi kõikjalt"
+
+msgid "&Refresh screen"
+msgstr "&Värskenda kuva"
+
+msgid "&Start/Stop record macro"
+msgstr "&Alusta/lõpeta makro salvestamine"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "Salvesta/korda &tegevusi"
+
+msgid "&Move"
+msgstr "&Teisalda"
+
+msgid "&Resize"
+msgstr "Suu&ruse muutmine"
+
+msgid "&Toggle fullscreen"
+msgstr "&Lülita täisekraan"
+
+msgid "&Next"
+msgstr "&Järgmine"
+
+msgid "&Previous"
+msgstr "&Eelmine"
+
+msgid "&List..."
+msgstr "&Näita..."
+
+msgid "&General..."
+msgstr "&Üldine..."
+
+msgid "Save &mode..."
+msgstr "&Salvestusrežiim..."
+
+msgid "Syntax &highlighting..."
+msgstr "Süntaksi &esiletõstmine..."
+
+msgid "&Appearance..."
+msgstr "&Välimus..."
+
+msgid "Learn &keys..."
+msgstr "K&lahvide õppimine..."
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "Ko&deering..."
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "Ko&deering..."
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "&Paneeli häälestus..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "Sü&ntaksi fail"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "&Menüü fail"
+
+msgid "&Save setup"
+msgstr "&Salvesta häälestus"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Fail"
+
+msgid "&Edit"
+msgstr "&Muuda"
+
+msgid "&Search"
+msgstr "&Otsi"
+
+msgid "&Command"
+msgstr "&Käsud"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Navigeerimine"
+
+msgid "&Window"
+msgstr "&Aken"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Suvandid"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Tabulatsioon"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Lugemine nurjus"
+
+msgid "&None"
+msgstr "&Puudub"
+
+msgid "&Dynamic paragraphing"
+msgstr "&Dünaamiline lõiguloome"
+
+msgid "Type &writer wrap"
+msgstr "&Staatiline rea murdmine"
+
+msgid "Wrap mode"
+msgstr "Rea murdmine"
+
+msgid "Tabulation"
+msgstr "Tabulatsioon"
+
+msgid "&Fake half tabs"
+msgstr "&Võltsid pooltabulaatorid"
+
+msgid "&Backspace through tabs"
+msgstr "&Tagasisamm läbi tabulaatorite"
+
+msgid "Fill tabs with &spaces"
+msgstr "&Asenda tabulaatorid tühikutega"
+
+msgid "Tab spacing:"
+msgstr "Tabulaatori pikkus:"
+
+msgid "Other options"
+msgstr "Muud suvandid"
+
+msgid "&Return does autoindent"
+msgstr "&Return trepib automaatselt"
+
+msgid "Confir&m before saving"
+msgstr "&Enne salvestamist küsi kinnitust"
+
+msgid "Save file &position"
+msgstr "Salvesta &asukoht failis"
+
+msgid "&Visible trailing spaces"
+msgstr "&Nähtavad lõputühikud"
+
+msgid "Visible &tabs"
+msgstr "Nähtavad &tabulaatorid"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "Süntaksi &esiletõstmine"
+
+msgid "C&ursor after inserted block"
+msgstr "Ku&rsor lisatud ploki lõppu"
+
+msgid "Pers&istent selection"
+msgstr "Püs&iv valik"
+
+msgid "Cursor be&yond end of line"
+msgstr "Kursor üle &faili lõpu"
+
+msgid "&Group undo"
+msgstr "&Grupi tagasivõtt"
+
+msgid "Word wrap line length:"
+msgstr "Sõna täpsusega reavahetuse rea pikkus:"
+
+msgid "Editor options"
+msgstr "Tekstitoimeti suvandid"
+
+msgid "Enter search string:"
+msgstr "Sisesta otsingu sõne:"
+
+msgid "Cas&e sensitive"
+msgstr "&Tõstutundlik"
+
+msgid "&Backwards"
+msgstr "&Tagurpidi"
+
+msgid "In se&lection"
+msgstr "&Valikus"
+
+msgid "&Whole words"
+msgstr "Terveid &sõnu"
+
+msgid "&All charsets"
+msgstr "&Kõik märgistikud"
+
+msgid "&Find all"
+msgstr "&Otsi kõikjalt"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Otsing"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Otsitakse %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Otsitakse %s"
+
+msgid "Enter replacement string:"
+msgstr "Sisesta asendus string:"
+
+msgid "Replace"
+msgstr "Asenda"
+
+msgid "Replace with:"
+msgstr "Asenda:"
+
+msgid "A&ll"
+msgstr "&Kõik"
+
+msgid "Confirm replace"
+msgstr "Kinnita asendamine"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "Teostati %ld asendust"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+"Kasutajasõbralik tekstiredaktor\n"
+"loodud programmi %s jaoks."
+
+msgid "About"
+msgstr "Programmist"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Ava fail"
+
+msgid "Edit: "
+msgstr "Muuda: "
+
+msgid "ButtonBar|Help"
+msgstr "ButtonBar|Abi"
+
+msgid "ButtonBar|Save"
+msgstr "ButtonBar|Salvesta"
+
+msgid "ButtonBar|Mark"
+msgstr "ButtonBar|Märgi"
+
+msgid "ButtonBar|Replac"
+msgstr "ButtonBar|Asenda"
+
+msgid "ButtonBar|Copy"
+msgstr "ButtonBar|Koopia"
+
+msgid "ButtonBar|Move"
+msgstr "ButtonBar|Teisal"
+
+msgid "ButtonBar|Search"
+msgstr "ButtonBar|Otsi"
+
+msgid "ButtonBar|Delete"
+msgstr "ButtonBar|Kustuta"
+
+msgid "ButtonBar|PullDn"
+msgstr "ButtonBar|Menüü"
+
+msgid "ButtonBar|Quit"
+msgstr "ButtonBar|Välju"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Otsitakse %s: %3d%%"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "<Auto>"
+
+msgid "< Reload Current Syntax >"
+msgstr "<Valitud süntaksi taaslaadimine>"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+"Faili avamine ei õnnestu\n"
+"%s"
+
+msgid "Load syntax file"
+msgstr "Laadi süntaksi fail"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Viga failis %s real %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Sa ei kasuta xtermi või Linuxi konsooli;\n"
+"alamkesta ei saa sisse/välja lülitada."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr "Pöördumaks tagasi programmi %s juurde, sisesta „exit“"
+
+msgid "Help file format error\n"
+msgstr "Abifaili vormingu viga\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Sisemine viga: viida ala topeltalgus"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Abifailis ei leidunud sõlme %s"
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Abi"
+
+msgid "ButtonBar|Index"
+msgstr "ButtonBar|Indeks"
+
+msgid "ButtonBar|Prev"
+msgstr "ButtonBar|Eelmine"
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Klahv F1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Navigeerimine"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Klahvide õppimine"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Küsi kinnitust"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+"Seda võtit ei saa kasutada.\n"
+"Sa sisestasid „%s“"
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Klahv Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Klahv Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Muuda &menüü faili"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&E-post..."
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "&Menüü fail"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&Näita..."
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Abi"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "&Muuda"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "Klahv A1"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Jätkamiseks vajuta suvalist klahvi..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "&Tagurpidi"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Muuda &menüü faili"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Käivitamine nurjus:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Kodukaust ei ole absoluutne"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Sulgemine nurjus:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "VFS pluginad ja skriptid:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Tundmatu viga alamprotsessis"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Määra"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Lugemine nurjus"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: viga"
+
+msgid "Choose codepage"
+msgstr "Vali kooditabel"
+
+msgid "-  < No translation >"
+msgstr "-  < tõlkimata >"
+
+msgid "Setup"
+msgstr "Seadistamine"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Seaded salvestati faili %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Nurjus seadete salvestamine faili %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Valikulise alamkesta toega"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "Hiire toega xtermis ja Linuxi konsoolil"
+
+msgid "With mouse support on xterm"
+msgstr "Hiire toega xtermis"
+
+msgid "With support for X11 events"
+msgstr "X11 sündmuste toega"
+
+msgid "With internationalization support"
+msgstr "Internatsionaliseerimise toega"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr "Kompileeritud GLib teegiga %d.%d.%d (kasutades GLibi %u.%u.%u)\n"
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr "Kompileeritud S-Langi teegiga"
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr " ja terminfo andmebaasiga (kasutades S-Langi %s)\n"
+
+#, c-format
+msgid "Built with %s"
+msgstr "Kompileerimisel on kaasatud %s"
+
+#, c-format
+msgid " (using %s)\n"
+msgstr " (kasutades %s)\n"
+
+msgid "Data types:"
+msgstr "Andmetüübid:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Otsitavat stringi ei leitud"
+
+msgid "Home directory:"
+msgstr "Kodukaust:"
+
+msgid "Profile root directory:"
+msgstr "Profiili juurkaust:"
+
+msgid "System data"
+msgstr "Süsteemi andmed"
+
+msgid "Config directory:"
+msgstr "Seadistuste kaust:"
+
+msgid "Data directory:"
+msgstr "Andmete kaust:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Tekstitoimeti suvandid"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "VFS pluginad ja skriptid:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Kasutaja andmed"
+
+msgid "Cache directory:"
+msgstr "Vahemälu kaust:"
+
+msgid "Debug"
+msgstr "Silumine"
+
+msgid "ERROR:"
+msgstr "Viga:"
+
+msgid "True:"
+msgstr "Tõene:"
+
+msgid "False:"
+msgstr "Väär:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "Ajutise erinevuste faili loomine ei õnnestunud"
+
+msgid "Error calling program"
+msgstr "Viga programmi kutsel"
+
+msgid "Cannot create temporary command file"
+msgstr "Ajutise käsufaili loomine ei õnnestu"
+
+msgid "Parameter"
+msgstr "Parameeter"
+
+msgid "Warning -- ignoring file"
+msgstr "Hoiatus -- eiratakse faili"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Faili %s omanik ei ole root või sina, või see on kõigile kirjutatav.\n"
+"Selle kasutamine võib ohustada su turvalisust"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "Käske ei saa käivitada kaugfailisüsteemidel"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "Failist %s ei leitud sobivaid kirjeid"
+
+msgid "User menu"
+msgstr "Kasutaja menüü"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Ei saa tõlkida keelest %s keelde %s"

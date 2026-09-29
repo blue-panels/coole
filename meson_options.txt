@@ -1,0 +1,25 @@
+option('screen', type: 'combo', choices: ['slang', 'ncurses'], value: 'slang',
+       description: 'Screen library')
+option('gpm', type: 'feature', value: 'auto',
+       description: 'gpm mouse support on the Linux console')
+option('x11', type: 'feature', value: 'auto',
+       description: 'Read the keyboard modifiers from the X server')
+option('lua', type: 'feature', value: 'auto',
+       description: 'The Lua runtime plugin')
+option('spell', type: 'feature', value: 'auto',
+       description: 'Spell checking through aspell or hunspell, loaded at run time')
+option('nls', type: 'feature', value: 'auto',
+       description: 'Translations of the messages')
+option('tests', type: 'feature', value: 'auto',
+       description: 'Unit tests (needs the check library)')
+option('assert', type: 'boolean', value: true,
+       description: 'Keep the GLib assertions')
+
+option('editor_plugins_dir', type: 'string', value: '',
+       description: 'Directory of the dynamic editor plugins [LIBDIR/coole/editor-plugins]')
+option('runtime_plugins_dir', type: 'string', value: '',
+       description: 'Directory of the runtime plugins [LIBDIR/coole/runtime-plugins]')
+option('lua_scripts_dir', type: 'string', value: '',
+       description: 'Directory of the system Lua scripts [DATADIR/coole/lua/scripts]')
+option('lua_modules_dir', type: 'string', value: '',
+       description: 'Directory of the shared Lua modules [DATADIR/coole/lua/lib]')

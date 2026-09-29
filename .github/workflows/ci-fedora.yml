@@ -1,0 +1,70 @@
+name: ci-fedora
+
+on:
+  workflow_call:
+
+env:
+  CLANG_FORMAT_VERSION: 20.1.3
+
+jobs:
+  build-fedora:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    container:
+      image: fedora:latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Install dependencies
+        run: |
+          dnf install -y \
+            git `# Install git inside container` \
+            \
+            clang-tools-extra gcc gettext-devel groff meson pkgconfig \
+            check-devel gpm-devel libX11-devel lua-devel "pkgconfig(glib-2.0)" "pkgconfig(gmodule-2.0)" "pkgconfig(slang)" \
+            \
+            glibc-gconv-extra util-linux `# For tests` \
+            python3-pip \
+            mandoc `# To render manual pages` \
+
+            pip install clang-format==${{ env.CLANG_FORMAT_VERSION }}
+
+      - uses: actions/checkout@v7
+
+
+      - name: Lint documentation
+        working-directory: maint
+        run: ./doctest.py
+
+      - name: Lint sources
+        working-directory: maint
+        run: ./asciitest.py
+
+      - name: Build default configuration
+        run: |
+          useradd --home "$(pwd)" test
+          chown -R test "$(pwd)"
+
+          su - test -c ' \
+            meson setup build --prefix="$(pwd)/install-prefix" -Dwerror=true && \
+            \
+            echo "Checking formatting..." && \
+            clang-format --version && \
+            meson compile -C build indent && \
+            echo "Changed files after formatting:" && \
+            git diff --name-only -- '*.c' '*.h' && \
+            git diff --exit-code -- '*.c' '*.h' && \
+            \
+            meson compile -C build && \
+            meson test -C build --print-errorlogs && \
+            meson install -C build \
+          '
+
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: test-logs-fedora
+          path: build/meson-logs/*.txt

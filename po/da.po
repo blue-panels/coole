@@ -1,0 +1,2800 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Henry Madsen Jensen <henry@madsen-jensen.dk>, 2016
+# Henry Madsen Jensen <henry@madsen-jensen.dk>, 2016
+# Joe Hansen <joedalton2@yahoo.dk>, 2014
+# Morten Bo Johansen <mortenbo@hotmail.com>, 2018,2023
+# scootergrisen, 2018-2020
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# Yury V. Zaytsev <yury@shurup.com>, 2025
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Danish <https://translate.codeberg.org/projects/mc6/mc6/da/>\n"
+"Language: da\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "Advarsel: kan ikke indlæse tegnsæt-liste"
+
+msgid "7-bit ASCII"
+msgstr "7-bit ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Kan ikke oversætte fra %s til %s"
+
+msgid "Event system already initialized"
+msgstr "Hændelsessystem allerede initieret"
+
+msgid "Failed to initialize event system"
+msgstr "Kunne ikke initiere hændelsessystem"
+
+msgid "Event system not initialized"
+msgstr "Hændelsessystem ikke initieret"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Tjek inputdata! Nogle af parametrene er NULL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Kan ikke oprette gruppen '%s' for hændelser!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Kan ikke oprette hændelsen '%s'!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Page Down"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "&Skift fuldskærm"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "&Sammenlign filer"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "&Brugerdefineret:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "Brugermenu"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Søgning færdig"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Erstat"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Terminalindstillinger"
+
+msgid "Edit file"
+msgstr "Rediger fil"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Rediger fil"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&Alle tegnsæt"
+
+#, fuzzy
+msgid "Command history"
+msgstr "Kommando&historik"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "Gem &som..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Gå til linje"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "Op&dater skærm"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "Opsætning gemt til %s"
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "Op&dater skærm"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Forrige"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Indsæt fil"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Forrige"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "&Skift linjetilstand"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Delete på numerisk tastatur"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Delete på numerisk tastatur"
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "K&lip til udklipsfil"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "Ko&pier til udklipsfil"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "&Indsæt fra udklipsfil"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "I &markering"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Vælg"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Vælg"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Vælg &gruppe"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Vælg"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Vælg sammenligningsmetode:"
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "&Skift linjetilstand"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Vælg sprog"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "&Sorteringsrækkefølge"
+
+#, fuzzy
+msgid "General options"
+msgstr "Panelindstillinger"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Lær taster"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "&Næste bogmærke"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "&Find erklæring"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Fremtoning"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "Gem ops&ætning"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Forrige"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Ledige knuder:"
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Forrige"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Fravælg"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Vælg &gruppe"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Vælg sprog"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Luk fil"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Rediger filendelse"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Vælg"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Vælg sprog"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Vælg"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "I &markering"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Gem blok"
+
+msgid "Insert file"
+msgstr "Indsæt fil"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "&Skift ins/overw"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "Indsæt &dato/tid"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Sletter"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "fil1 fil2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "Kommando&historik"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "&Formatér paragraf"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Venstre klamme"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Gentag de sidste kommandoer"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "Sta&vekontrol"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "Sta&vekontrol"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Vælg sprog"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "&Fjern bogmærker"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "&Næste bogmærke"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "F&orr. bogmærke"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Find alle"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "&Skift linjetilstand"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Ændringer til fil tabt"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Vælg sammenligningsmetode:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Vælg sammenligningsmetode:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Vælg sammenligningsmetode:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Vælg &gruppe"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Vælg &gruppe"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "&Fravælg gruppe"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "&Fravælg gruppe"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "I &markering"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "&Fravælg gruppe"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "&Formatér paragraf"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "&Synlige efterstillede mellemrum"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Skift s&yntaksfremhævelse"
+
+msgid "Choose syntax highlighting"
+msgstr "Vælg syntaksfremhævelse"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "Skift &mærke"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Panelindstillinger"
+
+msgid "About editor"
+msgstr ""
+
+#, fuzzy
+msgid "Execute script"
+msgstr "&Først kørbare"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "&Ændr størrelse"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "&Skift fuldskærm"
+
+#, fuzzy
+msgid "Window list"
+msgstr "&Vindue"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Forrige"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Filen »%s« er ved at blive redigeret.\n"
+"Bruger: %s\n"
+"Proces-id: %d"
+
+msgid "File locked"
+msgstr "Fil låst"
+
+msgid "&Grab lock"
+msgstr "&Tag lås"
+
+msgid "&Ignore lock"
+msgstr "&Ignorer lås"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Kan ikke oprette mappen %s"
+
+msgid "FATAL: not a directory:"
+msgstr "KRITISK: Ikke en mappe:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Tal udenfor område (skal være i byteområde, 0 <= n <= 0xFF, udtrykt i hex)"
+
+msgid "Invalid character"
+msgstr "Ugyldigt tegn"
+
+msgid "Unmatched quotes character"
+msgstr "Ikke matchet citationstegn"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Fejl i heksmønster ved placering %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Søgestreng blev ikke fundet"
+
+msgid "Not implemented yet"
+msgstr "Endnu ikke implementeret"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Antal erstatningssymbler svarer ikke til antallet af fundne symboler"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Ugyldigt symbolantal %d"
+
+msgid "Regular expression error"
+msgstr "Fejl i regulært udtryk"
+
+msgid "No&rmal"
+msgstr "&Normal"
+
+msgid "Re&gular expression"
+msgstr "&Regulært udtryk"
+
+msgid "He&xadecimal"
+msgstr "&Hexadecimal"
+
+msgid "Wil&dcard search"
+msgstr "&Jokertegnsøgning"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Kan ikke fortolke temaet »%s«.\n"
+"Standardtemaet er indlæst"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Kan ikke bruge '%s'-temaet med understøttelse af ægte farver:\n"
+"%s\n"
+"Standardtemaet er blevet indlæst"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Kan ikke indlæse temaet »%s«.\n"
+"Standardtemaet er indlæst"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr "Ægte farver understøttes ikke i denne version af slang."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "Escape"
+
+msgid "Function key 1"
+msgstr "Funktionstast 1"
+
+msgid "Function key 2"
+msgstr "Funktionstast 2"
+
+msgid "Function key 3"
+msgstr "Funktionstast 3"
+
+msgid "Function key 4"
+msgstr "Funktionstast 4"
+
+msgid "Function key 5"
+msgstr "Funktionstast 5"
+
+msgid "Function key 6"
+msgstr "Funktionstast 6"
+
+msgid "Function key 7"
+msgstr "Funktionstast 7"
+
+msgid "Function key 8"
+msgstr "Funktionstast 8"
+
+msgid "Function key 9"
+msgstr "Funktionstast 9"
+
+msgid "Function key 10"
+msgstr "Funktionstast 10"
+
+msgid "Function key 11"
+msgstr "Funktionstast 11"
+
+msgid "Function key 12"
+msgstr "Funktionstast 12"
+
+msgid "Function key 13"
+msgstr "Funktionstast 13"
+
+msgid "Function key 14"
+msgstr "Funktionstast 14"
+
+msgid "Function key 15"
+msgstr "Funktionstast 15"
+
+msgid "Function key 16"
+msgstr "Funktionstast 16"
+
+msgid "Function key 17"
+msgstr "Funktionstast 17"
+
+msgid "Function key 18"
+msgstr "Funktionstast 18"
+
+msgid "Function key 19"
+msgstr "Funktionstast 19"
+
+msgid "Function key 20"
+msgstr "Funktionstast 20"
+
+msgid "Completion/M-tab"
+msgstr "Fuldfør navn/M-tab"
+
+msgid "BackTab/S-tab"
+msgstr "BackTab/S-tab"
+
+msgid "Backspace"
+msgstr "Backspace"
+
+msgid "Up arrow"
+msgstr "Pil op"
+
+msgid "Down arrow"
+msgstr "Pil ned"
+
+msgid "Left arrow"
+msgstr "Venstre pil"
+
+msgid "Right arrow"
+msgstr "Højre pil"
+
+msgid "Insert"
+msgstr "Insert"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr "End-tast"
+
+msgid "Page Up"
+msgstr "Page Up"
+
+msgid "Page Down"
+msgstr "Page Down"
+
+msgid "/ on keypad"
+msgstr "/ på num. tastatur"
+
+msgid "* on keypad"
+msgstr "* på numerisk tastatur"
+
+msgid "- on keypad"
+msgstr "- på numerisk tastatur"
+
+msgid "+ on keypad"
+msgstr "+ på numerisk tastatur"
+
+msgid "Left arrow keypad"
+msgstr "Venstre pil på numerisk tastatur"
+
+msgid "Right arrow keypad"
+msgstr "Højre pil på numerisk tastatur"
+
+msgid "Up arrow keypad"
+msgstr "Pil op på numerisk tastatur"
+
+msgid "Down arrow keypad"
+msgstr "Pil ned på numerisk tastatur"
+
+msgid "Home on keypad"
+msgstr "Home på numerisk tastatur"
+
+msgid "End on keypad"
+msgstr "End på numerisk tastatur"
+
+msgid "Page Down keypad"
+msgstr "Page Down på numerisk tastatur"
+
+msgid "Page Up keypad"
+msgstr "Page Up på numerisk tastatur"
+
+msgid "Insert on keypad"
+msgstr "Insert på numerisk tastatur"
+
+msgid "Delete on keypad"
+msgstr "Delete på numerisk tastatur"
+
+msgid "Enter on keypad"
+msgstr "Enter på numerisk tastatur"
+
+msgid "Function key 21"
+msgstr "Funktionstast 21"
+
+msgid "Function key 22"
+msgstr "Funktionstast 22"
+
+msgid "Function key 23"
+msgstr "Funktionstast 23"
+
+msgid "Function key 24"
+msgstr "Funktionstast 24"
+
+msgid "A1 key"
+msgstr "A1-tast"
+
+msgid "C1 key"
+msgstr "C1-tast"
+
+msgid "Asterisk"
+msgstr "Asterisk"
+
+msgid "Minus"
+msgstr "Minus"
+
+msgid "Plus"
+msgstr "Plus"
+
+msgid "Dot"
+msgstr "Punktum"
+
+msgid "Less than"
+msgstr "Mindre end"
+
+msgid "Great than"
+msgstr "Større end"
+
+msgid "Equal"
+msgstr "Lig med"
+
+msgid "Comma"
+msgstr "Komma"
+
+msgid "Apostrophe"
+msgstr "Apostrof"
+
+msgid "Colon"
+msgstr "Kolon"
+
+msgid "Semicolon"
+msgstr "Semikolon"
+
+msgid "Exclamation mark"
+msgstr "Udråbstegn"
+
+msgid "Question mark"
+msgstr "Spørgsmålstegn"
+
+msgid "Ampersand"
+msgstr "Og-tegn"
+
+msgid "Dollar sign"
+msgstr "Dollartegn"
+
+msgid "Quotation mark"
+msgstr "Anførselstegn"
+
+msgid "Percent sign"
+msgstr "Procenttegn"
+
+msgid "Caret"
+msgstr "Indskudsmærke"
+
+msgid "Tilda"
+msgstr "Tilde"
+
+msgid "Prime"
+msgstr "Primtal"
+
+msgid "Underline"
+msgstr "Understregning"
+
+msgid "Understrike"
+msgstr "Bundstreg"
+
+msgid "Pipe"
+msgstr "Lodret streg"
+
+msgid "Left parenthesis"
+msgstr "Venstre parentes"
+
+msgid "Right parenthesis"
+msgstr "Højre parentes"
+
+msgid "Left bracket"
+msgstr "Venstre klamme"
+
+msgid "Right bracket"
+msgstr "Højre klamme"
+
+msgid "Left brace"
+msgstr "Venstre krøllede parentes"
+
+msgid "Right brace"
+msgstr "Højre krøllede parentes"
+
+msgid "Enter"
+msgstr "Retur"
+
+msgid "Tab key"
+msgstr "Tabulatortast"
+
+msgid "Space key"
+msgstr "Mellemrum"
+
+msgid "Slash key"
+msgstr "Skråstreg"
+
+msgid "Backslash key"
+msgstr "Omvendt skråstreg"
+
+msgid "Number sign #"
+msgstr "Taltegn #"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "Snabel-a"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Skift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Kan ikke oprette datakanal til SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Kan ikke konfigurere skriveslutning til SIGWINCH-datakanal: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Kan ikke konfigurere læseslutning til SIGWINCH-datakanal: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Skærmstørrelsen %dx%d understøttes ikke.\n"
+"Tjek TERM-miljøvariabelen.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "TERM-miljøvariabelen er ikke sat!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Kan ikke tjekke SIGWINCH-datakanal"
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Kan ikke oprette datakanal-deskriptor"
+
+msgid "Cannot create pipe streams"
+msgstr "Kan ikke oprette datakanalstrømme"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Uventet fejl i select() læser data fra en underproces:\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr "Kan ikke lukke datakanal-deskriptor (p == NULL)"
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Uventet fejl i waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Ændringer til fil tabt"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "Tryk på en tast for at fortsætte..."
+
+msgid "Internal error:"
+msgstr "Intern fejl:"
+
+msgid "Screens"
+msgstr "Skærme"
+
+msgid "History"
+msgstr "Historik"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Ja"
+
+msgid "&No"
+msgstr "&Nej"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "Historikoprydning"
+
+msgid "Do you want clean this history?"
+msgstr "Ønsker du at rydde op i denne mappe?"
+
+msgid "&OK"
+msgstr "&OK"
+
+msgid "&Cancel"
+msgstr "&Annuller"
+
+msgid "Error"
+msgstr "Fejl"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Afbryd"
+
+msgid "< Default >"
+msgstr "< Standard >"
+
+msgid "Skins"
+msgstr "Temaer"
+
+msgid "Skin:"
+msgstr "Tema:"
+
+msgid "&Shadows"
+msgstr "&Skygger"
+
+msgid "Appearance"
+msgstr "Fremtoning"
+
+msgid "Displays the current version"
+msgstr "Viser den nuværende version"
+
+msgid "Print data directory"
+msgstr "Udskriv datamappe"
+
+msgid "Print extended info about used data directories"
+msgstr "Udskriv udvidet information om brugte datamapper"
+
+msgid "Print configure options"
+msgstr "Udskriv konfigurationsindstillinger"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Deaktivér understøttelse af X11"
+
+msgid "Forces xterm features"
+msgstr "Fremtvinger xterm-funktioner"
+
+msgid "Disable X11 support"
+msgstr "Deaktivér understøttelse af X11"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Prøver at bruge en gammel fremhævelse af musesporing"
+
+msgid "Disable mouse support in text version"
+msgstr "Fjern museunderstøttelse i tekstversion"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Prøver at bruge termcap i stedet for terminfo"
+
+msgid "To run on slow terminals"
+msgstr "For at køre på langsomme terminaler"
+
+msgid "Use stickchars to draw"
+msgstr "Brug tændstiktegn til at tegne"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Indlæs definitioner på genvejstaster fra angivet fil"
+
+msgid "<file>"
+msgstr "<fil>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr "Indlæs ikke definitioner af tastebindinger fra fil, brug standarder"
+
+msgid "Requests to run in black and white"
+msgstr "Kør i sort-hvid"
+
+msgid "Request to run in color mode"
+msgstr "Forsøg at køre med farver"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Vis mc med angivet tema"
+
+msgid "<string>"
+msgstr "<streng>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+linjenr.] fil1[:linjenr.] [fil2[:linjenr.]...]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "De vigtigste indstillinger"
+
+msgid "Terminal options"
+msgstr "Terminalindstillinger"
+
+msgid "Color options"
+msgstr "Farveindstillinger"
+
+msgid "Arguments parse error!"
+msgstr "Fejl ved fortolkning af argumenter!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Opsætning..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Konfigurer indstillinger"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "&Store/små bogstaver"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "Frem&ad til erklæring"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "&Find erklæring"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "'%s' er ikke en symbolsk henvisning"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Kan ikke gemme fil"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Kan ikke gemme fil"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"Kunne ikke køre:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "Ingen egnede punkter fundet i %s"
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Søgning færdig"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Søgning færdig"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "&Færdig: Vis alle"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Kan ikke gemme fil"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Kan ikke gemme fil:\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Kan ikke oversætte fra %s til %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Profilens rodmappe:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Kan ikke oprette hændelsen '%s'!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Læsning fejlede"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Navigation"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "Frem&ad til erklæring"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "&Færdig: Vis alle"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Navigation"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Søgning færdig"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Søgning færdig"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Filnavn for symbolsk henvisning:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Indlæs syntaksfil"
+
+msgid "Manage repositories"
+msgstr ""
+
+#, fuzzy
+msgid "Reindex repository"
+msgstr "Indekseret mappe"
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Bekræftelse"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "Frem&ad til erklæring"
+
+msgid "&Find declaration"
+msgstr "&Find erklæring"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Navigation"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Søg"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Filnavn for symbolsk henvisning:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "&Færdig: Vis alle"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Vælg"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Filnavn for symbolsk henvisning:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Filnavn:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Indlæs fil"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Luk"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Advarsel"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Aktuel tekst blev ændret uden en filgemning.\n"
+"Fortsæt med at ændre disse ændringer."
+
+msgid "C&ontinue"
+msgstr "&Fortsæt"
+
+msgid "&Add word"
+msgstr "&Tilføj ord"
+
+msgid "&Replace"
+msgstr "&Erstat"
+
+msgid "&Skip"
+msgstr "&Spring over"
+
+msgid "Language"
+msgstr "Sprog"
+
+msgid "Misspelled"
+msgstr "Stavefejl"
+
+msgid "Check word"
+msgstr "Kontrollér ord"
+
+msgid "Suggest"
+msgstr "Foreslå"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Tilføj ord"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Stavefejl"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Sprog"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Vælg"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Vælg sprog"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Indlæser: %3d%%"
+
+msgid "Loading..."
+msgstr "Indlæser..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "Indlæs fil"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Fejl under læsning af %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Filen »%s« er for stor.\n"
+"Åbn den alligevel?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Der opstod en fejl under læsning fra datakanal: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+#, fuzzy
+msgid "Undo"
+msgstr "Fortr&yd"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Prøv igen"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Fil har hårde henvisninger. Frigør før der gemmes?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Filen er blevet ændret i mellemtiden. Gem alligevel?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Der opstod en fejl under skriving til datakanal: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Filen du gemmer slutter ikke med en nylinje."
+
+msgid "&Do not change"
+msgstr "&Ændr ikke"
+
+msgid "&Unix format (LF)"
+msgstr "&Unix-format (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Windows/DOS-format (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Macintosh-format (CR)"
+
+msgid "Enter file name:"
+msgstr "Indtast filnavn:"
+
+msgid "Change line breaks to:"
+msgstr "Ændre linjeskift til:"
+
+msgid "Save As"
+msgstr "Gem som"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "&Hurtiggem"
+
+msgid "&Safe save"
+msgstr "&Sikker gemning"
+
+msgid "&Do backups with following extension:"
+msgstr "&Udfør sikkerhedskopiering med følgende filendelse:"
+
+msgid "Check &POSIX new line"
+msgstr "Tjek &POSIX-linjeskift"
+
+msgid "Edit Save Mode"
+msgstr "Rediger gemtilstand"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "En fil findes allerede med dette navn"
+
+msgid "&Overwrite"
+msgstr "&Overskriv"
+
+msgid "Cannot save file"
+msgstr "Kan ikke gemme fil"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Bekræft gemning af fil: »%s«"
+
+msgid "Save file"
+msgstr "Gem fil"
+
+msgid "&Save"
+msgstr "&Gem"
+
+msgid "Load"
+msgstr "Indlæs"
+
+msgid "Syntax file edit"
+msgstr "Redigering af syntaksfil"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Hvilken syntaksfil ønsker du at redigere?"
+
+msgid "&User"
+msgstr "&Bruger"
+
+msgid "&System wide"
+msgstr "&Hele systemet"
+
+msgid "Menu edit"
+msgstr "Menuredigering"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Hvilken menufil ønsker du at redigere?"
+
+msgid "&Local"
+msgstr "&Lokal"
+
+msgid "[NoName]"
+msgstr "[IntetNavn]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Filen %s blev ændret.\n"
+"Gem inden lukning?"
+
+msgid "Close file"
+msgstr "Luk fil"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "Afslut"
+
+msgid "This function is not implemented"
+msgstr "Denne funktion er ikke implementeret"
+
+msgid "Unable to save to file"
+msgstr "Kan ikke gemme fil"
+
+msgid "Goto line"
+msgstr "Gå til linje"
+
+msgid "Enter line:"
+msgstr "Indtast linje:"
+
+msgid "Save block"
+msgstr "Gem blok"
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr "Kan ikke indsætte fil"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "post -s <emne> -c <cc> <til>"
+
+msgid "To"
+msgstr "Til"
+
+msgid "Subject"
+msgstr "Emne"
+
+msgid "Copies to"
+msgstr "Kopi til"
+
+msgid "Mail"
+msgstr "Post"
+
+msgid "Cancel"
+msgstr "Annuller"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Slet %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Erstat"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Historik"
+
+msgid "Collect completions"
+msgstr "Indsaml fuldførelser"
+
+msgid "NoName"
+msgstr "IntetNavn"
+
+msgid "Save macro"
+msgstr "Gem makro"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Tast makroens nye genvej:"
+
+msgid "Repeat last commands"
+msgstr "Gentag de sidste kommandoer"
+
+msgid "Repeat times:"
+msgstr "Gentag antal gange:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Slet makro"
+
+msgid "Delete macro"
+msgstr "Slet makro"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "Russisk"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Luk"
+
+msgid "&Open file..."
+msgstr "&Åbn fil..."
+
+msgid "&New"
+msgstr "&Ny"
+
+msgid "&History..."
+msgstr "&Historik..."
+
+msgid "Save &as..."
+msgstr "Gem &som..."
+
+msgid "&Insert file..."
+msgstr "&Indsæt fil..."
+
+msgid "Cop&y to file..."
+msgstr "&Kopiér til fil..."
+
+msgid "&User menu..."
+msgstr "&Brugermenu..."
+
+msgid "A&bout..."
+msgstr "&Om..."
+
+msgid "&Quit"
+msgstr "A&fslut"
+
+msgid "&Undo"
+msgstr "Fortr&yd"
+
+msgid "&Redo"
+msgstr "&Omgør"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "&Historik..."
+
+msgid "&Toggle ins/overw"
+msgstr "&Skift ins/overw"
+
+msgid "To&ggle mark"
+msgstr "Skift &mærke"
+
+msgid "&Mark columns"
+msgstr "Marker kolo&nner"
+
+msgid "Mark &all"
+msgstr "Marker &alle"
+
+msgid "Unmar&k"
+msgstr "Fjern mark&ering"
+
+msgid "Cop&y"
+msgstr "&Kopiér"
+
+msgid "Mo&ve"
+msgstr "&Flyt"
+
+msgid "&Delete"
+msgstr "&Slet"
+
+msgid "Co&py to clipfile"
+msgstr "Ko&pier til udklipsfil"
+
+msgid "&Cut to clipfile"
+msgstr "K&lip til udklipsfil"
+
+msgid "Pa&ste from clipfile"
+msgstr "&Indsæt fra udklipsfil"
+
+msgid "&Beginning"
+msgstr "&Begyndelse"
+
+msgid "&End"
+msgstr "Sl&utning"
+
+msgid "&Search..."
+msgstr "&Søg..."
+
+msgid "Search &again"
+msgstr "Søg &igen"
+
+msgid "&Replace..."
+msgstr "&Erstat..."
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "&Skift linjetilstand"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "&Skriv af ejer"
+
+msgid "&Toggle bookmark"
+msgstr "Sk&ift bogmærke"
+
+msgid "&Next bookmark"
+msgstr "&Næste bogmærke"
+
+msgid "&Prev bookmark"
+msgstr "F&orr. bogmærke"
+
+msgid "&Flush bookmarks"
+msgstr "&Fjern bogmærker"
+
+msgid "&Go to line..."
+msgstr "&Gå til linje..."
+
+msgid "&Toggle line state"
+msgstr "&Skift linjetilstand"
+
+msgid "Go to matching &bracket"
+msgstr "Gå til mat&chende parentes"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Skift s&yntaksfremhævelse"
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "Kodn&ing..."
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Find alle"
+
+msgid "&Refresh screen"
+msgstr "Op&dater skærm"
+
+msgid "&Start/Stop record macro"
+msgstr "Start/stop op&tagelse af makro"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "Optag/gentag &handlinger"
+
+msgid "&Move"
+msgstr "Fl&yt"
+
+msgid "&Resize"
+msgstr "&Ændr størrelse"
+
+msgid "&Toggle fullscreen"
+msgstr "&Skift fuldskærm"
+
+msgid "&Next"
+msgstr "&Næste"
+
+msgid "&Previous"
+msgstr "&Forrige"
+
+msgid "&List..."
+msgstr "&Liste..."
+
+msgid "&General..."
+msgstr "&Generelt..."
+
+msgid "Save &mode..."
+msgstr "Gem&tilstand..."
+
+msgid "Syntax &highlighting..."
+msgstr "Syntaks&fremhævelse..."
+
+msgid "&Appearance..."
+msgstr "&Fremtoning..."
+
+msgid "Learn &keys..."
+msgstr "L&ær taster..."
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "&Kodning..."
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "&Kodning..."
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "&Panelindstilinger..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "S&yntaksfil"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "&Menufil"
+
+msgid "&Save setup"
+msgstr "Gem ops&ætning"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Fil"
+
+msgid "&Edit"
+msgstr "&Rediger"
+
+msgid "&Search"
+msgstr "&Søg"
+
+msgid "&Command"
+msgstr "&Kommando"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Navigation"
+
+msgid "&Window"
+msgstr "&Vindue"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Indstillinger"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Tabulering"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Læsning fejlede"
+
+msgid "&None"
+msgstr "&Ingen"
+
+msgid "&Dynamic paragraphing"
+msgstr "&Dynamiske paragraffer"
+
+msgid "Type &writer wrap"
+msgstr "&Skrivemaskine-ombrydning"
+
+msgid "Wrap mode"
+msgstr "Ombrydningstilstand"
+
+msgid "Tabulation"
+msgstr "Tabulering"
+
+msgid "&Fake half tabs"
+msgstr "&Falske halve tabulatorer"
+
+msgid "&Backspace through tabs"
+msgstr "&Baglæns slet via tabulatorer"
+
+msgid "Fill tabs with &spaces"
+msgstr "Fyld tabulatoreer med &mellemrum"
+
+msgid "Tab spacing:"
+msgstr "Tabulatormellemrum:"
+
+msgid "Other options"
+msgstr "Andre indstillinger"
+
+msgid "&Return does autoindent"
+msgstr "&Retur laver autoindryk"
+
+msgid "Confir&m before saving"
+msgstr "&Bekræft før gemning"
+
+msgid "Save file &position"
+msgstr "Gem fil&placering"
+
+msgid "&Visible trailing spaces"
+msgstr "&Synlige efterstillede mellemrum"
+
+msgid "Visible &tabs"
+msgstr "Synlige &tabulatorer"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "Synta&ksfremhævelse"
+
+msgid "C&ursor after inserted block"
+msgstr "&Markør efter indsat blok"
+
+msgid "Pers&istent selection"
+msgstr "&Fast markering"
+
+msgid "Cursor be&yond end of line"
+msgstr "Markør &forbi slutningen af linjen"
+
+msgid "&Group undo"
+msgstr "&Gruppe fortryd"
+
+msgid "Word wrap line length:"
+msgstr "Linjelængde for ordombrydning:"
+
+msgid "Editor options"
+msgstr "Indstillinger for editor"
+
+msgid "Enter search string:"
+msgstr "Indtast søgestreng:"
+
+msgid "Cas&e sensitive"
+msgstr "&Store/små bogstaver"
+
+msgid "&Backwards"
+msgstr "&Baglæns"
+
+msgid "In se&lection"
+msgstr "I &markering"
+
+msgid "&Whole words"
+msgstr "&Hele ord"
+
+msgid "&All charsets"
+msgstr "&Alle tegnsæt"
+
+msgid "&Find all"
+msgstr "&Find alle"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Søg"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Søger %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Søger i %s"
+
+msgid "Enter replacement string:"
+msgstr "Indtast erstatningsstreng:"
+
+msgid "Replace"
+msgstr "Erstat"
+
+msgid "Replace with:"
+msgstr "Erstat med:"
+
+msgid "A&ll"
+msgstr "A&lle"
+
+msgid "Confirm replace"
+msgstr "Bekræft erstatning"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "%ld erstatninger foretaget"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "Om"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Åbn filer"
+
+msgid "Edit: "
+msgstr "Rediger: "
+
+msgid "ButtonBar|Help"
+msgstr "Hjælp"
+
+msgid "ButtonBar|Save"
+msgstr "Gem"
+
+msgid "ButtonBar|Mark"
+msgstr "Markér"
+
+msgid "ButtonBar|Replac"
+msgstr "Erstat"
+
+msgid "ButtonBar|Copy"
+msgstr "Kopiér"
+
+msgid "ButtonBar|Move"
+msgstr "Flyt"
+
+msgid "ButtonBar|Search"
+msgstr "Søg"
+
+msgid "ButtonBar|Delete"
+msgstr "Slet"
+
+msgid "ButtonBar|PullDn"
+msgstr "Træk ned"
+
+msgid "ButtonBar|Quit"
+msgstr "Afslut"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Søger %s: %3d%%"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Auto >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Genindlæs aktuel syntaks >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr "Indlæs syntaksfil"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Fejl i fil %s på linje %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Ikke en xterm eller Linuxkonsol;\n"
+"underskallen kan ikke skiftes."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr "Formatfejl i hjælpefil\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Intern fejl: Dobbeltstart på henvisningsområde"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Kan ikke finde knude %s i hjælpefil"
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Hjælp"
+
+msgid "ButtonBar|Index"
+msgstr "Indeks"
+
+msgid "ButtonBar|Prev"
+msgstr "Forr."
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Funktionstast 1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Navigation"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Lær taster"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Bekræftelse"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Skift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Rediger &menufil"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&Post..."
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "&Menufil"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&Liste..."
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Hjælp"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "&Rediger"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "A1-tast"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Tryk på en tast for at fortsætte..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "&Baglæns"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Rediger &menufil"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Kunne ikke køre:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Hjemmemappesti er ikke absolut"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Mislykkede under lukning:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "VFS-plugins og -scripts:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Ukendt fejl i underproces"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Angiv"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Læsning fejlede"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: Fejl"
+
+msgid "Choose codepage"
+msgstr "Vælg tegnsæt"
+
+msgid "-  < No translation >"
+msgstr "-  < Ingen oversættelse >"
+
+msgid "Setup"
+msgstr "Opsætning"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Opsætning gemt til %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Kan ikke gemme opsætning til %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Med valgfri understøttelse af underskal"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "Med understøttelse af mus i xterm og på Linuxkonsollen"
+
+msgid "With mouse support on xterm"
+msgstr "Med understøttelse af mus i xterm"
+
+msgid "With support for X11 events"
+msgstr "Med understøttelse af X11-hændelser"
+
+msgid "With internationalization support"
+msgstr "Med understøttelse af internationalisering"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr "Datatyper:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Søgestreng blev ikke fundet"
+
+msgid "Home directory:"
+msgstr "Hjemmemappe:"
+
+msgid "Profile root directory:"
+msgstr "Profilens rodmappe:"
+
+msgid "System data"
+msgstr "Systemdata"
+
+msgid "Config directory:"
+msgstr "Konfigurationsmappe:"
+
+msgid "Data directory:"
+msgstr "Datamappe:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Indstillinger for editor"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "VFS-plugins og -scripts:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Brugerdata"
+
+msgid "Cache directory:"
+msgstr "Mellemlagermappe:"
+
+msgid "Debug"
+msgstr "Fejlsøg"
+
+msgid "ERROR:"
+msgstr "FEJL:"
+
+msgid "True:"
+msgstr "Sand:"
+
+msgid "False:"
+msgstr "Falsk:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr ""
+"Kan ikke gemme fil:\n"
+"%s"
+
+msgid "Error calling program"
+msgstr "Fejl ved kald af program"
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr "Parameter"
+
+msgid "Warning -- ignoring file"
+msgstr "Advarsel - ignorerer fil"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Filen %s er hverken ejet af administrator, dig eller er global\n"
+"skrivbar. Brug af den kan muligvis kompromittere din sikkerhed"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "Kan ikke køre kommandoer på filsystemer der ikke er lokale"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "Ingen egnede punkter fundet i %s"
+
+msgid "User menu"
+msgstr "Brugermenu"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Kan ikke oversætte fra %s til %s"

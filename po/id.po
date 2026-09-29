@@ -1,0 +1,2650 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Andika Triwidada <andika@gmail.com>, 2011-2012
+# Ferriandy Chianiago <gpl4all@gmail.com>, 2015
+# Gung Sukma <so.hot.call@gmail.com>, 2015
+# Yury V. Zaytsev <yury@shurup.com>, 2025
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Indonesian <https://translate.codeberg.org/projects/mc6/mc6/"
+"id/>\n"
+"Language: id\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "Peringatan: tak bisa memuat daftar codepage"
+
+msgid "7-bit ASCII"
+msgstr "ASCII 7 bit"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Tak bisa menerjemahkan dari %s ke %s"
+
+msgid "Event system already initialized"
+msgstr "Event system sudah diinisiasi"
+
+msgid "Failed to initialize event system"
+msgstr "Gagal dalam inisiasi event system"
+
+msgid "Event system not initialized"
+msgstr "Event system tidak diinisiasi"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Periksa data masukan! Beberapa parameter NULL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Gagal membuat group '%s' untuk events!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Gagal membuat event '%s'!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Page Down"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+msgid "Top of screen"
+msgstr ""
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+msgid "Copy file(s)"
+msgstr ""
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Main menu"
+msgstr ""
+
+msgid "User-defined menu"
+msgstr ""
+
+msgid "Edit user menu"
+msgstr ""
+
+#, fuzzy
+msgid "Search next"
+msgstr "Pencarian"
+
+msgid "Replace next"
+msgstr ""
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Opsi terminal"
+
+msgid "Edit file"
+msgstr ""
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Menyunting files"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&All charsets"
+
+msgid "Command history"
+msgstr ""
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+msgid "Save as..."
+msgstr ""
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Pindah ke baris (kiri)"
+
+msgid "Refresh screen"
+msgstr ""
+
+msgid "Suspend to shell"
+msgstr ""
+
+msgid "List open screens"
+msgstr ""
+
+msgid "Next screen"
+msgstr ""
+
+msgid "Previous screen"
+msgstr ""
+
+#, fuzzy
+msgid "Next file"
+msgstr "Mendapatkan file"
+
+msgid "Previous file"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "Delete pada keypad"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Delete pada keypad"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Delete pada keypad"
+
+msgid "Cut to clipboard"
+msgstr ""
+
+msgid "Copy to clipboard"
+msgstr ""
+
+msgid "Paste from clipboard"
+msgstr ""
+
+msgid "Toggle selection"
+msgstr ""
+
+msgid "Select left"
+msgstr ""
+
+msgid "Select right"
+msgstr ""
+
+msgid "Select up"
+msgstr ""
+
+msgid "Select down"
+msgstr ""
+
+msgid "Select to word start"
+msgstr ""
+
+msgid "Select to word end"
+msgstr ""
+
+msgid "Select to line start"
+msgstr ""
+
+msgid "Select to line end"
+msgstr ""
+
+msgid "Sort order..."
+msgstr ""
+
+#, fuzzy
+msgid "General options"
+msgstr "Opsi terminal"
+
+msgid "Learn terminal keys"
+msgstr ""
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+msgid "Set bookmark"
+msgstr ""
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+msgid "Find declaration"
+msgstr ""
+
+msgid "Appearance settings"
+msgstr ""
+
+msgid "Save setup"
+msgstr ""
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+msgid "Previous link"
+msgstr ""
+
+msgid "Next node"
+msgstr ""
+
+msgid "Previous node"
+msgstr ""
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+msgid "Deselect all"
+msgstr ""
+
+msgid "Select page up"
+msgstr ""
+
+msgid "Select page down"
+msgstr ""
+
+msgid "Close editor"
+msgstr ""
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+msgid "Open file in editor"
+msgstr ""
+
+#, fuzzy
+msgid "Select word"
+msgstr "&Whole words"
+
+msgid "Select line"
+msgstr ""
+
+msgid "Select all"
+msgstr ""
+
+msgid "Column selection mode"
+msgstr ""
+
+msgid "Save selected block"
+msgstr ""
+
+msgid "Insert file"
+msgstr ""
+
+msgid "Toggle insert/overwrite"
+msgstr ""
+
+msgid "Insert date/time (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Delete"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "Memuat file"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "History"
+
+msgid "Format paragraph (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Kurung siku buka"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+msgid "Repeat last macro"
+msgstr ""
+
+msgid "Spell check"
+msgstr ""
+
+msgid "Spell check current word"
+msgstr ""
+
+msgid "Select spell language"
+msgstr ""
+
+msgid "Clear all bookmarks"
+msgstr ""
+
+msgid "Next bookmark"
+msgstr ""
+
+msgid "Previous bookmark"
+msgstr ""
+
+msgid "Toggle code fold"
+msgstr ""
+
+msgid "Unfold all"
+msgstr ""
+
+msgid "Toggle line filter"
+msgstr ""
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Perubahan file tidak tersimpan"
+
+msgid "Select to file end"
+msgstr ""
+
+msgid "Select to page start"
+msgstr ""
+
+msgid "Select to page end"
+msgstr ""
+
+msgid "Select scroll up"
+msgstr ""
+
+msgid "Select scroll down"
+msgstr ""
+
+msgid "Select paragraph up"
+msgstr ""
+
+msgid "Select paragraph down"
+msgstr ""
+
+msgid "Column select page up"
+msgstr ""
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+msgid "Column select up"
+msgstr ""
+
+msgid "Column select down"
+msgstr ""
+
+msgid "Column select scroll up"
+msgstr ""
+
+msgid "Column select scroll down"
+msgstr ""
+
+msgid "Column select paragraph up"
+msgstr ""
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+msgid "Toggle visible tabs/spaces"
+msgstr ""
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Pilih syntax highlighting"
+
+msgid "Choose syntax highlighting"
+msgstr "Pilih syntax highlighting"
+
+msgid "Toggle right margin"
+msgstr ""
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Opsi utama"
+
+msgid "About editor"
+msgstr ""
+
+msgid "Execute script"
+msgstr ""
+
+msgid "Move window"
+msgstr ""
+
+msgid "Resize window"
+msgstr ""
+
+msgid "Toggle fullscreen"
+msgstr ""
+
+msgid "Window list"
+msgstr ""
+
+msgid "Next window"
+msgstr ""
+
+msgid "Previous window"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Berkas \"%s\" sedang disunting.\n"
+"Pengguna: %s\n"
+"ID Proses: %d"
+
+msgid "File locked"
+msgstr "Berkas dikunci"
+
+msgid "&Grab lock"
+msgstr "Pe&gang kunci"
+
+msgid "&Ignore lock"
+msgstr "Aba&ikan kunci"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Tidak bisa membuat direktori %s"
+
+msgid "FATAL: not a directory:"
+msgstr "FATAL: bukan sebuah direktori:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+
+msgid "Invalid character"
+msgstr ""
+
+msgid "Unmatched quotes character"
+msgstr ""
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+
+msgid "Search string not found"
+msgstr "String yang dicari tak ditemukan"
+
+msgid "Not implemented yet"
+msgstr "Belum diimplementasi"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Cacah token pengganti tak sama dengan cacah token yang ditemukan"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Nomor token %d tak valid"
+
+msgid "Regular expression error"
+msgstr "Kesalahan pada Regular expression"
+
+msgid "No&rmal"
+msgstr "No&rmal"
+
+msgid "Re&gular expression"
+msgstr "Re&gular expression"
+
+msgid "He&xadecimal"
+msgstr "He&xadecimal"
+
+msgid "Wil&dcard search"
+msgstr "Wil&dcard search"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Tak bisa mengurai skin '%s'.\n"
+"Skin bawaan telah dimuat."
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Tak bisa memuat skin '%s'.\n"
+"Skin bawaan telah dimuat."
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "Escape"
+
+msgid "Function key 1"
+msgstr "Tombol fungsi 1"
+
+msgid "Function key 2"
+msgstr "Tombol fungsi 2"
+
+msgid "Function key 3"
+msgstr "Tombol fungsi 3"
+
+msgid "Function key 4"
+msgstr "Tombol fungsi 4"
+
+msgid "Function key 5"
+msgstr "Tombol fungsi 5"
+
+msgid "Function key 6"
+msgstr "Tombol fungsi 6"
+
+msgid "Function key 7"
+msgstr "Tombol fungsi 7"
+
+msgid "Function key 8"
+msgstr "Tombol fungsi 8"
+
+msgid "Function key 9"
+msgstr "Tombol fungsi 9"
+
+msgid "Function key 10"
+msgstr "Tombol fungsi 10"
+
+msgid "Function key 11"
+msgstr "Tombol fungsi 11"
+
+msgid "Function key 12"
+msgstr "Tombol fungsi 12"
+
+msgid "Function key 13"
+msgstr "Tombol fungsi 13"
+
+msgid "Function key 14"
+msgstr "Tombol fungsi 14"
+
+msgid "Function key 15"
+msgstr "Tombol fungsi 15"
+
+msgid "Function key 16"
+msgstr "Tombol fungsi 16"
+
+msgid "Function key 17"
+msgstr "Tombol fungsi 17"
+
+msgid "Function key 18"
+msgstr "Tombol fungsi 18"
+
+msgid "Function key 19"
+msgstr "Tombol fungsi 19"
+
+msgid "Function key 20"
+msgstr "Tombol fungsi 20"
+
+msgid "Completion/M-tab"
+msgstr "Completion/M-tab"
+
+msgid "BackTab/S-tab"
+msgstr "BackTab/S-tab"
+
+msgid "Backspace"
+msgstr "Backspace"
+
+msgid "Up arrow"
+msgstr "Up arrow"
+
+msgid "Down arrow"
+msgstr "Down arrow"
+
+msgid "Left arrow"
+msgstr "Left arrow"
+
+msgid "Right arrow"
+msgstr "Right arrow"
+
+msgid "Insert"
+msgstr "Insert"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr "Tombol end"
+
+msgid "Page Up"
+msgstr "Page Up"
+
+msgid "Page Down"
+msgstr "Page Down"
+
+msgid "/ on keypad"
+msgstr "/ on keypad"
+
+msgid "* on keypad"
+msgstr "* pada keypad"
+
+msgid "- on keypad"
+msgstr "- pada keypad"
+
+msgid "+ on keypad"
+msgstr "+ pada keypad"
+
+msgid "Left arrow keypad"
+msgstr "Panah kiri keypad"
+
+msgid "Right arrow keypad"
+msgstr "Panah kanan keypad"
+
+msgid "Up arrow keypad"
+msgstr "Panah naik keypad"
+
+msgid "Down arrow keypad"
+msgstr "Panah turun keypad"
+
+msgid "Home on keypad"
+msgstr "Home pada keypad"
+
+msgid "End on keypad"
+msgstr "End pada keypad"
+
+msgid "Page Down keypad"
+msgstr "Page Down keypad"
+
+msgid "Page Up keypad"
+msgstr "Page Up keypad"
+
+msgid "Insert on keypad"
+msgstr "Insert pada keypad"
+
+msgid "Delete on keypad"
+msgstr "Delete pada keypad"
+
+msgid "Enter on keypad"
+msgstr "Enter pada keypad"
+
+msgid "Function key 21"
+msgstr "Tombol fungsi 21"
+
+msgid "Function key 22"
+msgstr "Tombol fungsi 22"
+
+msgid "Function key 23"
+msgstr "Tombol fungsi 23"
+
+msgid "Function key 24"
+msgstr "Tombol fungsi 24"
+
+msgid "A1 key"
+msgstr "Tombol A1"
+
+msgid "C1 key"
+msgstr "Tombol C1"
+
+msgid "Asterisk"
+msgstr "Asterisk"
+
+msgid "Minus"
+msgstr "Minus"
+
+msgid "Plus"
+msgstr "Plus"
+
+msgid "Dot"
+msgstr "Dot"
+
+msgid "Less than"
+msgstr "Kurang dari"
+
+msgid "Great than"
+msgstr "Lebih dari"
+
+msgid "Equal"
+msgstr "Sama"
+
+msgid "Comma"
+msgstr "Koma"
+
+msgid "Apostrophe"
+msgstr "Apostrof"
+
+msgid "Colon"
+msgstr "Titik dua"
+
+msgid "Semicolon"
+msgstr "Semicolon"
+
+msgid "Exclamation mark"
+msgstr "Tanda seru"
+
+msgid "Question mark"
+msgstr "Tanda tanya"
+
+msgid "Ampersand"
+msgstr "Ampersand"
+
+msgid "Dollar sign"
+msgstr "Tanda dolar"
+
+msgid "Quotation mark"
+msgstr "Tanda tanya"
+
+msgid "Percent sign"
+msgstr "Percent sign"
+
+msgid "Caret"
+msgstr "Karet"
+
+msgid "Tilda"
+msgstr "Cacing"
+
+msgid "Prime"
+msgstr "Prime"
+
+msgid "Underline"
+msgstr "Garis bawah"
+
+msgid "Understrike"
+msgstr "Understrike"
+
+msgid "Pipe"
+msgstr "Pipa"
+
+msgid "Left parenthesis"
+msgstr "Kurung buka"
+
+msgid "Right parenthesis"
+msgstr "Kurung tutup"
+
+msgid "Left bracket"
+msgstr "Kurung siku buka"
+
+msgid "Right bracket"
+msgstr "Kurung siku tutup"
+
+msgid "Left brace"
+msgstr "Kurung kurawal buka"
+
+msgid "Right brace"
+msgstr "Kurung kurawal tutup"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "Tab"
+
+msgid "Space key"
+msgstr "Tombol spasi"
+
+msgid "Slash key"
+msgstr "Tombol garis miring"
+
+msgid "Backslash key"
+msgstr "Backslash key"
+
+msgid "Number sign #"
+msgstr "Number sign #"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "At sign"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Ukuran layar %dx%d tak didukung.\n"
+"Periksalah variabel lingkungan TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "Environment variable TERM belum diset\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr ""
+
+msgid "B"
+msgstr ""
+
+msgid "kB"
+msgstr ""
+
+msgid "KiB"
+msgstr ""
+
+msgid "MB"
+msgstr ""
+
+msgid "MiB"
+msgstr ""
+
+msgid "GB"
+msgstr ""
+
+msgid "GiB"
+msgstr ""
+
+msgid "Cannot create pipe descriptor"
+msgstr "Gagal membuat pipe descriptor"
+
+msgid "Cannot create pipe streams"
+msgstr "Gagal membuat pipe streams"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Kesalahan tak terduga dalam select() membaca data dari child process\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Kesalahan tak terduga dalam waitpid()\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Perubahan file tidak tersimpan"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "Tekan sebarang tombol untuk melanjutkan..."
+
+msgid "Internal error:"
+msgstr "Kesalahan internal."
+
+msgid "Screens"
+msgstr "Screens"
+
+msgid "History"
+msgstr "History"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Ya"
+
+msgid "&No"
+msgstr "&No"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "Pembersihan DialogTitle|History"
+
+msgid "Do you want clean this history?"
+msgstr "Apakah anda mau membersihkan history?"
+
+msgid "&OK"
+msgstr "&Oke"
+
+msgid "&Cancel"
+msgstr "&Cancel"
+
+msgid "Error"
+msgstr "Error"
+
+#, c-format
+msgid "%s (%d)"
+msgstr ""
+
+msgid "&Abort"
+msgstr "&Abort"
+
+msgid "< Default >"
+msgstr ""
+
+msgid "Skins"
+msgstr ""
+
+msgid "Skin:"
+msgstr ""
+
+msgid "&Shadows"
+msgstr ""
+
+msgid "Appearance"
+msgstr ""
+
+msgid "Displays the current version"
+msgstr "Tampilkan versi"
+
+msgid "Print data directory"
+msgstr "Cetak data directory"
+
+msgid "Print extended info about used data directories"
+msgstr "Cetak info lebih lanjut dari data directory yang terpakai"
+
+msgid "Print configure options"
+msgstr "Cetak opsi konfigurasi"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Non aktifkan X11 support"
+
+msgid "Forces xterm features"
+msgstr "Paksakan fitur xterm"
+
+msgid "Disable X11 support"
+msgstr "Non aktifkan X11 support"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr ""
+
+msgid "Disable mouse support in text version"
+msgstr "Non aktifkan mouse support dalam moda text"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Mencoba menggunakan termcap bukannya terminfo"
+
+msgid "To run on slow terminals"
+msgstr "Untuk menjalankan pada terminal yang lambat"
+
+msgid "Use stickchars to draw"
+msgstr "Gunakan stickchars untuk menggambar"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Memuat definisi key bindings dari file yang ditenttukan"
+
+msgid "<file>"
+msgstr ""
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr "Jangan memuat definisi key bindings dari file, gunakan default"
+
+msgid "Requests to run in black and white"
+msgstr "Meminta untuk dijalankan dalam moda hitam putih"
+
+msgid "Request to run in color mode"
+msgstr "Meminta untuk dijalankan dalam moda berwarna"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Tampilkan mc dengan skin tertentu"
+
+msgid "<string>"
+msgstr ""
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "Opsi utama"
+
+msgid "Terminal options"
+msgstr "Opsi terminal"
+
+msgid "Color options"
+msgstr "Opsi warna"
+
+msgid "Arguments parse error!"
+msgstr "Kesalahan mengurai argumen!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "Cetak opsi konfigurasi"
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Opsi utama"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "Cas&e sensitive"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+msgid "Go to Declaration"
+msgstr ""
+
+msgid "Find Declaration"
+msgstr ""
+
+msgid "No word at cursor."
+msgstr ""
+
+#, c-format
+msgid "'%s' is not a known symbol."
+msgstr ""
+
+msgid "Failed to create temporary file."
+msgstr ""
+
+msgid "Failed to open temporary file."
+msgstr ""
+
+msgid "No indexed files found."
+msgstr ""
+
+msgid "Failed to run grep."
+msgstr ""
+
+#, c-format
+msgid "No references found for '%s'."
+msgstr ""
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Pencarian"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Pencarian"
+
+msgid "Complete Symbol"
+msgstr ""
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, c-format
+msgid "Failed to load tags file: %s"
+msgstr ""
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr "Gagal membuat pipe streams"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Tak bisa menerjemahkan dari %s ke %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+msgid "Project root directory to index:"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Gagal membuat event '%s'!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Kesalahan membaca"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+msgid "Navigation History"
+msgstr ""
+
+msgid "Go to declaration"
+msgstr ""
+
+msgid "Find references"
+msgstr ""
+
+msgid "Complete symbol"
+msgstr ""
+
+msgid "Navigation history"
+msgstr ""
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Pencarian dinon aktifkan"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Pencarian"
+
+msgid "Symbols in current file"
+msgstr ""
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Memuat file"
+
+msgid "Manage repositories"
+msgstr ""
+
+msgid "Reindex repository"
+msgstr ""
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Cetak opsi konfigurasi"
+
+msgid "Go to &declaration"
+msgstr ""
+
+msgid "&Find declaration"
+msgstr ""
+
+msgid "Find &references"
+msgstr ""
+
+msgid "Navigation &history"
+msgstr ""
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "Pencarian dinon aktifkan"
+
+msgid "S&ymbols in file"
+msgstr ""
+
+msgid "&Complete symbol"
+msgstr ""
+
+msgid "No matching symbols found."
+msgstr ""
+
+msgid "Select symbol"
+msgstr ""
+
+msgid "Symbol name:"
+msgstr ""
+
+msgid "File name or path:"
+msgstr ""
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Memuat file"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr ""
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Peringatan"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+
+msgid "C&ontinue"
+msgstr ""
+
+msgid "&Add word"
+msgstr ""
+
+msgid "&Replace"
+msgstr ""
+
+msgid "&Skip"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Misspelled"
+msgstr ""
+
+msgid "Check word"
+msgstr ""
+
+msgid "Suggest"
+msgstr ""
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+msgid "Add word"
+msgstr ""
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+msgid "Aspell"
+msgstr ""
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+msgid "Language:"
+msgstr ""
+
+msgid "&Select..."
+msgstr ""
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr ""
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Memuat: %3d%%"
+
+msgid "Loading..."
+msgstr "Memuat..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "Memuat file"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Kesalahan membaca %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"File \"%s\" terlalu besar.\n"
+"Tetap dibuka?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+msgid "Undo"
+msgstr ""
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr ""
+
+msgid "File has hard-links. Detach before saving?"
+msgstr ""
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr ""
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr ""
+
+msgid "&Do not change"
+msgstr ""
+
+msgid "&Unix format (LF)"
+msgstr ""
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr ""
+
+msgid "&Macintosh format (CR)"
+msgstr ""
+
+msgid "Enter file name:"
+msgstr ""
+
+msgid "Change line breaks to:"
+msgstr ""
+
+msgid "Save As"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr ""
+
+msgid "&Safe save"
+msgstr ""
+
+msgid "&Do backups with following extension:"
+msgstr ""
+
+msgid "Check &POSIX new line"
+msgstr ""
+
+msgid "Edit Save Mode"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr ""
+
+msgid "&Overwrite"
+msgstr ""
+
+msgid "Cannot save file"
+msgstr ""
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr ""
+
+msgid "Save file"
+msgstr ""
+
+msgid "&Save"
+msgstr ""
+
+msgid "Load"
+msgstr ""
+
+msgid "Syntax file edit"
+msgstr ""
+
+msgid "Which syntax file you want to edit?"
+msgstr ""
+
+msgid "&User"
+msgstr ""
+
+msgid "&System wide"
+msgstr ""
+
+msgid "Menu edit"
+msgstr ""
+
+msgid "Which menu file do you want to edit?"
+msgstr ""
+
+msgid "&Local"
+msgstr ""
+
+msgid "[NoName]"
+msgstr ""
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+
+msgid "Close file"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "Keluar"
+
+msgid "This function is not implemented"
+msgstr ""
+
+msgid "Unable to save to file"
+msgstr ""
+
+msgid "Goto line"
+msgstr ""
+
+msgid "Enter line:"
+msgstr "Masukkan baris:"
+
+msgid "Save block"
+msgstr ""
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr ""
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <subject> -c <cc> <to>"
+
+msgid "To"
+msgstr ""
+
+msgid "Subject"
+msgstr ""
+
+msgid "Copies to"
+msgstr ""
+
+msgid "Mail"
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Delete"
+
+msgid "replace"
+msgstr ""
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "History"
+
+msgid "Collect completions"
+msgstr ""
+
+msgid "NoName"
+msgstr ""
+
+msgid "Save macro"
+msgstr ""
+
+msgid "Press the macro's new hotkey:"
+msgstr ""
+
+msgid "Repeat last commands"
+msgstr ""
+
+msgid "Repeat times:"
+msgstr ""
+
+#, c-format
+msgid "Delete macro %s?"
+msgstr ""
+
+msgid "Delete macro"
+msgstr ""
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+msgid "Run"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "&Open file..."
+msgstr ""
+
+msgid "&New"
+msgstr ""
+
+msgid "&History..."
+msgstr ""
+
+msgid "Save &as..."
+msgstr ""
+
+msgid "&Insert file..."
+msgstr ""
+
+msgid "Cop&y to file..."
+msgstr ""
+
+msgid "&User menu..."
+msgstr ""
+
+msgid "A&bout..."
+msgstr ""
+
+msgid "&Quit"
+msgstr ""
+
+msgid "&Undo"
+msgstr ""
+
+msgid "&Redo"
+msgstr ""
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "History"
+
+msgid "&Toggle ins/overw"
+msgstr ""
+
+msgid "To&ggle mark"
+msgstr ""
+
+msgid "&Mark columns"
+msgstr ""
+
+msgid "Mark &all"
+msgstr ""
+
+msgid "Unmar&k"
+msgstr ""
+
+msgid "Cop&y"
+msgstr ""
+
+msgid "Mo&ve"
+msgstr ""
+
+msgid "&Delete"
+msgstr ""
+
+msgid "Co&py to clipfile"
+msgstr ""
+
+msgid "&Cut to clipfile"
+msgstr ""
+
+msgid "Pa&ste from clipfile"
+msgstr ""
+
+msgid "&Beginning"
+msgstr ""
+
+msgid "&End"
+msgstr ""
+
+msgid "&Search..."
+msgstr ""
+
+msgid "Search &again"
+msgstr ""
+
+msgid "&Replace..."
+msgstr ""
+
+msgid "Toggle &line filter"
+msgstr ""
+
+msgid "Filter by &word"
+msgstr ""
+
+msgid "&Toggle bookmark"
+msgstr ""
+
+msgid "&Next bookmark"
+msgstr ""
+
+msgid "&Prev bookmark"
+msgstr ""
+
+msgid "&Flush bookmarks"
+msgstr ""
+
+msgid "&Go to line..."
+msgstr ""
+
+msgid "&Toggle line state"
+msgstr ""
+
+msgid "Go to matching &bracket"
+msgstr ""
+
+msgid "Toggle s&yntax highlighting"
+msgstr ""
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr ""
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+msgid "&Unfold all"
+msgstr ""
+
+msgid "&Refresh screen"
+msgstr ""
+
+msgid "&Start/Stop record macro"
+msgstr ""
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr ""
+
+msgid "&Move"
+msgstr ""
+
+msgid "&Resize"
+msgstr ""
+
+msgid "&Toggle fullscreen"
+msgstr ""
+
+msgid "&Next"
+msgstr ""
+
+msgid "&Previous"
+msgstr ""
+
+msgid "&List..."
+msgstr ""
+
+msgid "&General..."
+msgstr ""
+
+msgid "Save &mode..."
+msgstr ""
+
+msgid "Syntax &highlighting..."
+msgstr ""
+
+msgid "&Appearance..."
+msgstr ""
+
+msgid "Learn &keys..."
+msgstr ""
+
+msgid "Key &bindings..."
+msgstr ""
+
+msgid "Key s&niffer..."
+msgstr ""
+
+msgid "Manage &plugins..."
+msgstr ""
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr ""
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "Memuat file"
+
+msgid "&Save setup"
+msgstr ""
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr ""
+
+msgid "&Edit"
+msgstr ""
+
+msgid "&Search"
+msgstr ""
+
+msgid "&Command"
+msgstr ""
+
+msgid "&Navigate"
+msgstr ""
+
+msgid "&Window"
+msgstr ""
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr ""
+
+msgid "Lua action"
+msgstr ""
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Kesalahan membaca"
+
+msgid "&None"
+msgstr ""
+
+msgid "&Dynamic paragraphing"
+msgstr ""
+
+msgid "Type &writer wrap"
+msgstr ""
+
+msgid "Wrap mode"
+msgstr ""
+
+msgid "Tabulation"
+msgstr ""
+
+msgid "&Fake half tabs"
+msgstr ""
+
+msgid "&Backspace through tabs"
+msgstr ""
+
+msgid "Fill tabs with &spaces"
+msgstr ""
+
+msgid "Tab spacing:"
+msgstr ""
+
+msgid "Other options"
+msgstr ""
+
+msgid "&Return does autoindent"
+msgstr ""
+
+msgid "Confir&m before saving"
+msgstr ""
+
+msgid "Save file &position"
+msgstr ""
+
+msgid "&Visible trailing spaces"
+msgstr ""
+
+msgid "Visible &tabs"
+msgstr ""
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr ""
+
+msgid "C&ursor after inserted block"
+msgstr ""
+
+msgid "Pers&istent selection"
+msgstr ""
+
+msgid "Cursor be&yond end of line"
+msgstr ""
+
+msgid "&Group undo"
+msgstr ""
+
+msgid "Word wrap line length:"
+msgstr ""
+
+msgid "Editor options"
+msgstr ""
+
+msgid "Enter search string:"
+msgstr "Masukkan string pencarian:"
+
+msgid "Cas&e sensitive"
+msgstr "Cas&e sensitive"
+
+msgid "&Backwards"
+msgstr "&Backwards"
+
+msgid "In se&lection"
+msgstr ""
+
+msgid "&Whole words"
+msgstr "&Whole words"
+
+msgid "&All charsets"
+msgstr "&All charsets"
+
+msgid "&Find all"
+msgstr ""
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Pencarian"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr ""
+
+#, c-format
+msgid "Searching %s"
+msgstr ""
+
+msgid "Enter replacement string:"
+msgstr ""
+
+msgid "Replace"
+msgstr ""
+
+msgid "Replace with:"
+msgstr ""
+
+msgid "A&ll"
+msgstr ""
+
+msgid "Confirm replace"
+msgstr ""
+
+#, c-format
+msgid "%ld replacements made"
+msgstr ""
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr ""
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr ""
+
+msgid "Edit: "
+msgstr ""
+
+msgid "ButtonBar|Help"
+msgstr "ButtonBar|Bantuan"
+
+msgid "ButtonBar|Save"
+msgstr "ButtonBar|Simpan"
+
+msgid "ButtonBar|Mark"
+msgstr ""
+
+msgid "ButtonBar|Replac"
+msgstr ""
+
+msgid "ButtonBar|Copy"
+msgstr ""
+
+msgid "ButtonBar|Move"
+msgstr ""
+
+msgid "ButtonBar|Search"
+msgstr "ButtonBar|Cari"
+
+msgid "ButtonBar|Delete"
+msgstr ""
+
+msgid "ButtonBar|PullDn"
+msgstr ""
+
+msgid "ButtonBar|Quit"
+msgstr "ButtonBar|Keluar"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Memuat: %3d%%"
+
+msgid "Filter"
+msgstr ""
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Auto >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Reload Current Syntax >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr ""
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr ""
+
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr ""
+
+msgid "Internal bug: Double start of link area"
+msgstr ""
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr ""
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr ""
+
+msgid "ButtonBar|Index"
+msgstr ""
+
+msgid "ButtonBar|Prev"
+msgstr ""
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Tombol fungsi 1"
+
+msgid "Arrows / Navigation"
+msgstr ""
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Tombol end"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+msgid "Conflict"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Menyunting files"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+msgid "&Main"
+msgstr ""
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+msgid "&Menu"
+msgstr ""
+
+msgid "&Input"
+msgstr ""
+
+msgid "&Listbox"
+msgstr ""
+
+msgid "&Radio"
+msgstr ""
+
+msgid "&Help"
+msgstr ""
+
+#, fuzzy
+msgid "&Editor"
+msgstr "Menyunting"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "Tombol A1"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Tekan sebarang tombol untuk melanjutkan..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "&Backwards"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Menyunting files"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+
+msgid "Home directory path is not absolute"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+
+msgid "unspecified"
+msgstr ""
+
+msgid "Lua scripts"
+msgstr ""
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Error yang tidak dikenal di dalam child"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+msgid "&Settings"
+msgstr ""
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Kesalahan membaca"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "Kesalahan internal."
+
+msgid "Choose codepage"
+msgstr ""
+
+msgid "-  < No translation >"
+msgstr ""
+
+msgid "Setup"
+msgstr ""
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr ""
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr ""
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Non aktifkan subshell"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr ""
+
+msgid "With mouse support on xterm"
+msgstr ""
+
+msgid "With support for X11 events"
+msgstr ""
+
+msgid "With internationalization support"
+msgstr ""
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr ""
+
+#, fuzzy
+msgid "directory not found"
+msgstr "String yang dicari tak ditemukan"
+
+msgid "Home directory:"
+msgstr ""
+
+msgid "Profile root directory:"
+msgstr ""
+
+msgid "System data"
+msgstr ""
+
+msgid "Config directory:"
+msgstr ""
+
+msgid "Data directory:"
+msgstr ""
+
+msgid "Editor plugins:"
+msgstr ""
+
+msgid "Runtime plugins:"
+msgstr ""
+
+msgid "Lua scripts:"
+msgstr ""
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr ""
+
+msgid "Cache directory:"
+msgstr ""
+
+msgid "Debug"
+msgstr ""
+
+msgid "ERROR:"
+msgstr ""
+
+msgid "True:"
+msgstr ""
+
+msgid "False:"
+msgstr ""
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "Gagal membuat pipe streams"
+
+msgid "Error calling program"
+msgstr ""
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr ""
+
+msgid "Warning -- ignoring file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr ""
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr ""
+
+msgid "User menu"
+msgstr ""
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Tak bisa menerjemahkan dari %s ke %s"

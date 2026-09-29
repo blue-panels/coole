@@ -1,0 +1,278 @@
+/*
+   Print features specific for this build
+
+   Copyright (C) 2000-2026
+   Free Software Foundation, Inc.
+
+   Written by:
+   Ilia Maslakov <il.smind@gmail.com>, 2009, 2012, 2026
+
+   This file is part of the Midnight Commander.
+
+   The Midnight Commander is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   The Midnight Commander is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/** \file textconf.c
+ *  \brief Source: prints features specific for this build
+ */
+
+#include <config.h>
+
+#include <limits.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <stdint.h>  // uintmax_t
+
+#include "lib/global.h"
+#include "lib/fileloc.h"
+#include "lib/mcconfig.h"
+#include "lib/util.h"     // mc_get_profile_root()
+#include "lib/tty/tty.h"  // S-Lang or ncurses version
+
+#include "src/textconf.h"
+
+/*** global variables ****************************************************************************/
+
+/*** file scope macro definitions ****************************************************************/
+
+/*** file scope type declarations ****************************************************************/
+
+/*** forward declarations (file scope functions) *************************************************/
+
+/*** file scope variables ************************************************************************/
+
+static const char *const features[] = {
+
+#ifdef HAVE_ASPELL
+    N_ ("With aspell support"),
+#endif
+
+#ifdef HAVE_LIBGPM
+    N_ ("With mouse support on xterm and Linux console"),
+#else
+    N_ ("With mouse support on xterm"),
+#endif
+
+#ifdef HAVE_TEXTMODE_X11_SUPPORT
+    N_ ("With support for X11 events"),
+#endif
+
+#ifdef ENABLE_NLS
+    N_ ("With internationalization support"),
+#endif
+
+    NULL
+};
+
+/*** file scope functions ************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+/*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+void
+show_version (void)
+{
+    size_t i;
+
+    printf ("%s %s\n", PACKAGE_NAME, mc_global.mc_version);
+    printf (_ ("   a console text editor, a continuation of cooledit.\n"));
+
+    printf (_ ("Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"), GLIB_MAJOR_VERSION,
+            GLIB_MINOR_VERSION, GLIB_MICRO_VERSION, glib_major_version, glib_minor_version,
+            glib_micro_version);
+
+#ifdef HAVE_SLANG
+    printf (_ ("Built with S-Lang"));
+#ifdef SLANG_VERSION_STRING
+    printf (" %s", SLANG_VERSION_STRING);
+#elif defined SLANG_VERSION
+    printf (" %d", SLANG_VERSION);
+#endif
+    printf (_ (" and terminfo database (using S-Lang %s)\n"), SLang_Version_String);
+#elif defined HAVE_NCURSES
+    printf (_ ("Built with %s"), NCURSES_LIB_DISPLAYNAME);
+#ifdef NCURSES_VERSION_MAJOR
+    printf (" %d", NCURSES_VERSION_MAJOR);
+#ifdef NCURSES_VERSION_MINOR
+    printf (".%d", NCURSES_VERSION_MINOR);
+#endif
+#endif
+#ifdef NCURSES_VERSION_PATCH
+    printf (".%d", NCURSES_VERSION_PATCH);
+#endif
+    printf (_ (" (using %s)\n"), curses_version ());
+#else
+#error "Cannot compile coole without S-Lang or ncurses"
+#endif
+
+    for (i = 0; features[i] != NULL; i++)
+        puts (_ (features[i]));
+
+    (void) puts (_ ("Data types:"));
+#define TYPE_INFO(T) (void) printf (" %s: %d;", #T, (int) (CHAR_BIT * sizeof (T)))
+    TYPE_INFO (char);
+    TYPE_INFO (int);
+    TYPE_INFO (long);
+    TYPE_INFO (void *);
+    TYPE_INFO (size_t);
+    TYPE_INFO (off_t);
+    TYPE_INFO (uintmax_t);
+#undef TYPE_INFO
+    (void) puts ("");
+}
+
+/* --------------------------------------------------------------------------------------------- */
+#define PRINTF_GROUP(a)       (void) printf ("[%s]\n", a)
+#define PRINTF_SECTION(a, b)  (void) printf ("    %-17s %s\n", a, b)
+#define PRINTF_SECTION2(a, b) (void) printf ("    %-17s %s/\n", a, b)
+#define PRINTF(a, b, c)       (void) printf ("\t%-15s %s/%s\n", a, b, c)
+#define PRINTF2(a, b, c)      (void) printf ("\t%-15s %s%s\n", a, b, c)
+
+static void
+print_plugins_in_dir (const char *label, const char *dir_path)
+{
+    GDir *dir;
+
+    if (dir_path == NULL)
+        return;
+
+    (void) printf ("    %s %s\n", label, dir_path);
+
+    dir = g_dir_open (dir_path, 0, NULL);
+    if (dir != NULL)
+    {
+        const gchar *name;
+        gboolean found = FALSE;
+
+        while ((name = g_dir_read_name (dir)) != NULL)
+        {
+            gchar *entry_path;
+
+            entry_path = g_build_filename (dir_path, name, (char *) NULL);
+
+            if (g_str_has_suffix (name, ".so") || g_str_has_suffix (name, ".dylib")
+                || g_str_has_suffix (name, ".dll"))
+            {
+                (void) printf ("                   %s\n", name);
+                found = TRUE;
+            }
+            else if (g_file_test (entry_path, G_FILE_TEST_IS_DIR))
+            {
+                GDir *subdir;
+
+                subdir = g_dir_open (entry_path, 0, NULL);
+                if (subdir != NULL)
+                {
+                    const gchar *sub_name;
+
+                    while ((sub_name = g_dir_read_name (subdir)) != NULL)
+                    {
+                        if (g_str_has_suffix (sub_name, ".so")
+                            || g_str_has_suffix (sub_name, ".dylib")
+                            || g_str_has_suffix (sub_name, ".dll"))
+                        {
+                            (void) printf ("                   %s/%s\n", name, sub_name);
+                            found = TRUE;
+                        }
+                    }
+                    g_dir_close (subdir);
+                }
+            }
+
+            g_free (entry_path);
+        }
+        g_dir_close (dir);
+        if (!found)
+            (void) printf ("                   (%s)\n", _ ("none"));
+    }
+    else
+        (void) printf ("                   (%s)\n", _ ("directory not found"));
+}
+
+void
+show_datadirs_extended (void)
+{
+    (void) printf ("%s %s\n", _ ("Home directory:"), mc_config_get_home_dir ());
+    (void) printf ("%s %s\n", _ ("Profile root directory:"), mc_get_profile_root ());
+    (void) puts ("");
+
+    PRINTF_GROUP (_ ("System data"));
+
+    PRINTF_SECTION (_ ("Config directory:"), mc_global.sysconfig_dir);
+    PRINTF_SECTION (_ ("Data directory:"), mc_global.share_data_dir);
+
+#ifdef MC_EDITOR_PLUGINS_DIR
+    print_plugins_in_dir (_ ("Editor plugins:"), MC_EDITOR_PLUGINS_DIR);
+#endif
+#ifdef MC_RUNTIME_PLUGINS_DIR
+    print_plugins_in_dir (_ ("Runtime plugins:"), MC_RUNTIME_PLUGINS_DIR);
+#endif
+#ifdef ENABLE_LUA_PLUGIN
+    PRINTF_SECTION (_ ("Lua scripts:"), MC_LUA_SYSTEM_SCRIPTS_DIR);
+    PRINTF_SECTION (_ ("Lua modules:"), MC_LUA_SYSTEM_MODULES_DIR);
+#endif
+    (void) puts ("");
+
+    PRINTF_GROUP (_ ("User data"));
+
+    PRINTF_SECTION2 (_ ("Config directory:"), mc_config_get_path ());
+    PRINTF_SECTION2 (_ ("Data directory:"), mc_config_get_data_path ());
+    PRINTF ("skins:", mc_config_get_data_path (), MC_SKINS_DIR PATH_SEP_STR);
+    PRINTF ("macros:", mc_config_get_data_path (), MC_MACRO_FILE);
+    PRINTF ("external macros:", mc_config_get_data_path (), EDIT_HOME_MACRO_FILE ".*");
+#ifdef ENABLE_LUA_PLUGIN
+    {
+        gchar *user_lua_scripts = g_build_filename (g_get_user_data_dir (), MC_USERCONF_DIR, "lua",
+                                                    "scripts", (char *) NULL);
+        gchar *user_lua_modules =
+            g_build_filename (g_get_user_data_dir (), MC_USERCONF_DIR, "lua", "lib", (char *) NULL);
+
+        PRINTF_SECTION2 (_ ("Lua scripts:"), user_lua_scripts);
+        PRINTF_SECTION2 (_ ("Lua modules:"), user_lua_modules);
+        g_free (user_lua_scripts);
+        g_free (user_lua_modules);
+    }
+#endif
+    PRINTF_SECTION2 (_ ("Cache directory:"), mc_config_get_cache_path ());
+
+#ifdef MC_EDITOR_PLUGINS_DIR
+    {
+        gchar *user_lib_dir =
+            g_build_filename (g_get_home_dir (), ".local", "lib", MC_USERCONF_DIR, (char *) NULL);
+        gchar *user_editor_dir = g_build_filename (user_lib_dir, "editor-plugins", (char *) NULL);
+
+        print_plugins_in_dir (_ ("Editor plugins:"), user_editor_dir);
+        g_free (user_editor_dir);
+        g_free (user_lib_dir);
+    }
+#endif
+}
+
+#undef PRINTF
+#undef PRINTF_SECTION
+#undef PRINTF_GROUP
+
+/* --------------------------------------------------------------------------------------------- */
+
+#ifdef ENABLE_CONFIGURE_ARGS
+void
+show_configure_options (void)
+{
+    (void) puts (MC_CONFIGURE_ARGS);
+}
+#endif
+
+/* --------------------------------------------------------------------------------------------- */

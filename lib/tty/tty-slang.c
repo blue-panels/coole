@@ -1,0 +1,709 @@
+/*
+   Interface to the terminal controlling library.
+   Slang wrapper.
+
+   Copyright (C) 2005-2026
+   Free Software Foundation, Inc.
+
+   Written by:
+   Andrew Borodin <aborodin@vmail.ru>, 2009
+   Egmont Koblinger <egmont@gmail.com>, 2010
+   Ilia Maslakov <il.smind@gmail.com>, 2026
+
+   This file is part of the Midnight Commander.
+
+   The Midnight Commander is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   The Midnight Commander is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/** \file
+ *  \brief Source: S-Lang-based tty layer of Midnight Commander
+ */
+
+#include <config.h>
+
+#include <limits.h>  // MB_LEN_MAX
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>  // size_t
+#include <unistd.h>
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+#include <termios.h>
+
+#include "lib/global.h"
+#include "lib/strutil.h"  // str_term_form
+#include "lib/util.h"     // is_printable()
+
+#include "tty-internal.h"  // mc_tty_normalize_from_utf8()
+#include "tty.h"
+#include "color.h"
+#include "color-slang.h"
+#include "color-internal.h"
+#include "mouse.h"  // Gpm_Event is required in key.h
+#include "key.h"    // define_sequence
+#include "win.h"
+
+/*** global variables ****************************************************************************/
+
+/*** file scope macro definitions ****************************************************************/
+
+#ifndef SLTT_MAX_SCREEN_COLS
+#define SLTT_MAX_SCREEN_COLS 512
+#endif
+
+#ifndef SLTT_MAX_SCREEN_ROWS
+#define SLTT_MAX_SCREEN_ROWS 512
+#endif
+
+/*** file scope type declarations ****************************************************************/
+
+/*** forward declarations (file scope functions) *************************************************/
+
+/*** file scope variables ************************************************************************/
+
+/* Various saved termios settings that we control here */
+static struct termios boot_mode;
+static struct termios new_mode;
+
+/* Controls whether we should wait for input in tty_lowlevel_getch */
+static gboolean no_slang_delay;
+
+static gboolean slsmg_active = FALSE;
+
+/* This table describes which capabilities we want and which values we
+ * assign to them.
+ */
+static const struct
+{
+    int key_code;
+    const char *key_name;
+} key_table[] = {
+    { KEY_F (0), "k0" },
+    { KEY_F (1), "k1" },
+    { KEY_F (2), "k2" },
+    { KEY_F (3), "k3" },
+    { KEY_F (4), "k4" },
+    { KEY_F (5), "k5" },
+    { KEY_F (6), "k6" },
+    { KEY_F (7), "k7" },
+    { KEY_F (8), "k8" },
+    { KEY_F (9), "k9" },
+    { KEY_F (10), "k;" },
+    { KEY_F (11), "F1" },
+    { KEY_F (12), "F2" },
+    { KEY_F (13), "F3" },
+    { KEY_F (14), "F4" },
+    { KEY_F (15), "F5" },
+    { KEY_F (16), "F6" },
+    { KEY_F (17), "F7" },
+    { KEY_F (18), "F8" },
+    { KEY_F (19), "F9" },
+    { KEY_F (20), "FA" },
+    { KEY_IC, "kI" },
+    { KEY_NPAGE, "kN" },
+    { KEY_PPAGE, "kP" },
+    { KEY_LEFT, "kl" },
+    { KEY_RIGHT, "kr" },
+    { KEY_UP, "ku" },
+    { KEY_DOWN, "kd" },
+    { KEY_DC, "kD" },
+    { KEY_BACKSPACE, "kb" },
+    { KEY_HOME, "kh" },
+    { KEY_END, "@7" },
+    {
+        0,
+        NULL,
+    },
+};
+
+/* --------------------------------------------------------------------------------------------- */
+/*** file scope functions ************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+tty_setup_sigwinch (void (*handler) (int))
+{
+    (void) SLsignal (SIGWINCH, handler);
+    tty_create_winch_pipe ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+sigwinch_handler (int dummy)
+{
+    ssize_t n = 0;
+
+    (void) dummy;
+
+    n = write (sigwinch_pipe[1], "", 1);
+    (void) n;
+
+    (void) SLsignal (SIGWINCH, sigwinch_handler);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+do_define_key (int code, const char *strcap)
+{
+    char *seq;
+
+    seq = SLtt_tgetstr ((SLFUTURE_CONST char *) strcap);
+    if (seq != NULL)
+        define_sequence (code, seq, MCKEY_NOACTION);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+load_terminfo_keys (void)
+{
+    int i;
+
+    for (i = 0; key_table[i].key_code; i++)
+        do_define_key (key_table[i].key_code, key_table[i].key_name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+get_maybe_acs (mc_tty_char_t c, gboolean *alt_char)
+{
+    *alt_char = TRUE;
+
+    switch (c)
+    {
+    case MC_ACS_HLINE:
+        return SLSMG_HLINE_CHAR;
+    case MC_ACS_VLINE:
+        return SLSMG_VLINE_CHAR;
+    case MC_ACS_ULCORNER:
+        return SLSMG_ULCORN_CHAR;
+    case MC_ACS_URCORNER:
+        return SLSMG_URCORN_CHAR;
+    case MC_ACS_LLCORNER:
+        return SLSMG_LLCORN_CHAR;
+    case MC_ACS_LRCORNER:
+        return SLSMG_LRCORN_CHAR;
+    case MC_ACS_LTEE:
+        return SLSMG_LTEE_CHAR;
+    case MC_ACS_RTEE:
+        return SLSMG_RTEE_CHAR;
+    case MC_ACS_TTEE:
+        return SLSMG_UTEE_CHAR;
+    case MC_ACS_BTEE:
+        return SLSMG_DTEE_CHAR;
+    case MC_ACS_PLUS:
+        return SLSMG_PLUS_CHAR;
+
+    default:
+        *alt_char = FALSE;
+        return c;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_init (gboolean mouse_enable, gboolean is_xterm)
+{
+    SLtt_Ignore_Beep = 1;
+
+    SLutf8_enable (-1);  // has to be called first before any of the other functions.
+    SLtt_get_terminfo ();
+    /*
+     * If the terminal in not in terminfo but begins with a well-known
+     * string such as "linux" or "xterm" S-Lang will go on, but the
+     * terminal size and several other variables won't be initialized
+     * (as of S-Lang 1.4.4). Detect it and abort. Also detect extremely
+     * small screen dimensions.
+     */
+    if ((COLS < 10)
+        || (LINES < 5)
+#if SLANG_VERSION < 20303
+        /* Beginning from pre2.3.3-8 (55f58798c267d76a1b93d0d916027b71a10ac1ee),
+           these limitations were eliminated. */
+        || (COLS > SLTT_MAX_SCREEN_COLS) || (LINES > SLTT_MAX_SCREEN_ROWS)
+#endif
+    )
+    {
+        fprintf (stderr,
+                 _ ("Screen size %dx%d is not supported.\n"
+                    "Check the TERM environment variable.\n"),
+                 COLS, LINES);
+        exit (EXIT_FAILURE);
+    }
+
+    tcgetattr (fileno (stdin), &boot_mode);
+    // 255 = ignore abort char; XCTRL('g') for abort char = ^g
+    SLang_init_tty (XCTRL ('g'), 1, 0);
+
+    if (mc_global.tty.ugly_line_drawing)
+        SLtt_Has_Alt_Charset = 0;
+
+    tcgetattr (SLang_TT_Read_FD, &new_mode);
+
+    tty_reset_prog_mode ();
+    load_terminfo_keys ();
+
+    SLtt_Blink_Mode = (tty_use_256colors (NULL) || tty_use_truecolors (NULL)) ? 1 : 0;
+
+    tty_start_interrupt_key ();
+
+    // It's the small part from the previous init_key()
+    init_key_input_fd ();
+
+    /* For 8-bit locales, NCurses handles 154 (0x9A) symbol properly, while S-Lang
+     * requires SLsmg_Display_Eight_Bit >= 154 (OR manual filtering if xterm display
+     * detected - but checking TERM would fail under screen, OR running xterm
+     * with allowC1Printable).
+     */
+    tty_display_8bit (FALSE);
+
+    SLsmg_init_smg ();
+    slsmg_active = TRUE;
+    if (!mouse_enable)
+        use_mouse_p = MOUSE_DISABLED;
+    tty_init_xterm_support (is_xterm);  // do it before tty_enter_ca_mode() call
+    tty_enter_ca_mode ();
+    tty_keypad (TRUE);
+    tty_nodelay (FALSE);
+
+    tty_setup_sigwinch (sigwinch_handler);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_shutdown (void)
+{
+    char *op_cap;
+
+    tty_destroy_winch_pipe ();
+    tty_reset_shell_mode ();
+    tty_noraw_mode ();
+    tty_keypad (FALSE);
+    tty_reset_screen ();
+    tty_exit_ca_mode ();
+    SLang_reset_tty ();
+    slsmg_active = FALSE;
+
+    /* Load the op capability to reset the colors to those that were
+     * active when the program was started up
+     */
+    op_cap = SLtt_tgetstr ((SLFUTURE_CONST char *) "op");
+    if (op_cap != NULL)
+    {
+        fputs (op_cap, stdout);
+        fflush (stdout);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_enter_ca_mode (void)
+{
+    // S-Lang handles alternate screen switching and cursor position saving
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_exit_ca_mode (void)
+{
+    // S-Lang handles alternate screen switching and cursor position restoring
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_change_screen_size (void)
+{
+    SLtt_get_screen_size ();
+    if (slsmg_active)
+        SLsmg_reinit_smg ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* Done each time we come back from done mode */
+
+void
+tty_reset_prog_mode (void)
+{
+    tcsetattr (SLang_TT_Read_FD, TCSANOW, &new_mode);
+    SLsmg_init_smg ();
+    slsmg_active = TRUE;
+    SLsmg_touch_lines (0, LINES);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* Called each time we want to shutdown slang screen manager */
+
+void
+tty_reset_shell_mode (void)
+{
+    tcsetattr (SLang_TT_Read_FD, TCSANOW, &boot_mode);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_raw_mode (void)
+{
+    tcsetattr (SLang_TT_Read_FD, TCSANOW, &new_mode);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_noraw_mode (void)
+{
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_noecho (void)
+{
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+int
+tty_flush_input (void)
+{
+    return 0;  // OK
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_keypad (gboolean set)
+{
+    char *keypad_string;
+
+    keypad_string = SLtt_tgetstr ((SLFUTURE_CONST char *) (set ? "ks" : "ke"));
+
+    if (keypad_string != NULL)
+        SLtt_write_string (keypad_string);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_nodelay (gboolean set)
+{
+    no_slang_delay = set;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+int
+tty_baudrate (void)
+{
+    return SLang_TT_Baud_Rate;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+int
+tty_lowlevel_getch (void)
+{
+    int c;
+
+    if (no_slang_delay && (SLang_input_pending (0) == 0))
+        return -1;
+
+    c = SLang_getkey ();
+    if (c == SLANG_GETKEY_ERROR)
+    {
+        fprintf (stderr,
+                 "SLang_getkey returned SLANG_GETKEY_ERROR\n"
+                 "Assuming EOF on stdin and exiting\n");
+        exit (EXIT_FAILURE);
+    }
+
+    return c;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+tty_lowlevel_input_pending (void)
+{
+    // not SLang_input_pending(): it reads the waiting bytes into this buffer
+    return SLang_Input_Buffer_Len != 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+int
+tty_reset_screen (void)
+{
+    SLsmg_reset_smg ();
+    slsmg_active = FALSE;
+    return 0;  // OK
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_touch_screen (void)
+{
+    SLsmg_touch_lines (0, LINES);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_gotoyx (int y, int x)
+{
+    SLsmg_gotorc (y, x);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_getyx (int *py, int *px)
+{
+    *py = SLsmg_get_row ();
+    *px = SLsmg_get_column ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_draw_hline (int y, int x, mc_tty_char_t ch, int len)
+{
+    int x1;
+
+    if (y < 0 || y >= LINES || x >= COLS)
+        return;
+
+    x1 = x;
+
+    if (x < 0)
+    {
+        len += x;
+        if (len <= 0)
+            return;
+        x = 0;
+    }
+
+    SLsmg_gotorc (y, x);
+
+    if ((mc_global.utf8_display && ch == 0x2500) || ch == MC_ACS_HLINE)
+        SLsmg_draw_hline (len);
+    else
+        while (len-- != 0)
+            tty_print_char (ch);
+
+    SLsmg_gotorc (y, x1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_draw_vline (int y, int x, mc_tty_char_t ch, int len)
+{
+    int y1;
+
+    if (x < 0 || x >= COLS || y >= LINES)
+        return;
+
+    y1 = y;
+
+    if (y < 0)
+    {
+        len += y;
+        if (len <= 0)
+            return;
+        y = 0;
+    }
+
+    SLsmg_gotorc (y, x);
+
+    if ((mc_global.utf8_display && ch == 0x2502) || ch == MC_ACS_VLINE)
+        SLsmg_draw_vline (len);
+    else
+    {
+        int pos = 0;
+
+        while (len-- != 0)
+        {
+            SLsmg_gotorc (y + pos, x);
+            tty_print_char (ch);
+            pos++;
+        }
+    }
+
+    SLsmg_gotorc (y1, x);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_fill_region (int y, int x, int rows, int cols, unsigned char ch)
+{
+    SLsmg_fill_region (y, x, rows, cols, ch);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_colorize_area (int y, int x, int rows, int cols, int color)
+{
+    if (use_colors)
+        SLsmg_set_color_in_region (color, y, x, rows, cols);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_display_8bit (gboolean what)
+{
+    SLsmg_Display_Eight_Bit = what ? 128 : 160;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_print_char (mc_tty_char_t c)
+{
+    gboolean alt_char = FALSE;
+    int char_maybe_acs = c;
+
+    if (!mc_global.utf8_display)
+        char_maybe_acs = get_maybe_acs (char_maybe_acs, &alt_char);
+
+    if (alt_char)
+        SLsmg_draw_object (SLsmg_get_row (), SLsmg_get_column (), char_maybe_acs);
+    else
+        SLsmg_write_char ((SLwchar_Type) ((unsigned int) char_maybe_acs));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_print_anychar (mc_tty_char_t c)
+{
+    if (c > 255)
+    {
+        char str[MB_LEN_MAX + 1];
+        int res;
+
+        res = g_unichar_to_utf8 (c, str);
+        if (res == 0)
+        {
+            str[0] = '.';
+            str[1] = '\0';
+        }
+        else
+        {
+            str[res] = '\0';
+        }
+        SLsmg_write_string ((char *) str_term_form (str));
+    }
+    else
+    {
+        if (!is_printable (c))
+            c = '.';
+        SLsmg_write_char ((SLwchar_Type) ((unsigned int) c));
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_print_string (const char *s)
+{
+    SLsmg_write_string ((char *) str_term_form (s));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_printf (const char *fmt, ...)
+{
+    va_list args;
+
+    va_start (args, fmt);
+    SLsmg_vprintf ((char *) fmt, args);
+    va_end (args);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Although S-Lang uses the terminfo database by default (through its own parser), it expects
+ * termcap codes to access standard capabilities. Nevertheless, it can also access extended
+ * terminfo capabilities (including those that have no termcap equivalent, i.e., whose names
+ * are longer than two characters).
+ */
+
+/* --------------------------------------------------------------------------------------------- */
+
+int
+tty_tigetflag (const char *terminfo_cap, const char *termcap_cap)
+{
+    return SLtt_tgetflag ((SLFUTURE_CONST char *) (termcap_cap ? termcap_cap : terminfo_cap));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+int
+tty_tigetnum (const char *terminfo_cap, const char *termcap_cap)
+{
+    return SLtt_tgetnum ((SLFUTURE_CONST char *) (termcap_cap ? termcap_cap : terminfo_cap));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+tty_tigetstr (const char *terminfo_cap, const char *termcap_cap)
+{
+    return SLtt_tgetstr ((SLFUTURE_CONST char *) (termcap_cap ? termcap_cap : terminfo_cap));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_refresh (void)
+{
+    /* Synchronized output: a terminal that knows the mode shows the update as one frame, so a
+       full redraw does not blink; others ignore it. */
+    if (mc_global.tty.xterm_flag)
+        SLtt_write_string ((SLFUTURE_CONST char *) ESC_STR "[?2026h");
+    SLsmg_refresh ();
+    if (mc_global.tty.xterm_flag)
+    {
+        SLtt_write_string ((SLFUTURE_CONST char *) ESC_STR "[?2026l");
+        SLtt_flush_output ();
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_beep (void)
+{
+    SLtt_beep ();
+}
+
+/* --------------------------------------------------------------------------------------------- */

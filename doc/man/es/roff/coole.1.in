@@ -1,0 +1,469 @@
+.\" Generated from coole.md by maint/update-man-in.sh. Do not edit.
+.TH COOLE 1 "septiembre de 2026" "coole {{MAN_VERSION}}" "coole"
+
+.SH NOMBRE
+.PP
+coole \- un editor de textos.
+
+
+.SH SINOPSIS
+.PP
+\fBcoole\fP
+[opciones] [+línea] [arch1[:línea]] [arch2[:línea]] ...
+
+
+.SH DESCRIPCIÓN
+.PP
+\fBcoole\fP
+es un editor de textos para la consola. Continúa
+\fBcooledit\fP,
+el editor de Paul Sheer, cuya versión para terminal se desarrolló durante
+muchos años como el editor interno de GNU Midnight Commander; coole sigue
+desarrollándolo como un programa propio.
+
+.PP
+Edita varios archivos a la vez, cada uno en su propia ventana, y también
+archivos binarios. Cada archivo indicado en la línea de órdenes se abre en su
+propia ventana; sin archivos, el editor abre una ventana vacía.
+
+
+.SH OPCIONES
+.TP
+\fI+línea\fP
+Ir a la línea con ese número (sin espacio entre el signo
+\fI+\fP
+y el número). Se admiten varios números, pero solo se usa el último, y solo
+para el primer archivo.
+
+.TP
+\fIarch:línea[:]\fP
+Abrir el archivo en esa línea, tal como indican un lugar los compiladores y
+grep.
+
+.TP
+\fI\-V, \-\-version\fP
+Mostrar la versión del programa.
+
+.TP
+\fI\-f, \-\-datadir\fP
+Mostrar las rutas de búsqueda compiladas para los archivos de datos de coole.
+
+.TP
+\fI\-F, \-\-datadir\-info\fP
+Mostrar información ampliada sobre los directorios que usa coole.
+
+.TP
+\fI\-\-configure\-options\fP
+Mostrar las opciones con las que se configuró el programa.
+
+.TP
+\fI\-\-no\-lua\fP
+Arrancar sin el entorno Lua: no se carga ningún guion Lua.
+
+.TP
+\fI\-h, \-?, \-\-help\fP
+Mostrar las opciones y lo que hacen.
+
+.TP
+\fI\-x, \-\-xterm\fP
+Forzar el modo xterm.
+
+.TP
+\fI\-X, \-\-no\-x11\fP
+No usar el sistema X Window para conocer el estado de las teclas
+modificadoras.
+
+.TP
+\fI\-g, \-\-oldmouse\fP
+Usar el antiguo seguimiento del ratón del terminal.
+
+.TP
+\fI\-d, \-\-nomouse\fP
+Desactivar el ratón.
+
+.TP
+\fI\-t, \-\-termcap\fP
+Usar termcap en lugar de terminfo (solo con la biblioteca S\-Lang).
+
+.TP
+\fI\-s, \-\-slow\fP
+Terminal lento: la pantalla se redibuja menos.
+
+.TP
+\fI\-a, \-\-stickchars\fP
+Dibujar los marcos con caracteres simples.
+
+.TP
+\fI\-K arch, \-\-keymap=arch\fP
+Cargar las asociaciones de teclas de ese archivo.
+
+.TP
+\fI\-\-nokeymap\fP
+No cargar ningún archivo de teclas: usar las asociaciones internas.
+
+.TP
+\fI\-b, \-\-nocolor\fP
+Forzar la pantalla en blanco y negro.
+
+.TP
+\fI\-c, \-\-color\fP
+Forzar el modo de color.
+
+.TP
+\fI\-S tema, \-\-skin=tema\fP
+Usar el tema (skin) con ese nombre.
+
+
+.SH Editor de Archivos Interno
+.PP
+El editor de archivos interno es un editor a pantalla completa de avanzadas
+prestaciones. Un archivo mayor que
+\fIeditor_filesize_threshold\fP
+(64 MB por omisión) se abre tras una pregunta. También permite modificar
+archivos binarios.
+
+.PP
+Las características soportadas actualmente son: copia, desplazamiento,
+borrado, corte y pegado de bloques; deshacer paso a paso; menús
+desplegables; inserción de archivos; definición de macros; buscar y
+reemplazar usando expresiones regulares; selección de texto con
+mayúsculas\-cursor (si el terminal lo soporta); alternancia
+insertar\-sobreescribir; plegado de líneas; sangrado automático; tamaño
+de tabulación configurable; realce de sintaxis para varios tipos de
+archivos; y la opción de pasar bloques de texto por filtros externos
+como indent o ispell.
+
+.TP
+Secciones:
+Opciones del editor
+
+.PP
+El editor es muy fácil de usar y no requiere aprendizaje alguno.
+Para conocer las teclas asignadas a cada función, basta consultar los
+menús correspondientes. Además, las teclas de desplazamiento con la
+tecla de mayúsculas seleccionan texto. Se puede seleccionar con el ratón,
+aunque podemos recuperar su funcionamiento habitual en terminales (copiar
+y pegar) manteniendo pulsada la tecla mayúsculas.
+\fBCtrl\-Ins\fP
+copia al archivo de intercambio
+\fB~/.local/share/coole/clipboard\fP,
+\fBMayús\-Ins\fP
+pega desde él,
+\fBMayús\-Supr\fP
+corta hacia él y
+\fBCtrl\-Supr\fP
+elimina el texto resaltado.
+
+.PP
+Para definir una macro, pulsar
+\fBCtrl\-r\fP
+y entonces teclearemos las secuencias de teclas que deseamos sean
+ejecutadas. Pulsaremos
+\fBCtrl\-r\fP
+de nuevo al finalizar y asignaremos la macro a una tecla pulsando sobre
+ella. La macro se ejecuta con esa tecla y también con
+\fBCtrl\-a\fP
+seguido de la tecla asignada. Las macros se guardan en la sección
+\fB[editor]\fP
+del archivo
+\fB~/.local/share/coole/macros\fP,
+y se borra una macro eliminando su línea en ese archivo; cómo una macro
+llama a un guion propio se explica en el manual en inglés.
+
+.PP
+El juego de caracteres del texto mostrado se cambia con Alt\-e (M\-e). La
+recodificación va del juego elegido al del sistema. Para anularla,
+elegir "<No translation>" en el diálogo de juegos de caracteres.
+
+.PP
+El botón
+\fBFiltro\fP
+del diálogo de búsqueda
+(\fBF7\fP)
+oculta todas las líneas que no contienen el texto buscado, con los mismos
+ajustes de tipo, mayúsculas y palabra completa que la búsqueda. Los números
+de línea conservan su valor original y la columna de estado marca cada
+tramo oculto. El conjunto de líneas ocultas queda fijado en el momento de
+pulsar el botón: la edición no vuelve a aplicar la condición, de modo que
+una línea visible que se parte o se une sigue visible, y las líneas
+tecleadas después siguen visibles aunque no cumplan la condición.
+\fBM\-s\fP
+quita el filtro; pulsada de nuevo vuelve a poner la última búsqueda como
+filtro. "Desplegar todo" del menú Utilidades también lo quita.
+
+
+.SH Opciones del editor
+.PP
+Los ajustes del
+editor interno\&.
+Los abre la entrada
+\fBGeneral...\fP
+del menú
+\fBOpciones\fP
+del editor. Se guardan en el archivo ini con los
+nombres que describe el manual en inglés.
+
+.PP
+\fIModo de ajuste de línea.\fP
+Desactivado, formateo dinámico del párrafo, o el ajuste de máquina de escribir
+que corta la línea a la longitud fijada mientras se teclea.
+
+.PP
+\fISimular medias tabulaciones.\fP
+Entre el texto y el margen izquierdo el movimiento y la sangría van de media
+tabulación y se rellenan con espacios; en el resto la tabulación es normal.
+
+.PP
+\fIRetroceso a través de tabulaciones.\fP
+Un solo retroceso borra toda la sangría hasta el margen izquierdo cuando entre
+el cursor y el margen no hay texto.
+
+.PP
+\fIRellenar tabulaciones con espacios.\fP
+En lugar del carácter de tabulación se insertan espacios hasta la siguiente
+posición.
+
+.PP
+\fIAncho de tabulación.\fP
+El ancho que ocupa el carácter de tabulación. 8 de forma predeterminada.
+
+.PP
+\fIAuto sangría con Enter.\fP
+La línea nueva empieza con la sangría de la línea de arriba.
+
+.PP
+\fIConfirmar antes de guardar.\fP
+Preguntar antes de escribir el archivo.
+
+.PP
+\fIRecordar la posición en el archivo.\fP
+Abrir el archivo donde se dejó la última vez.
+
+.PP
+\fIMostrar espacios finales.\fP
+Se marcan los espacios al final de la línea.
+
+.PP
+\fIMostrar tabulaciones.\fP
+Se marcan los caracteres de tabulación.
+
+.PP
+\fIMostrar caracteres de control.\fP
+Los caracteres de control del texto se imprimen en lugar de ocultarse.
+
+.PP
+\fIResaltado de sintaxis.\fP
+El texto se colorea con las reglas de sintaxis de su tipo de archivo.
+
+.PP
+\fICursor tras el bloque insertado.\fP
+Después de insertar un bloque el cursor queda al final y no al principio.
+
+.PP
+\fISelección persistente.\fP
+La selección se mantiene al mover el cursor en lugar de perderse.
+
+.PP
+\fICursor más allá del fin de línea.\fP
+El cursor puede estar después del último carácter de la línea.
+
+.PP
+\fIDeshacer en grupo.\fP
+Un solo deshacer devuelve una serie de cambios del mismo tipo y no una tecla.
+
+.PP
+\fILongitud de línea para el ajuste.\fP
+La columna por la que los modos de ajuste cortan la línea. 72 de forma
+predeterminada.
+
+
+.SH Guardar como
+.PP
+El nombre con el que escribir el archivo y los fines de línea con los que
+escribirlo: como los tiene el archivo, Unix (LF), Windows y DOS (CR LF) o
+Macintosh (CR).
+
+
+.SH Modo de guardar
+.PP
+Cómo se escribe el archivo:
+
+.TP
+\fBGuardado rápido\fP
+Escribir sobre el archivo en el acto. Rápido, y un fallo a mitad deja el
+archivo escrito a medias.
+
+.TP
+\fBGuardado seguro\fP
+Escribir primero un archivo temporal y renombrarlo sobre el original cuando
+está entero, de modo que un fallo no toca el original.
+
+.TP
+\fBCrear copias de seguridad con la extensión\fP
+Guardado seguro, y el original se conserva con su nombre más la extensión de
+la línea de entrada, "~" de forma predeterminada.
+
+.TP
+\fBComprobar fin de línea POSIX\fP
+Preguntar por el fin de línea que falta al final del archivo antes de
+escribirlo.
+
+
+.SH Explorador de macros
+.PP
+Las macros grabadas, con la tecla a la que responde cada una y lo que hace.
+Los botones son
+
+.TP
+\fBEjecutar\fP
+Reproducir la macro donde está el cursor.
+
+.TP
+\fBBorrar\fP
+Quitarla, tras una pregunta.
+
+.TP
+\fBEditar archivo\fP
+Abrir el archivo donde viven las macros.
+
+
+.SH Archivos abiertos
+.PP
+Los archivos que el editor tiene abiertos, uno por línea. Enter va al archivo
+donde está el cursor, Esc deja el que se muestra.
+
+
+.SH Información de complementos
+.PP
+Los complementos que el editor ha cargado: el nombre, si está activo, qué
+ofrece y qué hace. Es una lista para mirar; se desactiva un complemento y se
+abre su configuración en el diálogo
+Administrar complementos
+del menú Opciones.
+
+
+.SH Asociaciones de teclas
+.PP
+Ver y cambiar las combinaciones de teclas de las acciones del programa (menú
+Opciones, "Asociaciones de teclas...").
+
+.TP
+\fBEnter\fP
+Sustituir la combinación: pulse la tecla que quiere asignar.
+
+.TP
+\fBF5\fP
+Añadir otra combinación para esta acción.
+
+.TP
+\fBF8, Del\fP
+Quitar la combinación.
+
+.TP
+\fBGuardar\fP
+Escribir los cambios en
+\fI~/.config/coole/keymap.ini\fP\&.
+
+.TP
+\fBEditar archivo de teclas\fP
+Abrir
+\fIkeymap.ini\fP
+en el editor.
+
+.TP
+\fBEditar archivo de terminal\fP
+Abrir las definiciones de teclas del terminal.
+
+.PP
+Las acciones marcadas con * se apartan de las de serie.
+
+
+.SH Analizador de teclas
+.PP
+Pulse Capturar y después cualquier tecla. Muestra:
+
+.EX
+Combinación   Nombre simbólico (por ejemplo Ctrl\-F5)
+Acción        Acción asociada en el mapa actual
+En bruto      Secuencia de escape y bytes en hexadecimal
+Código        Código numérico interno
+
+.EE
+
+.PP
+Útil para diagnosticar problemas con las teclas del terminal.
+
+
+.SH ENTORNO
+.TP
+\fBCOOLE_DATADIR\fP
+El directorio de los archivos de datos, en lugar de {{pkgdatadir}}.
+
+.TP
+\fBCOOLE_PROFILE_ROOT\fP
+La raíz de los archivos del usuario, en lugar del directorio personal.
+
+.TP
+\fBCOOLE_SKIN\fP
+El tema que usar.
+
+.TP
+\fBCOOLE_KEYMAP\fP
+El archivo de teclas que usar.
+
+.TP
+\fBCOOLE_TMPDIR\fP, \fBTMPDIR\fP
+El directorio de los archivos temporales.
+
+.TP
+\fBCOOLE_NO_LUA\fP
+Con el valor 1, arrancar sin el entorno Lua.
+
+.TP
+\fBCOOLE_LOG_ENABLE\fP, \fBCOOLE_LOG_FILE\fP, \fBCOOLE_SPELL_LOG\fP
+Los registros de depuración.
+
+
+.SH ARCHIVOS
+.TP
+\fI{{pkgdatadir}}/help/coole.md\fP
+El archivo de ayuda del programa.
+
+.TP
+\fI{{sysconfdir}}/coole/coole.ini\fP, \fI{{pkgdatadir}}/coole.ini\fP
+La configuración general, que se usa solo si el usuario no tiene
+~/.config/coole/ini.
+
+.TP
+\fI{{sysconfdir}}/coole/keymap.ini\fP, \fI{{sysconfdir}}/coole/coole.menu\fP
+Las teclas y el menú de usuario generales.
+
+.TP
+\fI{{pkgdatadir}}/syntax/*\fP
+Los archivos de sintaxis generales.
+
+.TP
+\fI{{editor_plugins_dir}}/\fP
+Los complementos del editor.
+
+.TP
+\fI~/.config/coole/ini\fP, \fI~/.config/coole/keymap.ini\fP, \fI~/.config/coole/menu\fP
+La configuración, las teclas y el menú de usuario propios.
+
+.TP
+\fI~/.local/share/coole/\fP
+El historial, las posiciones de los archivos, el portapapeles
+(clipboard), las macros (macros, macros.d/), la sintaxis (syntax/Syntax), los
+temas (skins/) y los guiones Lua (lua/scripts/editor/) del usuario.
+
+.TP
+\fI~/.cache/coole/\fP
+El archivo de bloque (block) y los temporales del editor.
+
+
+.SH VÉASE TAMBIÉN
+.PP
+cooledit(1), aspell(1), ctags(1).
+
+.PP
+El manual en inglés, coole(1), describe todas las funciones del editor.

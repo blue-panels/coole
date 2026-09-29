@@ -1,0 +1,2741 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Kimmo Kujansuu <mrkujansuu@gmail.com>, 2021
+# Nikolay Korotkiy <sikmir@disroot.org>, 2017-2019
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# hondakassi <kasvain@gmail.com>, 2015
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Finnish <https://translate.codeberg.org/projects/mc6/mc6/fi/"
+">\n"
+"Language: fi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "Varoitus: Koodisivuja ei pystytä lataamaan"
+
+msgid "7-bit ASCII"
+msgstr "7-bittinen ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Kääntäminen kielestä %s kieleen %s epäonnistui"
+
+msgid "Event system already initialized"
+msgstr "Tapahtumat on jo alustettu"
+
+msgid "Failed to initialize event system"
+msgstr "Tapahtumien alustaminen epäonnistui"
+
+msgid "Event system not initialized"
+msgstr "Tapahtumia ei ole alustettu"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Tarkista syöttötiedot! Jotkin parametrit ovat NULL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Ryhmää '%s' ei voi luoda tapahtumille!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Tapahtuman '%s' luonti epäonnistui!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Page Down"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "&Vaihda kokoruutuun"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "Kop&ioi tiedostoon..."
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "&Oma tiedostolista:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "&Käyttäjän valikko"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Etsi"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Korvaa"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Terminaalin asetukset"
+
+msgid "Edit file"
+msgstr "Muokkaa tiedostoa"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Muokkaa tiedostoa"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&Kaikki merkistöt"
+
+#, fuzzy
+msgid "Command history"
+msgstr "Komentojen &historia"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "Tallenna &nimellä..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Mene riville"
+
+msgid "Refresh screen"
+msgstr ""
+
+msgid "Suspend to shell"
+msgstr ""
+
+msgid "List open screens"
+msgstr ""
+
+msgid "Next screen"
+msgstr ""
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Edellinen"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Lisää tiedosto"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Edellinen"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "&Vaihda rivin tilaa"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Delete keypadilla"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Delete keypadilla"
+
+msgid "Cut to clipboard"
+msgstr ""
+
+msgid "Copy to clipboard"
+msgstr ""
+
+msgid "Paste from clipboard"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "&Käänteinen valinta"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Valitse"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Valitse"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Valitse &ryhmään"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Valitse"
+
+msgid "Select to word start"
+msgstr ""
+
+msgid "Select to word end"
+msgstr ""
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "&Vaihda rivin tilaa"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Valitse kieli"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "Järjestys"
+
+#, fuzzy
+msgid "General options"
+msgstr "Terminaalin asetukset"
+
+msgid "Learn terminal keys"
+msgstr ""
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "&Seuraava kirjanmerkki"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "Tiedostojen toiminnot"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Ulkoasu"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "Tallenna nimellä"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Edellinen"
+
+msgid "Next node"
+msgstr ""
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Edellinen"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+msgid "Deselect all"
+msgstr ""
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Valitse &ryhmään"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Valitse kieli"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Sulje tiedosto"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Laajennustiedoston muokkaus"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Valitse"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Valitse kieli"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Valitse"
+
+msgid "Column selection mode"
+msgstr ""
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Tallenna alue"
+
+msgid "Insert file"
+msgstr "Lisää tiedosto"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "&Vaihda rivin tilaa"
+
+msgid "Insert date/time (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Poistetaan"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "tiedosto1 tiedosto2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "Komentojen &historia"
+
+msgid "Format paragraph (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Vasen sarake"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Edellinen komento uudestaan"
+
+msgid "Spell check"
+msgstr ""
+
+msgid "Spell check current word"
+msgstr ""
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Valitse kieli"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "&Tyhjennä kirjanmerkit"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "&Seuraava kirjanmerkki"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "&Edellinen kirjanmerkki"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Etsi kaikki"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "&Vaihda rivin tilaa"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Muutokset tiedostoon menetetty"
+
+msgid "Select to file end"
+msgstr ""
+
+msgid "Select to page start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Valitse kieli"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Valitse &ryhmään"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Valitse &ryhmään"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "Poista &ryhmästä"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "Poista &ryhmästä"
+
+msgid "Column select down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "Poista &ryhmästä"
+
+msgid "Column select scroll down"
+msgstr ""
+
+msgid "Column select paragraph up"
+msgstr ""
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+msgid "Toggle visible tabs/spaces"
+msgstr ""
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Valitse syntaksin korostus"
+
+msgid "Choose syntax highlighting"
+msgstr "Valitse syntaksin korostus"
+
+msgid "Toggle right margin"
+msgstr ""
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Pääasetukset"
+
+msgid "About editor"
+msgstr ""
+
+msgid "Execute script"
+msgstr ""
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "&Muuta kokoa"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "&Vaihda kokoruutuun"
+
+#, fuzzy
+msgid "Window list"
+msgstr "&Ikkuna"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Edellinen"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Tiedosto \"%s\" on juuri nyt käsittelyssä.\n"
+"Käyttäjä: %s\n"
+"Prosessin ID: %d"
+
+msgid "File locked"
+msgstr "Tiedosto lukittu"
+
+msgid "&Grab lock"
+msgstr "&Lukitse"
+
+msgid "&Ignore lock"
+msgstr "&Vapauta"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Hakemiston %s luonti epäonnistui"
+
+msgid "FATAL: not a directory:"
+msgstr "FATAL: ei hakemistoa:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Luku alueen ulkopuolella (pitäisi olla tavualueella, 0 <= n <= 0xFF, "
+"ilmaistuna heksalla)"
+
+msgid "Invalid character"
+msgstr "Virheellinen merkki"
+
+msgid "Unmatched quotes character"
+msgstr "Ei vastaa lainausmerkkeihin"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Hex-kaavan virhe paikassa  %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Etsittyä merkkijonoa ei löydy"
+
+msgid "Not implemented yet"
+msgstr "Ei ole vielä toteutettu"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Korvaavien tunnusten lukumäärä ei ole sama kuin löydettyjen määrä"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Token %d ei ole validi"
+
+msgid "Regular expression error"
+msgstr "Säännöllisen lausekkeen virhe"
+
+msgid "No&rmal"
+msgstr "Ta&vallinen"
+
+msgid "Re&gular expression"
+msgstr "&Säännöllinen lauseke"
+
+msgid "He&xadecimal"
+msgstr "He&xadesimaali"
+
+msgid "Wil&dcard search"
+msgstr "Merkki&haku"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Teemaa '%s' ei pysty käsittelemään.\n"
+"Perusteema asetettu."
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Ei voi käyttää '%s' ulkoasua täydellä värikartalla:\n"
+"%s\n"
+"Oletus ulkoasu on ladattu"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Teemaa '%s' ei pysty lataamaan.\n"
+"Perusteema asetettu."
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr "Täyttä värikarttaa ei tueta tässä slang versiossa."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "Esc"
+
+msgid "Function key 1"
+msgstr "Funktio 1"
+
+msgid "Function key 2"
+msgstr "Funktio 2"
+
+msgid "Function key 3"
+msgstr "Funktio 3"
+
+msgid "Function key 4"
+msgstr "Funktio 4"
+
+msgid "Function key 5"
+msgstr "Funktio 5"
+
+msgid "Function key 6"
+msgstr "Funktio 6"
+
+msgid "Function key 7"
+msgstr "Funktio 7"
+
+msgid "Function key 8"
+msgstr "Funktio 8"
+
+msgid "Function key 9"
+msgstr "Funktio 9"
+
+msgid "Function key 10"
+msgstr "Funktio 10"
+
+msgid "Function key 11"
+msgstr "Funktio 11"
+
+msgid "Function key 12"
+msgstr "Funktio 12"
+
+msgid "Function key 13"
+msgstr "Funktio 13"
+
+msgid "Function key 14"
+msgstr "Funktio 14"
+
+msgid "Function key 15"
+msgstr "Funktio 15"
+
+msgid "Function key 16"
+msgstr "Funktio 16"
+
+msgid "Function key 17"
+msgstr "Funktio 17"
+
+msgid "Function key 18"
+msgstr "Funktio 18"
+
+msgid "Function key 19"
+msgstr "Funktio 19"
+
+msgid "Function key 20"
+msgstr "Funktio 20"
+
+msgid "Completion/M-tab"
+msgstr ""
+
+msgid "BackTab/S-tab"
+msgstr ""
+
+msgid "Backspace"
+msgstr "Askelpalautin"
+
+msgid "Up arrow"
+msgstr "Ylänuoli"
+
+msgid "Down arrow"
+msgstr "Alanuoli"
+
+msgid "Left arrow"
+msgstr "Vasen nuoli"
+
+msgid "Right arrow"
+msgstr "Oikea nuoli"
+
+msgid "Insert"
+msgstr "Insert"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr "End"
+
+msgid "Page Up"
+msgstr "Page Up"
+
+msgid "Page Down"
+msgstr "Page Down"
+
+msgid "/ on keypad"
+msgstr "/ keypadilla"
+
+msgid "* on keypad"
+msgstr "* keypadilla"
+
+msgid "- on keypad"
+msgstr "- keypadilla"
+
+msgid "+ on keypad"
+msgstr "+ keypadilla"
+
+msgid "Left arrow keypad"
+msgstr "Vasen nuoli keypadilla"
+
+msgid "Right arrow keypad"
+msgstr "Oikea nuoli keypadilla"
+
+msgid "Up arrow keypad"
+msgstr "Ylänuoli keypadilla"
+
+msgid "Down arrow keypad"
+msgstr "Alanuoli keypadilla"
+
+msgid "Home on keypad"
+msgstr "Home keypadilla"
+
+msgid "End on keypad"
+msgstr "End keypadilla"
+
+msgid "Page Down keypad"
+msgstr "Page Down keypadilla"
+
+msgid "Page Up keypad"
+msgstr "Page Up keypadilla"
+
+msgid "Insert on keypad"
+msgstr "Insert keypadilla"
+
+msgid "Delete on keypad"
+msgstr "Delete keypadilla"
+
+msgid "Enter on keypad"
+msgstr "Enter keypadilla"
+
+msgid "Function key 21"
+msgstr "Funktio 21"
+
+msgid "Function key 22"
+msgstr "Funktio 22"
+
+msgid "Function key 23"
+msgstr "Funktio 23"
+
+msgid "Function key 24"
+msgstr "Funktio 24"
+
+msgid "A1 key"
+msgstr "A1"
+
+msgid "C1 key"
+msgstr "C1"
+
+msgid "Asterisk"
+msgstr "Tähti"
+
+msgid "Minus"
+msgstr "Miinus"
+
+msgid "Plus"
+msgstr "Plus"
+
+msgid "Dot"
+msgstr "Piste"
+
+msgid "Less than"
+msgstr "Vähemmän kuin"
+
+msgid "Great than"
+msgstr "Enemmän kuin"
+
+msgid "Equal"
+msgstr "Yhtä kuin"
+
+msgid "Comma"
+msgstr "Pilkku"
+
+msgid "Apostrophe"
+msgstr "Heittomerkki"
+
+msgid "Colon"
+msgstr "Kaksoispiste"
+
+msgid "Semicolon"
+msgstr "Puolipiste"
+
+msgid "Exclamation mark"
+msgstr "Varoitus-merkki"
+
+msgid "Question mark"
+msgstr "Kysymysmerkki"
+
+msgid "Ampersand"
+msgstr "Et-merkki"
+
+msgid "Dollar sign"
+msgstr "Dollarin merkki"
+
+msgid "Quotation mark"
+msgstr "Lainausmerkki"
+
+msgid "Percent sign"
+msgstr "Prosenttimerkki"
+
+msgid "Caret"
+msgstr "Kursori"
+
+msgid "Tilda"
+msgstr "Tilde"
+
+msgid "Prime"
+msgstr "Heittomerkki"
+
+msgid "Underline"
+msgstr "Alleviivaus"
+
+msgid "Understrike"
+msgstr "Yliviivaus"
+
+msgid "Pipe"
+msgstr "Putki"
+
+msgid "Left parenthesis"
+msgstr "Sulku vasen"
+
+msgid "Right parenthesis"
+msgstr "Sulku oikea"
+
+msgid "Left bracket"
+msgstr "Vasen sarake"
+
+msgid "Right bracket"
+msgstr "Oikea sarake"
+
+msgid "Left brace"
+msgstr "Hakasulku vasen"
+
+msgid "Right brace"
+msgstr "Hakasulku oikea"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "Sarkain"
+
+msgid "Space key"
+msgstr "Välilyönti"
+
+msgid "Slash key"
+msgstr "Kenoviiva"
+
+msgid "Backslash key"
+msgstr "Takakenoviiva"
+
+msgid "Number sign #"
+msgstr "Risuaita"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "@"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Vaihto"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Ei voi luoda putkea SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Ei voitu määrittää kirjoituksen loppua SIGWINCH putkessa: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Ei voitu määrittää lukemisen loppua SIGWINCH putkessa: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Näytön koko %dx%d ei ole yhteensopiva.\n"
+"Tarkista TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "TERM-ympäristön muuttujaa ei ole asetettu!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Ei voi tarkistaa SIGWINCH -putkea"
+
+msgid "B"
+msgstr "t"
+
+msgid "kB"
+msgstr "kt"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "Mt"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "Gt"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Putken kuvausta ei voi luoda"
+
+msgid "Cannot create pipe streams"
+msgstr "Ei voitu luoda putken virtausta"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Odottamaton virhe select() luettaessa dataa aliprosessista:\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Odottamaton virhe waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Muutokset tiedostoon menetetty"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "Paina mitä tahansa näppäintä jatkaaksesi"
+
+msgid "Internal error:"
+msgstr "Sisäinen virhe:"
+
+msgid "Screens"
+msgstr "Ikkunat"
+
+msgid "History"
+msgstr "Historia"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Kyllä"
+
+msgid "&No"
+msgstr "&Ei"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "DialogTitle|Historian puhdistus"
+
+msgid "Do you want clean this history?"
+msgstr "Haluatko pyyhkiä tämän historian?"
+
+msgid "&OK"
+msgstr "&OK"
+
+msgid "&Cancel"
+msgstr "&Peruuta"
+
+msgid "Error"
+msgstr "Virhe"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Keskeytä"
+
+msgid "< Default >"
+msgstr "<Oletus>"
+
+msgid "Skins"
+msgstr "Ulkoasuteemat"
+
+msgid "Skin:"
+msgstr "Ulkoasuteema:"
+
+msgid "&Shadows"
+msgstr ""
+
+msgid "Appearance"
+msgstr "Ulkoasu"
+
+msgid "Displays the current version"
+msgstr "Näyttää nykyisen version"
+
+msgid "Print data directory"
+msgstr "Tulosta hakemistoon"
+
+msgid "Print extended info about used data directories"
+msgstr "Tulosta lisätietoja kuten hakemiston käyttämä tila"
+
+msgid "Print configure options"
+msgstr "Tulosta määrityksen vaihtoehdot"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Ota X11-tuki pois käytöstä"
+
+msgid "Forces xterm features"
+msgstr "Pakottaa xterm-ominaisuudet"
+
+msgid "Disable X11 support"
+msgstr "Ota X11-tuki pois käytöstä"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Yrittää käyttää seurantaan vanhaa hiiren korostusta"
+
+msgid "Disable mouse support in text version"
+msgstr "Ota hiirituki pois käytöstä tekstiversiossa"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Yrittään käyttää termcap, terminfo:n sijaan"
+
+msgid "To run on slow terminals"
+msgstr "Hitaissa päätteissä ajaminen"
+
+msgid "Use stickchars to draw"
+msgstr "Käytä pylväitä piirtämiseen"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr ""
+
+msgid "<file>"
+msgstr "<file>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr ""
+
+msgid "Requests to run in black and white"
+msgstr "Pyytää ajettavaksi mustavalkoisena"
+
+msgid "Request to run in color mode"
+msgstr "Pyytää ajettavaksi värillisenä"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Näytä mc määritetyllä ulkoasulla"
+
+msgid "<string>"
+msgstr "<string>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "Pääasetukset"
+
+msgid "Terminal options"
+msgstr "Terminaalin asetukset"
+
+msgid "Color options"
+msgstr "Väriasetukset"
+
+msgid "Arguments parse error!"
+msgstr "Argumenttien rakennevirhe!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Asetukset..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Pääasetukset"
+
+msgid "Case sensitive filter"
+msgstr ""
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+msgid "Go to Declaration"
+msgstr ""
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "Tiedostojen toiminnot"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, c-format
+msgid "'%s' is not a known symbol."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Tiedostoon tallentaminen epäonnistui "
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Tiedostoon tallentaminen epäonnistui "
+
+msgid "No indexed files found."
+msgstr ""
+
+msgid "Failed to run grep."
+msgstr ""
+
+#, c-format
+msgid "No references found for '%s'."
+msgstr ""
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Etsi"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Etsi"
+
+msgid "Complete Symbol"
+msgstr ""
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Tiedostoon tallentaminen epäonnistui "
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr "Ei voitu luoda putken virtausta"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Kääntäminen kielestä %s kieleen %s epäonnistui"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+msgid "Project root directory to index:"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Tapahtuman '%s' luonti epäonnistui!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Luku epäonnistui"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+msgid "Navigation History"
+msgstr ""
+
+msgid "Go to declaration"
+msgstr ""
+
+msgid "Find references"
+msgstr ""
+
+msgid "Complete symbol"
+msgstr ""
+
+msgid "Navigation history"
+msgstr ""
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Haku on pois käytöstä"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Etsi"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Symbolisen linkin tiedostonimi:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Lataa syntaksi tiedosto"
+
+msgid "Manage repositories"
+msgstr ""
+
+msgid "Reindex repository"
+msgstr ""
+
+#, fuzzy
+msgid "Configuration"
+msgstr "&Asetukset..."
+
+msgid "Go to &declaration"
+msgstr ""
+
+msgid "&Find declaration"
+msgstr ""
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Komentojen &historia"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "Haku on pois käytöstä"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Symbolisen linkin tiedostonimi:"
+
+msgid "&Complete symbol"
+msgstr ""
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Valitse"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Symbolisen linkin tiedostonimi:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Tiedostonimi:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Avaa tiedosto"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Sulje"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Varoitus"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Nykyistä tekstiä muokattiin tallentamatta tiedostoa.\n"
+"Jatkamalla hylkäät nämä muutokset."
+
+msgid "C&ontinue"
+msgstr "J&atka"
+
+msgid "&Add word"
+msgstr "&Lisää sana"
+
+msgid "&Replace"
+msgstr "&Korvaa"
+
+msgid "&Skip"
+msgstr "&Ohita"
+
+msgid "Language"
+msgstr "Kieli"
+
+msgid "Misspelled"
+msgstr "Kirjoitusvirhe"
+
+msgid "Check word"
+msgstr "Tarkista sana"
+
+msgid "Suggest"
+msgstr "Ehdota"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Lisää sana"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Kirjoitusvirhe"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Kieli"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Valitse"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Valitse kieli"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Avataan: %3d%%"
+
+msgid "Loading..."
+msgstr "Avataan..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "Avaa tiedosto"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Virhe lukiessa %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"tiedosto \"%s\" on liian iso.\n"
+"Avataanko silti?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Virhe luettaessa putkesta: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+#, fuzzy
+msgid "Undo"
+msgstr "&Kumoa"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Uudelleen"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Tiedostossa on kovia linkkejä. Irrota ennen tallennusta?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Tiedosto on muuttunut tällä välin. Tallenna kuitenkin?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Virhe kirjoitettaessa putkeen: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Tallentamasi tiedosto ei pääty uuteen riviin."
+
+msgid "&Do not change"
+msgstr "&Älä tee muutoksia"
+
+msgid "&Unix format (LF)"
+msgstr "&Unix formaatti (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Windows/DOS formaatti (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Macintosh formaatti (CR)"
+
+msgid "Enter file name:"
+msgstr "Anna tiedostonimi:"
+
+msgid "Change line breaks to:"
+msgstr "Muuta rivinvaihdot:"
+
+msgid "Save As"
+msgstr "Tallenna nimellä"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "&Nopea tallennus"
+
+msgid "&Safe save"
+msgstr "&Turvallinen tallennus"
+
+msgid "&Do backups with following extension:"
+msgstr "&Tee varmuuskopiot seuraavalla laajennuksella:"
+
+msgid "Check &POSIX new line"
+msgstr "Tarkista &POSIX uusi rivi"
+
+msgid "Edit Save Mode"
+msgstr "Muokkaa tallennustilaa"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "Nimellä on jo tiedosto olemassa"
+
+msgid "&Overwrite"
+msgstr "&Ylikirjoita"
+
+msgid "Cannot save file"
+msgstr "Tiedostoa ei voi tallentaa"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Vahvista tiedoston tallennus: \"%s\""
+
+msgid "Save file"
+msgstr "Tallenna tiedosto"
+
+msgid "&Save"
+msgstr "&Tallenna"
+
+msgid "Load"
+msgstr "Lataa"
+
+msgid "Syntax file edit"
+msgstr "Syntaksitiedoston muokkaus"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Mitä syntaksia haluat muuttaa?"
+
+msgid "&User"
+msgstr "&Käyttäjä"
+
+msgid "&System wide"
+msgstr "&Järjestelmän laajuinen"
+
+msgid "Menu edit"
+msgstr "Valikon muokkaus"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Mitä valikkoa haluat muuttaa?"
+
+msgid "&Local"
+msgstr "&Paikallinen"
+
+msgid "[NoName]"
+msgstr ""
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Tiedosto %s muuttunut.\n"
+"Tallenna ennen sulkemista?"
+
+msgid "Close file"
+msgstr "Sulje tiedosto"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "Poistu"
+
+msgid "This function is not implemented"
+msgstr "Tätä toimintoa ei ole otettu käyttöön"
+
+msgid "Unable to save to file"
+msgstr "Tiedostoon tallentaminen epäonnistui "
+
+msgid "Goto line"
+msgstr "Mene riville"
+
+msgid "Enter line:"
+msgstr "Anna rivi:"
+
+msgid "Save block"
+msgstr "Tallenna alue"
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr "Tiedostoa ei voi lisätä"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <subject> -c <cc> <to>"
+
+msgid "To"
+msgstr "Vastaanottaja"
+
+msgid "Subject"
+msgstr "Aihe"
+
+msgid "Copies to"
+msgstr "Kopiona"
+
+msgid "Mail"
+msgstr "Viesti"
+
+msgid "Cancel"
+msgstr "Peruuta"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Kumoa poisto"
+
+#, fuzzy
+msgid "replace"
+msgstr "Korvaa"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Historia"
+
+msgid "Collect completions"
+msgstr ""
+
+msgid "NoName"
+msgstr "Nimetön"
+
+msgid "Save macro"
+msgstr "Tallenna makro"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Paina makron uudet pikanäppäimet:"
+
+msgid "Repeat last commands"
+msgstr "Edellinen komento uudestaan"
+
+msgid "Repeat times:"
+msgstr "Toistokerrat:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Poista makro"
+
+msgid "Delete macro"
+msgstr "Poista makro"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "venäjä"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Sulje"
+
+msgid "&Open file..."
+msgstr "&Avaa tiedosto..."
+
+msgid "&New"
+msgstr "&Uusi"
+
+msgid "&History..."
+msgstr "&Historia..."
+
+msgid "Save &as..."
+msgstr "Tallenna &nimellä..."
+
+msgid "&Insert file..."
+msgstr "&Lisää tiedosto..."
+
+msgid "Cop&y to file..."
+msgstr "Kop&ioi tiedostoon..."
+
+msgid "&User menu..."
+msgstr "&Käyttäjän valikko..."
+
+msgid "A&bout..."
+msgstr ""
+
+msgid "&Quit"
+msgstr "&Lopeta"
+
+msgid "&Undo"
+msgstr "&Kumoa"
+
+msgid "&Redo"
+msgstr "&Uudelleen"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "&Historia..."
+
+msgid "&Toggle ins/overw"
+msgstr ""
+
+msgid "To&ggle mark"
+msgstr ""
+
+msgid "&Mark columns"
+msgstr "&Merkitse sarakkeet"
+
+msgid "Mark &all"
+msgstr "Merkitse k&aikki"
+
+msgid "Unmar&k"
+msgstr "Poista mer&kintä"
+
+msgid "Cop&y"
+msgstr "&Kopioi"
+
+msgid "Mo&ve"
+msgstr "Sii&rrä"
+
+msgid "&Delete"
+msgstr "&Poista"
+
+msgid "Co&py to clipfile"
+msgstr ""
+
+msgid "&Cut to clipfile"
+msgstr ""
+
+msgid "Pa&ste from clipfile"
+msgstr ""
+
+msgid "&Beginning"
+msgstr "&Alku"
+
+msgid "&End"
+msgstr "&Loppu"
+
+msgid "&Search..."
+msgstr "&Haku..."
+
+msgid "Search &again"
+msgstr "Hae &uudelleen"
+
+msgid "&Replace..."
+msgstr "&Korvaa..."
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "&Vaihda rivin tilaa"
+
+msgid "Filter by &word"
+msgstr ""
+
+msgid "&Toggle bookmark"
+msgstr "&Vaihda kirjanmerkki"
+
+msgid "&Next bookmark"
+msgstr "&Seuraava kirjanmerkki"
+
+msgid "&Prev bookmark"
+msgstr "&Edellinen kirjanmerkki"
+
+msgid "&Flush bookmarks"
+msgstr "&Tyhjennä kirjanmerkit"
+
+msgid "&Go to line..."
+msgstr "&Mene riville..."
+
+msgid "&Toggle line state"
+msgstr "&Vaihda rivin tilaa"
+
+msgid "Go to matching &bracket"
+msgstr ""
+
+msgid "Toggle s&yntax highlighting"
+msgstr ""
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr ""
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Etsi kaikki"
+
+msgid "&Refresh screen"
+msgstr ""
+
+msgid "&Start/Stop record macro"
+msgstr ""
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr ""
+
+msgid "&Move"
+msgstr "&Siirrä"
+
+msgid "&Resize"
+msgstr "&Muuta kokoa"
+
+msgid "&Toggle fullscreen"
+msgstr "&Vaihda kokoruutuun"
+
+msgid "&Next"
+msgstr "&Seuraava"
+
+msgid "&Previous"
+msgstr "&Edellinen"
+
+msgid "&List..."
+msgstr "&Lista..."
+
+msgid "&General..."
+msgstr ""
+
+msgid "Save &mode..."
+msgstr ""
+
+msgid "Syntax &highlighting..."
+msgstr ""
+
+msgid "&Appearance..."
+msgstr "&Ulkoasu..."
+
+msgid "Learn &keys..."
+msgstr ""
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "&Pakkaa..."
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "&Pakkaa..."
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "&Paneelin asetukset..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr ""
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "Avaa tiedostot"
+
+msgid "&Save setup"
+msgstr ""
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Tiedosto"
+
+msgid "&Edit"
+msgstr "&Muokkaa"
+
+msgid "&Search"
+msgstr ""
+
+msgid "&Command"
+msgstr ""
+
+msgid "&Navigate"
+msgstr ""
+
+msgid "&Window"
+msgstr "&Ikkuna"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Valinnat"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Taulukko"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Luku epäonnistui"
+
+msgid "&None"
+msgstr ""
+
+msgid "&Dynamic paragraphing"
+msgstr ""
+
+msgid "Type &writer wrap"
+msgstr ""
+
+msgid "Wrap mode"
+msgstr "Kieromoodi"
+
+msgid "Tabulation"
+msgstr "Taulukko"
+
+msgid "&Fake half tabs"
+msgstr "valepuolikas&Tabit"
+
+msgid "&Backspace through tabs"
+msgstr "&Poisto tuhoaa tabit"
+
+msgid "Fill tabs with &spaces"
+msgstr "täytä tabit &Välilyönnein"
+
+msgid "Tab spacing:"
+msgstr "Välilehtien väli:"
+
+msgid "Other options"
+msgstr "Muut asetukset"
+
+msgid "&Return does autoindent"
+msgstr "&Rivinvaihto sisentää"
+
+msgid "Confir&m before saving"
+msgstr "&Varmista ennen tallennusta"
+
+msgid "Save file &position"
+msgstr ""
+
+msgid "&Visible trailing spaces"
+msgstr ""
+
+msgid "Visible &tabs"
+msgstr ""
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "syntaks&Ikorostus"
+
+msgid "C&ursor after inserted block"
+msgstr "K&ohdistin lisätyn alueen jälkeen"
+
+msgid "Pers&istent selection"
+msgstr ""
+
+msgid "Cursor be&yond end of line"
+msgstr ""
+
+msgid "&Group undo"
+msgstr ""
+
+msgid "Word wrap line length:"
+msgstr "Sanan rivityksen pituus:"
+
+msgid "Editor options"
+msgstr "Editorin asetukset"
+
+msgid "Enter search string:"
+msgstr "Syötä hakusana:"
+
+msgid "Cas&e sensitive"
+msgstr ""
+
+msgid "&Backwards"
+msgstr "&Takaperin"
+
+msgid "In se&lection"
+msgstr ""
+
+msgid "&Whole words"
+msgstr "&Kokonaiset sanat"
+
+msgid "&All charsets"
+msgstr "&Kaikki merkistöt"
+
+msgid "&Find all"
+msgstr "&Etsi kaikki"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Etsi"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Etsitään %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Etsitään %s"
+
+msgid "Enter replacement string:"
+msgstr "Anna korvaava merkkijono:"
+
+msgid "Replace"
+msgstr "Korvaa"
+
+msgid "Replace with:"
+msgstr "Korvaa:"
+
+msgid "A&ll"
+msgstr "K&aikki"
+
+msgid "Confirm replace"
+msgstr "Vahvista vaihto"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "%ld korvaaminen tehty"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "Tietoja"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Avaa tiedostot"
+
+msgid "Edit: "
+msgstr "Muokkaa:"
+
+msgid "ButtonBar|Help"
+msgstr ""
+
+msgid "ButtonBar|Save"
+msgstr ""
+
+msgid "ButtonBar|Mark"
+msgstr ""
+
+msgid "ButtonBar|Replac"
+msgstr ""
+
+msgid "ButtonBar|Copy"
+msgstr ""
+
+msgid "ButtonBar|Move"
+msgstr ""
+
+msgid "ButtonBar|Search"
+msgstr ""
+
+msgid "ButtonBar|Delete"
+msgstr ""
+
+msgid "ButtonBar|PullDn"
+msgstr ""
+
+msgid "ButtonBar|Quit"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Etsitään %s: %3d%%"
+
+msgid "Filter"
+msgstr "Suodata"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Automaatti >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Lataa syntaksi uudelleen >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr "Lataa syntaksi tiedosto"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Virhe tiedostossa %s rivillä %d"
+
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr ""
+
+msgid "Internal bug: Double start of link area"
+msgstr ""
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr ""
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Ohje"
+
+msgid "ButtonBar|Index"
+msgstr ""
+
+msgid "ButtonBar|Prev"
+msgstr ""
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Funktio 1"
+
+msgid "Arrows / Navigation"
+msgstr ""
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "End"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+msgid "Conflict"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Vaihto"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Muokkaa tiedostoa"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+msgid "&Main"
+msgstr ""
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+msgid "&Menu"
+msgstr ""
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&Lista..."
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Ohje"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "&Muokkaa"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "A1"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Paina mitä tahansa näppäintä jatkaaksesi"
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "&Takaperin"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Muokkaa tiedostoa"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+
+msgid "Home directory path is not absolute"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+
+msgid "unspecified"
+msgstr ""
+
+msgid "Lua scripts"
+msgstr ""
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Tuntematon virhe aliprosessissa"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Aseta"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Luku epäonnistui"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "Sisäinen virhe:"
+
+msgid "Choose codepage"
+msgstr "Valitse koodisivu"
+
+msgid "-  < No translation >"
+msgstr ""
+
+msgid "Setup"
+msgstr ""
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr ""
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr ""
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Poistaa subshell tuen käytöstä"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr ""
+
+msgid "With mouse support on xterm"
+msgstr ""
+
+msgid "With support for X11 events"
+msgstr ""
+
+msgid "With internationalization support"
+msgstr ""
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr ""
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Etsittyä merkkijonoa ei löydy"
+
+msgid "Home directory:"
+msgstr ""
+
+msgid "Profile root directory:"
+msgstr ""
+
+msgid "System data"
+msgstr ""
+
+msgid "Config directory:"
+msgstr ""
+
+msgid "Data directory:"
+msgstr ""
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Editorin asetukset"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+msgid "Lua scripts:"
+msgstr ""
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr ""
+
+msgid "Cache directory:"
+msgstr ""
+
+msgid "Debug"
+msgstr ""
+
+msgid "ERROR:"
+msgstr "VIRHE:"
+
+msgid "True:"
+msgstr ""
+
+msgid "False:"
+msgstr ""
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "Ei voitu luoda putken virtausta"
+
+msgid "Error calling program"
+msgstr ""
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr ""
+
+msgid "Warning -- ignoring file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr ""
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr ""
+
+msgid "User menu"
+msgstr ""
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Kääntäminen kielestä %s kieleen %s epäonnistui"

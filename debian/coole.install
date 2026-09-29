@@ -1,0 +1,14 @@
+usr/bin/coole
+etc/coole/
+usr/share/doc/coole/LUA_API_REFERENCE.md
+usr/share/doc/coole/LUA_PLUGINS.md
+usr/share/doc/coole/lua-api.json
+usr/share/coole/charsets
+usr/share/coole/defaults.ini
+usr/share/coole/examples/
+usr/share/coole/help/
+usr/share/coole/skins/
+usr/share/coole/syntax/
+usr/share/man/man1/coole.1
+usr/share/man/*/man1/
+usr/share/locale/

@@ -1,0 +1,49 @@
+name: ci-freebsd
+
+on:
+  workflow_call:
+    inputs:
+      CFLAGS:
+        description: 'Custom CFLAGS'
+        default: ''
+        required: false
+        type: string
+
+jobs:
+  build-freebsd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          prepare: |
+            pkg install -y gettext meson ninja pkgconf
+            pkg install -y check glib libX11
+
+          run: |
+            pw useradd test -d "$(pwd)"
+            chown -R test $(pwd)
+
+            su - test -c ' \
+              \
+              export CFLAGS="${{ inputs.CFLAGS }}" && \
+              \
+              meson setup build --prefix="$(pwd)/install-prefix" \
+                -Dscreen=ncurses -Dwerror=true && \
+              meson compile -C build && \
+              meson test -C build --print-errorlogs && \
+              meson install -C build \
+            '
+
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: test-logs-freebsd
+          path: build/meson-logs/*.txt
