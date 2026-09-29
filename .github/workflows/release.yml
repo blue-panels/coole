@@ -136,7 +136,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: source-archive
           path: dist
@@ -212,7 +212,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: source-archive
           path: dist
@@ -259,7 +259,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: source-archive
           path: dist
@@ -301,7 +301,7 @@ jobs:
       TERM: xterm
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: arch-packages
           path: out
@@ -340,7 +340,7 @@ jobs:
       TERM: xterm
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.artifact }}
           path: out
@@ -395,7 +395,7 @@ jobs:
       TERM: xterm
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.artifact }}
           path: out
@@ -420,7 +420,7 @@ jobs:
     # builds on macOS. The archive is self contained, so nothing else is needed
     # here, not even a checkout.
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: source-archive
           path: dist
@@ -489,7 +489,7 @@ jobs:
     # The macOS build: a .pkg installer, and a .dmg carrying it. This package
     # is what a macOS user downloads.
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: source-archive
           path: dist
@@ -686,7 +686,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: source-archive
           path: dist
@@ -749,7 +749,7 @@ jobs:
       # One directory per artifact, not merged: the source package and the
       # source RPM are built on both architectures and carry the same name on
       # each, so merging would put two copies of them in one place. The step below keeps the first of each.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           path: packages
