@@ -1533,6 +1533,33 @@ The
 option causes the text between the delimiters to be highlighted, but not
 the delimiters themselves.
 
+A context can hand the text between its delimiters to the rules of
+another syntax, with a line right below it:
+
+**embed**
+[**soft**]
+*type*
+
+where
+*type*
+is the name of the rules as the file line of the Syntax file gives it,
+with \\s for a space.  The delimiters keep the colors of the context.  The
+right delimiter ends the embedded text wherever it stands, inside a string
+or a comment of the embedded rules as well.  An embedded syntax can embed
+another one in turn, a few levels deep.  For example, HTML hands scripts to
+JavaScript:
+
+```
+  context <SCRIPT*> </SCRIPT> brightcyan
+      embed JavaScript\sProgram
+```
+
+With
+**soft**
+the right delimiter ends the embedded text only outside the strings and
+comments of the embedded rules, so that in {{ "}}" }} of a Jinja2 template
+the first }} is part of the string.
+
 Each rule is a line of the form:
 
 **keyword**
