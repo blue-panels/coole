@@ -1,0 +1,242 @@
+name: PR summary from commits
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update PR body with commit summary
+        uses: actions/github-script@v9
+        env:
+          # The same provider the release notes use. Without a token the step
+          # writes the commit list as before and says nothing more.
+          MODELS_ENDPOINT: ${{ vars.MODELS_ENDPOINT }}
+          MODELS_MODEL: ${{ vars.MODELS_MODEL }}
+          MODELS_TOKEN: ${{ secrets.MODELS_TOKEN }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pr = context.payload.pull_request;
+
+            // For PRs from forks, GITHUB_TOKEN may be read-only (depends on repo settings).
+            // We'll try; if forbidden, the action will fail.
+            const prNumber = pr.number;
+
+            const markerStart = "<!-- pr-summary:start -->";
+            const markerEnd = "<!-- pr-summary:end -->";
+            const aiStart = "<!-- pr-ai-summary:start -->";
+            const aiEnd = "<!-- pr-ai-summary:end -->";
+
+            // 1) Collect commits
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner,
+              repo,
+              pull_number: prNumber,
+              per_page: 100
+            });
+
+            // 2) Collect changed files (limited to 300 for readability)
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number: prNumber,
+              per_page: 100
+            });
+
+            const commitLines = commits.map(c => {
+              const msg = (c.commit?.message || "").split("\n")[0].trim();
+              const sha = (c.sha || "").slice(0, 7);
+              return `- ${msg} (\`${sha}\`)`;
+            });
+
+            // Group files by status
+            const limit = 300;
+            const trimmedFiles = files.slice(0, limit);
+
+            const byStatus = new Map();
+            for (const f of trimmedFiles) {
+              const st = f.status || "modified";
+              if (!byStatus.has(st)) byStatus.set(st, []);
+              byStatus.get(st).push(f.filename);
+            }
+
+            const statusOrder = ["added", "modified", "removed", "renamed", "changed"];
+            const fileSectionParts = [];
+            for (const st of statusOrder) {
+              if (!byStatus.has(st)) continue;
+              const names = byStatus.get(st);
+              const shown = names.slice(0, 80);
+              const extra = names.length - shown.length;
+              const list = shown.map(n => `  - \`${n}\``).join("\n");
+              fileSectionParts.push(`**${st}** (${names.length})\n${list}${extra > 0 ? `\n  - ... (+${extra} more)` : ""}`);
+            }
+
+            const commitCount = commits.length;
+            const fileCount = files.length;
+
+            const summaryBlock =
+              `${markerStart}\n` +
+              `## Auto summary\n\n` +
+              `**Commits:** ${commitCount}  \n` +
+              `**Files changed:** ${fileCount}\n\n` +
+              `### Commit messages\n` +
+              `${commitLines.length ? commitLines.join("\n") : "_No commits found_"}\n\n` +
+              `### Changed files\n` +
+              `${fileSectionParts.length ? fileSectionParts.join("\n\n") : "_No files found_"}\n\n` +
+              `_This block is auto-generated. Edit outside this section._\n` +
+              `${markerEnd}\n`;
+
+            const currentBody = pr.body || "";
+
+            // A summary is written once and then left alone: the author may
+            // rewrite it, and a later push must not undo that. Nor is one
+            // written when the author has already put a Summary of their own.
+            const bodyOutsideAuto = currentBody.split(markerStart)[0];
+            const wantsSummary =
+              !currentBody.includes(aiStart) && !/^##\s+Summary\b/m.test(bodyOutsideAuto);
+
+            async function writeSummary () {
+              const token = process.env.MODELS_TOKEN;
+              let endpoint = process.env.MODELS_ENDPOINT || "";
+              const model = process.env.MODELS_MODEL;
+              const account = process.env.CF_ACCOUNT_ID;
+              if (!token || !endpoint || !model) return "";
+              if (account) endpoint = endpoint.replace("<CF_ACCOUNT_ID>", account);
+
+              // The messages, not the diff: they say why, which a diff cannot,
+              // and they cost a fraction of the tokens.
+              let messages = commits
+                .map(c => (c.commit?.message || "").trim())
+                .join("\n\n---\n\n");
+              if (messages.length > 6000) messages = messages.slice(0, 6000);
+              if (!messages) return "";
+
+              const system = [
+                "You write the summary that opens a pull request in coole, a console text",
+                "editor, a continuation of cooledit, with",
+                "syntax highlighting, code folding, macros, ctags navigation, spell checking,",
+                "editor plugins and Lua scripts.",
+                "",
+                "You are given the commit messages of the branch and nothing else. Write what a",
+                "reviewer wants before reading the code: what the change is, and why it was made.",
+                "Two short paragraphs at most, five sentences in all.",
+                "",
+                "Where the messages give a reason, keep it; where they do not, say nothing",
+                "about it. Never mention the commit messages, or what they do or do not",
+                "contain: the reader wants the change, not an account of your sources.",
+                "",
+                "Do not list the commits, they are printed below your text, and do not describe",
+                "the making of the change. Prose for someone who knows the program, neither a",
+                "catalogue nor a story for a beginner.",
+                "",
+                "Write sentences with a subject, in the indicative. \"A folded block can now be",
+                "unfolded from the gutter\", not \"Adds support for unfolding\": the second is",
+                "the language of a commit subject and reads as an instruction.",
+                "",
+                "Name a thing once and keep that name. Coining a second one for the same thing",
+                "-- the undo history in one sentence, the undo browser facility in the next -- leaves",
+                "the reader wondering whether two things are meant.",
+                "",
+                "Leave out the words that fill a line without carrying anything: support for,",
+                "facility, capability, functionality, participate in, leverage, seamless, and",
+                "the construction enable X to Y where X simply does Y.",
+                "",
+                "No headings, no bullets, no markdown beyond backticks, and those only for what",
+                "the reader types or sees: a file name, a command, an option, a function. Not",
+                "for ordinary words such as CI or PR. Plain ASCII: straight quotes, plain",
+                "hyphens."
+              ].join("\n");
+
+              // A reasoning model spends this budget on thinking before it
+              // writes anything, and what is left over is the answer. At 900,
+              // with the instructions this prompt now carries, it thought until
+              // there was nothing left and returned an empty message.
+              const budget = 3000;
+
+              const body = {
+                model,
+                max_completion_tokens: budget,
+                messages: [
+                  { role: "system", content: system },
+                  { role: "user", content: messages }
+                ]
+              };
+
+              async function ask(payload) {
+                try {
+                  const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                  });
+                  const json = await response.json().catch(() => null);
+                  if (!response.ok)
+                    core.warning(`the endpoint answered ${response.status}: ` +
+                                 (json?.error?.message ?? JSON.stringify(json)?.slice(0, 300) ?? ""));
+                  return json;
+                } catch (e) {
+                  core.warning(`the endpoint could not be reached: ${e.message}`);
+                  return null;
+                }
+              }
+
+              let answer = await ask(body);
+
+              // Older models take max_tokens instead, and say so.
+              if (answer?.error?.message?.includes("max_tokens")) {
+                delete body.max_completion_tokens;
+                body.max_tokens = budget;
+                answer = await ask(body);
+              }
+
+              const choice = answer?.choices?.[0];
+              const text = choice?.message?.content?.trim();
+              if (!text) {
+                // Say which of the several ways it went wrong: an empty answer
+                // that stopped on "length" is a budget too small for the
+                // prompt, and reads nothing like a refusal or a bad request.
+                core.warning("no summary came back; leaving the body to the commit list" +
+                             ` (finish_reason: ${choice?.finish_reason ?? "none"},` +
+                             ` error: ${answer?.error?.message ?? "none"},` +
+                             ` completion tokens: ${answer?.usage?.completion_tokens ?? "unknown"})`);
+                return "";
+              }
+              return `${aiStart}\n## Summary\n\n${text}\n${aiEnd}\n`;
+            }
+
+            const aiBlock = wantsSummary ? await writeSummary() : "";
+
+            const hasMarkers = currentBody.includes(markerStart) && currentBody.includes(markerEnd);
+
+            let newBody;
+            if (hasMarkers) {
+              const startIdx = currentBody.indexOf(markerStart);
+              const endIdx = currentBody.indexOf(markerEnd) + markerEnd.length;
+              newBody = currentBody.slice(0, startIdx).trimEnd() + "\n\n" + summaryBlock + "\n" + currentBody.slice(endIdx).trimStart();
+            } else {
+              // Prepend summary
+              newBody = summaryBlock + "\n" + currentBody;
+            }
+
+            // The written summary goes above the generated block, where a
+            // reader looks first.
+            if (aiBlock) newBody = aiBlock + "\n" + newBody;
+
+            // Avoid unnecessary updates
+            if (newBody !== currentBody) {
+              await github.rest.pulls.update({
+                owner,
+                repo,
+                pull_number: prNumber,
+                body: newBody
+              });
+            }

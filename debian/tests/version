@@ -1,0 +1,14 @@
+#!/bin/sh
+# The program starts and says which version it is.
+set -e
+
+# A test bed has no terminal of its own. The program answers --version without
+# one, and TERM is set here so that the rest of the test does not depend on it.
+TERM=${TERM:-dumb}
+export TERM
+
+out=$(coole --version)
+printf '%s\n' "$out"
+
+printf '%s' "$out" | grep -q "^coole "
+printf '%s' "$out" | grep -qE "[0-9]+\.[0-9]+\.[0-9]+"

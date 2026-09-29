@@ -1,0 +1,2828 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Keith Bowes <zooplah@gmail.com>, 2011,2016,2018-2019
+# Yury V. Zaytsev <yury@shurup.com>, 2022,2025
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Esperanto <https://translate.codeberg.org/projects/mc6/mc6/eo/"
+">\n"
+"Language: eo\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr "Neniu traduko"
+
+msgid "Warning: cannot load codepages list"
+msgstr "Averto: ne eblas ŝargi liston da kodpaĝoj"
+
+msgid "7-bit ASCII"
+msgstr "7-bita Askio"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Ne eblas traduki el %s al %s"
+
+msgid "Event system already initialized"
+msgstr "Eventosistemo jam startigita"
+
+msgid "Failed to initialize event system"
+msgstr "Malsukcesis startigi la eventosistemon"
+
+msgid "Event system not initialized"
+msgstr "Eventosistemo ne jam startigita"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Kontrolu enmeton! Iuj parametroj estis NUL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Ne eblas krei grupon '%s' por eventoj!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Ne eblas krei eventon '%s'!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Rulumi malsupren je paĝo"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "&Inversigi tutekranecon"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "K&ompari dosierojn"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Foriga klavo"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "U&zanto difinata:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "Uzanto-menuo"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Serĉo finita"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Anstataŭigi"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Terminala agordo"
+
+msgid "Edit file"
+msgstr "Redakti dosieron"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Redakti dosieron"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "Ĉ&iuj signaroj"
+
+#, fuzzy
+msgid "Command history"
+msgstr "Komanda &historio"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "K&onservi kiel..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Iri linion"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "Refreŝigi &ekranon"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "Agordo konservita al %s"
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "Refreŝigi &ekranon"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Antaŭa"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Enmeti dosieron"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Antaŭa"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "Inversigi &linian staton"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Foriga klavo [cifera klavaro]"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Foriga klavo [cifera klavaro]"
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "El&tranĉi al poŝa dosiero"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "Ko&pii al poŝa dosiero"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "Alglui el poŝa do&siero"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "En e&lekto"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Elekti"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Elekti"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Elekti &grupon"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Elekti"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Elektu komparan metodon:"
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "Inversigi &linian staton"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Elekti lingvon"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "&Ordiga ordo..."
+
+#, fuzzy
+msgid "General options"
+msgstr "Flankaj agordaĵoj"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Lerni klavojn"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "S&ekva legosigno"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "&Trovi deklaron"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Aspekto"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "&Konservi agordon"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Antaŭa"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Liberaj nodoj: "
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Antaŭa"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Malelekti"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Elekti &grupon"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Elekti lingvon"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Fermi dosieron"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "sufikso-dosiera redaktilo"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Elekti"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Elekti lingvon"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Elekti"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "En e&lekto"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Konservi blokon"
+
+msgid "Insert file"
+msgstr "Enmeti dosieron"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "Inversigi (e&nmeti/anstataŭigi)"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "Enmeti &daton/tempon"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Foriganta"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "dosiero1 dosiero2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "Komanda &historio"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "&Formati alineon"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Maldekstra rekta krampo"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Refari lastajn komandojn"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "&Literumilo"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "&Literumilo"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Elekti lingvon"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "&Forviŝi legosignojn"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "S&ekva legosigno"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "A&ntaŭa legosigno"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Trovi ĉion"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "Inversigi &linian staton"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Ŝanĝoj de la dosiero perditaj"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Elektu komparan metodon:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Elektu komparan metodon:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Elektu komparan metodon:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Elekti &grupon"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Elekti &grupon"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "Malelekti gr&upon"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "Malelekti gr&upon"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "En e&lekto"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "Malelekti gr&upon"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "&Formati alineon"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "V&ideblaj postaj spacetoj"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "(Mal)ŝalti &sintaksan prilumadon"
+
+msgid "Choose syntax highlighting"
+msgstr "Elekti sintaksan prilumadon"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "Inversi&gi dekstran marĝenon"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Flankaj agordaĵoj"
+
+#, fuzzy
+msgid "About editor"
+msgstr "Kun interna tekstoredaktilo"
+
+#, fuzzy
+msgid "Execute script"
+msgstr "P&lenumebla unue"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "&Regrandigi"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "&Inversigi tutekranecon"
+
+#, fuzzy
+msgid "Window list"
+msgstr "Fe&nestro"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Antaŭa"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Dosiero \"%s\" jam estas redaktata.\n"
+"Uzanto: %s\n"
+"Proceza identigilo: %d"
+
+msgid "File locked"
+msgstr "Dosiero fiksita"
+
+msgid "&Grab lock"
+msgstr "&Ekkapti fiksilon"
+
+msgid "&Ignore lock"
+msgstr "&Ignori fiksilon"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Ne eblas krei dosierujon %s"
+
+msgid "FATAL: not a directory:"
+msgstr "PEREIGA: ne estas dosierujo:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Nombro ekster skalo (devas esti en la skalo: 0 <= n <= 0xFF, esprimita "
+"deksesume)"
+
+msgid "Invalid character"
+msgstr "Nevalida signo"
+
+msgid "Unmatched quotes character"
+msgstr "Neniu korelativa citilo"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Eraro pri deksesuma ŝablono ĉe pozicio: %d\n"
+"%s"
+
+msgid "Search string not found"
+msgstr "Serĉita ĉeno ne trovita"
+
+msgid "Not implemented yet"
+msgstr "Ankoraŭ ne realigita"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Nombro da anstataŭotaj eroj ne egalas nombron da trovitaj eroj"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Nevalida era numero %d"
+
+msgid "Regular expression error"
+msgstr "Regulesprima eraro"
+
+msgid "No&rmal"
+msgstr "&Normala"
+
+msgid "Re&gular expression"
+msgstr "Re&gulesprimo"
+
+msgid "He&xadecimal"
+msgstr "&Deksesuma"
+
+msgid "Wil&dcard search"
+msgstr "Ĵo&kera ŝerco"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Ne eblas interpreti etoson '%s'.\n"
+"Apriora etoso estas ŝargita"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Ne eblas uzi etoson '%s' kun rego de verkoloj:\n"
+"%s\n"
+"Uzanta la aprioran etoson"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Ne eblas ŝargi etoson '%s'.\n"
+"Apriora etoso estas ŝargita"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr "Verkoloro ne estas regata de tiu eldono de S-Lang"
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "Eskapa klavo"
+
+msgid "Function key 1"
+msgstr "Funkcia klavo 1"
+
+msgid "Function key 2"
+msgstr "Funkcia klavo 2"
+
+msgid "Function key 3"
+msgstr "Funkcia klavo 3"
+
+msgid "Function key 4"
+msgstr "Funkcia klavo 4"
+
+msgid "Function key 5"
+msgstr "Funkcia klavo 5"
+
+msgid "Function key 6"
+msgstr "Funkcia klavo 6"
+
+msgid "Function key 7"
+msgstr "Funkcia klavo 7"
+
+msgid "Function key 8"
+msgstr "Funkcia klavo 8"
+
+msgid "Function key 9"
+msgstr "Funkcia klavo 9"
+
+msgid "Function key 10"
+msgstr "Funkcia klavo 10"
+
+msgid "Function key 11"
+msgstr "Funkcia klavo 11"
+
+msgid "Function key 12"
+msgstr "Funkcia klavo 12"
+
+msgid "Function key 13"
+msgstr "Funkcia klavo 13"
+
+msgid "Function key 14"
+msgstr "Funkcia klavo 14"
+
+msgid "Function key 15"
+msgstr "Funkcia klavo 15"
+
+msgid "Function key 16"
+msgstr "Funkcia klavo 16"
+
+msgid "Function key 17"
+msgstr "Funkcia klavo 17"
+
+msgid "Function key 18"
+msgstr "Funkcia klavo 18"
+
+msgid "Function key 19"
+msgstr "Funkcia klavo 19"
+
+msgid "Function key 20"
+msgstr "Funkcia klavo 20"
+
+msgid "Completion/M-tab"
+msgstr "Kompletiga klavo"
+
+msgid "BackTab/S-tab"
+msgstr "Inversa tabado/S-tabo"
+
+msgid "Backspace"
+msgstr "Retropaŝa klavo"
+
+msgid "Up arrow"
+msgstr "Supreniga sagoklavo"
+
+msgid "Down arrow"
+msgstr "Malsupreniga sagoklavo"
+
+msgid "Left arrow"
+msgstr "Maldekstreniga sagoklavo"
+
+msgid "Right arrow"
+msgstr "Dekstreniga sagoklavo"
+
+msgid "Insert"
+msgstr "Enmeta klavo"
+
+msgid "Home"
+msgstr "Hejma klavo"
+
+msgid "End key"
+msgstr "Finiga klavo"
+
+msgid "Page Up"
+msgstr "Rulumi supren je paĝo"
+
+msgid "Page Down"
+msgstr "Rulumi malsupren je paĝo"
+
+msgid "/ on keypad"
+msgstr "/ ĉe cifera klavaro"
+
+msgid "* on keypad"
+msgstr "* ĉe cifera klavaro"
+
+msgid "- on keypad"
+msgstr "- ĉe cifera klavaro"
+
+msgid "+ on keypad"
+msgstr "+ ĉe cifera klavaro"
+
+msgid "Left arrow keypad"
+msgstr "Maldekstreniga sagoklavo [cifera klavaro]"
+
+msgid "Right arrow keypad"
+msgstr "Dekstreniga sagoklavo [cifera klavaro]"
+
+msgid "Up arrow keypad"
+msgstr "Supreniga sagoklavo [cifera klavaro]"
+
+msgid "Down arrow keypad"
+msgstr "Malsupreniga sagoklavo [cifera klavaro]"
+
+msgid "Home on keypad"
+msgstr "Hejma klavo [cifera klavaro]"
+
+msgid "End on keypad"
+msgstr "Finiga klavo [cifera klavaro]"
+
+msgid "Page Down keypad"
+msgstr "Klavo por malsuprenigi je ekranpleno [cifera klavaro]"
+
+msgid "Page Up keypad"
+msgstr "Klavo por suprenigi je ekranpleno [cifera klavaro]"
+
+msgid "Insert on keypad"
+msgstr "Enmeta klavo [cifera klavaro]"
+
+msgid "Delete on keypad"
+msgstr "Foriga klavo [cifera klavaro]"
+
+msgid "Enter on keypad"
+msgstr "Enen-klavo [cifera klavaro]"
+
+msgid "Function key 21"
+msgstr "Funkcia klavo 21"
+
+msgid "Function key 22"
+msgstr "Funkcia klavo 22"
+
+msgid "Function key 23"
+msgstr "Funkcia klavo 23"
+
+msgid "Function key 24"
+msgstr "Funkcia klavo 24"
+
+msgid "A1 key"
+msgstr "Klavo A1"
+
+msgid "C1 key"
+msgstr "Klavo C1"
+
+msgid "Asterisk"
+msgstr "Steleto"
+
+msgid "Minus"
+msgstr "Minus"
+
+msgid "Plus"
+msgstr "Plus"
+
+msgid "Dot"
+msgstr "Punkto"
+
+msgid "Less than"
+msgstr "Malpli ol"
+
+msgid "Great than"
+msgstr "Pli ol"
+
+msgid "Equal"
+msgstr "Egalsigno"
+
+msgid "Comma"
+msgstr "Komo"
+
+msgid "Apostrophe"
+msgstr "Apostrofo"
+
+msgid "Colon"
+msgstr "Dupunkto"
+
+msgid "Semicolon"
+msgstr "Punktokomo"
+
+msgid "Exclamation mark"
+msgstr "Krisigno"
+
+msgid "Question mark"
+msgstr "Demandosigno"
+
+msgid "Ampersand"
+msgstr "Kaj-signo"
+
+msgid "Dollar sign"
+msgstr "Dolara signo"
+
+msgid "Quotation mark"
+msgstr "Citilo"
+
+msgid "Percent sign"
+msgstr "Elcenta signo"
+
+msgid "Caret"
+msgstr "Ĉapelo"
+
+msgid "Tilda"
+msgstr "Tildo"
+
+msgid "Prime"
+msgstr "Ĉefo"
+
+msgid "Underline"
+msgstr "Substreko"
+
+msgid "Understrike"
+msgstr "Superstreko"
+
+msgid "Pipe"
+msgstr "Dukto"
+
+msgid "Left parenthesis"
+msgstr "Maldekstra ronda krampo"
+
+msgid "Right parenthesis"
+msgstr "Dekstra ronda krampo"
+
+msgid "Left bracket"
+msgstr "Maldekstra rekta krampo"
+
+msgid "Right bracket"
+msgstr "Dekstra rekta krampo"
+
+msgid "Left brace"
+msgstr "Maldekstra kuniga krampo"
+
+msgid "Right brace"
+msgstr "Dekstra kuniga krampo"
+
+msgid "Enter"
+msgstr "Enen-klavo"
+
+msgid "Tab key"
+msgstr "Tabo"
+
+msgid "Space key"
+msgstr "Spaceto"
+
+msgid "Slash key"
+msgstr "Oblikvo"
+
+msgid "Backslash key"
+msgstr "Deklivo"
+
+msgid "Number sign #"
+msgstr "Numersigno"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "Po-signo"
+
+msgid "Ctrl"
+msgstr "Stirklavo"
+
+msgid "Alt"
+msgstr "Alternativo"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Uskleca inversigilo"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Ne eblas krei duktajn por SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Ne eblas agordi skribfinon de SIGWINCH-dukto: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Ne eblas agordi legfinon de SIGWINCH-dukton: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Ekrangrando %dx%d ne estas regata.\n"
+"Kontroli la medivariablon TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "La medivariablo TERM ne estas valorizita!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Ne eblas kontroli SIGWINCH-dukton"
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Ne eblas krei duktan priskribilon"
+
+msgid "Cannot create pipe streams"
+msgstr "Ne eblas krei duktajn fluojn"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Neatendita eraro en select() leginte datumojn el ida procezo:\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr "Ne eblas fermi duktan priskribilon (p == NULL)"
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Neatendita eraro en waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Ŝanĝoj de la dosiero perditaj"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+"Ne eblas krei provizoran dosierujon %s: %s.\n"
+"Provizoraj dosieroj ne kreiĝos\n"
+
+msgid "Press any key to continue..."
+msgstr "Premu iun klavon por daŭri..."
+
+msgid "Internal error:"
+msgstr "Interna eraro:"
+
+msgid "Screens"
+msgstr "Ekranplenoj"
+
+msgid "History"
+msgstr "Historio"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Jes"
+
+msgid "&No"
+msgstr "&Ne"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "DialogTitle|Historia purigado"
+
+msgid "Do you want clean this history?"
+msgstr "Ĉu vi volas purigi ĉi tiun historion?"
+
+msgid "&OK"
+msgstr "&Bone"
+
+msgid "&Cancel"
+msgstr "N&uligi"
+
+msgid "Error"
+msgstr "Eraro"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Nuligi"
+
+msgid "< Default >"
+msgstr "< Apriora >"
+
+msgid "Skins"
+msgstr "Etosoj"
+
+msgid "Skin:"
+msgstr "Etoso:"
+
+msgid "&Shadows"
+msgstr "&Ombroj"
+
+msgid "Appearance"
+msgstr "Aspekto"
+
+msgid "Displays the current version"
+msgstr "Eligi la uzatan eldonon"
+
+msgid "Print data directory"
+msgstr "Eligi datuman dosierujon"
+
+msgid "Print extended info about used data directories"
+msgstr "Eligi vastajn informojn pri uzataj datumaj dosierujoj"
+
+msgid "Print configure options"
+msgstr "Eligi muntajn agordaĵojn"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Malaktivigi X11-regon"
+
+msgid "Forces xterm features"
+msgstr "Devigi xterm-trajtojn"
+
+msgid "Disable X11 support"
+msgstr "Malaktivigi X11-regon"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Provi uzi antaŭan reĝimon de musa spurado"
+
+msgid "Disable mouse support in text version"
+msgstr "Malebligi musan regon en teksta variaĵo"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Provi uzi termcap-on anstataŭ terminfo-on"
+
+msgid "To run on slow terminals"
+msgstr "Por plenumiĝi en malrapidaj terminaloj"
+
+msgid "Use stickchars to draw"
+msgstr "Ornami sole per askiaj signoj"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Ŝargi difinojn de klavaj asignoj el specifa dosiero"
+
+msgid "<file>"
+msgstr "<dosieron>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr "Ne ŝargi difinojn de klavaj asignoj el specifa dosiero; uzi aŭtomatajn"
+
+msgid "Requests to run in black and white"
+msgstr "Peti plenumiĝi unukolore"
+
+msgid "Request to run in color mode"
+msgstr "Peti plenumiĝi bunte"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Montri kun specifa etoso"
+
+msgid "<string>"
+msgstr "<ĉeno>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+linia_numero] dosiero1[:linia_numero] [dosiero2[:linia_numero]...]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+"\n"
+"Bonvolu sendi ĉiujn raportojn pri eraroj (inkluzivu la eligon de '%s -V')\n"
+"kiel biletojn en %s\n"
+
+msgid "Main options"
+msgstr "Ĉefa agordo"
+
+msgid "Terminal options"
+msgstr "Terminala agordo"
+
+msgid "Color options"
+msgstr "Kolora agordo"
+
+msgid "Arguments parse error!"
+msgstr "Eraro dum analizi parametrojn!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "Ag&ordo..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Agordaĵoj"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "&Usklecon ignori"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+"Ne eblas ŝanĝi permesojn\n"
+"%sn%s"
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "A&ntaŭen al deklaro"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "&Trovi deklaron"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "'%s' ne estas simbola ligilo"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Ne eblas krei provizoran flikaĵo-dosieron"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Ne eblas konservi al dosiero"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"Malsukcesis plenumigi:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "Neniuj taŭgaj eroj trovitaj en %s"
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Serĉo finita"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Serĉo finita"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "Kompleta: mont&ri ĉion"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Malsukcesis legi datumojn el ida ĉefeligujo"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Ne eblas krei celan dosieron\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Ne eblas traduki el %s al %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Hejma dosierujo profila:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Ne eblas krei eventon '%s'!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Legado malsukcesis"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Navigo"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "A&ntaŭen al deklaro"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "Kompleta: mont&ri ĉion"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Navigo"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Serĉo finita"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Serĉo finita"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Mola ligilo dosiernomo:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Ŝargi sintakso-dosieron"
+
+msgid "Manage repositories"
+msgstr ""
+
+#, fuzzy
+msgid "Reindex repository"
+msgstr "Indicitaj dosierujon"
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Konfirmo"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "A&ntaŭen al deklaro"
+
+msgid "&Find declaration"
+msgstr "&Trovi deklaron"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Navigo"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Serĉi"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Mola ligilo dosiernomo:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "Kompleta: mont&ri ĉion"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Elekti"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Mola ligilo dosiernomo:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Dosiernomo:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Ŝargi dosieron"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Fermi"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Averto"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Nuna teksto estis modifita sen dosiera konservado.\n"
+"Daŭri forviŝos tiujn ŝanĝojn."
+
+msgid "C&ontinue"
+msgstr "D&aŭrigi"
+
+msgid "&Add word"
+msgstr "&Aldoni vorton"
+
+msgid "&Replace"
+msgstr "&Anstataŭigi"
+
+msgid "&Skip"
+msgstr "&Preterlasi"
+
+msgid "Language"
+msgstr "Lingvo"
+
+msgid "Misspelled"
+msgstr "Misliterumita"
+
+msgid "Check word"
+msgstr "Kontroli vorton"
+
+msgid "Suggest"
+msgstr "Proponi"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Aldoni vorton"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Misliterumita"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Lingvo"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Elekti"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Elekti lingvon"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Ŝarganta: %3d%%"
+
+msgid "Loading..."
+msgstr "Ŝarganta..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+"Ne eblas malfermi\n"
+"%s"
+
+msgid "Load file"
+msgstr "Ŝargi dosieron"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Eraro legi je %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+"Ne eblas trovi\n"
+"%s"
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+"%s\n"
+"ne estas normala dosiero"
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Dosiero \"%s\" estas tro granda.\n"
+"Ĉu senkonsidere malfermi ĝin?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Eraro dum legi de dukto: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+"Ne eblas malfermi dukton por legi\n"
+"%s"
+
+#, fuzzy
+msgid "Undo"
+msgstr "&Malfari"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Reprovi"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Dosiero havas rektajn ligilojn. Ĉu elmeti antaŭ ol konservi?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "La dosiero estis ekstere modifita. Ĉu senkonsidere konservi?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Eraro dum skribi al dukto: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+"Ne eblas malfermi dosieron\n"
+"%s\n"
+"por skribi"
+
+msgid "The file you are saving does not end with a newline."
+msgstr "La dosiero, kiun vi estas konservanta, ne finiĝas per novlinio."
+
+msgid "&Do not change"
+msgstr "&Ne ŝanĝu"
+
+msgid "&Unix format (LF)"
+msgstr "Uniksa &formato"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Vindoza/DOS-a formato"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Makintoŝa formato"
+
+msgid "Enter file name:"
+msgstr "Enmeti dosiernomon:"
+
+msgid "Change line breaks to:"
+msgstr "ŝanĝi linirompojn al:"
+
+msgid "Save As"
+msgstr "Konservi kiel"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+"Ne eblas krei dosierujon\n"
+"%s"
+
+msgid "&Quick save"
+msgstr "&Rapida konservado"
+
+msgid "&Safe save"
+msgstr "&Sekura konservado"
+
+msgid "&Do backups with following extension:"
+msgstr "&Fari sekurkopiojn kun la jena sufikso:"
+
+msgid "Check &POSIX new line"
+msgstr "Kontroli la novan linion laŭ &POSIX"
+
+msgid "Edit Save Mode"
+msgstr "Reĝimo de redakta konservado"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+"Ne eblas konservi\n"
+"%s:\n"
+"ne normala dosiero"
+
+msgid "A file already exists with this name"
+msgstr "Dosiero kun tiu nomo jam ekzistas"
+
+msgid "&Overwrite"
+msgstr "&Anstataŭigi"
+
+msgid "Cannot save file"
+msgstr "Ne eblas konservi dosieron"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Konfirmi konservi dosieron: \"%s\""
+
+msgid "Save file"
+msgstr "Konservi dosieron"
+
+msgid "&Save"
+msgstr "&Konservi"
+
+msgid "Load"
+msgstr "Ŝargi"
+
+msgid "Syntax file edit"
+msgstr "Sintakso-dosiera redaktado"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Kiun sintakso-dosiero vi volas redakti?"
+
+msgid "&User"
+msgstr "&Uzanto"
+
+msgid "&System wide"
+msgstr "&Tutsistema"
+
+msgid "Menu edit"
+msgstr "Menua redaktilo"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Kiun menuo-dosiero vi volas redakti?"
+
+msgid "&Local"
+msgstr "&Loka"
+
+msgid "[NoName]"
+msgstr "[Sennoma]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Dosiero %s estis modifita.\n"
+"Ĉu konservi antaŭ ol fermi?"
+
+msgid "Close file"
+msgstr "Fermi dosieron"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+"%s estas elirinta.\n"
+"Ĉu konservi modifitan dosieron %s?"
+
+msgid "Quit"
+msgstr "Eliri"
+
+msgid "This function is not implemented"
+msgstr "Tiu funkcio ne estas realigita"
+
+msgid "Unable to save to file"
+msgstr "Ne eblas konservi al dosiero"
+
+msgid "Goto line"
+msgstr "Iri linion"
+
+msgid "Enter line:"
+msgstr "Enmeti linion:"
+
+msgid "Save block"
+msgstr "Konservi blokon"
+
+msgid "Cannot save block"
+msgstr "Ne eblas konservi blokon"
+
+msgid "Cannot insert file"
+msgstr "Ne eblas enmeti dosieron"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <temo> -c <aliaj_ricevontoj> <al>"
+
+msgid "To"
+msgstr "Al"
+
+msgid "Subject"
+msgstr "Temo"
+
+msgid "Copies to"
+msgstr "Kopioj al"
+
+msgid "Mail"
+msgstr "Retpoŝto"
+
+msgid "Cancel"
+msgstr "Nuligi"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Enmeta klavo"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Ĉu forigi je %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Anstataŭigi"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Historio"
+
+msgid "Collect completions"
+msgstr "Kolekti kompletigojn"
+
+msgid "NoName"
+msgstr "Sennoma"
+
+msgid "Save macro"
+msgstr "Konservi makroon"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Premu la novan klavkomandon de la makroo:"
+
+msgid "Repeat last commands"
+msgstr "Refari lastajn komandojn"
+
+msgid "Repeat times:"
+msgstr "Refari (n-fojojn):"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Forigi makroon"
+
+msgid "Delete macro"
+msgstr "Forigi makroon"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "Rusa"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Fermi"
+
+msgid "&Open file..."
+msgstr "&Malfermi dosieron..."
+
+msgid "&New"
+msgstr "&Nova"
+
+msgid "&History..."
+msgstr "&Historio..."
+
+msgid "Save &as..."
+msgstr "K&onservi kiel..."
+
+msgid "&Insert file..."
+msgstr "Enmeti &dosieron..."
+
+msgid "Cop&y to file..."
+msgstr "Kop&ii al dosiero..."
+
+msgid "&User menu..."
+msgstr "&Uzanto-menuo..."
+
+msgid "A&bout..."
+msgstr "&Pri..."
+
+msgid "&Quit"
+msgstr "&Eliri"
+
+msgid "&Undo"
+msgstr "&Malfari"
+
+msgid "&Redo"
+msgstr "&Refari"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "&Historio..."
+
+msgid "&Toggle ins/overw"
+msgstr "Inversigi (e&nmeti/anstataŭigi)"
+
+msgid "To&ggle mark"
+msgstr "Inversi&gi markon"
+
+msgid "&Mark columns"
+msgstr "M&arki kolumnojn"
+
+msgid "Mark &all"
+msgstr "Marki ĉ&ion"
+
+msgid "Unmar&k"
+msgstr "Ma&lmarki"
+
+msgid "Cop&y"
+msgstr "&Kopii"
+
+msgid "Mo&ve"
+msgstr "Mo&vi"
+
+msgid "&Delete"
+msgstr "F&origi"
+
+msgid "Co&py to clipfile"
+msgstr "Ko&pii al poŝa dosiero"
+
+msgid "&Cut to clipfile"
+msgstr "El&tranĉi al poŝa dosiero"
+
+msgid "Pa&ste from clipfile"
+msgstr "Alglui el poŝa do&siero"
+
+msgid "&Beginning"
+msgstr "Komen&co"
+
+msgid "&End"
+msgstr "&Fino"
+
+msgid "&Search..."
+msgstr "&Serĉi..."
+
+msgid "Search &again"
+msgstr "Serĉi &denove"
+
+msgid "&Replace..."
+msgstr "&Anstataŭigi"
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "Inversigi &linian staton"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "&skribi laŭ estro"
+
+msgid "&Toggle bookmark"
+msgstr "&Inversigi legosignon"
+
+msgid "&Next bookmark"
+msgstr "S&ekva legosigno"
+
+msgid "&Prev bookmark"
+msgstr "A&ntaŭa legosigno"
+
+msgid "&Flush bookmarks"
+msgstr "&Forviŝi legosignojn"
+
+msgid "&Go to line..."
+msgstr "&Iri al linio..."
+
+msgid "&Toggle line state"
+msgstr "Inversigi &linian staton"
+
+msgid "Go to matching &bracket"
+msgstr "Iri al kongrua &krampo"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "(Mal)ŝalti &sintaksan prilumadon"
+
+msgid "Togg&le right margin"
+msgstr "Inversi&gi dekstran marĝenon"
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "Kodo&prezento..."
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Trovi ĉion"
+
+msgid "&Refresh screen"
+msgstr "Refreŝigi &ekranon"
+
+msgid "&Start/Stop record macro"
+msgstr "Komenci/Ĉesi registran &makroon"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "Registri/refari &agojn"
+
+msgid "&Move"
+msgstr "&Movi"
+
+msgid "&Resize"
+msgstr "&Regrandigi"
+
+msgid "&Toggle fullscreen"
+msgstr "&Inversigi tutekranecon"
+
+msgid "&Next"
+msgstr "&Sekva"
+
+msgid "&Previous"
+msgstr "&Antaŭa"
+
+msgid "&List..."
+msgstr "&Listo..."
+
+msgid "&General..."
+msgstr "Ĝ&enerala..."
+
+msgid "Save &mode..."
+msgstr "Konservi &reĝimon..."
+
+msgid "Syntax &highlighting..."
+msgstr "Sintaksa &prilumado..."
+
+msgid "&Appearance..."
+msgstr "A&spekto..."
+
+msgid "Learn &keys..."
+msgstr "&Lerni klavojn..."
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "&Kodoprezento..."
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "&Kodoprezento..."
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "&Flankaj agordaĵoj..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "S&intakso-dosiero"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "&Menuo-dosiero"
+
+msgid "&Save setup"
+msgstr "&Konservi agordon"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Dosiero"
+
+msgid "&Edit"
+msgstr "&Redakti"
+
+msgid "&Search"
+msgstr "&Serĉi"
+
+msgid "&Command"
+msgstr "&Komandoj"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Navigo"
+
+msgid "&Window"
+msgstr "Fe&nestro"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Agordo"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Tabado"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Legado malsukcesis"
+
+msgid "&None"
+msgstr "&Neniu"
+
+msgid "&Dynamic paragraphing"
+msgstr "Dinamika &alineado"
+
+msgid "Type &writer wrap"
+msgstr "&Tajpila linifaldo"
+
+msgid "Wrap mode"
+msgstr "Linifalda reĝimo"
+
+msgid "Tabulation"
+msgstr "Tabado"
+
+msgid "&Fake half tabs"
+msgstr "&Falsaj duontaboj"
+
+msgid "&Backspace through tabs"
+msgstr "&Retropaŝi tra taboj"
+
+msgid "Fill tabs with &spaces"
+msgstr "Plenigi tabojn per &spacetoj"
+
+msgid "Tab spacing:"
+msgstr "Taba spaco:"
+
+msgid "Other options"
+msgstr "Aliaj agordaĵoj"
+
+msgid "&Return does autoindent"
+msgstr "&Enen-klavo ne aŭtomate deŝovas"
+
+msgid "Confir&m before saving"
+msgstr "Konfirmi antaŭ &ol konservado"
+
+msgid "Save file &position"
+msgstr "Konservi dosieran &pozicion"
+
+msgid "&Visible trailing spaces"
+msgstr "V&ideblaj postaj spacetoj"
+
+msgid "Visible &tabs"
+msgstr "&Videblaj taboj"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "Sinta&ksa prilumado"
+
+msgid "C&ursor after inserted block"
+msgstr "K&ursoro post enmetita bloko"
+
+msgid "Pers&istent selection"
+msgstr "&Daŭra elektado"
+
+msgid "Cursor be&yond end of line"
+msgstr "Kursoro preter &linifino"
+
+msgid "&Group undo"
+msgstr "&Grupa malfaro"
+
+msgid "Word wrap line length:"
+msgstr "Linifalda longo:"
+
+msgid "Editor options"
+msgstr "Redaktilaj agordaĵoj"
+
+msgid "Enter search string:"
+msgstr "Enmetu serĉan ĉenon:"
+
+msgid "Cas&e sensitive"
+msgstr "N&e ignori usklecon"
+
+msgid "&Backwards"
+msgstr "D&orsen"
+
+msgid "In se&lection"
+msgstr "En e&lekto"
+
+msgid "&Whole words"
+msgstr "Tutaj &vortoj"
+
+msgid "&All charsets"
+msgstr "Ĉ&iuj signaroj"
+
+msgid "&Find all"
+msgstr "&Trovi ĉion"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Serĉo"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Serĉanta en %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Serĉanta en %s"
+
+msgid "Enter replacement string:"
+msgstr "Enmetu anstataŭigan ĉenon:"
+
+msgid "Replace"
+msgstr "Anstataŭigi"
+
+msgid "Replace with:"
+msgstr "Anstataŭigi per:"
+
+msgid "A&ll"
+msgstr "Ĉ&io"
+
+msgid "Confirm replace"
+msgstr "Konfirmi anstataŭigon"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "%ld anstataŭigoj faritaj"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+"Afabla tekstoredaktilo\n"
+"verkita por %s."
+
+msgid "About"
+msgstr "Pri"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Malfermi dosierojn"
+
+msgid "Edit: "
+msgstr "Redakti: "
+
+msgid "ButtonBar|Help"
+msgstr "ButtonBar|Helpo"
+
+msgid "ButtonBar|Save"
+msgstr "ButtonBar|Konservi"
+
+msgid "ButtonBar|Mark"
+msgstr "ButtonBar|Mark"
+
+msgid "ButtonBar|Replac"
+msgstr "ButtonBar|Anstataŭigi"
+
+msgid "ButtonBar|Copy"
+msgstr "ButtonBar|Kopii"
+
+msgid "ButtonBar|Move"
+msgstr "ButtonBar|Movi"
+
+msgid "ButtonBar|Search"
+msgstr "ButtonBar|Serĉi"
+
+msgid "ButtonBar|Delete"
+msgstr "ButtonBar|Forigi"
+
+msgid "ButtonBar|PullDn"
+msgstr "ButtonBar|Menuzono"
+
+msgid "ButtonBar|Quit"
+msgstr "ButtonBar|Eliri"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Serĉanta en %s: %3d%%"
+
+msgid "Filter"
+msgstr "Filtri"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Aŭtomata >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Reŝargi nunan sintakson >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+"Ne eblas malfermi dosieron\n"
+"%s"
+
+msgid "Load syntax file"
+msgstr "Ŝargi sintakso-dosieron"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Eraro en dosiero %s ĉe linio %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Ne xterm-fenestron aŭ linuksan terminalon;\n"
+"la subŝelon oni ne ne povas baskuligi."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr "Tajpu \"exit\" por reiri al %s"
+
+msgid "Help file format error\n"
+msgstr "Eraro ĉe la helpdosiera formato\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Interna eraro: Duobla komenco de liga regiono"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Ne eblas trovi nodon %s en helpa dosiero"
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Helpo"
+
+msgid "ButtonBar|Index"
+msgstr "ButtonBar|Indekso"
+
+msgid "ButtonBar|Prev"
+msgstr "ButtonBar|Antaŭa"
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Funkcia klavo 1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Navigo"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Lerni klavojn"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Konfirmo"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+"Ne eblas akcepti ĉi tiun klavon.\n"
+"Ve estas enmetinta la klavon \"%s\""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Stirklavo"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Uskleca inversigilo"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Redakti &menuo-dosieron"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&Retpoŝtilo..."
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "&Menuo-dosiero"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&Listo..."
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Helpo"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "&Redakti"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "Klavo A1"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Premu iun klavon por daŭri..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "D&orsen"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Redakti &menuo-dosieron"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Malsukcesis plenumigi:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Hejma-dosieruja vojo ne estas absoluta"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Malsukcesi dum fermi:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "Kromprogramoj kaj programetoj por VFS:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Nekonata eraro en ido"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Fari"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Legado malsukcesis"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: eraro"
+
+msgid "Choose codepage"
+msgstr "Elekti kodpaĝon"
+
+msgid "-  < No translation >"
+msgstr "- < Neniu traduko >"
+
+msgid "Setup"
+msgstr "Agordo"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Agordo konservita al %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Ne eblas konservi al dosiero %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Kun laŭvola subŝelo"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "Kun musa rego ĉe terminaloj xterm-aj kaj linuksaj"
+
+msgid "With mouse support on xterm"
+msgstr "Kun musa rego ĉe xterm"
+
+msgid "With support for X11 events"
+msgstr "Kun rego de X11-eventoj"
+
+msgid "With internationalization support"
+msgstr "Kun internaciiga rego"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr "Muntita kun GLib %d.%d.%d (uzata kun GLib %u.%u.%u)\n"
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr "Muntita kun S-Lang"
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr " kaj terminfo-datumbazo (kun S-Lang %s)\n"
+
+#, c-format
+msgid "Built with %s"
+msgstr "Muntita kun %s"
+
+#, c-format
+msgid " (using %s)\n"
+msgstr " (kun %s)\n"
+
+msgid "Data types:"
+msgstr "Datumtipoj:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Serĉita ĉeno ne trovita"
+
+msgid "Home directory:"
+msgstr "Hejma dosierujo:"
+
+msgid "Profile root directory:"
+msgstr "Hejma dosierujo profila:"
+
+msgid "System data"
+msgstr "Sistemaj datumoj"
+
+msgid "Config directory:"
+msgstr "Agorda dosierujo:"
+
+msgid "Data directory:"
+msgstr "Datuma dosierujo:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Redaktilaj agordaĵoj"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "Kromprogramoj kaj programetoj por VFS:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Uzanto-datumoj"
+
+msgid "Cache directory:"
+msgstr "Teneja dosierujo:"
+
+msgid "Debug"
+msgstr "Senerarigi"
+
+msgid "ERROR:"
+msgstr "ERARO:"
+
+msgid "True:"
+msgstr "Vera:"
+
+msgid "False:"
+msgstr "Malvera:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "Ne eblas krei provizoran flikaĵo-dosieron"
+
+msgid "Error calling program"
+msgstr "Eraro dum programa plenumo"
+
+msgid "Cannot create temporary command file"
+msgstr "Ne eblas krei provizoran komandodosieron"
+
+msgid "Parameter"
+msgstr "Parametro"
+
+msgid "Warning -- ignoring file"
+msgstr "Averto -- ignoranta dosieron"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Dosiero %s estas posedata de nek la ĉefuzanto nek vi aŭ estas universale "
+"skribebla.\n"
+"Uzi ĝin eble kompromitos vian sekurecon"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "Ne eblas plenumi komandojn en foraj dosiersistemoj"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "Neniuj taŭgaj eroj trovitaj en %s"
+
+msgid "User menu"
+msgstr "Uzanto-menuo"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Ne eblas traduki el %s al %s"

@@ -1,0 +1,41 @@
+name: ci-alpine
+
+on:
+  workflow_call:
+
+jobs:
+  build-alpine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    container:
+      image: alpine:latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: |
+          apk add build-base meson pkgconf sudo
+          apk add check-dev gettext-dev glib-dev gpm-dev lua5.4-dev slang-dev
+
+      - name: Build default configuration
+        run: |
+          adduser --home "$(pwd)" --no-create-home --disabled-password test
+          chown -R test "$(pwd)"
+
+          su - test -c ' \
+            meson setup build --prefix="$(pwd)/install-prefix" -Dwerror=true && \
+            meson compile -C build && \
+            meson test -C build --print-errorlogs && \
+            meson install -C build \
+          '
+
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: test-logs-alpine
+          path: build/meson-logs/*.txt

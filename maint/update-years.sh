@@ -1,0 +1,24 @@
+#! /bin/sh
+
+YEAR=`date +%Y`
+
+SOURCES="`find lib src tests -name '*.c'`"
+
+LINE="Copyright (C)"
+
+for i in $SOURCES; do
+    # replace year: XXXX-YYYY -> XXXX-ZZZZ
+    # add year: XXXX -> XXXX-ZZZZ
+    ${SED-sed} -e "
+        1,20 {
+                /$LINE/s/-[0-9]\{4\}$/-$YEAR/
+        };
+        1,20 {
+                /$LINE/s/ [0-9]\{4\}$/&-$YEAR/
+    }" $i > $i.tmp && mv -f $i.tmp $i
+done
+
+# special case
+${SED-sed} -e "/last_year =/s/[0-9]\{4\};/$YEAR;/" lib/global.c > lib/global.c.tmp && \
+  mv -f lib/global.c.tmp lib/global.c
+

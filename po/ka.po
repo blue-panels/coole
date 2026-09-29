@@ -1,0 +1,2656 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# George Machitidze <giomac@gmail.com>, 2012,2014
+# Temuri Doghonadze <temuri.doghonadze@gmail.com>, 2022
+# Temuri Doghonadze <temuri.doghonadze@gmail.com>, 2022
+# Temuri Doghonadze <temuri.doghonadze@gmail.com>, 2022
+# EkaterinePapava <ekaterinepapava@noreply.codeberg.org>, 2026.
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Georgian <https://translate.codeberg.org/projects/mc6/mc6/ka/"
+">\n"
+"Language: ka\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "გაფრთხილება: კოდების გვერდების სიის ჩატვირთვის სეცდომა"
+
+msgid "7-bit ASCII"
+msgstr "7-ბიტიანი ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "%s-დან %s-ზე თარგმნა შეუძლებელია"
+
+msgid "Event system already initialized"
+msgstr "მოვლენების სისტემა უკვე ინიციალიზირებულია"
+
+msgid "Failed to initialize event system"
+msgstr "მოვლენების სისტემის ინიციალიზაციის შეცდომა"
+
+msgid "Event system not initialized"
+msgstr "მოვლენების სისტემა ინიციალიზირებული არაა"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr ""
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "მოვლენებისთვის ჯგუფის შექმნა შეუძლებელია: %s !"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr ""
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "ღილაკი Page Down"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "&სრულ ეკრანზე"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+msgid "Copy file(s)"
+msgstr "ფაილ(ებ)-ის კოპირება"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "წაშლა"
+
+msgid "Main menu"
+msgstr ""
+
+msgid "User-defined menu"
+msgstr "მომხმარებლის აღწერილი მენიუ"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "მომხმარებლის მენიუ"
+
+msgid "Search next"
+msgstr "შემდეგის ძებნა"
+
+msgid "Replace next"
+msgstr "შემდეგის ჩანაცვლება"
+
+msgid "Show help"
+msgstr ""
+
+msgid "Terminal"
+msgstr "ტერმინალი"
+
+msgid "Edit file"
+msgstr "ფაილის ჩასწორება"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "ფაილის ჩასწორება"
+
+msgid "Select charset"
+msgstr "აირჩიეთ სიმბოლოების ნაკრები"
+
+msgid "Command history"
+msgstr "ბრძანებების ისტორია"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+msgid "Save as..."
+msgstr "შენახვა როგორც..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "გადასვლა ხაზზე"
+
+msgid "Refresh screen"
+msgstr "ეკრანის განახლება"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "პარამეტრები შეინახა %s ფაილში"
+
+msgid "List open screens"
+msgstr ""
+
+msgid "Next screen"
+msgstr "შემდეგი ეკრანი"
+
+msgid "Previous screen"
+msgstr "წინა ეკრანი"
+
+msgid "Next file"
+msgstr "შემდეგი ფაილი"
+
+msgid "Previous file"
+msgstr "წინა ფაილი"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "ღილაკი Delete ციფრულ კლავიატურაზე"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "ღილაკი Delete ციფრულ კლავიატურაზე"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "ღილაკი Delete ციფრულ კლავიატურაზე"
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "&ამოსაჭრელ ფაილში ამოჭრა"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "&ამოსაჭრელ ფაილში კოპირება"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "&ამოსაჭრელი ფაილიდან ჩასმა"
+
+msgid "Toggle selection"
+msgstr "მონიშნულის გადართვა"
+
+msgid "Select left"
+msgstr "მონიშვნა მარცხნივ"
+
+msgid "Select right"
+msgstr "მონიშვნა მარჯვნივ"
+
+msgid "Select up"
+msgstr "მონიშვნა მაღლა"
+
+msgid "Select down"
+msgstr "მონიშვნა დაბლა"
+
+msgid "Select to word start"
+msgstr ""
+
+msgid "Select to word end"
+msgstr ""
+
+msgid "Select to line start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "ენის არჩევა"
+
+msgid "Sort order..."
+msgstr "დალაგების მიმდევრობა..."
+
+msgid "General options"
+msgstr "ზოგადი პარამეტრები"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "&ღილაკების სწავლა..."
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+msgid "Set bookmark"
+msgstr "სანიშნეს დაყენება"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+msgid "Find declaration"
+msgstr "აღწერის პოვნა"
+
+msgid "Appearance settings"
+msgstr "გარეგნობის მორგება"
+
+msgid "Save setup"
+msgstr "პარამეტრების შენახვა"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+msgid "Previous link"
+msgstr "წინა ბმული"
+
+msgid "Next node"
+msgstr "შემდეგი კვანძი"
+
+msgid "Previous node"
+msgstr "წინა კვანძი"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+msgid "Deselect all"
+msgstr "მონიშვნის მოხსნა ყველაფერზე"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "ჯგუფის მონიშვნა"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "ენის არჩევა"
+
+msgid "Close editor"
+msgstr "რედაქტორის დახურვა"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "სინტაქსური ფაილის რედაქტირება"
+
+msgid "Select word"
+msgstr "სიტყვის მონიშვნა"
+
+msgid "Select line"
+msgstr "ხაზის არჩევა"
+
+msgid "Select all"
+msgstr "ყველას მონიშვნა"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "მონიშნულში"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "ბლოკის შენახვა"
+
+msgid "Insert file"
+msgstr "ფაილის ჩასმა"
+
+msgid "Toggle insert/overwrite"
+msgstr "ჩასმა/გადაწერის გადართვა"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "&თარიღის/დროს ჩასმა"
+
+msgid "Delete line"
+msgstr "ხაზის წაშლა"
+
+msgid "Mail file"
+msgstr "ფაილის გაგზავნა ელფოსტით"
+
+msgid "Undo history"
+msgstr "გაუქმებების ისტორია"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "&პარაგრაფის ფორმატირება"
+
+msgid "Match bracket"
+msgstr "შესაბამისი ფრჩხილი"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "მაკროსის წაშლა"
+
+msgid "Spell check"
+msgstr "მართლწერის შემოწმება"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "მართლწერის შემოწმება"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "ენის არჩევა"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "&სანიშნის ჩართ/გამორთ"
+
+msgid "Next bookmark"
+msgstr "შემდეგი სანიშნე"
+
+msgid "Previous bookmark"
+msgstr "წინა სანიშნე"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&ყველას პოვნა"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "&ჩასმა/გადაწერის გადართვა"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "ფაილის ცვლილებები დაიკარგა"
+
+msgid "Select to file end"
+msgstr ""
+
+msgid "Select to page start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "ენის არჩევა"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "ჯგუფის მონიშვნა"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "ჯგუფის მონიშვნა"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "ჯგუფის მონიშვნის მოხსნა"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "ჯგუფის მონიშვნის მოხსნა"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "მონიშნულში"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "ჯგუფის მონიშვნის მოხსნა"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "&პარაგრაფის ფორმატირება"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "მიწერილი გამოტოვებების ჩვენება"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "აირჩიეთ სინტაქსის განატება"
+
+msgid "Choose syntax highlighting"
+msgstr "აირჩიეთ სინტაქსის განატება"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "&ნიშნის ჩართ/გამორთ"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "პანელის მორგება"
+
+msgid "About editor"
+msgstr ""
+
+msgid "Execute script"
+msgstr ""
+
+msgid "Move window"
+msgstr ""
+
+msgid "Resize window"
+msgstr "ფანჯრის ზომის შეცვლა"
+
+msgid "Toggle fullscreen"
+msgstr "სრულ ეკრანის გადართვა"
+
+msgid "Window list"
+msgstr "ფანჯრების სია"
+
+msgid "Next window"
+msgstr ""
+
+msgid "Previous window"
+msgstr "წინა ფანჯარა"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+
+msgid "File locked"
+msgstr "ფაილი დაბლოკილია"
+
+msgid "&Grab lock"
+msgstr "ბლოკირების მი&თვისება"
+
+msgid "&Ignore lock"
+msgstr "ბლოკირების &იგნორირება"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "საქაღალდე %s-ის შექმნა შეუძლებელია"
+
+msgid "FATAL: not a directory:"
+msgstr "შეცდომა: არ წარმოადგენს საქაღალდეს:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+
+msgid "Invalid character"
+msgstr "არასწორი სიმბოლო"
+
+msgid "Unmatched quotes character"
+msgstr "დაუმთხვეველი ბრჭყალების სიმბოლო"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+
+msgid "Search string not found"
+msgstr "საძებნი სტრიქონი ვერ მოიძებნა"
+
+msgid "Not implemented yet"
+msgstr "ჯერ არაა იმპლემენტირებული"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr ""
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "კოდის არასწორი ნომერი %d"
+
+msgid "Regular expression error"
+msgstr "შეცდომა რეგულარულ გამოსახულებაში"
+
+msgid "No&rmal"
+msgstr "ნორ&მალური"
+
+msgid "Re&gular expression"
+msgstr "&რეგულარულ გამოსახულება"
+
+msgid "He&xadecimal"
+msgstr "ტე&ქვსმეტობითი"
+
+msgid "Wil&dcard search"
+msgstr "&ვაილდკარდით ძებნა"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "ღილაკი Esc"
+
+msgid "Function key 1"
+msgstr "ღილაკი F1"
+
+msgid "Function key 2"
+msgstr "ღილაკი F2"
+
+msgid "Function key 3"
+msgstr "ღილაკი F3"
+
+msgid "Function key 4"
+msgstr "ღილაკი F4"
+
+msgid "Function key 5"
+msgstr "ღილაკი F5"
+
+msgid "Function key 6"
+msgstr "ღილაკი F6"
+
+msgid "Function key 7"
+msgstr "ღილაკი F7"
+
+msgid "Function key 8"
+msgstr "ღილაკი F8"
+
+msgid "Function key 9"
+msgstr "ღილაკი F9"
+
+msgid "Function key 10"
+msgstr "ღილაკი F10"
+
+msgid "Function key 11"
+msgstr "ღილაკი F11"
+
+msgid "Function key 12"
+msgstr "ღილაკი F12"
+
+msgid "Function key 13"
+msgstr "ღილაკი F13"
+
+msgid "Function key 14"
+msgstr "ღილაკი F14"
+
+msgid "Function key 15"
+msgstr "ღილაკი F15"
+
+msgid "Function key 16"
+msgstr "ღილაკი F16"
+
+msgid "Function key 17"
+msgstr "ღილაკი F17"
+
+msgid "Function key 18"
+msgstr "ღილაკი F18"
+
+msgid "Function key 19"
+msgstr "ღილაკი F19"
+
+msgid "Function key 20"
+msgstr "ღილაკი F20"
+
+msgid "Completion/M-tab"
+msgstr ""
+
+msgid "BackTab/S-tab"
+msgstr ""
+
+msgid "Backspace"
+msgstr "Backspace"
+
+msgid "Up arrow"
+msgstr "ისარი ზემოთ"
+
+msgid "Down arrow"
+msgstr "ისარი ქვემოთ"
+
+msgid "Left arrow"
+msgstr "ისარი მარცხნივ"
+
+msgid "Right arrow"
+msgstr "ისარი მარჯვნივ"
+
+msgid "Insert"
+msgstr "ჩასმა"
+
+msgid "Home"
+msgstr "ღილაკი Home"
+
+msgid "End key"
+msgstr "ღილაკი End"
+
+msgid "Page Up"
+msgstr "ღილაკი Page Up"
+
+msgid "Page Down"
+msgstr "ღილაკი Page Down"
+
+msgid "/ on keypad"
+msgstr "/ ციფრულ კლავიატურაზე"
+
+msgid "* on keypad"
+msgstr "* ციფრულ კლავიატურაზე"
+
+msgid "- on keypad"
+msgstr "- ციფრულ კლავიატურაზე"
+
+msgid "+ on keypad"
+msgstr "+ ციფრულ კლავიატურაზე"
+
+msgid "Left arrow keypad"
+msgstr "ისარი მარცხნივ ციფრულ კლავიატურაზე"
+
+msgid "Right arrow keypad"
+msgstr "ისარი მარჯვნივ ციფრულ კლავიატურაზე"
+
+msgid "Up arrow keypad"
+msgstr "ისარი ზემოთ ციფრულ კლავიატურაზე"
+
+msgid "Down arrow keypad"
+msgstr "ისარი ქვემოთ ციფრულ კლავიატურაზე"
+
+msgid "Home on keypad"
+msgstr "ღილაკი Home ციფრულ კლავიატურაზე"
+
+msgid "End on keypad"
+msgstr "ღილაკი End ციფრულ კლავიატურაზე"
+
+msgid "Page Down keypad"
+msgstr "ღილაკი PageDown ციფრულ კლავიატურაზე"
+
+msgid "Page Up keypad"
+msgstr "ღილაკი PageUp ციფრულ კლავიატურაზე"
+
+msgid "Insert on keypad"
+msgstr "ღილაკი Insert ციფრულ კლავიატურაზე"
+
+msgid "Delete on keypad"
+msgstr "ღილაკი Delete ციფრულ კლავიატურაზე"
+
+msgid "Enter on keypad"
+msgstr "ღილაკი Enter ციფრულ კლავიატურაზე"
+
+msgid "Function key 21"
+msgstr "ღილაკი F21"
+
+msgid "Function key 22"
+msgstr "ღილაკი F22"
+
+msgid "Function key 23"
+msgstr "ღილაკი F23"
+
+msgid "Function key 24"
+msgstr "ღილაკი F24"
+
+msgid "A1 key"
+msgstr "A1 ღილაკი"
+
+msgid "C1 key"
+msgstr "C1 ღილაკი"
+
+msgid "Asterisk"
+msgstr "ვარსკვლავი"
+
+msgid "Minus"
+msgstr "მინუსი"
+
+msgid "Plus"
+msgstr "პლუსი"
+
+msgid "Dot"
+msgstr "წერტილი"
+
+msgid "Less than"
+msgstr "ნაკლებობა"
+
+msgid "Great than"
+msgstr "მეტობა"
+
+msgid "Equal"
+msgstr "ტოლობა"
+
+msgid "Comma"
+msgstr "მძიმე"
+
+msgid "Apostrophe"
+msgstr "აპოსტროფი"
+
+msgid "Colon"
+msgstr "ორი წერტილი"
+
+msgid "Semicolon"
+msgstr "წერტილმძიმე"
+
+msgid "Exclamation mark"
+msgstr "ძახილის ნიშანი"
+
+msgid "Question mark"
+msgstr "კითხვის ნიშანი"
+
+msgid "Ampersand"
+msgstr "ამპერსანდი"
+
+msgid "Dollar sign"
+msgstr "დოლარის ნიშანი"
+
+msgid "Quotation mark"
+msgstr "კითხვის ნიშანი"
+
+msgid "Percent sign"
+msgstr "პროცენტის ნიშანი"
+
+msgid "Caret"
+msgstr "კარეტის დაბრუნება"
+
+msgid "Tilda"
+msgstr "ტალღა"
+
+msgid "Prime"
+msgstr "პრიმა"
+
+msgid "Underline"
+msgstr "ქვედა ტირე"
+
+msgid "Understrike"
+msgstr "ქვედახაზი"
+
+msgid "Pipe"
+msgstr "მილი"
+
+msgid "Left parenthesis"
+msgstr "მარცხენა მრგვალი ფრჩხილი"
+
+msgid "Right parenthesis"
+msgstr "მარჯვენა მრგვალი ფრჩხილი"
+
+msgid "Left bracket"
+msgstr "მარცხენა ნაკვთური ფრჩხილი"
+
+msgid "Right bracket"
+msgstr "მარჯვენა ნაკვთური ფრჩხილი"
+
+msgid "Left brace"
+msgstr "მარცხენა ფიგურული ფრჩხილი"
+
+msgid "Right brace"
+msgstr "მარჯვენა ფიგურული ფრჩხილი"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "ღილაკი Tab"
+
+msgid "Space key"
+msgstr "ღილაკი ჰარე"
+
+msgid "Slash key"
+msgstr "ღილაკი /"
+
+msgid "Backslash key"
+msgstr "ღილაკი \\"
+
+msgid "Number sign #"
+msgstr "ნომრის ნიშანი #"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "ძაღლუკა"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"ეკრანიზ ზომა %dx%d არ არის მხარდაჭერილი.\n"
+"შეამოწმეთ გარემოს ცვლადი TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "გარემოს ცვლადი TERM დაყენებული არაა!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr ""
+
+msgid "B"
+msgstr "ბ"
+
+msgid "kB"
+msgstr "კბ"
+
+msgid "KiB"
+msgstr "კიბ"
+
+msgid "MB"
+msgstr "მბ"
+
+msgid "MiB"
+msgstr "მიბ"
+
+msgid "GB"
+msgstr "გბ"
+
+msgid "GiB"
+msgstr "გიბ"
+
+msgid "Cannot create pipe descriptor"
+msgstr "ფაიფის დესკრიპტორის შექმნა შეუძლებელია"
+
+msgid "Cannot create pipe streams"
+msgstr "ფაილის ნაკადის შექმნა შეუძლებელია"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Waitpid()-ის გაუთვალისწინებელი შეცდომა:\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "ფაილის ცვლილებები დაიკარგა"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "გასაგრძელებლად დააჭირეთ ნებისმიერ ღილაკს..."
+
+msgid "Internal error:"
+msgstr "შიდა შეცდომა:"
+
+msgid "Screens"
+msgstr "ეკრანები"
+
+msgid "History"
+msgstr "ისტორია"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&დიახ"
+
+msgid "&No"
+msgstr "&არა"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr ""
+
+msgid "Do you want clean this history?"
+msgstr ""
+
+msgid "&OK"
+msgstr "&OK"
+
+msgid "&Cancel"
+msgstr "&შეწყვეტა"
+
+msgid "Error"
+msgstr "შეცდომა"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s(%d)"
+
+msgid "&Abort"
+msgstr "გაუქმება"
+
+msgid "< Default >"
+msgstr "< ნაგულისხმევი >"
+
+msgid "Skins"
+msgstr "სკინები"
+
+msgid "Skin:"
+msgstr "გარეგნობა:"
+
+msgid "&Shadows"
+msgstr "ჩრდილები"
+
+msgid "Appearance"
+msgstr "გარემოს იერსახე"
+
+msgid "Displays the current version"
+msgstr "აჩვენებს მიმდინარე ვერსიას"
+
+msgid "Print data directory"
+msgstr "დაბეჭდვის მონაცემების საქაღალდე"
+
+msgid "Print extended info about used data directories"
+msgstr ""
+
+msgid "Print configure options"
+msgstr "კონფიგურაციის პარამეტრების ამობეჭდვა"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "X11-ის მხარდაჭერის გათიშვა"
+
+msgid "Forces xterm features"
+msgstr ""
+
+msgid "Disable X11 support"
+msgstr "X11-ის მხარდაჭერის გათიშვა"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr ""
+
+msgid "Disable mouse support in text version"
+msgstr ""
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr ""
+
+msgid "To run on slow terminals"
+msgstr "ნელ ტერმინალებზე გასაშვებად"
+
+msgid "Use stickchars to draw"
+msgstr ""
+
+msgid "Load definitions of key bindings from specified file"
+msgstr ""
+
+msgid "<file>"
+msgstr "<file>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr ""
+
+msgid "Requests to run in black and white"
+msgstr "შავ-თეთრ რეჟიმში გაშვება"
+
+msgid "Request to run in color mode"
+msgstr "ფერად რეჟიმში გაშვება"
+
+msgid "Use the specified skin"
+msgstr ""
+
+msgid "<string>"
+msgstr "<string>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+lineno] file1[:lineno] [file2[:lineno]...]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "ძირითადი პარამეტრები"
+
+msgid "Terminal options"
+msgstr "ტერმინალის პარამეტრები"
+
+msgid "Color options"
+msgstr "ფერების პარამეტრები"
+
+msgid "Arguments parse error!"
+msgstr "არგუმენტების დამუშავების შეცდომა!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+msgid "Ctags Configuration"
+msgstr "Ctags-ის მორგება"
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "პარამეტრების მორგება"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "&დიდი თუ პატარა სიმბოლოები"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+msgid "Go to Declaration"
+msgstr ""
+
+msgid "Find Declaration"
+msgstr "აღწერის პოვნა"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, c-format
+msgid "'%s' is not a known symbol."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "ფაილში შენახვის შეცდომა"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "ფაილში შენახვის შეცდომა"
+
+msgid "No indexed files found."
+msgstr ""
+
+msgid "Failed to run grep."
+msgstr ""
+
+#, c-format
+msgid "No references found for '%s'."
+msgstr ""
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+msgid "Search Symbol"
+msgstr "სიმბოლოს ძებნა"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+msgid "Search File"
+msgstr "ფაილის ძიება"
+
+msgid "Complete Symbol"
+msgstr "სიმბოლოს დასრულება"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "ფაილში შენახვის შეცდომა"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr "ფაილის ნაკადის შექმნა შეუძლებელია"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "%s-დან %s-ზე თარგმნა შეუძლებელია"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "შეიყვანეთ საქაღალდის სახელი:"
+
+#, c-format
+msgid "Failed to create index in %s"
+msgstr ""
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "წაკითხვა ვერ მოხერხდა"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+msgid "Navigation History"
+msgstr "ნავიგაციის ისტორია"
+
+msgid "Go to declaration"
+msgstr ""
+
+msgid "Find references"
+msgstr ""
+
+msgid "Complete symbol"
+msgstr "სიმბოლოს დასრულება"
+
+msgid "Navigation history"
+msgstr "ნავიგაციის ისტორია"
+
+msgid "Go forward"
+msgstr ""
+
+msgid "Search symbol"
+msgstr "სიმბოლოს ძებნა"
+
+msgid "Search file"
+msgstr "ფაილის ძიება"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "სიმბოლური ბმულის ფაილის სახელი:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "სინტაქსის ფაილის ჩატვირთვა"
+
+msgid "Manage repositories"
+msgstr ""
+
+msgid "Reindex repository"
+msgstr ""
+
+msgid "Configuration"
+msgstr "მორგება"
+
+msgid "Go to &declaration"
+msgstr ""
+
+msgid "&Find declaration"
+msgstr ""
+
+msgid "Find &references"
+msgstr ""
+
+msgid "Navigation &history"
+msgstr "ნავიგაციის &ისტორია"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+msgid "&Search symbol"
+msgstr "&სიმბოლოს ძებნა"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "სიმბოლური ბმულის ფაილის სახელი:"
+
+msgid "&Complete symbol"
+msgstr "სიმბოლოს დასრულე&ბა"
+
+msgid "No matching symbols found."
+msgstr ""
+
+msgid "Select symbol"
+msgstr "აირჩიეთ სიმბოლო"
+
+msgid "Symbol name:"
+msgstr "სიმბოლოს სახელი:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "ფაილის სახელი:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "ფაილის ჩატვირთვა"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "დაკე&ტვა"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "გაფრთხილება"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+
+msgid "C&ontinue"
+msgstr "გაგრ&ძელება"
+
+msgid "&Add word"
+msgstr "&სიტყვის დამატება"
+
+msgid "&Replace"
+msgstr "ჩანაცვლება"
+
+msgid "&Skip"
+msgstr "გამო&ტოვება"
+
+msgid "Language"
+msgstr "ენა"
+
+msgid "Misspelled"
+msgstr "არასწორი მართლწერა"
+
+msgid "Check word"
+msgstr "სიტყვის შემოწმება"
+
+msgid "Suggest"
+msgstr "მინიშნება"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+msgid "Add word"
+msgstr "სიტყვის დამატება"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+msgid "Aspell"
+msgstr "Aspell"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+msgid "Language:"
+msgstr "ენა:"
+
+msgid "&Select..."
+msgstr "&აირჩიეთ..."
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "ენის არჩევა"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "ჩატვირთვა: %3d%%"
+
+msgid "Loading..."
+msgstr "ჩატვირთვა..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "ფაილის ჩატვირთვა"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "%s-ის კითხვის შეცდომა"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+msgid "Undo"
+msgstr "ბრძანების გაუქმება"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&თავიდან ცდა"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr ""
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr ""
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "ფაიფში ჩაწერის შეცდომა: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr ""
+
+msgid "&Do not change"
+msgstr "ა&რ შეცვალო"
+
+msgid "&Unix format (LF)"
+msgstr "&Unix-ის ფორმატი(LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Windows/DOS-ის ფორმატი(CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Macintosh-ის ფორმატი (CR)"
+
+msgid "Enter file name:"
+msgstr "შეიყვანეთ ფაილის სახელი:"
+
+msgid "Change line breaks to:"
+msgstr ""
+
+msgid "Save As"
+msgstr "შეინახე როგორც"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "&სწრაფი შენახვა"
+
+msgid "&Safe save"
+msgstr "ფაილის &შენახვა"
+
+msgid "&Do backups with following extension:"
+msgstr ""
+
+msgid "Check &POSIX new line"
+msgstr ""
+
+msgid "Edit Save Mode"
+msgstr "შენახვის რეჟიმის ჩასწორება"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "ფაილი ამ სახელით უკვე არსებობს"
+
+msgid "&Overwrite"
+msgstr "&გადაწერა"
+
+msgid "Cannot save file"
+msgstr "ფაილის შენახვა შეუძლებელია"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr ""
+
+msgid "Save file"
+msgstr "ფაილის შენახვა"
+
+msgid "&Save"
+msgstr "&შენახვა"
+
+msgid "Load"
+msgstr "ჩატვირთვა"
+
+msgid "Syntax file edit"
+msgstr "სინტაქსური ფაილის რედაქტირება"
+
+msgid "Which syntax file you want to edit?"
+msgstr ""
+
+msgid "&User"
+msgstr "მომ&ხმარებელი"
+
+msgid "&System wide"
+msgstr "&მთელ სისტემაში"
+
+msgid "Menu edit"
+msgstr "მენიუს რედაქტირება"
+
+msgid "Which menu file do you want to edit?"
+msgstr ""
+
+msgid "&Local"
+msgstr "&ლოკალურად"
+
+msgid "[NoName]"
+msgstr "[უსახელო]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+
+msgid "Close file"
+msgstr "ფაილის დაკეტვა"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "გამოსვლა"
+
+msgid "This function is not implemented"
+msgstr ""
+
+msgid "Unable to save to file"
+msgstr "ფაილში შენახვის შეცდომა"
+
+msgid "Goto line"
+msgstr "გადასვლა ხაზზე"
+
+msgid "Enter line:"
+msgstr "შეიყვანეთ სტრიქონი:"
+
+msgid "Save block"
+msgstr "ბლოკის შენახვა"
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr "ფაილის ჩასმა ვერ მოხერხდა"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <სათაური> -c <ასლები> <ვის>"
+
+msgid "To"
+msgstr "ვის"
+
+msgid "Subject"
+msgstr "სათაური"
+
+msgid "Copies to"
+msgstr "ასლები"
+
+msgid "Mail"
+msgstr "წერილი"
+
+msgid "Cancel"
+msgstr "შეწყვეტა"
+
+#, c-format
+msgid "insert %d"
+msgstr "%d-ის ჩასმა"
+
+#, c-format
+msgid "delete %d"
+msgstr "%d-ის წაშლა"
+
+msgid "replace"
+msgstr "ჩანაცვლება"
+
+msgid "Nothing to undo."
+msgstr ""
+
+msgid "Undo History"
+msgstr "გაუქმების ისტორია"
+
+msgid "Collect completions"
+msgstr ""
+
+msgid "NoName"
+msgstr "უსახელო"
+
+msgid "Save macro"
+msgstr "მაკროსის შენახვა"
+
+msgid "Press the macro's new hotkey:"
+msgstr ""
+
+msgid "Repeat last commands"
+msgstr ""
+
+msgid "Repeat times:"
+msgstr "გამეორების დრო:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "მაკროსის წაშლა"
+
+msgid "Delete macro"
+msgstr "მაკროსის წაშლა"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+msgid "Run"
+msgstr "გაშვება"
+
+msgid "Close"
+msgstr "დახურვა"
+
+msgid "&Open file..."
+msgstr "&ფაილის გახსნა..."
+
+msgid "&New"
+msgstr "&ახალი"
+
+msgid "&History..."
+msgstr "&ისტორია..."
+
+msgid "Save &as..."
+msgstr "&შენახვა როგორც..."
+
+msgid "&Insert file..."
+msgstr "&ფაილის ჩასმა..."
+
+msgid "Cop&y to file..."
+msgstr "ფაილში &კოპირება..."
+
+msgid "&User menu..."
+msgstr "&მომხმარებლის მენიუ..."
+
+msgid "A&bout..."
+msgstr "&შესახებ..."
+
+msgid "&Quit"
+msgstr "&გასვლა"
+
+msgid "&Undo"
+msgstr "&დაბრუნება"
+
+msgid "&Redo"
+msgstr "&გამეორება"
+
+msgid "Undo &History..."
+msgstr "გაუქმების &ისტორია..."
+
+msgid "&Toggle ins/overw"
+msgstr "&ჩასმა/გადაწერის გადართვა"
+
+msgid "To&ggle mark"
+msgstr "&ნიშნის ჩართ/გამორთ"
+
+msgid "&Mark columns"
+msgstr "&სვეტების ნიშნები"
+
+msgid "Mark &all"
+msgstr "&ყველაფრის მონიშვნა"
+
+msgid "Unmar&k"
+msgstr "&მონიშვნის მოხსნა"
+
+msgid "Cop&y"
+msgstr "&კოპირება"
+
+msgid "Mo&ve"
+msgstr "&გადატანა"
+
+msgid "&Delete"
+msgstr "&წაშლა"
+
+msgid "Co&py to clipfile"
+msgstr "&ამოსაჭრელ ფაილში კოპირება"
+
+msgid "&Cut to clipfile"
+msgstr "&ამოსაჭრელ ფაილში ამოჭრა"
+
+msgid "Pa&ste from clipfile"
+msgstr "&ამოსაჭრელი ფაილიდან ჩასმა"
+
+msgid "&Beginning"
+msgstr "&დასაწყისი"
+
+msgid "&End"
+msgstr "&დასასრული"
+
+msgid "&Search..."
+msgstr "&ძებნა..."
+
+msgid "Search &again"
+msgstr "&თავიდან ძებნა"
+
+msgid "&Replace..."
+msgstr "&ჩანაცვლება..."
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "&ჩასმა/გადაწერის გადართვა"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "მფლობლის მიერ ჩაწერა"
+
+msgid "&Toggle bookmark"
+msgstr "&სანიშნის ჩართ/გამორთ"
+
+msgid "&Next bookmark"
+msgstr "&შემდეგი სანიშნი"
+
+msgid "&Prev bookmark"
+msgstr "&წინა სანიშიშნი"
+
+msgid "&Flush bookmarks"
+msgstr ""
+
+msgid "&Go to line..."
+msgstr ""
+
+msgid "&Toggle line state"
+msgstr ""
+
+msgid "Go to matching &bracket"
+msgstr ""
+
+msgid "Toggle s&yntax highlighting"
+msgstr ""
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "კოდირება..."
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&ყველას პოვნა"
+
+msgid "&Refresh screen"
+msgstr "&ეკრანის განახლება"
+
+msgid "&Start/Stop record macro"
+msgstr "მაკროს ჩაწერის დაწყება/დასასრული"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "ჩაწერა/გამეორების ქმედებები"
+
+msgid "&Move"
+msgstr "&გადატანა"
+
+msgid "&Resize"
+msgstr "&ზომის შეცვლა"
+
+msgid "&Toggle fullscreen"
+msgstr "&სრულ ეკრანზე"
+
+msgid "&Next"
+msgstr "&შემდეგი"
+
+msgid "&Previous"
+msgstr "&წინა"
+
+msgid "&List..."
+msgstr "ს&ია..."
+
+msgid "&General..."
+msgstr "&ძირითადი..."
+
+msgid "Save &mode..."
+msgstr "შენახვის &რეჟიმი..."
+
+msgid "Syntax &highlighting..."
+msgstr "&სინტაქსის განათება..."
+
+msgid "&Appearance..."
+msgstr "გარეგნობა..."
+
+msgid "Learn &keys..."
+msgstr "&ღილაკების სწავლა..."
+
+msgid "Key &bindings..."
+msgstr "კლავიატურის &მალსახმობები..."
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "კლავიატურის &მალსახმობები..."
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "დამატებების &მართვა..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "&სინტაქსის ფაილი"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "&მენიუს ფაილი"
+
+msgid "&Save setup"
+msgstr "&პარამეტრების შენახვა"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&ფაილი"
+
+msgid "&Edit"
+msgstr "რ&ედაქტირება"
+
+msgid "&Search"
+msgstr "&ძებნა"
+
+msgid "&Command"
+msgstr "&ბრძანება"
+
+msgid "&Navigate"
+msgstr "&ნავიგაცია"
+
+msgid "&Window"
+msgstr "&ფანჯარა"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&პარამეტრები"
+
+msgid "Lua action"
+msgstr "Lua-ის ქმედება"
+
+msgid "Action failed"
+msgstr "ქმედება ჩავარდა"
+
+msgid "&None"
+msgstr "არაფერი"
+
+msgid "&Dynamic paragraphing"
+msgstr "&დინამიური პარაგრაფები"
+
+msgid "Type &writer wrap"
+msgstr "სიტყ&ვების გადატანა"
+
+msgid "Wrap mode"
+msgstr "გადატანის რეჟიმი"
+
+msgid "Tabulation"
+msgstr "ტაბულაცია"
+
+msgid "&Fake half tabs"
+msgstr ""
+
+msgid "&Backspace through tabs"
+msgstr ""
+
+msgid "Fill tabs with &spaces"
+msgstr ""
+
+msgid "Tab spacing:"
+msgstr ""
+
+msgid "Other options"
+msgstr "სხვა პარამეტრები"
+
+msgid "&Return does autoindent"
+msgstr ""
+
+msgid "Confir&m before saving"
+msgstr ""
+
+msgid "Save file &position"
+msgstr "ფაილის მდებარეობის შენახვა"
+
+msgid "&Visible trailing spaces"
+msgstr "მიწერილი გამოტოვებების ჩვენება"
+
+msgid "Visible &tabs"
+msgstr "ტაბულაციის ჩვენება"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "&სინტაქსის განათება"
+
+msgid "C&ursor after inserted block"
+msgstr "კურსორი ჩასმული ბლოკის შემდეგ"
+
+msgid "Pers&istent selection"
+msgstr "მუდმივი მონიშნული"
+
+msgid "Cursor be&yond end of line"
+msgstr "კურსორი ხაზის ბოლოს იქეთაა"
+
+msgid "&Group undo"
+msgstr "ჯგუფური გაუქმება"
+
+msgid "Word wrap line length:"
+msgstr "სიტყვების გადატანის სიგრძე:"
+
+msgid "Editor options"
+msgstr "რედაქტორის მორგება"
+
+msgid "Enter search string:"
+msgstr "შეიყვანეთ საძებნი სტრიქონი:"
+
+msgid "Cas&e sensitive"
+msgstr "&რეგისტრზე-დამოკიდებული"
+
+msgid "&Backwards"
+msgstr "&უკან"
+
+msgid "In se&lection"
+msgstr "მონიშნულში"
+
+msgid "&Whole words"
+msgstr "&მთლიანი სიტყვები"
+
+msgid "&All charsets"
+msgstr "&ყველა კოდირება"
+
+msgid "&Find all"
+msgstr "&ყველას პოვნა"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "ძებნა"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr ""
+
+#, c-format
+msgid "Searching %s"
+msgstr ""
+
+msgid "Enter replacement string:"
+msgstr "შეიყვანეთ ჩანაცვლების სტრიქონი:"
+
+msgid "Replace"
+msgstr "გამოცვლა"
+
+msgid "Replace with:"
+msgstr "ჩანაცვლება:"
+
+msgid "A&ll"
+msgstr "ყვე&ლა"
+
+msgid "Confirm replace"
+msgstr "ჩანაცვლების დადასტურება"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "მოხდა %ld ჩანაცვლება"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "შესახებ"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "ფაილების გახსნა"
+
+msgid "Edit: "
+msgstr "ჩასწორება: "
+
+msgid "ButtonBar|Help"
+msgstr "დახმ"
+
+msgid "ButtonBar|Save"
+msgstr "შენახვა"
+
+msgid "ButtonBar|Mark"
+msgstr "მონიშ"
+
+msgid "ButtonBar|Replac"
+msgstr "შეცვლა"
+
+msgid "ButtonBar|Copy"
+msgstr "ასლი"
+
+msgid "ButtonBar|Move"
+msgstr "გადატანა"
+
+msgid "ButtonBar|Search"
+msgstr "ძებნა"
+
+msgid "ButtonBar|Delete"
+msgstr "წაშლა"
+
+msgid "ButtonBar|PullDn"
+msgstr "MCმენიუ"
+
+msgid "ButtonBar|Quit"
+msgstr "გასვლა"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "ჩატვირთვა: %3d%%"
+
+msgid "Filter"
+msgstr "ფილტრი"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< ავტომატური >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< მიმდინარე სინტაქსის თავიდან ჩატვირთვა >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr "სინტაქსის ფაილის ჩატვირთვა"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr ""
+
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr ""
+
+msgid "Internal bug: Double start of link area"
+msgstr ""
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr ""
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "დახმარება"
+
+msgid "ButtonBar|Index"
+msgstr ""
+
+msgid "ButtonBar|Prev"
+msgstr "წინა"
+
+msgid "Function keys"
+msgstr "ფუნქციური ღილაკები"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "ნავიგაცია"
+
+msgid "Special"
+msgstr ""
+
+msgid "Learn key"
+msgstr "სწავლის ღილაკი"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+msgid "Conflict"
+msgstr "კონფლიქტი"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+msgid "&Ctrl"
+msgstr "&Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+msgid "&Shift"
+msgstr "&Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "მენიუს ფაილის ჩასწორება"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+msgid "&Main"
+msgstr "&მთავარი"
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+msgid "&Menu"
+msgstr "&მენიუ"
+
+msgid "&Input"
+msgstr ""
+
+msgid "&Listbox"
+msgstr "სიის ბ&ლოკი"
+
+msgid "&Radio"
+msgstr ""
+
+msgid "&Help"
+msgstr "და&ხმარება"
+
+msgid "&Editor"
+msgstr "რ&ედაქტორი"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+msgid "Assign key"
+msgstr "მინიჭების ღილაკი"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "გასაგრძელებლად დააჭირეთ ნებისმიერ ღილაკს..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+msgid "&Back"
+msgstr "&უკან"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "მენიუს ფაილის ჩასწორება"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+
+msgid "Home directory path is not absolute"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "Lua-ის სკრიპტები:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+msgid "Unknown error"
+msgstr "უცნობი შეცდომა"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "და&ყენება"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "წაკითხვა ვერ მოხერხდა"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: შეცდომა"
+
+msgid "Choose codepage"
+msgstr ""
+
+msgid "-  < No translation >"
+msgstr ""
+
+msgid "Setup"
+msgstr "მორგება"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "პარამეტრები შეინახა %s ფაილში"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr ""
+
+msgid "With aspell support"
+msgstr ""
+
+msgid "With mouse support on xterm and Linux console"
+msgstr ""
+
+msgid "With mouse support on xterm"
+msgstr ""
+
+msgid "With support for X11 events"
+msgstr ""
+
+msgid "With internationalization support"
+msgstr ""
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr ""
+
+#, fuzzy
+msgid "directory not found"
+msgstr "საძებნი სტრიქონი ვერ მოიძებნა"
+
+msgid "Home directory:"
+msgstr ""
+
+msgid "Profile root directory:"
+msgstr ""
+
+msgid "System data"
+msgstr "სისტემური მონაცემები"
+
+msgid "Config directory:"
+msgstr "კონფიგურაციის საქაღალდე:"
+
+msgid "Data directory:"
+msgstr "მონაცემების საქაღალდე:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "რედაქტორის მორგება"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+msgid "Lua scripts:"
+msgstr "Lua-ის სკრიპტები:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "სამომხმარებლო მონაცემები"
+
+msgid "Cache directory:"
+msgstr ""
+
+msgid "Debug"
+msgstr "გამართვა"
+
+msgid "ERROR:"
+msgstr "შეცდომა:"
+
+msgid "True:"
+msgstr ""
+
+msgid "False:"
+msgstr ""
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "ფაილის ნაკადის შექმნა შეუძლებელია"
+
+msgid "Error calling program"
+msgstr "შეცდომა პროგრამის გამოძახებისას"
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr "პარამეტრი"
+
+msgid "Warning -- ignoring file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr ""
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr ""
+
+msgid "User menu"
+msgstr "მომხმარებლის მენიუ"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "%s-დან %s-ზე თარგმნა შეუძლებელია"

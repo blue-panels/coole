@@ -1,0 +1,51 @@
+Source: coole
+Section: editors
+Priority: optional
+Maintainer: Ilia Maslakov <il.smind@gmail.com>
+Build-Depends: debhelper-compat (= 13),
+               meson (>= 0.61),
+               ninja-build,
+               pkgconf,
+               gettext,
+               libglib2.0-dev,
+               libslang2-dev,
+               liblua5.4-dev,
+               libx11-dev,
+               libgpm-dev [linux-any],
+               check <!nocheck>
+Standards-Version: 4.7.2
+Rules-Requires-Root: no
+Homepage: https://github.com/blue-panels/coole
+Vcs-Git: https://github.com/blue-panels/coole.git
+Vcs-Browser: https://github.com/blue-panels/coole
+
+Package: coole
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: coole-lua
+Suggests: libx11-6, libaspell15 | libhunspell-1.7-0, universal-ctags
+Description: console text editor, a continuation of cooledit
+ coole is a console text editor that continues cooledit by Paul Sheer.  It
+ has syntax highlighting, code folding, an
+ undo history browser, keyboard macros with a macro explorer, ctags and
+ etags navigation, spell checking, a user menu, multiple windows, skins and
+ editable key bindings.
+ .
+ Spell checking uses aspell or hunspell, whichever is installed; the
+ library is loaded at run time.
+ .
+ The coole-lua package adds the Lua runtime, which runs editor scripts.
+
+Package: coole-lua
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+         coole (= ${binary:Version})
+Description: Lua runtime and scripts for the coole text editor
+ The Lua runtime plugin that coole loads at run time, and the editor
+ scripts that come with it, such as inserting the date and time, sorting
+ the selection, formatting a paragraph, drawing a table or inserting the
+ output of a command.
+ .
+ Without this package coole runs, and the features written in Lua are
+ absent.

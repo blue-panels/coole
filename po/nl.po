@@ -1,0 +1,2794 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# flipthegreat <flipthegreat@hotmail.com>, 2011
+# Heimen Stoffels <vistausss@fastmail.com>, 2013
+# Jaap Kramer <jaap-kramer@ziggo.nl>, 2023,2025
+# Richard E. van der Luit <nippur@fedoraproject.org>, 2012-2015,2017,2020
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# toniotonba <TonioTonBa@gmail.com>, 2011
+# bucovaina78 <wannessmet@gmail.com>, 2012
+# Yury V. Zaytsev <yury@shurup.com>, 2016-2017,2025
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Dutch <https://translate.codeberg.org/projects/mc6/mc6/nl/>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr "Geen vertaling"
+
+msgid "Warning: cannot load codepages list"
+msgstr "Waarschuwing: kan lijst met codepagina's niet laden"
+
+msgid "7-bit ASCII"
+msgstr "7-bit ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Kan niet van %s naar %s vertalen"
+
+msgid "Event system already initialized"
+msgstr "Bewerking systeem reeds geïnitialiseerd"
+
+msgid "Failed to initialize event system"
+msgstr "Bewerking systeem initialiseren mislukt"
+
+msgid "Event system not initialized"
+msgstr "Bewerking systeem niet geïnitialiseerd"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Check input data! Sommige parameters zijn NULL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Niet in staat groep '%s' voor bewerking aan te maken!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Niet in staat bewerking '%s' aan te maken!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Page Down"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "&Toggle volledig scherm"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "Vergelij&ken bestanden"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Verwijderen"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "Aange&past:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "Gebruikersmenu"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Zoeken afgerond"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Vervang"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Terminal-opties"
+
+msgid "Edit file"
+msgstr "Bestand bewerken"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Bestand bewerken"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&Alle karaktersets"
+
+#, fuzzy
+msgid "Command history"
+msgstr "&Opdrachtengeschiedenis"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "&Opslaan als..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Ga naar regel"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "Scherm verversen"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "Instellingen opgeslagen in %s"
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "Scherm verversen"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Vorige"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Bestand invoegen"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Vorige"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "&Inv aan/uit"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Numeriek Del"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Numeriek Del"
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "Kn&ippen naar prikbord"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "Kopieer naar klembord"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "&Plakken van prikbord"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "In se&lectie"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Selectie maken"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Selectie maken"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Selecteren &groep"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Selectie maken"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Selecteer vergelijkmethode:"
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "&Inv aan/uit"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Kies taal"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "&Sorteer volgorde…"
+
+#, fuzzy
+msgid "General options"
+msgstr "Vensteropties "
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Toetsen leren"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "&Volgende bladwijzer"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "&Zoek declaratie"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Uiterlijk"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "Instellingen &Opslaan"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Vorige"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Vrije nodes:"
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Vorige"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Selectie wissen"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Selecteren &groep"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Kies taal"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Bestand sluiten"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Bewerken uitbreidingsbestand"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Selectie maken"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Kies taal"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Selectie maken"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "In se&lectie"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Sla selectieblok op"
+
+msgid "Insert file"
+msgstr "Bestand invoegen"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "&Toggle ins/overw"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "&Datum/Tijd invoegen"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Verwijderen"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "bestand1 bestand2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "&Opdrachtengeschiedenis"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "P&aragraaf opmaken"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Rechte haak links"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Herhaal laatste opdrachten"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "S&pellingscontrole"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "S&pellingscontrole"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Kies taal"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "&Flush bladwijzers"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "&Volgende bladwijzer"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "Vorige bladwijzer"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Vind allemaal"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "&Inv aan/uit"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Wijzigingen zijn verloren"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Selecteer vergelijkmethode:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Selecteer vergelijkmethode:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Selecteer vergelijkmethode:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Selecteren &groep"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Selecteren &groep"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "&Deselecteren groep"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "&Deselecteren groep"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "In se&lectie"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "&Deselecteren groep"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "P&aragraaf opmaken"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "Zichtbaar spatiespoor"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Kies syntax highlighting"
+
+msgid "Choose syntax highlighting"
+msgstr "Kies syntax highlighting"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "Rechtermarge in- en uitschakelen"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Vensteropties "
+
+msgid "About editor"
+msgstr ""
+
+#, fuzzy
+msgid "Execute script"
+msgstr "&Uitvoerbare bestanden eerst"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "Veranderen g&rootte"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "&Toggle volledig scherm"
+
+#, fuzzy
+msgid "Window list"
+msgstr "Scher&m"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Vorige"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr "Bestand \"%s\" wordt al bewerkt. Gebruiker: %s Proces ID: %d"
+
+msgid "File locked"
+msgstr "Bestand vergrendeld"
+
+msgid "&Grab lock"
+msgstr "Ver&grendelen"
+
+msgid "&Ignore lock"
+msgstr "Negeren vergrendel&ing"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Aanmaken van map %s mislukt"
+
+msgid "FATAL: not a directory:"
+msgstr "FATAAL: geen directory:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Getal buiten bereik (zou in bytegebied moeten zijn, 0 <= n <= 0xFF, "
+"uitgedrukt in hex)"
+
+msgid "Invalid character"
+msgstr "Ongeldig teken"
+
+msgid "Unmatched quotes character"
+msgstr "Niet-overeenkomende quote-tekens"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Hexpatroonfout op positie %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Gezochte tekst niet gevonden"
+
+msgid "Not implemented yet"
+msgstr "Nog niet geïmplementeerd"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Aantal te vervangen tekens niet gelijk aan aantal gevonden tekens"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Ongeldig teken-nummer %d"
+
+msgid "Regular expression error"
+msgstr "Reguliere expressie-fout"
+
+msgid "No&rmal"
+msgstr "No&rmaal"
+
+msgid "Re&gular expression"
+msgstr "&Reguliere expressie"
+
+msgid "He&xadecimal"
+msgstr "He&xadecimaal"
+
+msgid "Wil&dcard search"
+msgstr "Met wil&dcard zoeken"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Verwerken van thema %s mislukt.\n"
+"Standaard-thema is geladen"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Niet instaat '%s' skin te gebruiken met true-colors ondersteuning\n"
+"%s\n"
+"Standaard skin is geladen"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Laden van thema %s mislukt.\n"
+"Standaard-thema is geladen"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr "True color wordt in deze dialectversie niet ondersteund."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "Escape"
+
+msgid "Function key 1"
+msgstr "Functietoets 1"
+
+msgid "Function key 2"
+msgstr "Functietoets 2"
+
+msgid "Function key 3"
+msgstr "Functietoets 3"
+
+msgid "Function key 4"
+msgstr "Functietoets 4"
+
+msgid "Function key 5"
+msgstr "Functietoets 5"
+
+msgid "Function key 6"
+msgstr "Functietoets 6"
+
+msgid "Function key 7"
+msgstr "Functietoets 7"
+
+msgid "Function key 8"
+msgstr "Functietoets 8"
+
+msgid "Function key 9"
+msgstr "Functietoets 9"
+
+msgid "Function key 10"
+msgstr "Functietoets 10"
+
+msgid "Function key 11"
+msgstr "Functietoets 11"
+
+msgid "Function key 12"
+msgstr "Functietoets 12"
+
+msgid "Function key 13"
+msgstr "Functietoets 13"
+
+msgid "Function key 14"
+msgstr "Functietoets 14"
+
+msgid "Function key 15"
+msgstr "Functietoets 15"
+
+msgid "Function key 16"
+msgstr "Functietoets 16"
+
+msgid "Function key 17"
+msgstr "Functietoets 17"
+
+msgid "Function key 18"
+msgstr "Functietoets 18"
+
+msgid "Function key 19"
+msgstr "Functietoets 19"
+
+msgid "Function key 20"
+msgstr "Functietoets 20"
+
+msgid "Completion/M-tab"
+msgstr "Completeren/M-Tab"
+
+msgid "BackTab/S-tab"
+msgstr "BackTab/S-tab"
+
+msgid "Backspace"
+msgstr "Backspace"
+
+msgid "Up arrow"
+msgstr "Pijl omhoog"
+
+msgid "Down arrow"
+msgstr "Pijl omlaag"
+
+msgid "Left arrow"
+msgstr "Pijl links"
+
+msgid "Right arrow"
+msgstr "Pijl rechts"
+
+msgid "Insert"
+msgstr "Invoegen"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr "End-toets"
+
+msgid "Page Up"
+msgstr "Page Up"
+
+msgid "Page Down"
+msgstr "Page Down"
+
+msgid "/ on keypad"
+msgstr "Numeriek /"
+
+msgid "* on keypad"
+msgstr "Numeriek *"
+
+msgid "- on keypad"
+msgstr "Numeriek -"
+
+msgid "+ on keypad"
+msgstr "Numeriek +"
+
+msgid "Left arrow keypad"
+msgstr "Numeriek pijl links"
+
+msgid "Right arrow keypad"
+msgstr "Numeriek pijl rechts"
+
+msgid "Up arrow keypad"
+msgstr "Numeriek pijl omhoog"
+
+msgid "Down arrow keypad"
+msgstr "Numeriek pijl omlaag"
+
+msgid "Home on keypad"
+msgstr "Numeriek Home"
+
+msgid "End on keypad"
+msgstr "Numeriek End"
+
+msgid "Page Down keypad"
+msgstr "Numeriek PageDown"
+
+msgid "Page Up keypad"
+msgstr "Numeriek PageUp"
+
+msgid "Insert on keypad"
+msgstr "Numeriek Ins"
+
+msgid "Delete on keypad"
+msgstr "Numeriek Del"
+
+msgid "Enter on keypad"
+msgstr "Numeriek Enter"
+
+msgid "Function key 21"
+msgstr "Functietoets 21"
+
+msgid "Function key 22"
+msgstr "Functietoets 22"
+
+msgid "Function key 23"
+msgstr "Functietoets 23"
+
+msgid "Function key 24"
+msgstr "Functietoets 24"
+
+msgid "A1 key"
+msgstr "A1-toets"
+
+msgid "C1 key"
+msgstr "C1-toets"
+
+msgid "Asterisk"
+msgstr "Asterisk"
+
+msgid "Minus"
+msgstr "Min"
+
+msgid "Plus"
+msgstr "Plus"
+
+msgid "Dot"
+msgstr "Punt"
+
+msgid "Less than"
+msgstr "Minder dan"
+
+msgid "Great than"
+msgstr "Meer dan"
+
+msgid "Equal"
+msgstr "Is gelijk aan"
+
+msgid "Comma"
+msgstr "Komma"
+
+msgid "Apostrophe"
+msgstr "Apostrof"
+
+msgid "Colon"
+msgstr "Dubbele punt"
+
+msgid "Semicolon"
+msgstr "Semicolon"
+
+msgid "Exclamation mark"
+msgstr "Uitroepteken"
+
+msgid "Question mark"
+msgstr "Vraagteken"
+
+msgid "Ampersand"
+msgstr "En-teken"
+
+msgid "Dollar sign"
+msgstr "Dollar-teken"
+
+msgid "Quotation mark"
+msgstr "Aanhalingsteken"
+
+msgid "Percent sign"
+msgstr "Procentteken"
+
+msgid "Caret"
+msgstr "Dakje"
+
+msgid "Tilda"
+msgstr "Tilde"
+
+msgid "Prime"
+msgstr "Primair"
+
+msgid "Underline"
+msgstr "Onderstreping"
+
+msgid "Understrike"
+msgstr "Doorhalen"
+
+msgid "Pipe"
+msgstr "Pijp"
+
+msgid "Left parenthesis"
+msgstr "Aanhalingsteken links"
+
+msgid "Right parenthesis"
+msgstr "Aanhalingsteken rechts"
+
+msgid "Left bracket"
+msgstr "Rechte haak links"
+
+msgid "Right bracket"
+msgstr "Rechte haak rechts"
+
+msgid "Left brace"
+msgstr "Linker accolade"
+
+msgid "Right brace"
+msgstr "Rechter accolade"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "Tab"
+
+msgid "Space key"
+msgstr "Spatie"
+
+msgid "Slash key"
+msgstr "Slash /"
+
+msgid "Backslash key"
+msgstr "Backslash \\"
+
+msgid "Number sign #"
+msgstr "Hekje #"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "Apestaartje @"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Kan geen pipe aanmaken voor SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Kan schrijfzijde van SIGWINCH-pipe: %s (%d) niet configureren\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Kan leeszijde van SIGWINCH-pipe: %s (%d) niet configureren\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Schermgrootte %dx%d wordt niet ondersteund.\n"
+"Controleer omgevingsvariabele TERM ( opdr: set).\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "De TERM-omgevingsvariabele is niet gezet!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Kan SIGWINCH-pipe niet controleren"
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Aanmaken van pipe discriptor mislukt"
+
+msgid "Cannot create pipe streams"
+msgstr "Kan pipe streams niet aanmaken"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Onverwachte fout in select() reading data van een child process:\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr "Kan pipe-descriptor niet sluiten (p == NULL)"
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Onverwachte fout in waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Wijzigingen zijn verloren"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "Druk op een toets om verder te gaan..."
+
+msgid "Internal error:"
+msgstr "Interne fout:"
+
+msgid "Screens"
+msgstr "Schermen"
+
+msgid "History"
+msgstr "Geschiedenis"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Ja"
+
+msgid "&No"
+msgstr "&Nee"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "Venster titel| geschiedenis opruimen"
+
+msgid "Do you want clean this history?"
+msgstr "Wilt u deze geschiedenis opruimen?"
+
+msgid "&OK"
+msgstr "&OK"
+
+msgid "&Cancel"
+msgstr "&Afbreken"
+
+msgid "Error"
+msgstr "Fout"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Afbreken"
+
+msgid "< Default >"
+msgstr "< Default >"
+
+msgid "Skins"
+msgstr "Skins"
+
+msgid "Skin:"
+msgstr "Skin:"
+
+msgid "&Shadows"
+msgstr "&Schaduwen"
+
+msgid "Appearance"
+msgstr "Uiterlijk"
+
+msgid "Displays the current version"
+msgstr "Toon de huidige versie"
+
+msgid "Print data directory"
+msgstr "Datamap weergeven"
+
+msgid "Print extended info about used data directories"
+msgstr "Toon uitgebreide info over gebruik data directories"
+
+msgid "Print configure options"
+msgstr "Toon instellingsopties"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "X11-ondersteuning uitschakelen"
+
+msgid "Forces xterm features"
+msgstr "Dwingt xterm features"
+
+msgid "Disable X11 support"
+msgstr "X11-ondersteuning uitschakelen"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Probeert oude highlight mouse tracking te gebruiken"
+
+msgid "Disable mouse support in text version"
+msgstr "Muisondersteuning uitschakelen in de tekstversie"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Probeert 'termcap' te gebruiken, in plaats van 'terminfo'"
+
+msgid "To run on slow terminals"
+msgstr "Voor langzame terminals"
+
+msgid "Use stickchars to draw"
+msgstr "Gebruik ASCII-karakters om te tekenen"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Laad definities van sneltoetsen van aangegeven bestand"
+
+msgid "<file>"
+msgstr "<file>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr "Laad geen definities van sneltoetsen uit bestand, gebruik standaard"
+
+msgid "Requests to run in black and white"
+msgstr "Verzoekt om in zwart/wit te werken"
+
+msgid "Request to run in color mode"
+msgstr "Vraag om de kleurenmodus te gebruiken"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Laad mc met aangegeven skin"
+
+msgid "<string>"
+msgstr "<string>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+lineno] file1[:lineno] [file2[:lineno]...]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "Hoofd-opties"
+
+msgid "Terminal options"
+msgstr "Terminal-opties"
+
+msgid "Color options"
+msgstr "Kleur-instellingen"
+
+msgid "Arguments parse error!"
+msgstr "Parsefout argumenten!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Configuratie..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Instellingen"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "Hoofd-/kleine le&tters"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "Voor&waarts naar declaratie"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "&Zoek declaratie"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "'%s' is  geen symbolische link"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Kan niet naar bestand opslaan"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Kan niet naar bestand opslaan"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"Gefaald te draaien:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "Geen passende items gevonden in %s "
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Zoeken afgerond"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Zoeken afgerond"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "Co&mpleet: Toon alles"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Kan niet naar bestand opslaan"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr "Kon bestand %s niet opslaan"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Kan niet van %s naar %s vertalen"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Thuismap-profielen:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Niet in staat bewerking '%s' aan te maken!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Lezen mislukt"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Navigatie"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "Voor&waarts naar declaratie"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "Co&mpleet: Toon alles"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Navigatie"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Zoeken afgerond"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Zoeken afgerond"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Naam voor de symbolische link:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Laad syntaxbestand"
+
+msgid "Manage repositories"
+msgstr ""
+
+#, fuzzy
+msgid "Reindex repository"
+msgstr "Geindexeerde map"
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Bevestiging"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "Voor&waarts naar declaratie"
+
+msgid "&Find declaration"
+msgstr "&Zoek declaratie"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Navigatie"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Zoeken"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Naam voor de symbolische link:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "Co&mpleet: Toon alles"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Selectie maken"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Naam voor de symbolische link:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Bestandsnaam:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Laden bestand"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Sluiten"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Waarschuwing"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Deze tekst is veranderd zonder te zijn opgeslagen.\n"
+"Doorgaan gooit alle wijzigingen weg."
+
+msgid "C&ontinue"
+msgstr "D&oorgaan"
+
+msgid "&Add word"
+msgstr "&Woord toevoegen"
+
+msgid "&Replace"
+msgstr "Ve&rvangen"
+
+msgid "&Skip"
+msgstr "Over&slaan"
+
+msgid "Language"
+msgstr "Taal"
+
+msgid "Misspelled"
+msgstr "Fout gespeld"
+
+msgid "Check word"
+msgstr "Controleer woord"
+
+msgid "Suggest"
+msgstr "Hint"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Woord toevoegen"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Fout gespeld"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Taal"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Selectie maken"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Kies taal"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Laden: %3d%%"
+
+msgid "Loading..."
+msgstr "Laden..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "Laden bestand"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Fout bij het lezen van %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Bestand \"%s\" is te groot.\n"
+"Toch openen?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Probleem bij het lezen van pipe: %s "
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+#, fuzzy
+msgid "Undo"
+msgstr "&Herstellen"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Nogmaals"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Bestand heeft harde links. Ontkoppelen voor het opslaan? "
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Bestand is in de tussentijd veranderd. Toch opslaan?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Fout bij het schrijven naar pipe: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Het bestand dat je wilt opslaan eindigd niet met een nieuwe regel."
+
+msgid "&Do not change"
+msgstr "&Niet veranderen"
+
+msgid "&Unix format (LF)"
+msgstr "&Unix-formaat (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Windows/DOS-formaat (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Macintosh-formaat (CR)"
+
+msgid "Enter file name:"
+msgstr "Vul bestandsnaam in:"
+
+msgid "Change line breaks to:"
+msgstr "Verander regeleindes naar:"
+
+msgid "Save As"
+msgstr "Opslaan als"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "&Snel opslaan "
+
+msgid "&Safe save"
+msgstr "&Veilig opslaan "
+
+msgid "&Do backups with following extension:"
+msgstr "&Maak backups met de volgende extensie:"
+
+msgid "Check &POSIX new line"
+msgstr "Controleer &POSIX nieuwe regel"
+
+msgid "Edit Save Mode"
+msgstr "Bewerk Opslag-modus"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "Er bestaat al een bestand met die naam."
+
+msgid "&Overwrite"
+msgstr "&Overschrijven"
+
+msgid "Cannot save file"
+msgstr "Kan bestand niet opslaan"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Bevestig opslaan van bestand: \"%s\""
+
+msgid "Save file"
+msgstr "Bestand opslaan"
+
+msgid "&Save"
+msgstr "Op&slaan"
+
+msgid "Load"
+msgstr "Laden"
+
+msgid "Syntax file edit"
+msgstr "Uitbreidingsbestand bewerken"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Welk syntax-bestand wilt u bewerken?"
+
+msgid "&User"
+msgstr "&Gebruiker"
+
+msgid "&System wide"
+msgstr "&Systeemwijd"
+
+msgid "Menu edit"
+msgstr "Menu bewerken"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Welk menubestand wilt u bewerken?"
+
+msgid "&Local"
+msgstr "&Lokaal"
+
+msgid "[NoName]"
+msgstr "[NoName]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr "Bestand %s is gewijzigd. Opslaan voordat wordt afgesloten?"
+
+msgid "Close file"
+msgstr "Bestand sluiten"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "Afsltn"
+
+msgid "This function is not implemented"
+msgstr "Deze functie is niet geïmplementeerd"
+
+msgid "Unable to save to file"
+msgstr "Kan niet naar bestand opslaan"
+
+msgid "Goto line"
+msgstr "Ga naar regel"
+
+msgid "Enter line:"
+msgstr "Invoerregel:"
+
+msgid "Save block"
+msgstr "Sla selectieblok op"
+
+msgid "Cannot save block"
+msgstr "Kan blok niet opslaan"
+
+msgid "Cannot insert file"
+msgstr "Kan bestand niet invoegen"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <subject> -c <cc> <to>"
+
+msgid "To"
+msgstr "Naar"
+
+msgid "Subject"
+msgstr "Onderwerp"
+
+msgid "Copies to"
+msgstr "Kopie naar"
+
+msgid "Mail"
+msgstr "Mail"
+
+msgid "Cancel"
+msgstr "Annuleren"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Invoegen"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Verwijderen %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Vervang"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Geschiedenis"
+
+msgid "Collect completions"
+msgstr "Verzamelen uitkomsten"
+
+msgid "NoName"
+msgstr "NoName"
+
+msgid "Save macro"
+msgstr "Macro opslaan"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Druk op de nieuwe sneltoets voor de macro:"
+
+msgid "Repeat last commands"
+msgstr "Herhaal laatste opdrachten"
+
+msgid "Repeat times:"
+msgstr "Aantal keren te herhalen:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Verwijder macro"
+
+msgid "Delete macro"
+msgstr "Verwijder macro"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "Russisch"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Sluiten"
+
+msgid "&Open file..."
+msgstr "&Open bestand..."
+
+msgid "&New"
+msgstr "&Nieuw"
+
+msgid "&History..."
+msgstr "Gesc&hiedenis..."
+
+msgid "Save &as..."
+msgstr "&Opslaan als..."
+
+msgid "&Insert file..."
+msgstr "Bestand &invoegen..."
+
+msgid "Cop&y to file..."
+msgstr "&Kopieer naar bestand..."
+
+msgid "&User menu..."
+msgstr "Gebr&Uikersmenu..."
+
+msgid "A&bout..."
+msgstr "&Over..."
+
+msgid "&Quit"
+msgstr "Beëindigen"
+
+msgid "&Undo"
+msgstr "&Herstellen"
+
+msgid "&Redo"
+msgstr "&Nogmaals"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "Gesc&hiedenis..."
+
+msgid "&Toggle ins/overw"
+msgstr "&Toggle ins/overw"
+
+msgid "To&ggle mark"
+msgstr "Markering &omdraaien"
+
+msgid "&Mark columns"
+msgstr "&Markeer kolommen"
+
+msgid "Mark &all"
+msgstr "&Alles markeren"
+
+msgid "Unmar&k"
+msgstr "Demar&keren"
+
+msgid "Cop&y"
+msgstr "Kopieer"
+
+msgid "Mo&ve"
+msgstr "Verplaats"
+
+msgid "&Delete"
+msgstr "&Verwijderen"
+
+msgid "Co&py to clipfile"
+msgstr "Kopieer naar klembord"
+
+msgid "&Cut to clipfile"
+msgstr "Kn&ippen naar prikbord"
+
+msgid "Pa&ste from clipfile"
+msgstr "&Plakken van prikbord"
+
+msgid "&Beginning"
+msgstr "&Begin"
+
+msgid "&End"
+msgstr "&Einde"
+
+msgid "&Search..."
+msgstr "&Zoeken..."
+
+msgid "Search &again"
+msgstr "Nogmaals z&oeken"
+
+msgid "&Replace..."
+msgstr "Ve&rvangen..."
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "&Inv aan/uit"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "s&chrijven door eigenaar"
+
+msgid "&Toggle bookmark"
+msgstr "&Bladwijzer aan/uit"
+
+msgid "&Next bookmark"
+msgstr "&Volgende bladwijzer"
+
+msgid "&Prev bookmark"
+msgstr "Vorige bladwijzer"
+
+msgid "&Flush bookmarks"
+msgstr "&Flush bladwijzers"
+
+msgid "&Go to line..."
+msgstr "&Ga naar regel..."
+
+msgid "&Toggle line state"
+msgstr "&Inv aan/uit"
+
+msgid "Go to matching &bracket"
+msgstr "Ga naar corresponderend &haakje"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Kies syntax highlighting"
+
+msgid "Togg&le right margin"
+msgstr "Rechtermarge in- en uitschakelen"
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "Encoder&ing..."
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Vind allemaal"
+
+msgid "&Refresh screen"
+msgstr "Scherm verversen"
+
+msgid "&Start/Stop record macro"
+msgstr "&Start/Stop macro opnemen"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "Opnemen/Herhalen &acties"
+
+msgid "&Move"
+msgstr "&Verplaatsen"
+
+msgid "&Resize"
+msgstr "Veranderen g&rootte"
+
+msgid "&Toggle fullscreen"
+msgstr "&Toggle volledig scherm"
+
+msgid "&Next"
+msgstr "Volge&nde"
+
+msgid "&Previous"
+msgstr "&Vorige"
+
+msgid "&List..."
+msgstr "Bestands&lijst..."
+
+msgid "&General..."
+msgstr "&Algemeen..."
+
+msgid "Save &mode..."
+msgstr "&Opslagmodus..."
+
+msgid "Syntax &highlighting..."
+msgstr "Synta&x oplichting..."
+
+msgid "&Appearance..."
+msgstr "&Uiterlijk..."
+
+msgid "Learn &keys..."
+msgstr "&Leer toetsen..."
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "&Encoderen..."
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "&Encoderen..."
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "Venstero&pties "
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "S&yntax bestand"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "&Menu bestand"
+
+msgid "&Save setup"
+msgstr "Instellingen &Opslaan"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Bestand"
+
+msgid "&Edit"
+msgstr "Be&werk"
+
+msgid "&Search"
+msgstr "&Zoeken"
+
+msgid "&Command"
+msgstr "&Opdracht"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Navigatie"
+
+msgid "&Window"
+msgstr "Scher&m"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Opties"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Tabulatie"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Lezen mislukt"
+
+msgid "&None"
+msgstr "Gee&n"
+
+msgid "&Dynamic paragraphing"
+msgstr "&Dynamische regeluitvulling"
+
+msgid "Type &writer wrap"
+msgstr "Type&machine-afbreking"
+
+msgid "Wrap mode"
+msgstr "Woordafbrekingsmodus"
+
+msgid "Tabulation"
+msgstr "Tabulatie"
+
+msgid "&Fake half tabs"
+msgstr "Simuleer &halve tabs"
+
+msgid "&Backspace through tabs"
+msgstr "&Backspace door Tabs"
+
+msgid "Fill tabs with &spaces"
+msgstr "Tabs met &spaties vullen"
+
+msgid "Tab spacing:"
+msgstr "Tab-afstand:"
+
+msgid "Other options"
+msgstr "Andere opties"
+
+msgid "&Return does autoindent"
+msgstr "&Return springt automatisch in"
+
+msgid "Confir&m before saving"
+msgstr "Be&vestigen voor opslaan"
+
+msgid "Save file &position"
+msgstr "&Positie van bestand opslaan"
+
+msgid "&Visible trailing spaces"
+msgstr "Zichtbaar spatiespoor"
+
+msgid "Visible &tabs"
+msgstr "Zichtbare $tabs"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "Synta&x oplichting"
+
+msgid "C&ursor after inserted block"
+msgstr "C&ursor na ingevoegd blok"
+
+msgid "Pers&istent selection"
+msgstr "Vastliggende s&electie"
+
+msgid "Cursor be&yond end of line"
+msgstr "Cursor voorb&ij regeleinde"
+
+msgid "&Group undo"
+msgstr "&Groep ongedaan maken"
+
+msgid "Word wrap line length:"
+msgstr "Regellengte voor afbreken:"
+
+msgid "Editor options"
+msgstr "Editor-opties"
+
+msgid "Enter search string:"
+msgstr "Geef de zoektekst :"
+
+msgid "Cas&e sensitive"
+msgstr "Hoofd-/kleine le&tters"
+
+msgid "&Backwards"
+msgstr "&Terug"
+
+msgid "In se&lection"
+msgstr "In se&lectie"
+
+msgid "&Whole words"
+msgstr "Hele &woorden"
+
+msgid "&All charsets"
+msgstr "&Alle karaktersets"
+
+msgid "&Find all"
+msgstr "&Vind allemaal"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Zoeken"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Zoeken %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Zoeken naar %s"
+
+msgid "Enter replacement string:"
+msgstr "Geef de vervangende string:"
+
+msgid "Replace"
+msgstr "Vervang"
+
+msgid "Replace with:"
+msgstr "Vervangen met:"
+
+msgid "A&ll"
+msgstr "A&lle"
+
+msgid "Confirm replace"
+msgstr "Vervangen bevestigen"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "%ld vervangingen doorgevoerd"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "Over"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Openen bestanden"
+
+msgid "Edit: "
+msgstr "Bewerken: "
+
+msgid "ButtonBar|Help"
+msgstr " Help"
+
+msgid "ButtonBar|Save"
+msgstr " Opsln"
+
+msgid "ButtonBar|Mark"
+msgstr " Markeren"
+
+msgid "ButtonBar|Replac"
+msgstr " Vervangen"
+
+msgid "ButtonBar|Copy"
+msgstr " Kopie"
+
+msgid "ButtonBar|Move"
+msgstr " Verplts"
+
+msgid "ButtonBar|Search"
+msgstr " Zoeken"
+
+msgid "ButtonBar|Delete"
+msgstr " Verwijder"
+
+msgid "ButtonBar|PullDn"
+msgstr " Menu"
+
+msgid "ButtonBar|Quit"
+msgstr " Afsltn"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Zoeken %s: %3d%%"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Auto >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Herlaadt Huidige Syntax >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr "Laad syntaxbestand"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Fout in bestand %s, op regel %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Geen xterm of Linux-console;\n"
+"de subshell kan niet getoggled worden."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr "Formaatfout in help-bestand\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr " Interne fout: dubbele start van linkgebied"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Node %s is niet gevonden het help-bestand "
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr " Help"
+
+msgid "ButtonBar|Index"
+msgstr "Index"
+
+msgid "ButtonBar|Prev"
+msgstr "Vorige"
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Functietoets 1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Navigatie"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Toetsen leren"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Bevestiging"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "&Bewerken menubestand               "
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&Mail...              "
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "&Menu bestand"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "Bestands&lijst..."
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr " Help"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "Be&werk"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "A1-toets"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Druk op een toets om verder te gaan..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "&Terug"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "&Bewerken menubestand               "
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Gefaald te draaien:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Pad van thuismap is niet absoluut"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Gefaald tijdens sluiten:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "VFS-plugins en -scripts:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Onbekende fout in child"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Zetten"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Lezen mislukt"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: fout"
+
+msgid "Choose codepage"
+msgstr "Kies invoerkarakterset"
+
+msgid "-  < No translation >"
+msgstr "- < Geen vertaling >"
+
+msgid "Setup"
+msgstr "Configuratie"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Instellingen opgeslagen in %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Niet in staat instellingen op te slaan in %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Met optionele subshell-ondersteuning"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "Met muisondersteuning bij xterm en Linux-console"
+
+msgid "With mouse support on xterm"
+msgstr "Met muisondersteuning bij xterm"
+
+msgid "With support for X11 events"
+msgstr "Met ondersteuning voor X11-signalen"
+
+msgid "With internationalization support"
+msgstr "Met ondersteuning voor vreemde talen"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr "Datatypen:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Gezochte tekst niet gevonden"
+
+msgid "Home directory:"
+msgstr "Thuismap:"
+
+msgid "Profile root directory:"
+msgstr "Thuismap-profielen:"
+
+msgid "System data"
+msgstr "Systeemdata"
+
+msgid "Config directory:"
+msgstr "Config directory:"
+
+msgid "Data directory:"
+msgstr "Data directory:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Editor-opties"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "VFS-plugins en -scripts:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Gebruikersgegevens"
+
+msgid "Cache directory:"
+msgstr "Cache-directory:"
+
+msgid "Debug"
+msgstr "Debug"
+
+msgid "ERROR:"
+msgstr "FOUT:"
+
+msgid "True:"
+msgstr "Waar:"
+
+msgid "False:"
+msgstr "Onwaar:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "Kon bestand %s niet opslaan"
+
+msgid "Error calling program"
+msgstr "Fout bij het aanroepen van programma"
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr "Parameter"
+
+msgid "Warning -- ignoring file"
+msgstr "Waarschuwing -- bestand wordt genegeerd"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Bestand %s is niet van de 'root' of van u, of is door iedereen "
+"beschrijfbaar.\n"
+"Het gebruik kan veiligheidsrisico's betekenen"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "U kunt geen opdrachten uitvoeren op non-lokale bestandssystemen"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "Geen passende items gevonden in %s "
+
+msgid "User menu"
+msgstr "Gebruikersmenu"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Kan niet van %s naar %s vertalen"

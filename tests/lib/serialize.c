@@ -1,0 +1,346 @@
+/*
+   lib - common serialize/deserialize functions
+
+   Copyright (C) 2011-2025
+   Free Software Foundation, Inc.
+
+   Written by:
+   Slava Zanko <slavazanko@gmail.com>, 2011, 2013
+
+   This file is part of the Midnight Commander.
+
+   The Midnight Commander is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   The Midnight Commander is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#define TEST_SUITE_NAME "/lib"
+
+#include "tests/mctest.h"
+
+#include "lib/strutil.h"
+#include "lib/serialize.h"
+
+static GError *error = NULL;
+
+static const char *deserialize_input_value1 =
+    "g6:group1p6:param1v10:some valuep6:param2v11:some value "
+    "g6:group2p6:param1v4:truep6:param2v6:123456"
+    "g6:group3p6:param1v11:::bla-bla::p6:param2v31:bla-:p1:w:v2:12:g3:123:bla-bla\n"
+    "g6:group4p6:param1v5:falsep6:param2v6:654321";
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* @Before */
+static void
+setup (void)
+{
+    str_init_strings (NULL);
+    error = NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* @After */
+static void
+teardown (void)
+{
+    g_clear_error (&error);
+    str_uninit_strings ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* @DataSource("test_serialize_ds") */
+static const struct test_serialize_ds
+{
+    const char input_char_prefix;
+    const char *input_string;
+    const char *expected_result;
+} test_serialize_ds[] = {
+    { 's', "some test string", "s16:some test string" },
+    { 'a', "some test test test string", "a26:some test test test string" },
+};
+/* @Test(dataSource = "test_serialize_ds") */
+START_PARAMETRIZED_TEST (test_serialize, test_serialize_ds)
+{
+    // given
+    char *actual_result;
+
+    // when
+    actual_result = mc_serialize_str (data->input_char_prefix, data->input_string, &error);
+
+    // then
+    mctest_assert_str_eq (actual_result, data->expected_result);
+
+    g_free (actual_result);
+
+    if (error != NULL)
+        g_error_free (error);
+}
+END_PARAMETRIZED_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* @DataSource("test_deserialize_incorrect_ds") */
+static const struct test_deserialize_incorrect_ds
+{
+    const char input_char_prefix;
+    const char *input_string;
+    const int expected_error_code;
+    const char *expected_error_string;
+} test_deserialize_incorrect_ds[] = {
+    {
+        's',
+        NULL,
+        0,  // FIXME, TODO
+        "mc_serialize_str(): Input data is NULL or empty.",
+    },
+    {
+        's',
+        "incorrect string",
+        0,  // FIXME, TODO
+        "mc_serialize_str(): String prefix doesn't equal to 's'",
+    },
+    {
+        's',
+        "s12345string without delimiter",
+        0,  // FIXME, TODO
+        "mc_serialize_str(): Length delimiter ':' doesn't exists",
+    },
+    {
+        's',
+        "s1234567890123456789012345678901234567890123456789012345678901234567890:too big number",
+        0,  // FIXME, TODO
+        "mc_serialize_str(): Too big string length",
+    },
+    {
+        's',
+        "s500:actual string length less that specified length",
+        0,  // FIXME, TODO
+        "mc_serialize_str(): Specified data length (500) is greater than actual data length (47)",
+    },
+};
+/* @Test(dataSource = "test_deserialize_incorrect_ds") */
+START_PARAMETRIZED_TEST (test_deserialize_incorrect, test_deserialize_incorrect_ds)
+{
+    // given
+    char *actual_result;
+
+    // when
+    actual_result = mc_deserialize_str (data->input_char_prefix, data->input_string, &error);
+
+    // then
+    mctest_assert_null (actual_result);
+
+    ck_assert_int_eq (error->code, data->expected_error_code);
+    mctest_assert_str_eq (error->message, data->expected_error_string);
+}
+END_PARAMETRIZED_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* @DataSource("test_deserialize_ds") */
+static const struct test_deserialize_ds
+{
+    const char input_char_prefix;
+    const char *input_string;
+    const char *expected_result;
+} test_deserialize_ds[] = {
+    {
+        's',
+        "s10:actual string length great that specified length",
+        "actual str",
+    },
+    {
+        'r',
+        "r21:The right test string",
+        "The right test string",
+    },
+};
+/* @Test(dataSource = "test_deserialize_ds") */
+START_PARAMETRIZED_TEST (test_deserialize, test_deserialize_ds)
+{
+    // given
+    char *actual_result;
+
+    // when
+    actual_result = mc_deserialize_str (data->input_char_prefix, data->input_string, &error);
+
+    // then
+    mctest_assert_str_eq (actual_result, data->expected_result);
+
+    g_free (actual_result);
+}
+END_PARAMETRIZED_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_serialize_config)
+{
+    // given
+    mc_config_t *test_data;
+    char *actual;
+    const char *expected_result =
+        "g6:group1p6:param1v10:some valuep6:param2v11:some value "
+        "g6:group2p6:param1v4:truep6:param2v6:123456"
+        "g6:group3p6:param1v11:::bla-bla::p6:param2v31:bla-:p1:w:v2:12:g3:123:bla-bla\n"
+        "g6:group4p6:param1v5:falsep6:param2v6:654321";
+
+    test_data = mc_config_init (NULL, FALSE);
+
+    mc_config_set_string_raw (test_data, "group1", "param1", "some value");
+    mc_config_set_string (test_data, "group1", "param2", "some value ");
+
+    mc_config_set_bool (test_data, "group2", "param1", TRUE);
+    mc_config_set_int (test_data, "group2", "param2", 123456);
+
+    mc_config_set_string_raw (test_data, "group3", "param1", "::bla-bla::");
+    mc_config_set_string (test_data, "group3", "param2", "bla-:p1:w:v2:12:g3:123:bla-bla\n");
+
+    mc_config_set_bool (test_data, "group4", "param1", FALSE);
+    mc_config_set_int (test_data, "group4", "param2", 654321);
+
+    // when
+    actual = mc_serialize_config (test_data, &error);
+    mc_config_deinit (test_data);
+
+    // then
+    mctest_assert_not_null (actual);
+    mctest_assert_str_eq (actual, expected_result);
+
+    g_free (actual);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+/* @DataSource("test_deserialize_config_incorrect_ds") */
+static const struct test_deserialize_config_incorrect_ds
+{
+    const char *input_string;
+    const int expected_error_code;
+    const char *expected_error_string;
+} test_deserialize_config_incorrect_ds[] = {
+    {
+        "g123error in group name",
+        0,  // FIXME, TODO
+        "mc_deserialize_config() at 1: mc_serialize_str(): Length delimiter ':' doesn't exists",
+    },
+    {
+        "p6:param1v10:some valuep6:param2v11:some value ",
+        0,  // FIXME, TODO
+        "mc_deserialize_config() at 1: mc_serialize_str(): String prefix doesn't equal to 'g'",
+    },
+    {
+        "g6:group1v10:some valuep6:param2v11:some value ",
+        0,  // FIXME, TODO
+        "mc_deserialize_config() at 10: mc_serialize_str(): String prefix doesn't equal to 'p'",
+    },
+    {
+        "g6:group1p6000:param2v11:some value ",
+        0,  // FIXME, TODO
+        "mc_deserialize_config() at 10: mc_serialize_str(): Specified data length (6000) is "
+        "greater "
+        "than actual data length (21)",
+    },
+};
+/* @Test(dataSource = "test_deserialize_config_incorrect_ds") */
+START_PARAMETRIZED_TEST (test_deserialize_config_incorrect, test_deserialize_config_incorrect_ds)
+{
+    // given
+    mc_config_t *actual_result;
+
+    // when
+    actual_result = mc_deserialize_config (data->input_string, &error);
+
+    // then
+    mctest_assert_null (actual_result);
+
+    ck_assert_int_eq (error->code, data->expected_error_code);
+    mctest_assert_str_eq (error->message, data->expected_error_string);
+}
+END_PARAMETRIZED_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_deserialize_config)
+{
+    // given
+    mc_config_t *actual;
+    char *actual_value;
+
+    // when
+    actual = mc_deserialize_config (deserialize_input_value1, &error);
+
+    // then
+    mctest_assert_not_null (actual);
+
+    actual_value = mc_config_get_string_raw (actual, "group1", "param1", "");
+    mctest_assert_str_eq (actual_value, "some value");
+    g_free (actual_value);
+
+    actual_value = mc_config_get_string (actual, "group1", "param2", "");
+    mctest_assert_str_eq (actual_value, "some value ");
+    g_free (actual_value);
+
+    mctest_assert_true (mc_config_get_bool (actual, "group2", "param1", FALSE));
+
+    ck_assert_int_eq (mc_config_get_int (actual, "group2", "param2", 0), 123456);
+
+    actual_value = mc_config_get_string_raw (actual, "group3", "param1", "");
+    mctest_assert_str_eq (actual_value, "::bla-bla::");
+    g_free (actual_value);
+
+    actual_value = mc_config_get_string (actual, "group3", "param2", "");
+    mctest_assert_str_eq (actual_value, "bla-:p1:w:v2:12:g3:123:bla-bla\n");
+    g_free (actual_value);
+
+    mctest_assert_false (mc_config_get_bool (actual, "group4", "param1", TRUE));
+
+    ck_assert_int_eq (mc_config_get_int (actual, "group4", "param2", 0), 654321);
+
+    mc_config_deinit (actual);
+}
+END_TEST
+
+#undef input_value
+/* --------------------------------------------------------------------------------------------- */
+
+int
+main (void)
+{
+    TCase *tc_core;
+
+    tc_core = tcase_create ("Core");
+
+    tcase_add_checked_fixture (tc_core, setup, teardown);
+
+    // Add new tests here: ***************
+    mctest_add_parameterized_test (tc_core, test_serialize, test_serialize_ds);
+
+    mctest_add_parameterized_test (tc_core, test_deserialize_incorrect,
+                                   test_deserialize_incorrect_ds);
+
+    mctest_add_parameterized_test (tc_core, test_deserialize, test_deserialize_ds);
+
+    tcase_add_test (tc_core, test_serialize_config);
+
+    mctest_add_parameterized_test (tc_core, test_deserialize_config_incorrect,
+                                   test_deserialize_config_incorrect_ds);
+
+    tcase_add_test (tc_core, test_deserialize_config);
+    // ***********************************
+
+    return mctest_run_all (tc_core);
+}
+
+/* --------------------------------------------------------------------------------------------- */

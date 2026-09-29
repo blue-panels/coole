@@ -1,0 +1,43 @@
+name: ci-solaris
+
+on:
+  workflow_call:
+
+jobs:
+  build-solaris:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build on Solaris
+        uses: vmactions/solaris-vm@v1
+        with:
+          release: "11.4-gcc"  # developer/gcc/gcc-c pkg-config
+          prepare: |
+            pkg install --no-backup-be --no-refresh --accept -v \
+              check glib2 libx11 developer/build/meson developer/build/ninja
+
+          run: |
+            useradd -d "$(pwd)" test
+            chown -R test $(pwd)
+
+            su - test -c ' \
+              export PKG_CONFIG_PATH=/usr/lib/64/pkgconfig && \
+              \
+              meson setup build --prefix="$(pwd)/install-prefix" \
+                -Dscreen=ncurses -Dwerror=true && \
+              meson compile -C build && \
+              meson test -C build --print-errorlogs && \
+              meson install -C build \
+            '
+
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: test-logs-solaris
+          path: build/meson-logs/*.txt

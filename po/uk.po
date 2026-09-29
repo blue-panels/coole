@@ -1,0 +1,2811 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Andrij Mizyk <andm1zyk@proton.me>, 2022,2025
+# 1057792d4be8b9c6cf7b64c224fea2c1_7fc5896, 2022
+# f977cb811fcf66493f48eac227fd7473_b98aa5d <2419f1d8d12d92441152e78ae3e3bde0_722180>, 2021-2022
+# Andriy Il <toelik@ukr.net>, 2016-2017
+# Andriy Smilyanets <smile.andriy@gmail.com>, 2019
+# Oleksandr Natalenko <oleksandr@natalenko.name>, 2011, 2012
+# Sergey Fesyura <pingvein@gmail.com>, 2012-2013
+# Rostyslav Haitkulov <info@ubilling.net.ua>, 2023
+# Serhii Trykoza <sergey.trikoza@gmail.com>, 2019
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# Vlad Anisimov <uniss@ua.fm>, 2019
+# Yury V. Zaytsev <yury@shurup.com>, 2016,2025
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Ukrainian <https://translate.codeberg.org/projects/mc6/mc6/uk/"
+">\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != "
+"11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % "
+"100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || "
+"(n % 100 >=11 && n % 100 <=14 )) ? 2: 3);\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "Попередження: не вдалося завантажити список кодових сторінок"
+
+msgid "7-bit ASCII"
+msgstr "7-розрядний ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Не вдалося перетворити із %s на %s"
+
+msgid "Event system already initialized"
+msgstr "Систему подій уже ініціалізовано"
+
+msgid "Failed to initialize event system"
+msgstr "Сталася помилка ініціалізації системи подій"
+
+msgid "Event system not initialized"
+msgstr "Систему подій не ініціалізовано"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Перевірте вхідні дані. Деякі параметри мають значення NULL."
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Не вдалося створити для подій групу «%s»."
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Не вдалося створити подію '%s'!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Клавіша PageDown"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "&Перемкнути повноекранний режим"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "П&орівняти файли"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Клавіша Delete"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "&Визначений користувачем:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "Меню користувача"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Пошук завершено"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Замінити"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Параметри терміналу"
+
+msgid "Edit file"
+msgstr "Редагувати файл"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Редагувати файл"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&Усі кодування"
+
+#, fuzzy
+msgid "Command history"
+msgstr "&Історія команд"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "Зберегти &як…"
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Перейти на рядок"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "Пере&малювати екран"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "Установки збережено в %s"
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "Пере&малювати екран"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Попередній"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Вставити файл"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Попередній"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "&Перемкнути стан рядка"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Дод. Delete"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Дод. Delete"
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "&Вирізати до буферного файлу"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "Копі&ювати до буферного файлу"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "В&ставити з буферного файлу"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "У вид&іленні"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Вибрати"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Вибрати"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Обрати гр&yпу"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Вибрати"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Виберіть метод порівняння:"
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "&Перемкнути стан рядка"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Вибрати мову"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "&Порядок сортування..."
+
+#, fuzzy
+msgid "General options"
+msgstr "Параметри панелі"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Вивчення клавіш"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "&Наступна закладка"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "&Знайти об’явлення"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Вигляд"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "&Зберегти параметри"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Попередній"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Вільних вузлів:"
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Попередній"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Зняти відмітку"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Обрати гр&yпу"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Вибрати мову"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Закрити файл"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Редагування файла розширень"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Вибрати"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Вибрати мову"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Вибрати"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "У вид&іленні"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Зберегти блок"
+
+msgid "Insert file"
+msgstr "Вставити файл"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "&Режим вставки/заміни"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "Вставити &дату/час"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Видалення"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "file1 file2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "&Історія команд"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "Форматувати &абзац"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "["
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Повторити останні команди"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "&Перевірити правопис"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "&Перевірити правопис"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Вибрати мову"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "&Скинути закладки"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "&Наступна закладка"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "П&опередня закладка"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Знайти все"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "&Перемкнути стан рядка"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Зміни у файлі втрачено"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Виберіть метод порівняння:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Виберіть метод порівняння:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Виберіть метод порівняння:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Обрати гр&yпу"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Обрати гр&yпу"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "Зн&яти відмітку з групи"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "Зн&яти відмітку з групи"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "У вид&іленні"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "Зн&яти відмітку з групи"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "Форматувати &абзац"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "&Видимі задні пробіли"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Перемкнути підсвітку синтаксис&у"
+
+msgid "Choose syntax highlighting"
+msgstr "Оберіть підсвітку синтаксису"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "П&еремкнути помічання"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Параметри панелі"
+
+msgid "About editor"
+msgstr ""
+
+#, fuzzy
+msgid "Execute script"
+msgstr "Виконувані &першими"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "Змі&нити розмір"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "&Перемкнути повноекранний режим"
+
+#, fuzzy
+msgid "Window list"
+msgstr "&Вікно"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Попередній"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Файл «%s» уже редагується\n"
+"Користувач: %s\n"
+"Ідентифікатор процесу: %d"
+
+msgid "File locked"
+msgstr "Файл заблоковано"
+
+msgid "&Grab lock"
+msgstr "&Захопити блокування"
+
+msgid "&Ignore lock"
+msgstr "&Ігнорувати блокування"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Не вдалося створити каталог %s"
+
+msgid "FATAL: not a directory:"
+msgstr "Сталася помилка. Не є каталогом:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Число поза діапазоном (повинне бути в межах байту, 0 <= n <= 0xFF, в "
+"шістнадцятиричній формі)"
+
+msgid "Invalid character"
+msgstr "Неприпустимий символ"
+
+msgid "Unmatched quotes character"
+msgstr "Незакритий символ лапки"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Помилка шістнадцятиричного шаблону в позиції %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Пошуковий рядок не знайдено"
+
+msgid "Not implemented yet"
+msgstr "Ще не реалізовано"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr ""
+"Кількість елементів заміни не збігається з кількістю знайдених елементів"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Неправильний номер елемента: %d"
+
+msgid "Regular expression error"
+msgstr "Виявлено помилку регулярного виразу"
+
+msgid "No&rmal"
+msgstr "Н&ормальний"
+
+msgid "Re&gular expression"
+msgstr "Р&eгулярний вираз"
+
+msgid "He&xadecimal"
+msgstr "Ші&стнадцятковий"
+
+msgid "Wil&dcard search"
+msgstr "П&ошук за маскою"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Не вдалося обробити обкладинку «%s».\n"
+"Завантажено стандартну обкладинку"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Не вдалося використати обкладинку «%s» із підтримкою 256 кольорів\n"
+"%s\n"
+"Завантажено стандартну обкладинку"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Не вдалося завантажити обкладинку «%s».\n"
+"Завантажено стандартну обкладинку"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr "True колір не підтримується в цій версії slang."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "Клавіша Escape"
+
+msgid "Function key 1"
+msgstr "F1"
+
+msgid "Function key 2"
+msgstr "F2"
+
+msgid "Function key 3"
+msgstr "F3"
+
+msgid "Function key 4"
+msgstr "F4"
+
+msgid "Function key 5"
+msgstr "F5"
+
+msgid "Function key 6"
+msgstr "F6"
+
+msgid "Function key 7"
+msgstr "F7"
+
+msgid "Function key 8"
+msgstr "F8"
+
+msgid "Function key 9"
+msgstr "F9"
+
+msgid "Function key 10"
+msgstr "F10"
+
+msgid "Function key 11"
+msgstr "F11"
+
+msgid "Function key 12"
+msgstr "F12"
+
+msgid "Function key 13"
+msgstr "F13"
+
+msgid "Function key 14"
+msgstr "F14"
+
+msgid "Function key 15"
+msgstr "F15"
+
+msgid "Function key 16"
+msgstr "F16"
+
+msgid "Function key 17"
+msgstr "F17"
+
+msgid "Function key 18"
+msgstr "F18"
+
+msgid "Function key 19"
+msgstr "F19"
+
+msgid "Function key 20"
+msgstr "F20"
+
+msgid "Completion/M-tab"
+msgstr "Доповнення/M-Tab"
+
+msgid "BackTab/S-tab"
+msgstr "Зворотня табуляція/S-tab"
+
+msgid "Backspace"
+msgstr "Клавіша ← Backspace"
+
+msgid "Up arrow"
+msgstr "Стрілка вгору"
+
+msgid "Down arrow"
+msgstr "Стрілка вниз"
+
+msgid "Left arrow"
+msgstr "Стрілка вліво"
+
+msgid "Right arrow"
+msgstr "Стрілка вправо"
+
+msgid "Insert"
+msgstr "Клавіша Insert"
+
+msgid "Home"
+msgstr "Клавіша Home"
+
+msgid "End key"
+msgstr "End"
+
+msgid "Page Up"
+msgstr "Клавіша PageUp"
+
+msgid "Page Down"
+msgstr "Клавіша PageDown"
+
+msgid "/ on keypad"
+msgstr "/ на клавіатурі"
+
+msgid "* on keypad"
+msgstr "Дод. *"
+
+msgid "- on keypad"
+msgstr "Дод. -"
+
+msgid "+ on keypad"
+msgstr "Дод. +"
+
+msgid "Left arrow keypad"
+msgstr "Дод. ←"
+
+msgid "Right arrow keypad"
+msgstr "Дод. →"
+
+msgid "Up arrow keypad"
+msgstr "Дод. ↑"
+
+msgid "Down arrow keypad"
+msgstr "Дод. ↓"
+
+msgid "Home on keypad"
+msgstr "Дод. Home"
+
+msgid "End on keypad"
+msgstr "Дод. End"
+
+msgid "Page Down keypad"
+msgstr "Дод. Page Down"
+
+msgid "Page Up keypad"
+msgstr "Дод. Page Up"
+
+msgid "Insert on keypad"
+msgstr "Дод. Insert"
+
+msgid "Delete on keypad"
+msgstr "Дод. Delete"
+
+msgid "Enter on keypad"
+msgstr "Дод. Enter"
+
+msgid "Function key 21"
+msgstr "F21"
+
+msgid "Function key 22"
+msgstr "F22"
+
+msgid "Function key 23"
+msgstr "F23"
+
+msgid "Function key 24"
+msgstr "F24"
+
+msgid "A1 key"
+msgstr "A1"
+
+msgid "C1 key"
+msgstr "C1"
+
+msgid "Asterisk"
+msgstr "*"
+
+msgid "Minus"
+msgstr "-"
+
+msgid "Plus"
+msgstr "+"
+
+msgid "Dot"
+msgstr "."
+
+msgid "Less than"
+msgstr "<"
+
+msgid "Great than"
+msgstr ">"
+
+msgid "Equal"
+msgstr "="
+
+msgid "Comma"
+msgstr ","
+
+msgid "Apostrophe"
+msgstr "'"
+
+msgid "Colon"
+msgstr ":"
+
+msgid "Semicolon"
+msgstr "Крапка з комою"
+
+msgid "Exclamation mark"
+msgstr "!"
+
+msgid "Question mark"
+msgstr "?"
+
+msgid "Ampersand"
+msgstr "&"
+
+msgid "Dollar sign"
+msgstr "$"
+
+msgid "Quotation mark"
+msgstr "\""
+
+msgid "Percent sign"
+msgstr "Знак відсотка"
+
+msgid "Caret"
+msgstr "^"
+
+msgid "Tilda"
+msgstr "~"
+
+msgid "Prime"
+msgstr "′"
+
+msgid "Underline"
+msgstr "_"
+
+msgid "Understrike"
+msgstr "_"
+
+msgid "Pipe"
+msgstr "Канал"
+
+msgid "Left parenthesis"
+msgstr "("
+
+msgid "Right parenthesis"
+msgstr ")"
+
+msgid "Left bracket"
+msgstr "["
+
+msgid "Right bracket"
+msgstr "]"
+
+msgid "Left brace"
+msgstr "{"
+
+msgid "Right brace"
+msgstr "}"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "Tab"
+
+msgid "Space key"
+msgstr "Пробіл"
+
+msgid "Slash key"
+msgstr "/"
+
+msgid "Backslash key"
+msgstr "\\"
+
+msgid "Number sign #"
+msgstr "#"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "@"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Не вдалося створити канал для SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Не вдалося налаштувати кінець запису каналу SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Не вдалося налаштувати кінець зчитування каналу SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Розмір екрана %dx%d не підтримується.\n"
+"Перевірте змінну оточення TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "Змінна середовища TERM не встановлена!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Не вдалося перевірити канал SIGWINCH"
+
+msgid "B"
+msgstr "Б"
+
+msgid "kB"
+msgstr "кБ"
+
+msgid "KiB"
+msgstr "КіБ"
+
+msgid "MB"
+msgstr "Мб"
+
+msgid "MiB"
+msgstr "МіБ"
+
+msgid "GB"
+msgstr "Гб"
+
+msgid "GiB"
+msgstr "ГіБ"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Не вдалося створити дескриптор каналу"
+
+msgid "Cannot create pipe streams"
+msgstr "Не вдалося створити потоки каналу"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Виникла несподівана помилка під час читання select() з підлеглого процесу:\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr "Неможливо закрити дескриптор каналу (p == NULL)"
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Неочікувана помилка у waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Зміни у файлі втрачено"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "Щоб продовжити, натисніть будь-яку клавішу…"
+
+msgid "Internal error:"
+msgstr "Сталася внутрішня помилка:"
+
+msgid "Screens"
+msgstr "Екрани"
+
+msgid "History"
+msgstr "Історія"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Так"
+
+msgid "&No"
+msgstr "&Ні"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "DialogTitle|Очистка історії"
+
+msgid "Do you want clean this history?"
+msgstr "Справді очистити цю історію?"
+
+msgid "&OK"
+msgstr "Г&aразд"
+
+msgid "&Cancel"
+msgstr "&Cкасувати"
+
+msgid "Error"
+msgstr "Помилка"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Перервати"
+
+msgid "< Default >"
+msgstr "< Типово >"
+
+msgid "Skins"
+msgstr "Шкіри"
+
+msgid "Skin:"
+msgstr "Шкіра:"
+
+msgid "&Shadows"
+msgstr "&Тіні"
+
+msgid "Appearance"
+msgstr "Вигляд"
+
+msgid "Displays the current version"
+msgstr "Показує поточну версію"
+
+msgid "Print data directory"
+msgstr "Показати каталог даних"
+
+msgid "Print extended info about used data directories"
+msgstr "Показати додаткові відомості про використовувані каталоги даних"
+
+msgid "Print configure options"
+msgstr "Показати параметри конфігурації"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Вимкнути підтримку X11"
+
+msgid "Forces xterm features"
+msgstr "Нав’язує властивості xterm"
+
+msgid "Disable X11 support"
+msgstr "Вимкнути підтримку X11"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Намагатися використовувати застаріле стеження за виділенням мишкою"
+
+msgid "Disable mouse support in text version"
+msgstr "Вимкнути підтримку миші в текстовій версії"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Пробує використовувати termcap замість terminfo"
+
+msgid "To run on slow terminals"
+msgstr "Для повільних терміналів"
+
+msgid "Use stickchars to draw"
+msgstr "Псевдографіка для малювання"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Завантажити визначення прив’язок клавіш із вказаного файлу"
+
+msgid "<file>"
+msgstr "<file>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr "Не завантажувати прив’язки клавіш із файлу, використовувати стандартні"
+
+msgid "Requests to run in black and white"
+msgstr "Запитує запуск у чорно-білому режимі"
+
+msgid "Request to run in color mode"
+msgstr "Запит на запуск у кольоровому режимі"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Показати mc із обраною обкладинкою"
+
+msgid "<string>"
+msgstr "<string>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+lineno] file1[:lineno] [file2[:lineno]...]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "Головні параметри"
+
+msgid "Terminal options"
+msgstr "Параметри терміналу"
+
+msgid "Color options"
+msgstr "Параметри кольору"
+
+msgid "Arguments parse error!"
+msgstr "Сталася помилка під час обробки аргументів."
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Конфігурація…"
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Параметри конфігурації"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "&Регістрозалежний"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "Перейти до об’явлення"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "&Знайти об’явлення"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "«%s» — не символьне посилання"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Не вдалося зберегти у файл"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Не вдалося зберегти у файл"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"Не вдалося запустити:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "У %s не знайдено потрібних записів"
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Пошук завершено"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Пошук завершено"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "Доп&овнення: показувати всі"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Не вдалося зберегти у файл"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Не вдалося зберегти файл:\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Не вдалося перетворити із %s на %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Кореневий каталог профілю:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Не вдалося створити подію '%s'!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Сталася помилка зчитування"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Навігація"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "Перейти до об’явлення"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "Доп&овнення: показувати всі"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Навігація"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Пошук завершено"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Пошук завершено"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Назва символьного посилання:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Завантажити файл синтаксису"
+
+msgid "Manage repositories"
+msgstr ""
+
+#, fuzzy
+msgid "Reindex repository"
+msgstr "Індексований каталог"
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Підтвердження"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "Перейти до об’явлення"
+
+msgid "&Find declaration"
+msgstr "&Знайти об’явлення"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Навігація"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Пошук"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Назва символьного посилання:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "Доп&овнення: показувати всі"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Вибрати"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Назва символьного посилання:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Назва файлу:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Завантажити файл"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Закрити"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Попередження"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Поточний текст змінено і не збережено. \n"
+"Продовження операції призведе до втрати змін."
+
+msgid "C&ontinue"
+msgstr "Пр&одовжити"
+
+msgid "&Add word"
+msgstr "&Додати слово"
+
+msgid "&Replace"
+msgstr "&Замінити"
+
+msgid "&Skip"
+msgstr "П&ропустити"
+
+msgid "Language"
+msgstr "Мова"
+
+msgid "Misspelled"
+msgstr "Орфографічна помилка"
+
+msgid "Check word"
+msgstr "Перевірити слово"
+
+msgid "Suggest"
+msgstr "Запропонувати"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Додати слово"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Орфографічна помилка"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Мова"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Вибрати"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Вибрати мову"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Завантаження: %3d%%"
+
+msgid "Loading..."
+msgstr "Завантаження..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "Завантажити файл"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Сталася помилка зчитування %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Файл «%s» надто великий\n"
+"Все одно відкрити?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Сталася помилка читання з каналу: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+#, fuzzy
+msgid "Undo"
+msgstr "По&вернути"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "По&вторити"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Файл має жорсткі посилання. Відкріпити їх перед зберіганням?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Файл змінено під час роботи. Все рівно зберегти?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Сталася помилка запису в канал: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Файл, що зберігається, не завершено новим рядком"
+
+msgid "&Do not change"
+msgstr "Не з&мінювати"
+
+msgid "&Unix format (LF)"
+msgstr "Формат &Unix (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "Формат &Windows/DOS (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "Формат &Macintosh (CR)"
+
+msgid "Enter file name:"
+msgstr "Введіть назву файлу:"
+
+msgid "Change line breaks to:"
+msgstr "Замінити закінчення рядків на:"
+
+msgid "Save As"
+msgstr "Зберегти як"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "&Швидке збереження"
+
+msgid "&Safe save"
+msgstr "&Безпечне збереження"
+
+msgid "&Do backups with following extension:"
+msgstr "&Зробити резервні копії таких розширень:"
+
+msgid "Check &POSIX new line"
+msgstr "Перевіряти новий рядок &POSIX"
+
+msgid "Edit Save Mode"
+msgstr "Редагувати режим збереження "
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "Файл із такою назвою вже існує"
+
+msgid "&Overwrite"
+msgstr "&Замістити"
+
+msgid "Cannot save file"
+msgstr "Не вдалося зберегти файл"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Підтвердити запис файлу: «%s»"
+
+msgid "Save file"
+msgstr "Зберегти файл"
+
+msgid "&Save"
+msgstr "&Зберегти"
+
+msgid "Load"
+msgstr "Завантажити"
+
+msgid "Syntax file edit"
+msgstr "Редагувати файл синтаксису"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Який файл синтаксису необхідно редагувати?"
+
+msgid "&User"
+msgstr "&Користувацький"
+
+msgid "&System wide"
+msgstr "&Загальносистемний"
+
+msgid "Menu edit"
+msgstr "Редагувати меню "
+
+msgid "Which menu file do you want to edit?"
+msgstr "Який файл меню необхідно редагувати?"
+
+msgid "&Local"
+msgstr "&Місцевий"
+
+msgid "[NoName]"
+msgstr "[БезНазви]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Файл %s змінено.\n"
+"Зберегти перед закриттям?"
+
+msgid "Close file"
+msgstr "Закрити файл"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "Вийти"
+
+msgid "This function is not implemented"
+msgstr "Цю функція ще не реалізовано"
+
+msgid "Unable to save to file"
+msgstr "Не вдалося зберегти у файл"
+
+msgid "Goto line"
+msgstr "Перейти на рядок"
+
+msgid "Enter line:"
+msgstr "Введіть номер рядка:"
+
+msgid "Save block"
+msgstr "Зберегти блок"
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr "Не вдалося вставити файл"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <Тема> -c <Копії> <До>"
+
+msgid "To"
+msgstr "Кому"
+
+msgid "Subject"
+msgstr "Тема"
+
+msgid "Copies to"
+msgstr "Копії"
+
+msgid "Mail"
+msgstr "Пошта"
+
+msgid "Cancel"
+msgstr "Скасувати"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Клавіша Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Видалити %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Замінити"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Історія"
+
+msgid "Collect completions"
+msgstr "Зібрати доповнення"
+
+msgid "NoName"
+msgstr "БезНазви"
+
+msgid "Save macro"
+msgstr "Зберегти макрос"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Натисніть нову клавішу макросу:"
+
+msgid "Repeat last commands"
+msgstr "Повторити останні команди"
+
+msgid "Repeat times:"
+msgstr "Кількість повторень:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Видалити макрос"
+
+msgid "Delete macro"
+msgstr "Видалити макрос"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "Російська"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Закрити"
+
+msgid "&Open file..."
+msgstr "&Відкрити файл…"
+
+msgid "&New"
+msgstr "&Новий"
+
+msgid "&History..."
+msgstr "&Історія..."
+
+msgid "Save &as..."
+msgstr "Зберегти &як…"
+
+msgid "&Insert file..."
+msgstr "&Вставити файл…"
+
+msgid "Cop&y to file..."
+msgstr "Копі&ювати у файл…"
+
+msgid "&User menu..."
+msgstr "Меню &користувача…"
+
+msgid "A&bout..."
+msgstr "П&ро програму…"
+
+msgid "&Quit"
+msgstr "&Вийти"
+
+msgid "&Undo"
+msgstr "По&вернути"
+
+msgid "&Redo"
+msgstr "&Повторити"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "&Історія..."
+
+msgid "&Toggle ins/overw"
+msgstr "&Режим вставки/заміни"
+
+msgid "To&ggle mark"
+msgstr "П&еремкнути помічання"
+
+msgid "&Mark columns"
+msgstr "Помітити стов&пці"
+
+msgid "Mark &all"
+msgstr "Помі&тити все"
+
+msgid "Unmar&k"
+msgstr "Зняти пом&ітку"
+
+msgid "Cop&y"
+msgstr "Копі&ювати"
+
+msgid "Mo&ve"
+msgstr "Пере&нести"
+
+msgid "&Delete"
+msgstr "&Видалити"
+
+msgid "Co&py to clipfile"
+msgstr "Копі&ювати до буферного файлу"
+
+msgid "&Cut to clipfile"
+msgstr "&Вирізати до буферного файлу"
+
+msgid "Pa&ste from clipfile"
+msgstr "В&ставити з буферного файлу"
+
+msgid "&Beginning"
+msgstr "&Початок"
+
+msgid "&End"
+msgstr "&Кінець"
+
+msgid "&Search..."
+msgstr "&Пошук…"
+
+msgid "Search &again"
+msgstr "Шукати &знову"
+
+msgid "&Replace..."
+msgstr "&Замінити…"
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "&Перемкнути стан рядка"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "&писати від імені власника"
+
+msgid "&Toggle bookmark"
+msgstr "&Перемкнути закладку"
+
+msgid "&Next bookmark"
+msgstr "&Наступна закладка"
+
+msgid "&Prev bookmark"
+msgstr "П&опередня закладка"
+
+msgid "&Flush bookmarks"
+msgstr "&Скинути закладки"
+
+msgid "&Go to line..."
+msgstr "Пе&рейти на рядок…"
+
+msgid "&Toggle line state"
+msgstr "&Перемкнути стан рядка"
+
+msgid "Go to matching &bracket"
+msgstr "Перейти до парної &дужки"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Перемкнути підсвітку синтаксис&у"
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "Кодування…"
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Знайти все"
+
+msgid "&Refresh screen"
+msgstr "Пере&малювати екран"
+
+msgid "&Start/Stop record macro"
+msgstr "&Почати/зупинити записування макросу"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "Записати/повторити &дії"
+
+msgid "&Move"
+msgstr "Пере&нести"
+
+msgid "&Resize"
+msgstr "Змі&нити розмір"
+
+msgid "&Toggle fullscreen"
+msgstr "&Перемкнути повноекранний режим"
+
+msgid "&Next"
+msgstr "&Наступний"
+
+msgid "&Previous"
+msgstr "&Попередній"
+
+msgid "&List..."
+msgstr "&Список…"
+
+msgid "&General..."
+msgstr "&Загальні…"
+
+msgid "Save &mode..."
+msgstr "Режим &збереження…"
+
+msgid "Syntax &highlighting..."
+msgstr "&Підсвітка синтаксису…"
+
+msgid "&Appearance..."
+msgstr "&Вигляд..."
+
+msgid "Learn &keys..."
+msgstr "Вивчення к&лавіш…"
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "Кодування…"
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "Кодування…"
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "Параметри панелі…"
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "Файл с&интаксису"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "Файл &меню"
+
+msgid "&Save setup"
+msgstr "&Зберегти параметри"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Файл"
+
+msgid "&Edit"
+msgstr "&Редагувати"
+
+msgid "&Search"
+msgstr "&Пошук"
+
+msgid "&Command"
+msgstr "&Команда"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Навігація"
+
+msgid "&Window"
+msgstr "&Вікно"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Параметри "
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Табуляція"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Сталася помилка зчитування"
+
+msgid "&None"
+msgstr "&Порожньо"
+
+msgid "&Dynamic paragraphing"
+msgstr "&Динамічне параграфування"
+
+msgid "Type &writer wrap"
+msgstr "Напишіть &писемну обгортку"
+
+msgid "Wrap mode"
+msgstr "Режим перенесення"
+
+msgid "Tabulation"
+msgstr "Табуляція"
+
+msgid "&Fake half tabs"
+msgstr "&Симуляція напівтабуляції"
+
+msgid "&Backspace through tabs"
+msgstr "&Забій в обхід табуляції"
+
+msgid "Fill tabs with &spaces"
+msgstr "Заміняти &табуляцію пробілами"
+
+msgid "Tab spacing:"
+msgstr "Крок табуляції:"
+
+msgid "Other options"
+msgstr "Інші параметри"
+
+msgid "&Return does autoindent"
+msgstr "Автові&дступ"
+
+msgid "Confir&m before saving"
+msgstr "Пит&ати перед збереженням"
+
+msgid "Save file &position"
+msgstr "Зберегти &позицію в файлі"
+
+msgid "&Visible trailing spaces"
+msgstr "&Видимі задні пробіли"
+
+msgid "Visible &tabs"
+msgstr "Видимі &вкладки"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "&Підсвітка синтаксису"
+
+msgid "C&ursor after inserted block"
+msgstr "Курсор знаходиться після вставленого блоку"
+
+msgid "Pers&istent selection"
+msgstr "Пос&тійне виділення"
+
+msgid "Cursor be&yond end of line"
+msgstr "Дозволити переміщувати курсор за межі рядка."
+
+msgid "&Group undo"
+msgstr "&Групове повернення"
+
+msgid "Word wrap line length:"
+msgstr "Переносити після досягнення довжини:"
+
+msgid "Editor options"
+msgstr "Параметри редактора"
+
+msgid "Enter search string:"
+msgstr "Введіть рядок для пошуку:"
+
+msgid "Cas&e sensitive"
+msgstr "Регістро&залежний"
+
+msgid "&Backwards"
+msgstr "&Hазад"
+
+msgid "In se&lection"
+msgstr "У вид&іленні"
+
+msgid "&Whole words"
+msgstr "&Цілі слова"
+
+msgid "&All charsets"
+msgstr "&Усі кодування"
+
+msgid "&Find all"
+msgstr "&Знайти все"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Пошук"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Виконується пошук %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Виконується пошук %s"
+
+msgid "Enter replacement string:"
+msgstr "Введіть рядок для заміни:"
+
+msgid "Replace"
+msgstr "Замінити"
+
+msgid "Replace with:"
+msgstr "Замінити на:"
+
+msgid "A&ll"
+msgstr "&Усі"
+
+msgid "Confirm replace"
+msgstr "Підтвердити заміну"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "Виконано замін: %ld"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "Про програму"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Відкрити файли"
+
+msgid "Edit: "
+msgstr "Редагування: "
+
+msgid "ButtonBar|Help"
+msgstr "ButtonBar|Довідка"
+
+msgid "ButtonBar|Save"
+msgstr "ButtonBar|Зберегти"
+
+msgid "ButtonBar|Mark"
+msgstr "ButtonBar|Помітити"
+
+msgid "ButtonBar|Replac"
+msgstr "ButtonBar|Замінити"
+
+msgid "ButtonBar|Copy"
+msgstr "ButtonBar|Копіювати"
+
+msgid "ButtonBar|Move"
+msgstr "ButtonBar|Перемістити"
+
+msgid "ButtonBar|Search"
+msgstr "ButtonBar|Пошук"
+
+msgid "ButtonBar|Delete"
+msgstr "ButtonBar|Видалити"
+
+msgid "ButtonBar|PullDn"
+msgstr "ButtonBar|Меню"
+
+msgid "ButtonBar|Quit"
+msgstr "ButtonBar|Вихід"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Виконується пошук %s: %3d%%"
+
+msgid "Filter"
+msgstr "Фільтр"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Авто >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Оновити поточний синтаксис >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr "Завантажити файл синтаксису"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Виявлено помилку у файлі %s у рядку %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Це не xterm чи консоль Linux;\n"
+"підоболонку не можливо перемкнути."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr "Виявлено помилку формату файла довідки\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Внутрішня помилка: подвійний початок області посилання"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Не вдалося знайти вузол %s у файлі довідки"
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Довідка"
+
+msgid "ButtonBar|Index"
+msgstr "ButtonBar|Індекс"
+
+msgid "ButtonBar|Prev"
+msgstr "ButtonBar|Попередній"
+
+#, fuzzy
+msgid "Function keys"
+msgstr "F1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Навігація"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Вивчення клавіш"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Підтвердження"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Редагувати файл &меню"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&Пошта…"
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "Файл &меню"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&Список…"
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Довідка"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "&Редагувати"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "A1"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Щоб продовжити, натисніть будь-яку клавішу…"
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "&Hазад"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Редагувати файл &меню"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Не вдалося запустити:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Шлях до домашнього каталогу не абсолютний"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Під час закривання сталася помилка:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "Плагіни та скрипти VFS:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Сталася невідома помилка у нащадку"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "Вст&aновити"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Сталася помилка зчитування"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: сталася помилка"
+
+msgid "Choose codepage"
+msgstr "Виберіть кодову сторінку"
+
+msgid "-  < No translation >"
+msgstr "-  < Без перекодування >"
+
+msgid "Setup"
+msgstr "Налаштування"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Установки збережено в %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Не вдалося зберегти установки в %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Із необовʼязковою підтримкою підоболонки"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "Із підтримкою миші в xterm та консолях Linux"
+
+msgid "With mouse support on xterm"
+msgstr "Із підтримкою миші в xterm"
+
+msgid "With support for X11 events"
+msgstr "Із підтримкою подій X11"
+
+msgid "With internationalization support"
+msgstr "Із підтримкою інтернаціоналізації"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr "Типи даних:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Пошуковий рядок не знайдено"
+
+msgid "Home directory:"
+msgstr "Домашній каталог:"
+
+msgid "Profile root directory:"
+msgstr "Кореневий каталог профілю:"
+
+msgid "System data"
+msgstr "Системна дата"
+
+msgid "Config directory:"
+msgstr "Конфігураційний каталог:"
+
+msgid "Data directory:"
+msgstr "Каталог даних:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Параметри редактора"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "Плагіни та скрипти VFS:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Користувацький каталог:"
+
+msgid "Cache directory:"
+msgstr "Каталог кешу:"
+
+msgid "Debug"
+msgstr "Відлагоджування"
+
+msgid "ERROR:"
+msgstr "ПОМИЛКА:"
+
+msgid "True:"
+msgstr "Істина:"
+
+msgid "False:"
+msgstr "Хибність:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr ""
+"Не вдалося зберегти файл:\n"
+"%s"
+
+msgid "Error calling program"
+msgstr "Сталася помилка виклику програми"
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr "Параметр"
+
+msgid "Warning -- ignoring file"
+msgstr "Попередження — файл не враховується"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Файл %s не належить ні root'у, ні вам, або доступний усім на запис.\n"
+"Його використання неприйнятно з міркувань безпеки."
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "Не можна виконувати команди на нелокальних файлових системах"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "У %s не знайдено потрібних записів"
+
+msgid "User menu"
+msgstr "Меню користувача"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Не вдалося перетворити із %s на %s"

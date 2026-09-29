@@ -1,0 +1,680 @@
+coole
+Frequently Asked Questions
+
+     * 1 Getting started
+          + 1.1 What is coole?
+          + 1.2 Where does it come from?
+          + 1.3 Does it run on my machine?
+          + 1.4 Does it work with my terminal?
+          + 1.5 What else do I need to run it?
+          + 1.6 Is coole Public Domain?  Copyrighted?
+          + 1.7 Where can I get coole?
+          + 1.8 I cannot compile it.  What should I do?
+
+     * 2 Keyboard
+          + 2.1 What does documentation mean with the C-?, M-? and F?
+            keys?
+          + 2.2 Why don't function keys (or some other key) work?
+          + 2.3 How do I use function keys F11 to F20?
+          + 2.4 Why does the ESC key behave funny?
+          + 2.5 Some Ctrl key doesn't work!
+          + 2.6 What 'keys' are the "a1" and "c1" keys mentioned in the
+            manual?
+          + 2.7 How do I change the key bindings?
+          + 2.8 What does my terminal really send for this key?
+
+     * 3 Mouse
+          + 3.1 How do I enable mouse support?
+          + 3.2 How do I cut and paste text with mouse?
+
+     * 4 Display
+          + 4.1 Why do I keep getting "Terminal not powerful enough for
+            SLang" or "Terminal not powerful enough for SLsmg"?
+          + 4.2 Why don't line drawing characters work?
+          + 4.3 Can one use latin-1 characters without losing the lines?
+          + 4.4 How can I get colors?
+          + 4.5 My color_xterm goes completely (or partially) black!
+          + 4.6 I got colors working here but the other programs don't
+            work at all anymore!
+          + 4.7 How do I change the colors of the program itself?
+          + 4.8 Why is the program linked with X libraries?
+
+     * 5 Editing
+          + 5.1 When I try pasting, the amount of indenting increases
+            with each line!
+          + 5.2 How do I add syntax highlighting for my language?
+          + 5.3 Is there any way to include additional commands?
+          + 5.4 What are editor plugins and Lua scripts?
+          + 5.5 How do I turn a plugin off, or configure it?
+
+     * 6 Configuration files
+          + 6.1 Where does the program keep my settings?
+
+     * 7 Other common problems
+          + 7.1 When I start the program, nothing happens!
+
+     * 8 Development
+          + 8.1 Who has written this?
+          + 8.2 Do I dare to use a development version?
+          + 8.3 How can I report a bug/request for a feature?
+          + 8.4 How can I join the development?
+          + 8.5 How can I help with translations?
+
+     * 9 More information
+          + 9.1 This document didn't answer my question.  Where else
+            can I look for an answer?
+          + 9.2 Where should I look on the World Wide Web?
+
+     * 10 Legal issues
+          + 10.1 Authorship
+          + 10.2 Feedback is invited
+          + 10.3 Disclaimer and copyright
+
+
+1 Getting started
+
+1.1 What is coole?
+
+   coole is a console text editor, a continuation of cooledit by Paul
+   Sheer.  It has syntax highlighting, code
+   folding, an undo history browser, macros and a macro explorer,
+   ctags and etags navigation, spell checking, a user menu, multiple
+   windows, editor plugins and Lua scripting.
+
+   The program and the package are called coole.  Run it as
+
+     coole [+lineno] file1[:lineno] [file2[:lineno]...]
+
+1.2 Where does it come from?
+
+   coole continues cooledit, the editor written by Paul Sheer.  The
+   terminal version of cooledit was developed for many years as the
+   internal editor of GNU Midnight Commander; coole takes it with the
+   fixes and features it gained there and develops it as a program of
+   its own.  It is not an official GNU package.
+
+   It keeps the keys and the file formats of that editor.
+
+   Report problems with coole here, not to the upstream project, and do
+   not report problems of the original program to us.
+
+1.3 Does it run on my machine?
+
+   coole runs on POSIX (Unix-like) operating systems, such as
+   GNU/Linux, FreeBSD, macOS, Solaris and others.
+
+   It uses GNU Autoconf, which should configure it for every Unix
+   clone.
+
+1.4 Does it work with my terminal?
+
+   Yes, it does.
+
+   Because this is a full screen program it doesn't run on dummy
+   terminals, but anything more advanced will do (like vt100).  If your
+   terminal works with vi, emacs, elm or pine it will work here.
+
+1.5 What else do I need to run it?
+
+   You need a POSIX (Unix compatible) operating system and glib >= 2.58,
+   available at https://download.gnome.org/sources/glib/ .
+
+   If you want to use the mouse on the Linux console you need the gpm
+   daemon from https://www.nico.schottelius.org/software/gpm/ .  You
+   need nothing extra to use the mouse on xterm.
+
+   The screen is drawn through the S-Lang library or through ncurses;
+   "coole -V" says which one this build uses.  Editor plugins and the
+   Lua runtime need GModule, which comes with glib.  Everything else is
+   optional and is listed in the INSTALL file.
+
+1.6 Is coole Public Domain? Copyrighted?
+
+   It is under the GNU General Public License, which basically means
+   that you may freely copy, change and distribute it, but that you may
+   not impose any restrictions on further distribution, and that you
+   must make the source code available.  This is not the same as Public
+   Domain.  The license is included in the source distribution (the
+   COPYING file).
+
+   Most of the code belongs to the Free Software Foundation, to which
+   its authors gave their rights.  The
+   code written for coole belongs to its own authors, listed in the
+   AUTHORS file.
+
+1.7 Where can I get coole?
+
+   The development version is in the master branch of
+
+     https://github.com/blue-panels/coole
+
+1.8 I cannot compile it.  What should I do?
+
+   Make sure you have read the INSTALL file in the sources.  Report the
+   error messages exactly as they appear, mention the versions of your
+   OS, your compiler and whatever else software you think is relevant.
+
+
+2 Keyboard
+
+2.1 What does documentation mean with the C-?, M-? and F? keys?
+
+   The documentation uses emacs style names for keyboard keys.
+
+   C stands for the Ctrl key.  For example, C-f means that you should
+   hold down the Ctrl key and press the f key.
+
+   M stands for the Meta key.  Your terminal might call it Alt or
+   Compose instead of Meta.  For example, M-f means that you should hold
+   down the Meta/Alt/Compose key and press the f key.  If your terminal
+   doesn't have Meta, Alt or Compose or they don't work you can use Esc.
+   For M-f press the Esc key and then press the f key.
+
+   Sometimes Ctrl and Alt are used instead of C and M for simplicity.
+   Keep in mind that Alt can actually be Meta on some keyboards.
+
+   F? stands for a function key.  If your terminal doesn't have function
+   keys or they don't work you can use Esc.  For example, for F3 press
+   the Esc key and then press the 3 key.
+
+2.2 Why don't function keys (or some other key) work?
+
+   Your terminfo or termcap database has missing or incorrect
+   definitions for function keys.  Type "coole -V" to see what terminal
+   database is being used.
+
+   Up-to-date termcap and terminfo databases are available here:
+
+     http://www.catb.org/~esr/terminfo/
+     https://ftp.gnu.org/gnu/ncurses/
+
+   If you don't have permission to edit terminal databases, teach the
+   program the key instead: Options -> Learn keys, press the key and
+   save.  What it learns is kept per terminal type in
+   ~/.config/coole/term/$TERM, so a key learned in one terminal does not
+   disturb another.
+
+   Options -> Key sniffer shows the bytes your terminal really sends,
+   which is the fastest way to find out what is going on.
+
+   If all else fails you can emulate function keys by first pressing the
+   ESC key and then one of the number keys.  For example, if you want to
+   produce F9, press ESC, then 9.  If you don't have an ESC key on your
+   keyboard you can try alt-9 or meta-9.
+
+2.3 How do I use function keys F11 to F20?
+
+   These are normally mapped to function keys F1 to F10 with Shift held,
+   e.g. function key F13 can be activated by pressing Shift-F3.  You can
+   define the keys this way in the Options -> Learn keys dialog.  The
+   convention for PC keyboards is that F11-20 always means Shift with
+   F1-10.
+
+   You may find that on the Linux console with some keyboard layouts
+   Shift-Fn is interpreted as F(n+12), not as F(n+10).  This is a result
+   of non-uniformity of keyboard layouts.  Use "Learn keys" to remedy
+   this inconvenience.
+
+2.4 Why does the ESC key behave funny?
+
+   The ESC key is a prefix for simulating the Meta and Alt keys (for
+   terminals which don't have Meta or Alt, see the three previous
+   questions).  For example, pressing ESC-a is the same as pressing
+   Meta-a.  In addition most terminals use ESC for internal
+   representation of arrow keys, function keys and other enhanced keys.
+   If you want to use ESC to cancel things you have to press it twice,
+   i.e. ESC-ESC.  If you find this cumbersome you can generally use F10
+   to cancel.  Alternatively turn on the old_esc_mode setting in the
+   ~/.config/coole/ini file.  The old_esc_mode setting makes ESC work as a
+   prefix only if another key is pressed within 0.5 seconds.  After 0.5
+   seconds the ESC key cancels.  There is no way to make ESC cancel
+   immediately (if we want to be able to use arrow keys and function
+   keys).
+
+2.5 Some Ctrl key doesn't work!
+
+   Maybe the key is a stty control character on your terminal (C-s,
+   C-q and C-z often are).  See man stty for details on how to list and
+   change stty control characters.
+
+2.6 What 'keys' are the "a1" and "c1" keys mentioned in the manual?
+
+   A1 is the "Home" key on the keypad (numpad 7 with Num Lock turned
+   off), which is decoded as a different key from the regular "Home".
+   Likewise C1 is keypad "End", A3 is keypad "Page Up", C3 is keypad
+   "Page Down", and B2 is documented to "center of keypad", i.e. the 5
+   key, though I don't know whether any keyboards actually use that.
+   They are documented for the curses library (search for "keypad"):
+
+   https://pubs.opengroup.org/onlinepubs/007908799/xcurses/curses.h.html
+
+2.7 How do I change the key bindings?
+
+   Options -> Key bindings lists every command with the keys it answers
+   to, and rebinds them on the spot.  What you change there is written
+   to ~/.config/coole/keymap.ini.
+
+   The same file can be written by hand, and so can the system-wide
+   /etc/coole/keymap.ini; the coole(1) man page describes the format.
+
+2.8 What does my terminal really send for this key?
+
+   Options -> Key sniffer shows the raw bytes of every key you press,
+   together with the name the program gives it.  Use it when a key does
+   nothing, or when two keys look the same to the program.
+
+
+3 Mouse
+
+3.1 How do I enable mouse support?
+
+   Invoke coole like this (without quotes): "coole -x".  If this doesn't
+   work upgrade to a terminal which is compatible with the Xterm mouse
+   sequences.
+
+   Alternatively, on the Linux console you can use gpm.
+
+3.2 How do I cut and paste text with mouse?
+
+   Hold down the shift key while using the mouse to cut and paste.
+
+
+4 Display
+
+4.1 Why do I keep getting "Terminal not powerful enough for SLang" or
+    "Terminal not powerful enough for SLsmg"?
+
+   This means that your terminfo databases do not contain the correct
+   definitions for your terminal.
+
+   You could try using a different terminal setting.  If you use csh or
+   tcsh:
+
+     setenv TERM vt100
+
+   or if you use sh, bash, ksh or zsh:
+
+     export TERM=vt100
+
+4.2 Why don't line drawing characters work?
+
+   The command line option -a forces the use of the characters +, |, -
+   for line drawing.  Use it if none of the suggestions below helps.
+
+   In general, there are three cases:
+     * Lines are shown as ASCII characters like this
+
+      +---------+
+      |         |
+      +---------+
+
+       This also happens when you use the -a option.  Other than that
+       possible reason is 1 or 2 (see below).
+
+     * Lines are shown as lower case characters like this
+
+      lqqqqqqqqqk
+      x         x
+      mqqqqqqqqqj
+
+       Possible reason is 1 or 2 (see below).
+
+     * Lines are shown as blanks or missing characters.  Possible reason
+       is 2 or 3 (see below).
+
+   The reason for the problem is one of following:
+
+    1. Your terminal might not support line drawing characters.  VT100
+       compatible terminals, rxvt and xterm and color_xterm do support
+       them.
+    2. Your terminfo or termcap database might have missing or incorrect
+       definitions for line drawing characters.  Set the acsc variable
+       in the terminfo database like this:
+       acsc=a\376k\277l\332m\300j\331n\305w\302v\301u\264t\303q\304x
+       \263h\2600\333
+       Don't forget to issue the 'tic' command.  This supposes you are
+       using the PC character set.  The octal values might be different
+       for other character sets.  If you are using termcap instead of
+       terminfo, you should modify the above solution appropriately.
+    3. Your terminal font might not support line drawing characters.
+       Try changing the font.
+
+4.3 Can one use latin-1 characters without losing the lines?
+
+   Yes, you need a correct font and a correct termcap/terminfo database.
+
+   For font, if you use xterm try "xterm -fn fixed".
+
+   For termcap/terminfo database, change the acsc capability in the
+   database.
+
+4.4 How can I get colors?
+
+   Invoke coole like this (without quotes): "coole -c".
+
+   If you get colors, be happy.
+
+   If your terminal stays black and white, your terminal doesn't support
+   color.  You might want to upgrade to a terminal which is compatible
+   with the ANSI color sequences.
+
+   If your terminal goes completely black, see the next question.
+
+   More detailed answer:
+
+   Check that your terminal supports color.  Most terminals do. You can
+   test color support with the following command:
+
+        printf "\033[32m Hello color world! \033[m\n"
+
+   You can test 256 color support with the following command:
+
+        printf "\033[38;5;120m Hello 256-color world! \033[m\n"
+
+   You can test true color support with the following command:
+
+        printf "\033[38;2;0;200;0m Hello true color world! \033[m\n"
+
+   If you see the text in green, your terminal supports the respective
+   color mode.
+
+   Check that you are using the proper TERM variable for your terminal.
+   If not, set it accordingly. You can use the 'toe -a' command to list
+   all available terminfo entries.
+
+   If your terminal supports 256 colors, the correct entry name may be
+   appended with -256color. If your terminal supports true color, it
+   should be appended with -direct, -direct16, or -direct256. All three
+   variants provide both 256-color and true color support simultaneously.
+   The latter two variants make no difference here, and they support
+   basic colors including their bright versions along with true color
+   support, in contrast to the -direct variant, which supports only basic
+   8 colors together with true color when used in a skin.
+
+   If there is no 256-color or true-color terminfo variant for your
+   terminal, even though your terminal supports it, send an e-mail to
+   ncurses/terminfo maintainers (bug-ncurses@gnu.org) and ask them to
+   add one.
+
+   With the S-Lang library (you can check by 'coole -V'), you can force
+   color support by setting the environment variable COLORTERM to any
+   value, and specifically force true color support by setting it to
+   'truecolor'.
+
+4.5 My color_xterm goes completely (or partially) black!
+
+   Some color_xterm terminals define all colors as black instead of the
+   standard ANSI colors.  This makes them go completely black when you
+   try to use colors.
+
+   You will have to override the defaults.  Create a file
+   "color.defaults" which has the following contents:
+
+    color_xterm*color0:           Black
+    color_xterm*color1:           Red
+    color_xterm*color2:           Green
+    color_xterm*color3:           Yellow
+    color_xterm*color4:           Blue
+    color_xterm*color5:           Magenta
+    color_xterm*color6:           Cyan
+    color_xterm*color7:           White
+    color_xterm*background:       White
+    color_xterm*foreground:       Black
+
+   (replace color_xterm with the name of your color_xterm, color_xterm
+   mentions its name in its title bar)
+
+   Now type:
+
+    xrdb -merge color.defaults
+
+   Alternatively you can add the suggested contents of the
+   color.defaults file to your .Xdefaults or .Xresources file (or what
+   ever the name of your X configuration file is).  Or you can replace
+   your non-ANSI color_xterm with an ANSI color_xterm.
+
+4.6 I got colors working here but the other programs don't work at all
+anymore!
+
+   This program uses the terminfo database (if available) but many other
+   programs use the termcap database.  If you set the TERM environment
+   variable to a value which has no corresponding entry in the termcap
+   database those programs stop working.  You should add the new value
+   of TERM to the termcap database.
+
+   Example: If you have set TERM to xterm-color locate from /etc/termcap
+   the line which starts:
+
+    xterm|vs100|xterm terminal emulator
+
+   Change it to start:
+
+    xterm|xterm-color|vs100|xterm terminal emulator
+
+4.7 How do I change the colors of the program itself?
+
+   Colors come from a skin file.  Options -> Appearance lists the skins
+   that are installed and applies one at once; the choice is kept in
+   ~/.config/coole/ini.  "coole -S name" picks a skin for one run.
+
+   System skins live in /usr/share/coole/skins, your own in
+   ~/.local/share/coole/skins.  A skin is a plain ini file, so copying
+   one of the system skins into your own directory and editing it is the
+   usual way to make your own.
+
+4.8 Why is the program linked with X libraries?
+
+   It reads key modifiers from the X server, which helps to tell apart
+   keys that the terminal emulator reports in the same way, e.g. PgUp
+   and Ctrl-PgUp.  The libraries are loaded dynamically on the systems
+   that support it, and "coole -V" says whether this build has the
+   support at all.  "coole -X" turns it off for one run.
+
+
+5 Editing
+
+5.1 When I try pasting, the amount of indenting increases with each
+line!
+
+   Turn off 'Return does autoindent' in the editor options, or hold
+   Shift while you paste, which suspends the autoindent.
+
+5.2 How do I add syntax highlighting for my language?
+
+   The rules are in /usr/share/coole/syntax, one file per language, and
+   the file Syntax there says which of them a file name gets.  To add or
+   change a rule, copy the syntax directory to
+   ~/.local/share/coole/syntax, edit your copy, and the editor takes it
+   instead of the system one.
+
+   The editor also has code folding (Command -> Fold / Unfold block),
+   an undo history on Alt-Shift-u and a macro explorer on Alt-Shift-m;
+   a filter on Alt-s hides every line that does not match, which is a
+   quick way through a log.
+
+5.3 Is there any way to include additional commands?
+
+   Yes, F11 invokes a user menu, which is fully configurable.  You can
+   add any shell commands to it.  The editor reads .coole.menu in the
+   current directory, then ~/.config/coole/menu, then the system-wide
+   /etc/coole/coole.menu; Options -> Menu file edits it.  The coole(1)
+   man page describes the format.
+
+   Editor plugins and Lua scripts add commands too, see 5.4.
+
+   And finally, you can code any feature you want yourself.  The source
+   code is free, which means you can change it any way you want.  There
+   are some limitations to make sure it stays free.  See the GNU General
+   Public License for details.
+
+5.4 What are editor plugins and Lua scripts?
+
+   An editor plugin is a shared library that adds commands to the
+   editor menus, for example the ctags source navigator.  The ctags,
+   etags and spell plugins are built into the program; others are
+   loaded from $libdir/coole/editor-plugins and from
+   ~/.local/lib/coole/editor-plugins.  doc/PLUGINS in the source
+   distribution describes how to write one.
+
+   Lua scripts are smaller and need no compiler.  They live in
+   /usr/share/coole/lua/scripts and in ~/.local/share/coole/lua/scripts,
+   and a script with the same name in your own directory shadows the
+   system one.  doc/LUA_PLUGINS.md and doc/LUA_API_REFERENCE.md describe
+   what they can do.  "coole --no-lua" starts without them.
+
+5.5 How do I turn a plugin off, or configure it?
+
+   Options -> Manage plugins lists the plugins, with a switch for each.
+   What you turn off there is not loaded at the next start; the state
+   is kept in ~/.config/coole/plugins.ini.
+
+   A plugin that has settings of its own opens them from that same
+   dialog with Enter or F4.
+
+
+6 Configuration files
+
+6.1 Where does the program keep my settings?
+
+   In three directories, following the XDG layout:
+
+     ~/.config/coole        ini, keymap.ini, menu, learned keys,
+                            plugin settings
+     ~/.local/share/coole   skins, syntax, Lua scripts, editor files
+     ~/.cache/coole         data that can be thrown away
+
+   Editor plugins of your own live in ~/.local/lib/coole.  "coole -F"
+   prints every one of these paths, which is the quickest way to see
+   where a particular file went.
+
+
+7 Other common problems
+
+7.1 When I start the program, nothing happens!
+
+   One reason is problems with gpm.  Try the "--nomouse" option to
+   see if it makes any difference.  Restarting gpm can help.  Sometimes
+   it's enough to move the mouse.
+
+   Also, if you have the DISPLAY environment variable set, but the X
+   server is unreachable (e.g. it's firewalled), this can also cause a
+   delay at startup.  Unset DISPLAY, or run "coole -X", to see if that's
+   the case.
+
+
+8 Development
+
+8.1 Who has written this?
+
+   coole is maintained by Ilia Maslakov.  It continues cooledit, written
+   by Paul Sheer, and the work of the many people who developed that
+   editor since.  The AUTHORS file lists them all.
+
+8.2 Do I dare to use a development version?
+
+   Yes, of course.  The master branch of
+
+     https://github.com/blue-panels/coole
+
+   is where the work happens; check it out and build it as the INSTALL
+   file describes.
+
+   But always remember: development versions may have nasty bugs at some
+   points of time.  It's up to you to judge whether the new features and
+   fixes for the bugs you know outweigh the risk of unknown bugs.
+
+8.3 How can I report a bug/request for a feature?
+
+   You might first want to get the newest development version to see if
+   the bug is fixed or the feature is added already.
+
+   If this is not the case, open a ticket at
+
+     https://github.com/blue-panels/coole/issues
+
+   Bugs of coole do not belong to the upstream project, and bugs of
+   the upstream program do not belong here.
+
+   Give as many details as possible.  A too long message is a lot better
+   than a too short message.  Say which version you run ("coole -V"),
+   which terminal and which operating system.
+
+   For segmentation faults a stack backtrace is appreciated.  You can
+   produce a stack backtrace as follows:
+     * If the segmentation fault produced a core file:
+         1. Load the core file by typing "gdb coole core".
+         2. Type "where".
+         3. Cut and paste the results into your report.
+     * If the segmentation fault didn't produce a core file:
+         1. Load coole by typing "gdb coole".
+         2. Start coole by typing "run".
+         3. Try to reproduce the segmentation fault by doing whatever
+            you did last time when the segmentation fault occurred.
+         4. Type "where".
+         5. Cut and paste the results into your report.
+         6. For the future you might want to check out what the command
+            in your shell is to allow producing of core files.  Usually
+            it is "ulimit -c unlimited".
+
+8.4 How can I join the development?
+
+   Send a pull request on GitHub, or open a ticket with the patch.
+   Before you start coding, check the latest development version; it
+   might be that your feature has already been implemented.  The HACKING
+   file describes how the source is laid out and how it is formatted.
+
+   The code you write stays yours.  coole asks for no copyright
+   assignment.
+
+8.5 How can I help with translations?
+
+   The program strings are in the po files under po/, and the manual
+   pages are in doc/man; send changes to them as a pull request.
+
+
+9 More information
+
+9.1 This document didn't answer my question.  Where else can I look
+for an answer?
+
+   Press F1: the built-in help is the manual page, and it covers nearly
+   everything.  The wiki has the longer guides:
+
+     https://github.com/blue-panels/coole/wiki
+
+   Upgrade to a newer version.  Many problems are fixed in the new
+   versions.
+
+   If you still can't find an answer, ask in a ticket at
+   https://github.com/blue-panels/coole/issues .
+
+9.2 Where should I look on the World Wide Web?
+
+   The project lives at
+
+     https://github.com/blue-panels/coole
+
+
+10 Legal issues
+
+10.1 Authorship
+
+   Questions and Answers was written by Janne Kukonlehto for GNU
+   Midnight Commander.  Parts of it originate from Ian Jackson, Miguel
+   de Icaza, Dugan Porter, Norbert Warmuth and Paul Sheer.  It was
+   rewritten for coole, keeping the answers that concern the editor and
+   the terminal.
+
+10.2 Feedback is invited
+
+   Send your comments about this document and about the program to
+   https://github.com/blue-panels/coole/issues .
+
+10.3 Disclaimer and copyright
+
+   Note that this document is provided as is.  The information in it is
+   not warranted to be correct; you use it at your own risk.
+
+   You can use Questions and Answers according to the GNU General Public
+   License (see the COPYING file in the source distribution).  Questions
+   and Answers is not public domain.

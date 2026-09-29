@@ -1,0 +1,583 @@
+/*
+   Dialog box features module for the Midnight Commander
+
+   Copyright (C) 1994-2025
+   Free Software Foundation, Inc.
+
+   This file is part of the Midnight Commander.
+
+   The Midnight Commander is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   The Midnight Commander is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/** \file dialog.c
+ *  \brief Source: dialog box features module
+ */
+
+#include <config.h>
+
+#include <stdlib.h>
+
+#include "lib/global.h"
+
+#include "lib/tty/tty.h"
+#include "lib/skin.h"
+#include "lib/tty/key.h"
+#include "lib/strutil.h"
+#include "lib/event.h"  // mc_event_raise()
+#include "lib/util.h"   // MC_PTR_FREE
+
+#include "lib/widget.h"
+#include "lib/widget/mouse.h"
+
+/*** global variables ****************************************************************************/
+
+/* Color styles for normal and error dialogs */
+dlg_colors_t dialog_colors;
+dlg_colors_t alarm_colors;
+dlg_colors_t listbox_colors;
+dlg_colors_t help_colors;
+
+/* A hook list for idle events */
+hook_t *idle_hook = NULL;
+
+/* left click outside of dialog closes it */
+gboolean mouse_close_dialog = FALSE;
+
+const global_keymap_t *dialog_map = NULL;
+
+/*** file scope macro definitions ****************************************************************/
+
+/*** file scope type declarations ****************************************************************/
+
+/*** forward declarations (file scope functions) *************************************************/
+
+/*** file scope variables ************************************************************************/
+
+/* --------------------------------------------------------------------------------------------- */
+/*** file scope functions ************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+static const int *
+dlg_default_get_colors (const Widget *w)
+{
+    return CONST_DIALOG (w)->colors;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+refresh_cmd (void)
+{
+#ifdef HAVE_SLANG
+    tty_touch_screen ();
+    mc_refresh ();
+#else
+    // Use this if the refreshes fail
+    tty_clear_screen ();
+    repaint_screen ();
+#endif
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+dlg_help (const WDialog *h)
+{
+    ev_help_t event_data = { h->help_file, h->help_ctx, NULL };
+
+    mc_event_raise (MCEVENT_GROUP_CORE, "help", &event_data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static cb_ret_t
+dlg_execute_cmd (WDialog *h, long command)
+{
+    WGroup *g = GROUP (h);
+    cb_ret_t ret = MSG_HANDLED;
+
+    if (send_message (h, NULL, MSG_ACTION, command, NULL) == MSG_HANDLED)
+        return MSG_HANDLED;
+
+    switch (command)
+    {
+    case CK_Ok:
+        h->ret_value = B_ENTER;
+        dlg_close (h);
+        break;
+    case CK_Cancel:
+        h->ret_value = B_CANCEL;
+        dlg_close (h);
+        break;
+
+    case CK_Up:
+    case CK_Left:
+        group_select_prev_widget (g);
+        break;
+    case CK_Down:
+    case CK_Right:
+        group_select_next_widget (g);
+        break;
+
+    case CK_Help:
+        dlg_help (h);
+        break;
+
+    case CK_Suspend:
+        mc_event_raise (MCEVENT_GROUP_CORE, "suspend", NULL);
+        refresh_cmd ();
+        break;
+    case CK_Refresh:
+        refresh_cmd ();
+        break;
+
+    case CK_ScreenList:
+        if (!widget_get_state (WIDGET (h), WST_MODAL))
+            dialog_switch_list ();
+        else
+            ret = MSG_NOT_HANDLED;
+        break;
+    case CK_ScreenNext:
+        if (!widget_get_state (WIDGET (h), WST_MODAL))
+            dialog_switch_next ();
+        else
+            ret = MSG_NOT_HANDLED;
+        break;
+    case CK_ScreenPrev:
+        if (!widget_get_state (WIDGET (h), WST_MODAL))
+            dialog_switch_prev ();
+        else
+            ret = MSG_NOT_HANDLED;
+        break;
+
+    default:
+        ret = MSG_NOT_HANDLED;
+    }
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static cb_ret_t
+dlg_handle_key (WDialog *h, int d_key)
+{
+    long command;
+
+    command = widget_lookup_key (WIDGET (h), d_key);
+    if (command == CK_IgnoreKey)
+        command = keybind_lookup_keymap_command (dialog_map, d_key);
+    if (command != CK_IgnoreKey)
+        return dlg_execute_cmd (h, command);
+
+    return MSG_NOT_HANDLED;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+dlg_key_event (WDialog *h, int d_key)
+{
+    Widget *w = WIDGET (h);
+    WGroup *g = GROUP (h);
+    cb_ret_t handled;
+
+    if (g->widgets == NULL)
+        return;
+
+    if (g->current == NULL)
+        g->current = g->widgets;
+
+    // TAB used to cycle
+    if (!widget_get_options (w, WOP_WANT_TAB))
+    {
+        if (d_key == '\t')
+        {
+            group_select_next_widget (g);
+            return;
+        }
+        else if ((d_key & ~(KEY_M_SHIFT | KEY_M_CTRL)) == '\t')
+        {
+            group_select_prev_widget (g);
+            return;
+        }
+    }
+
+    // first can dlalog handle the key itself
+    handled = send_message (h, NULL, MSG_KEY, d_key, NULL);
+
+    if (handled == MSG_NOT_HANDLED)
+        handled = group_default_callback (w, NULL, MSG_KEY, d_key, NULL);
+
+    if (handled == MSG_NOT_HANDLED)
+        handled = dlg_handle_key (h, d_key);
+
+    (void) handled;
+    send_message (h, NULL, MSG_POST_KEY, d_key, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+dlg_handle_mouse_event (Widget *w, Gpm_Event *event)
+{
+    if (w->mouse_callback != NULL)
+    {
+        int mou;
+
+        mou = mouse_handle_event (w, event);
+        if (mou != MOU_UNHANDLED)
+            return mou;
+    }
+
+    return group_handle_mouse_event (w, event);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+frontend_dlg_run (WDialog *h)
+{
+    Widget *wh = WIDGET (h);
+    Gpm_Event event;
+
+    event.x = -1;
+
+    // close opened editors, etc
+    if (!widget_get_state (wh, WST_MODAL) && mc_global.shutdown)
+    {
+        send_message (h, NULL, MSG_VALIDATE, 0, NULL);
+        return;
+    }
+
+    while (widget_get_state (wh, WST_ACTIVE))
+    {
+        int d_key;
+
+        if (tty_got_winch ())
+            dialog_change_screen_size ();
+
+        if (is_idle ())
+        {
+            if (idle_hook)
+                execute_hooks (idle_hook);
+
+            while (widget_get_state (wh, WST_IDLE) && is_idle ())
+                send_message (wh, NULL, MSG_IDLE, 0, NULL);
+
+            // Allow terminating the dialog from the idle handler
+            if (!widget_get_state (wh, WST_ACTIVE))
+                break;
+        }
+
+        widget_update_cursor (wh);
+
+        // Clear interrupt flag
+        tty_got_interrupt ();
+        d_key = tty_get_event (&event, GROUP (h)->mouse_status == MOU_REPEAT, TRUE);
+
+        dlg_process_event (h, d_key, &event);
+
+        if (widget_get_state (wh, WST_CLOSED))
+            send_message (h, NULL, MSG_VALIDATE, 0, NULL);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+dlg_default_destroy (Widget *w)
+{
+    WDialog *h = DIALOG (w);
+
+    // if some widgets have history, save all histories at one moment here
+    history_save (h, NULL);
+    group_default_callback (w, NULL, MSG_DESTROY, 0, NULL);
+    send_message (w, NULL, MSG_DESTROY, 0, NULL);
+    mc_event_group_del (h->event_group);
+    g_free (h->event_group);
+    g_free (h);
+
+    do_refresh ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+/** Default dialog callback */
+
+cb_ret_t
+dlg_default_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    switch (msg)
+    {
+    case MSG_INIT:
+        // nothing to init in dialog itself
+        return MSG_HANDLED;
+
+    case MSG_IDLE:
+        // we don't want endless loop
+        widget_idle (w, FALSE);
+        return MSG_HANDLED;
+
+    case MSG_DESTROY:
+        // nothing to deinit in dialog itself
+        return MSG_HANDLED;
+
+    default:
+        return group_default_callback (w, sender, msg, parm, data);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+dlg_default_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
+{
+    switch (msg)
+    {
+    case MSG_MOUSE_CLICK:
+        if (event->y < 0 || event->y >= w->rect.lines || event->x < 0 || event->x >= w->rect.cols)
+        {
+            DIALOG (w)->ret_value = B_CANCEL;
+            dlg_close (DIALOG (w));
+        }
+        break;
+
+    default:
+        // return MOU_UNHANDLED
+        event->result.abort = TRUE;
+        break;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+WDialog *
+dlg_create (gboolean modal, int y1, int x1, int lines, int cols, widget_pos_flags_t pos_flags,
+            gboolean compact, const int *colors, widget_cb_fn callback,
+            widget_mouse_cb_fn mouse_callback, const char *help_ctx, const char *title)
+{
+    WRect r = { y1, x1, lines, cols };
+    WDialog *new_d;
+    Widget *w;
+    WGroup *g;
+
+    new_d = g_new0 (WDialog, 1);
+    w = WIDGET (new_d);
+    g = GROUP (new_d);
+    widget_adjust_position (pos_flags, &r);
+    group_init (g, &r, callback != NULL ? callback : dlg_default_callback,
+                mouse_callback != NULL ? mouse_callback : dlg_default_mouse_callback);
+
+    w->pos_flags = pos_flags;
+    w->options |= WOP_SELECTABLE | WOP_TOP_SELECT;
+    w->state |= WST_FOCUSED;
+    // Temporary hack: dialog doesn't have an owner, own itself.
+    w->owner = g;
+
+    w->keymap = dialog_map;
+
+    w->mouse_handler = dlg_handle_mouse_event;
+    w->mouse.forced_capture = mouse_close_dialog && (w->pos_flags & WPOS_FULLSCREEN) == 0;
+
+    w->destroy = dlg_default_destroy;
+    w->get_colors = dlg_default_get_colors;
+
+    new_d->colors = colors;
+    new_d->help_ctx = help_ctx;
+    new_d->compact = compact;
+    new_d->data.p = NULL;
+
+    if (modal)
+    {
+        w->state |= WST_MODAL;
+
+        new_d->bg =
+            WIDGET (frame_new (0, 0, w->rect.lines, w->rect.cols, title, FALSE, new_d->compact));
+        group_add_widget (g, new_d->bg);
+        frame_set_title (FRAME (new_d->bg), title);
+    }
+
+    // unique name of event group for this dialog
+    new_d->event_group = g_strdup_printf ("%s_%p", MCEVENT_GROUP_DIALOG, (void *) new_d);
+
+    return new_d;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+dlg_set_default_colors (void)
+{
+    dialog_colors[DLG_COLOR_NORMAL] = DIALOG_NORMAL_COLOR;
+    dialog_colors[DLG_COLOR_FOCUS] = DIALOG_FOCUS_COLOR;
+    dialog_colors[DLG_COLOR_HOT_NORMAL] = DIALOG_HOT_NORMAL_COLOR;
+    dialog_colors[DLG_COLOR_HOT_FOCUS] = DIALOG_HOT_FOCUS_COLOR;
+    dialog_colors[DLG_COLOR_SELECTED_NORMAL] = DIALOG_SELECTED_NORMAL_COLOR;
+    dialog_colors[DLG_COLOR_SELECTED_FOCUS] = DIALOG_SELECTED_FOCUS_COLOR;
+    dialog_colors[DLG_COLOR_TITLE] = DIALOG_TITLE_COLOR;
+    dialog_colors[DLG_COLOR_FRAME] = DIALOG_FRAME_COLOR;
+
+    alarm_colors[DLG_COLOR_NORMAL] = ERROR_NORMAL_COLOR;
+    alarm_colors[DLG_COLOR_FOCUS] = ERROR_FOCUS_COLOR;
+    alarm_colors[DLG_COLOR_HOT_NORMAL] = ERROR_HOT_NORMAL_COLOR;
+    alarm_colors[DLG_COLOR_HOT_FOCUS] = ERROR_HOT_FOCUS_COLOR;
+    alarm_colors[DLG_COLOR_SELECTED_NORMAL] = ERROR_HOT_FOCUS_COLOR;  // unused
+    alarm_colors[DLG_COLOR_SELECTED_FOCUS] = ERROR_FOCUS_COLOR;       // unused
+    alarm_colors[DLG_COLOR_TITLE] = ERROR_TITLE_COLOR;
+    alarm_colors[DLG_COLOR_FRAME] = ERROR_FRAME_COLOR;
+
+    listbox_colors[DLG_COLOR_NORMAL] = PMENU_ENTRY_COLOR;
+    listbox_colors[DLG_COLOR_FOCUS] = PMENU_SELECTED_COLOR;
+    listbox_colors[DLG_COLOR_HOT_NORMAL] = PMENU_ENTRY_COLOR;
+    listbox_colors[DLG_COLOR_HOT_FOCUS] = PMENU_SELECTED_COLOR;
+    listbox_colors[DLG_COLOR_SELECTED_NORMAL] = PMENU_SELECTED_COLOR;  // unused
+    listbox_colors[DLG_COLOR_SELECTED_FOCUS] = PMENU_SELECTED_COLOR;   // unused
+    listbox_colors[DLG_COLOR_TITLE] = PMENU_TITLE_COLOR;
+    listbox_colors[DLG_COLOR_FRAME] = PMENU_FRAME_COLOR;
+
+    help_colors[DLG_COLOR_NORMAL] = HELP_NORMAL_COLOR;
+    help_colors[DLG_COLOR_FOCUS] = 0;  // unused
+    help_colors[DLG_COLOR_HOT_NORMAL] = HELP_BOLD_COLOR;
+    help_colors[DLG_COLOR_HOT_FOCUS] = 0;        // unused
+    help_colors[DLG_COLOR_SELECTED_NORMAL] = 0;  // unused
+    help_colors[DLG_COLOR_SELECTED_FOCUS] = 0;   // unused
+    help_colors[DLG_COLOR_TITLE] = HELP_TITLE_COLOR;
+    help_colors[DLG_COLOR_FRAME] = HELP_FRAME_COLOR;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+dlg_close (WDialog *h)
+{
+    widget_set_state (WIDGET (h), WST_CLOSED, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** Init the process */
+
+void
+dlg_init (WDialog *h)
+{
+    WGroup *g = GROUP (h);
+    Widget *wh = WIDGET (h);
+
+    if (top_dlg != NULL && widget_get_state (WIDGET (top_dlg->data), WST_MODAL))
+        widget_set_state (wh, WST_MODAL, TRUE);
+
+    // add dialog to the stack
+    top_dlg = g_list_prepend (top_dlg, h);
+
+    // Initialize dialog manager and widgets
+    if (widget_get_state (wh, WST_CONSTRUCT))
+    {
+        if (!widget_get_state (wh, WST_MODAL))
+            dialog_switch_add (h);
+
+        send_message (h, NULL, MSG_INIT, 0, NULL);
+        group_default_callback (wh, NULL, MSG_INIT, 0, NULL);
+        history_load (h, NULL);
+    }
+
+    // Select the first widget that takes focus
+    while (g->current != NULL && !widget_is_focusable (g->current->data))
+        group_set_current_widget_next (g);
+
+    widget_set_state (wh, WST_ACTIVE, TRUE);
+    widget_draw (wh);
+
+    h->ret_value = 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+dlg_process_event (WDialog *h, int key, Gpm_Event *event)
+{
+    switch (key)
+    {
+    case EV_NONE:
+        if (tty_got_interrupt ())
+            dlg_execute_cmd (h, CK_Cancel);
+        break;
+
+    case EV_MOUSE:
+    {
+        Widget *w = WIDGET (h);
+
+        GROUP (h)->mouse_status = w->mouse_handler (w, event);
+        break;
+    }
+
+    default:
+        dlg_key_event (h, key);
+        break;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** Shutdown the dlg_run */
+
+void
+dlg_run_done (WDialog *h)
+{
+    top_dlg = g_list_remove (top_dlg, h);
+
+    if (widget_get_state (WIDGET (h), WST_CLOSED))
+    {
+        send_message (h, GROUP (h)->current == NULL ? NULL : WIDGET (GROUP (h)->current->data),
+                      MSG_END, 0, NULL);
+        if (!widget_get_state (WIDGET (h), WST_MODAL))
+            dialog_switch_remove (h);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Standard run dialog routine
+ * We have to keep this routine small so that we can duplicate it's
+ * behavior on complex routines like the file routines, this way,
+ * they can call the dlg_process_event without rewriting all the code
+ */
+
+int
+dlg_run (WDialog *h)
+{
+    dlg_init (h);
+    frontend_dlg_run (h);
+    dlg_run_done (h);
+    return h->ret_value;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+dlg_get_title (const WDialog *h, const ssize_t width)
+{
+    char *t;
+
+    if (h == NULL)
+        abort ();
+
+    if (h->get_title != NULL)
+        t = h->get_title (h, width);
+    else
+        t = g_strdup ("");
+
+    return t;
+}
+
+/* --------------------------------------------------------------------------------------------- */

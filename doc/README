@@ -1,0 +1,62 @@
+The documentation of coole
+--------------------------
+
+coole is a console text editor, a continuation of cooledit.  The
+top-level README.md says what it does and how to start it.
+
+This directory holds:
+
+* INSTALL
+    What is needed to build coole, the configure options, and how to
+    build and install it.  The file INSTALL at the top of the tree
+    points here.
+
+* HACKING
+    How the source is laid out, how it is formatted, and some
+    programming tips.
+
+* FAQ
+    Frequently asked questions: keys, the mouse, colors, the terminal,
+    editing and the configuration files.
+
+* PLUGINS
+    How to write an editor plugin: the API in lib/editor-plugin.h, how
+    plugins are loaded, and a minimal example.
+
+* LUA_PLUGINS.md, LUA_API_REFERENCE.md, lua-api.json
+    The Lua scripts that the Lua runtime plugin runs in the editor:
+    how to write one, and the reference of the API they see.  These are
+    installed into the documentation directory.
+
+* man/
+    The manual page, coole.1, and its translations.  The page is
+    written in markdown (coole.md); the roff under roff/ is made from
+    it by maint/update-man-in.sh.
+
+* hlp/
+    The help the program shows on F1, which is the markdown of the
+    manual page.
+
+* COPYING
+    The GNU General Public License, version 3.
+
+
+Reporting problems
+------------------
+
+Report bugs in coole on its issue tracker:
+
+https://github.com/blue-panels/coole/issues
+
+Include the output of "coole --version", the operating system and the
+distribution (if applicable) you are using, the compiler and the
+configure flags used to compile the program (if you know them;
+"coole --configure-options" prints them).
+
+If the program crashed and produced a core dump, please provide a
+stack trace of the program.
+
+You can do this by running gdb like this:
+
+gdb coole core
+(gdb) where

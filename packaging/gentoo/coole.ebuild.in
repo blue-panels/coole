@@ -1,0 +1,56 @@
+# Copyright 2026 Ilia Maslakov
+# Distributed under the terms of the GNU General Public License v2
+
+EAPI=8
+
+inherit meson optfeature
+
+DESCRIPTION="Console text editor, a continuation of cooledit"
+HOMEPAGE="https://github.com/blue-panels/coole"
+SRC_URI="https://github.com/blue-panels/coole/releases/download/coole-${PV}/coole-${PV}.tar.gz"
+S="${WORKDIR}/coole-${PV}"
+
+LICENSE="GPL-3+"
+SLOT="0"
+KEYWORDS="~amd64 ~arm64"
+IUSE="+gpm +lua +slang test X"
+RESTRICT="!test? ( test )"
+
+COMMON_DEPEND="
+	dev-libs/glib:2
+	slang? ( sys-libs/slang )
+	!slang? ( sys-libs/ncurses:0= )
+	gpm? ( sys-libs/gpm )
+	lua? ( dev-lang/lua:0= )
+	X? ( x11-libs/libX11 )
+"
+RDEPEND="${COMMON_DEPEND}"
+DEPEND="
+	${COMMON_DEPEND}
+	test? ( dev-libs/check )
+"
+BDEPEND="
+	sys-devel/gettext
+	virtual/pkgconfig
+"
+
+src_configure() {
+	local emesonargs=(
+		-Dscreen="$(usex slang slang ncurses)"
+		-Deditor_plugins_dir="/usr/$(get_libdir)/coole/editor-plugins"
+		-Druntime_plugins_dir="/usr/$(get_libdir)/coole/runtime-plugins"
+		$(meson_feature gpm)
+		$(meson_feature lua)
+		$(meson_feature test tests)
+		$(meson_feature X x11)
+		-Dnls=enabled
+	)
+	meson_src_configure
+}
+
+DOCS=( CHANGELOG.md README.md )
+
+pkg_postinst() {
+	optfeature "spell checking" app-text/aspell app-text/hunspell
+	optfeature "the tag index the editor reads" dev-util/ctags
+}

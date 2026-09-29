@@ -1,0 +1,91 @@
+Name:            coole
+Version:         @VERSION@
+Release:         1%{?dist}
+Summary:         Console text editor, a continuation of cooledit
+License:         GPL-3.0-or-later
+URL:             https://github.com/blue-panels/coole
+Source0:         %{url}/releases/download/coole-%{version}/coole-%{version}.tar.gz
+
+BuildRequires:   check-devel
+BuildRequires:   gcc
+BuildRequires:   gettext
+BuildRequires:   glib2-devel
+BuildRequires:   gpm-devel
+BuildRequires:   meson >= 0.61
+BuildRequires:   pkgconf-pkg-config
+BuildRequires:   slang-devel
+BuildRequires:   lua-devel
+BuildRequires:   libX11-devel
+
+Recommends:      %{name}-lua%{?_isa} = %{version}-%{release}
+Suggests:        libX11
+Suggests:        aspell
+Suggests:        hunspell
+Suggests:        ctags
+
+%description
+coole is a console text editor that continues cooledit by Paul Sheer.  It has syntax highlighting, code folding, an
+undo history browser, keyboard macros with a macro explorer, ctags and etags
+navigation, spell checking through aspell or hunspell loaded at run time, a
+user menu, multiple windows, skins and editable key bindings.
+
+%package lua
+Summary:         Lua runtime and scripts for the coole text editor
+Requires:        %{name}%{?_isa} = %{version}-%{release}
+
+%description lua
+The Lua runtime plugin that coole loads at run time, and the editor scripts
+that come with it, such as inserting the date and time, sorting the
+selection, formatting a paragraph, drawing a table or inserting the output of
+a command.  Without this package coole runs, and the features written in Lua
+are absent.
+
+%prep
+%autosetup -n %{name}-%{version}
+
+%build
+# The archive carries its version in .tarball-version.
+%meson \
+    -Dscreen=slang \
+    -Deditor_plugins_dir=%{_libdir}/coole/editor-plugins \
+    -Druntime_plugins_dir=%{_libdir}/coole/runtime-plugins \
+    -Dlua=enabled
+%meson_build
+
+%install
+%meson_install
+%find_lang %{name}
+# The Lua documentation is listed as %%doc below, which puts it in place
+# itself; what the install left behind would be packaged twice.
+rm -rf %{buildroot}%{_docdir}/%{name}
+
+%check
+%meson_test
+
+%files -f %{name}.lang
+%license COPYING
+%doc README.md CHANGELOG.md
+%doc doc/LUA_API_REFERENCE.md doc/LUA_PLUGINS.md doc/lua-api.json
+%{_bindir}/coole
+# Owned here so that the directory does not depend on the lua subpackage.
+%dir %{_datadir}/coole/
+%{_datadir}/coole/charsets
+%{_datadir}/coole/defaults.ini
+%{_datadir}/coole/examples/
+%{_datadir}/coole/help/
+%{_datadir}/coole/skins/
+%{_datadir}/coole/syntax/
+%dir %{_sysconfdir}/coole/
+%config(noreplace) %{_sysconfdir}/coole/*
+%{_mandir}/man1/coole.1*
+# The translated manuals.
+%{_mandir}/*/man1/coole.1*
+# Owned here so that the directory does not depend on the lua subpackage.
+%dir %{_libdir}/coole/
+
+%files lua
+%{_libdir}/coole/runtime-plugins/
+%{_datadir}/coole/lua/
+
+%changelog
+@CHANGELOG@

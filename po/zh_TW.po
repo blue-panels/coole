@@ -1,0 +1,2741 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# linwebs <thomas881114@gmail.com>, 2020
+# MP Wang, 2023
+# MP Wang, 2025
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Chinese (Traditional Han script) <https://translate.codeberg."
+"org/projects/mc6/mc6/zh_Hant/>\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "警告: 無法讀取字碼頁列表"
+
+msgid "7-bit ASCII"
+msgstr "7位元 ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "無法由 %s 轉換到 %s"
+
+msgid "Event system already initialized"
+msgstr "事件系統已被初始化"
+
+msgid "Failed to initialize event system"
+msgstr "初始化事件系統失敗"
+
+msgid "Event system not initialized"
+msgstr "事件系統尚未初始化"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "請檢查輸入的資料! 有參數為空!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "無法建立群組 '%s' !"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "無法建立事件 '%s'!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Page Down 鍵"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+msgid "Top of screen"
+msgstr ""
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "比較檔案"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "刪除鍵"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "使用者自訂(&U)："
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "使用者選單"
+
+#, fuzzy
+msgid "Search next"
+msgstr "搜尋完畢"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "取代"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "終端機選項"
+
+msgid "Edit file"
+msgstr "編輯檔案"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "編輯檔案"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "所有字元"
+
+#, fuzzy
+msgid "Command history"
+msgstr "指令"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "儲存為..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "前往此行"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "重新整理螢幕 (&R)"
+
+msgid "Suspend to shell"
+msgstr ""
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "重新整理螢幕 (&R)"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "重新整理螢幕 (&R)"
+
+#, fuzzy
+msgid "Next file"
+msgstr "插入檔案"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "關閉檔案"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "數字區的 Del 鍵"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "數字區的 Del 鍵"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "數字區的 Del 鍵"
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "剪下到剪貼簿"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "複製到剪貼簿"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "從剪貼簿中貼上"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "在選擇中"
+
+#, fuzzy
+msgid "Select left"
+msgstr "選取"
+
+#, fuzzy
+msgid "Select right"
+msgstr "選取"
+
+#, fuzzy
+msgid "Select up"
+msgstr "選取群組"
+
+#, fuzzy
+msgid "Select down"
+msgstr "選取"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "選取比對方式:"
+
+msgid "Select to line start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "選取語言"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "排序... (&S)"
+
+#, fuzzy
+msgid "General options"
+msgstr "終端機選項"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "學習快捷鍵"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "標示區設定"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "檔案操作"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "出現..."
+
+#, fuzzy
+msgid "Save setup"
+msgstr "儲存設定"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+msgid "Previous link"
+msgstr ""
+
+msgid "Next node"
+msgstr ""
+
+msgid "Previous node"
+msgstr ""
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "取消選取"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "選取群組"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "選取語言"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "關閉檔案"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "擴充檔案編輯"
+
+#, fuzzy
+msgid "Select word"
+msgstr "選取"
+
+#, fuzzy
+msgid "Select line"
+msgstr "選取語言"
+
+#, fuzzy
+msgid "Select all"
+msgstr "選取"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "在選擇中"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "儲存區塊"
+
+msgid "Insert file"
+msgstr "插入檔案"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "切換插入/覆寫 (&T)"
+
+msgid "Insert date/time (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Delete line"
+msgstr "刪除中"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "檔案1 檔案2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "歷史紀錄"
+
+msgid "Format paragraph (Lua action)"
+msgstr ""
+
+msgid "Match bracket"
+msgstr ""
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "重複最後的指令"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "拼字檢查 (&P)"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "拼字檢查 (&P)"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "選取語言"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "清除標示區"
+
+msgid "Next bookmark"
+msgstr ""
+
+msgid "Previous bookmark"
+msgstr ""
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "尋找全部"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "切換插入/覆寫 (&T)"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "欲切換到的檔案已遺失"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "選取比對方式:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "選取比對方式:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "選取比對方式:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "選取群組"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "選取群組"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "取消選取群組"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "取消選取群組"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "在選擇中"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "取消選取群組"
+
+msgid "Column select scroll down"
+msgstr ""
+
+msgid "Column select paragraph up"
+msgstr ""
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+msgid "Toggle visible tabs/spaces"
+msgstr ""
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "依語法改變顏色"
+
+msgid "Choose syntax highlighting"
+msgstr ""
+
+msgid "Toggle right margin"
+msgstr ""
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "主要選項"
+
+msgid "About editor"
+msgstr ""
+
+#, fuzzy
+msgid "Execute script"
+msgstr "可執行檔優先 (&F)"
+
+msgid "Move window"
+msgstr ""
+
+msgid "Resize window"
+msgstr ""
+
+msgid "Toggle fullscreen"
+msgstr ""
+
+msgid "Window list"
+msgstr ""
+
+msgid "Next window"
+msgstr ""
+
+msgid "Previous window"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"檔案 \"%s\" 已經被編輯.\n"
+"使用者: %s\n"
+"處理程序編號: %d"
+
+msgid "File locked"
+msgstr "檔案已鎖定"
+
+msgid "&Grab lock"
+msgstr ""
+
+msgid "&Ignore lock"
+msgstr "忽略鎖定 (&I)"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "無法建立目錄 %s"
+
+msgid "FATAL: not a directory:"
+msgstr "錯誤: 不是一個目錄"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr "數字超出範圍 (應在 byte 範圍內，0 <= n <= 0xFF，以十六進制表示)"
+
+msgid "Invalid character"
+msgstr "無效的字元"
+
+msgid "Unmatched quotes character"
+msgstr "引號未配成對"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"十六進制的位置錯誤 %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "未搜尋到字串"
+
+msgid "Not implemented yet"
+msgstr "尚未實作"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "要取代的 tokens 數量與找到的 tokens 數量不同"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "無效的 token 號碼 %d"
+
+msgid "Regular expression error"
+msgstr " 正規表示式錯誤"
+
+msgid "No&rmal"
+msgstr "一般"
+
+msgid "Re&gular expression"
+msgstr " 正規表示式 "
+
+msgid "He&xadecimal"
+msgstr "十六進制 (&X)"
+
+msgid "Wil&dcard search"
+msgstr "萬用搜尋"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"無法解析 '%s' 面板。\n"
+"已載入預設面板"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"無法使用需要支援真實色彩的 '%s' 面板：\n"
+"%s\n"
+"已載入預設面板"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"無法讀取 '%s' 面板。\n"
+"已載入預設面板"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr "本 slang 版本不支援真實色彩。"
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "Esc 鍵"
+
+msgid "Function key 1"
+msgstr "功能鍵 1"
+
+msgid "Function key 2"
+msgstr "功能鍵 2"
+
+msgid "Function key 3"
+msgstr "功能鍵 3"
+
+msgid "Function key 4"
+msgstr "功能鍵 4"
+
+msgid "Function key 5"
+msgstr "功能鍵 5"
+
+msgid "Function key 6"
+msgstr "功能鍵 6"
+
+msgid "Function key 7"
+msgstr "功能鍵 7"
+
+msgid "Function key 8"
+msgstr "功能鍵 8"
+
+msgid "Function key 9"
+msgstr "功能鍵 9"
+
+msgid "Function key 10"
+msgstr "功能鍵 10"
+
+msgid "Function key 11"
+msgstr "功能鍵 11"
+
+msgid "Function key 12"
+msgstr "功能鍵 12"
+
+msgid "Function key 13"
+msgstr "功能鍵 13"
+
+msgid "Function key 14"
+msgstr "功能鍵 14"
+
+msgid "Function key 15"
+msgstr "功能鍵 15"
+
+msgid "Function key 16"
+msgstr "功能鍵 16"
+
+msgid "Function key 17"
+msgstr "功能鍵 17"
+
+msgid "Function key 18"
+msgstr "功能鍵 18"
+
+msgid "Function key 19"
+msgstr "功能鍵 19"
+
+msgid "Function key 20"
+msgstr "功能鍵 20"
+
+msgid "Completion/M-tab"
+msgstr "Completion / M-tab 鍵"
+
+msgid "BackTab/S-tab"
+msgstr "BackTab / S-tab 鍵"
+
+msgid "Backspace"
+msgstr "倒退鍵"
+
+msgid "Up arrow"
+msgstr "向上鍵"
+
+msgid "Down arrow"
+msgstr "向下鍵"
+
+msgid "Left arrow"
+msgstr "向左鍵"
+
+msgid "Right arrow"
+msgstr "向右鍵"
+
+msgid "Insert"
+msgstr "插入鍵"
+
+msgid "Home"
+msgstr "頁首"
+
+msgid "End key"
+msgstr "頁尾鍵"
+
+msgid "Page Up"
+msgstr "Page Up 鍵"
+
+msgid "Page Down"
+msgstr "Page Down 鍵"
+
+msgid "/ on keypad"
+msgstr "數字區的 /"
+
+msgid "* on keypad"
+msgstr "數字區的 *"
+
+msgid "- on keypad"
+msgstr "數字區的 -"
+
+msgid "+ on keypad"
+msgstr "數字區的 +"
+
+msgid "Left arrow keypad"
+msgstr "數字區的向左鍵"
+
+msgid "Right arrow keypad"
+msgstr "數字區的向右鍵"
+
+msgid "Up arrow keypad"
+msgstr "數字區的向上鍵"
+
+msgid "Down arrow keypad"
+msgstr "數字區的向下鍵"
+
+msgid "Home on keypad"
+msgstr "數字區的 Home 鍵"
+
+msgid "End on keypad"
+msgstr "數字區的 End 鍵"
+
+msgid "Page Down keypad"
+msgstr "數字區的 Page Down 鍵"
+
+msgid "Page Up keypad"
+msgstr "數字區的 Page Up鍵"
+
+msgid "Insert on keypad"
+msgstr "數字區的 Insert 鍵"
+
+msgid "Delete on keypad"
+msgstr "數字區的 Del 鍵"
+
+msgid "Enter on keypad"
+msgstr "數字區的 Enter 鍵"
+
+msgid "Function key 21"
+msgstr "功能鍵 21"
+
+msgid "Function key 22"
+msgstr "功能鍵 22"
+
+msgid "Function key 23"
+msgstr "功能鍵 23"
+
+msgid "Function key 24"
+msgstr "功能鍵 24"
+
+msgid "A1 key"
+msgstr "A1 鍵"
+
+msgid "C1 key"
+msgstr "C1 鍵"
+
+msgid "Asterisk"
+msgstr "星號"
+
+msgid "Minus"
+msgstr "減"
+
+msgid "Plus"
+msgstr "加"
+
+msgid "Dot"
+msgstr "點"
+
+msgid "Less than"
+msgstr "小於"
+
+msgid "Great than"
+msgstr "好於"
+
+msgid "Equal"
+msgstr "等於"
+
+msgid "Comma"
+msgstr "逗號"
+
+msgid "Apostrophe"
+msgstr "撇號"
+
+msgid "Colon"
+msgstr "冒號"
+
+msgid "Semicolon"
+msgstr "分號"
+
+msgid "Exclamation mark"
+msgstr "驚嘆號"
+
+msgid "Question mark"
+msgstr "問號"
+
+msgid "Ampersand"
+msgstr ""
+
+msgid "Dollar sign"
+msgstr ""
+
+msgid "Quotation mark"
+msgstr ""
+
+msgid "Percent sign"
+msgstr ""
+
+msgid "Caret"
+msgstr ""
+
+msgid "Tilda"
+msgstr ""
+
+msgid "Prime"
+msgstr ""
+
+msgid "Underline"
+msgstr "底線"
+
+msgid "Understrike"
+msgstr ""
+
+msgid "Pipe"
+msgstr ""
+
+msgid "Left parenthesis"
+msgstr ""
+
+msgid "Right parenthesis"
+msgstr ""
+
+msgid "Left bracket"
+msgstr ""
+
+msgid "Right bracket"
+msgstr ""
+
+msgid "Left brace"
+msgstr ""
+
+msgid "Right brace"
+msgstr ""
+
+msgid "Enter"
+msgstr "輸入"
+
+msgid "Tab key"
+msgstr "Tab 鍵"
+
+msgid "Space key"
+msgstr "空白鍵"
+
+msgid "Slash key"
+msgstr "\"/\" 鍵"
+
+msgid "Backslash key"
+msgstr "\"\\\" 鍵"
+
+msgid "Number sign #"
+msgstr ""
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr ""
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"不支援 %dx%d 的螢幕大小。\n"
+"請檢查 TERM 環境變數。\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "環境變數 TERM 並未設定！ \n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr ""
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr ""
+
+msgid "Cannot create pipe streams"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"在 waitpid() 發生不可預期的錯誤：\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "欲切換到的檔案已遺失"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "按任意鍵繼續..."
+
+msgid "Internal error:"
+msgstr "內部錯誤:"
+
+msgid "Screens"
+msgstr "畫面"
+
+msgid "History"
+msgstr "歷史紀錄"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "是(&Y)"
+
+msgid "&No"
+msgstr "否(&N)"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "清除對話框標題歷史紀錄"
+
+msgid "Do you want clean this history?"
+msgstr "您確定要清除歷程記錄嗎？"
+
+msgid "&OK"
+msgstr "確定 (&O)"
+
+msgid "&Cancel"
+msgstr "取消"
+
+msgid "Error"
+msgstr "錯誤"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "中斷"
+
+msgid "< Default >"
+msgstr "< 預設 >"
+
+msgid "Skins"
+msgstr "面板"
+
+msgid "Skin:"
+msgstr "面板："
+
+msgid "&Shadows"
+msgstr ""
+
+msgid "Appearance"
+msgstr ""
+
+msgid "Displays the current version"
+msgstr "顯示目前的版本"
+
+msgid "Print data directory"
+msgstr "列印資料目錄"
+
+msgid "Print extended info about used data directories"
+msgstr ""
+
+msgid "Print configure options"
+msgstr ""
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "停用 X11 支援"
+
+msgid "Forces xterm features"
+msgstr "強迫使用 xterm 特性"
+
+msgid "Disable X11 support"
+msgstr "停用 X11 支援"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr ""
+
+msgid "Disable mouse support in text version"
+msgstr "文字模式下不使用滑鼠支援"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "試著使用 termcap 來代替 terminfo"
+
+msgid "To run on slow terminals"
+msgstr "於慢速的終端機上執行"
+
+msgid "Use stickchars to draw"
+msgstr "使用stickchars繪製"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr ""
+
+msgid "<file>"
+msgstr ""
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr ""
+
+msgid "Requests to run in black and white"
+msgstr "要求在黑白模式下執行"
+
+msgid "Request to run in color mode"
+msgstr "要求在彩色模式中執行"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "使用指定面板來顯示 mc"
+
+msgid "<string>"
+msgstr ""
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+"\n"
+"若有任何錯誤回報(輸出包含'%s -V')，\n"
+"請寄送至 %s\n"
+
+msgid "Main options"
+msgstr "主要選項"
+
+msgid "Terminal options"
+msgstr "終端機選項"
+
+msgid "Color options"
+msgstr "色彩選項"
+
+msgid "Arguments parse error!"
+msgstr ""
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "設定..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "設定選項"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "區分大小寫"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+msgid "Go to Declaration"
+msgstr ""
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "檔案操作"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "'%s' 不是一個軟連結"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "無法建立 diff 暫存檔案"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "無法儲存為檔案"
+
+msgid "No indexed files found."
+msgstr ""
+
+msgid "Failed to run grep."
+msgstr ""
+
+#, c-format
+msgid "No references found for '%s'."
+msgstr ""
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "搜尋完畢"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "搜尋完畢"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "計算總合"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "無法從子程序 stdout 讀取資料"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr "無法建立 diff 暫存檔案"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "無法由 %s 轉換到 %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "個人檔案跟目錄:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "無法建立事件 '%s'!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "讀取失敗"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+msgid "Navigation History"
+msgstr ""
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "沒有節點資訊"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "計算總合"
+
+msgid "Navigation history"
+msgstr ""
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "搜尋完畢"
+
+#, fuzzy
+msgid "Search file"
+msgstr "搜尋完畢"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "符號連結名稱："
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "讀取檔案"
+
+msgid "Manage repositories"
+msgstr ""
+
+msgid "Reindex repository"
+msgstr ""
+
+#, fuzzy
+msgid "Configuration"
+msgstr "確認"
+
+msgid "Go to &declaration"
+msgstr ""
+
+msgid "&Find declaration"
+msgstr ""
+
+msgid "Find &references"
+msgstr ""
+
+msgid "Navigation &history"
+msgstr ""
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "搜尋完畢"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "符號連結名稱："
+
+msgid "&Complete symbol"
+msgstr ""
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "選取"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "符號連結名稱："
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "檔案名稱:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "讀取檔案"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "關閉"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "警告"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"有已修改但尚未儲存的文字。\n"
+"若繼續將捨棄這些變更。"
+
+msgid "C&ontinue"
+msgstr "繼續"
+
+msgid "&Add word"
+msgstr ""
+
+msgid "&Replace"
+msgstr "替換"
+
+msgid "&Skip"
+msgstr "跳過"
+
+msgid "Language"
+msgstr ""
+
+msgid "Misspelled"
+msgstr ""
+
+msgid "Check word"
+msgstr ""
+
+msgid "Suggest"
+msgstr ""
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "新增"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+msgid "Aspell"
+msgstr ""
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+msgid "Language:"
+msgstr ""
+
+#, fuzzy
+msgid "&Select..."
+msgstr "選取"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "選取語言"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "讀取中: %3d%%"
+
+msgid "Loading..."
+msgstr "讀取中..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "讀取檔案"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "讀取 %s 時發生錯誤"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+#, fuzzy
+msgid "Undo"
+msgstr "復原"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "重試"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr ""
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr ""
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr ""
+
+msgid "&Do not change"
+msgstr ""
+
+msgid "&Unix format (LF)"
+msgstr "Unix 格式 (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Windows/DOS 格式 (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Macintosh 格式 (CR)"
+
+msgid "Enter file name:"
+msgstr "輸入檔案名稱:"
+
+msgid "Change line breaks to:"
+msgstr "切換行尾到:"
+
+msgid "Save As"
+msgstr "儲存為"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "快速儲存"
+
+msgid "&Safe save"
+msgstr "安全的儲存"
+
+msgid "&Do backups with following extension:"
+msgstr ""
+
+msgid "Check &POSIX new line"
+msgstr ""
+
+msgid "Edit Save Mode"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "相同的檔案名稱已經存在"
+
+msgid "&Overwrite"
+msgstr "覆寫"
+
+msgid "Cannot save file"
+msgstr "無法儲存檔案"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "確認儲存的檔案: \"%s\""
+
+msgid "Save file"
+msgstr "儲存檔案"
+
+msgid "&Save"
+msgstr "存檔"
+
+msgid "Load"
+msgstr "讀取"
+
+msgid "Syntax file edit"
+msgstr "語法檔案編輯"
+
+msgid "Which syntax file you want to edit?"
+msgstr ""
+
+msgid "&User"
+msgstr "使用者"
+
+msgid "&System wide"
+msgstr ""
+
+msgid "Menu edit"
+msgstr "選單編輯"
+
+msgid "Which menu file do you want to edit?"
+msgstr ""
+
+msgid "&Local"
+msgstr "本地"
+
+msgid "[NoName]"
+msgstr "[無名稱]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+
+msgid "Close file"
+msgstr "關閉檔案"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "退出"
+
+msgid "This function is not implemented"
+msgstr "尚未實作此功能"
+
+msgid "Unable to save to file"
+msgstr "無法儲存為檔案"
+
+msgid "Goto line"
+msgstr "前往此行"
+
+msgid "Enter line:"
+msgstr "輸入行數:"
+
+msgid "Save block"
+msgstr "儲存區塊"
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr "無法插入檔案"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr ""
+
+msgid "To"
+msgstr "到"
+
+msgid "Subject"
+msgstr "主題"
+
+msgid "Copies to"
+msgstr "複製到"
+
+msgid "Mail"
+msgstr "郵件"
+
+msgid "Cancel"
+msgstr "取消"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "插入鍵"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "是否要刪除 %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "取代"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "歷史紀錄"
+
+msgid "Collect completions"
+msgstr ""
+
+msgid "NoName"
+msgstr "無名稱"
+
+msgid "Save macro"
+msgstr "儲存巨集"
+
+msgid "Press the macro's new hotkey:"
+msgstr "請指定新的巨集快捷鍵："
+
+msgid "Repeat last commands"
+msgstr "重複最後的指令"
+
+msgid "Repeat times:"
+msgstr "重複次數:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "刪除巨集"
+
+msgid "Delete macro"
+msgstr "刪除巨集"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "執行中"
+
+#, fuzzy
+msgid "Close"
+msgstr "關閉"
+
+msgid "&Open file..."
+msgstr "開啟檔案"
+
+msgid "&New"
+msgstr "新增"
+
+msgid "&History..."
+msgstr "歷史紀錄"
+
+msgid "Save &as..."
+msgstr "儲存為..."
+
+msgid "&Insert file..."
+msgstr "插入檔案..."
+
+msgid "Cop&y to file..."
+msgstr "複製到檔案..."
+
+msgid "&User menu..."
+msgstr "使用者選單"
+
+msgid "A&bout..."
+msgstr "關於..."
+
+msgid "&Quit"
+msgstr "退出 (&Q)"
+
+msgid "&Undo"
+msgstr "復原"
+
+msgid "&Redo"
+msgstr "重做"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "歷史紀錄"
+
+msgid "&Toggle ins/overw"
+msgstr "切換插入/覆寫 (&T)"
+
+msgid "To&ggle mark"
+msgstr ""
+
+msgid "&Mark columns"
+msgstr "標記欄位 (&M)"
+
+msgid "Mark &all"
+msgstr "標記全部"
+
+msgid "Unmar&k"
+msgstr "取消標記"
+
+msgid "Cop&y"
+msgstr "複製"
+
+msgid "Mo&ve"
+msgstr "移動"
+
+msgid "&Delete"
+msgstr "刪除"
+
+msgid "Co&py to clipfile"
+msgstr "複製到剪貼簿"
+
+msgid "&Cut to clipfile"
+msgstr "剪下到剪貼簿"
+
+msgid "Pa&ste from clipfile"
+msgstr "從剪貼簿中貼上"
+
+msgid "&Beginning"
+msgstr ""
+
+msgid "&End"
+msgstr ""
+
+msgid "&Search..."
+msgstr ""
+
+msgid "Search &again"
+msgstr ""
+
+msgid "&Replace..."
+msgstr ""
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "切換插入/覆寫 (&T)"
+
+msgid "Filter by &word"
+msgstr ""
+
+msgid "&Toggle bookmark"
+msgstr ""
+
+msgid "&Next bookmark"
+msgstr ""
+
+msgid "&Prev bookmark"
+msgstr ""
+
+msgid "&Flush bookmarks"
+msgstr ""
+
+msgid "&Go to line..."
+msgstr "前往此行"
+
+msgid "&Toggle line state"
+msgstr ""
+
+msgid "Go to matching &bracket"
+msgstr ""
+
+msgid "Toggle s&yntax highlighting"
+msgstr ""
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "編碼... (&I)"
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "尋找全部"
+
+msgid "&Refresh screen"
+msgstr "重新整理螢幕 (&R)"
+
+msgid "&Start/Stop record macro"
+msgstr "開始/停止錄製巨集 (&S)"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "錄製/重複動作 (&A)"
+
+msgid "&Move"
+msgstr "移動"
+
+msgid "&Resize"
+msgstr ""
+
+msgid "&Toggle fullscreen"
+msgstr ""
+
+msgid "&Next"
+msgstr ""
+
+msgid "&Previous"
+msgstr ""
+
+msgid "&List..."
+msgstr "列表... (&L)"
+
+msgid "&General..."
+msgstr ""
+
+msgid "Save &mode..."
+msgstr ""
+
+msgid "Syntax &highlighting..."
+msgstr ""
+
+msgid "&Appearance..."
+msgstr "出現..."
+
+msgid "Learn &keys..."
+msgstr "學習快捷鍵"
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "編碼... (&E)"
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "編碼... (&E)"
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "面板選項..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr ""
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "選單檔案"
+
+msgid "&Save setup"
+msgstr "儲存設定"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr ""
+
+msgid "&Edit"
+msgstr "編輯"
+
+msgid "&Search"
+msgstr ""
+
+msgid "&Command"
+msgstr "指令 (&C)"
+
+msgid "&Navigate"
+msgstr ""
+
+msgid "&Window"
+msgstr ""
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr ""
+
+msgid "Lua action"
+msgstr ""
+
+#, fuzzy
+msgid "Action failed"
+msgstr "讀取失敗"
+
+msgid "&None"
+msgstr ""
+
+msgid "&Dynamic paragraphing"
+msgstr ""
+
+msgid "Type &writer wrap"
+msgstr "打字和輸入換行"
+
+msgid "Wrap mode"
+msgstr "換行模式"
+
+msgid "Tabulation"
+msgstr ""
+
+msgid "&Fake half tabs"
+msgstr "半個 TAB"
+
+msgid "&Backspace through tabs"
+msgstr "Backspace 刪除移位鍵"
+
+msgid "Fill tabs with &spaces"
+msgstr "以空白填滿移位鍵 (tab)"
+
+msgid "Tab spacing:"
+msgstr ""
+
+msgid "Other options"
+msgstr ""
+
+msgid "&Return does autoindent"
+msgstr "換行時自動縮排"
+
+msgid "Confir&m before saving"
+msgstr "存檔前先確認"
+
+msgid "Save file &position"
+msgstr ""
+
+msgid "&Visible trailing spaces"
+msgstr ""
+
+msgid "Visible &tabs"
+msgstr ""
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "依語法改變顏色"
+
+msgid "C&ursor after inserted block"
+msgstr "游標在插入區塊後"
+
+msgid "Pers&istent selection"
+msgstr "持續選取"
+
+msgid "Cursor be&yond end of line"
+msgstr ""
+
+msgid "&Group undo"
+msgstr "復原群組"
+
+msgid "Word wrap line length:"
+msgstr "文字換行行高:"
+
+msgid "Editor options"
+msgstr "編輯器選項"
+
+msgid "Enter search string:"
+msgstr "輸入搜尋文字:"
+
+msgid "Cas&e sensitive"
+msgstr "區分大小寫"
+
+msgid "&Backwards"
+msgstr " 向後 "
+
+msgid "In se&lection"
+msgstr "在選擇中"
+
+msgid "&Whole words"
+msgstr "整個文字"
+
+msgid "&All charsets"
+msgstr "所有字元"
+
+msgid "&Find all"
+msgstr "尋找全部"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "搜尋"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "搜尋 %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "搜尋 %s"
+
+msgid "Enter replacement string:"
+msgstr "輸入要取代的字串："
+
+msgid "Replace"
+msgstr "取代"
+
+msgid "Replace with:"
+msgstr "取代:"
+
+msgid "A&ll"
+msgstr "全部"
+
+msgid "Confirm replace"
+msgstr "確認取代"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "已取代 %ld 個項目。"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "關於"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "開啟檔案"
+
+msgid "Edit: "
+msgstr "編輯:"
+
+msgid "ButtonBar|Help"
+msgstr "按鈕列 | 幫助"
+
+msgid "ButtonBar|Save"
+msgstr "按鈕列 | 儲存"
+
+msgid "ButtonBar|Mark"
+msgstr "按鈕列 | 標記"
+
+msgid "ButtonBar|Replac"
+msgstr "按鈕列 | 取代"
+
+msgid "ButtonBar|Copy"
+msgstr "按鈕列 | 複製"
+
+msgid "ButtonBar|Move"
+msgstr "按鈕列 | 移動"
+
+msgid "ButtonBar|Search"
+msgstr "按鈕列 | 搜尋"
+
+msgid "ButtonBar|Delete"
+msgstr "按鈕列 | 刪除"
+
+msgid "ButtonBar|PullDn"
+msgstr "按鈕列 | 下拉選單"
+
+msgid "ButtonBar|Quit"
+msgstr "按鈕列|退出"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "搜尋 %s: %3d%%"
+
+msgid "Filter"
+msgstr ""
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< 自動 >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< 重新讀取當前語法 >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr ""
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr ""
+
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr "輸入 'exit' 來返回 %s"
+
+msgid "Help file format error\n"
+msgstr ""
+
+msgid "Internal bug: Double start of link area"
+msgstr ""
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr ""
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "說明"
+
+msgid "ButtonBar|Index"
+msgstr "按鈕列 | 索引"
+
+msgid "ButtonBar|Prev"
+msgstr "按鈕列 | 前"
+
+#, fuzzy
+msgid "Function keys"
+msgstr "功能鍵 1"
+
+msgid "Arrows / Navigation"
+msgstr ""
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "學習快捷鍵"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "確認"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "編輯選單檔"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+msgid "&Main"
+msgstr ""
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "選單檔案"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "列表... (&L)"
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "說明"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "編輯"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "A1 鍵"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "按任意鍵繼續..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr " 向後 "
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "編輯選單檔"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+
+msgid "Home directory path is not absolute"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "VFS 外掛和腳本:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "子程序發生未知的錯誤"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "設定"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "讀取失敗"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "內部錯誤:"
+
+msgid "Choose codepage"
+msgstr ""
+
+msgid "-  < No translation >"
+msgstr "-  < 不轉換 >"
+
+msgid "Setup"
+msgstr ""
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr ""
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr ""
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "選用的子殼層支援"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr ""
+
+msgid "With mouse support on xterm"
+msgstr ""
+
+msgid "With support for X11 events"
+msgstr ""
+
+msgid "With internationalization support"
+msgstr ""
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr "資料類型:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "未搜尋到字串"
+
+msgid "Home directory:"
+msgstr "家目錄:"
+
+msgid "Profile root directory:"
+msgstr "個人檔案跟目錄:"
+
+msgid "System data"
+msgstr "系統資料"
+
+msgid "Config directory:"
+msgstr "設定檔資料夾:"
+
+msgid "Data directory:"
+msgstr "資料目錄："
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "編輯器選項"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "VFS 外掛和腳本:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "使用者資料"
+
+msgid "Cache directory:"
+msgstr "快取資料夾:"
+
+msgid "Debug"
+msgstr "偵錯"
+
+msgid "ERROR:"
+msgstr "錯誤:"
+
+msgid "True:"
+msgstr "是:"
+
+msgid "False:"
+msgstr "否:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "無法建立 diff 暫存檔案"
+
+msgid "Error calling program"
+msgstr ""
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr ""
+
+msgid "Warning -- ignoring file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"檔案 %s 的擁有者並不是 root 或您，或者檔案允許任何人寫入；\n"
+"使用這個檔案對您系統的安全造成危害。"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr ""
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr ""
+
+msgid "User menu"
+msgstr "使用者選單"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "無法由 %s 轉換到 %s"

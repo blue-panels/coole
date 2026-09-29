@@ -1,0 +1,356 @@
+Editor Plugin Development Guide for coole
+=========================================
+
+This document describes how to write an editor plugin for coole: a
+module that registers with the editor and adds commands, menu entries
+and key handling of its own.
+
+The authoritative declarations live in:
+
+- lib/editor-plugin.h        the plugin API
+- lib/editor-plugin.c        the registry and the loader
+
+This guide reflects the current API only.  When in doubt, the header
+is the source of truth.
+
+Scripts written in Lua are a different mechanism: they are run by the
+Lua runtime plugin and need no compiler.  See doc/LUA_PLUGINS.md and
+doc/LUA_API_REFERENCE.md.
+
+
+1. General Rules
+----------------
+
+- Keep the editor core plugin-agnostic.
+  Core must not branch on a plugin's name; expose a capability flag or
+  callback instead.
+- Use the host callbacks (mc_editor_host_t) rather than reaching into
+  editor internals where a callback exists.
+- Return explicit status codes:
+  MC_EPR_OK / MC_EPR_FAILED / MC_EPR_NOT_SUPPORTED.
+- Keep activate() for the main action and configure() for the settings
+  dialog; do not overload activate() with a configuration dialog.
+
+
+2. In-tree Plugins
+------------------
+
+The plugins that come with coole are built into the program (see
+src/meson.build, which compiles them into the internal library):
+
+  src/editor-plugins/ctags/      self-registered menu entries, named
+                                 actions, dynamic shortcut resolver
+  src/editor-plugins/spell/      activate + configure + query_state +
+                                 handle_key
+  src/editor-plugins/etags/      handle_action only
+
+src/editor-plugins/builtin-plugins.c (compiled as part of
+src/editor/editcmd.c) holds their descriptors (and that
+of the "scripts" entry) and registers them with
+mc_editor_plugin_add() from editor_plugins_register_all().
+
+The help of a plugin (ctags.md, etags.md, spell.md) is installed into
+$(pkgdatadir)/help next to the help of the program.
+
+
+3. Lifecycle and Location
+-------------------------
+
+When the editor starts, it first registers the built-in plugins and
+then calls mc_editor_plugins_load(), which scans two directories:
+
+    $(libdir)/coole/editor-plugins          (MC_EDITOR_PLUGINS_DIR)
+    ~/.local/lib/coole/editor-plugins
+
+The system directory is set at build time:
+
+    meson setup build -Deditor_plugins_dir=DIR
+
+Every file directly in these directories whose name ends in .so (or
+.dylib, .bundle, .dll) is opened with g_module_open(); there are no
+subdirectories.  The loader resolves the symbol
+"mc_editor_plugin_register" (MC_EDITOR_PLUGIN_ENTRY), calls it, and
+passes the descriptor it returns to mc_editor_plugin_add().  A module
+whose descriptor is accepted is made resident.  Loading needs GModule;
+a build without it has the built-in plugins only.
+
+mc_editor_plugin_add() rejects a descriptor
+
+- whose api_version differs from MC_EDITOR_PLUGIN_API_VERSION
+  (currently 5), with a message on stderr;
+- that has no name, no open() or no close(), with a message on stderr;
+- whose name was disabled in Options -> Manage plugins;
+- whose name is already registered.  The built-in plugins are
+  registered first, so a module cannot replace one of them.
+
+For every editor dialog, the editor calls open() of each registered
+plugin that is not disabled.  A plugin whose open() returns NULL gets
+no instance in that dialog.  close() receives the value open()
+returned.
+
+Options -> Manage plugins switches plugins on and off; the state is
+kept in ~/.config/coole/plugins.ini, section [DisabledPlugins], one key
+"editor/<name>" per disabled plugin.  Options -> Plugin info lists the
+registered plugins and the callbacks each one has.
+
+
+4. API Entry Point
+------------------
+
+A plugin module must export:
+
+    const mc_editor_plugin_t *mc_editor_plugin_register (void);
+
+The descriptor minimum:
+
+- api_version = MC_EDITOR_PLUGIN_API_VERSION
+- a unique name
+- display_name (the menu label; name is used when it is NULL)
+- the required callbacks open and close
+
+    void *(*open) (mc_editor_host_t *host, void *editor_dialog);
+    void (*close) (void *plugin_data);
+
+
+5. Capability Flags (mc_ep_flags_t)
+-----------------------------------
+
+  MC_EPF_NONE
+  MC_EPF_HAS_MENU            the plugin has an entry of its own in the
+                             Plugins menu.  The entry is shown only when
+                             the plugin also has activate()
+
+
+6. Host Services (mc_editor_host_t)
+-----------------------------------
+
+What the editor provides to the plugin, passed to open():
+
+  redraw(host)
+                             redraw the editor window
+  message(host, flags, title, text)
+                             modal message box
+  get_cursor_word(host, edit)
+                             word under cursor; NULL if not on a word.
+                             Caller frees with g_free()
+  get_current_file(host, edit)
+                             absolute path of the open file or NULL;
+                             caller frees
+  get_cursor_line(host, edit)
+                             1-based line number; 0 if unavailable
+  jump_to(host, edit, file, line)
+                             open file at line; pushes the current
+                             position onto the navigation stack
+  insert_text(host, edit, text, remove_before)
+                             insert at cursor after deleting
+                             remove_before bytes backwards
+
+Fields:
+
+  host_data                  opaque, owned by the editor core
+
+The edit and editor_dialog arguments are opaque to the plugin.
+
+
+7. Plugin Callbacks
+-------------------
+
+All are optional except open and close.
+
+  activate(plugin_data, edit)
+                             the primary action, run when the plugin's
+                             entry in the Plugins menu is picked
+  configure(plugin_data, edit)
+                             open the settings dialog
+  handle_action(plugin_data, command, edit)
+                             called for the plugin's own Plugins menu
+                             command when it has no activate(), and
+                             offered every editor command (CK_*) the
+                             editor executes
+  query_state(plugin_data, edit, &state)
+                             fill mc_ep_state_t; checked before
+                             activate() from the Plugins menu
+  handle_key(plugin_data, key, edit)
+                             raw key interception.  Called for every
+                             key after the macro hotkeys and before the
+                             keymap is consulted;
+                             return MC_EPR_OK to consume the key
+  handle_event(plugin_data, edit, event_id, payload)
+  on_file_open(plugin_data, edit)
+  on_file_close(plugin_data, edit)
+                             declared in the header; the editor core
+                             does not call these yet (Plugin info lists
+                             them as capabilities)
+
+State contract (mc_ep_state_t):
+
+  available                  plugin can operate in the current
+                             environment (binaries present, etc.)
+  enabled                    action is currently usable
+  reason                     optional explanation shown to the user
+                             when the action is refused
+
+Event ids reserved for handle_event():
+
+  MC_EP_EVENT_FILE_SAVED      file written; payload = const char *path
+  MC_EP_EVENT_FILE_RENAMED    Save As completed; payload = new path
+  MC_EP_EVENT_FOCUS_IN        editor window got focus
+  MC_EP_EVENT_FOCUS_OUT       editor window lost focus
+
+
+8. Actions and Menu Entries
+---------------------------
+
+A plugin exposes named actions through:
+
+    const mc_ep_action_t *actions;
+    int action_count;
+
+Each entry has a label and a direct callback:
+
+    mc_ep_result_t (*callback) (void *plugin_data, void *edit);
+
+The callback is invoked directly when the user picks the menu item;
+activate / handle_action are not used for it.  A plugin has at most
+MC_EDITOR_PLUGIN_ACTIONS_MAX (256) actions.
+
+Top-level menu integration:
+
+    const mc_ep_cmd_menu_entry_t *cmd_menu_entries;
+    int cmd_menu_entry_count;
+
+Each entry sets:
+
+    menu_name        MC_EP_MENU_COMMAND or MC_EP_MENU_NAVIGATE
+    label            menu text (with & accelerator, translated with
+                     gettext); NULL = separator
+    action_index     index into actions[]
+    shortcut         display string for the shortcut column; NULL =
+                     omit.  Overridden at menu-build time if the plugin
+                     defines get_menu_shortcut().
+
+Optional dynamic shortcut resolver:
+
+    char *(*get_menu_shortcut) (int action_index);
+
+Returns a newly-allocated string (caller frees with g_free) or NULL to
+fall back to the static shortcut text.
+
+Command ids: the Plugins menu entry of the plugin at position N of the
+registry is MC_EDITOR_PLUGIN_CMD_BASE + N; action A of that plugin is
+MC_EDITOR_PLUGIN_ACTION_BASE + N * MC_EDITOR_PLUGIN_ACTIONS_MAX + A.
+
+
+9. Registry
+-----------
+
+  mc_editor_plugin_add(plugin)
+  mc_editor_plugin_list()
+  mc_editor_plugin_find_by_name(name)
+
+
+10. Minimal Skeleton
+--------------------
+
+A plugin that registers and reacts to its Plugins menu entry (no extra
+menus, no named actions):
+
+    #include <config.h>
+
+    #include "lib/global.h"
+    #include "lib/editor-plugin.h"
+
+    static void *
+    my_open (mc_editor_host_t *host, void *editor_dialog)
+    {
+        (void) editor_dialog;
+        return host;  /* any non-NULL opaque handle */
+    }
+
+    static void
+    my_close (void *plugin_data)
+    {
+        (void) plugin_data;
+    }
+
+    static mc_ep_result_t
+    my_activate (void *plugin_data, void *edit)
+    {
+        mc_editor_host_t *host = (mc_editor_host_t *) plugin_data;
+        (void) edit;
+        if (host->message != NULL)
+            host->message (host, 0, "My Plugin", "Hello from the editor.");
+        return MC_EPR_OK;
+    }
+
+    static const mc_editor_plugin_t my_plugin = {
+        .api_version  = MC_EDITOR_PLUGIN_API_VERSION,
+        .name         = "myedit",
+        .display_name = "My Editor Plugin",
+        .flags        = MC_EPF_HAS_MENU,
+
+        .open         = my_open,
+        .close        = my_close,
+        .activate     = my_activate,
+    };
+
+    const mc_editor_plugin_t *
+    mc_editor_plugin_register (void)
+    {
+        return &my_plugin;
+    }
+
+The headers come from the source tree, and config.h from a configured
+build tree of the same version.  With the source in $SRC and the build
+tree in $BUILD, a module can be compiled like this:
+
+    cc -shared -fPIC -I"$BUILD" -I"$SRC" \
+        $(pkg-config --cflags glib-2.0) \
+        -o myedit.so myedit.c
+
+The program is linked with -export-dynamic when GModule is available,
+so the module can use the functions of the editor without linking
+against them.  Copy myedit.so into ~/.local/lib/coole/editor-plugins
+and start coole again: the plugin appears in the Plugins menu, and
+selecting it calls my_activate().
+
+The descriptor is checked against MC_EDITOR_PLUGIN_API_VERSION, and a
+module built against headers of another API version is not loaded.
+Rebuild plugins when coole is upgraded.
+
+
+11. Testing Checklist
+---------------------
+
+- the plugin appears in the Plugins menu, and in Options -> Plugin info
+- activate() runs the primary action
+- configure() opens settings only
+- query_state() reflects backend / runtime availability
+- self-registered menu entries land in the right top-level menu
+- missing dependencies are reported via a clear user message
+- switching the plugin off in Options -> Manage plugins keeps it out
+  after a restart
+
+
+12. Troubleshooting
+-------------------
+
+- Plugin not loaded:
+  - verify the module is installed directly in one of the plugin
+    directories, with a .so suffix
+  - verify the exported symbol name (mc_editor_plugin_register)
+  - verify api_version matches the header constant
+  - run coole from a terminal and read what the loader writes to
+    stderr
+  - check that the plugin is not disabled in Options -> Manage plugins
+  - check that no other plugin, built-in or not, has the same name
+
+- Plugin listed but does nothing:
+  - check that the required callbacks are non-NULL
+  - confirm correct return codes (NOT_SUPPORTED vs FAILED)
+  - for a Plugins menu entry, set MC_EPF_HAS_MENU and provide
+    activate()
+
+- Key does not trigger:
+  - handle_key() sees the raw key code before the keymap; compare
+    against the key code, not a CK_* command

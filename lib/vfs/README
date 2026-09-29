@@ -1,0 +1,28 @@
+The VFS layer of coole
+======================
+
+coole reads and writes every file through a small virtual file system
+switch: the mc_*() functions of interface.c (mc_open, mc_read, mc_stat,
+...) take a vfs_path_t (path.c) and hand the call to the class that
+serves the path.  coole has one class, the local file system
+(src/vfs/local/local.c), registered by vfs_plugins_init()
+(src/vfs/plugins_init.c).
+
+The layer is kept because the editor and the rest of the code are
+written against it: paths carry their encoding (the #enc: element,
+see vfs_get_encoding()), the current directory is kept by the layer
+(vfs_get_current_dir(), vfs_setup_work_dir()), and temporary files
+come from mc_tmpdir() and mc_mkstemps().
+
+Rules for the code here:
+
+* Exported symbols are declared in vfs.h, path.h, utilvfs.h or gc.h and
+  begin with 'vfs_' or 'mc_'.
+
+* A class is a struct vfs_class filled in by vfs_init_class() and its
+  own operations, and registered with vfs_register_class().  An
+  operation it does not have stays NULL: the switch answers ENOTSUP.
+
+* gc.c frees what a class keeps open once nothing refers to it any
+  more (vfs_stamp_create(), vfs_expire()).  The local class keeps
+  nothing, but the machinery is what mc_chdir() relies on.

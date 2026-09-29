@@ -1,0 +1,2925 @@
+/*
+   Editor high level editing commands
+
+   Copyright (C) 1996-2025
+   Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
+
+   Written by:
+   Paul Sheer, 1996, 1997
+   Andrew Borodin <aborodin@vmail.ru>, 2012-2022
+   Ilia Maslakov <il.smind@gmail.com>, 2012, 2026
+
+   This file is part of coole,
+   a text editor based on GNU Midnight Commander.
+
+   coole is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   coole is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/** \file
+ *  \brief Source: editor high level editing commands
+ *  \author Paul Sheer
+ *  \date 1996, 1997
+ */
+
+/* #define PIPE_BLOCKS_SO_READ_BYTE_BY_BYTE */
+
+#include <config.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <errno.h>
+
+#include "lib/global.h"
+#include "lib/tty/tty.h"
+#include "lib/tty/key.h"  // XCTRL
+#include "lib/strutil.h"  // utf string functions
+#include "lib/fileloc.h"
+#include "lib/lock.h"
+#include "lib/util.h"  // tilde_expand(), x_basename()
+#include "lib/vfs/vfs.h"
+#include "lib/widget.h"
+#include "lib/event.h"  // mc_event_raise()
+#include "lib/charsets.h"
+#include "lib/runtime-events.h"
+
+#include "src/events_init.h"
+#include "src/history.h"
+#include "src/file_history.h"  // show_file_history()
+#include "src/runtime-host.h"
+#include "src/selcodepage.h"
+#include "src/util.h"       // check_for_default(), file_error_message()
+#include "src/clipboard.h"  // clipboard_info_write()
+
+#include "edit-impl.h"
+#include "editwidget.h"
+#include "editcmd_private.h"
+#include "editsearch.h"
+#include "src/editor-plugins/builtin-plugins.h"
+
+/*
+ * Temporary wiring: compile builtin editor plugins implementation from its own
+ * source tree without changing autotools files in this step.
+ */
+#include "src/editor-plugins/builtin-plugins.c"
+
+/*** global variables ****************************************************************************/
+
+/* search and replace: */
+int search_create_bookmark = FALSE;
+
+/*** file scope macro definitions ****************************************************************/
+
+#define TEMP_BUF_LEN 1024
+
+/*** file scope type declarations ****************************************************************/
+
+/*** forward declarations (file scope functions) *************************************************/
+
+MC_TESTABLE void edit_insert_column_of_text (WEdit *edit, GString *data, long width,
+                                             off_t *start_pos, off_t *end_pos, long *col1,
+                                             long *col2);
+
+/*** file scope variables ************************************************************************/
+
+static unsigned long edit_save_mode_radio_id, edit_save_mode_input_id;
+
+/* --------------------------------------------------------------------------------------------- */
+/*** file scope functions ************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+edit_publish_runtime_save (WEdit *edit, const char *previous_path, gboolean save_as)
+{
+    mc_runtime_event_snapshot_t *snapshot;
+
+    runtime_host_set_current_editor (edit);
+    if (!events_runtime_is_started () || !mc_runtime_events_is_initialized ())
+        return;
+
+    snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_SAVE);
+    snapshot->data.editor_save.editor =
+        mc_runtime_handle_for_object (MC_RUNTIME_HANDLE_EDITOR, edit);
+    snapshot->data.editor_save.path = edit->filename_vpath != NULL
+        ? vfs_path_to_str_flags (edit->filename_vpath, 0, VPF_STRIP_PASSWORD)
+        : g_strdup ("");
+    snapshot->data.editor_save.previous_path = g_strdup (previous_path);
+    snapshot->data.editor_save.save_as = save_as;
+
+    (void) mc_runtime_event_publish (snapshot, NULL);
+    mc_runtime_event_snapshot_free (snapshot);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static cb_ret_t
+edit_save_mode_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    switch (msg)
+    {
+    case MSG_CHANGED_FOCUS:
+        if (sender != NULL && sender->id == edit_save_mode_radio_id)
+        {
+            Widget *ww;
+
+            ww = widget_find_by_id (w, edit_save_mode_input_id);
+            widget_disable (ww, RADIO (sender)->sel != 2);
+            return MSG_HANDLED;
+        }
+        return MSG_NOT_HANDLED;
+
+    default:
+        return dlg_default_callback (w, sender, msg, parm, data);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static vfs_path_t *
+edit_get_real_filename_vpath (const WEdit *edit, const vfs_path_t *filename_vpath)
+{
+    const char *start_filename;
+    const vfs_path_element_t *vpath_element;
+
+    vpath_element = vfs_path_get_by_index (filename_vpath, 0);
+    if (vpath_element == NULL)
+        return NULL;
+
+    start_filename = vpath_element->path;
+    if (*start_filename == '\0')
+        return NULL;
+
+    if (!IS_PATH_SEP (*start_filename) && edit->dir_vpath != NULL)
+        return vfs_path_append_vpath_new (edit->dir_vpath, filename_vpath, NULL);
+
+    return vfs_path_clone (filename_vpath);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+edit_save_with_sudo (WEdit *edit, const char *real_filename, const char *password)
+{
+    FILE *file;
+    char *cmd;
+    char *quoted_filename;
+    const int pwlen = (int) strlen (password);
+    int status;
+    off_t filelen;
+
+    quoted_filename = name_quote (real_filename, FALSE);
+    if (quoted_filename == NULL)
+        return FALSE;
+
+    cmd = g_strdup_printf ("sudo -S -p '' tee -- %s > /dev/null", quoted_filename);
+    g_free (quoted_filename);
+
+    file = (FILE *) popen (cmd, "w");
+    g_free (cmd);
+
+    if (file == NULL)
+        return FALSE;
+
+    if (pwlen > 0 && fwrite (password, 1, (size_t) pwlen, file) != (size_t) pwlen)
+    {
+        (void) pclose (file);
+        return FALSE;
+    }
+
+    if (fputc ('\n', file) == EOF)
+    {
+        (void) pclose (file);
+        return FALSE;
+    }
+
+    filelen = edit_write_stream (edit, file);
+    if (filelen != edit->buffer.size)
+    {
+        (void) pclose (file);
+        return FALSE;
+    }
+
+    status = pclose (file);
+    return (status == 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static char *
+edit_sudo_password_dialog (void)
+{
+    char *password = NULL;
+    quick_widget_t quick_widgets[] = {
+        QUICK_LABELED_INPUT (_ ("No write permissions for this file.\n"
+                                "Enter sudo password to save as root:"),
+                             input_label_above, "", "", &password, NULL, TRUE, FALSE,
+                             INPUT_COMPLETE_NONE),
+        QUICK_BUTTONS_OK_CANCEL,
+        QUICK_END,
+    };
+
+    WRect r = { -1, -1, 0, MIN (63, COLS - 2) };
+    quick_dialog_t qdlg = {
+        .rect = r,
+        .title = _ ("Save with sudo"),
+        .help = NULL,
+        .widgets = quick_widgets,
+        .callback = NULL,
+        .mouse_callback = NULL,
+    };
+
+    return (quick_dialog (&qdlg) != B_CANCEL) ? password : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* returns 1 on success, 0 on failure, -1 on cancel */
+static int
+edit_try_sudo_save_cmd (WEdit *edit)
+{
+    int result = 0;
+    vfs_path_t *real_filename_vpath;
+
+    real_filename_vpath = edit_get_real_filename_vpath (edit, edit->filename_vpath);
+    if (real_filename_vpath == NULL)
+        return 0;
+
+    if (!vfs_file_is_local (real_filename_vpath))
+    {
+        vfs_path_free (real_filename_vpath, TRUE);
+        return 0;
+    }
+
+    for (;;)
+    {
+        char *password;
+
+        password = edit_sudo_password_dialog ();
+        if (password == NULL)
+        {
+            result = -1;
+            break;
+        }
+
+        if (edit_save_with_sudo (edit, vfs_path_as_str (real_filename_vpath), password))
+        {
+            (void) mc_stat (real_filename_vpath, &edit->stat1);
+            memset (password, 0, strlen (password));
+            g_free (password);
+            result = 1;
+            break;
+        }
+
+        memset (password, 0, strlen (password));
+        g_free (password);
+
+        if (edit_query_dialog2 (_ ("Save with sudo"),
+                                _ ("Cannot save with sudo.\n"
+                                   "Wrong password or sudo is not configured."),
+                                _ ("&Retry"), _ ("&Cancel"))
+            != 0)
+        {
+            result = -1;
+            break;
+        }
+    }
+
+    vfs_path_free (real_filename_vpath, TRUE);
+    return result;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+edit_save_should_try_sudo (int save_res, int save_errno)
+{
+    return (save_res == 0 && save_errno == EACCES);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* returns 1 if handled as success, -1 if handled as cancel/failure, 0 if not handled */
+int
+edit_save_handle_sudo_result (WEdit *edit, int sudo_res)
+{
+    if (sudo_res > 0)
+    {
+        edit->delete_file = 0;
+        edit->modified = 0;
+        edit->undo_content_saved = edit->undo_content_seq;
+        edit->undo_content_saved_gen = edit->undo_content_gen;
+        edit->force |= REDRAW_COMPLETELY;
+        return 1;
+    }
+
+    if (sudo_res < 0)
+    {
+        edit->force |= REDRAW_COMPLETELY;
+        return -1;
+    }
+
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_register_builtin_plugins (void)
+{
+    editor_plugins_register_all ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/*  If 0 (quick save) then  a) create/truncate <filename> file,
+   b) save to <filename>;
+   if 1 (safe save) then   a) save to <tempnam>,
+   b) rename <tempnam> to <filename>;
+   if 2 (do backups) then  a) save to <tempnam>,
+   b) rename <filename> to <filename.backup_ext>,
+   c) rename <tempnam> to <filename>. */
+
+/* returns 0 on error, -1 on abort */
+
+static int
+edit_save_file (WEdit *edit, const vfs_path_t *filename_vpath)
+{
+    char *p;
+    off_t filelen = 0;
+    int this_save_mode, rv, fd = -1;
+    vfs_path_t *real_filename_vpath;
+    vfs_path_t *savename_vpath = NULL;
+    struct stat sb;
+
+    real_filename_vpath = edit_get_real_filename_vpath (edit, filename_vpath);
+    if (real_filename_vpath == NULL)
+        return 0;
+
+    this_save_mode = edit_options.save_mode;
+    if (this_save_mode != EDIT_QUICK_SAVE)
+    {
+        if (!vfs_file_is_local (real_filename_vpath))
+            // The file does not exists yet, so no safe save or backup are necessary.
+            this_save_mode = EDIT_QUICK_SAVE;
+        else
+        {
+            fd = mc_open (real_filename_vpath, O_RDONLY | O_BINARY);
+            if (fd == -1)
+                // The file does not exists yet, so no safe save or backup are necessary.
+                this_save_mode = EDIT_QUICK_SAVE;
+        }
+
+        if (fd != -1)
+            mc_close (fd);
+    }
+
+    rv = mc_stat (real_filename_vpath, &sb);
+    if (rv == 0)
+    {
+        if (this_save_mode == EDIT_QUICK_SAVE && edit->skip_detach_prompt == 0 && sb.st_nlink > 1)
+        {
+            rv =
+                edit_query_dialog3 (_ ("Warning"), _ ("File has hard-links. Detach before saving?"),
+                                    _ ("&Yes"), _ ("&No"), _ ("&Cancel"));
+            switch (rv)
+            {
+            case 0:
+                this_save_mode = EDIT_SAFE_SAVE;
+                MC_FALLTHROUGH;
+            case 1:
+                edit->skip_detach_prompt = 1;
+                break;
+            default:
+                vfs_path_free (real_filename_vpath, TRUE);
+                return -1;
+            }
+        }
+
+        // Prevent overwriting changes from other editor sessions.
+        if (edit->stat1.st_mtime != 0 && edit->stat1.st_mtime != sb.st_mtime)
+        {
+            // The default action is "Cancel".
+            query_set_sel (1);
+
+            rv = edit_query_dialog2 (_ ("Warning"),
+                                     _ ("The file has been modified in the meantime. Save anyway?"),
+                                     _ ("&Yes"), _ ("&Cancel"));
+            if (rv != 0)
+            {
+                vfs_path_free (real_filename_vpath, TRUE);
+                return -1;
+            }
+        }
+    }
+
+    if (this_save_mode == EDIT_QUICK_SAVE)
+        savename_vpath = vfs_path_clone (real_filename_vpath);
+    else
+    {
+        char *savedir, *saveprefix;
+
+        savedir = vfs_path_tokens_get (real_filename_vpath, 0, -1);
+        if (savedir == NULL)
+            savedir = g_strdup (".");
+
+        // Token-related function never return leading slash, so we need add it manually
+        saveprefix = mc_build_filename (PATH_SEP_STR, savedir, "cooledit", (char *) NULL);
+        g_free (savedir);
+        fd = mc_mkstemps (&savename_vpath, saveprefix, NULL);
+        g_free (saveprefix);
+        if (savename_vpath == NULL)
+        {
+            vfs_path_free (real_filename_vpath, TRUE);
+            return 0;
+        }
+        /* FIXME:
+         * Close for now because mc_mkstemps use pure open system call
+         * to create temporary file and it needs to be reopened by
+         * VFS-aware mc_open().
+         */
+        close (fd);
+    }
+
+    (void) mc_chown (savename_vpath, edit->stat1.st_uid, edit->stat1.st_gid);
+    (void) mc_chmod (savename_vpath, edit->stat1.st_mode);
+    if (edit->attrs_ok)
+        (void) mc_fsetflags (savename_vpath, edit->attrs);
+
+    fd = mc_open (savename_vpath, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, edit->stat1.st_mode);
+    if (fd == -1)
+        goto error_save;
+
+    // pipe save
+    p = edit_get_write_filter (savename_vpath, real_filename_vpath);
+    if (p != NULL)
+    {
+        FILE *file;
+
+        mc_close (fd);
+        file = (FILE *) popen (p, "w");
+
+        if (file != NULL)
+        {
+            filelen = edit_write_stream (edit, file);
+#if 1
+            pclose (file);
+#else
+            if (pclose (file) != 0)
+            {
+                message (D_ERROR, MSG_ERROR, _ ("Error writing to pipe: %s"), p);
+                g_free (p);
+                goto error_save;
+            }
+#endif
+        }
+        else
+        {
+            file_error_message (_ ("Cannot open pipe for reading\n%s"), p);
+            g_free (p);
+            goto error_save;
+        }
+        g_free (p);
+    }
+    else if (edit->lb == LB_ASIS)
+    {  // do not change line breaks
+        filelen = edit_buffer_write_file (&edit->buffer, fd);
+
+        if (filelen != edit->buffer.size)
+        {
+            mc_close (fd);
+            goto error_save;
+        }
+
+        if (mc_close (fd) != 0)
+            goto error_save;
+
+        // Update the file information, especially the mtime.
+        if (mc_stat (savename_vpath, &edit->stat1) == -1)
+            goto error_save;
+    }
+    else
+    {  // change line breaks
+        FILE *file;
+        const char *savename;
+
+        mc_close (fd);
+
+        savename = vfs_path_get_last_path_str (savename_vpath);
+        file = (FILE *) fopen (savename, "w");
+        if (file != NULL)
+        {
+            filelen = edit_write_stream (edit, file);
+            fclose (file);
+        }
+        else
+        {
+            file_error_message (_ ("Cannot open file\n%s\nfor writing"), savename);
+            goto error_save;
+        }
+    }
+
+    if (filelen != edit->buffer.size)
+        goto error_save;
+
+    if (this_save_mode == EDIT_DO_BACKUP)
+    {
+        char *tmp_store_filename;
+        vfs_path_element_t *last_vpath_element;
+        vfs_path_t *tmp_vpath;
+        gboolean ok;
+
+        g_assert (edit_options.backup_ext != NULL);
+
+        // add backup extension to the path
+        tmp_vpath = vfs_path_clone (real_filename_vpath);
+        last_vpath_element = (vfs_path_element_t *) vfs_path_get_by_index (tmp_vpath, -1);
+        tmp_store_filename = last_vpath_element->path;
+        last_vpath_element->path =
+            g_strdup_printf ("%s%s", tmp_store_filename, edit_options.backup_ext);
+        g_free (tmp_store_filename);
+
+        ok = (mc_rename (real_filename_vpath, tmp_vpath) != -1);
+        vfs_path_free (tmp_vpath, TRUE);
+        if (!ok)
+            goto error_save;
+    }
+
+    if (this_save_mode != EDIT_QUICK_SAVE && mc_rename (savename_vpath, real_filename_vpath) == -1)
+        goto error_save;
+
+    vfs_path_free (real_filename_vpath, TRUE);
+    vfs_path_free (savename_vpath, TRUE);
+    return 1;
+error_save:
+    /*  FIXME: Is this safe ?
+     *  if (this_save_mode != EDIT_QUICK_SAVE)
+     *      mc_unlink (savename);
+     */
+    vfs_path_free (real_filename_vpath, TRUE);
+    vfs_path_free (savename_vpath, TRUE);
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+edit_check_newline (const edit_buffer_t *buf)
+{
+    return !(edit_options.check_nl_at_eof && buf->size > 0
+             && edit_buffer_get_byte (buf, buf->size - 1) != '\n'
+             && edit_query_dialog2 (_ ("Warning"),
+                                    _ ("The file you are saving does not end with a newline."),
+                                    _ ("C&ontinue"), _ ("&Cancel"))
+                 != 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static vfs_path_t *
+edit_get_save_file_as (WEdit *edit)
+{
+    static LineBreaks cur_lb = LB_ASIS;
+    char *filename_res = NULL;
+    vfs_path_t *ret_vpath = NULL;
+
+    const char *lb_names[LB_NAMES] = {
+        _ ("&Do not change"),
+        _ ("&Unix format (LF)"),
+        _ ("&Windows/DOS format (CR LF)"),
+        _ ("&Macintosh format (CR)"),
+    };
+
+    quick_widget_t quick_widgets[] = {
+        QUICK_LABELED_INPUT (_ ("Enter file name:"), input_label_above,
+                             vfs_path_as_str (edit->filename_vpath), "save-as", &filename_res, NULL,
+                             FALSE, FALSE, INPUT_COMPLETE_FILENAMES),
+        QUICK_SEPARATOR (TRUE),
+        QUICK_LABEL (_ ("Change line breaks to:"), NULL),
+        QUICK_RADIO (LB_NAMES, lb_names, (int *) &cur_lb, NULL),
+        QUICK_BUTTONS_OK_CANCEL,
+        QUICK_END,
+    };
+
+    WRect r = { -1, -1, 0, 64 };
+
+    quick_dialog_t qdlg = {
+        .rect = r,
+        .title = _ ("Save As"),
+        .help = "[Save File As]",
+        .help_file = MCEDIT_HELP_FILE,
+        .widgets = quick_widgets,
+        .callback = NULL,
+        .mouse_callback = NULL,
+    };
+
+    if (quick_dialog (&qdlg) != B_CANCEL)
+    {
+        char *fname;
+
+        edit->lb = cur_lb;
+        fname = tilde_expand (filename_res);
+        g_free (filename_res);
+        ret_vpath = vfs_path_from_str (fname);
+        g_free (fname);
+    }
+
+    return ret_vpath;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** returns TRUE on success */
+
+static gboolean
+edit_save_cmd (WEdit *edit)
+{
+    int save_lock = 0;
+    int save_errno = 0;
+
+    if (edit->locked == 0 && edit->delete_file == 0)
+        save_lock = lock_file (edit->filename_vpath);
+
+    const int res = edit_save_file (edit, edit->filename_vpath);
+    save_errno = errno;
+
+    // Maintain modify (not save) lock on failure
+    if ((res > 0 && edit->locked != 0) || save_lock != 0)
+        edit->locked = unlock_file (edit->filename_vpath);
+
+    // On failure try 'save as', it does locking on its own
+    if (res == 0)
+    {
+        if (edit_save_should_try_sudo (res, save_errno))
+        {
+            const int sudo_res = edit_try_sudo_save_cmd (edit);
+            const int handled = edit_save_handle_sudo_result (edit, sudo_res);
+
+            if (handled > 0)
+            {
+                edit_publish_runtime_save (edit, NULL, FALSE);
+                return TRUE;
+            }
+
+            if (handled < 0)
+                return FALSE;
+        }
+
+        return edit_save_as_cmd (edit);
+    }
+
+    if (res > 0)
+    {
+        edit->delete_file = 0;
+        edit->modified = 0;
+        edit->undo_content_saved = edit->undo_content_seq;
+        edit->undo_content_saved_gen = edit->undo_content_gen;
+        edit_publish_runtime_save (edit, NULL, FALSE);
+    }
+
+    edit->force |= REDRAW_COMPLETELY;
+
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+edit_runtime_save (WEdit *edit)
+{
+    if (edit == NULL)
+        return FALSE;
+
+    return edit_save_cmd (edit);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+edit_delete_column_of_text (WEdit *edit, off_t m1, off_t m2)
+{
+    off_t n;
+    off_t r;
+    long b, c, d;
+
+    n = edit_buffer_get_forward_offset (&edit->buffer, m1, 0, m2) + 1;
+    r = edit_buffer_get_bol (&edit->buffer, m1);
+    c = (long) edit_move_forward3 (edit, r, 0, m1);
+    r = edit_buffer_get_bol (&edit->buffer, m2);
+    d = (long) edit_move_forward3 (edit, r, 0, m2);
+    b = MAX (MIN (c, d), MIN (edit->column1, edit->column2));
+    c = MAX (c, MAX (edit->column1, edit->column2));
+
+    while (n-- != 0)
+    {
+        off_t p, q;
+
+        r = edit_buffer_get_current_bol (&edit->buffer);
+        p = edit_move_forward3 (edit, r, b, 0);
+        q = edit_move_forward3 (edit, r, c, 0);
+        p = MAX (p, m1);
+        q = MIN (q, m2);
+        edit_cursor_move (edit, p - edit->buffer.curs1);
+        // delete line between margins
+        for (; q > p; q--)
+            if (edit_buffer_get_current_byte (&edit->buffer) != '\n')
+                edit_delete (edit, TRUE);
+
+        // move to next line except on the last delete
+        if (n != 0)
+        {
+            r = edit_buffer_get_forward_offset (&edit->buffer, edit->buffer.curs1, 1, 0);
+            edit_cursor_move (edit, r - edit->buffer.curs1);
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** if success return TRUE */
+
+static gboolean
+edit_block_delete (WEdit *edit, off_t start_mark, off_t end_mark)
+{
+    off_t curs_pos;
+    long curs_line, c1, c2;
+
+    if (edit->column_highlight && edit->mark2 < 0)
+        edit_mark_cmd (edit, FALSE);
+
+    // Warning message with a query to continue or cancel the operation
+    if ((end_mark - start_mark) > max_undo / 2
+        && edit_query_dialog2 (_ ("Warning"),
+                               ("Block is large, you may not be able to undo this action"),
+                               _ ("C&ontinue"), _ ("&Cancel"))
+            != 0)
+        return FALSE;
+
+    c1 = MIN (edit->column1, edit->column2);
+    c2 = MAX (edit->column1, edit->column2);
+    edit->column1 = c1;
+    edit->column2 = c2;
+
+    edit_push_markers (edit);
+
+    curs_line = edit->buffer.curs_line;
+
+    curs_pos = edit->curs_col + edit->over_col;
+
+    // move cursor to start of selection
+    edit_cursor_move (edit, start_mark - edit->buffer.curs1);
+    edit_scroll_screen_over_cursor (edit);
+
+    if (start_mark < end_mark)
+    {
+        if (edit->column_highlight)
+        {
+            off_t b, e;
+            off_t line_width;
+
+            if (edit->mark2 < 0)
+                edit_mark_cmd (edit, FALSE);
+            edit_delete_column_of_text (edit, start_mark, end_mark);
+            // move cursor to the saved position
+            edit_move_to_line (edit, curs_line);
+            // calculate line width and cursor position before cut
+            b = edit_buffer_get_current_bol (&edit->buffer);
+            e = edit_buffer_get_current_eol (&edit->buffer);
+            line_width = edit_move_forward3 (edit, b, 0, e);
+            if (edit_options.cursor_beyond_eol && curs_pos > line_width)
+                edit->over_col = curs_pos - line_width;
+        }
+        else
+        {
+            off_t count;
+
+            for (count = start_mark; count < end_mark; count++)
+                edit_delete (edit, TRUE);
+        }
+    }
+
+    edit_set_markers (edit, 0, 0, 0, 0);
+    edit->force |= REDRAW_PAGE;
+
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Offset of the first character of a line that begins at or after @column.
+ *
+ * A character that straddles the margin -- a tab, a double width character -- belongs to the side
+ * its first column is on.  The margin is a character boundary in any case: a byte of a multibyte
+ * character is not a column of its own, and cutting a line between two of them loses the character.
+ */
+
+static off_t
+edit_line_column_margin (WEdit *edit, const off_t bol, const off_t eol, const long column)
+{
+    off_t offset;
+    long col;
+
+    offset = edit_get_line_offset (edit, bol, column, &col);
+
+    if (col < column && offset < eol)
+    {
+        int char_length = 1;
+
+        if (edit->utf8)
+            (void) edit_buffer_get_utf (&edit->buffer, offset, &char_length);
+
+        offset = MIN (offset + char_length, eol);
+    }
+
+    return offset;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** Return a null terminated length of text. Result must be g_free'd */
+
+static GString *
+edit_get_block (WEdit *edit, const off_t start, const off_t finish)
+{
+    GString *r;
+
+    r = g_string_sized_new (finish - start);
+
+    if (edit->column_highlight)
+    {
+        const long col1 = MIN (edit->column1, edit->column2);
+        const long col2 = MAX (edit->column1, edit->column2);
+        off_t bol;
+
+        // per line, keep the bytes in columns [col1, col2) plus the newline; jump to the margins
+        // through the cached column<->offset lookups rather than scanning every spanned byte
+        for (bol = edit_buffer_get_bol (&edit->buffer, start); bol < finish;
+             bol = edit_get_line_eol (edit, bol) + 1)
+        {
+            const off_t eol = edit_get_line_eol (edit, bol);
+            off_t i, e;
+
+            i = MAX (edit_line_column_margin (edit, bol, eol, col1), start);
+            e = MIN (edit_line_column_margin (edit, bol, eol, col2), MIN (eol, finish));
+
+            for (; i < e; i++)
+                g_string_append_c (r, (gchar) edit_buffer_get_byte (&edit->buffer, i));
+
+            if (eol >= start && eol < finish)
+                g_string_append_c (r, '\n');
+        }
+    }
+    else
+        for (off_t i = start; i < finish; i++)
+        {
+            const int c = edit_buffer_get_byte (&edit->buffer, i);
+
+            g_string_append_c (r, (gchar) c);
+        }
+
+    return r;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** copies a block to clipboard file */
+
+static gboolean
+edit_save_block_to_clip_file (WEdit *edit, off_t start, off_t finish)
+{
+    gboolean ret;
+    gchar *tmp;
+
+    tmp = mc_config_get_full_path (EDIT_HOME_CLIP_FILE);
+    ret = edit_save_clip_block (edit, tmp, start, finish);
+    g_free (tmp);
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+edit_append_spaces_at_eol (WEdit *edit, const long col, const long width)
+{
+    if (edit_buffer_get_current_byte (&edit->buffer) != '\n')
+        for (long l = width - (edit_get_col (edit) - col); l > 0; l--)
+            edit_insert (edit, ' ');
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+MC_TESTABLE void
+edit_insert_column_of_text (WEdit *edit, GString *data, long width, off_t *start_pos,
+                            off_t *end_pos, long *col1, long *col2)
+{
+    off_t cursor;
+    long col;
+
+    cursor = edit->buffer.curs1;
+    col = edit_get_col (edit);
+
+    for (gsize i = 0; i < data->len; i++)
+    {
+        if (data->str[i] != '\n')
+            edit_insert (edit, data->str[i]);
+        else
+        {  // fill in and move to next line
+            off_t p;
+
+            edit_append_spaces_at_eol (edit, col, width);
+
+            for (p = edit->buffer.curs1;; p++)
+            {
+                if (p == edit->buffer.size)
+                {
+                    edit_cursor_move (edit, edit->buffer.size - edit->buffer.curs1);
+                    edit_insert_ahead (edit, '\n');
+                    p++;
+                    break;
+                }
+                if (edit_buffer_get_byte (&edit->buffer, p) == '\n')
+                {
+                    p++;
+                    break;
+                }
+            }
+            edit_cursor_move (edit, edit_move_forward3 (edit, p, col, 0) - edit->buffer.curs1);
+
+            for (long l = col - edit_get_col (edit); l >= 1; l--)
+                edit_insert (edit, ' ');
+        }
+    }
+
+    // add spaces at the end of the last line if this line is short
+    edit_append_spaces_at_eol (edit, col, width);
+
+    *col1 = col;
+    *col2 = col + width;
+    *start_pos = cursor;
+    *end_pos = edit->buffer.curs1;
+    edit_cursor_move (edit, cursor - edit->buffer.curs1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Callback for the iteration of objects in the 'editors' array.
+ * Drop the cached column layout after a change in how characters are displayed.
+ *
+ * @param data      probably WEdit object
+ * @param user_data unused
+ */
+
+void
+edit_layout_reset_cb (void *data, void *user_data)
+{
+    (void) user_data;
+
+    if (edit_widget_is_editor (CONST_WIDGET (data)))
+        edit_layout_reset (EDIT (data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+edit_syntax_onoff_cb (void *data, void *user_data)
+{
+    (void) user_data;
+
+    if (edit_widget_is_editor (CONST_WIDGET (data)))
+    {
+        WEdit *edit = EDIT (data);
+
+        if (edit_options.syntax_highlighting)
+            edit_load_syntax (edit, NULL, edit_get_syntax_type (edit));
+        edit->force |= REDRAW_PAGE;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static cb_ret_t
+editcmd_dialog_raw_key_query_cb (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    WDialog *h = DIALOG (w);
+
+    switch (msg)
+    {
+    case MSG_KEY:
+        h->ret_value = parm;
+        dlg_close (h);
+        return MSG_HANDLED;
+    default:
+        return dlg_default_callback (w, sender, msg, parm, data);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editcmd_check_and_create_user_syntax_directory (const vfs_path_t *user_syntax_file_vpath)
+{
+    gboolean ret;
+    struct stat st;
+
+    ret = mc_stat (user_syntax_file_vpath, &st) == 0;
+    if (!ret)
+    {
+        // file doesn't exist -- check why
+        const char *user_syntax_file_path = vfs_path_as_str (user_syntax_file_vpath);
+
+        // check directory
+        const char *user_syntax_file_basename = x_basename (user_syntax_file_path);
+        char *user_syntax_dir;
+        vfs_path_t *user_syntax_vpath;
+
+        user_syntax_dir =
+            g_strndup (user_syntax_file_path, user_syntax_file_basename - user_syntax_file_path);
+        user_syntax_vpath = vfs_path_from_str (user_syntax_dir);
+
+        ret = mc_stat (user_syntax_vpath, &st) == 0;
+        if (!ret)
+            ret = mc_mkdir (user_syntax_vpath, 0700) == 0;
+        else if (!S_ISDIR (st.st_mode))
+        {
+            ret = FALSE;
+            // set for file_error_message()
+            errno = EEXIST;
+        }
+
+        if (!ret)
+            file_error_message (_ ("Cannot create directory\n%s"), user_syntax_dir);
+
+        vfs_path_free (user_syntax_vpath, TRUE);
+        g_free (user_syntax_dir);
+    }
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_refresh_cmd (void)
+{
+    tty_clear_screen ();
+    repaint_screen ();
+    tty_keypad (TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Toggle syntax highlighting in all editor windows.
+ *
+ * @param h root widget for all windows
+ */
+
+void
+edit_syntax_onoff_cmd (WDialog *h)
+{
+    edit_options.syntax_highlighting = !edit_options.syntax_highlighting;
+    g_list_foreach (GROUP (h)->widgets, edit_syntax_onoff_cb, NULL);
+    widget_draw (WIDGET (h));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Toggle tabs showing in all editor windows.
+ *
+ * @param h root widget for all windows
+ */
+
+void
+edit_show_tabs_tws_cmd (WDialog *h)
+{
+    enable_show_tabs_tws = !enable_show_tabs_tws;
+    widget_draw (WIDGET (h));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Toggle right margin showing in all editor windows.
+ *
+ * @param h root widget for all windows
+ */
+
+void
+edit_show_margin_cmd (WDialog *h)
+{
+    edit_options.show_right_margin = !edit_options.show_right_margin;
+    widget_draw (WIDGET (h));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Toggle caret notation of control characters in all editor windows.
+ *
+ * @param h root widget for all windows
+ */
+
+void
+edit_show_control_chars_cmd (WDialog *h)
+{
+    edit_options.show_control_chars = !edit_options.show_control_chars;
+    g_list_foreach (GROUP (h)->widgets, edit_layout_reset_cb, NULL);
+    widget_draw (WIDGET (h));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Toggle line numbers showing in all editor windows.
+ *
+ * @param h root widget for all windows
+ */
+
+void
+edit_show_numbers_cmd (WDialog *h)
+{
+    edit_options.line_state = !edit_options.line_state;
+    edit_options.line_state_width = edit_options.line_state ? LINE_STATE_WIDTH : 0;
+    widget_draw (WIDGET (h));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_save_mode_cmd (void)
+{
+    char *str_result = NULL;
+
+    const char *str[] = {
+        _ ("&Quick save"),
+        _ ("&Safe save"),
+        _ ("&Do backups with following extension:"),
+    };
+
+    g_assert (edit_options.backup_ext != NULL);
+
+    {
+        quick_widget_t quick_widgets[] = {
+            QUICK_RADIO (3, str, &edit_options.save_mode, &edit_save_mode_radio_id),
+            QUICK_INPUT (edit_options.backup_ext, "edit-backup-ext", &str_result,
+                         &edit_save_mode_input_id, FALSE, FALSE, INPUT_COMPLETE_NONE),
+            QUICK_SEPARATOR (TRUE),
+            QUICK_CHECKBOX (_ ("Check &POSIX new line"), &edit_options.check_nl_at_eof, NULL),
+            QUICK_BUTTONS_OK_CANCEL,
+            QUICK_END,
+        };
+
+        WRect r = { -1, -1, 0, 38 };
+
+        quick_dialog_t qdlg = {
+            .rect = r,
+            .title = _ ("Edit Save Mode"),
+            .help = "[Edit Save Mode]",
+            .help_file = MCEDIT_HELP_FILE,
+            .widgets = quick_widgets,
+            .callback = edit_save_mode_callback,
+            .mouse_callback = NULL,
+        };
+
+        if (quick_dialog (&qdlg) != B_CANCEL)
+        {
+            g_free (edit_options.backup_ext);
+            edit_options.backup_ext = str_result;
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_set_filename (WEdit *edit, const vfs_path_t *name_vpath)
+{
+    vfs_path_free (edit->filename_vpath, TRUE);
+    edit->filename_vpath = vfs_path_clone (name_vpath);
+
+    if (edit->dir_vpath == NULL)
+        edit->dir_vpath = vfs_path_clone (vfs_get_raw_current_dir ());
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* Here we want to warn the users of overwriting an existing file,
+   but only if they have made a change to the filename */
+/* returns TRUE on success */
+gboolean
+edit_save_as_cmd (WEdit *edit)
+{
+    // This heads the 'Save As' dialog box
+    vfs_path_t *exp_vpath;
+    int save_lock = 0;
+    gboolean different_filename = FALSE;
+    gboolean ret = FALSE;
+    char *previous_path = NULL;
+
+    if (!edit_check_newline (&edit->buffer))
+        return FALSE;
+
+    if (edit->filename_vpath != NULL)
+        previous_path = vfs_path_to_str_flags (edit->filename_vpath, 0, VPF_STRIP_PASSWORD);
+
+    exp_vpath = edit_get_save_file_as (edit);
+    edit_push_undo_action (edit, KEY_PRESS + edit->start_display);
+
+    if (exp_vpath != NULL && vfs_path_len (exp_vpath) != 0)
+    {
+        int rv;
+
+        if (!vfs_path_equal (edit->filename_vpath, exp_vpath))
+        {
+            int file;
+            struct stat sb;
+
+            if (mc_stat (exp_vpath, &sb) == 0 && !S_ISREG (sb.st_mode))
+            {
+                file_error_message (_ ("Cannot save\n%s:\nnot a regular file"),
+                                    vfs_path_as_str (exp_vpath));
+                goto ret;
+            }
+
+            different_filename = TRUE;
+            file = mc_open (exp_vpath, O_RDONLY | O_BINARY);
+
+            if (file == -1)
+                edit->stat1.st_mode |= S_IWUSR;
+            else
+            {
+                // the file exists
+                mc_close (file);
+                // Overwrite the current file or cancel the operation
+                if (edit_query_dialog2 (_ ("Warning"), _ ("A file already exists with this name"),
+                                        _ ("&Overwrite"), _ ("&Cancel")))
+                    goto ret;
+            }
+
+            save_lock = lock_file (exp_vpath);
+        }
+        else if (edit->locked == 0 && edit->delete_file == 0)
+            // filenames equal, check if already locked
+            save_lock = lock_file (exp_vpath);
+
+        if (different_filename)
+            /* Allow user to write into saved (under another name) file
+             * even if original file had r/o user permissions. */
+            edit->stat1.st_mode |= S_IWUSR;
+
+        rv = edit_save_file (edit, exp_vpath);
+        switch (rv)
+        {
+        case 1:
+            // Successful, so unlock both files
+            if (different_filename)
+            {
+                if (save_lock != 0)
+                    unlock_file (exp_vpath);
+                if (edit->locked != 0)
+                    edit->locked = unlock_file (edit->filename_vpath);
+            }
+            else if (edit->locked != 0 || save_lock != 0)
+                edit->locked = unlock_file (edit->filename_vpath);
+
+            edit_set_filename (edit, exp_vpath);
+            if (edit->lb != LB_ASIS)
+                edit_reload (edit, exp_vpath);
+            edit->modified = 0;
+            edit->undo_content_saved = edit->undo_content_seq;
+            edit->undo_content_saved_gen = edit->undo_content_gen;
+            edit->delete_file = 0;
+            if (different_filename && edit_options.syntax_highlighting)
+                edit_load_syntax (edit, NULL, edit_get_syntax_type (edit));
+            edit_publish_runtime_save (edit, previous_path, TRUE);
+            ret = TRUE;
+            break;
+
+        default:
+            message (D_ERROR, MSG_ERROR, "%s", _ ("Cannot save file"));
+            MC_FALLTHROUGH;
+
+        case -1:
+            // Failed, so maintain modify (not save) lock
+            if (save_lock != 0)
+                unlock_file (exp_vpath);
+            break;
+        }
+    }
+
+ret:
+    g_free (previous_path);
+    vfs_path_free (exp_vpath, TRUE);
+    edit->force |= REDRAW_COMPLETELY;
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** returns TRUE on success */
+
+gboolean
+edit_save_confirm_cmd (WEdit *edit)
+{
+    if (edit->filename_vpath == NULL)
+        return edit_save_as_cmd (edit);
+
+    if (!edit_check_newline (&edit->buffer))
+        return FALSE;
+
+    if (edit_options.confirm_save)
+    {
+        char *f;
+        gboolean ok;
+
+        f = g_strdup_printf (_ ("Confirm save file: \"%s\""),
+                             vfs_path_as_str (edit->filename_vpath));
+        ok = (edit_query_dialog2 (_ ("Save file"), f, _ ("&Save"), _ ("&Cancel")) == 0);
+        g_free (f);
+        if (!ok)
+            return FALSE;
+    }
+
+    return edit_save_cmd (edit);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Ask file to edit and load it.
+ *
+ * @return TRUE on success or cancel of ask.
+ */
+
+gboolean
+edit_load_cmd (WDialog *h)
+{
+    char *exp;
+    gboolean ret = TRUE;  // possible cancel
+
+    exp = input_expand_dialog (_ ("Load"), _ ("Enter file name:"), MC_HISTORY_EDIT_LOAD,
+                               INPUT_LAST_TEXT, INPUT_COMPLETE_FILENAMES | INPUT_COMPLETE_CD);
+
+    if (exp != NULL && *exp != '\0')
+    {
+        vfs_path_t *exp_vpath;
+        edit_arg_t arg;
+
+        exp_vpath = vfs_path_from_str (exp);
+        edit_arg_init (&arg, exp_vpath, 0);
+        ret = edit_load_file_from_filename (h, &arg);
+        vfs_path_free (exp_vpath, TRUE);
+    }
+
+    g_free (exp);
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Load file content
+ *
+ * @param h screen the owner of editor window
+ * @param vpath vfs file path
+ * @param line line number
+ *
+ * @return TRUE if file content was successfully loaded, FALSE otherwise
+ */
+
+gboolean
+edit_load_file_from_filename (WDialog *h, const edit_arg_t *arg)
+{
+    WRect r = WIDGET (h)->rect;
+
+    rect_grow (&r, -1, 0);
+
+    return edit_add_window (h, &r, arg);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Show history od edited or viewed files and open selected file.
+ *
+ * @return TRUE on success, FALSE otherwise.
+ */
+
+gboolean
+edit_load_file_from_history (WDialog *h)
+{
+    char *exp;
+    int action;
+    gboolean ret = TRUE;  // possible cancel
+
+    exp = show_file_history (CONST_WIDGET (h), &action);
+    if (exp != NULL && (action == CK_Edit || action == CK_Enter))
+    {
+        vfs_path_t *exp_vpath;
+        edit_arg_t arg;
+
+        exp_vpath = vfs_path_from_str (exp);
+        edit_arg_init (&arg, exp_vpath, 0);
+        ret = edit_load_file_from_filename (h, &arg);
+        vfs_path_free (exp_vpath, TRUE);
+    }
+
+    g_free (exp);
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Load syntax file to edit.
+ *
+ * @return TRUE on success
+ */
+
+gboolean
+edit_load_syntax_file (WDialog *h)
+{
+    vfs_path_t *extdir_vpath;
+    int dir = 0;
+    edit_arg_t arg;
+    gboolean ret = FALSE;
+
+    if (geteuid () == 0)
+        dir = query_dialog (_ ("Syntax file edit"), _ ("Which syntax file you want to edit?"),
+                            D_NORMAL, 2, _ ("&User"), _ ("&System wide"));
+
+    extdir_vpath =
+        vfs_path_build_filename (mc_global.sysconfig_dir, EDIT_SYNTAX_FILE, (char *) NULL);
+    if (!exist_file (vfs_path_get_last_path_str (extdir_vpath)))
+    {
+        vfs_path_free (extdir_vpath, TRUE);
+        extdir_vpath =
+            vfs_path_build_filename (mc_global.share_data_dir, EDIT_SYNTAX_FILE, (char *) NULL);
+    }
+
+    if (dir == 0)
+    {
+        vfs_path_t *user_syntax_file_vpath;
+
+        user_syntax_file_vpath = mc_config_get_full_vpath (EDIT_SYNTAX_FILE);
+
+        if (editcmd_check_and_create_user_syntax_directory (user_syntax_file_vpath))
+        {
+            check_for_default (extdir_vpath, user_syntax_file_vpath);
+            edit_arg_init (&arg, user_syntax_file_vpath, 0);
+            ret = edit_load_file_from_filename (h, &arg);
+        }
+
+        vfs_path_free (user_syntax_file_vpath, TRUE);
+    }
+    else if (dir == 1)
+    {
+        edit_arg_init (&arg, extdir_vpath, 0);
+        ret = edit_load_file_from_filename (h, &arg);
+    }
+
+    vfs_path_free (extdir_vpath, TRUE);
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Load menu file to edit.
+ *
+ * @return TRUE on success
+ */
+
+gboolean
+edit_load_menu_file (WDialog *h)
+{
+    vfs_path_t *buffer_vpath;
+    vfs_path_t *menufile_vpath;
+    int dir;
+    edit_arg_t arg;
+    gboolean ret;
+
+    query_set_sel (1);
+    dir = query_dialog (_ ("Menu edit"), _ ("Which menu file do you want to edit?"), D_NORMAL,
+                        geteuid () != 0 ? 2 : 3, _ ("&Local"), _ ("&User"), _ ("&System wide"));
+
+    menufile_vpath =
+        vfs_path_build_filename (mc_global.sysconfig_dir, EDIT_GLOBAL_MENU, (char *) NULL);
+    if (!exist_file (vfs_path_get_last_path_str (menufile_vpath)))
+    {
+        vfs_path_free (menufile_vpath, TRUE);
+        menufile_vpath =
+            vfs_path_build_filename (mc_global.share_data_dir, EDIT_GLOBAL_MENU, (char *) NULL);
+    }
+
+    switch (dir)
+    {
+    case 0:
+        buffer_vpath = vfs_path_from_str (EDIT_LOCAL_MENU);
+        check_for_default (menufile_vpath, buffer_vpath);
+        chmod (vfs_path_get_last_path_str (buffer_vpath), 0600);
+        break;
+
+    case 1:
+        buffer_vpath = mc_config_get_full_vpath (EDIT_HOME_MENU);
+        check_for_default (menufile_vpath, buffer_vpath);
+        break;
+
+    case 2:
+        buffer_vpath =
+            vfs_path_build_filename (mc_global.sysconfig_dir, EDIT_GLOBAL_MENU, (char *) NULL);
+        if (!exist_file (vfs_path_get_last_path_str (buffer_vpath)))
+        {
+            vfs_path_free (buffer_vpath, TRUE);
+            buffer_vpath =
+                vfs_path_build_filename (mc_global.share_data_dir, EDIT_GLOBAL_MENU, (char *) NULL);
+        }
+        break;
+
+    default:
+        vfs_path_free (menufile_vpath, TRUE);
+        return FALSE;
+    }
+
+    edit_arg_init (&arg, buffer_vpath, 0);
+    ret = edit_load_file_from_filename (h, &arg);
+
+    vfs_path_free (buffer_vpath, TRUE);
+    vfs_path_free (menufile_vpath, TRUE);
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Close window with opened file.
+ *
+ * @return TRUE if file was closed.
+ */
+
+gboolean
+edit_close_cmd (WEdit *edit)
+{
+    gboolean ret;
+
+    ret = (edit != NULL) && edit_ok_to_quit (edit);
+
+    if (ret)
+    {
+        Widget *w = WIDGET (edit);
+        WGroup *g = w->owner;
+
+        if (edit->locked != 0)
+            edit->locked = unlock_file (edit->filename_vpath);
+
+        group_remove_widget (w);
+        widget_destroy (w);
+
+        if (edit_widget_is_editor (CONST_WIDGET (g->current->data)))
+            edit = EDIT (g->current->data);
+        else
+        {
+            edit = edit_find_editor (DIALOG (g));
+            if (edit != NULL)
+                widget_select (WIDGET (edit));
+        }
+    }
+
+    if (edit != NULL)
+        edit->force |= REDRAW_COMPLETELY;
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_block_copy_cmd (WEdit *edit)
+{
+    off_t start_mark, end_mark, current = edit->buffer.curs1;
+    off_t mark1 = 0, mark2 = 0;
+    long c1 = 0, c2 = 0;
+    GString *copy_buf;
+
+    edit_update_curs_col (edit);
+    if (!eval_marks (edit, &start_mark, &end_mark))
+        return;
+
+    copy_buf = edit_get_block (edit, start_mark, end_mark);
+
+    // all that gets pushed are deletes hence little space is used on the stack
+
+    edit_push_markers (edit);
+
+    if (edit->column_highlight)
+    {
+        long col_delta;
+
+        col_delta = labs (edit->column2 - edit->column1);
+        edit_insert_column_of_text (edit, copy_buf, col_delta, &mark1, &mark2, &c1, &c2);
+    }
+    else
+    {
+        for (gsize i = copy_buf->len; i != 0; i--)
+            edit_insert_ahead (edit, copy_buf->str[i - 1]);
+
+        // Place cursor at the end of text selection
+        if (edit_options.cursor_after_inserted_block)
+            edit_cursor_move (edit, copy_buf->len);
+    }
+
+    g_string_free (copy_buf, TRUE);
+    edit_scroll_screen_over_cursor (edit);
+
+    if (edit->column_highlight)
+        edit_set_markers (edit, edit->buffer.curs1, mark2, c1, c2);
+    else if (start_mark < current && end_mark > current)
+        edit_set_markers (edit, start_mark, end_mark + end_mark - start_mark, 0, 0);
+
+    edit->force |= REDRAW_PAGE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_block_move_cmd (WEdit *edit)
+{
+    off_t current;
+    off_t start_mark, end_mark;
+
+    if (!eval_marks (edit, &start_mark, &end_mark))
+        return;
+
+    if (!edit->column_highlight && edit->buffer.curs1 > start_mark && edit->buffer.curs1 < end_mark)
+        return;
+
+    if (edit->mark2 < 0)
+        edit_mark_cmd (edit, FALSE);
+    edit_push_markers (edit);
+
+    if (edit->column_highlight)
+    {
+        off_t mark1, mark2;
+        long c1, c2, b_width;
+        long x, x2;
+        off_t b1, b2;
+        GString *copy_buf;
+
+        c1 = MIN (edit->column1, edit->column2);
+        c2 = MAX (edit->column1, edit->column2);
+        b_width = c2 - c1;
+
+        edit_update_curs_col (edit);
+
+        x = edit->curs_col;
+        x2 = x + edit->over_col;
+
+        // do nothing when cursor inside first line of selected area
+        b1 = edit_buffer_get_eol (&edit->buffer, edit->buffer.curs1);
+        b2 = edit_buffer_get_eol (&edit->buffer, start_mark);
+        if (b1 == b2 && x2 > c1 && x2 <= c2)
+            return;
+
+        if (edit->buffer.curs1 > start_mark
+            && edit->buffer.curs1 < edit_buffer_get_eol (&edit->buffer, end_mark))
+        {
+            if (x > c2)
+                x -= b_width;
+            else if (x > c1 && x <= c2)
+                x = c1;
+        }
+        // save current selection into buffer
+        copy_buf = edit_get_block (edit, start_mark, end_mark);
+
+        // remove current selection
+        edit_block_delete_cmd (edit);
+
+        edit->over_col = MAX (0, edit->over_col - b_width);
+        // calculate the cursor pos after delete block
+        b1 = edit_buffer_get_current_bol (&edit->buffer);
+        current = edit_move_forward3 (edit, b1, x, 0);
+        edit_cursor_move (edit, current - edit->buffer.curs1);
+        edit_scroll_screen_over_cursor (edit);
+
+        // add TWS if need before block insertion
+        if (edit_options.cursor_beyond_eol && edit->over_col > 0)
+            edit_insert_over (edit);
+
+        edit_insert_column_of_text (edit, copy_buf, b_width, &mark1, &mark2, &c1, &c2);
+        edit_set_markers (edit, mark1, mark2, c1, c2);
+        g_string_free (copy_buf, TRUE);
+    }
+    else
+    {
+        unsigned char *copy_buf;
+        off_t count, count_orig;
+        off_t x;
+
+        current = edit->buffer.curs1;
+        copy_buf = g_malloc0 (end_mark - start_mark);
+        edit_cursor_move (edit, start_mark - edit->buffer.curs1);
+        edit_scroll_screen_over_cursor (edit);
+
+        for (count = start_mark; count < end_mark; count++)
+            copy_buf[end_mark - count - 1] = edit_delete (edit, TRUE);
+
+        edit_scroll_screen_over_cursor (edit);
+        x = current > edit->buffer.curs1 ? end_mark - start_mark : 0;
+        edit_cursor_move (edit, current - edit->buffer.curs1 - x);
+        edit_scroll_screen_over_cursor (edit);
+        count_orig = count;
+        while (count-- > start_mark)
+            edit_insert_ahead (edit, copy_buf[end_mark - count - 1]);
+        g_free (copy_buf);
+
+        edit_set_markers (edit, edit->buffer.curs1, edit->buffer.curs1 + end_mark - start_mark, 0,
+                          0);
+
+        // Place cursor at the end of text selection
+        if (edit_options.cursor_after_inserted_block)
+            edit_cursor_move (edit, count_orig - start_mark);
+    }
+
+    edit_scroll_screen_over_cursor (edit);
+    edit->force |= REDRAW_PAGE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** returns FALSE if canceelled by user */
+
+gboolean
+edit_block_delete_cmd (WEdit *edit)
+{
+    off_t start_mark, end_mark;
+
+    if (eval_marks (edit, &start_mark, &end_mark))
+        return edit_block_delete (edit, start_mark, end_mark);
+
+    edit_delete_line (edit);
+
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Check if it's OK to close the file. If there are unsaved changes, ask user.
+ *
+ * @return TRUE if it's OK to exit, FALSE to continue editing.
+ */
+
+gboolean
+edit_ok_to_quit (WEdit *edit)
+{
+    const char *fname;
+    char *msg;
+    int act;
+
+    if (edit->modified == 0)
+        return TRUE;
+
+    if (edit->filename_vpath != NULL)
+        fname = vfs_path_as_str (edit->filename_vpath);
+    else
+        fname = _ ("[NoName]");
+
+    if (!mc_global.shutdown)
+    {
+        query_set_sel (2);
+
+        msg = g_strdup_printf (_ ("File %s was modified.\nSave before close?"), fname);
+        act = edit_query_dialog3 (_ ("Close file"), msg, _ ("&Yes"), _ ("&No"), _ ("&Cancel"));
+    }
+    else
+    {
+        msg = g_strdup_printf (_ ("%s is being shut down.\nSave modified file %s?"), PACKAGE_NAME,
+                               fname);
+        act = edit_query_dialog2 (_ ("Quit"), msg, _ ("&Yes"), _ ("&No"));
+
+        // Esc is No
+        if (act == -1)
+            act = 1;
+    }
+
+    g_free (msg);
+
+    switch (act)
+    {
+    case 0:  // Yes
+        if (!mc_global.shutdown && !edit_check_newline (&edit->buffer))
+            return FALSE;
+        edit_push_markers (edit);
+        edit_set_markers (edit, 0, 0, 0, 0);
+        if (!edit_save_cmd (edit) || mc_global.shutdown)
+            return mc_global.shutdown;
+        break;
+    case 1:  // No
+    default:
+        break;
+    case 2:   // Cancel
+    case -1:  // Esc
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* Save the block into the file; a vertical block gets the marker when asked. The digest of the
+   written bytes goes into sum when given. TRUE on success. */
+static gboolean
+edit_save_block_sum (WEdit *edit, const char *filename, off_t start, off_t finish,
+                     const gboolean marker, GChecksum *sum)
+{
+    int file;
+    vfs_path_t *vpath;
+    off_t len = 1;
+
+    vpath = vfs_path_from_str (filename);
+    file = mc_open (vpath, O_CREAT | O_WRONLY | O_TRUNC,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH | O_BINARY);
+    vfs_path_free (vpath, TRUE);
+    if (file == -1)
+        return FALSE;
+
+    if (edit->column_highlight)
+    {
+        int r = 1;
+
+        if (marker)
+            r = mc_write (file, VERTICAL_MAGIC, sizeof (VERTICAL_MAGIC));
+        if (r > 0)
+        {
+            GString *block;
+            char *p;
+
+            block = edit_get_block (edit, start, finish);
+
+            // pad each line to the selection width so over-wide blocks survive the round-trip
+            {
+                const long col1 = MIN (edit->column1, edit->column2);
+                const long width = labs (edit->column2 - edit->column1);
+                GString *padded;
+                gsize ls = 0;
+
+                padded = g_string_sized_new (block->len);
+                for (gsize i = 0; i <= block->len; i++)
+                    if (i == block->len || block->str[i] == '\n')
+                    {
+                        long cols;
+
+                        // a trailing '\n' leaves no final line to pad
+                        if (i == block->len && ls == i)
+                            break;
+
+                        g_string_append_len (padded, block->str + ls, i - ls);
+                        for (cols = edit_block_line_columns (edit, col1, block->str + ls, i - ls);
+                             cols < width; cols++)
+                            g_string_append_c (padded, ' ');
+                        if (i < block->len)
+                            g_string_append_c (padded, '\n');
+                        ls = i + 1;
+                    }
+
+                g_string_free (block, TRUE);
+                block = padded;
+            }
+
+            if (sum != NULL)
+                g_checksum_update (sum, (const guchar *) block->str, block->len);
+
+            p = block->str;
+            len = block->len;
+
+            while (len != 0)
+            {
+                r = mc_write (file, p, len);
+                if (r < 0)
+                    break;
+                p += r;
+                len -= r;
+            }
+
+            g_string_free (block, TRUE);
+        }
+    }
+    else
+    {
+        unsigned char *buf;
+        off_t i = start;
+
+        len = finish - start;
+        buf = g_malloc0 (TEMP_BUF_LEN);
+        while (start != finish)
+        {
+            off_t end;
+
+            end = MIN (finish, start + TEMP_BUF_LEN);
+            for (; i < end; i++)
+                buf[i - start] = edit_buffer_get_byte (&edit->buffer, i);
+            if (sum != NULL)
+                g_checksum_update (sum, buf, end - start);
+            len -= mc_write (file, (char *) buf, end - start);
+            start = end;
+        }
+        g_free (buf);
+    }
+    mc_close (file);
+
+    return (len == 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** save block to a file of the user, returns TRUE on success */
+
+gboolean
+edit_save_block (WEdit *edit, const char *filename, off_t start, off_t finish)
+{
+    return edit_save_block_sum (edit, filename, start, finish, TRUE, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** save block to the clipfile: the info file records the kind of the block and the codeset */
+
+gboolean
+edit_save_clip_block (WEdit *edit, const char *filename, off_t start, off_t finish)
+{
+    GChecksum *sum;
+    gboolean ret;
+
+    sum = g_checksum_new (CLIP_DIGEST_TYPE);
+    ret = edit_save_block_sum (edit, filename, start, finish, FALSE, sum);
+    if (ret)
+        clipboard_info_write (filename, g_checksum_get_string (sum), edit->column_highlight != 0,
+                              edit_get_codeset ());
+    else
+        clipboard_info_drop (filename);
+    g_checksum_free (sum);
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_paste_from_history (WEdit *edit)
+{
+    (void) edit;
+
+    message (D_ERROR, MSG_ERROR, "%s", _ ("This function is not implemented"));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+edit_copy_to_X_buf_cmd (WEdit *edit)
+{
+    off_t start_mark, end_mark;
+
+    if (!eval_marks (edit, &start_mark, &end_mark))
+        return TRUE;
+
+    if (!edit_save_block_to_clip_file (edit, start_mark, end_mark))
+    {
+        message (D_ERROR, MSG_ERROR, "%s", _ ("Unable to save to file"));
+        return FALSE;
+    }
+    // try use external clipboard utility
+    mc_event_raise (MCEVENT_GROUP_CORE, "clipboard_file_to_ext_clip", NULL);
+
+    if (edit_options.drop_selection_on_copy)
+        edit_mark_cmd (edit, TRUE);
+
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+edit_cut_to_X_buf_cmd (WEdit *edit)
+{
+    off_t start_mark, end_mark;
+
+    if (!eval_marks (edit, &start_mark, &end_mark))
+        return TRUE;
+
+    if (!edit_save_block_to_clip_file (edit, start_mark, end_mark))
+    {
+        message (D_ERROR, MSG_ERROR, "%s", _ ("Unable to save to file"));
+        return FALSE;
+    }
+    // try use external clipboard utility
+    mc_event_raise (MCEVENT_GROUP_CORE, "clipboard_file_to_ext_clip", NULL);
+
+    edit_block_delete_cmd (edit);
+    edit_mark_cmd (edit, TRUE);
+
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+edit_paste_from_X_buf_cmd (WEdit *edit)
+{
+    vfs_path_t *tmp;
+    gboolean ret;
+
+    // try use external clipboard utility
+    mc_event_raise (MCEVENT_GROUP_CORE, "clipboard_file_from_ext_clip", NULL);
+    tmp = mc_config_get_full_vpath (EDIT_HOME_CLIP_FILE);
+    ret = (edit_insert_file (edit, tmp) >= 0);
+    vfs_path_free (tmp, TRUE);
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Ask user for the line and go to that line.
+ * Negative numbers mean line from the end (i.e. -1 is the last line).
+ */
+
+void
+edit_goto_cmd (WEdit *edit)
+{
+    static gboolean first_run = TRUE;
+
+    char *f;
+    long l;
+    char *error;
+
+    f = input_dialog (_ ("Goto line"), _ ("Enter line:"), MC_HISTORY_EDIT_GOTO_LINE,
+                      first_run ? NULL : INPUT_LAST_TEXT, INPUT_COMPLETE_NONE);
+    if (f == NULL || *f == '\0')
+    {
+        g_free (f);
+        return;
+    }
+
+    l = strtol (f, &error, 0);
+    if (*error != '\0')
+    {
+        g_free (f);
+        return;
+    }
+
+    if (l < 0)
+        l = edit->buffer.lines + l + 2;
+
+    edit_move_display (edit, l - WIDGET (edit)->rect.lines / 2 - 1);
+    edit_move_to_line (edit, l - 1);
+    edit->force |= REDRAW_COMPLETELY;
+
+    g_free (f);
+    first_run = FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** Return TRUE on success */
+
+gboolean
+edit_save_block_cmd (WEdit *edit)
+{
+    off_t start_mark, end_mark;
+    char *exp, *tmp;
+    gboolean ret = FALSE;
+
+    if (!eval_marks (edit, &start_mark, &end_mark))
+        return TRUE;
+
+    tmp = mc_config_get_full_path (EDIT_HOME_CLIP_FILE);
+    exp = input_expand_dialog (_ ("Save block"), _ ("Enter file name:"), MC_HISTORY_EDIT_SAVE_BLOCK,
+                               tmp, INPUT_COMPLETE_FILENAMES);
+    g_free (tmp);
+    edit_push_undo_action (edit, KEY_PRESS + edit->start_display);
+
+    if (exp != NULL && *exp != '\0')
+    {
+        if (edit_save_block (edit, exp, start_mark, end_mark))
+            ret = TRUE;
+        else
+            message (D_ERROR, MSG_ERROR, "%s", _ ("Cannot save block"));
+
+        edit->force |= REDRAW_COMPLETELY;
+    }
+
+    g_free (exp);
+
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** returns TRUE on success */
+gboolean
+edit_insert_file_cmd (WEdit *edit)
+{
+    char *tmp;
+    char *exp;
+    gboolean ret = FALSE;
+
+    tmp = mc_config_get_full_path (EDIT_HOME_CLIP_FILE);
+    exp = input_expand_dialog (_ ("Insert file"), _ ("Enter file name:"),
+                               MC_HISTORY_EDIT_INSERT_FILE, tmp, INPUT_COMPLETE_FILENAMES);
+    g_free (tmp);
+
+    edit_push_undo_action (edit, KEY_PRESS + edit->start_display);
+
+    if (exp != NULL && *exp != '\0')
+    {
+        vfs_path_t *exp_vpath;
+
+        exp_vpath = vfs_path_from_str (exp);
+        ret = (edit_insert_file (edit, exp_vpath) >= 0);
+        vfs_path_free (exp_vpath, TRUE);
+
+        if (!ret)
+            message (D_ERROR, MSG_ERROR, "%s", _ ("Cannot insert file"));
+    }
+
+    g_free (exp);
+
+    edit->force |= REDRAW_COMPLETELY;
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** if block is 1, a block must be highlighted and the shell command
+   processes it. If block is 0 the shell command is a straight system
+   command, that just produces some output which is to be inserted */
+
+void
+edit_block_process_cmd (WEdit *edit, int macro_number)
+{
+    char *fname;
+    char *macros_fname = NULL;
+
+    fname = g_strdup_printf ("%s.%i.sh", EDIT_HOME_MACRO_FILE, macro_number);
+    macros_fname = g_build_filename (mc_config_get_data_path (), fname, (char *) NULL);
+    edit_user_menu (edit, macros_fname, 0);
+    g_free (fname);
+    g_free (macros_fname);
+    edit->force |= REDRAW_COMPLETELY;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_select_codepage_cmd (WEdit *edit)
+{
+    if (do_select_codepage ())
+        edit_set_codeset (edit);
+
+    edit->force = REDRAW_PAGE;
+    widget_draw (WIDGET (edit));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+edit_load_forward_cmd (WEdit *edit)
+{
+    if (edit->modified != 0
+        && edit_query_dialog2 (_ ("Warning"),
+                               _ ("Current text was modified without a file save.\n"
+                                  "Continue discards these changes."),
+                               _ ("C&ontinue"), _ ("&Cancel"))
+            == 1)
+    {
+        edit->force |= REDRAW_COMPLETELY;
+        return TRUE;
+    }
+
+    if (edit_stack_iterator + 1 >= MAX_HISTORY_MOVETO)
+        return FALSE;
+
+    if (edit_history_moveto[edit_stack_iterator + 1].line_number < 1)
+        return FALSE;
+
+    edit_stack_iterator++;
+    if (edit_history_moveto[edit_stack_iterator].file_vpath != NULL)
+        return edit_reload_line (edit, &edit_history_moveto[edit_stack_iterator]);
+
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+edit_load_back_cmd (WEdit *edit)
+{
+    if (edit->modified != 0
+        && edit_query_dialog2 (_ ("Warning"),
+                               _ ("Current text was modified without a file save.\n"
+                                  "Continue discards these changes."),
+                               _ ("C&ontinue"), _ ("&Cancel"))
+            == 1)
+    {
+        edit->force |= REDRAW_COMPLETELY;
+        return TRUE;
+    }
+
+    // we are in the bottom of the stack, NO WAY!
+    if (edit_stack_iterator == 0)
+        return FALSE;
+
+    edit_stack_iterator--;
+    if (edit_history_moveto[edit_stack_iterator].file_vpath != NULL)
+        return edit_reload_line (edit, &edit_history_moveto[edit_stack_iterator]);
+
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* gets a raw key from the keyboard. Passing cancel = 1 draws
+   a cancel button thus allowing c-c etc.  Alternatively, cancel = 0
+   will return the next key pressed.  ctrl-a (=B_CANCEL), ctrl-g, ctrl-c,
+   and Esc are cannot returned */
+
+int
+editcmd_dialog_raw_key_query (const char *heading, const char *query, gboolean cancel)
+{
+    int w, wq;
+    int y = 2;
+    WDialog *raw_dlg;
+    WGroup *g;
+
+    w = str_term_width1 (heading) + 6;
+    wq = str_term_width1 (query);
+    w = MAX (w, wq + 3 * 2 + 1 + 2);
+
+    raw_dlg = dlg_create (TRUE, 0, 0, cancel ? 7 : 5, w, WPOS_CENTER | WPOS_TRYUP, FALSE,
+                          dialog_colors, editcmd_dialog_raw_key_query_cb, NULL, NULL, heading);
+    g = GROUP (raw_dlg);
+    widget_want_tab (WIDGET (raw_dlg), TRUE);
+
+    group_add_widget (g, label_new (y, 3, query));
+    group_add_widget (
+        g, input_new (y++, 3 + wq + 1, input_colors, w - (6 + wq + 1), "", 0, INPUT_COMPLETE_NONE));
+    if (cancel)
+    {
+        group_add_widget (g, hline_new (y++, -1, -1));
+        // Button w/o hotkey to allow use any key as raw or macro one
+        group_add_widget_autopos (g, button_new (y, 1, B_CANCEL, NORMAL_BUTTON, _ ("Cancel"), NULL),
+                                  WPOS_KEEP_TOP | WPOS_CENTER_HORZ, NULL);
+    }
+
+    w = dlg_run (raw_dlg);
+    widget_destroy (WIDGET (raw_dlg));
+
+    return (cancel && (w == ESC_CHAR || w == B_CANCEL)) ? 0 : w;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+#define UNDO_HIST_MAX 500
+
+typedef struct
+{
+    int n_inserted;  /* insert-type operations (bytes) */
+    int n_deleted;   /* delete-type operations (bytes) */
+    int n_chars;     /* character count for label (0 = unknown, fall back to byte count) */
+    guint steps;     /* coalesced raw stack steps */
+    gboolean has_br; /* group contains space/newline/tab (BACKSPACE_BR) */
+    char preview[32];
+    off_t curs_before;
+} undo_hist_entry_t;
+
+static void
+preview_truncate_utf8 (char *s)
+{
+    int len = (int) strlen (s);
+    int i;
+    unsigned char c;
+    int char_len;
+
+    if (len == 0)
+        return;
+
+    i = len - 1;
+    while (i > 0 && ((unsigned char) s[i] & 0xC0) == 0x80)
+        i--;
+
+    c = (unsigned char) s[i];
+    if (c < 0x80)
+        char_len = 1;
+    else if ((c & 0xE0) == 0xC0)
+        char_len = 2;
+    else if ((c & 0xF0) == 0xE0)
+        char_len = 3;
+    else if ((c & 0xF8) == 0xF0)
+        char_len = 4;
+    else
+        char_len = 1;
+
+    if (i + char_len > len)
+        s[i] = '\0';
+}
+
+/* Render up to count bytes from buf into a compact preview. */
+static void
+preview_fill_from_buf (char *preview, const edit_buffer_t *buf, off_t pos, int count,
+                       gboolean is_utf8)
+{
+    int plen = 0;
+    int remaining = count;
+
+    while (remaining > 0 && plen < 30)
+    {
+        int ch, char_length;
+
+        if (is_utf8)
+        {
+            ch = edit_buffer_get_utf (buf, pos, &char_length);
+            if (char_length < 1)
+            {
+                pos++;
+                remaining--;
+                continue;
+            }
+        }
+        else
+        {
+            ch = (unsigned char) edit_buffer_get_byte (buf, pos);
+            char_length = 1;
+        }
+
+        if (ch == '\n')
+        {
+            if (plen + 2 > 30)
+                break;
+            preview[plen++] = '^';
+            preview[plen++] = 'M';
+            break;
+        }
+        else if (ch < 32 || ch == 127)
+        {
+            if (plen + 2 > 30)
+                break;
+            preview[plen++] = '^';
+            preview[plen++] = (ch == 127) ? '?' : (char) ('@' + ch);
+        }
+        else
+        {
+            int i;
+
+            if (plen + char_length > 30)
+                break;
+            for (i = 0; i < char_length; i++)
+                preview[plen++] = (char) edit_buffer_get_byte (buf, pos + i);
+        }
+
+        pos += char_length;
+        remaining -= char_length;
+    }
+    preview[plen] = '\0';
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+count_utf8_chars_in_buf (const edit_buffer_t *buf, off_t pos, int byte_count)
+{
+    int chars = 0;
+    int remaining = byte_count;
+
+    while (remaining > 0)
+    {
+        unsigned char ch = (unsigned char) edit_buffer_get_byte (buf, pos);
+
+        if ((ch & 0xC0) != 0x80)
+            chars++;
+        pos++;
+        remaining--;
+    }
+    return chars;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+undo_hist_collect (const long *stack, unsigned long sp, unsigned long bottom, unsigned long mask,
+                   gboolean is_redo, GArray *groups, off_t start_curs)
+{
+    unsigned long cursor;
+    undo_hist_entry_t cur;
+    off_t tracked_curs = start_curs;
+    long cur_curs_delta = 0;
+
+    memset (&cur, 0, sizeof (cur));
+    cursor = sp;
+
+    while (cursor != bottom)
+    {
+        long entry, ac;
+        int repeat;
+
+        entry = stack[(cursor - 1) & mask];
+
+        if (entry >= 0)
+        {
+            ac = entry;
+            repeat = 1;
+            cursor = (cursor - 1) & mask;
+        }
+        else
+        {
+            if (((cursor - bottom) & mask) < 2)
+                break;
+            ac = stack[(cursor - 2) & mask];
+            repeat = (int) (-entry);
+            cursor = (cursor - 2) & mask;
+        }
+
+        if (ac >= KEY_PRESS)
+        {
+            cur.steps = 1;
+            cur.curs_before = tracked_curs - (off_t) cur_curs_delta;
+
+            if (cur.n_deleted > 0)
+                preview_truncate_utf8 (cur.preview);
+
+            tracked_curs -= (off_t) cur_curs_delta;
+            cur_curs_delta = 0;
+
+            g_array_append_val (groups, cur);
+            memset (&cur, 0, sizeof (cur));
+        }
+        else if (!is_redo)
+        {
+            if (ac == BACKSPACE)
+            {
+                cur.n_inserted += repeat;
+                cur_curs_delta += repeat;
+            }
+            else if (ac == BACKSPACE_BR)
+            {
+                cur.n_inserted += repeat;
+                cur.has_br = TRUE;
+                cur_curs_delta += repeat;
+            }
+            else if (ac == DELCHAR)
+                cur.n_inserted += repeat;
+            else if (ac == DELCHAR_BR)
+            {
+                cur.n_inserted += repeat;
+                cur.has_br = TRUE;
+            }
+            else if (ac >= 0 && ac < 256)
+            {
+                int ch = (int) ac;
+                int plen = (int) strlen (cur.preview);
+                int r;
+
+                cur.n_deleted += repeat;
+                if ((ch & 0xC0) != 0x80)
+                    cur.n_chars += repeat;
+                cur_curs_delta -= repeat;
+
+                for (r = 0; r < repeat; r++)
+                {
+                    if (plen >= 30)
+                        break;
+                    if (ch < 32)
+                    {
+                        if (plen + 2 > 30)
+                            break;
+                        cur.preview[plen++] = '^';
+                        cur.preview[plen++] = ch == '\n' ? 'M' : (char) ('@' + ch);
+                        if (ch == '\n')
+                            break;
+                    }
+                    else if (ch == 127)
+                    {
+                        if (plen + 2 > 30)
+                            break;
+                        cur.preview[plen++] = '^';
+                        cur.preview[plen++] = '?';
+                    }
+                    else
+                        cur.preview[plen++] = (char) ch;
+                }
+                cur.preview[plen] = '\0';
+            }
+            else if (ac >= 256 && ac < 512)
+            {
+                int ch = (int) (ac - 256);
+                int plen = (int) strlen (cur.preview);
+                int r;
+
+                cur.n_deleted += repeat;
+                if ((ch & 0xC0) != 0x80)
+                    cur.n_chars += repeat;
+
+                for (r = 0; r < repeat; r++)
+                {
+                    if (plen >= 30)
+                        break;
+                    if (ch < 32)
+                    {
+                        if (plen + 2 > 30)
+                            break;
+                        memmove (cur.preview + 2, cur.preview, (size_t) (plen + 1));
+                        cur.preview[0] = '^';
+                        cur.preview[1] = ch == '\n' ? 'M' : (char) ('@' + ch);
+                        plen += 2;
+                        if (ch == '\n')
+                            break;
+                    }
+                    else if (ch == 127)
+                    {
+                        if (plen + 2 > 30)
+                            break;
+                        memmove (cur.preview + 2, cur.preview, (size_t) (plen + 1));
+                        cur.preview[0] = '^';
+                        cur.preview[1] = '?';
+                        plen += 2;
+                    }
+                    else
+                    {
+                        memmove (cur.preview + 1, cur.preview, (size_t) (plen + 1));
+                        cur.preview[0] = (char) ch;
+                        plen++;
+                    }
+                }
+            }
+            else if (ac == CURS_LEFT)
+                cur_curs_delta += repeat;
+            else if (ac == CURS_RIGHT)
+                cur_curs_delta -= repeat;
+        }
+        else
+        {
+            if (ac >= 0 && ac < 256)
+            {
+                int ch = (int) ac;
+                int plen = (int) strlen (cur.preview);
+                int r;
+
+                if (ch <= 32)
+                    cur.has_br = TRUE;
+                cur.n_inserted += repeat;
+                if ((ch & 0xC0) != 0x80)
+                    cur.n_chars += repeat;
+
+                for (r = 0; r < repeat; r++)
+                {
+                    if (plen >= 30)
+                        break;
+                    if (ch < 32)
+                    {
+                        if (plen + 2 > 30)
+                            break;
+                        cur.preview[plen++] = '^';
+                        cur.preview[plen++] = ch == '\n' ? 'M' : (char) ('@' + ch);
+                        if (ch == '\n')
+                            break;
+                    }
+                    else if (ch == 127)
+                    {
+                        if (plen + 2 > 30)
+                            break;
+                        cur.preview[plen++] = '^';
+                        cur.preview[plen++] = '?';
+                    }
+                    else
+                        cur.preview[plen++] = (char) ch;
+                }
+                cur.preview[plen] = '\0';
+            }
+            else if (ac >= 256 && ac < 512)
+            {
+                int ch = (int) (ac - 256);
+
+                cur.n_inserted += repeat;
+                if ((ch & 0xC0) != 0x80)
+                    cur.n_chars += repeat;
+            }
+            else if (ac == BACKSPACE || ac == BACKSPACE_BR || ac == DELCHAR || ac == DELCHAR_BR)
+                cur.n_deleted += repeat;
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+undo_hist_can_coalesce (const undo_hist_entry_t *a, const undo_hist_entry_t *b, gboolean is_redo)
+{
+    if (!is_redo && (a->has_br || b->has_br))
+        return FALSE;
+    if (a->n_inserted > 0 && a->n_deleted == 0 && b->n_inserted > 0 && b->n_deleted == 0)
+        return TRUE;
+    if (a->n_deleted > 0 && a->n_inserted == 0 && b->n_deleted > 0 && b->n_inserted == 0)
+        return TRUE;
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static GArray *
+undo_hist_coalesce (GArray *raw, gboolean is_redo)
+{
+    GArray *out;
+    undo_hist_entry_t cur;
+    gboolean has_cur = FALSE;
+    guint i;
+
+    out = g_array_new (FALSE, FALSE, sizeof (undo_hist_entry_t));
+
+    for (i = 0; i < raw->len; i++)
+    {
+        const undo_hist_entry_t *e = &g_array_index (raw, undo_hist_entry_t, i);
+
+        if (has_cur && undo_hist_can_coalesce (&cur, e, is_redo))
+        {
+            cur.n_inserted += e->n_inserted;
+            cur.n_deleted += e->n_deleted;
+            cur.n_chars += e->n_chars;
+            cur.steps += e->steps;
+            cur.curs_before = e->curs_before;
+            if (e->preview[0] != '\0')
+            {
+                int cur_plen = (int) strlen (cur.preview);
+                int e_plen = (int) strlen (e->preview);
+                if (cur_plen + e_plen < (int) sizeof (cur.preview) - 1)
+                    memcpy (cur.preview + cur_plen, e->preview, (size_t) (e_plen + 1));
+            }
+        }
+        else
+        {
+            if (has_cur)
+            {
+                preview_truncate_utf8 (cur.preview);
+                g_array_append_val (out, cur);
+            }
+            cur = *e;
+            has_cur = TRUE;
+        }
+    }
+
+    if (has_cur)
+    {
+        preview_truncate_utf8 (cur.preview);
+        g_array_append_val (out, cur);
+    }
+
+    g_array_free (raw, TRUE);
+    return out;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static GArray *
+undo_hist_drop_cursor (GArray *arr)
+{
+    GArray *out;
+    guint i, pending = 0;
+
+    out = g_array_new (FALSE, FALSE, sizeof (undo_hist_entry_t));
+
+    for (i = 0; i < arr->len; i++)
+    {
+        const undo_hist_entry_t *e = &g_array_index (arr, undo_hist_entry_t, i);
+
+        if (e->n_inserted == 0 && e->n_deleted == 0)
+        {
+            if (out->len > 0)
+                g_array_index (out, undo_hist_entry_t, out->len - 1).steps += e->steps;
+            else
+                pending += e->steps;
+        }
+        else
+        {
+            undo_hist_entry_t copy = *e;
+
+            copy.steps += pending;
+            pending = 0;
+            g_array_append_val (out, copy);
+        }
+    }
+
+    g_array_free (arr, TRUE);
+    return out;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+undo_hist_entry_label (const undo_hist_entry_t *e, gboolean is_redo, char *buf, size_t len)
+{
+    int written;
+
+    written = g_snprintf (buf, len, "%s ", is_redo ? "[+]" : "[-]");
+    if (written <= 0 || (size_t) written >= len)
+        return;
+    buf += written;
+    len -= (size_t) written;
+
+    if (e->n_inserted > 0 && e->n_deleted == 0)
+    {
+        int cnt = e->n_chars > 0 ? e->n_chars : e->n_inserted;
+
+        written = g_snprintf (buf, len, _ ("insert %d"), cnt);
+    }
+    else if (e->n_deleted > 0 && e->n_inserted == 0)
+    {
+        int cnt = e->n_chars > 0 ? e->n_chars : e->n_deleted;
+
+        written = g_snprintf (buf, len, _ ("delete %d"), cnt);
+    }
+    else
+        written = g_snprintf (buf, len, "%s", _ ("replace"));
+
+    if (e->preview[0] != '\0' && written > 0 && (size_t) written < len - 1)
+    {
+        const char *p;
+        int pchars = 0;
+        gboolean truncated;
+
+        for (p = e->preview; *p != '\0'; p++)
+            if (((unsigned char) *p & 0xC0) != 0x80)
+                pchars++;
+
+        truncated = (e->n_chars > 0 && pchars < e->n_chars);
+        g_snprintf (buf + written, len - (size_t) written, "  %s%s", e->preview,
+                    truncated ? "~" : "");
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Collect, coalesce and fill previews for undo and redo groups.
+ * Both output arrays are owned by the caller (g_array_free with TRUE). */
+static void
+undo_history_build (WEdit *edit, GArray **undo_out, GArray **redo_out)
+{
+    GArray *raw;
+    guint i;
+
+    raw = g_array_new (FALSE, FALSE, sizeof (undo_hist_entry_t));
+    undo_hist_collect (edit->undo_stack, edit->undo_stack_pointer, edit->undo_stack_bottom,
+                       edit->undo_stack_size_mask, FALSE, raw, edit->buffer.curs1);
+    *undo_out = undo_hist_coalesce (undo_hist_drop_cursor (raw), FALSE);
+
+    raw = g_array_new (FALSE, FALSE, sizeof (undo_hist_entry_t));
+    undo_hist_collect (edit->redo_stack, edit->redo_stack_pointer, edit->redo_stack_bottom,
+                       edit->redo_stack_size_mask, TRUE, raw, 0);
+    *redo_out = undo_hist_coalesce (undo_hist_drop_cursor (raw), TRUE);
+
+    /* Avoid unbounded memory/time when the undo ring wrapped after a huge paste. */
+    if ((*undo_out)->len > UNDO_HIST_MAX)
+        g_array_set_size (*undo_out, UNDO_HIST_MAX);
+    if ((*redo_out)->len > UNDO_HIST_MAX)
+        g_array_set_size (*redo_out, UNDO_HIST_MAX);
+
+    for (i = 0; i < (*undo_out)->len; i++)
+    {
+        undo_hist_entry_t *e = &g_array_index (*undo_out, undo_hist_entry_t, i);
+
+        if (e->n_inserted > 0 && e->n_deleted == 0 && e->curs_before >= 0)
+        {
+            preview_fill_from_buf (e->preview, &edit->buffer, e->curs_before, e->n_inserted,
+                                   edit->utf8);
+            e->n_chars = edit->utf8
+                ? count_utf8_chars_in_buf (&edit->buffer, e->curs_before, e->n_inserted)
+                : e->n_inserted;
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+edit_undo_history_get_label (WEdit *edit, gboolean is_redo, guint n, char *buf, size_t buflen)
+{
+    GArray *undo_groups, *redo_groups;
+    GArray *groups;
+    gboolean result = FALSE;
+
+    undo_history_build (edit, &undo_groups, &redo_groups);
+    groups = is_redo ? redo_groups : undo_groups;
+
+    if (n < groups->len)
+    {
+        const undo_hist_entry_t *e = &g_array_index (groups, undo_hist_entry_t, n);
+
+        undo_hist_entry_label (e, is_redo, buf, buflen);
+        result = TRUE;
+    }
+
+    g_array_free (undo_groups, TRUE);
+    g_array_free (redo_groups, TRUE);
+    return result;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_undo_history_cmd (WEdit *edit)
+{
+    GArray *undo_groups;
+    GArray *redo_groups;
+    Listbox *lb;
+    int sel;
+    guint redo_count;
+    guint i;
+    char label[96];
+
+    undo_history_build (edit, &undo_groups, &redo_groups);
+
+    if (undo_groups->len == 0 && redo_groups->len == 0)
+    {
+        const char *msg = edit->modified ? _ ("Undo history is not available.\n"
+                                              "The change log was overwritten after a large edit.")
+                                         : _ ("Nothing to undo.");
+        g_array_free (redo_groups, TRUE);
+        g_array_free (undo_groups, TRUE);
+        message (D_NORMAL, _ ("Undo History"), "%s", msg);
+        return;
+    }
+
+    redo_count = redo_groups->len;
+
+    lb = listbox_window_new (20, 55, _ ("Undo History"), NULL);
+
+    for (i = undo_groups->len; i > 0; i--)
+    {
+        const undo_hist_entry_t *e = &g_array_index (undo_groups, undo_hist_entry_t, i - 1);
+
+        undo_hist_entry_label (e, FALSE, label, sizeof (label));
+        LISTBOX_APPEND_TEXT (lb, 0, label, NULL, FALSE);
+    }
+
+    for (i = 0; i < redo_count; i++)
+    {
+        const undo_hist_entry_t *e = &g_array_index (redo_groups, undo_hist_entry_t, i);
+
+        undo_hist_entry_label (e, TRUE, label, sizeof (label));
+        LISTBOX_APPEND_TEXT (lb, 0, label, NULL, FALSE);
+    }
+
+    {
+        guint cur = undo_groups->len > 0 ? undo_groups->len - 1 : 0;
+        listbox_set_current (lb->list, (int) cur);
+    }
+
+    sel = listbox_run (lb);
+
+    if (sel >= 0)
+    {
+        guint undo_count = undo_groups->len;
+        guint selected = (guint) sel;
+        guint steps = 0;
+        gboolean do_redo = (selected >= undo_count);
+
+        if (!do_redo)
+        {
+            guint idx = undo_count - 1 - selected;
+
+            for (i = 0; i <= idx; i++)
+                steps += g_array_index (undo_groups, undo_hist_entry_t, i).steps;
+        }
+        else
+        {
+            guint idx = selected - undo_count;
+
+            for (i = 0; i <= idx; i++)
+                steps += g_array_index (redo_groups, undo_hist_entry_t, i).steps;
+        }
+
+        g_array_free (redo_groups, TRUE);
+        g_array_free (undo_groups, TRUE);
+
+        edit->redo_stack_reset = 0;
+
+        for (i = 0; i < steps; i++)
+        {
+            if (do_redo)
+            {
+                edit_push_key_press (edit);
+                edit_execute_cmd (edit, CK_Redo, -1);
+            }
+            else
+                edit_undo_one_group (edit);
+        }
+
+        edit->force |= REDRAW_COMPLETELY;
+        return;
+    }
+
+    g_array_free (redo_groups, TRUE);
+    g_array_free (undo_groups, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */

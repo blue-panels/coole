@@ -1,0 +1,2809 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Arthur Titeica <arthur@psw.ro>, 2013
+# Arthur Țițeică <arthur.titeica@gmail.com>, 2013-2014,2017
+# 666ac67b8cef279621e9f9f0d4368bd5_672ede5, 2018
+# 7ad110ef65cb8fea3e45887cffdf497a_28ca6f3 <3e77beb79c064caff61514bbc685d086_451299>, 2016
+# Nicolae Crefelean, 2014,2019
+# Simona Iacob <s@zp1.net>, 2021-2023
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# Sorin Sfirlogea, 2016
+# Vitalie Ciubotaru <vitalie@ciubotaru.tk>, 2015
+# Yury V. Zaytsev <yury@shurup.com>, 2025
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Romanian <https://translate.codeberg.org/projects/mc6/mc6/ro/"
+">\n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
+"20)) ? 1 : 2;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "Atenție: nu se poate încărca lista de coduri de pagină"
+
+msgid "7-bit ASCII"
+msgstr "7-bit ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Nu pot face trecerea din %s în %s"
+
+msgid "Event system already initialized"
+msgstr "Sistemul de evenimente este deja inițializat"
+
+msgid "Failed to initialize event system"
+msgstr "A eșuat inițializarea sistemului de evenimente"
+
+msgid "Event system not initialized"
+msgstr "Sistemul de evenimente nu este inițializat"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Verifică datele de intrare! Unii parametri au valoarea NULL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Nu se poate crea grupul '%s' pentru evenimente!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Nu se poate crea evenimentul '%s'!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Page Down"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "Comu&tă pe tot ecranul"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "C&ompară fișiere"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "Definit de &utilizator:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "Meniu utilizator"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Căutarea a fost efectuată"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Înlocuiește"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Opțiuni terminal"
+
+msgid "Edit file"
+msgstr "Editează fișier"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Editează fișier"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "To&ate seturile de caractere"
+
+#, fuzzy
+msgid "Command history"
+msgstr "&Istoric comenzi"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "Salvează c&a..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Mergi la linia"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "&Reîmprospătare ecran"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "Configurația a fost salvată în %s"
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "&Reîmprospătare ecran"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Precedentul"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Inserează fișierul"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Precedentul"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "&Comută linia de stare"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Delete pe keypad"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Delete pe keypad"
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "&Taie în fișierul clip"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "Co&piază în fișierul clip"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "Li&pește din fișierul clip"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "În se&lecție"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Selectează"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Selectează"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Selectează &grupul"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Selectează"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Alege metoda de comparare:"
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "&Comută linia de stare"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Selectează limba"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "&Ordinea de sortare..."
+
+#, fuzzy
+msgid "General options"
+msgstr "Opțiuni panou"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Învață tastele"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "Marcajul &următor"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "&Găsește declarația"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Aspect"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "&Salvează setările"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Precedentul"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Noduri libere:"
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Precedentul"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Deselectează"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Selectează &grupul"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Selectează limba"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Închide fișier"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Editează fișierul de extensii"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Selectează"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Selectează limba"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Selectează"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "În se&lecție"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Salvează blocul"
+
+msgid "Insert file"
+msgstr "Inserează fișierul"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "Comu&tă ins/supr"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "Inserează &dată/timp"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Ștergere"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "file1 file2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "&Istoric comenzi"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "&Format paragraf"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Paranteză dreaptă stânga"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Repetă ultimele comenzi"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "Veri&ficare ortografică"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "Veri&ficare ortografică"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Selectează limba"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "Ște&rge marcaje"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "Marcajul &următor"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "Marcajul &precedent"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Găsește tot"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "&Comută linia de stare"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "S-au pierdut schimbările efectuate în fișier"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Alege metoda de comparare:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Alege metoda de comparare:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Alege metoda de comparare:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Selectează &grupul"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Selectează &grupul"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "&De-selectează grupul"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "&De-selectează grupul"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "În se&lecție"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "&De-selectează grupul"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "&Format paragraf"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "Spații la final &vizibile"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Comută evidenţierea de sinta&xă"
+
+msgid "Choose syntax highlighting"
+msgstr "Alege sintaxa de evidenţiere"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "Co&mută selecția"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Opțiuni panou"
+
+msgid "About editor"
+msgstr ""
+
+#, fuzzy
+msgid "Execute script"
+msgstr "Mai întâ&i executabilele"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "&Redimensionează"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "Comu&tă pe tot ecranul"
+
+#, fuzzy
+msgid "Window list"
+msgstr "Fe&reastră"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Precedentul"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Fișierul \"%s\" este deja deschis pentru editare.\n"
+"Utilizator: %s\n"
+"ID proces: %d"
+
+msgid "File locked"
+msgstr "Fișier blocat"
+
+msgid "&Grab lock"
+msgstr "&Preia blocarea"
+
+msgid "&Ignore lock"
+msgstr "&Ignoră blocarea"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Nu se poate crea dosarul %s"
+
+msgid "FATAL: not a directory:"
+msgstr "FATAL: nu este un dosar:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Număr în afara intervalului (ar trebui să fie în intervalul octet, 0 <= n <= "
+"0xFF, exprimat în hex)"
+
+msgid "Invalid character"
+msgstr "Caracter nevalid"
+
+msgid "Unmatched quotes character"
+msgstr "Caracterul ghilimelelor neîmperecheate"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Eroare model Hex la poziția %d\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Șirul căutat nu a fost găsit"
+
+msgid "Not implemented yet"
+msgstr "Nu este încă implementat"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Nr. jetoanelor de înlocuire nu este egal cu nr. jetoanelor găsite"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Număr jeton nevalid %d"
+
+msgid "Regular expression error"
+msgstr "Expresie regulată eronată"
+
+msgid "No&rmal"
+msgstr "No&rmal"
+
+msgid "Re&gular expression"
+msgstr "Expresie re&gulată"
+
+msgid "He&xadecimal"
+msgstr "He&xazecimal"
+
+msgid "Wil&dcard search"
+msgstr "Căutare me&tacaracter"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Nu se poate interpreta tematica '%s'.\n"
+"A fost încărcată tematica implicită"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Nu se poate folosi tema '%s' cu suport pentru culori reale:\n"
+"%s\n"
+"Tema implicita a fost încărcata"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Nu se poate încărca tematica '%s'.\n"
+"A fost încărcată tematica implicită"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr "CULORI REALE  nu sunt acceptate în această versiune slang."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr "Escape"
+
+msgid "Function key 1"
+msgstr "Tasta funcț. 1"
+
+msgid "Function key 2"
+msgstr "Tasta funcț. 2"
+
+msgid "Function key 3"
+msgstr "Tasta funcț. 3"
+
+msgid "Function key 4"
+msgstr "Tasta funcț. 4"
+
+msgid "Function key 5"
+msgstr "Tasta funcț. 5"
+
+msgid "Function key 6"
+msgstr "Tasta funcț. 6"
+
+msgid "Function key 7"
+msgstr "Tasta funcț. 7"
+
+msgid "Function key 8"
+msgstr "Tasta funcț. 8"
+
+msgid "Function key 9"
+msgstr "Tasta funcț. 9"
+
+msgid "Function key 10"
+msgstr "Tasta funcț. 10"
+
+msgid "Function key 11"
+msgstr "Tasta funcț. 11"
+
+msgid "Function key 12"
+msgstr "Tasta funcț. 12"
+
+msgid "Function key 13"
+msgstr "Tasta funcț. 13"
+
+msgid "Function key 14"
+msgstr "Tasta funcț. 14"
+
+msgid "Function key 15"
+msgstr "Tasta funcț. 14"
+
+msgid "Function key 16"
+msgstr "Tasta funcț. 16"
+
+msgid "Function key 17"
+msgstr "Tasta funcț. 17"
+
+msgid "Function key 18"
+msgstr "Tasta funcț. 18"
+
+msgid "Function key 19"
+msgstr "Tasta funcț. 19"
+
+msgid "Function key 20"
+msgstr "Tasta funcț. 20"
+
+msgid "Completion/M-tab"
+msgstr "Completare/M-tab"
+
+msgid "BackTab/S-tab"
+msgstr "BackTab/S-tab"
+
+msgid "Backspace"
+msgstr "Backspace"
+
+msgid "Up arrow"
+msgstr "Săgeată sus"
+
+msgid "Down arrow"
+msgstr "Săgeată jos"
+
+msgid "Left arrow"
+msgstr "Săgeată stânga"
+
+msgid "Right arrow"
+msgstr "Săgeată dreapta"
+
+msgid "Insert"
+msgstr "Insert"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr "Tasta End"
+
+msgid "Page Up"
+msgstr "Page Up"
+
+msgid "Page Down"
+msgstr "Page Down"
+
+msgid "/ on keypad"
+msgstr "/ pe tastatura numerică"
+
+msgid "* on keypad"
+msgstr "* pe keypad"
+
+msgid "- on keypad"
+msgstr "- pe keypad"
+
+msgid "+ on keypad"
+msgstr "+ pe keypad"
+
+msgid "Left arrow keypad"
+msgstr "Săgeată stânga pe keypad"
+
+msgid "Right arrow keypad"
+msgstr "Săgeată dreapta pe keypad"
+
+msgid "Up arrow keypad"
+msgstr "Săgeată sus pe keypad"
+
+msgid "Down arrow keypad"
+msgstr "Săgeată jos pe keypad"
+
+msgid "Home on keypad"
+msgstr "Home pe keypad"
+
+msgid "End on keypad"
+msgstr "End pe keypad"
+
+msgid "Page Down keypad"
+msgstr "Page Down pe keypad"
+
+msgid "Page Up keypad"
+msgstr "Page Up pe keypad"
+
+msgid "Insert on keypad"
+msgstr "Insert pe keypad"
+
+msgid "Delete on keypad"
+msgstr "Delete pe keypad"
+
+msgid "Enter on keypad"
+msgstr "Enter pe keypad"
+
+msgid "Function key 21"
+msgstr "Tasta funcț. 21"
+
+msgid "Function key 22"
+msgstr "Tasta funcț. 22"
+
+msgid "Function key 23"
+msgstr "Tasta funcț. 23"
+
+msgid "Function key 24"
+msgstr "Tasta funcț. 24"
+
+msgid "A1 key"
+msgstr "Tasta A1"
+
+msgid "C1 key"
+msgstr "Tasta C1"
+
+msgid "Asterisk"
+msgstr "Asterisc"
+
+msgid "Minus"
+msgstr "Minus"
+
+msgid "Plus"
+msgstr "Plus"
+
+msgid "Dot"
+msgstr "Punct"
+
+msgid "Less than"
+msgstr "Mai puțin decât"
+
+msgid "Great than"
+msgstr "Mai mult decât"
+
+msgid "Equal"
+msgstr "Egal"
+
+msgid "Comma"
+msgstr "Virgulă"
+
+msgid "Apostrophe"
+msgstr "Apostrof"
+
+msgid "Colon"
+msgstr "Punct și virgulă"
+
+msgid "Semicolon"
+msgstr "Punct și virgulă"
+
+msgid "Exclamation mark"
+msgstr "Semn de exclamare"
+
+msgid "Question mark"
+msgstr "Semn de întrebare"
+
+msgid "Ampersand"
+msgstr "Semnul &&"
+
+msgid "Dollar sign"
+msgstr "Semnul dollar"
+
+msgid "Quotation mark"
+msgstr "Ghilimele"
+
+msgid "Percent sign"
+msgstr "Semnul de procent"
+
+msgid "Caret"
+msgstr "Cursor"
+
+msgid "Tilda"
+msgstr "Tildă"
+
+msgid "Prime"
+msgstr "Prim"
+
+msgid "Underline"
+msgstr "Subliniere"
+
+msgid "Understrike"
+msgstr "Liniuță de subliniere"
+
+msgid "Pipe"
+msgstr "Pipe"
+
+msgid "Left parenthesis"
+msgstr "Paranteză stânga"
+
+msgid "Right parenthesis"
+msgstr "Paranteză dreapta"
+
+msgid "Left bracket"
+msgstr "Paranteză dreaptă stânga"
+
+msgid "Right bracket"
+msgstr "Paranteză dreaptă dreapta"
+
+msgid "Left brace"
+msgstr "Acoladă stânga"
+
+msgid "Right brace"
+msgstr "Acoladă dreapta"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "Tasta Tab"
+
+msgid "Space key"
+msgstr "Tasta spațiu"
+
+msgid "Slash key"
+msgstr "Tasta slash"
+
+msgid "Backslash key"
+msgstr "Tasta backslash"
+
+msgid "Number sign #"
+msgstr "Semn #"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "Semnul at"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Nu se poate crea conducta pentru SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Nu se poate configura capătul de scriere al conductei SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Nu se poate configura capătul de citire al conductei SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Mărimea %dx%d a ecranului nu este suportată.\n"
+"Verificați variabila de mediu TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "Variabila de mediu TERM nu este setată!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Nu se poate verifica conducta SIGWINCH"
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Nu pot crea descriptorul filtrului"
+
+msgid "Cannot create pipe streams"
+msgstr "Nu pot crea fluxul filtrului"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Eroare neașteptată în select() se accesează datele dintr-un proces copil :\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr "Nu se poate închide descriptorul de țeavă (p == NULL)"
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Eroare surpriza in waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "S-au pierdut schimbările efectuate în fișier"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "Apăsați o tastă pentru a continua..."
+
+msgid "Internal error:"
+msgstr "Eroare internă:"
+
+msgid "Screens"
+msgstr "Ecrane"
+
+msgid "History"
+msgstr "Istoric"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Da"
+
+msgid "&No"
+msgstr "&Nu"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "DialogTitle|Curățare istoric"
+
+msgid "Do you want clean this history?"
+msgstr "Dorești curățarea acestui istoric?"
+
+msgid "&OK"
+msgstr "&OK"
+
+msgid "&Cancel"
+msgstr "&Renunță"
+
+msgid "Error"
+msgstr "Eroare"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Anulează"
+
+msgid "< Default >"
+msgstr "< Implicit >"
+
+msgid "Skins"
+msgstr "Tematici"
+
+msgid "Skin:"
+msgstr "Tematică:"
+
+msgid "&Shadows"
+msgstr "&Umbre"
+
+msgid "Appearance"
+msgstr "Aspect"
+
+msgid "Displays the current version"
+msgstr "Afișează versiunea curentă"
+
+msgid "Print data directory"
+msgstr "Afișează dosarul de date"
+
+msgid "Print extended info about used data directories"
+msgstr "Afișează informații extinse despre dosarele de date folosite"
+
+msgid "Print configure options"
+msgstr "Afișează opțiunile de configurare"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Dezactivează suportul X11"
+
+msgid "Forces xterm features"
+msgstr "Forțează facilitățile xterm"
+
+msgid "Disable X11 support"
+msgstr "Dezactivează suportul X11"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Încearcă să folosească o determinare veche a evidențierii mausului"
+
+msgid "Disable mouse support in text version"
+msgstr "Dezactivează suportul de mouse în versiunea text"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Încearcă să utilizeze termcap în locul terminfo"
+
+msgid "To run on slow terminals"
+msgstr "Pentru a rula pe terminale încete"
+
+msgid "Use stickchars to draw"
+msgstr "Utilizează stickchars pentru afișare"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Încarcă definițiile de combinații de taste din fișierul specificat"
+
+msgid "<file>"
+msgstr "<file>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr ""
+"Nu încarca definițiile de combinații de taste din fișier, folosește tastele "
+"implicite"
+
+msgid "Requests to run in black and white"
+msgstr "Cerere de rulare în alb/negru"
+
+msgid "Request to run in color mode"
+msgstr "Cerere de rulare în culori"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Arată mc cu tematica specificată"
+
+msgid "<string>"
+msgstr "<string>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+lineno] file1[:lineno] [file2[:lineno]...]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "Opțiuni principale"
+
+msgid "Terminal options"
+msgstr "Opțiuni terminal"
+
+msgid "Color options"
+msgstr "Opțiuni culori"
+
+msgid "Arguments parse error!"
+msgstr "Eroare de interpretare a argumentelor!"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Configurare..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Opțiuni de configurare"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "Sensibil la majus&cule"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "Î&nainte către declarație"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "&Găsește declarația"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "'%s' nu este o legătură simbolică"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Nu se poate salva în fișier"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Nu se poate salva în fișier"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"A eșuat executarea:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "Nu au fost găsite înregistrări potrivite in %s"
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Căutarea a fost efectuată"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Căutarea a fost efectuată"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "Co&mplet: arată tot"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Nu se poate salva în fișier"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Nu se poate salva fișierul:\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Nu pot face trecerea din %s în %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Director rădăcină:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Nu se poate crea evenimentul '%s'!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Citirea a eșuat"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Navigare"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "Î&nainte către declarație"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "Co&mplet: arată tot"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Navigare"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Căutarea a fost efectuată"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Căutarea a fost efectuată"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Numele legăturii simbolice:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Încarcă fișier de sintaxă"
+
+msgid "Manage repositories"
+msgstr ""
+
+#, fuzzy
+msgid "Reindex repository"
+msgstr "Director indexat"
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Confirmare"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "Î&nainte către declarație"
+
+msgid "&Find declaration"
+msgstr "&Găsește declarația"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Navigare"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Caută"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Numele legăturii simbolice:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "Co&mplet: arată tot"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Selectează"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Numele legăturii simbolice:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Nume de fișier:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Încărcare fișier"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "În&chide"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Atenție"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Textul curent a fost modificat fără a se salva fișierul.\n"
+"Dacă se continuă schimbările vor fi pierdute."
+
+msgid "C&ontinue"
+msgstr "C&ontinuă"
+
+msgid "&Add word"
+msgstr "&Adaugă cuvânt"
+
+msgid "&Replace"
+msgstr "&Înlocuiește"
+
+msgid "&Skip"
+msgstr "&Sar"
+
+msgid "Language"
+msgstr "Limbă"
+
+msgid "Misspelled"
+msgstr "Scris greșit"
+
+msgid "Check word"
+msgstr "Verifică cuvânt"
+
+msgid "Suggest"
+msgstr "Sugerează"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Adaugă cuvânt"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Scris greșit"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Limbă"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Selectează"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Selectează limba"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Se încarcă: %3d%%"
+
+msgid "Loading..."
+msgstr "Se încarcă..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "Încărcare fișier"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Eroare la citirea %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Fișierul \"%s\" este prea mare.\n"
+"Îl deschizi oricum?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Eroare la citirea din pipe: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+#, fuzzy
+msgid "Undo"
+msgstr "An&ulează"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Reîncearcă"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Fișierul are hard-links. Desprinzi înainte de a salva?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Fișierul a fost modificat între timp. Salvezi oricum?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Eroare la scrierea în pipe: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Fișierul pe care îl salvezi nu se termină cu o linie nouă."
+
+msgid "&Do not change"
+msgstr "&Nu schimba"
+
+msgid "&Unix format (LF)"
+msgstr "Format &Unix (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "Format &Windows/DOS (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "Format &Macintosh (CR)"
+
+msgid "Enter file name:"
+msgstr "Introdu numele de fișier:"
+
+msgid "Change line breaks to:"
+msgstr "Schimbă finalul de linie în:"
+
+msgid "Save As"
+msgstr "Salvează ca"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "Salvare &rapidă"
+
+msgid "&Safe save"
+msgstr "&Salvare sigură"
+
+msgid "&Do backups with following extension:"
+msgstr "&Fă copii de siguranță cu următoarea extensie:"
+
+msgid "Check &POSIX new line"
+msgstr "Verificare &POSIX pentru o noua linie"
+
+msgid "Edit Save Mode"
+msgstr "Editare mod salvare"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "Deja există un fișier cu acest nume"
+
+msgid "&Overwrite"
+msgstr "S&uprascrie"
+
+msgid "Cannot save file"
+msgstr "Nu se poate salva fișierul"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Confirmă salvarea fișierului: \"%s\""
+
+msgid "Save file"
+msgstr "Salvează fișier"
+
+msgid "&Save"
+msgstr "&Salvează"
+
+msgid "Load"
+msgstr "Încarcă"
+
+msgid "Syntax file edit"
+msgstr "Editare fișier sintaxă"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Ce fișier de sintaxă dorești să editezi?"
+
+msgid "&User"
+msgstr "&Utilizator"
+
+msgid "&System wide"
+msgstr "În tot &sistemul"
+
+msgid "Menu edit"
+msgstr "Editare meniu"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Ce fișier de meniu dorești să editezi?"
+
+msgid "&Local"
+msgstr "&Local"
+
+msgid "[NoName]"
+msgstr "[FărăNume]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Fișierul %s a fost modificat.\n"
+"Salvezi înainte de închidere?"
+
+msgid "Close file"
+msgstr "Închide fișier"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "Ieși"
+
+msgid "This function is not implemented"
+msgstr "Această funcție nu este implementată"
+
+msgid "Unable to save to file"
+msgstr "Nu se poate salva în fișier"
+
+msgid "Goto line"
+msgstr "Mergi la linia"
+
+msgid "Enter line:"
+msgstr "Introdu linia:"
+
+msgid "Save block"
+msgstr "Salvează blocul"
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr "Nu se poate insera fișierul"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <subiect> -c <cc> <către>"
+
+msgid "To"
+msgstr "Către"
+
+msgid "Subject"
+msgstr "Subiect"
+
+msgid "Copies to"
+msgstr "Copie către"
+
+msgid "Mail"
+msgstr "Mail"
+
+msgid "Cancel"
+msgstr "Renunță"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Șterge %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Înlocuiește"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Istoric"
+
+msgid "Collect completions"
+msgstr "Colecționează completări"
+
+msgid "NoName"
+msgstr "FărăNume"
+
+msgid "Save macro"
+msgstr "Salvează macro"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Apasă noua combinație de taste pentru macro:"
+
+msgid "Repeat last commands"
+msgstr "Repetă ultimele comenzi"
+
+msgid "Repeat times:"
+msgstr "Număr de repetări:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Șterge macro"
+
+msgid "Delete macro"
+msgstr "Șterge macro"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "rusă"
+
+#, fuzzy
+msgid "Close"
+msgstr "În&chide"
+
+msgid "&Open file..."
+msgstr "D&eschide fișier..."
+
+msgid "&New"
+msgstr "&Nou"
+
+msgid "&History..."
+msgstr "&Istoric..."
+
+msgid "Save &as..."
+msgstr "Salvează c&a..."
+
+msgid "&Insert file..."
+msgstr "&Inserează fișier..."
+
+msgid "Cop&y to file..."
+msgstr "Co&piază în fișier..."
+
+msgid "&User menu..."
+msgstr "Meniu &utilizator..."
+
+msgid "A&bout..."
+msgstr "Des&pre..."
+
+msgid "&Quit"
+msgstr "&Ieșire"
+
+msgid "&Undo"
+msgstr "An&ulează"
+
+msgid "&Redo"
+msgstr "&Refă"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "&Istoric..."
+
+msgid "&Toggle ins/overw"
+msgstr "Comu&tă ins/supr"
+
+msgid "To&ggle mark"
+msgstr "Co&mută selecția"
+
+msgid "&Mark columns"
+msgstr "Selectează coloa&ne"
+
+msgid "Mark &all"
+msgstr "Selecte&ază tot"
+
+msgid "Unmar&k"
+msgstr "Deselectează"
+
+msgid "Cop&y"
+msgstr "C&opiază"
+
+msgid "Mo&ve"
+msgstr "Mu&tă"
+
+msgid "&Delete"
+msgstr "Ş&terge"
+
+msgid "Co&py to clipfile"
+msgstr "Co&piază în fișierul clip"
+
+msgid "&Cut to clipfile"
+msgstr "&Taie în fișierul clip"
+
+msgid "Pa&ste from clipfile"
+msgstr "Li&pește din fișierul clip"
+
+msgid "&Beginning"
+msgstr "În&ceput"
+
+msgid "&End"
+msgstr "Sfârşi&t"
+
+msgid "&Search..."
+msgstr "&Caută..."
+
+msgid "Search &again"
+msgstr "C&aută din nou"
+
+msgid "&Replace..."
+msgstr "În&locuire..."
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "&Comută linia de stare"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "&scrie de către proprietar"
+
+msgid "&Toggle bookmark"
+msgstr "&Comută marcaj"
+
+msgid "&Next bookmark"
+msgstr "Marcajul &următor"
+
+msgid "&Prev bookmark"
+msgstr "Marcajul &precedent"
+
+msgid "&Flush bookmarks"
+msgstr "Ște&rge marcaje"
+
+msgid "&Go to line..."
+msgstr "Mer&gi la linia..."
+
+msgid "&Toggle line state"
+msgstr "&Comută linia de stare"
+
+msgid "Go to matching &bracket"
+msgstr "Mergi la &paranteza pereche"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Comută evidenţierea de sinta&xă"
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "Codif&icare"
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Găsește tot"
+
+msgid "&Refresh screen"
+msgstr "&Reîmprospătare ecran"
+
+msgid "&Start/Stop record macro"
+msgstr "&Start/stop înregistrare macro"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "Înregistrare/Repetare &acțiuni"
+
+msgid "&Move"
+msgstr "&Mută"
+
+msgid "&Resize"
+msgstr "&Redimensionează"
+
+msgid "&Toggle fullscreen"
+msgstr "Comu&tă pe tot ecranul"
+
+msgid "&Next"
+msgstr "&Următorul"
+
+msgid "&Previous"
+msgstr "&Precedentul"
+
+msgid "&List..."
+msgstr "&Listă..."
+
+msgid "&General..."
+msgstr "&General..."
+
+msgid "Save &mode..."
+msgstr "&Mod salvare..."
+
+msgid "Syntax &highlighting..."
+msgstr "Evidențiere de s&intaxă..."
+
+msgid "&Appearance..."
+msgstr "&Aspect..."
+
+msgid "Learn &keys..."
+msgstr "Învață &taste..."
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "Codificar&e"
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "Codificar&e"
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "Opțiuni &panou..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "Fișier de s&intaxă"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "Fișier de &meniu"
+
+msgid "&Save setup"
+msgstr "&Salvează setările"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Fișier"
+
+msgid "&Edit"
+msgstr "&Editare"
+
+msgid "&Search"
+msgstr "&Caută"
+
+msgid "&Command"
+msgstr "&Comandă"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Navigare"
+
+msgid "&Window"
+msgstr "Fe&reastră"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Opțiuni"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Tabulare"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Citirea a eșuat"
+
+msgid "&None"
+msgstr "&Nimic"
+
+msgid "&Dynamic paragraphing"
+msgstr "Paragrafe &dinamice"
+
+msgid "Type &writer wrap"
+msgstr "Aranjare tip &mașină de scris"
+
+msgid "Wrap mode"
+msgstr "Mod de aranjare"
+
+msgid "Tabulation"
+msgstr "Tabulare"
+
+msgid "&Fake half tabs"
+msgstr "&Simulează tab-urile 1/2"
+
+msgid "&Backspace through tabs"
+msgstr "Șterge deodată &tab-urile"
+
+msgid "Fill tabs with &spaces"
+msgstr "&Umple tab-urile cu spații"
+
+msgid "Tab spacing:"
+msgstr "Spațiere tab:"
+
+msgid "Other options"
+msgstr "Alte opțiuni"
+
+msgid "&Return does autoindent"
+msgstr "Enter &autoindentează"
+
+msgid "Confir&m before saving"
+msgstr "Confir&mă înainte de a salva"
+
+msgid "Save file &position"
+msgstr "Salvează &poziția în fișier"
+
+msgid "&Visible trailing spaces"
+msgstr "Spații la final &vizibile"
+
+msgid "Visible &tabs"
+msgstr "&Taburi vizibile"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "&Evidențiere sintaxă"
+
+msgid "C&ursor after inserted block"
+msgstr "C&ursor după blocul inserat"
+
+msgid "Pers&istent selection"
+msgstr "Selecție pers&istentă"
+
+msgid "Cursor be&yond end of line"
+msgstr "Cursor &dincolo de sfârşit fișier"
+
+msgid "&Group undo"
+msgstr "&Group undo"
+
+msgid "Word wrap line length:"
+msgstr "Lungime linie pentru curgere cuvinte:"
+
+msgid "Editor options"
+msgstr "Opțiuni editor"
+
+msgid "Enter search string:"
+msgstr "Introdu șirul de căutare:"
+
+msgid "Cas&e sensitive"
+msgstr "S&ensibil la majuscule"
+
+msgid "&Backwards"
+msgstr "În sens &invers"
+
+msgid "In se&lection"
+msgstr "În se&lecție"
+
+msgid "&Whole words"
+msgstr "C&uvinte întregi"
+
+msgid "&All charsets"
+msgstr "To&ate seturile de caractere"
+
+msgid "&Find all"
+msgstr "&Găsește tot"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Caută"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Caut %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Caut %s"
+
+msgid "Enter replacement string:"
+msgstr "Introdu șirul de înlocuire:"
+
+msgid "Replace"
+msgstr "Înlocuiește"
+
+msgid "Replace with:"
+msgstr "Înlocuiește cu:"
+
+msgid "A&ll"
+msgstr "Toa&te"
+
+msgid "Confirm replace"
+msgstr "Confirmă înlocuirea"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "%ld înlocuiri efectuate"
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "Despre"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Deschide fișiere"
+
+msgid "Edit: "
+msgstr "Editează: "
+
+msgid "ButtonBar|Help"
+msgstr "ButtonBar|Ajutor"
+
+msgid "ButtonBar|Save"
+msgstr "ButtonBar|Salvare"
+
+msgid "ButtonBar|Mark"
+msgstr "ButtonBar|Marc"
+
+msgid "ButtonBar|Replac"
+msgstr "ButtonBar|Înloc"
+
+msgid "ButtonBar|Copy"
+msgstr "ButtonBar|Copie"
+
+msgid "ButtonBar|Move"
+msgstr "ButtonBar|Mută"
+
+msgid "ButtonBar|Search"
+msgstr "ButtonBar|Caută"
+
+msgid "ButtonBar|Delete"
+msgstr "ButtonBar|Șterge"
+
+msgid "ButtonBar|PullDn"
+msgstr "ButtonBar|ÎnJos"
+
+msgid "ButtonBar|Quit"
+msgstr "ButtonBar|Ieșire"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Caut %s: %3d%%"
+
+msgid "Filter"
+msgstr "Filtru"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Auto >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Reîncarcă sintaxa curentă >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr "Încarcă fișier de sintaxă"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Eroare în fișierul %s pe linia %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Nu o consolă xterm sau Linux;\n"
+"subshell-ul nu poate fi comutat."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr "Format eronat al fișierului de ajutor\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Bug intern: Double start of link area"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Nu se poate găsi nodul %s în fișierul de ajutor"
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Ajutor"
+
+msgid "ButtonBar|Index"
+msgstr "ButtonBar|Index"
+
+msgid "ButtonBar|Prev"
+msgstr "ButtonBar|Prec"
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Tasta funcț. 1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Navigare"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Învață tastele"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Confirmare"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Editare fișier &meniuri"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&Mail..."
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "Fișier de &meniu"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&Listă..."
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Ajutor"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "&Editare"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "Tasta A1"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Apăsați o tastă pentru a continua..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "În sens &invers"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Editare fișier &meniuri"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"A eșuat executarea:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Calea către dosarul acasă nu este absolută"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"A eșuat în timpul închiderii:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "Pluginuri si scripturi VFS:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Eroare necunoscută în procesul copil"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Setez"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Citirea a eșuat"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: eroare"
+
+msgid "Choose codepage"
+msgstr "Alege pagina de cod"
+
+msgid "-  < No translation >"
+msgstr "-  < Fără translatare >"
+
+msgid "Setup"
+msgstr "Configurație"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Configurația a fost salvată în %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Nu se poate salva configurația în %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Cu suport opțional pentru subshell-uri"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "Cu suport pentru mouse pe xterm și consola Linux"
+
+msgid "With mouse support on xterm"
+msgstr "Cu suport pentru mouse pe xterm"
+
+msgid "With support for X11 events"
+msgstr "Cu suport pentru evenimente X11"
+
+msgid "With internationalization support"
+msgstr "Cu suport pentru internaționalizare"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr "Tipuri de date:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Șirul căutat nu a fost găsit"
+
+msgid "Home directory:"
+msgstr "Director acasă:"
+
+msgid "Profile root directory:"
+msgstr "Director rădăcină:"
+
+msgid "System data"
+msgstr "Date sistem"
+
+msgid "Config directory:"
+msgstr "Dosarul pentru configurări:"
+
+msgid "Data directory:"
+msgstr "Dosarul pentru date:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Opțiuni editor"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "Pluginuri si scripturi VFS:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Date utilizator"
+
+msgid "Cache directory:"
+msgstr "Dosarul pentru cache:"
+
+msgid "Debug"
+msgstr "Debug"
+
+msgid "ERROR:"
+msgstr "EROARE:"
+
+msgid "True:"
+msgstr "Adevărat:"
+
+msgid "False:"
+msgstr "Fals:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr ""
+"Nu se poate salva fișierul:\n"
+"%s"
+
+msgid "Error calling program"
+msgstr "Eroare la executarea programului"
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr "Parametru"
+
+msgid "Warning -- ignoring file"
+msgstr "Atenție -- se ignoră fișierul"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Fișierul %s nu este deținut de root ori dvs. sau poate fi modificat de "
+"oricine.\n"
+"Utilizându-l vă puteți compromite securitatea"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "Nu se pot executa comenzi în sisteme de fișiere ne-locale"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "Nu au fost găsite înregistrări potrivite in %s"
+
+msgid "User menu"
+msgstr "Meniu utilizator"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Nu pot face trecerea din %s în %s"

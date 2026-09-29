@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "methods": [
+    {
+      "signature": "editor:path() -> string|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Return the document path."
+    },
+    {
+      "signature": "editor:info() -> DocumentInfo|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Return document metadata and the current revision."
+    },
+    {
+      "signature": "editor:selection() -> Selection|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Return the current selection snapshot."
+    },
+    {
+      "signature": "editor:replace_selection(text, options?) -> EditResult|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Replace the selection, or insert when it is empty."
+    },
+    {
+      "signature": "editor:replace(range, text) -> EditResult|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Replace a byte range in the editor buffer."
+    },
+    {
+      "signature": "editor:text(range?) -> string|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Read the complete buffer or a byte range."
+    },
+    {
+      "signature": "editor:edit(spec) -> EditResult|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Apply replacements atomically as one undo operation."
+    },
+    {
+      "signature": "editor:cursor() -> Position|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Return the current cursor position."
+    },
+    {
+      "signature": "editor:set_cursor(position) -> boolean|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Move the cursor to a validated position."
+    },
+    {
+      "signature": "editor:is_readonly() -> boolean|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Report whether the document is read-only."
+    },
+    {
+      "signature": "editor:tab_width() -> integer|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Return the configured tab width."
+    },
+    {
+      "signature": "editor:overwrite() -> boolean|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Report whether typing overwrites instead of inserting."
+    },
+    {
+      "signature": "editor:set_overwrite(flag) -> boolean|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Switch typing between overwrite and insert."
+    },
+    {
+      "signature": "editor:get_text() -> string|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Read the complete buffer using the compatibility API."
+    },
+    {
+      "signature": "editor:selected_text() -> string|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Read selected text using the compatibility API."
+    },
+    {
+      "signature": "editor:insert(text) -> boolean|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Insert text at the cursor using the compatibility API."
+    },
+    {
+      "signature": "editor:save() -> boolean|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Save the document with the native editor operation."
+    },
+    {
+      "signature": "mc.editor.current() -> editor|nil, error?",
+      "workspace": "editor",
+      "capability": "editor",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Return the editor associated with the active callback."
+    },
+    {
+      "signature": "mc.on(event, callback, options?) -> integer|nil, error?",
+      "workspace": "any",
+      "capability": "events",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Subscribe the package to a named event."
+    },
+    {
+      "signature": "mc.off(subscription) -> boolean",
+      "workspace": "any",
+      "capability": "events",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Remove an event subscription owned by the package."
+    },
+    {
+      "signature": "mc.macro(spec) -> boolean|nil, error?",
+      "workspace": "editor",
+      "capability": "events",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Register an editor action with optional key and menu placement."
+    },
+    {
+      "signature": "mc.log.debug(message) -> nil",
+      "workspace": "any",
+      "capability": "—",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Write a debug message to the Lua runtime log."
+    },
+    {
+      "signature": "mc.log.info(message) -> nil",
+      "workspace": "any",
+      "capability": "—",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Write an informational message to the Lua runtime log."
+    },
+    {
+      "signature": "mc.log.warn(message) -> nil",
+      "workspace": "any",
+      "capability": "—",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Write a warning to the Lua runtime log."
+    },
+    {
+      "signature": "mc.log.error(message) -> nil",
+      "workspace": "any",
+      "capability": "—",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Write an error to the Lua runtime log."
+    },
+    {
+      "signature": "mc.process.run(spec) -> ProcessResult|nil, error?",
+      "workspace": "any",
+      "capability": "process",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Run a shell command and capture its bounded output."
+    },
+    {
+      "signature": "mc.ui.screen(spec) -> screen|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Describe a full-screen grid of widgets: a title, a status line on top, keys for the button bar at the bottom, and between them spec.layout, rows of cells; a row is height = n lines or weight = n, a cell is width = n columns or weight = n and holds one control: label, status, text, separator, input, checkbox, or a table with columns and rows(first, count).  help = {file, node}; the callbacks are on_key, on_enter, on_action, on_check, on_row, on_resize, on_close.  palette = \"editor\" gives the whole screen the editor skin colors; the default is the dialog palette.  A text control is read-only: it scrolls both ways and does not wrap. screen:run() shows it and returns when it is closed."
+    },
+    {
+      "signature": "screen:run() -> boolean|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Show the screen and return when it is closed: by F10 or Esc, by the \"close\" action, by screen:close(), or by a callback returning { close = true }."
+    },
+    {
+      "signature": "screen:update(control, patch) -> boolean|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Change a running screen's control: patch.text for a label, status or text cell, patch.value for an input or checkbox, and for a table patch.rows (a new rows function), patch.row_count, patch.invalidate (drop the rows fetched so far) and patch.row (the current row, from 0)."
+    },
+    {
+      "signature": "screen:status(text) -> boolean|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Change the status line of a running screen."
+    },
+    {
+      "signature": "screen:close() -> boolean|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Close a running screen; screen:run() then returns."
+    },
+    {
+      "signature": "mc.settings(handler) -> true|nil, error?",
+      "workspace": "any",
+      "capability": "—",
+      "mutation": "yes",
+      "errors": [
+        "invalid_settings_handler"
+      ],
+      "summary": "Register the dialog this package shows when its settings are asked for in Manage Plugins.  The handler takes no argument and returns nothing; it owns the dialog and whatever it keeps."
+    },
+    {
+      "signature": "mc.ui.dialog(spec) -> DialogResult|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Show a declarative native modal dialog.  spec.help = {file, node} is what F1 opens over it; a relative file is taken from the script's directory, and a spec without a node has no help."
+    },
+    {
+      "signature": "mc.ui.indicator(spec) -> boolean|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Set or replace a package-owned persistent UI indicator."
+    },
+    {
+      "signature": "mc.ui.indicator_clear(id, area?) -> boolean|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Remove a package-owned UI indicator."
+    },
+    {
+      "signature": "mc.ui.status(text) -> boolean|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Display transient text in the status line of the editor, in front of the indicators."
+    },
+    {
+      "signature": "mc.ui.message(title, text) -> boolean|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Show a native informational message box."
+    },
+    {
+      "signature": "mc.tty.info(section?) -> table|nil, error?",
+      "workspace": "any",
+      "capability": "tty",
+      "mutation": "no",
+      "errors": [],
+      "summary": "What the terminal shows and what the skin paints a section with.  The section is named the way the skin names it (\"editor\", \"dialog\"); the default is the core.  Returns { colors = 256, fg = \"white\", bg = \"black\" }, colors being 16, 256 or 16777216 for true color, and fg and bg the color names of the skin, nil when it names none."
+    },
+    {
+      "signature": "mc.syntax.scan(text, options?) -> table|nil, error?",
+      "workspace": "any",
+      "capability": "syntax",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Color text with the syntax rules of the editor.  options.type names the rule set the way the Syntax file does (\"C Program\"), options.filename picks it by name; without both, the first line of the text decides.  Returns { type = \"C Program\", colors = { { fg = \"yellow\", bg = nil, attrs = \"bold\" } }, runs = { { offset = 1, length = 6, color = 1 } } }, offsets counting bytes from one and color indexing colors."
+    },
+    {
+      "signature": "mc.ui.text_width(text) -> integer|nil, error?",
+      "workspace": "any",
+      "capability": "ui",
+      "mutation": "no",
+      "errors": [],
+      "summary": "Measure UTF-8 text using terminal display columns."
+    }
+  ],
+  "callbacks": [
+    {
+      "signature": "event(snapshot) -> nil",
+      "workspace": "any",
+      "capability": "events",
+      "mutation": "no",
+      "errors": [],
+      "summary": ""
+    },
+    {
+      "signature": "action(event) -> mc.PASS|mc.CONSUME",
+      "workspace": "editor",
+      "capability": "events",
+      "mutation": "no",
+      "errors": [],
+      "summary": ""
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+name: l10n-pull
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Merge the translations into a branch
+        id: merge
+        env:
+          # The Git repository Weblate keeps the translations in, set as a
+          # repository variable, for example
+          # https://translate.codeberg.org/git/<project>/<component>/
+          WEBLATE_GIT_URL: ${{ vars.WEBLATE_GIT_URL }}
+        run: |
+          if test -z "$WEBLATE_GIT_URL"; then
+            echo "::error::set the repository variable WEBLATE_GIT_URL to the Weblate Git URL"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --no-tags "$WEBLATE_GIT_URL" master
+          base=$(git rev-parse HEAD)
+          if git merge-base --is-ancestor FETCH_HEAD "$base"; then
+            echo "Weblate has nothing new." >> "$GITHUB_STEP_SUMMARY"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git switch -C l10n/weblate
+          git merge --no-edit FETCH_HEAD
+          git push --force origin l10n/weblate
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "Commits taken from Weblate:"
+            echo
+            git log --format='- %h %an: %s' "$base"..FETCH_HEAD
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Point at the branch
+        if: steps.merge.outputs.changed == 'true'
+        run: |
+          title='l10n: update translations from Weblate'
+          body=$'Translations from Weblate.\n\nMerge, do not squash: the commits carry the names of the translators who wrote them.'
+          url="https://github.com/${GITHUB_REPOSITORY}/compare/master...l10n/weblate"
+          url="${url}?expand=1&labels=Chore,infra,Docs"
+          url="${url}&title=$(jq -rn --arg s "$title" '$s|@uri')"
+          url="${url}&body=$(jq -rn --arg s "$body" '$s|@uri')"
+          {
+            echo
+            echo "Open the pull request, the title, text and label are filled in:"
+            echo "$url"
+          } >> "$GITHUB_STEP_SUMMARY"

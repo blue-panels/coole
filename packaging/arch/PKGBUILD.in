@@ -1,0 +1,71 @@
+# Maintainer: Ilia Maslakov <il.smind@gmail.com>
+
+pkgbase=coole
+pkgname=(coole coole-lua)
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc='Console text editor, a continuation of cooledit'
+arch=('x86_64' 'aarch64')
+url='https://github.com/blue-panels/coole'
+license=('GPL-3.0-or-later')
+makedepends=('meson' 'pkgconf' 'gettext' 'glib2' 'slang' 'gpm' 'lua' 'libx11')
+options=('!emptydirs')
+source=("coole-${pkgver}.tar.gz::${url}/releases/download/coole-${pkgver}/coole-${pkgver}.tar.gz")
+# Filled in by packaging/prepare.sh from the release archive; SKIP when no
+# archive was given to it.
+b2sums=('@B2SUMS@')
+
+build() {
+  arch-meson "coole-${pkgver}" build \
+    -Dscreen=slang \
+    -Deditor_plugins_dir=/usr/lib/coole/editor-plugins \
+    -Druntime_plugins_dir=/usr/lib/coole/runtime-plugins \
+    -Dlua=enabled
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package_coole() {
+  pkgdesc='Console text editor, a continuation of cooledit'
+  depends=('glib2' 'slang' 'gpm')
+  optdepends=('coole-lua: the Lua runtime and the editor scripts'
+              'libx11: keyboard modifiers under X'
+              'aspell: spell checking'
+              'hunspell: spell checking'
+              'ctags: the tag index the editor reads')
+  backup=('etc/coole/coole.menu' 'etc/coole/ctags.keymap'
+          'etc/coole/edit.indent.rc' 'etc/coole/keymap.default.ini'
+          'etc/coole/keymap.emacs.ini' 'etc/coole/keymap.ini'
+          'etc/coole/keymap.vim.ini' 'etc/coole/spell.keymap')
+
+  meson install -C build --destdir "${pkgdir}"
+  rm -rf "${pkgdir}/usr/lib/coole/runtime-plugins"
+  rm -rf "${pkgdir}/usr/share/coole/lua"
+
+  # keymap.ini is installed as a symlink to keymap.default.ini, and pacman
+  # cannot keep a symlink through the backup mechanism: the user's edits would
+  # be lost on upgrade. Ship it as a file. (Arch FS#50889)
+  rm "${pkgdir}/etc/coole/keymap.ini"
+  cp "${pkgdir}"/etc/coole/keymap{.default,}.ini
+  install -Dm644 "coole-${pkgver}/COPYING" "${pkgdir}/usr/share/licenses/coole/COPYING"
+  install -Dm644 "coole-${pkgver}/CHANGELOG.md" "${pkgdir}/usr/share/doc/coole/CHANGELOG.md"
+}
+
+package_coole-lua() {
+  pkgdesc='Lua runtime and scripts for the coole text editor'
+  depends=("coole=${pkgver}-${pkgrel}" 'glib2' 'lua')
+
+  meson install -C build --destdir "${pkgdir}"
+  rm -rf "${pkgdir}/etc" "${pkgdir}/usr/bin"
+  # Keep the runtime plugin and the Lua scripts, drop everything else the
+  # install put here: pacman refuses two packages that own the same file.
+  find "${pkgdir}/usr/lib" -mindepth 1 -maxdepth 1 ! -name coole -exec rm -rf {} +
+  find "${pkgdir}/usr/lib/coole" -mindepth 1 -maxdepth 1 ! -name runtime-plugins \
+    -exec rm -rf {} +
+  find "${pkgdir}/usr/share" -mindepth 1 -maxdepth 1 ! -name coole -exec rm -rf {} +
+  find "${pkgdir}/usr/share/coole" -mindepth 1 -maxdepth 1 ! -name lua -exec rm -rf {} +
+  install -Dm644 "coole-${pkgver}/COPYING" "${pkgdir}/usr/share/licenses/coole-lua/COPYING"
+}

@@ -1,0 +1,27 @@
+#! /bin/sh
+# *** External Formatter (Indenter) for coole.
+# arguments:
+#    $1 - Name of the file being edited
+#    $2 - Name of the file to be processed
+
+exec >/dev/null
+
+case `echo $1 |sed 's/^.*\.//'` in
+    c|C|cc|CC|cxx|CXX|cpp|CPP|c++|C++|h|H|hh|hxx|hpp)
+    # https://clang.llvm.org/docs/ClangFormat.html
+    # Please add options to your .clang-format, not here.
+        clang-format -i "$2"
+    ;;
+    java|JAVA)
+    # https://astyle.sourceforge.net
+        astyle --style=java --mode=java "$2"
+    ;;
+    htm|html|HTM|HTML)
+    # https://tidy.sourceforge.net
+        tidy -q -m -ascii -wrap 80 "$2"
+    ;;
+    *)
+    # https://www.gnu.org/software/coreutils/
+        fmt "$2" >"$2.tmp" && rm -f "$2" && mv -f "$2.tmp" "$2"
+    ;;
+esac

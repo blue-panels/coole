@@ -1,0 +1,192 @@
+/** \file global.h
+ *  \brief Header: %global definitions for compatibility
+ *
+ *  This file should be included after all system includes and before all local includes.
+ */
+
+#ifndef MC_GLOBAL_H
+#define MC_GLOBAL_H
+
+#include <glib.h>
+
+#if defined(__has_attribute)
+#define MC_HAS_ATTRIBUTE(ATTR) __has_attribute (ATTR)
+#else
+#define MC_HAS_ATTRIBUTE(ATTR) 0
+#endif
+
+#if MC_HAS_ATTRIBUTE(weak) && defined(HAVE_TESTS)
+#define MC_MOCKABLE __attribute__ ((weak))
+#else
+#define MC_MOCKABLE
+#endif
+
+#if defined(HAVE_TESTS)
+#define MC_TESTABLE
+#else
+#define MC_TESTABLE static
+#endif
+
+#include "glibcompat.h"
+
+#include "unixcompat.h"
+
+#include "fs.h"
+#include "shell.h"
+#include "mcconfig.h"
+
+/*** typedefs(not structures) and defined constants **********************************************/
+
+#ifdef ENABLE_NLS
+#include <libintl.h>
+#define _(String) gettext (String)
+#ifdef gettext_noop
+#define N_(String) gettext_noop (String)
+#else
+#define N_(String) (String)
+#endif
+#else  // Stubs that do something close enough.
+#define textdomain(String)                1
+#define gettext(String)                   (String)
+#define ngettext(String1, String2, Num)   (((Num) == 1) ? (String1) : (String2))
+#define dgettext(Domain, Message)         (Message)
+#define dcgettext(Domain, Message, Type)  (Message)
+#define bindtextdomain(Domain, Directory) 1
+#define _(String)                         (String)
+#define N_(String)                        (String)
+#endif
+
+#if MC_HAS_ATTRIBUTE(fallthrough)
+#define MC_FALLTHROUGH __attribute__ ((fallthrough))
+#else
+#define MC_FALLTHROUGH
+#endif
+
+#if MC_HAS_ATTRIBUTE(unused)
+#define MC_UNUSED __attribute__ ((unused))
+#else
+#define MC_UNUSED
+#endif
+
+#if MC_HAS_ATTRIBUTE(nonstring)
+#define MC_NONSTRING __attribute__ ((nonstring))
+#else
+#define MC_NONSTRING
+#endif
+
+#ifdef USE_MAINTAINER_MODE
+#include "lib/logging.h"
+#endif
+
+/* Just for keeping Your's brains from invention a proper size of the buffer :-) */
+#define BUF_10K         10240L
+#define BUF_8K          8192L
+#define BUF_4K          4096L
+#define BUF_2K          2048L
+#define BUF_1K          1024L
+
+#define BUF_LARGE       BUF_1K
+#define BUF_MEDIUM      512
+#define BUF_SMALL       128
+#define BUF_TINY        64
+
+#define MC_ERROR        g_quark_from_static_string (PACKAGE)
+
+#define DEFAULT_CHARSET "ASCII"
+
+/*** enums ***************************************************************************************/
+
+/*** structures declarations (and typedefs of structures)*****************************************/
+
+typedef struct
+{
+    const char *mc_version;
+
+    // Used so that widgets know if they are being destroyed or shut down
+    gboolean shutdown;
+
+    /* sysconfig_dir: Area for default settings from maintainers of distributuves
+       default is /etc/coole or may be defined by COOLE_DATADIR */
+    char *sysconfig_dir;
+    // share_data_dir: Area for default settings from developers
+    char *share_data_dir;
+
+    char *profile_name;
+
+    mc_config_t *main_config;
+
+    // Numbers of (file I/O) and (input/display) codepages. -1 if not selected
+    int source_codepage;
+    int display_codepage;
+
+    // If utf-8 terminal utf8_display = TRUE
+    gboolean utf8_display;
+
+    // Set if the nice and useful keybar is visible
+    gboolean keybar_visible;
+
+    struct
+    {
+        // Asks for confirmation before clean up of history
+        gboolean confirm_history_cleanup;
+
+        // Set if you want the possible completions dialog for the first time
+        gboolean show_all_if_ambiguous;
+    } widget;
+
+    // The user's shell
+    mc_shell_t *shell;
+
+    struct
+    {
+        // Use the specified skin
+        char *skin;
+        // Dialog window and drop down menu have a shadow
+        gboolean shadows;
+
+        char *setup_color_string;
+        char *term_color_string;
+        char *color_terminal_string;
+
+        // This flag is set by xterm detection routine in function main()
+        // It is used by function toggle_terminal()
+        gboolean xterm_flag;
+
+        // disable x11 support
+        gboolean disable_x11;
+
+        // For slow terminals
+        // If true lines are shown by spaces
+        gboolean slow_terminal;
+
+        // Set to force black and white display at program startup
+        gboolean disable_colors;
+
+        // If true use +, -, | for line drawing
+        gboolean ugly_line_drawing;
+
+        // Tries to use old highlight mouse tracking
+        gboolean old_mouse;
+
+        /* If true, use + and \ keys normally and select/unselect do if M-+ / M-\.
+           and M-- and keypad + / - */
+        gboolean alternate_plus_minus;
+    } tty;
+
+    struct
+    {
+        // Set when cd symlink following is desirable (bash mode)
+        gboolean cd_symlinks;
+    } vfs;
+} mc_global_t;
+
+/*** global variables defined in .c file *********************************************************/
+
+extern mc_global_t mc_global;
+
+/*** declarations of public functions ************************************************************/
+
+char *mc_get_package_copyright (void);
+
+/*** inline functions ****************************************************************************/
+#endif

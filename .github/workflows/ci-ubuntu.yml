@@ -1,0 +1,87 @@
+name: ci-ubuntu
+
+on:
+  workflow_call:
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # meson dist packs the git tree: it needs the tags version.sh reads
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build check gettext pkg-config
+          sudo apt-get install -y libglib2.0-dev libgpm-dev libncurses-dev libslang2-dev libx11-dev liblua5.4-dev
+
+      - name: Build full configuration
+        run: |
+          meson setup build-full \
+              --prefix="$(pwd)/install" \
+              -Dlua=enabled \
+              -Dwerror=true
+          meson compile -C build-full
+          meson test -C build-full --print-errorlogs
+          meson install -C build-full
+          TERM=xterm ./install/bin/coole --version
+
+      - name: Build ncurses configuration
+        run: |
+          meson setup build-ncurses -Dscreen=ncurses -Dwerror=true
+          meson compile -C build-ncurses
+          meson test -C build-ncurses --print-errorlogs
+
+      - name: Build release configuration
+        run: |
+          meson setup build-release --buildtype=release -Dwerror=true
+          meson compile -C build-release
+          meson test -C build-release --print-errorlogs
+
+      - name: Build minimal configuration
+        run: |
+          meson setup build-minimal \
+              -Dnls=disabled \
+              -Dassert=false \
+              -Dlua=disabled \
+              -Dx11=disabled \
+              -Dgpm=disabled \
+              -Dspell=disabled \
+              -Dtests=enabled \
+              -Dwerror=true
+          meson compile -C build-minimal
+          meson test -C build-minimal --print-errorlogs
+
+      - name: Build distribution archive
+        run: meson dist -C build-full --formats=xztar
+
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: test-logs-ubuntu
+          path: build-*/meson-logs/*.txt
+
+  check-glib-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build and test with GLib 2.58
+        run: sh maint/check-glib-api.sh
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: glib-258-logs
+          path: |
+            /tmp/coole-glib-api.*/*.log
+            /tmp/coole-glib-api.*/build/meson-logs/*.txt

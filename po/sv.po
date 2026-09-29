@@ -1,0 +1,2725 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Alexander Kilian <alexander.kilian@gmail.com>, 2022
+# Cybjit <cybjit@gmail.com>, 2012
+# Cybjit <cybjit@gmail.com>, 2012
+# Daniel Nylander <po@danielnylander.se>, 2025
+# Henrik Mattsson-Mårn <h@reglage.net>, 2016
+# Ingemar Karlsson <ingemar@ingk.se>, 2021
+# Jonas Hultén <jonas@kollektivet.nu>, 2017
+# Jörgen Städje <jorgen@qedata.se>, 2020
+# MagnusHerrlin <m8618@abc.se>, 2016
+# MagnusHerrlin <m8618@abc.se>, 2016
+# Sebastian Rasmussen <sebras@gmail.com>, 2019-2020
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# Yury V. Zaytsev <yury@shurup.com>, 2025
+# yeager <yeager@noreply.codeberg.org>, 2026.
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+# yeager <user-6596@noreply.codeberg.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: yeager <user-6596@noreply.codeberg.org>\n"
+"Language-Team: Swedish <https://translate.codeberg.org/projects/mc6/mc6/sv/"
+">\n"
+"Language: sv\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr "Ingen översättning"
+
+msgid "Warning: cannot load codepages list"
+msgstr "Varning: kan inte läsa in listan över teckenkodningar"
+
+msgid "7-bit ASCII"
+msgstr "7-bitars ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Kan inte översätta från %s till %s"
+
+msgid "Event system already initialized"
+msgstr "Händelsesystemet är redan initierat"
+
+msgid "Failed to initialize event system"
+msgstr "Misslyckades med att initiera händelsesystemet"
+
+msgid "Event system not initialized"
+msgstr "Händelsesystemet är inte initierat"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Kontrollera indata! Vissa parametrar är NULL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Kan inte skapa gruppen '%s' för händelser!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Kan inte skapa händelsen '%s'!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr "Copyright (C) 1996-%zu the Free Software Foundation"
+
+msgid "Half page up"
+msgstr "En halv sida upp"
+
+msgid "Half page down"
+msgstr "En halv sida ned"
+
+msgid "Go to top"
+msgstr "Gå till början"
+
+msgid "Go to bottom"
+msgstr "Gå till slutet"
+
+msgid "Top of screen"
+msgstr "Skärmens överkant"
+
+msgid "Bottom of screen"
+msgstr "Skärmens nederkant"
+
+msgid "Word left"
+msgstr "Ett ord åt vänster"
+
+msgid "Word right"
+msgstr "Ett ord åt höger"
+
+msgid "Copy file(s)"
+msgstr "Kopiera filer"
+
+msgid "Move/rename file(s)"
+msgstr "Flytta/byt namn på filer"
+
+msgid "Delete"
+msgstr "Ta bort"
+
+msgid "Main menu"
+msgstr "Huvudmeny"
+
+msgid "User-defined menu"
+msgstr "Användardefinierad meny"
+
+msgid "Edit user menu"
+msgstr "Redigera användarmeny"
+
+msgid "Search next"
+msgstr "Sök nästa"
+
+msgid "Replace next"
+msgstr "Ersätt nästa"
+
+msgid "Show help"
+msgstr "Visa hjälp"
+
+msgid "Terminal"
+msgstr "Terminal"
+
+msgid "Edit file"
+msgstr "Redigera fil"
+
+msgid "Edit new file"
+msgstr "Redigera ny fil"
+
+msgid "Select charset"
+msgstr "Välj teckenkodning"
+
+msgid "Command history"
+msgstr "Kommandohistorik"
+
+msgid "Next in history"
+msgstr "Nästa i historiken"
+
+msgid "Previous in history"
+msgstr "Föregående i historiken"
+
+msgid "Auto-complete"
+msgstr "Komplettera automatiskt"
+
+msgid "Save as..."
+msgstr "Spara som..."
+
+msgid "Go to line"
+msgstr "Gå till rad"
+
+msgid "Refresh screen"
+msgstr "Uppdatera skärmen"
+
+msgid "Suspend to shell"
+msgstr "Pausa och gå till skalet"
+
+msgid "List open screens"
+msgstr "Lista öppna skärmar"
+
+msgid "Next screen"
+msgstr "Nästa skärm"
+
+msgid "Previous screen"
+msgstr "Föregående skärm"
+
+msgid "Next file"
+msgstr "Nästa fil"
+
+msgid "Previous file"
+msgstr "Föregående fil"
+
+msgid "Delete to line start"
+msgstr "Radera till radens början"
+
+msgid "Delete to line end"
+msgstr "Radera till radens slut"
+
+msgid "Delete to word start"
+msgstr "Radera till ordets början"
+
+msgid "Delete to word end"
+msgstr "Radera till ordets slut"
+
+msgid "Cut to clipboard"
+msgstr "Klipp ut till urklipp"
+
+msgid "Copy to clipboard"
+msgstr "Kopiera till urklipp"
+
+msgid "Paste from clipboard"
+msgstr "Klistra in från urklipp"
+
+msgid "Toggle selection"
+msgstr "Växla markering"
+
+msgid "Select left"
+msgstr "Markera åt vänster"
+
+msgid "Select right"
+msgstr "Markera åt höger"
+
+msgid "Select up"
+msgstr "Markera uppåt"
+
+msgid "Select down"
+msgstr "Markera nedåt"
+
+msgid "Select to word start"
+msgstr "Markera till ordets början"
+
+msgid "Select to word end"
+msgstr "Markera till ordets slut"
+
+msgid "Select to line start"
+msgstr "Markera till radens början"
+
+msgid "Select to line end"
+msgstr "Markera till radens slut"
+
+msgid "Sort order..."
+msgstr "Sorteringsordning..."
+
+msgid "General options"
+msgstr "Allmänna inställningar"
+
+msgid "Learn terminal keys"
+msgstr "Lär in terminaltangenter"
+
+msgid "Key bindings"
+msgstr "Tangentbindningar"
+
+msgid "Key sniffer"
+msgstr "Tangentavläsare"
+
+msgid "Manage plugins"
+msgstr "Hantera insticksmoduler"
+
+msgid "Set bookmark"
+msgstr "Sätt bokmärke"
+
+msgid "Quit program"
+msgstr "Avsluta programmet"
+
+msgid "Extended key prefix"
+msgstr "Prefix för utökade tangenter"
+
+msgid "Find declaration"
+msgstr "Sök deklaration"
+
+msgid "Appearance settings"
+msgstr "Utseendeinställningar"
+
+msgid "Save setup"
+msgstr "Spara inställningar"
+
+msgid "Yank (paste kill buffer)"
+msgstr "Klistra in raderad text"
+
+msgid "Help index"
+msgstr "Hjälpindex"
+
+msgid "Go back"
+msgstr "Gå tillbaka"
+
+msgid "Next link"
+msgstr "Nästa länk"
+
+msgid "Previous link"
+msgstr "Föregående länk"
+
+msgid "Next node"
+msgstr "Nästa nod"
+
+msgid "Previous node"
+msgstr "Föregående nod"
+
+msgid "Scroll up"
+msgstr "Rulla uppåt"
+
+msgid "Scroll down"
+msgstr "Rulla nedåt"
+
+msgid "Deselect all"
+msgstr "Avmarkera allt"
+
+msgid "Select page up"
+msgstr "Markera en sida uppåt"
+
+msgid "Select page down"
+msgstr "Markera en sida nedåt"
+
+msgid "Close editor"
+msgstr "Stäng redigeraren"
+
+msgid "Paragraph up"
+msgstr "Ett stycke uppåt"
+
+msgid "Paragraph down"
+msgstr "Ett stycke nedåt"
+
+msgid "Open file in editor"
+msgstr "Öppna fil i redigeraren"
+
+msgid "Select word"
+msgstr "Markera ord"
+
+msgid "Select line"
+msgstr "Markera rad"
+
+msgid "Select all"
+msgstr "Markera allt"
+
+msgid "Column selection mode"
+msgstr "Kolumnmarkeringsläge"
+
+msgid "Save selected block"
+msgstr "Spara markerat block"
+
+msgid "Insert file"
+msgstr "Infoga fil"
+
+msgid "Toggle insert/overwrite"
+msgstr "Växla infognings-/överskrivningsläge"
+
+msgid "Insert date/time (Lua action)"
+msgstr "Infoga datum/tid (Lua-åtgärd)"
+
+msgid "Delete line"
+msgstr "Radera rad"
+
+msgid "Mail file"
+msgstr "Skicka fil med e-post"
+
+msgid "Undo history"
+msgstr "Ångringshistorik"
+
+msgid "Format paragraph (Lua action)"
+msgstr "Formatera stycke (Lua-åtgärd)"
+
+msgid "Match bracket"
+msgstr "Hitta matchande parentes"
+
+msgid "Sort selection (Lua action)"
+msgstr "Sortera markering (Lua-åtgärd)"
+
+msgid "Insert command output (Lua action)"
+msgstr "Infoga kommandoutdata (Lua-åtgärd)"
+
+msgid "Start macro recording"
+msgstr "Starta makroinspelning"
+
+msgid "Stop macro recording"
+msgstr "Stoppa makroinspelning"
+
+msgid "Toggle macro recording"
+msgstr "Växla makroinspelning"
+
+msgid "Macro explorer"
+msgstr "Makrohanterare"
+
+msgid "Repeat last macro"
+msgstr "Upprepa senaste makrot"
+
+msgid "Spell check"
+msgstr "Stavningskontroll"
+
+msgid "Spell check current word"
+msgstr "Stavningskontrollera aktuellt ord"
+
+msgid "Select spell language"
+msgstr "Välj språk för stavningskontroll"
+
+msgid "Clear all bookmarks"
+msgstr "Rensa alla bokmärken"
+
+msgid "Next bookmark"
+msgstr "Nästa bokmärke"
+
+msgid "Previous bookmark"
+msgstr "Föregående bokmärke"
+
+msgid "Toggle code fold"
+msgstr "Vik in/ut kod"
+
+msgid "Unfold all"
+msgstr "Vik ut allt"
+
+msgid "Toggle line filter"
+msgstr "Växla radfilter"
+
+msgid "Filter by selection or word"
+msgstr "Filtrera efter markering eller ord"
+
+msgid "Select to file start"
+msgstr "Markera till filens början"
+
+msgid "Select to file end"
+msgstr "Markera till filens slut"
+
+msgid "Select to page start"
+msgstr "Markera till sidans början"
+
+msgid "Select to page end"
+msgstr "Markera till sidans slut"
+
+msgid "Select scroll up"
+msgstr "Markera och rulla uppåt"
+
+msgid "Select scroll down"
+msgstr "Markera och rulla nedåt"
+
+msgid "Select paragraph up"
+msgstr "Markera ett stycke uppåt"
+
+msgid "Select paragraph down"
+msgstr "Markera ett stycke nedåt"
+
+msgid "Column select page up"
+msgstr "Kolumnmarkera en sida uppåt"
+
+msgid "Column select page down"
+msgstr "Kolumnmarkera en sida nedåt"
+
+msgid "Column select left"
+msgstr "Kolumnmarkera åt vänster"
+
+msgid "Column select right"
+msgstr "Kolumnmarkera åt höger"
+
+msgid "Column select up"
+msgstr "Kolumnmarkera uppåt"
+
+msgid "Column select down"
+msgstr "Kolumnmarkera nedåt"
+
+msgid "Column select scroll up"
+msgstr "Kolumnmarkera och rulla uppåt"
+
+msgid "Column select scroll down"
+msgstr "Kolumnmarkera och rulla nedåt"
+
+msgid "Column select paragraph up"
+msgstr "Kolumnmarkera ett stycke uppåt"
+
+msgid "Column select paragraph down"
+msgstr "Kolumnmarkera ett stycke nedåt"
+
+msgid "Shift block left"
+msgstr "Flytta block åt vänster"
+
+msgid "Shift block right"
+msgstr "Flytta block åt höger"
+
+msgid "Insert literal character (Lua action)"
+msgstr "Infoga bokstavligt tecken (Lua-åtgärd)"
+
+msgid "Toggle visible tabs/spaces"
+msgstr "Växla visning av tabbar/mellanslag"
+
+msgid "Toggle control characters"
+msgstr "Växla visning av styrtecken"
+
+msgid "Toggle syntax highlighting"
+msgstr "Växla syntaxmarkering"
+
+msgid "Choose syntax highlighting"
+msgstr "Välj syntaxmarkering"
+
+msgid "Toggle right margin"
+msgstr "Växla högermarginal"
+
+msgid "Save mode options"
+msgstr "Spara lägesinställningar"
+
+msgid "About editor"
+msgstr "Om redigeraren"
+
+msgid "Execute script"
+msgstr "Kör skript"
+
+msgid "Move window"
+msgstr "Flytta fönster"
+
+msgid "Resize window"
+msgstr "Ändra fönsterstorlek"
+
+msgid "Toggle fullscreen"
+msgstr "Växla helskärmsläge"
+
+msgid "Window list"
+msgstr "Fönsterlista"
+
+msgid "Next window"
+msgstr "Nästa fönster"
+
+msgid "Previous window"
+msgstr "Föregående fönster"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Filen ”%s” redigeras redan.\n"
+"Användare: %s\n"
+"Process-ID: %d"
+
+msgid "File locked"
+msgstr "Fil låst"
+
+msgid "&Grab lock"
+msgstr "&Överta lås"
+
+msgid "&Ignore lock"
+msgstr "&Ignorera lås"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Kan inte skapa katalogen %s"
+
+msgid "FATAL: not a directory:"
+msgstr "ALLVARLIGT FEL: inte en katalog:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Talet är utanför tillåtet område (ska vara i området för en byte, 0 <= n <= "
+"0xFF, uttryckt hexadecimalt)"
+
+msgid "Invalid character"
+msgstr "Otillåtet tecken"
+
+msgid "Unmatched quotes character"
+msgstr "Omatchat citattecken"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Det hexadecimala mönstret är fel vid position %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Söksträng ej funnen"
+
+msgid "Not implemented yet"
+msgstr "Ej implementerat än"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Antalet ersättningssymboler matchar inte antalet funna symboler"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Otillåtet symbolnummer %d"
+
+msgid "Regular expression error"
+msgstr "Reguljärt uttrycksfel"
+
+msgid "No&rmal"
+msgstr "No&rmal"
+
+msgid "Re&gular expression"
+msgstr "Re&guljärt uttryck"
+
+msgid "He&xadecimal"
+msgstr "He&xadecimal"
+
+msgid "Wil&dcard search"
+msgstr "&Jokertecken"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Temat '%s' kan inte tolkas.\n"
+"Förinställt tema har laddats"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Temat '%s' med fullfärgsstöd kan inte användas:\n"
+"%s\n"
+"Förinställt tema har laddats"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Kan inte använda temat ”%s” med stöd för 256 färger:\n"
+"%s\n"
+"Standardtemat har lästs in"
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Temat '%s' kan inte laddas in.\n"
+"Förinställt tema har laddats"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+"\n"
+"Om din terminal har stöd för 256 färger måste du ställa in din TERM-\n"
+"miljövariabel så att den matchar din terminal, kanske med hjälp av\n"
+"en *-256color- eller *-direct256-variant. Använd kommandot ’toe -a’\n"
+"för att lista alla tillgängliga varianter på ditt system.\n"
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+"För 24-bitars färg krävs ncurses-biblioteket version 6.1 eller senare\n"
+"med stöd för breda tecken och ABI 6 eller senare.\n"
+"Uppgradera ditt system.\n"
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+"\n"
+"Om terminalen stöder 24-bitars färg måste du ange miljövariabeln TERM\n"
+"till en variant av typen *-direct256, *-direct16 eller *-direct.\n"
+"Kommandot 'toe -a' listar alla tillgängliga varianter på ditt system.\n"
+
+msgid "True color not supported in this slang version."
+msgstr "Fullfärg stöds inte i den här versionen av slang."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+"\n"
+"Om terminalen stöder 24-bitars färg måste du ange miljövariabeln TERM\n"
+"till en variant av typen *-direct256, *-direct16 eller *-direct.\n"
+"Kommandot 'toe -a' listar alla tillgängliga varianter på ditt system.\n"
+"Du kan även ange COLORTERM=truecolor.\n"
+
+msgid "Escape"
+msgstr "Escape"
+
+msgid "Function key 1"
+msgstr "Funktionstangent 1"
+
+msgid "Function key 2"
+msgstr "Funktionstangent 2"
+
+msgid "Function key 3"
+msgstr "Funktionstangent 3"
+
+msgid "Function key 4"
+msgstr "Funktionstangent 4"
+
+msgid "Function key 5"
+msgstr "Funktionstangent 5"
+
+msgid "Function key 6"
+msgstr "Funktionstangent 6"
+
+msgid "Function key 7"
+msgstr "Funktionstangent 7"
+
+msgid "Function key 8"
+msgstr "Funktionstangent 8"
+
+msgid "Function key 9"
+msgstr "Funktionstangent 9"
+
+msgid "Function key 10"
+msgstr "Funktionstangent 10"
+
+msgid "Function key 11"
+msgstr "Funktionstangent 11"
+
+msgid "Function key 12"
+msgstr "Funktionstangent 12"
+
+msgid "Function key 13"
+msgstr "Funktionstangent 13"
+
+msgid "Function key 14"
+msgstr "Funktionstangent 14"
+
+msgid "Function key 15"
+msgstr "Funktionstangent 15"
+
+msgid "Function key 16"
+msgstr "Funktionstangent 16"
+
+msgid "Function key 17"
+msgstr "Funktionstangent 17"
+
+msgid "Function key 18"
+msgstr "Funktionstangent 18"
+
+msgid "Function key 19"
+msgstr "Funktionstangent 19"
+
+msgid "Function key 20"
+msgstr "Funktionstangent 20"
+
+msgid "Completion/M-tab"
+msgstr "Komplettera/M-tab"
+
+msgid "BackTab/S-tab"
+msgstr "Bakåttab/S-tab"
+
+msgid "Backspace"
+msgstr "Backsteg"
+
+msgid "Up arrow"
+msgstr "Uppåtpil"
+
+msgid "Down arrow"
+msgstr "Nedåtpil"
+
+msgid "Left arrow"
+msgstr "Vänsterpil"
+
+msgid "Right arrow"
+msgstr "Högerpil"
+
+msgid "Insert"
+msgstr "Infoga"
+
+msgid "Home"
+msgstr "Hem"
+
+msgid "End key"
+msgstr "End"
+
+msgid "Page Up"
+msgstr "Sida upp"
+
+msgid "Page Down"
+msgstr "Sida ned"
+
+msgid "/ on keypad"
+msgstr "/ på num tang"
+
+msgid "* on keypad"
+msgstr "* på num tang"
+
+msgid "- on keypad"
+msgstr "- på num tang"
+
+msgid "+ on keypad"
+msgstr "+ på num tang"
+
+msgid "Left arrow keypad"
+msgstr "Vänsterpil, num tang"
+
+msgid "Right arrow keypad"
+msgstr "Högerpil, num tang"
+
+msgid "Up arrow keypad"
+msgstr "Uppåtpil, num tang"
+
+msgid "Down arrow keypad"
+msgstr "Nedåtpil, num tang"
+
+msgid "Home on keypad"
+msgstr "Home, num tang"
+
+msgid "End on keypad"
+msgstr "End, num tang"
+
+msgid "Page Down keypad"
+msgstr "Page Down, num tang"
+
+msgid "Page Up keypad"
+msgstr "Page Up, num tang"
+
+msgid "Insert on keypad"
+msgstr "Insert, num tang"
+
+msgid "Delete on keypad"
+msgstr "Delete, num tang"
+
+msgid "Enter on keypad"
+msgstr "Enter, num tang"
+
+msgid "Function key 21"
+msgstr "Funktionstangent 21"
+
+msgid "Function key 22"
+msgstr "Funktionstangent 22"
+
+msgid "Function key 23"
+msgstr "Funktionstangent 23"
+
+msgid "Function key 24"
+msgstr "Funktionstangent 24"
+
+msgid "A1 key"
+msgstr "A1-tangenten"
+
+msgid "C1 key"
+msgstr "C1-tangenten"
+
+msgid "Asterisk"
+msgstr "Asterisk"
+
+msgid "Minus"
+msgstr "Minus"
+
+msgid "Plus"
+msgstr "Plus"
+
+msgid "Dot"
+msgstr "Punkt"
+
+msgid "Less than"
+msgstr "Mindre än"
+
+msgid "Great than"
+msgstr "Större än"
+
+msgid "Equal"
+msgstr "Lika med"
+
+msgid "Comma"
+msgstr "Komma"
+
+msgid "Apostrophe"
+msgstr "Apostrof"
+
+msgid "Colon"
+msgstr "Kolon"
+
+msgid "Semicolon"
+msgstr "Semikolon"
+
+msgid "Exclamation mark"
+msgstr "Utropstecken"
+
+msgid "Question mark"
+msgstr "Frågetecken"
+
+msgid "Ampersand"
+msgstr "Et-tecken"
+
+msgid "Dollar sign"
+msgstr "Dollartecken"
+
+msgid "Quotation mark"
+msgstr "Citationstecken"
+
+msgid "Percent sign"
+msgstr "Procenttecken"
+
+msgid "Caret"
+msgstr "Cirkumflex"
+
+msgid "Tilda"
+msgstr "Tilde"
+
+msgid "Prime"
+msgstr "Grav accent"
+
+msgid "Underline"
+msgstr "Understreck"
+
+msgid "Understrike"
+msgstr "Understreck"
+
+msgid "Pipe"
+msgstr "Vertikalstreck"
+
+msgid "Left parenthesis"
+msgstr "Vänster parentes"
+
+msgid "Right parenthesis"
+msgstr "Höger parentes"
+
+msgid "Left bracket"
+msgstr "Vänster hakparentes"
+
+msgid "Right bracket"
+msgstr "Höger hakparentes"
+
+msgid "Left brace"
+msgstr "Vänster klammerparentes"
+
+msgid "Right brace"
+msgstr "Höger klammerparentes"
+
+msgid "Enter"
+msgstr "Retur"
+
+msgid "Tab key"
+msgstr "Tabulator"
+
+msgid "Space key"
+msgstr "Mellanslag"
+
+msgid "Slash key"
+msgstr "Snedstreck"
+
+msgid "Backslash key"
+msgstr "Omvänt snedstreck"
+
+msgid "Number sign #"
+msgstr "Brädgård"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "Snabel-a"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr "Höger Alt"
+
+msgid "Shift"
+msgstr "Skift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Det går inte att skapa ett rör för SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Det går inte att konfigurera skrivänden på SIGWINCH-röret: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Det går inte att konfigurera läsänden på SIGWINCH-röret: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Skärmstorleken %d×%d stöds inte.\n"
+"Kontrollera miljövariabeln TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "Miljövariabeln TERM är inte angiven!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Kan inte kontrollera SIGWINCH-röret"
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Kan inte skapa rörbeskrivare"
+
+msgid "Cannot create pipe streams"
+msgstr "Kan inte skapa rörströmmar"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Oväntat fel i select() under läsning av data från en barnprocess:\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr "Det går inte att stänga rörbeskrivaren (p == NULL)"
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Oväntat fel i waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Ändringar i filen gick förlorade"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+"Det går inte att skapa en tillfällig katalog %s: %s.\n"
+"Temporära filer kommer inte att skapas\n"
+
+msgid "Press any key to continue..."
+msgstr "Tryck valfri tangent för att fortsätta..."
+
+msgid "Internal error:"
+msgstr "Internt fel:"
+
+msgid "Screens"
+msgstr "Skärmar"
+
+msgid "History"
+msgstr "Historik"
+
+msgid "Paste"
+msgstr "Klistra in"
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+"Urklipp innehåller mer än 2 kB text.\n"
+"Klistra in den?"
+
+msgid "&Yes"
+msgstr "&Ja"
+
+msgid "&No"
+msgstr "&Nej"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "DialogTitle|Rensa historik"
+
+msgid "Do you want clean this history?"
+msgstr "Vill du rensa denna historik?"
+
+msgid "&OK"
+msgstr "&OK"
+
+msgid "&Cancel"
+msgstr "&Avbryt"
+
+msgid "Error"
+msgstr "Fel"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Avbryt"
+
+msgid "< Default >"
+msgstr "< Fördefinierat >"
+
+msgid "Skins"
+msgstr "Teman"
+
+msgid "Skin:"
+msgstr "Tema:"
+
+msgid "&Shadows"
+msgstr "&Skuggor"
+
+msgid "Appearance"
+msgstr "Utseende"
+
+msgid "Displays the current version"
+msgstr "Visa den aktuella versionen"
+
+msgid "Print data directory"
+msgstr "Skriv ut datakatalog"
+
+msgid "Print extended info about used data directories"
+msgstr "Skriv ut extra information om använda datakataloger"
+
+msgid "Print configure options"
+msgstr "Skriv ut configure-alternativ"
+
+msgid "Disables Lua support"
+msgstr "Inaktiverar Lua-stöd"
+
+msgid "Forces xterm features"
+msgstr "Tvinga fram xtermfinesser"
+
+msgid "Disable X11 support"
+msgstr "Stäng av stöd för X11"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Försöker använda ett åldrat sätt att läsa av muspekaren"
+
+msgid "Disable mouse support in text version"
+msgstr "Stäng av musstödet i textversionen"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Försöker använda termcap istället för terminfo"
+
+msgid "To run on slow terminals"
+msgstr "Att köra på långsamma terminaler"
+
+msgid "Use stickchars to draw"
+msgstr "Använd '+', '-' och '|' för att rita"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Läs in tangentbindningar från angiven fil"
+
+msgid "<file>"
+msgstr "<fil>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr "Läs inte in tangentbindningar från fil, använd standardvärden"
+
+msgid "Requests to run in black and white"
+msgstr "Begäran att köra i svartvitt"
+
+msgid "Request to run in color mode"
+msgstr "Begär att få köra i färgläge"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Visa mc med specificerat tema"
+
+msgid "<string>"
+msgstr "<sträng>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+radnr] fil1[:radnr] [fil2[:radnr]...]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+"\n"
+"Skicka alla felrapporter (inklusive utdata från '%s -V')\n"
+"som ärenden på %s\n"
+
+msgid "Main options"
+msgstr "Huvudalternativ"
+
+msgid "Terminal options"
+msgstr "Terminalalternativ"
+
+msgid "Color options"
+msgstr "Färgalternativ"
+
+msgid "Arguments parse error!"
+msgstr "Argumenttolkningsfel!"
+
+msgid "Spell"
+msgstr "Stavning"
+
+msgid "Spell backend is unavailable."
+msgstr "Stavningsmotorn är inte tillgänglig."
+
+msgid "Ctags Configuration"
+msgstr "Ctags-inställningar"
+
+msgid "Ctags executable:"
+msgstr "Körbar fil för Ctags:"
+
+msgid "Command line options:"
+msgstr "Kommandoradsflaggor:"
+
+msgid "Case sensitive filter"
+msgstr "Skiftlägeskänsligt filter"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr "Hitta taggfil automatiskt i överordnade kataloger"
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr "Kan inte gå till %s:%ld."
+
+msgid "Ctags"
+msgstr "Ctags"
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr "Symbolen ”%s” hittades inte i något inläst förråd."
+
+msgid "Go to Declaration"
+msgstr "Gå till deklaration"
+
+msgid "Find Declaration"
+msgstr "Sök deklaration"
+
+msgid "No word at cursor."
+msgstr "Inget ord vid markören."
+
+#, c-format
+msgid "'%s' is not a known symbol."
+msgstr "”%s” är ingen känd symbol."
+
+msgid "Failed to create temporary file."
+msgstr "Kunde inte skapa temporär fil."
+
+msgid "Failed to open temporary file."
+msgstr "Kunde inte öppna temporär fil."
+
+msgid "No indexed files found."
+msgstr "Inga indexerade filer hittades."
+
+msgid "Failed to run grep."
+msgstr "Kunde inte köra grep."
+
+#, c-format
+msgid "No references found for '%s'."
+msgstr "Inga referenser hittades för ”%s”."
+
+msgid "Find References"
+msgstr "Sök referenser"
+
+msgid "No repository loaded."
+msgstr "Inget förråd är inläst."
+
+msgid "Search Symbol"
+msgstr "Sök symbol"
+
+msgid "No file is open."
+msgstr "Ingen fil är öppen."
+
+msgid "No tags found for the current file."
+msgstr "Inga taggar hittades för den aktuella filen."
+
+msgid "Symbols in Current File"
+msgstr "Symboler i aktuell fil"
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr "Inga filer matchar ”%s”."
+
+msgid "Search File"
+msgstr "Sök fil"
+
+msgid "Complete Symbol"
+msgstr "Komplettera symbol"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr "Inga medlemmar hittades för ”%s”."
+
+#, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Kunde inte läsa in taggfil: %s"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr "Läste in %u symboler från %s"
+
+#, c-format
+msgid "Cannot create temp file: %s"
+msgstr "Kan inte skapa temporär fil: %s"
+
+#, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Kan inte byta namn på %s till %s: %s"
+
+msgid "Ctags: Create Index"
+msgstr "Ctags: Skapa index"
+
+msgid "Project root directory to index:"
+msgstr "Projektets rotkatalog att indexera:"
+
+#, c-format
+msgid "Failed to create index in %s"
+msgstr "Kunde inte skapa index i %s"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr "Indexerade: %u symboler"
+
+#, c-format
+msgid "Reindex failed for %s"
+msgstr "Omindexering misslyckades för %s"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr "Omindexerade: %u symboler"
+
+msgid "Navigation history is empty."
+msgstr "Navigeringshistoriken är tom."
+
+msgid "Navigation History"
+msgstr "Navigeringshistorik"
+
+msgid "Go to declaration"
+msgstr "Gå till deklaration"
+
+msgid "Find references"
+msgstr "Sök referenser"
+
+msgid "Complete symbol"
+msgstr "Komplettera symbol"
+
+msgid "Navigation history"
+msgstr "Navigeringshistorik"
+
+msgid "Go forward"
+msgstr "Gå framåt"
+
+msgid "Search symbol"
+msgstr "Sök symbol"
+
+msgid "Search file"
+msgstr "Sök fil"
+
+msgid "Symbols in current file"
+msgstr "Symboler i aktuell fil"
+
+msgid "Class/struct members"
+msgstr "Medlemmar i klass/struktur"
+
+msgid "Load tags file"
+msgstr "Läs in taggfil"
+
+msgid "Manage repositories"
+msgstr "Hantera förråd"
+
+msgid "Reindex repository"
+msgstr "Indexera om förråd"
+
+msgid "Configuration"
+msgstr "Inställningar"
+
+msgid "Go to &declaration"
+msgstr "Gå till &deklaration"
+
+msgid "&Find declaration"
+msgstr "&Hitta deklaration"
+
+msgid "Find &references"
+msgstr "Sök &referenser"
+
+msgid "Navigation &history"
+msgstr "Navigerings&historik"
+
+msgid "Go &back"
+msgstr "Gå &tillbaka"
+
+msgid "Go for&ward"
+msgstr "Gå &framåt"
+
+msgid "Class/struct &members"
+msgstr "&Medlemmar i klass/struktur"
+
+msgid "&Search symbol"
+msgstr "&Sök symbol"
+
+msgid "S&ymbols in file"
+msgstr "S&ymboler i fil"
+
+msgid "&Complete symbol"
+msgstr "&Komplettera symbol"
+
+msgid "No matching symbols found."
+msgstr "Inga matchande symboler hittades."
+
+msgid "Select symbol"
+msgstr "Välj symbol"
+
+msgid "Symbol name:"
+msgstr "Symbolnamn:"
+
+msgid "File name or path:"
+msgstr "Filnamn eller sökväg:"
+
+msgid "Class/Struct Members"
+msgstr "Medlemmar i klass/struktur"
+
+msgid "Scope name (class, struct, namespace):"
+msgstr "Namn på omfång (klass, struktur, namnrymd):"
+
+msgid "Load Tags File"
+msgstr "Läs in taggfil"
+
+msgid "Tags file path:"
+msgstr "Sökväg till taggfil:"
+
+msgid "Manage Tag Repositories"
+msgstr "Hantera taggförråd"
+
+msgid "(unknown)"
+msgstr "(okänd)"
+
+msgid "&Close"
+msgstr "S&täng"
+
+msgid "No references found."
+msgstr "Inga referenser hittades."
+
+msgid "Members"
+msgstr "Medlemmar"
+
+msgid "Warning"
+msgstr "Varning"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Nuvarande text har modifierats utan att sparas.\n"
+"Fortsätt kastar bort dessa ändringar."
+
+msgid "C&ontinue"
+msgstr "F&ortsätt"
+
+msgid "&Add word"
+msgstr "&Lägg till ord"
+
+msgid "&Replace"
+msgstr "&Ersätt"
+
+msgid "&Skip"
+msgstr "&Hoppa över"
+
+msgid "Language"
+msgstr "Språk"
+
+msgid "Misspelled"
+msgstr "Felstavad"
+
+msgid "Check word"
+msgstr "Kontrollera ord"
+
+msgid "Suggest"
+msgstr "Föreslå"
+
+msgid "(no suggestions)"
+msgstr "(inga förslag)"
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+"Biblioteket hunspell är inte installerat.\n"
+"Installera det och en ordlista för språket du skriver på."
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+"Biblioteket aspell är inte installerat.\n"
+"Installera det och en ordlista för språket du skriver på."
+
+msgid "none"
+msgstr "ingen"
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+"Aspell saknar ordlista för ”%s”.\n"
+"Installerade: %s\n"
+"Installera en ordlista och ange sedan dess namn under Språk."
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+"Hunspell saknar ordlista för ”%s”.\n"
+"Installerade: %s\n"
+"Installera en ordlista och ange sedan dess namn under Språk."
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+"Stavningskontrollen är avstängd.\n"
+"Ange ett språk i stavningsmodulens inställningar för att aktivera den."
+
+msgid "Add word"
+msgstr "Lägg till ord"
+
+msgid "Word to add to the dictionary:"
+msgstr "Ord att lägga till i ordlistan:"
+
+msgid "Aspell"
+msgstr "Aspell"
+
+msgid "Hunspell"
+msgstr "Hunspell"
+
+msgid "Engine"
+msgstr "Motor"
+
+msgid "Language:"
+msgstr "Språk:"
+
+msgid "&Select..."
+msgstr "&Välj..."
+
+msgid "Spell plugin settings"
+msgstr "Stavningsmodulens inställningar"
+
+msgid "Select language"
+msgstr "Välj språk"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Läser in: %3d%%"
+
+msgid "Loading..."
+msgstr "Laddar..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+"Kan inte öppna\n"
+"%s"
+
+msgid "Load file"
+msgstr "Ladda fil"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Fel vid läsning av %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+"Kan inte läsa filstatus för\n"
+"%s"
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+"%s\n"
+"är inte en vanlig fil"
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Filen \"%s\" är för stor.\n"
+"Öppna ändå?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Fel vid läsning från rör: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+"Kan inte öppna rör för läsning\n"
+"%s"
+
+msgid "Undo"
+msgstr "Ångra"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+"Ångringshistoriken är inte tillgänglig.\n"
+"Ändringsloggen skrevs över efter en stor ändring."
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+"Du saknar skrivrättigheter för denna fil.\n"
+"Ange sudo-lösenord för att spara som root:"
+
+msgid "Save with sudo"
+msgstr "Spara med sudo"
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+"Kan inte spara med sudo.\n"
+"Fel lösenord eller sudo är inte konfigurerat."
+
+msgid "&Retry"
+msgstr "Försök &igen"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Filen har hårda länkar. Koppla loss innan den sparas?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Filen har modifierats av något annat under tiden. Spara ändå?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Fel vid skrivning till rör: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+"Det går inte att öppna filen\n"
+"%s\n"
+"för skrivning"
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Filen som du sparar slutar inte med en radmatning."
+
+msgid "&Do not change"
+msgstr "&Ändra inte"
+
+msgid "&Unix format (LF)"
+msgstr "&Unix-format (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "&Windows/DOS-format (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "&Macintosh-format (CR)"
+
+msgid "Enter file name:"
+msgstr "Ange filnamn:"
+
+msgid "Change line breaks to:"
+msgstr "Ändra radbrytningar till:"
+
+msgid "Save As"
+msgstr "Spara som"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+"Det går inte att skapa en katalog\n"
+"%s"
+
+msgid "&Quick save"
+msgstr "S&nabbspara"
+
+msgid "&Safe save"
+msgstr "&Säker lagring"
+
+msgid "&Do backups with following extension:"
+msgstr "&Gör säkerhetskopior med följande filnamnstillägg:"
+
+msgid "Check &POSIX new line"
+msgstr "Kontrollera &POSIX-radslut"
+
+msgid "Edit Save Mode"
+msgstr "Inställningar för att spara filer"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+"Det går inte att spara\n"
+"%s:\n"
+"inte en vanlig fil"
+
+msgid "A file already exists with this name"
+msgstr "En fil med detta namn finns redan"
+
+msgid "&Overwrite"
+msgstr "&Skriv över"
+
+msgid "Cannot save file"
+msgstr "Kan inte spara fil"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Bekräfta att filen ska sparas: ”%s”"
+
+msgid "Save file"
+msgstr "Spara fil"
+
+msgid "&Save"
+msgstr "&Spara"
+
+msgid "Load"
+msgstr "Ladda"
+
+msgid "Syntax file edit"
+msgstr "Redigera syntaxfil"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Vilken syntaxfil vill du redigera?"
+
+msgid "&User"
+msgstr "&Användarens"
+
+msgid "&System wide"
+msgstr "&Systemets"
+
+msgid "Menu edit"
+msgstr "Menyredigering"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Vilken menyfil vill du redigera?"
+
+msgid "&Local"
+msgstr "&Lokal"
+
+msgid "[NoName]"
+msgstr "[Namnlös]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Filen %s har ändrats.\n"
+"Spara innan nedstängning?"
+
+msgid "Close file"
+msgstr "Stäng fil"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+"%s håller på att stängas ner.\n"
+"Spara modifierade filen %s?"
+
+msgid "Quit"
+msgstr "Avsluta"
+
+msgid "This function is not implemented"
+msgstr "Denna funktion är inte implementerad"
+
+msgid "Unable to save to file"
+msgstr "Kan inte spara till fil"
+
+msgid "Goto line"
+msgstr "Gå till rad"
+
+msgid "Enter line:"
+msgstr "Ange rad:"
+
+msgid "Save block"
+msgstr "Spara block"
+
+msgid "Cannot save block"
+msgstr "Det går inte att spara block"
+
+msgid "Cannot insert file"
+msgstr "Kan inte infoga fil"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <ämne> -c <kopia> <till>"
+
+msgid "To"
+msgstr "Till"
+
+msgid "Subject"
+msgstr "Ämne"
+
+msgid "Copies to"
+msgstr "Kopior till"
+
+msgid "Mail"
+msgstr "E-post"
+
+msgid "Cancel"
+msgstr "Avbryt"
+
+#, c-format
+msgid "insert %d"
+msgstr "infoga %d"
+
+#, c-format
+msgid "delete %d"
+msgstr "radera %d"
+
+msgid "replace"
+msgstr "ersätt"
+
+msgid "Nothing to undo."
+msgstr "Inget att ångra."
+
+msgid "Undo History"
+msgstr "Ångringshistorik"
+
+msgid "Collect completions"
+msgstr "Samlar in kompletteringar"
+
+msgid "NoName"
+msgstr "Namnlös"
+
+msgid "Save macro"
+msgstr "Spara makro"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Tryck på ny snabbtangent för makro:"
+
+msgid "Repeat last commands"
+msgstr "Repetera senaste kommandon"
+
+msgid "Repeat times:"
+msgstr "Repetitioner:"
+
+#, c-format
+msgid "Delete macro %s?"
+msgstr "Ta bort makrot %s?"
+
+msgid "Delete macro"
+msgstr "Ta bort makro"
+
+msgid "Macro Explorer"
+msgstr "Makrohanterare"
+
+msgid "No macros recorded"
+msgstr "Inga makron inspelade"
+
+msgid "Run"
+msgstr "Kör"
+
+msgid "Close"
+msgstr "Stäng"
+
+msgid "&Open file..."
+msgstr "&Öppna fil..."
+
+msgid "&New"
+msgstr "&Ny"
+
+msgid "&History..."
+msgstr "&Historik…"
+
+msgid "Save &as..."
+msgstr "Spa&ra som..."
+
+msgid "&Insert file..."
+msgstr "&Infoga fil..."
+
+msgid "Cop&y to file..."
+msgstr "&Kopiera till fil..."
+
+msgid "&User menu..."
+msgstr "Användar&meny..."
+
+msgid "A&bout..."
+msgstr "&Om..."
+
+msgid "&Quit"
+msgstr "&Avsluta"
+
+msgid "&Undo"
+msgstr "&Ångra"
+
+msgid "&Redo"
+msgstr "&Gör om"
+
+msgid "Undo &History..."
+msgstr "Ångrings&historik..."
+
+msgid "&Toggle ins/overw"
+msgstr "&Växla infoga/överskr"
+
+msgid "To&ggle mark"
+msgstr "Vä&xla markering"
+
+msgid "&Mark columns"
+msgstr "&Markera kolumner"
+
+msgid "Mark &all"
+msgstr "Markera &allt"
+
+msgid "Unmar&k"
+msgstr "Avmarke&ra"
+
+msgid "Cop&y"
+msgstr "&Kopiera"
+
+msgid "Mo&ve"
+msgstr "&Flytta"
+
+msgid "&Delete"
+msgstr "&Ta bort"
+
+msgid "Co&py to clipfile"
+msgstr "Ko&piera till urklippsfil"
+
+msgid "&Cut to clipfile"
+msgstr "K&lipp ut till urklippsfil"
+
+msgid "Pa&ste from clipfile"
+msgstr "Kl&istra in från urklippsfil"
+
+msgid "&Beginning"
+msgstr "&Början"
+
+msgid "&End"
+msgstr "&Slutet"
+
+msgid "&Search..."
+msgstr "&Sök..."
+
+msgid "Search &again"
+msgstr "Sök &igen"
+
+msgid "&Replace..."
+msgstr "&Ersätt..."
+
+msgid "Toggle &line filter"
+msgstr "Växla &radfilter"
+
+msgid "Filter by &word"
+msgstr "Filtrera efter &ord"
+
+msgid "&Toggle bookmark"
+msgstr "&Växla bokmärke"
+
+msgid "&Next bookmark"
+msgstr "&Nästa bokmärke"
+
+msgid "&Prev bookmark"
+msgstr "&Föreg bokmärke"
+
+msgid "&Flush bookmarks"
+msgstr "&Rensa bokmärken"
+
+msgid "&Go to line..."
+msgstr "&Gå till rad..."
+
+msgid "&Toggle line state"
+msgstr "Växla &radnummer"
+
+msgid "Go to matching &bracket"
+msgstr "Till &matchande parentes"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Växla s&yntaxmarkering"
+
+msgid "Togg&le right margin"
+msgstr "Växla &höger marginal"
+
+msgid "Toggle &control characters"
+msgstr "Växla &styrtecken"
+
+msgid "Encod&ing..."
+msgstr "&Teckenkodning..."
+
+msgid "&Fold / Unfold block"
+msgstr "&Vik in/ut block"
+
+msgid "&Unfold all"
+msgstr "Vik &ut allt"
+
+msgid "&Refresh screen"
+msgstr "Rita &om skärmen"
+
+msgid "&Start/Stop record macro"
+msgstr "&Börja/sluta spela in makro"
+
+msgid "Macro e&xplorer..."
+msgstr "Makro&hanterare..."
+
+msgid "Record/Repeat &actions"
+msgstr "Spela in/repetera &ändringar"
+
+msgid "&Move"
+msgstr "Fl&ytta"
+
+msgid "&Resize"
+msgstr "&Ändra storlek"
+
+msgid "&Toggle fullscreen"
+msgstr "&Växla fullskärm"
+
+msgid "&Next"
+msgstr "&Nästa"
+
+msgid "&Previous"
+msgstr "&Föregående"
+
+msgid "&List..."
+msgstr "&Lista..."
+
+msgid "&General..."
+msgstr "&Allmänt..."
+
+msgid "Save &mode..."
+msgstr "S&ätt att spara..."
+
+msgid "Syntax &highlighting..."
+msgstr "Sy&ntaxmarkering..."
+
+msgid "&Appearance..."
+msgstr "&Utseende..."
+
+msgid "Learn &keys..."
+msgstr "Lär in &tangenter..."
+
+msgid "Key &bindings..."
+msgstr "Tangent&bindningar..."
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "Tangent&avläsare..."
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "&Hantera insticksmoduler..."
+
+msgid "Pl&ugin info..."
+msgstr "In&sticksmodulinfo..."
+
+msgid "&Lua scripts..."
+msgstr "&Lua-skript..."
+
+msgid "S&yntax file"
+msgstr "S&yntaxfil"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "&Menyfil"
+
+msgid "&Save setup"
+msgstr "&Spara inställningar"
+
+msgid "(no plugins loaded)"
+msgstr "(inga insticksmoduler inlästa)"
+
+msgid "&File"
+msgstr "&Fil"
+
+msgid "&Edit"
+msgstr "R&edigera"
+
+msgid "&Search"
+msgstr "&Sök"
+
+msgid "&Command"
+msgstr "&Kommando"
+
+msgid "&Navigate"
+msgstr "&Navigera"
+
+msgid "&Window"
+msgstr "F&önster"
+
+msgid "Pl&ugins"
+msgstr "In&sticksmoduler"
+
+msgid "&Options"
+msgstr "&Alternativ"
+
+msgid "Lua action"
+msgstr "Lua-åtgärd"
+
+msgid "Action failed"
+msgstr "Åtgärden misslyckades"
+
+msgid "&None"
+msgstr "I&ngen"
+
+msgid "&Dynamic paragraphing"
+msgstr "&Dynamisk styckeindelning"
+
+msgid "Type &writer wrap"
+msgstr "&Skrivmaskinsradbrytning"
+
+msgid "Wrap mode"
+msgstr "Radbrytning"
+
+msgid "Tabulation"
+msgstr "Tabulering"
+
+msgid "&Fake half tabs"
+msgstr "Falska &halva tabbar"
+
+msgid "&Backspace through tabs"
+msgstr "&Backsteg genom tabbar"
+
+msgid "Fill tabs with &spaces"
+msgstr "F&yll tabbar med blanksteg"
+
+msgid "Tab spacing:"
+msgstr "Tabbredd:"
+
+msgid "Other options"
+msgstr "Andra alternativ"
+
+msgid "&Return does autoindent"
+msgstr "Retur gör automatiska &indrag"
+
+msgid "Confir&m before saving"
+msgstr "Fr&åga innan sparande"
+
+msgid "Save file &position"
+msgstr "Spara fil&position"
+
+msgid "&Visible trailing spaces"
+msgstr "Synliga avslutande &blanksteg"
+
+msgid "Visible &tabs"
+msgstr "Synliga &tabulatorer"
+
+msgid "S&how control characters"
+msgstr "&Visa styrtecken"
+
+msgid "Synta&x highlighting"
+msgstr "Synta&xmarkering"
+
+msgid "C&ursor after inserted block"
+msgstr "&Markör efter infogat block"
+
+msgid "Pers&istent selection"
+msgstr "Fast ma&rkering"
+
+msgid "Cursor be&yond end of line"
+msgstr "Mar&kör bortom radslut"
+
+msgid "&Group undo"
+msgstr "&Gruppera ångra"
+
+msgid "Word wrap line length:"
+msgstr "Radbrytning vid längd:"
+
+msgid "Editor options"
+msgstr "Redigerarinställningar"
+
+msgid "Enter search string:"
+msgstr "Ange söksträng:"
+
+msgid "Cas&e sensitive"
+msgstr "&Skiftlägeskänsligt"
+
+msgid "&Backwards"
+msgstr "&Bakåt"
+
+msgid "In se&lection"
+msgstr "&I markerat"
+
+msgid "&Whole words"
+msgstr "&Hela ord"
+
+msgid "&All charsets"
+msgstr "Alla te&ckenkodningar"
+
+msgid "&Find all"
+msgstr "Hi&tta alla"
+
+msgid "Fil&ter"
+msgstr "Fil&ter"
+
+msgid "Search"
+msgstr "Sök"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Söker %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Söker efter %s"
+
+msgid "Enter replacement string:"
+msgstr "Ange ersättningssträng:"
+
+msgid "Replace"
+msgstr "Ersätt"
+
+msgid "Replace with:"
+msgstr "Ersätt med:"
+
+msgid "A&ll"
+msgstr "A&lla"
+
+msgid "Confirm replace"
+msgstr "Bekräfta ersättning"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "%ld ersättningar gjordes"
+
+msgid "Plugin"
+msgstr "Insticksmodul"
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+"En användarvänlig textredigerare\n"
+"skriven för %s."
+
+msgid "About"
+msgstr "Om"
+
+msgid "Plugin info"
+msgstr "Insticksmodulinfo"
+
+msgid "No plugins are loaded."
+msgstr "Inga insticksmoduler är inlästa."
+
+msgid "Selected runtime has no configuration callback."
+msgstr "Den valda körmiljön saknar konfigurationsfunktion."
+
+msgid "Selected plugin has no configuration callback."
+msgstr "Den valda insticksmodulen saknar konfigurationsfunktion."
+
+msgid "Open files"
+msgstr "Öppna filer"
+
+msgid "Edit: "
+msgstr "Redigera: "
+
+msgid "ButtonBar|Help"
+msgstr "ButtonBar|Hjälp"
+
+msgid "ButtonBar|Save"
+msgstr "ButtonBar|Spara"
+
+msgid "ButtonBar|Mark"
+msgstr "ButtonBar|Marker"
+
+msgid "ButtonBar|Replac"
+msgstr "ButtonBar|Ersätt"
+
+msgid "ButtonBar|Copy"
+msgstr "ButtonBar|Kopier"
+
+msgid "ButtonBar|Move"
+msgstr "ButtonBar|Flytta"
+
+msgid "ButtonBar|Search"
+msgstr "ButtonBar|Sök"
+
+msgid "ButtonBar|Delete"
+msgstr "ButtonBar|TaBort"
+
+msgid "ButtonBar|PullDn"
+msgstr "ButtonBar|DraNer"
+
+msgid "ButtonBar|Quit"
+msgstr "ButtonBar|Avslut"
+
+#, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Filtrerar %s: %3d%%"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "No lines match"
+msgstr "Inga rader matchar"
+
+msgid "< Auto >"
+msgstr "< Auto >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Läs om aktuell syntax >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+"Det går inte att öppna filen\n"
+"%s"
+
+msgid "Load syntax file"
+msgstr "Läs in syntaxfil"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Fel i filen %s på rad %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Varken xterm eller Linux-konsol;\n"
+"terminalen kan inte visas."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr "Skriv \"exit\" för att återgå till %s"
+
+msgid "Help file format error\n"
+msgstr "Formatfel i hjälpfilen\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Internt fel: Länkarea-start i en länkarea"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Noden %s i hjälpfilen kan inte hittas"
+
+msgid "See also"
+msgstr "Se även"
+
+msgid "Help"
+msgstr "Hjälp"
+
+msgid "ButtonBar|Index"
+msgstr "ButtonBar|Index"
+
+msgid "ButtonBar|Prev"
+msgstr "ButtonBar|Föreg"
+
+msgid "Function keys"
+msgstr "Funktionstangenter"
+
+msgid "Arrows / Navigation"
+msgstr "Piltangenter / Navigering"
+
+msgid "Special"
+msgstr "Special"
+
+msgid "Learn key"
+msgstr "Lär in tangent"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr "Tryck på %s och vänta..."
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+"Sekvensen %s är redan tilldelad %s.\n"
+"Tilldela den till %s i stället?"
+
+msgid "Conflict"
+msgstr "Konflikt"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+"Kan inte godta denna tangent.\n"
+"Du tryckte på: %s"
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr "Lär in terminal [%s]"
+
+msgid "&Ctrl"
+msgstr "&Ctrl"
+
+msgid "&Alt"
+msgstr "&Alt"
+
+msgid "&Shift"
+msgstr "&Skift"
+
+msgid "Edit &term file"
+msgstr "Redigera &term-fil"
+
+msgid "(not recognized)"
+msgstr "(okänd)"
+
+msgid "(none)"
+msgstr "(ingen)"
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+"Tryck på valfri tangent...\n"
+"\n"
+"Vänta tills detta meddelande försvinner."
+
+msgid "Shortcut:"
+msgstr "Kortkommando:"
+
+msgid "Action:"
+msgstr "Åtgärd:"
+
+msgid "Raw:"
+msgstr "Rådata:"
+
+msgid "Keycode:"
+msgstr "Tangentkod:"
+
+msgid "&Capture key"
+msgstr "&Läs av tangent"
+
+msgid "&Main"
+msgstr "&Huvudläge"
+
+msgid "&Ctrl-X + ..."
+msgstr "&Ctrl-X + ..."
+
+msgid "&Dialog"
+msgstr "&Dialog"
+
+msgid "&Menu"
+msgstr "&Meny"
+
+msgid "&Input"
+msgstr "&Inmatning"
+
+msgid "&Listbox"
+msgstr "&Listruta"
+
+msgid "&Radio"
+msgstr "&Radioknapp"
+
+msgid "&Help"
+msgstr "&Hjälp"
+
+msgid "&Editor"
+msgstr "&Redigerare"
+
+msgid "&Widgets"
+msgstr "&Gränssnittskomponenter"
+
+msgid "Key"
+msgstr "Tangent"
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr "Okänd sekvens: %s"
+
+msgid "Assign key"
+msgstr "Tilldela tangent"
+
+msgid "Key:"
+msgstr "Tangent:"
+
+msgid "Set shortcut"
+msgstr "Ange kortkommando"
+
+msgid "Press new shortcut..."
+msgstr "Tryck på nytt kortkommando..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+"%s är redan bundet till %s.\n"
+"Tilldela ändå?"
+
+msgid "&Back"
+msgstr "&Tillbaka"
+
+msgid "Edit &keymap file"
+msgstr "Redigera &tangentbindningsfil"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Körning misslyckades:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Hemkatalogsökvägen är inte absolut"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Misslyckades under stängning:\n"
+"%s\n"
+
+msgid "unspecified"
+msgstr "ospecificerad"
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "Lua-skript:"
+
+#, fuzzy
+msgid "This script has no entry file."
+msgstr "Denna insticksmodul saknar inställningar."
+
+msgid "Lua"
+msgstr "Lua"
+
+msgid "Unknown error"
+msgstr "Okänt fel"
+
+#, fuzzy
+msgid "This script has no settings."
+msgstr "Denna insticksmodul saknar inställningar."
+
+#, fuzzy
+msgid "No global or user Lua scripts were found."
+msgstr ""
+"Inga globala eller användarspecifika Lua-skript för redigeraren hittades."
+
+#, fuzzy
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr "Lua-körmiljön är inaktiverad. Aktivera Lua-motorn och starta om MC."
+
+#, fuzzy
+msgid "&Settings"
+msgstr "VFS-inställningar"
+
+msgid "Lua action failed"
+msgstr "Lua-åtgärden misslyckades"
+
+msgid "The selected script has no runnable actions."
+msgstr "Det valda skriptet saknar körbara åtgärder."
+
+msgid "Run Lua action"
+msgstr "Kör Lua-åtgärd"
+
+msgid "(disabled, not loaded)"
+msgstr "(inaktiverad, inte inläst)"
+
+msgid "Manage Plugins"
+msgstr "Hantera insticksmoduler"
+
+msgid "This plugin has no settings."
+msgstr "Denna insticksmodul saknar inställningar."
+
+msgid "No plugins loaded."
+msgstr "Inga insticksmoduler inlästa."
+
+msgid "Runtime errors"
+msgstr "Körfel"
+
+msgid "Choose codepage"
+msgstr "Välj teckenkodning"
+
+msgid "-  < No translation >"
+msgstr "-  < Ingen översättning >"
+
+msgid "Setup"
+msgstr "Inställningar"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Inställningar sparade till %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Inställningar kunde inte sparas till %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Med valfritt stöd för subshell"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "Med musstöd på xterm och Linux-konsol"
+
+msgid "With mouse support on xterm"
+msgstr "Med musstöd på xterm"
+
+msgid "With support for X11 events"
+msgstr "Med stöd för X11-händelser"
+
+msgid "With internationalization support"
+msgstr "Med stöd för internationalisering"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr "   baserad på GNU Midnight Commander.\n"
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr "Byggd med GLib %d.%d.%d (med hjälp av GLib %u.%u.%u)\n"
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr "Byggd med S-Lang"
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr " och terminfo-databasen (med S-Lang %s)\n"
+
+#, c-format
+msgid "Built with %s"
+msgstr "Byggd med %s"
+
+#, c-format
+msgid " (using %s)\n"
+msgstr " (använder %s)\n"
+
+msgid "Data types:"
+msgstr "Datatyper:"
+
+msgid "directory not found"
+msgstr "katalogen hittades inte"
+
+msgid "Home directory:"
+msgstr "Hemkatalog:"
+
+msgid "Profile root directory:"
+msgstr "Profilrotkatalog:"
+
+msgid "System data"
+msgstr "Systemdata"
+
+msgid "Config directory:"
+msgstr "Konfigurationskatalog:"
+
+msgid "Data directory:"
+msgstr "Datakatalog:"
+
+msgid "Editor plugins:"
+msgstr "Redigerarinsticksmoduler:"
+
+msgid "Runtime plugins:"
+msgstr "Körmiljöinsticksmoduler:"
+
+msgid "Lua scripts:"
+msgstr "Lua-skript:"
+
+msgid "Lua modules:"
+msgstr "Lua-moduler:"
+
+msgid "User data"
+msgstr "Användardata"
+
+msgid "Cache directory:"
+msgstr "Cachekatalog:"
+
+msgid "Debug"
+msgstr "Felsök"
+
+msgid "ERROR:"
+msgstr "FEL:"
+
+msgid "True:"
+msgstr "Sant:"
+
+msgid "False:"
+msgstr "Falskt:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr "Det går inte att skapa en tillfällig diff-fil"
+
+msgid "Error calling program"
+msgstr "Kunde inte anropa programmet"
+
+msgid "Cannot create temporary command file"
+msgstr "Kan inte skapa temporär kommandofil"
+
+msgid "Parameter"
+msgstr "Parameter"
+
+msgid "Warning -- ignoring file"
+msgstr "Varning - ignorerar fil"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Fil %s ägs varken av dig eller root, eller är skrivbar för alla.\n"
+"Att använda den kan äventyra din säkerhet"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "Kan inte köra kommandon på filsystem som inte är lokala"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "Inga passande poster hittades i %s"
+
+msgid "User menu"
+msgstr "Användarmeny"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Kan inte byta namn på %s till %s: %s"

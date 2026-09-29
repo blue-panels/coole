@@ -1,0 +1,2802 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Alexander Shopov <ash@kambanaria.org>, 2022
+# Myselus, 2015,2017
+# Myselus, 2015-2017
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# Yasen Pramatarov <yasen@lindeas.com>, 2011-2014,2016
+# Yury V. Zaytsev <yury@shurup.com>, 2017,2020,2025
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Bulgarian <https://translate.codeberg.org/projects/mc6/mc6/bg/"
+">\n"
+"Language: bg\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "Предупреждение: списъкът с кодовите таблици не може да се зареди"
+
+msgid "7-bit ASCII"
+msgstr "7-битов ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Не може да се преведе от %s на %s"
+
+msgid "Event system already initialized"
+msgstr "Системата за събития вече е инициализирана"
+
+msgid "Failed to initialize event system"
+msgstr "Неуспешно инициализиране на системата за събития"
+
+msgid "Event system not initialized"
+msgstr "Системата за събития не е инициализирана"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Проверете входящата информация. Някои параметри са NULL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Не може да се създаде група „%s“ за събития!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Не може да се създаде събитие „%s“!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+msgid "Half page down"
+msgstr ""
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+#, fuzzy
+msgid "Top of screen"
+msgstr "На &цял екран"
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "Сра&внение на файлове"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "&Потребителски:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "Потребителско меню"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Търсенето приключи"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Замяна"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Настройки на терминала"
+
+msgid "Edit file"
+msgstr "Редактиране на файл"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Редактиране на файл"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&Всички кодови таблици"
+
+#, fuzzy
+msgid "Command history"
+msgstr "&История на командите"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "Запис &като…"
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Към ред"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "О&бновяване на екрана"
+
+#, fuzzy
+msgid "Suspend to shell"
+msgstr "Настройките са записани в %s"
+
+msgid "List open screens"
+msgstr ""
+
+#, fuzzy
+msgid "Next screen"
+msgstr "О&бновяване на екрана"
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Предишен"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Вмъкване на файл"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Предишен"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "&Състояние на реда"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Delete от доп. клав."
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Delete от доп. клав."
+
+#, fuzzy
+msgid "Cut to clipboard"
+msgstr "&Изрязване към изрезките"
+
+#, fuzzy
+msgid "Copy to clipboard"
+msgstr "Ко&пие в изрезките"
+
+#, fuzzy
+msgid "Paste from clipboard"
+msgstr "Вм&ъкване от изрезките"
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "В се&лекция"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Избиране"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Избиране"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Избор на &група"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Избиране"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Начин на сравняване:"
+
+#, fuzzy
+msgid "Select to line start"
+msgstr "&Състояние на реда"
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Избор на език"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "Подредба"
+
+#, fuzzy
+msgid "General options"
+msgstr "Настройки на панел"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Задаване на клавиши"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "&Следваща отметка"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "&Декларация"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Външен вид"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "&Запазване на настройките"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Предишен"
+
+#, fuzzy
+msgid "Next node"
+msgstr "Свободни възли:"
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Предишен"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Без избиране"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Избор на &група"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Избор на език"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Затваряне на файл"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Редактиране на файл с разширения"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Избиране"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Избор на език"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Избиране"
+
+#, fuzzy
+msgid "Column selection mode"
+msgstr "В се&лекция"
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Запис на блок"
+
+msgid "Insert file"
+msgstr "Вмъкване на файл"
+
+#, fuzzy
+msgid "Toggle insert/overwrite"
+msgstr "Вмъкване/&Замяна"
+
+#, fuzzy
+msgid "Insert date/time (Lua action)"
+msgstr "Вмъкване на &дата и час"
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Изтриване"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "файл_1 файл_2"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "&История на командите"
+
+#, fuzzy
+msgid "Format paragraph (Lua action)"
+msgstr "&Форматиране на абзац"
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "["
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Повтаряне на последните команди"
+
+#, fuzzy
+msgid "Spell check"
+msgstr "П&роверка правопис"
+
+#, fuzzy
+msgid "Spell check current word"
+msgstr "П&роверка правопис"
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Избор на език"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "Из&чистване на отметките"
+
+#, fuzzy
+msgid "Next bookmark"
+msgstr "&Следваща отметка"
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "&Предишна отметка"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Намиране на всички"
+
+#, fuzzy
+msgid "Toggle line filter"
+msgstr "&Състояние на реда"
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Промените във файла изгубени"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Начин на сравняване:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Начин на сравняване:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Начин на сравняване:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Избор на &група"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Избор на &група"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "Без избор на гр&упа"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "Без избор на гр&упа"
+
+#, fuzzy
+msgid "Column select down"
+msgstr "В се&лекция"
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "Без избор на гр&упа"
+
+msgid "Column select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select paragraph up"
+msgstr "&Форматиране на абзац"
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle visible tabs/spaces"
+msgstr "&Видими интервали в края"
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Оцветяване на с&интаксиса"
+
+msgid "Choose syntax highlighting"
+msgstr "Оцветяване на синтаксиса"
+
+#, fuzzy
+msgid "Toggle right margin"
+msgstr "&Избиране"
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Настройки на панел"
+
+msgid "About editor"
+msgstr ""
+
+#, fuzzy
+msgid "Execute script"
+msgstr "Изпълними файлове отпре&д"
+
+msgid "Move window"
+msgstr ""
+
+#, fuzzy
+msgid "Resize window"
+msgstr "О&размеряване"
+
+#, fuzzy
+msgid "Toggle fullscreen"
+msgstr "На &цял екран"
+
+#, fuzzy
+msgid "Window list"
+msgstr "&Прозорец"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Предишен"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Файлът „%s“ вече се редактира.\n"
+"Потребител: %s\n"
+"Ид-р на процеса: %d"
+
+msgid "File locked"
+msgstr "Файлът е заключен"
+
+msgid "&Grab lock"
+msgstr "&Прихващане на заключването"
+
+msgid "&Ignore lock"
+msgstr "Прене&брегване на заключването"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Не може да се създаде директория „%s“"
+
+msgid "FATAL: not a directory:"
+msgstr "ФАТАЛНА ГРЕШКА: не е директория:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Числото е извън обхват (трябва да е в интервала [0; 0xFF] и да е в 16-ен "
+"формат) "
+
+msgid "Invalid character"
+msgstr "Неправилен знак"
+
+msgid "Unmatched quotes character"
+msgstr "Кавичка без еш"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Грешка за 16-на стойност при знак %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Търсеният низ не намерен"
+
+msgid "Not implemented yet"
+msgstr "Все още не е внедрено"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr "Броят лексеми за заместване е различен от броя намерени лексеми"
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr "Неправилeн номер на лексема %d"
+
+msgid "Regular expression error"
+msgstr "Грешка в регулярен израз"
+
+msgid "No&rmal"
+msgstr "&Нормално"
+
+msgid "Re&gular expression"
+msgstr "Ре&гулярен израз"
+
+msgid "He&xadecimal"
+msgstr "&Шестнадесетично"
+
+msgid "Wil&dcard search"
+msgstr "Тър&сене с маски"
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Невъзможен анализ на темата „%s“.\n"
+"Заредена бе стандартната тема"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Не може да се ползва темата с поддръжка на истински цветове „%s“:\n"
+"%s\n"
+"Заредена бе стандартната тема"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Невъзможно зареждане на темата „%s“.\n"
+"Заредена бе стандартната тема"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr "Истински цвят не се поддържа с тази версия на slang."
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr ""
+
+msgid "Function key 1"
+msgstr "F1"
+
+msgid "Function key 2"
+msgstr "F2"
+
+msgid "Function key 3"
+msgstr "F3"
+
+msgid "Function key 4"
+msgstr "F4"
+
+msgid "Function key 5"
+msgstr "F5"
+
+msgid "Function key 6"
+msgstr "F6"
+
+msgid "Function key 7"
+msgstr "F7"
+
+msgid "Function key 8"
+msgstr "F8"
+
+msgid "Function key 9"
+msgstr "F9"
+
+msgid "Function key 10"
+msgstr "F10"
+
+msgid "Function key 11"
+msgstr "F11"
+
+msgid "Function key 12"
+msgstr "F12"
+
+msgid "Function key 13"
+msgstr "F13"
+
+msgid "Function key 14"
+msgstr "F14"
+
+msgid "Function key 15"
+msgstr "F15"
+
+msgid "Function key 16"
+msgstr "F16"
+
+msgid "Function key 17"
+msgstr "F17"
+
+msgid "Function key 18"
+msgstr "F18"
+
+msgid "Function key 19"
+msgstr "F19"
+
+msgid "Function key 20"
+msgstr "F20"
+
+msgid "Completion/M-tab"
+msgstr "Дописване/M-Tab"
+
+msgid "BackTab/S-tab"
+msgstr "Обратно/S-Tab"
+
+msgid "Backspace"
+msgstr "Backspace"
+
+msgid "Up arrow"
+msgstr "↑"
+
+msgid "Down arrow"
+msgstr "↓"
+
+msgid "Left arrow"
+msgstr "←"
+
+msgid "Right arrow"
+msgstr "→"
+
+msgid "Insert"
+msgstr "Insert"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr "End"
+
+msgid "Page Up"
+msgstr ""
+
+msgid "Page Down"
+msgstr ""
+
+msgid "/ on keypad"
+msgstr "/ от доп. клав."
+
+msgid "* on keypad"
+msgstr "* от доп. клав."
+
+msgid "- on keypad"
+msgstr "- от доп. клав."
+
+msgid "+ on keypad"
+msgstr "+ от доп. клав."
+
+msgid "Left arrow keypad"
+msgstr "← от доп. клав."
+
+msgid "Right arrow keypad"
+msgstr "→ от доп. клав."
+
+msgid "Up arrow keypad"
+msgstr "↑ от доп. клав."
+
+msgid "Down arrow keypad"
+msgstr "↓ от доп. клав."
+
+msgid "Home on keypad"
+msgstr "Home от доп. клав."
+
+msgid "End on keypad"
+msgstr "End от доп. клав."
+
+msgid "Page Down keypad"
+msgstr "Page Down от доп. клав."
+
+msgid "Page Up keypad"
+msgstr "Page Up от доп. клав."
+
+msgid "Insert on keypad"
+msgstr "Insert от доп. клав."
+
+msgid "Delete on keypad"
+msgstr "Delete от доп. клав."
+
+msgid "Enter on keypad"
+msgstr "Enter от доп. клав."
+
+msgid "Function key 21"
+msgstr "F21"
+
+msgid "Function key 22"
+msgstr "F22"
+
+msgid "Function key 23"
+msgstr "F23"
+
+msgid "Function key 24"
+msgstr "F24"
+
+msgid "A1 key"
+msgstr "Клавиш A1"
+
+msgid "C1 key"
+msgstr "Клавиш C1"
+
+msgid "Asterisk"
+msgstr "*"
+
+msgid "Minus"
+msgstr "-"
+
+msgid "Plus"
+msgstr "+"
+
+msgid "Dot"
+msgstr "."
+
+msgid "Less than"
+msgstr "<"
+
+msgid "Great than"
+msgstr ">"
+
+msgid "Equal"
+msgstr "="
+
+msgid "Comma"
+msgstr ","
+
+msgid "Apostrophe"
+msgstr "'"
+
+msgid "Colon"
+msgstr ":"
+
+msgid "Semicolon"
+msgstr ";"
+
+msgid "Exclamation mark"
+msgstr "!"
+
+msgid "Question mark"
+msgstr "?"
+
+msgid "Ampersand"
+msgstr "&"
+
+msgid "Dollar sign"
+msgstr "$"
+
+msgid "Quotation mark"
+msgstr "\""
+
+msgid "Percent sign"
+msgstr "%"
+
+msgid "Caret"
+msgstr "^"
+
+msgid "Tilda"
+msgstr "~"
+
+msgid "Prime"
+msgstr "`"
+
+msgid "Underline"
+msgstr "_"
+
+msgid "Understrike"
+msgstr "_"
+
+msgid "Pipe"
+msgstr "|"
+
+msgid "Left parenthesis"
+msgstr "("
+
+msgid "Right parenthesis"
+msgstr ")"
+
+msgid "Left bracket"
+msgstr "["
+
+msgid "Right bracket"
+msgstr "]"
+
+msgid "Left brace"
+msgstr "{"
+
+msgid "Right brace"
+msgstr "}"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Tab key"
+msgstr "Табулация"
+
+msgid "Space key"
+msgstr "Интервал"
+
+msgid "Slash key"
+msgstr "/"
+
+msgid "Backslash key"
+msgstr "\\"
+
+msgid "Number sign #"
+msgstr "#"
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr "@"
+
+msgid "Ctrl"
+msgstr "Ctrl"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Shift"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+"\n"
+"Не може да се създаде канал за SIGWINCH: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Страната за запис на канала за SIGWINCH не може да се настрои: %s (%d)\n"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+"\n"
+"Страната за четене на канала за SIGWINCH не може да се настрои: %s (%d)\n"
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Не се поддържа размер на екрана %dx%d.\n"
+"Проверете променливата на средата TERM.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "Променливата TERM не е зададена!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr "Каналът за SIGWINCH не може да се провери"
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr "Не може да се създаде дескриптор на канала"
+
+msgid "Cannot create pipe streams"
+msgstr "Не може да се създадат потоци на канала"
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+"Неочаквана грешка в select() при четене на информация от дъщерен процес:\n"
+"%s"
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+"Неочаквана грешка в waitpid():\n"
+"%s"
+
+msgid "Changes to file lost"
+msgstr "Промените във файла изгубени"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "Натиснете клавиш, за да продължите…"
+
+msgid "Internal error:"
+msgstr "Вътрешна грешка:"
+
+msgid "Screens"
+msgstr "Екрани"
+
+msgid "History"
+msgstr "История"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Да"
+
+msgid "&No"
+msgstr "&Не"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr "Изчистване история"
+
+msgid "Do you want clean this history?"
+msgstr "Да се изчисти ли историята?"
+
+msgid "&OK"
+msgstr "&Добре"
+
+msgid "&Cancel"
+msgstr "&Отказ"
+
+msgid "Error"
+msgstr "Грешка"
+
+#, c-format
+msgid "%s (%d)"
+msgstr "%s (%d)"
+
+msgid "&Abort"
+msgstr "&Отказ"
+
+msgid "< Default >"
+msgstr "< Стандартно >"
+
+msgid "Skins"
+msgstr "Теми"
+
+msgid "Skin:"
+msgstr "Тема:"
+
+msgid "&Shadows"
+msgstr "&Сенки"
+
+msgid "Appearance"
+msgstr "Външен вид"
+
+msgid "Displays the current version"
+msgstr "Показване на текущата версия"
+
+msgid "Print data directory"
+msgstr "Печат на директорията с данни"
+
+msgid "Print extended info about used data directories"
+msgstr "Печат на разширена информация относно използваните директории за данни"
+
+msgid "Print configure options"
+msgstr "Печат на конфигурационните опции"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Изключване на поддръжката на X11"
+
+msgid "Forces xterm features"
+msgstr "Използване възможности на xterm"
+
+msgid "Disable X11 support"
+msgstr "Изключване на поддръжката на X11"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr "Опит за ползване на старото следене на маркиране с мишка"
+
+msgid "Disable mouse support in text version"
+msgstr "Без поддръжка на мишка в текстов режим"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Опитва да използва termcap вместо terminfo"
+
+msgid "To run on slow terminals"
+msgstr "При бавни терминали"
+
+msgid "Use stickchars to draw"
+msgstr "Рисуване с псевдографика"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Зареждане на дефиниции за клавишни комбинации от определен файл"
+
+msgid "<file>"
+msgstr "<файл>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr ""
+"Без зареждане на клавишни комбинации от файл, използване на стандартните"
+
+msgid "Requests to run in black and white"
+msgstr "Поиск за стартиране в черно-бяло"
+
+msgid "Request to run in color mode"
+msgstr "Поиск за стартиране е цветен режим"
+
+#, fuzzy
+msgid "Use the specified skin"
+msgstr "Показване на mc с определена тема"
+
+msgid "<string>"
+msgstr "<низ>"
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr "[+№_ред] файл_1[:№_ред] [файл_2[:№_ред]…]"
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "Основни настройки"
+
+msgid "Terminal options"
+msgstr "Настройки на терминала"
+
+msgid "Color options"
+msgstr "Настройки на цветове"
+
+msgid "Arguments parse error!"
+msgstr "Грешка при обработка на аргументите"
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "&Настройки…"
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Настройки"
+
+#, fuzzy
+msgid "Case sensitive filter"
+msgstr "&Чувствителност към регистъра"
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+#, fuzzy
+msgid "Go to Declaration"
+msgstr "На&пред към декларация"
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "&Декларация"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "'%s' is not a known symbol."
+msgstr "„%s“ не е символна връзка"
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Грешка при запис на файла"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Грешка при запис на файла"
+
+msgid "No indexed files found."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to run grep."
+msgstr ""
+"Неуспешно изпълнение:\n"
+"%s\n"
+
+#, fuzzy, c-format
+msgid "No references found for '%s'."
+msgstr "Няма намерени подходящи елементи в %s"
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Търсенето приключи"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Търсенето приключи"
+
+#, fuzzy
+msgid "Complete Symbol"
+msgstr "Допис&ване: показване на всички"
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Грешка при запис на файла"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Не може да се запише файл:\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Не може да се преведе от %s на %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Коренова директория на профила:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Не може да се създаде събитие „%s“!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Reindex failed for %s"
+msgstr "Грешка при четене"
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Навигация"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "На&пред към декларация"
+
+msgid "Find references"
+msgstr ""
+
+#, fuzzy
+msgid "Complete symbol"
+msgstr "Допис&ване: показване на всички"
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Навигация"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Търсенето приключи"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Търсенето приключи"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Име на връзката:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Зареждане на файл със синтаксис"
+
+msgid "Manage repositories"
+msgstr ""
+
+#, fuzzy
+msgid "Reindex repository"
+msgstr "Индексирана директория"
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Потвърждения"
+
+#, fuzzy
+msgid "Go to &declaration"
+msgstr "На&пред към декларация"
+
+msgid "&Find declaration"
+msgstr "&Декларация"
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Навигация"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "&Търсене"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Име на връзката:"
+
+#, fuzzy
+msgid "&Complete symbol"
+msgstr "Допис&ване: показване на всички"
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Избиране"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Име на връзката:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Име на файл:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Зареждане на файл"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Затваряне"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Предупреждение"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Текущият текст е променен без запис на файл.\n"
+"Продължаване изоставяйки тези промени"
+
+msgid "C&ontinue"
+msgstr "П&родължение"
+
+msgid "&Add word"
+msgstr "&Добавяне на дума"
+
+msgid "&Replace"
+msgstr "&Замяна"
+
+msgid "&Skip"
+msgstr "&Пропускане"
+
+msgid "Language"
+msgstr "Език"
+
+msgid "Misspelled"
+msgstr "Сгрешено"
+
+msgid "Check word"
+msgstr "Проверка на дума"
+
+msgid "Suggest"
+msgstr "Предложение"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "&Добавяне на дума"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+#, fuzzy
+msgid "Aspell"
+msgstr "Сгрешено"
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Език"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Избиране"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Избор на език"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr "Зареждане: %3d%%"
+
+msgid "Loading..."
+msgstr "Зареждане…"
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "Зареждане на файл"
+
+#, c-format
+msgid "Error reading %s"
+msgstr "Грешка при четене на %s"
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Файлът „%s“ е твърде голям.\n"
+"Отваряне въпреки това? "
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr "Грешка при четене от канал: %s"
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+#, fuzzy
+msgid "Undo"
+msgstr "&Отмяна"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Отново"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr "Файлът има hard-линкове. Отвързване преди запис?"
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Файлът е бил променен междувременно. Да се запише ли въпреки това?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr "Грешка при писане към канал: %s"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Файлът, който записвате не завършва с нов ред."
+
+msgid "&Do not change"
+msgstr "&Без промяна"
+
+msgid "&Unix format (LF)"
+msgstr "Формат за &Unix (LF)"
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr "Формат за &Windows/DOS (CR LF)"
+
+msgid "&Macintosh format (CR)"
+msgstr "Формат за &Macintosh (CR)"
+
+msgid "Enter file name:"
+msgstr "Въведете име на файл:"
+
+msgid "Change line breaks to:"
+msgstr "Преобразуване на новите редове към:"
+
+msgid "Save As"
+msgstr "Запазване като"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "&Бърз запис"
+
+msgid "&Safe save"
+msgstr "&Сигурен запис"
+
+msgid "&Do backups with following extension:"
+msgstr "&Направа на резервни копия със следните разширения:"
+
+msgid "Check &POSIX new line"
+msgstr "Проверка за &POSIX нов ред"
+
+msgid "Edit Save Mode"
+msgstr "Редактиране Режим Запис"
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "Вече съществува файл с такова име"
+
+msgid "&Overwrite"
+msgstr "&Презаписване"
+
+msgid "Cannot save file"
+msgstr "Не може да се запише файл"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Потвърждаване запис на файл: „%s“"
+
+msgid "Save file"
+msgstr "Запазване на файл"
+
+msgid "&Save"
+msgstr "&Запазване"
+
+msgid "Load"
+msgstr "Зареждане"
+
+msgid "Syntax file edit"
+msgstr "Редактирай файл със синтаксис"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Кой синтактичен файл искате да редактирате?"
+
+msgid "&User"
+msgstr "&Потребителски"
+
+msgid "&System wide"
+msgstr "&Общосистемни"
+
+msgid "Menu edit"
+msgstr "Редактиране на меню"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Кой файл на меню искате да редактирате?"
+
+msgid "&Local"
+msgstr "&Локален"
+
+msgid "[NoName]"
+msgstr "[БезИме]"
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Файл %s е променен. \n"
+"Да се запази ли преди излизане?"
+
+msgid "Close file"
+msgstr "Затваряне на файл"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "Изход"
+
+msgid "This function is not implemented"
+msgstr "Това действие все още не е внедрено"
+
+msgid "Unable to save to file"
+msgstr "Грешка при запис на файла"
+
+msgid "Goto line"
+msgstr "Към ред"
+
+msgid "Enter line:"
+msgstr "Въведете ред:"
+
+msgid "Save block"
+msgstr "Запис на блок"
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr "Грешка при вмъкване на файл"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr "mail -s <ТЕМА> -c <ДОП_ПОЛУЧАТЕЛ> <ПОЛУЧАТЕЛ>"
+
+msgid "To"
+msgstr "До"
+
+msgid "Subject"
+msgstr "Тема"
+
+msgid "Copies to"
+msgstr "Копие до"
+
+msgid "Mail"
+msgstr "Поща"
+
+msgid "Cancel"
+msgstr "Отказ"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Insert"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Да се изтрие ли „%s“?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Замяна"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "История"
+
+msgid "Collect completions"
+msgstr "Събиране на дописванията"
+
+msgid "NoName"
+msgstr "БезИме"
+
+msgid "Save macro"
+msgstr "Записване на макрос"
+
+msgid "Press the macro's new hotkey:"
+msgstr "Натиснете новия клавиш за макрос:"
+
+msgid "Repeat last commands"
+msgstr "Повтаряне на последните команди"
+
+msgid "Repeat times:"
+msgstr "Брой повторения:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Изтриване на макрос"
+
+msgid "Delete macro"
+msgstr "Изтриване на макрос"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "Руски"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Затваряне"
+
+msgid "&Open file..."
+msgstr "&Отваряне на файл…"
+
+msgid "&New"
+msgstr "&Нов"
+
+msgid "&History..."
+msgstr "&История…"
+
+msgid "Save &as..."
+msgstr "Запис &като…"
+
+msgid "&Insert file..."
+msgstr "&Вмъкване на файл…"
+
+msgid "Cop&y to file..."
+msgstr "Коп&иране към файл…"
+
+msgid "&User menu..."
+msgstr "&Потребителско меню…"
+
+msgid "A&bout..."
+msgstr "От&носно…"
+
+msgid "&Quit"
+msgstr "Из&ход"
+
+msgid "&Undo"
+msgstr "&Отмяна"
+
+msgid "&Redo"
+msgstr "&Възстановяване"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "&История…"
+
+msgid "&Toggle ins/overw"
+msgstr "Вмъкване/&Замяна"
+
+msgid "To&ggle mark"
+msgstr "&Избиране"
+
+msgid "&Mark columns"
+msgstr "Избиране &колони"
+
+msgid "Mark &all"
+msgstr "Избиране &всички"
+
+msgid "Unmar&k"
+msgstr "&Без избиране"
+
+msgid "Cop&y"
+msgstr "Копира&не"
+
+msgid "Mo&ve"
+msgstr "Пре&местване"
+
+msgid "&Delete"
+msgstr "Из&триване"
+
+msgid "Co&py to clipfile"
+msgstr "Ко&пие в изрезките"
+
+msgid "&Cut to clipfile"
+msgstr "&Изрязване към изрезките"
+
+msgid "Pa&ste from clipfile"
+msgstr "Вм&ъкване от изрезките"
+
+msgid "&Beginning"
+msgstr "&Начало"
+
+msgid "&End"
+msgstr "&Край"
+
+msgid "&Search..."
+msgstr "&Търсене…"
+
+msgid "Search &again"
+msgstr "Търсене &отново"
+
+msgid "&Replace..."
+msgstr "&Замяна…"
+
+#, fuzzy
+msgid "Toggle &line filter"
+msgstr "&Състояние на реда"
+
+#, fuzzy
+msgid "Filter by &word"
+msgstr "&писане от собственика"
+
+msgid "&Toggle bookmark"
+msgstr "&Отметка"
+
+msgid "&Next bookmark"
+msgstr "&Следваща отметка"
+
+msgid "&Prev bookmark"
+msgstr "&Предишна отметка"
+
+msgid "&Flush bookmarks"
+msgstr "Из&чистване на отметките"
+
+msgid "&Go to line..."
+msgstr "Към &ред…"
+
+msgid "&Toggle line state"
+msgstr "&Състояние на реда"
+
+msgid "Go to matching &bracket"
+msgstr "Преместване до съответна &скоба"
+
+msgid "Toggle s&yntax highlighting"
+msgstr "Оцветяване на с&интаксиса"
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr "Ко&диране…"
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Намиране на всички"
+
+msgid "&Refresh screen"
+msgstr "О&бновяване на екрана"
+
+msgid "&Start/Stop record macro"
+msgstr "&Запис на макрос"
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr "Запис/Повторение &действия"
+
+msgid "&Move"
+msgstr "&Преместване"
+
+msgid "&Resize"
+msgstr "О&размеряване"
+
+msgid "&Toggle fullscreen"
+msgstr "На &цял екран"
+
+msgid "&Next"
+msgstr "&Следващ"
+
+msgid "&Previous"
+msgstr "&Предишен"
+
+msgid "&List..."
+msgstr "&Списък…"
+
+msgid "&General..."
+msgstr "&Общо…"
+
+msgid "Save &mode..."
+msgstr "Запис &режим…"
+
+msgid "Syntax &highlighting..."
+msgstr "Оцветяване на &синтаксис…"
+
+msgid "&Appearance..."
+msgstr "&Външен вид…"
+
+msgid "Learn &keys..."
+msgstr "За&даване на клавиши…"
+
+#, fuzzy
+msgid "Key &bindings..."
+msgstr "&Кодиране…"
+
+#, fuzzy
+msgid "Key s&niffer..."
+msgstr "&Кодиране…"
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "Настройки на &панел…"
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "Файл със &синтаксис"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "Файл с &меню"
+
+msgid "&Save setup"
+msgstr "&Запазване на настройките"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "&Файл"
+
+msgid "&Edit"
+msgstr "&Редактиране"
+
+msgid "&Search"
+msgstr "&Търсене"
+
+msgid "&Command"
+msgstr "&Команда"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Навигация"
+
+msgid "&Window"
+msgstr "&Прозорец"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "&Настройки"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Табулация"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Грешка при четене"
+
+msgid "&None"
+msgstr "&Няма"
+
+msgid "&Dynamic paragraphing"
+msgstr "&Динамични абзаци"
+
+msgid "Type &writer wrap"
+msgstr "&Машинописно пренасяне"
+
+msgid "Wrap mode"
+msgstr "Режим на пренасяне"
+
+msgid "Tabulation"
+msgstr "Табулация"
+
+msgid "&Fake half tabs"
+msgstr "&Фалшиви полутабулации"
+
+msgid "&Backspace through tabs"
+msgstr "&Backspace между tab-овете"
+
+msgid "Fill tabs with &spaces"
+msgstr "Табулации чрез &интервали"
+
+msgid "Tab spacing:"
+msgstr "Пространство на табулацията:"
+
+msgid "Other options"
+msgstr "Други настройки"
+
+msgid "&Return does autoindent"
+msgstr "Return спазва &полето"
+
+msgid "Confir&m before saving"
+msgstr "&Питане преди запазване"
+
+msgid "Save file &position"
+msgstr "Запис на &позицията на файла"
+
+msgid "&Visible trailing spaces"
+msgstr "&Видими интервали в края"
+
+msgid "Visible &tabs"
+msgstr "Видими &табулации"
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "&Оцветяване на синтаксиса"
+
+msgid "C&ursor after inserted block"
+msgstr "К&урсор след вмъкнат блок"
+
+msgid "Pers&istent selection"
+msgstr "Посто&янна селекция"
+
+msgid "Cursor be&yond end of line"
+msgstr "Курсорът из&вън края на ред"
+
+msgid "&Group undo"
+msgstr "&Групова отняна"
+
+msgid "Word wrap line length:"
+msgstr "Дължина за пренасяне на ред:"
+
+msgid "Editor options"
+msgstr "Настройки на редактора"
+
+msgid "Enter search string:"
+msgstr "Въведете низ за търсене:"
+
+msgid "Cas&e sensitive"
+msgstr "&Чувствителност към регистъра"
+
+msgid "&Backwards"
+msgstr "&Назад"
+
+msgid "In se&lection"
+msgstr "В се&лекция"
+
+msgid "&Whole words"
+msgstr "&Цели думи"
+
+msgid "&All charsets"
+msgstr "&Всички кодови таблици"
+
+msgid "&Find all"
+msgstr "&Намиране на всички"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Търсене"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr "Търсене на %s: %3d%%"
+
+#, c-format
+msgid "Searching %s"
+msgstr "Търсене на %s"
+
+msgid "Enter replacement string:"
+msgstr "Заместващ израз:"
+
+msgid "Replace"
+msgstr "Замяна"
+
+msgid "Replace with:"
+msgstr "Замяна с:"
+
+msgid "A&ll"
+msgstr "&Всички"
+
+msgid "Confirm replace"
+msgstr "Потвърждаване замяната"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr "направени са %ld замѐни "
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "Относно"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Отваряне на файлове"
+
+msgid "Edit: "
+msgstr "Редактиране: "
+
+msgid "ButtonBar|Help"
+msgstr "Помощ"
+
+msgid "ButtonBar|Save"
+msgstr "Запис"
+
+msgid "ButtonBar|Mark"
+msgstr "Избиране"
+
+msgid "ButtonBar|Replac"
+msgstr "Заместване"
+
+msgid "ButtonBar|Copy"
+msgstr "Копиране"
+
+msgid "ButtonBar|Move"
+msgstr "Преместване"
+
+msgid "ButtonBar|Search"
+msgstr "Търсене"
+
+msgid "ButtonBar|Delete"
+msgstr "Изтриване"
+
+msgid "ButtonBar|PullDn"
+msgstr "Меню"
+
+msgid "ButtonBar|Quit"
+msgstr "Изход"
+
+#, fuzzy, c-format
+msgid "Filtering %s: %3d%%"
+msgstr "Търсене на %s: %3d%%"
+
+msgid "Filter"
+msgstr "Филтър"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Автоматично >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Презареждане на сегашния синтаксис >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr "Зареждане на файл със синтаксис"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Грешка във файл %s на ред %d"
+
+#, fuzzy
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+"Не е xterm или конзола на Linux.\n"
+"Не може да се превключи подобвивка."
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr "Грешка във форма̀та на помощния файл\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr "Вътрешна грешка: второ начало на областта за свързване"
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr "Не може да се намери възел %s в помощния файл"
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Помощ"
+
+msgid "ButtonBar|Index"
+msgstr "Индекс"
+
+msgid "ButtonBar|Prev"
+msgstr "Назад"
+
+#, fuzzy
+msgid "Function keys"
+msgstr "F1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Навигация"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Задаване на клавиши"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Потвърждения"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Ctrl"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Shift"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Файл с &меню"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+#, fuzzy
+msgid "&Main"
+msgstr "&Поща…"
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "Файл с &меню"
+
+msgid "&Input"
+msgstr ""
+
+#, fuzzy
+msgid "&Listbox"
+msgstr "&Списък…"
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Помощ"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "&Редактиране"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+#, fuzzy
+msgid "Assign key"
+msgstr "Клавиш A1"
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Натиснете клавиш, за да продължите…"
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "&Назад"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Файл с &меню"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+"Неуспешно изпълнение:\n"
+"%s\n"
+
+msgid "Home directory path is not absolute"
+msgstr "Пътят до домашната папка не е абсолютен"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+"\n"
+"Грешка при затваряне:\n"
+"%s\n"
+"\n"
+
+msgid "unspecified"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts"
+msgstr "Добавки и скриптове за виртуални ФС:"
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "Непозната грешка в дъщерния процес"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Задаване"
+
+#, fuzzy
+msgid "Lua action failed"
+msgstr "Грешка при четене"
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: грешка"
+
+msgid "Choose codepage"
+msgstr "Кодова таблица"
+
+msgid "-  < No translation >"
+msgstr "—  < Без преобразуване >"
+
+msgid "Setup"
+msgstr "Настройки"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr "Настройките са записани в %s"
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr "Грешка при запис ан настройките в %s"
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "С поддръжка на подобвивка (при възможност)"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr "С поддръжка на мишка на в xterm и конзола на Linux"
+
+msgid "With mouse support on xterm"
+msgstr "С поддръжка на мишка в xterm"
+
+msgid "With support for X11 events"
+msgstr "С поддръжка на събития от X11"
+
+msgid "With internationalization support"
+msgstr "С поддръжка на интернационализация"
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr "Видове данни:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Търсеният низ не намерен"
+
+msgid "Home directory:"
+msgstr "Домашна папка:"
+
+msgid "Profile root directory:"
+msgstr "Коренова директория на профила:"
+
+msgid "System data"
+msgstr "Системни данни"
+
+msgid "Config directory:"
+msgstr "Директория с настройки:"
+
+msgid "Data directory:"
+msgstr "Директория с данни:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Настройки на редактора"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+#, fuzzy
+msgid "Lua scripts:"
+msgstr "Добавки и скриптове за виртуални ФС:"
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Потребителски данни"
+
+msgid "Cache directory:"
+msgstr "Директория с кеш:"
+
+msgid "Debug"
+msgstr "Трасиране"
+
+msgid "ERROR:"
+msgstr "ГРЕШКА:"
+
+msgid "True:"
+msgstr "Вярно:"
+
+msgid "False:"
+msgstr "Невярно:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr ""
+"Не може да се запише файл:\n"
+"%s"
+
+msgid "Error calling program"
+msgstr "Грешка при извикване на програма"
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr "Параметър"
+
+msgid "Warning -- ignoring file"
+msgstr "Предупреждение — игнориране на файл"
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Файлът %s не е на root и не е ваш, или е достъпен за запис\n"
+"от всички. Използването му може да застраши сигурността ви"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr "Не може да се изпълняват команди на нелокални файлови системи"
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr "Няма намерени подходящи елементи в %s"
+
+msgid "User menu"
+msgstr "Потребителско меню"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Не може да се преведе от %s на %s"

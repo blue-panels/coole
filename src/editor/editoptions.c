@@ -1,0 +1,293 @@
+/*
+   Editor options dialog box
+
+   Copyright (C) 1996-2025
+   Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
+
+   Written by:
+   Paul Sheer, 1996, 1997
+   Andrew Borodin <aborodin@vmail.ru>, 2012-2022
+   Ilia Maslakov <il.smind@gmail.com>, 2026
+
+   This file is part of coole,
+   a text editor based on GNU Midnight Commander.
+
+   coole is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   coole is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/** \file
+ *  \brief Source: editor options dialog box
+ *  \author Paul Sheer
+ *  \date 1996, 1997
+ */
+
+#include <config.h>
+
+#include <stdlib.h>  // atoi(), NULL
+
+#include "lib/global.h"
+#include "lib/widget.h"
+
+#include "editwidget.h"
+#include "edit-impl.h"
+
+/*** global variables ****************************************************************************/
+
+/*** file scope macro definitions ****************************************************************/
+
+/*** file scope type declarations ****************************************************************/
+
+/*** forward declarations (file scope functions) *************************************************/
+
+/*** file scope variables ************************************************************************/
+
+static const char *wrap_str[] = {
+    N_ ("&None"),
+    N_ ("&Dynamic paragraphing"),
+    N_ ("Type &writer wrap"),
+    NULL,
+};
+
+/* --------------------------------------------------------------------------------------------- */
+/*** file scope functions ************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+#ifdef ENABLE_NLS
+static void
+i18n_translate_array (const char *array[])
+{
+    while (*array != NULL)
+    {
+        *array = _ (*array);
+        array++;
+    }
+}
+#endif
+
+/* --------------------------------------------------------------------------------------------- */
+
+/**
+ * Apply a per-widget function to every screen. The editors the user left open
+ * are on that list, and the functions below skip whatever is not an editor.
+ */
+
+static void
+edit_screen_foreach (void *data, void *user_data)
+{
+    g_list_foreach (GROUP (data)->widgets, *(GFunc *) user_data, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+edit_editors_foreach (GFunc fn)
+{
+    dialog_switch_foreach (edit_screen_foreach, &fn);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/**
+ * Callback for the iteration of objects in the 'editors' array.
+ * Tear down 'over_col' property in all editors.
+ *
+ * @param data      probably WEdit object
+ * @param user_data unused
+ */
+
+static void
+edit_reset_over_col (void *data, void *user_data)
+{
+    (void) user_data;
+
+    if (edit_widget_is_editor (CONST_WIDGET (data)))
+        EDIT (data)->over_col = 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Callback for the iteration of objects in the 'editors' array.
+ * Reload syntax lighlighting in all editors.
+ *
+ * @param data      probably WEdit object
+ * @param user_data unused
+ */
+
+static void
+edit_reload_syntax (void *data, void *user_data)
+{
+    (void) user_data;
+
+    if (edit_widget_is_editor (CONST_WIDGET (data)))
+    {
+        WEdit *edit = EDIT (data);
+
+        if (edit_options.syntax_highlighting)
+            edit_load_syntax (edit, NULL, edit_get_syntax_type (edit));
+        else
+            edit_free_syntax_rules (edit);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_options_dialog (void)
+{
+    char wrap_length[16], tab_spacing[16];
+    char *p, *q;
+    int wrap_mode = 0;
+    gboolean old_syntax_hl;
+    gboolean old_show_control_chars;
+
+#ifdef ENABLE_NLS
+    static gboolean i18n_flag = FALSE;
+
+    if (!i18n_flag)
+    {
+        i18n_translate_array (wrap_str);
+        i18n_flag = TRUE;
+    }
+#endif
+
+    old_show_control_chars = edit_options.show_control_chars;
+    old_syntax_hl = edit_options.syntax_highlighting;
+
+    g_snprintf (wrap_length, sizeof (wrap_length), "%d", edit_options.word_wrap_line_length);
+    g_snprintf (tab_spacing, sizeof (tab_spacing), "%d", TAB_SIZE);
+
+    if (edit_options.auto_para_formatting)
+        wrap_mode = 1;
+    else if (edit_options.typewriter_wrap)
+        wrap_mode = 2;
+    else
+        wrap_mode = 0;
+
+    {
+        quick_widget_t quick_widgets[] = {
+            // clang-format off
+            QUICK_START_COLUMNS,
+                QUICK_START_GROUPBOX (_ ("Wrap mode")),
+                    QUICK_RADIO (3, wrap_str, &wrap_mode, NULL),
+                QUICK_STOP_GROUPBOX,
+                QUICK_SEPARATOR (FALSE),
+                QUICK_SEPARATOR (FALSE),
+                QUICK_START_GROUPBOX (_ ("Tabulation")),
+                    QUICK_CHECKBOX (_ ("&Fake half tabs"), &edit_options.fake_half_tabs, NULL),
+                    QUICK_CHECKBOX (_ ("&Backspace through tabs"),
+                                    &edit_options.backspace_through_tabs, NULL),
+                    QUICK_CHECKBOX (_ ("Fill tabs with &spaces"),
+                                    &edit_options.fill_tabs_with_spaces, NULL),
+                    QUICK_LABELED_INPUT (_ ("Tab spacing:"), input_label_left, tab_spacing,
+                                         "edit-tab-spacing", &q, NULL, FALSE, FALSE,
+                                         INPUT_COMPLETE_NONE),
+                QUICK_STOP_GROUPBOX,
+            QUICK_NEXT_COLUMN,
+                QUICK_START_GROUPBOX (_ ("Other options")),
+                    QUICK_CHECKBOX (_ ("&Return does autoindent"),
+                                    &edit_options.return_does_auto_indent, NULL),
+                    QUICK_CHECKBOX (_ ("Confir&m before saving"), &edit_options.confirm_save, NULL),
+                    QUICK_CHECKBOX (_ ("Save file &position"), &edit_options.save_position, NULL),
+                    QUICK_CHECKBOX (_ ("&Visible trailing spaces"), &edit_options.visible_tws,
+                                    NULL),
+                    QUICK_CHECKBOX (_ ("Visible &tabs"), &edit_options.visible_tabs, NULL),
+                    QUICK_CHECKBOX (_ ("S&how control characters"),
+                                    &edit_options.show_control_chars, NULL),
+                    QUICK_CHECKBOX (_ ("Synta&x highlighting"), &edit_options.syntax_highlighting,
+                                    NULL),
+                    QUICK_CHECKBOX (_ ("C&ursor after inserted block"),
+                                    &edit_options.cursor_after_inserted_block, NULL),
+                    QUICK_CHECKBOX (_ ("Pers&istent selection"),
+                                    &edit_options.persistent_selections, NULL),
+                    QUICK_CHECKBOX (_ ("Cursor be&yond end of line"),
+                                    &edit_options.cursor_beyond_eol, NULL),
+                    QUICK_CHECKBOX (_ ("&Group undo"), &edit_options.group_undo, NULL),
+                    QUICK_LABELED_INPUT (_ ("Word wrap line length:"), input_label_left, wrap_length,
+                                         "edit-word-wrap", &p, NULL, FALSE, FALSE, INPUT_COMPLETE_NONE),
+                QUICK_STOP_GROUPBOX,
+            QUICK_STOP_COLUMNS,
+            QUICK_BUTTONS_OK_CANCEL,
+            QUICK_END,
+            // clang-format on
+        };
+
+        WRect r = { -1, -1, 0, 74 };
+
+        quick_dialog_t qdlg = {
+            .rect = r,
+            .title = _ ("Editor options"),
+            .help = "[Editor options]",
+            .help_file = MCEDIT_HELP_FILE,
+            .widgets = quick_widgets,
+            .callback = NULL,
+            .mouse_callback = NULL,
+        };
+
+        if (quick_dialog (&qdlg) == B_CANCEL)
+            return;
+    }
+
+    if (!edit_options.cursor_beyond_eol)
+        edit_editors_foreach (edit_reset_over_col);
+
+    if (*p != '\0')
+    {
+        edit_options.word_wrap_line_length = atoi (p);
+        if (edit_options.word_wrap_line_length <= 0)
+            edit_options.word_wrap_line_length = DEFAULT_WRAP_LINE_LENGTH;
+        g_free (p);
+    }
+
+    if (*q != '\0')
+    {
+        TAB_SIZE = atoi (q);
+        if (TAB_SIZE <= 0)
+            TAB_SIZE = DEFAULT_TAB_SPACING;
+        g_free (q);
+    }
+
+    if (wrap_mode == 1)
+    {
+        edit_options.auto_para_formatting = TRUE;
+        edit_options.typewriter_wrap = FALSE;
+    }
+    else if (wrap_mode == 2)
+    {
+        edit_options.auto_para_formatting = FALSE;
+        edit_options.typewriter_wrap = TRUE;
+    }
+    else
+    {
+        edit_options.auto_para_formatting = FALSE;
+        edit_options.typewriter_wrap = FALSE;
+    }
+
+    // Load or unload syntax rules if the option has changed
+    if (edit_options.syntax_highlighting != old_syntax_hl)
+        edit_editors_foreach (edit_reload_syntax);
+
+    // the cached column layout depends on the width of control characters
+    if (edit_options.show_control_chars != old_show_control_chars)
+        edit_editors_foreach (edit_layout_reset_cb);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** The editor settings dialog. */
+
+/* --------------------------------------------------------------------------------------------- */

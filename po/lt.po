@@ -1,0 +1,2742 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the mc package.
+#
+# Translators:
+# Andrius Burokas, 2017-2018
+# Mantas Kriaučiūnas Baltix <mantas@akl.lt>, 2020
+# Mindaugas <opensuse.lietuviu.kalba@gmail.com>, 2019-2020
+# Nerijus Baliūnas <nerijus@users.sourceforge.net>, 2011
+# Slava Zanko <slavazanko@gmail.com>, 2011
+# Zygimantus <zygimantus@gmail.com>, 2016
+# Zygimantus <zygimantus@gmail.com>, 2016-2017
+# Anonymous <anonymous@noreply.codeberg.org>, 2026.
+# GitHub webhook <noreply-webhook-github@weblate.org>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Midnight Commander\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"POT-Creation-Date: 2026-09-29 13:14+0200\n"
+"PO-Revision-Date: 2026-09-25 22:53+0000\n"
+"Last-Translator: GitHub webhook <noreply-webhook-github@weblate.org>\n"
+"Language-Team: Lithuanian <https://translate.codeberg.org/projects/mc6/mc6/"
+"lt/>\n"
+"Language: lt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n % 10 == 1 && (n % 100 > 19 || n % 100 < "
+"11) ? 0 : (n % 10 >= 2 && n % 10 <=9) && (n % 100 > 19 || n % 100 < 11) ? "
+"1 : n % 1 != 0 ? 2: 3);\n"
+"X-Generator: Weblate 2026.9.1\n"
+
+# "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+msgid "No translation"
+msgstr ""
+
+msgid "Warning: cannot load codepages list"
+msgstr "Įspėjimas: nepavyko įkelti koduočių sąrašo"
+
+msgid "7-bit ASCII"
+msgstr "7 bitų ASCII"
+
+#, c-format
+msgid "Cannot translate from %s to %s"
+msgstr "Nepavyko išversti iš %s į %s"
+
+msgid "Event system already initialized"
+msgstr "Įvykių sistema jau inicializuota"
+
+msgid "Failed to initialize event system"
+msgstr "Nepavyko inicializuoti įvykių sistemos"
+
+msgid "Event system not initialized"
+msgstr "Įvykių sistema neinicializuota"
+
+msgid "Check input data! Some of parameters are NULL!"
+msgstr "Patikrinkite įvesties duomenis! Kai kurie parametrai yra NULL!"
+
+#, c-format
+msgid "Unable to create group '%s' for events!"
+msgstr "Nepavyko sukurti grupės '%s' įvykiams!"
+
+#, c-format
+msgid "Unable to create event '%s'!"
+msgstr "Nepavyko sukurti įvykio '%s'!"
+
+#, c-format
+msgid "Copyright (C) 1996-%zu the Free Software Foundation"
+msgstr ""
+
+msgid "Half page up"
+msgstr ""
+
+#, fuzzy
+msgid "Half page down"
+msgstr "Page Down"
+
+msgid "Go to top"
+msgstr ""
+
+msgid "Go to bottom"
+msgstr ""
+
+msgid "Top of screen"
+msgstr ""
+
+msgid "Bottom of screen"
+msgstr ""
+
+msgid "Word left"
+msgstr ""
+
+msgid "Word right"
+msgstr ""
+
+#, fuzzy
+msgid "Copy file(s)"
+msgstr "Palyginti failus"
+
+msgid "Move/rename file(s)"
+msgstr ""
+
+msgid "Delete"
+msgstr "Šalinti"
+
+msgid "Main menu"
+msgstr ""
+
+#, fuzzy
+msgid "User-defined menu"
+msgstr "Kit&oks:"
+
+#, fuzzy
+msgid "Edit user menu"
+msgstr "Vartotojo meniu"
+
+#, fuzzy
+msgid "Search next"
+msgstr "Paieška baigta"
+
+#, fuzzy
+msgid "Replace next"
+msgstr "Pakeisti"
+
+msgid "Show help"
+msgstr ""
+
+#, fuzzy
+msgid "Terminal"
+msgstr "Terminalo parinktys"
+
+msgid "Edit file"
+msgstr "Keisti failą"
+
+#, fuzzy
+msgid "Edit new file"
+msgstr "Keisti failą"
+
+#, fuzzy
+msgid "Select charset"
+msgstr "&Visos koduotės"
+
+#, fuzzy
+msgid "Command history"
+msgstr "Komandų istorija"
+
+msgid "Next in history"
+msgstr ""
+
+msgid "Previous in history"
+msgstr ""
+
+msgid "Auto-complete"
+msgstr ""
+
+#, fuzzy
+msgid "Save as..."
+msgstr "Įrašyti kaip..."
+
+#, fuzzy
+msgid "Go to line"
+msgstr "Eiti į eilutę"
+
+#, fuzzy
+msgid "Refresh screen"
+msgstr "A&tnaujinti"
+
+msgid "Suspend to shell"
+msgstr ""
+
+msgid "List open screens"
+msgstr ""
+
+msgid "Next screen"
+msgstr ""
+
+#, fuzzy
+msgid "Previous screen"
+msgstr "&Ankstesnis"
+
+#, fuzzy
+msgid "Next file"
+msgstr "Įterpti failą"
+
+#, fuzzy
+msgid "Previous file"
+msgstr "&Ankstesnis"
+
+#, fuzzy
+msgid "Delete to line start"
+msgstr "Skaitm. „Delete“"
+
+#, fuzzy
+msgid "Delete to line end"
+msgstr "Skaitm. „Delete“"
+
+msgid "Delete to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Delete to word end"
+msgstr "Skaitm. „Delete“"
+
+msgid "Cut to clipboard"
+msgstr ""
+
+msgid "Copy to clipboard"
+msgstr ""
+
+msgid "Paste from clipboard"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle selection"
+msgstr "Atv&irkštinis pasirinkimas"
+
+#, fuzzy
+msgid "Select left"
+msgstr "Pasirinkti"
+
+#, fuzzy
+msgid "Select right"
+msgstr "Pasirinkti"
+
+#, fuzzy
+msgid "Select up"
+msgstr "Pasirinkti &grupę"
+
+#, fuzzy
+msgid "Select down"
+msgstr "Pasirinkti"
+
+msgid "Select to word start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to word end"
+msgstr "Pasirinkite lyginimo metodą:"
+
+msgid "Select to line start"
+msgstr ""
+
+#, fuzzy
+msgid "Select to line end"
+msgstr "Pasirinkti kalbą"
+
+#, fuzzy
+msgid "Sort order..."
+msgstr "Rikiavimo tvarka"
+
+#, fuzzy
+msgid "General options"
+msgstr "Skydelio parinktys"
+
+#, fuzzy
+msgid "Learn terminal keys"
+msgstr "Mokytis klavišus"
+
+msgid "Key bindings"
+msgstr ""
+
+msgid "Key sniffer"
+msgstr ""
+
+msgid "Manage plugins"
+msgstr ""
+
+#, fuzzy
+msgid "Set bookmark"
+msgstr "Nustat&yti pažymėtus"
+
+msgid "Quit program"
+msgstr ""
+
+msgid "Extended key prefix"
+msgstr ""
+
+#, fuzzy
+msgid "Find declaration"
+msgstr "Failų veiksmai"
+
+#, fuzzy
+msgid "Appearance settings"
+msgstr "Išvaizda"
+
+#, fuzzy
+msgid "Save setup"
+msgstr "Įrašyti nu&statymus"
+
+msgid "Yank (paste kill buffer)"
+msgstr ""
+
+msgid "Help index"
+msgstr ""
+
+msgid "Go back"
+msgstr ""
+
+msgid "Next link"
+msgstr ""
+
+#, fuzzy
+msgid "Previous link"
+msgstr "&Ankstesnis"
+
+msgid "Next node"
+msgstr ""
+
+#, fuzzy
+msgid "Previous node"
+msgstr "&Ankstesnis"
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Deselect all"
+msgstr "Nebesirinkti"
+
+#, fuzzy
+msgid "Select page up"
+msgstr "Pasirinkti &grupę"
+
+#, fuzzy
+msgid "Select page down"
+msgstr "Pasirinkti kalbą"
+
+#, fuzzy
+msgid "Close editor"
+msgstr "Uždaryti failą"
+
+msgid "Paragraph up"
+msgstr ""
+
+msgid "Paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Open file in editor"
+msgstr "Plėtinių failo keitimas"
+
+#, fuzzy
+msgid "Select word"
+msgstr "Pasirinkti"
+
+#, fuzzy
+msgid "Select line"
+msgstr "Pasirinkti kalbą"
+
+#, fuzzy
+msgid "Select all"
+msgstr "Pasirinkti"
+
+msgid "Column selection mode"
+msgstr ""
+
+#, fuzzy
+msgid "Save selected block"
+msgstr "Išsaugoti bloką"
+
+msgid "Insert file"
+msgstr "Įterpti failą"
+
+msgid "Toggle insert/overwrite"
+msgstr ""
+
+msgid "Insert date/time (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Delete line"
+msgstr "Ištrinama"
+
+#, fuzzy
+msgid "Mail file"
+msgstr "Sumaišyti failus"
+
+#, fuzzy
+msgid "Undo history"
+msgstr "Komandų istorija"
+
+msgid "Format paragraph (Lua action)"
+msgstr ""
+
+#, fuzzy
+msgid "Match bracket"
+msgstr "Kairysis laužtinis skliaustas"
+
+msgid "Sort selection (Lua action)"
+msgstr ""
+
+msgid "Insert command output (Lua action)"
+msgstr ""
+
+msgid "Start macro recording"
+msgstr ""
+
+msgid "Stop macro recording"
+msgstr ""
+
+msgid "Toggle macro recording"
+msgstr ""
+
+msgid "Macro explorer"
+msgstr ""
+
+#, fuzzy
+msgid "Repeat last macro"
+msgstr "Šalinti macro"
+
+msgid "Spell check"
+msgstr ""
+
+msgid "Spell check current word"
+msgstr ""
+
+#, fuzzy
+msgid "Select spell language"
+msgstr "Pasirinkti kalbą"
+
+#, fuzzy
+msgid "Clear all bookmarks"
+msgstr "Išva&lyti pažymėtus"
+
+msgid "Next bookmark"
+msgstr ""
+
+#, fuzzy
+msgid "Previous bookmark"
+msgstr "&Ankstesnis"
+
+msgid "Toggle code fold"
+msgstr ""
+
+#, fuzzy
+msgid "Unfold all"
+msgstr "&Rasti viską"
+
+msgid "Toggle line filter"
+msgstr ""
+
+msgid "Filter by selection or word"
+msgstr ""
+
+#, fuzzy
+msgid "Select to file start"
+msgstr "Failo pakeitimai prarasti"
+
+#, fuzzy
+msgid "Select to file end"
+msgstr "Pasirinkite lyginimo metodą:"
+
+#, fuzzy
+msgid "Select to page start"
+msgstr "Pasirinkite lyginimo metodą:"
+
+#, fuzzy
+msgid "Select to page end"
+msgstr "Pasirinkite lyginimo metodą:"
+
+#, fuzzy
+msgid "Select scroll up"
+msgstr "Pasirinkti &grupę"
+
+msgid "Select scroll down"
+msgstr ""
+
+#, fuzzy
+msgid "Select paragraph up"
+msgstr "Pasirinkti &grupę"
+
+msgid "Select paragraph down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select page up"
+msgstr "Šali&nti iš parinktųjų grupės"
+
+msgid "Column select page down"
+msgstr ""
+
+msgid "Column select left"
+msgstr ""
+
+msgid "Column select right"
+msgstr ""
+
+#, fuzzy
+msgid "Column select up"
+msgstr "Šali&nti iš parinktųjų grupės"
+
+msgid "Column select down"
+msgstr ""
+
+#, fuzzy
+msgid "Column select scroll up"
+msgstr "Šali&nti iš parinktųjų grupės"
+
+msgid "Column select scroll down"
+msgstr ""
+
+msgid "Column select paragraph up"
+msgstr ""
+
+msgid "Column select paragraph down"
+msgstr ""
+
+msgid "Shift block left"
+msgstr ""
+
+msgid "Shift block right"
+msgstr ""
+
+msgid "Insert literal character (Lua action)"
+msgstr ""
+
+msgid "Toggle visible tabs/spaces"
+msgstr ""
+
+msgid "Toggle control characters"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle syntax highlighting"
+msgstr "Pasirinkti sintaksės žymėjimą"
+
+msgid "Choose syntax highlighting"
+msgstr "Pasirinkti sintaksės žymėjimą"
+
+msgid "Toggle right margin"
+msgstr ""
+
+#, fuzzy
+msgid "Save mode options"
+msgstr "Skydelio parinktys"
+
+msgid "About editor"
+msgstr ""
+
+msgid "Execute script"
+msgstr ""
+
+msgid "Move window"
+msgstr ""
+
+msgid "Resize window"
+msgstr ""
+
+msgid "Toggle fullscreen"
+msgstr ""
+
+#, fuzzy
+msgid "Window list"
+msgstr "Langas"
+
+msgid "Next window"
+msgstr ""
+
+#, fuzzy
+msgid "Previous window"
+msgstr "&Ankstesnis"
+
+#, c-format
+msgid ""
+"File \"%s\" is already being edited.\n"
+"User: %s\n"
+"Process ID: %d"
+msgstr ""
+"Failas \"%s\" jau yra redaguojamas.\n"
+"Vartotojas: %s\n"
+"Proceso ID: %d"
+
+msgid "File locked"
+msgstr "Failas užrakintas"
+
+msgid "&Grab lock"
+msgstr "&Paimti užraktą"
+
+msgid "&Ignore lock"
+msgstr "&Ignoruoti užraktą"
+
+#, c-format
+msgid "Cannot create %s directory"
+msgstr "Nepavyko sukurti %s aplanko"
+
+msgid "FATAL: not a directory:"
+msgstr "KLAIDA: ne aplankas:"
+
+msgid ""
+"Number out of range (should be in byte range, 0 <= n <= 0xFF, expressed in "
+"hex)"
+msgstr ""
+"Skaičiaus reikšmė peržengia leistinas ribas (riba: 0 <= n <= "
+"0xFF, išreiškiama šešioliktainiu kodu)"
+
+msgid "Invalid character"
+msgstr "Neteisingas simbolis"
+
+msgid "Unmatched quotes character"
+msgstr "Trūksta citatos simbolio"
+
+#, c-format
+msgid ""
+"Hex pattern error at position %d:\n"
+"%s."
+msgstr ""
+"Šešioliktainės išraiškos klaida stulpelyje %d:\n"
+"%s."
+
+msgid "Search string not found"
+msgstr "Eilutė nerasta"
+
+msgid "Not implemented yet"
+msgstr "Dar neįgyvendinta"
+
+msgid "Num of replace tokens not equal to num of found tokens"
+msgstr ""
+
+#, c-format
+msgid "Invalid token number %d"
+msgstr ""
+
+msgid "Regular expression error"
+msgstr "Reguliariosios išraiškos klaida"
+
+msgid "No&rmal"
+msgstr "No&rmalus"
+
+msgid "Re&gular expression"
+msgstr "Reguliarioji išraiška"
+
+msgid "He&xadecimal"
+msgstr "Šešioliktainis"
+
+msgid "Wil&dcard search"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to parse '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Nepavyko perskaityti '%s' apipavidalinimo.\n"
+"Įkeltas numatytasis apipavidalinimas"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with true colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+"Nepavyko panaudoti '%s' apipavidalinimo su tikrų spalvų palaikymu:\n"
+"%s\n"
+"Įkeltas numatytasis apipavidalinimas"
+
+#, c-format
+msgid ""
+"Unable to use '%s' skin with 256 colors support:\n"
+"%s\n"
+"Default skin has been loaded"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unable to load '%s' skin.\n"
+"Default skin has been loaded"
+msgstr ""
+"Nepavyko įkelti '%s' apipavidalinimo.\n"
+"Įkeltas numatytasis apipavidalinimas"
+
+msgid ""
+"\n"
+"If your terminal supports 256 colors, you need to set your TERM\n"
+"environment variable to match your terminal, perhaps using\n"
+"a *-256color or *-direct256 variant. Use the 'toe -a'\n"
+"command to list all available variants on your system.\n"
+msgstr ""
+
+msgid ""
+"For true color support, you need version 6.1 or later of the ncurses\n"
+"library with wide character and ABI 6 or higher support.\n"
+"Please upgrade your system.\n"
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+msgstr ""
+
+msgid "True color not supported in this slang version."
+msgstr ""
+
+msgid ""
+"\n"
+"If your terminal supports true colors, you need to set your TERM\n"
+"environment variable to a *-direct256, *-direct16, or *-direct variant.\n"
+"Use the 'toe -a' command to list all available variants on your system.\n"
+"Alternatively, you can set COLORTERM=truecolor.\n"
+msgstr ""
+
+msgid "Escape"
+msgstr ""
+
+msgid "Function key 1"
+msgstr "Funkcinis klav. 1"
+
+msgid "Function key 2"
+msgstr "Funkcinis klav. 2"
+
+msgid "Function key 3"
+msgstr "Funkcinis klav. 3"
+
+msgid "Function key 4"
+msgstr "Funkcinis klav. 4"
+
+msgid "Function key 5"
+msgstr "Funkcinis klav. 5"
+
+msgid "Function key 6"
+msgstr "Funkcinis klav. 6"
+
+msgid "Function key 7"
+msgstr "Funkcinis klav. 7"
+
+msgid "Function key 8"
+msgstr "Funkcinis klav. 8"
+
+msgid "Function key 9"
+msgstr "Funkcinis klav. 9"
+
+msgid "Function key 10"
+msgstr "Funkcinis klav. 10"
+
+msgid "Function key 11"
+msgstr "Funkcinis klav. 11"
+
+msgid "Function key 12"
+msgstr "Funkcinis klav. 12"
+
+msgid "Function key 13"
+msgstr "Funkcinis klav. 13"
+
+msgid "Function key 14"
+msgstr "Funkcinis klav. 14"
+
+msgid "Function key 15"
+msgstr "Funkcinis klav. 15"
+
+msgid "Function key 16"
+msgstr "Funkcinis klav. 16"
+
+msgid "Function key 17"
+msgstr "Funkcinis klav. 17"
+
+msgid "Function key 18"
+msgstr "Funkcinis klav. 18"
+
+msgid "Function key 19"
+msgstr "Funkcinis klav. 19"
+
+msgid "Function key 20"
+msgstr "Funkcinis klav. 20"
+
+msgid "Completion/M-tab"
+msgstr "Užbaig./„M-Tab“"
+
+msgid "BackTab/S-tab"
+msgstr ""
+
+msgid "Backspace"
+msgstr ""
+
+msgid "Up arrow"
+msgstr "Rodyklė \"aukštyn\""
+
+msgid "Down arrow"
+msgstr "Rodyklė \"žemyn\""
+
+msgid "Left arrow"
+msgstr "Rodyklė \"kairėn\""
+
+msgid "Right arrow"
+msgstr "Rodyklė \"dešinėn\""
+
+msgid "Insert"
+msgstr "Įterpti"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "End key"
+msgstr "„End“"
+
+msgid "Page Up"
+msgstr "Page Up"
+
+msgid "Page Down"
+msgstr "Page Down"
+
+msgid "/ on keypad"
+msgstr "Skaitm. /"
+
+msgid "* on keypad"
+msgstr "Skaitm. *"
+
+msgid "- on keypad"
+msgstr "Skaitm. -"
+
+msgid "+ on keypad"
+msgstr "Skaitm. +"
+
+msgid "Left arrow keypad"
+msgstr "Skaitm. „kairėn“"
+
+msgid "Right arrow keypad"
+msgstr "Skaitm. „dešinėn“"
+
+msgid "Up arrow keypad"
+msgstr "Skaitm. „aukštyn“"
+
+msgid "Down arrow keypad"
+msgstr "Skaitm. „žemyn“"
+
+msgid "Home on keypad"
+msgstr "Skaitm. „Home“"
+
+msgid "End on keypad"
+msgstr "Skaitm. „End“"
+
+msgid "Page Down keypad"
+msgstr "Skaitm. „Page Down“"
+
+msgid "Page Up keypad"
+msgstr "Skaitm. „Page Up“"
+
+msgid "Insert on keypad"
+msgstr "Skaitm. „Insert“"
+
+msgid "Delete on keypad"
+msgstr "Skaitm. „Delete“"
+
+msgid "Enter on keypad"
+msgstr "Skaitm. „Enter“"
+
+msgid "Function key 21"
+msgstr "Funkcinis klav. 21"
+
+msgid "Function key 22"
+msgstr "Funkcinis klav. 22"
+
+msgid "Function key 23"
+msgstr "Funkcinis klav. 23"
+
+msgid "Function key 24"
+msgstr "Funkcinis klav. 24"
+
+msgid "A1 key"
+msgstr ""
+
+msgid "C1 key"
+msgstr ""
+
+msgid "Asterisk"
+msgstr ""
+
+msgid "Minus"
+msgstr ""
+
+msgid "Plus"
+msgstr ""
+
+msgid "Dot"
+msgstr ""
+
+msgid "Less than"
+msgstr ""
+
+msgid "Great than"
+msgstr ""
+
+msgid "Equal"
+msgstr ""
+
+msgid "Comma"
+msgstr ""
+
+msgid "Apostrophe"
+msgstr ""
+
+msgid "Colon"
+msgstr ""
+
+msgid "Semicolon"
+msgstr ""
+
+msgid "Exclamation mark"
+msgstr ""
+
+msgid "Question mark"
+msgstr ""
+
+msgid "Ampersand"
+msgstr ""
+
+msgid "Dollar sign"
+msgstr ""
+
+msgid "Quotation mark"
+msgstr ""
+
+msgid "Percent sign"
+msgstr ""
+
+msgid "Caret"
+msgstr ""
+
+msgid "Tilda"
+msgstr ""
+
+msgid "Prime"
+msgstr ""
+
+msgid "Underline"
+msgstr ""
+
+msgid "Understrike"
+msgstr ""
+
+msgid "Pipe"
+msgstr ""
+
+msgid "Left parenthesis"
+msgstr "Kairysis skliaustas"
+
+msgid "Right parenthesis"
+msgstr "Dešinysis skliaustas"
+
+msgid "Left bracket"
+msgstr "Kairysis laužtinis skliaustas"
+
+msgid "Right bracket"
+msgstr "Dešinysis laužtinis skliaustas"
+
+msgid "Left brace"
+msgstr "Kairysis riestinis skliaustas"
+
+msgid "Right brace"
+msgstr "Dešinysis riestinis skliaustas"
+
+msgid "Enter"
+msgstr ""
+
+msgid "Tab key"
+msgstr ""
+
+msgid "Space key"
+msgstr ""
+
+msgid "Slash key"
+msgstr ""
+
+msgid "Backslash key"
+msgstr ""
+
+msgid "Number sign #"
+msgstr ""
+
+#. TRANSLATORS: Please translate as in "at sign" (@).
+msgid "At sign"
+msgstr ""
+
+msgid "Ctrl"
+msgstr "Vald"
+
+msgid "Alt"
+msgstr "Alt"
+
+msgid "RAlt"
+msgstr ""
+
+msgid "Shift"
+msgstr "Lyg2"
+
+#, c-format
+msgid ""
+"\n"
+"Cannot create pipe for SIGWINCH: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure write end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Cannot configure read end of SIGWINCH pipe: %s (%d)\n"
+msgstr ""
+
+#, c-format
+msgid ""
+"Screen size %dx%d is not supported.\n"
+"Check the TERM environment variable.\n"
+msgstr ""
+"Ekrano dydis %dx%d nepalaikomas.\n"
+"Patikrinkite TERM aplinkos kintamąjį.\n"
+
+msgid "The TERM environment variable is unset!\n"
+msgstr "Aplinkos kintamasis TERM nenustatytas!\n"
+
+msgid "Cannot check SIGWINCH pipe"
+msgstr ""
+
+msgid "B"
+msgstr "B"
+
+msgid "kB"
+msgstr "kB"
+
+msgid "KiB"
+msgstr "KiB"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MiB"
+msgstr "MiB"
+
+msgid "GB"
+msgstr "GB"
+
+msgid "GiB"
+msgstr "GiB"
+
+msgid "Cannot create pipe descriptor"
+msgstr ""
+
+msgid "Cannot create pipe streams"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in select() reading data from a child process:\n"
+"%s"
+msgstr ""
+
+msgid "Cannot close pipe descriptor (p == NULL)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Unexpected error in waitpid():\n"
+"%s"
+msgstr ""
+
+msgid "Changes to file lost"
+msgstr "Failo pakeitimai prarasti"
+
+#, c-format
+msgid ""
+"Cannot create temporary directory %s: %s.\n"
+"Temporary files will not be created\n"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr "Paspauskite bet kurį klavišą..."
+
+msgid "Internal error:"
+msgstr "Vidinė klaida:"
+
+msgid "Screens"
+msgstr ""
+
+msgid "History"
+msgstr "Istorija"
+
+msgid "Paste"
+msgstr ""
+
+msgid ""
+"The clipboard holds more than 2 KB of text.\n"
+"Paste it?"
+msgstr ""
+
+msgid "&Yes"
+msgstr "&Taip"
+
+msgid "&No"
+msgstr "&Ne"
+
+#. TRANSLATORS: no need to translate 'DialogTitle', it's just a context prefix
+msgid "DialogTitle|History cleanup"
+msgstr ""
+
+msgid "Do you want clean this history?"
+msgstr "Ar tikrai norite išvalyti istoriją?"
+
+msgid "&OK"
+msgstr "&Gerai"
+
+msgid "&Cancel"
+msgstr "&Atsisakyti"
+
+msgid "Error"
+msgstr "Klaida"
+
+#, c-format
+msgid "%s (%d)"
+msgstr ""
+
+msgid "&Abort"
+msgstr "Nutr&aukti"
+
+msgid "< Default >"
+msgstr "< Numatytas >"
+
+msgid "Skins"
+msgstr ""
+
+msgid "Skin:"
+msgstr "Išvaizda"
+
+msgid "&Shadows"
+msgstr ""
+
+msgid "Appearance"
+msgstr "Išvaizda"
+
+msgid "Displays the current version"
+msgstr "Parodo dabartinę versiją"
+
+msgid "Print data directory"
+msgstr "Parodo duomenų aplanką"
+
+msgid "Print extended info about used data directories"
+msgstr ""
+
+msgid "Print configure options"
+msgstr "Rodyti 'configure' parinktis"
+
+#, fuzzy
+msgid "Disables Lua support"
+msgstr "Išjungti X11 palaikymą"
+
+msgid "Forces xterm features"
+msgstr "Priverčia naudoti „xterm“ galimybes"
+
+msgid "Disable X11 support"
+msgstr "Išjungti X11 palaikymą"
+
+msgid "Tries to use an old highlight mouse tracking"
+msgstr ""
+
+msgid "Disable mouse support in text version"
+msgstr "Išjungia pelę tekstinėje versijoje"
+
+msgid "Tries to use termcap instead of terminfo"
+msgstr "Bando naudoti „termcap“ vietoj „terminfo“"
+
+msgid "To run on slow terminals"
+msgstr "Leidžia lėtame terminale"
+
+msgid "Use stickchars to draw"
+msgstr "Naudoja alternatyvią pseudografiką"
+
+msgid "Load definitions of key bindings from specified file"
+msgstr "Įkelti klavišų saistymo nustatymus iš failo"
+
+msgid "<file>"
+msgstr "<file>"
+
+msgid "Don't load definitions of key bindings from file, use defaults"
+msgstr ""
+"Nenaudoti klavišų saistymo nustatymų iš failo, naudoti numatytus saistymus"
+
+msgid "Requests to run in black and white"
+msgstr "Paleidžia nespalvotu režimu"
+
+msgid "Request to run in color mode"
+msgstr "Paleidžia spalvotu režimu"
+
+msgid "Use the specified skin"
+msgstr ""
+
+msgid "<string>"
+msgstr ""
+
+msgid "[+lineno] file1[:lineno] [file2[:lineno]...]"
+msgstr ""
+
+#, c-format
+msgid ""
+"\n"
+"Please send any bug reports (including the output of '%s -V')\n"
+"as tickets at %s\n"
+msgstr ""
+
+msgid "Main options"
+msgstr "Pagrindinės parinktys"
+
+msgid "Terminal options"
+msgstr "Terminalo parinktys"
+
+msgid "Color options"
+msgstr "Spalvų parinktys"
+
+msgid "Arguments parse error!"
+msgstr ""
+
+msgid "Spell"
+msgstr ""
+
+msgid "Spell backend is unavailable."
+msgstr ""
+
+#, fuzzy
+msgid "Ctags Configuration"
+msgstr "Konfigūra&cija..."
+
+msgid "Ctags executable:"
+msgstr ""
+
+#, fuzzy
+msgid "Command line options:"
+msgstr "Keisti parinktis"
+
+msgid "Case sensitive filter"
+msgstr ""
+
+msgid "Auto-discover tags file in parent directories"
+msgstr ""
+
+#, c-format
+msgid "Cannot jump to %s:%ld."
+msgstr ""
+
+msgid "Ctags"
+msgstr ""
+
+#, c-format
+msgid "Symbol '%s' not found in any loaded repository."
+msgstr ""
+
+msgid "Go to Declaration"
+msgstr ""
+
+#, fuzzy
+msgid "Find Declaration"
+msgstr "Failų veiksmai"
+
+msgid "No word at cursor."
+msgstr ""
+
+#, c-format
+msgid "'%s' is not a known symbol."
+msgstr ""
+
+#, fuzzy
+msgid "Failed to create temporary file."
+msgstr "Nepavyko išsaugoti faile"
+
+#, fuzzy
+msgid "Failed to open temporary file."
+msgstr "Nepavyko išsaugoti faile"
+
+msgid "No indexed files found."
+msgstr ""
+
+msgid "Failed to run grep."
+msgstr ""
+
+#, c-format
+msgid "No references found for '%s'."
+msgstr ""
+
+msgid "Find References"
+msgstr ""
+
+msgid "No repository loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Search Symbol"
+msgstr "Paieška baigta"
+
+msgid "No file is open."
+msgstr ""
+
+msgid "No tags found for the current file."
+msgstr ""
+
+msgid "Symbols in Current File"
+msgstr ""
+
+#, c-format
+msgid "No files matching '%s'."
+msgstr ""
+
+#, fuzzy
+msgid "Search File"
+msgstr "Paieška baigta"
+
+msgid "Complete Symbol"
+msgstr ""
+
+#, c-format
+msgid "No members found for '%s'."
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Failed to load tags file: %s"
+msgstr "Nepavyko išsaugoti faile"
+
+#, c-format
+msgid "Loaded %u symbols from %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Cannot create temp file: %s"
+msgstr ""
+"Nepavyko išsaugoti failo:\n"
+"%s"
+
+#, fuzzy, c-format
+msgid "Cannot rename %s to %s: %s"
+msgstr "Nepavyko išversti iš %s į %s"
+
+msgid "Ctags: Create Index"
+msgstr ""
+
+#, fuzzy
+msgid "Project root directory to index:"
+msgstr "Profilio šakninis aplankas:"
+
+#, fuzzy, c-format
+msgid "Failed to create index in %s"
+msgstr "Nepavyko sukurti įvykio '%s'!"
+
+#, c-format
+msgid "Indexed: %u symbols"
+msgstr ""
+
+#, c-format
+msgid "Reindex failed for %s"
+msgstr ""
+
+#, c-format
+msgid "Reindexed: %u symbols"
+msgstr ""
+
+msgid "Navigation history is empty."
+msgstr ""
+
+#, fuzzy
+msgid "Navigation History"
+msgstr "Navigacija"
+
+#, fuzzy
+msgid "Go to declaration"
+msgstr "Nėra informacijos apie mazgą"
+
+msgid "Find references"
+msgstr ""
+
+msgid "Complete symbol"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation history"
+msgstr "Navigacija"
+
+msgid "Go forward"
+msgstr ""
+
+#, fuzzy
+msgid "Search symbol"
+msgstr "Paieška baigta"
+
+#, fuzzy
+msgid "Search file"
+msgstr "Paieška baigta"
+
+#, fuzzy
+msgid "Symbols in current file"
+msgstr "Simbolinės nuorodos pavadinimas:"
+
+msgid "Class/struct members"
+msgstr ""
+
+#, fuzzy
+msgid "Load tags file"
+msgstr "Įkelti sintaksės failą"
+
+msgid "Manage repositories"
+msgstr ""
+
+msgid "Reindex repository"
+msgstr ""
+
+#, fuzzy
+msgid "Configuration"
+msgstr "Patvirtinimas"
+
+msgid "Go to &declaration"
+msgstr ""
+
+msgid "&Find declaration"
+msgstr ""
+
+msgid "Find &references"
+msgstr ""
+
+#, fuzzy
+msgid "Navigation &history"
+msgstr "Navigacija"
+
+msgid "Go &back"
+msgstr ""
+
+msgid "Go for&ward"
+msgstr ""
+
+msgid "Class/struct &members"
+msgstr ""
+
+#, fuzzy
+msgid "&Search symbol"
+msgstr "Paieška"
+
+#, fuzzy
+msgid "S&ymbols in file"
+msgstr "Simbolinės nuorodos pavadinimas:"
+
+msgid "&Complete symbol"
+msgstr ""
+
+msgid "No matching symbols found."
+msgstr ""
+
+#, fuzzy
+msgid "Select symbol"
+msgstr "Pasirinkti"
+
+#, fuzzy
+msgid "Symbol name:"
+msgstr "Simbolinės nuorodos pavadinimas:"
+
+#, fuzzy
+msgid "File name or path:"
+msgstr "Failo pavadinimas:"
+
+msgid "Class/Struct Members"
+msgstr ""
+
+msgid "Scope name (class, struct, namespace):"
+msgstr ""
+
+#, fuzzy
+msgid "Load Tags File"
+msgstr "Įkelti failą"
+
+msgid "Tags file path:"
+msgstr ""
+
+msgid "Manage Tag Repositories"
+msgstr ""
+
+msgid "(unknown)"
+msgstr ""
+
+msgid "&Close"
+msgstr "&Uždaryti"
+
+msgid "No references found."
+msgstr ""
+
+msgid "Members"
+msgstr ""
+
+msgid "Warning"
+msgstr "Įspėjimas"
+
+msgid ""
+"Current text was modified without a file save.\n"
+"Continue discards these changes."
+msgstr ""
+"Teksto pakeitimai neišsaugoti faile.\n"
+"Tęsimas atšauks šiuos pakeitimus."
+
+msgid "C&ontinue"
+msgstr "&Tęsti"
+
+msgid "&Add word"
+msgstr ""
+
+msgid "&Replace"
+msgstr "Pa&keisti"
+
+msgid "&Skip"
+msgstr "Pralei&sti"
+
+msgid "Language"
+msgstr "Kalba"
+
+msgid "Misspelled"
+msgstr ""
+
+msgid "Check word"
+msgstr "Tikrinti žodį"
+
+msgid "Suggest"
+msgstr "Pasiūlyti"
+
+msgid "(no suggestions)"
+msgstr ""
+
+msgid ""
+"The hunspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid ""
+"The aspell library is not installed.\n"
+"Install it, and a dictionary for the language you write in."
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+#, c-format
+msgid ""
+"Aspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+#, c-format
+msgid ""
+"Hunspell has no dictionary for \"%s\".\n"
+"Installed: %s\n"
+"Install a dictionary, then set Language to the name it goes by."
+msgstr ""
+
+msgid ""
+"Spell checking is off.\n"
+"Set a language in the Spell plugin settings to turn it on."
+msgstr ""
+
+#, fuzzy
+msgid "Add word"
+msgstr "Pridėti n&aują"
+
+msgid "Word to add to the dictionary:"
+msgstr ""
+
+msgid "Aspell"
+msgstr ""
+
+msgid "Hunspell"
+msgstr ""
+
+msgid "Engine"
+msgstr ""
+
+#, fuzzy
+msgid "Language:"
+msgstr "Kalba"
+
+#, fuzzy
+msgid "&Select..."
+msgstr "Pasirinkti"
+
+msgid "Spell plugin settings"
+msgstr ""
+
+msgid "Select language"
+msgstr "Pasirinkti kalbą"
+
+#, c-format
+msgid "Loading: %3d%%"
+msgstr ""
+
+msgid "Loading..."
+msgstr "Įkeliama..."
+
+#, c-format
+msgid ""
+"Cannot open\n"
+"%s"
+msgstr ""
+
+msgid "Load file"
+msgstr "Įkelti failą"
+
+#, c-format
+msgid "Error reading %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot stat\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"%s\n"
+"is not a regular file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File \"%s\" is too large.\n"
+"Open it anyway?"
+msgstr ""
+"Failas \"%s\" yra per didelis.\n"
+"Vis tiek atidaryti?"
+
+#, c-format
+msgid "Error reading from pipe: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot open pipe for reading\n"
+"%s"
+msgstr ""
+
+#, fuzzy
+msgid "Undo"
+msgstr "Atšaukti"
+
+msgid ""
+"Undo history is not available.\n"
+"The change log was overwritten after a large edit."
+msgstr ""
+
+msgid ""
+"No write permissions for this file.\n"
+"Enter sudo password to save as root:"
+msgstr ""
+
+msgid "Save with sudo"
+msgstr ""
+
+msgid ""
+"Cannot save with sudo.\n"
+"Wrong password or sudo is not configured."
+msgstr ""
+
+msgid "&Retry"
+msgstr "&Iš naujo"
+
+msgid "File has hard-links. Detach before saving?"
+msgstr ""
+
+msgid "The file has been modified in the meantime. Save anyway?"
+msgstr "Tuo tarpu failas buvo pakeistas. Vis tiek jį išsaugoti?"
+
+#, c-format
+msgid "Error writing to pipe: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s\n"
+"for writing"
+msgstr ""
+
+msgid "The file you are saving does not end with a newline."
+msgstr "Išsaugomas failas nesibaigia nauja eilute."
+
+msgid "&Do not change"
+msgstr ""
+
+msgid "&Unix format (LF)"
+msgstr ""
+
+msgid "&Windows/DOS format (CR LF)"
+msgstr ""
+
+msgid "&Macintosh format (CR)"
+msgstr ""
+
+msgid "Enter file name:"
+msgstr "Įveskite failo vardą:"
+
+msgid "Change line breaks to:"
+msgstr ""
+
+msgid "Save As"
+msgstr "Išsaugoti kaip"
+
+#, c-format
+msgid ""
+"Cannot create directory\n"
+"%s"
+msgstr ""
+
+msgid "&Quick save"
+msgstr "&Greitas išsaugojimas"
+
+msgid "&Safe save"
+msgstr "&Saugus išsaugojimas"
+
+msgid "&Do backups with following extension:"
+msgstr ""
+
+msgid "Check &POSIX new line"
+msgstr ""
+
+msgid "Edit Save Mode"
+msgstr ""
+
+#, c-format
+msgid ""
+"Cannot save\n"
+"%s:\n"
+"not a regular file"
+msgstr ""
+
+msgid "A file already exists with this name"
+msgstr "Failas su tokiu vardu jau egzistuoja"
+
+msgid "&Overwrite"
+msgstr "Perraš&yti"
+
+msgid "Cannot save file"
+msgstr "Nepavyko išsaugoti failo"
+
+#, c-format
+msgid "Confirm save file: \"%s\""
+msgstr "Patvirtinkite failo išsaugojimą: \"%s\""
+
+msgid "Save file"
+msgstr "Išsaugoti failą"
+
+msgid "&Save"
+msgstr "Į&rašyti"
+
+msgid "Load"
+msgstr "Įkelti"
+
+msgid "Syntax file edit"
+msgstr "Sintaksės failo keitimas"
+
+msgid "Which syntax file you want to edit?"
+msgstr "Kurį sintaksės failą norite redaguoti?"
+
+msgid "&User"
+msgstr "&Vartotojo"
+
+msgid "&System wide"
+msgstr ""
+
+msgid "Menu edit"
+msgstr "Meniu redagavimas"
+
+msgid "Which menu file do you want to edit?"
+msgstr "Kurį meniu failą norite redaguoti?"
+
+msgid "&Local"
+msgstr "&Vietinį"
+
+msgid "[NoName]"
+msgstr ""
+
+#, c-format
+msgid ""
+"File %s was modified.\n"
+"Save before close?"
+msgstr ""
+"Failas %s buvo pakeistas.\n"
+"Ar išsaugoti?"
+
+msgid "Close file"
+msgstr "Uždaryti failą"
+
+#, c-format
+msgid ""
+"%s is being shut down.\n"
+"Save modified file %s?"
+msgstr ""
+
+msgid "Quit"
+msgstr "Išeiti"
+
+msgid "This function is not implemented"
+msgstr ""
+
+msgid "Unable to save to file"
+msgstr "Nepavyko išsaugoti faile"
+
+msgid "Goto line"
+msgstr "Eiti į eilutę"
+
+msgid "Enter line:"
+msgstr ""
+
+msgid "Save block"
+msgstr "Išsaugoti bloką"
+
+msgid "Cannot save block"
+msgstr ""
+
+msgid "Cannot insert file"
+msgstr "Negalima įterpti failo"
+
+msgid "mail -s <subject> -c <cc> <to>"
+msgstr ""
+
+msgid "To"
+msgstr ""
+
+msgid "Subject"
+msgstr ""
+
+msgid "Copies to"
+msgstr ""
+
+msgid "Mail"
+msgstr ""
+
+msgid "Cancel"
+msgstr "Atsisakyti"
+
+#, fuzzy, c-format
+msgid "insert %d"
+msgstr "Įterpti"
+
+#, fuzzy, c-format
+msgid "delete %d"
+msgstr "Ištrinti %s?"
+
+#, fuzzy
+msgid "replace"
+msgstr "Pakeisti"
+
+msgid "Nothing to undo."
+msgstr ""
+
+#, fuzzy
+msgid "Undo History"
+msgstr "Istorija"
+
+msgid "Collect completions"
+msgstr ""
+
+msgid "NoName"
+msgstr ""
+
+msgid "Save macro"
+msgstr ""
+
+msgid "Press the macro's new hotkey:"
+msgstr ""
+
+msgid "Repeat last commands"
+msgstr ""
+
+msgid "Repeat times:"
+msgstr "Kartojimų skaičius:"
+
+#, fuzzy, c-format
+msgid "Delete macro %s?"
+msgstr "Šalinti macro"
+
+msgid "Delete macro"
+msgstr "Šalinti macro"
+
+msgid "Macro Explorer"
+msgstr ""
+
+msgid "No macros recorded"
+msgstr ""
+
+#, fuzzy
+msgid "Run"
+msgstr "Rusų"
+
+#, fuzzy
+msgid "Close"
+msgstr "&Uždaryti"
+
+msgid "&Open file..."
+msgstr "At&verti failą..."
+
+msgid "&New"
+msgstr "&Naujas"
+
+msgid "&History..."
+msgstr ""
+
+msgid "Save &as..."
+msgstr "Įrašyti kaip..."
+
+msgid "&Insert file..."
+msgstr "Įterpti failą..."
+
+msgid "Cop&y to file..."
+msgstr "Ko&pijuoti į failą..."
+
+msgid "&User menu..."
+msgstr "Vartotojo meni&u..."
+
+msgid "A&bout..."
+msgstr "A&pie"
+
+msgid "&Quit"
+msgstr "&Išeiti"
+
+msgid "&Undo"
+msgstr "Atšaukti"
+
+msgid "&Redo"
+msgstr "Atstatyti"
+
+#, fuzzy
+msgid "Undo &History..."
+msgstr "Komandų istorija"
+
+msgid "&Toggle ins/overw"
+msgstr ""
+
+msgid "To&ggle mark"
+msgstr ""
+
+msgid "&Mark columns"
+msgstr ""
+
+msgid "Mark &all"
+msgstr "Pažymėti viską"
+
+msgid "Unmar&k"
+msgstr ""
+
+msgid "Cop&y"
+msgstr "Kop&ijuoti"
+
+msgid "Mo&ve"
+msgstr "Perkelti"
+
+msgid "&Delete"
+msgstr "Š&alinti"
+
+msgid "Co&py to clipfile"
+msgstr ""
+
+msgid "&Cut to clipfile"
+msgstr ""
+
+msgid "Pa&ste from clipfile"
+msgstr ""
+
+msgid "&Beginning"
+msgstr "&Pradžia"
+
+msgid "&End"
+msgstr "Pa&baiga"
+
+msgid "&Search..."
+msgstr "Ieškoti..."
+
+msgid "Search &again"
+msgstr "Ieškoti dar kartą"
+
+msgid "&Replace..."
+msgstr "Pakeisti..."
+
+msgid "Toggle &line filter"
+msgstr ""
+
+msgid "Filter by &word"
+msgstr ""
+
+msgid "&Toggle bookmark"
+msgstr ""
+
+msgid "&Next bookmark"
+msgstr ""
+
+msgid "&Prev bookmark"
+msgstr ""
+
+msgid "&Flush bookmarks"
+msgstr ""
+
+msgid "&Go to line..."
+msgstr ""
+
+msgid "&Toggle line state"
+msgstr ""
+
+msgid "Go to matching &bracket"
+msgstr "Eiti prie sutampančio skliausto"
+
+msgid "Toggle s&yntax highlighting"
+msgstr ""
+
+msgid "Togg&le right margin"
+msgstr ""
+
+msgid "Toggle &control characters"
+msgstr ""
+
+msgid "Encod&ing..."
+msgstr ""
+
+msgid "&Fold / Unfold block"
+msgstr ""
+
+#, fuzzy
+msgid "&Unfold all"
+msgstr "&Rasti viską"
+
+msgid "&Refresh screen"
+msgstr ""
+
+msgid "&Start/Stop record macro"
+msgstr ""
+
+msgid "Macro e&xplorer..."
+msgstr ""
+
+msgid "Record/Repeat &actions"
+msgstr ""
+
+msgid "&Move"
+msgstr "&Perkelti"
+
+msgid "&Resize"
+msgstr ""
+
+msgid "&Toggle fullscreen"
+msgstr ""
+
+msgid "&Next"
+msgstr "&Kitas"
+
+msgid "&Previous"
+msgstr "&Ankstesnis"
+
+msgid "&List..."
+msgstr ""
+
+msgid "&General..."
+msgstr ""
+
+msgid "Save &mode..."
+msgstr "Įrašymo rėžimas..."
+
+msgid "Syntax &highlighting..."
+msgstr "Sintaksės žymėjimas..."
+
+msgid "&Appearance..."
+msgstr "Išvaizda..."
+
+msgid "Learn &keys..."
+msgstr "Mokytis klavišus"
+
+msgid "Key &bindings..."
+msgstr ""
+
+msgid "Key s&niffer..."
+msgstr ""
+
+#, fuzzy
+msgid "Manage &plugins..."
+msgstr "Skydelio &parinktys..."
+
+msgid "Pl&ugin info..."
+msgstr ""
+
+msgid "&Lua scripts..."
+msgstr ""
+
+msgid "S&yntax file"
+msgstr "Sintaksės failas"
+
+#, fuzzy
+msgid "M&enu file"
+msgstr "&Meniu failas"
+
+msgid "&Save setup"
+msgstr "Įrašyti nu&statymus"
+
+msgid "(no plugins loaded)"
+msgstr ""
+
+msgid "&File"
+msgstr "Failas"
+
+msgid "&Edit"
+msgstr "R&edaguoti"
+
+msgid "&Search"
+msgstr "Paieška"
+
+msgid "&Command"
+msgstr "Komanda"
+
+#, fuzzy
+msgid "&Navigate"
+msgstr "Navigacija"
+
+msgid "&Window"
+msgstr "Langas"
+
+msgid "Pl&ugins"
+msgstr ""
+
+msgid "&Options"
+msgstr "Nustatymai"
+
+#, fuzzy
+msgid "Lua action"
+msgstr "Tabuliacija"
+
+#, fuzzy
+msgid "Action failed"
+msgstr "Plėtinių failo keitimas"
+
+msgid "&None"
+msgstr "Nieko"
+
+msgid "&Dynamic paragraphing"
+msgstr ""
+
+msgid "Type &writer wrap"
+msgstr ""
+
+msgid "Wrap mode"
+msgstr "Eilučių laužymas"
+
+msgid "Tabulation"
+msgstr "Tabuliacija"
+
+msgid "&Fake half tabs"
+msgstr "Netikra pusinė tabuliacija"
+
+msgid "&Backspace through tabs"
+msgstr "Trinti ta&buliaciją"
+
+msgid "Fill tabs with &spaces"
+msgstr "Tabuliacija tarpai&s"
+
+msgid "Tab spacing:"
+msgstr ""
+
+msgid "Other options"
+msgstr "Kitos parinktys"
+
+msgid "&Return does autoindent"
+msgstr "„&Return“ autom. įtraukia"
+
+msgid "Confir&m before saving"
+msgstr "Patvirtinti pri&eš įrašant"
+
+msgid "Save file &position"
+msgstr "Išsaugoti &vietą faile"
+
+msgid "&Visible trailing spaces"
+msgstr ""
+
+msgid "Visible &tabs"
+msgstr ""
+
+msgid "S&how control characters"
+msgstr ""
+
+msgid "Synta&x highlighting"
+msgstr "Sintak&sės ryškinimas"
+
+msgid "C&ursor after inserted block"
+msgstr ""
+
+msgid "Pers&istent selection"
+msgstr ""
+
+msgid "Cursor be&yond end of line"
+msgstr ""
+
+msgid "&Group undo"
+msgstr ""
+
+msgid "Word wrap line length:"
+msgstr ""
+
+msgid "Editor options"
+msgstr "Redaktoriaus parinktys"
+
+msgid "Enter search string:"
+msgstr ""
+
+msgid "Cas&e sensitive"
+msgstr ""
+
+msgid "&Backwards"
+msgstr "At&bulai"
+
+msgid "In se&lection"
+msgstr ""
+
+msgid "&Whole words"
+msgstr ""
+
+msgid "&All charsets"
+msgstr "&Visos koduotės"
+
+msgid "&Find all"
+msgstr "&Rasti viską"
+
+msgid "Fil&ter"
+msgstr ""
+
+msgid "Search"
+msgstr "Paieška"
+
+#, c-format
+msgid "Searching %s: %3d%%"
+msgstr ""
+
+#, c-format
+msgid "Searching %s"
+msgstr "Ieškoma %s"
+
+msgid "Enter replacement string:"
+msgstr ""
+
+msgid "Replace"
+msgstr "Pakeisti"
+
+msgid "Replace with:"
+msgstr "Pakeisti:"
+
+msgid "A&ll"
+msgstr "&Visi"
+
+msgid "Confirm replace"
+msgstr "Patvirtinti pakeitimą"
+
+#, c-format
+msgid "%ld replacements made"
+msgstr ""
+
+msgid "Plugin"
+msgstr ""
+
+#, c-format
+msgid ""
+"A user friendly text editor\n"
+"written for the %s."
+msgstr ""
+
+msgid "About"
+msgstr "Apie"
+
+msgid "Plugin info"
+msgstr ""
+
+msgid "No plugins are loaded."
+msgstr ""
+
+msgid "Selected runtime has no configuration callback."
+msgstr ""
+
+msgid "Selected plugin has no configuration callback."
+msgstr ""
+
+msgid "Open files"
+msgstr "Atidaryti failus"
+
+msgid "Edit: "
+msgstr "Keisti:"
+
+msgid "ButtonBar|Help"
+msgstr "ButtonBar|Pagalba"
+
+msgid "ButtonBar|Save"
+msgstr "ButtonBar|Įrašyt"
+
+msgid "ButtonBar|Mark"
+msgstr "ButtonBar|Žymėt"
+
+msgid "ButtonBar|Replac"
+msgstr "ButtonBar|Pakeist"
+
+msgid "ButtonBar|Copy"
+msgstr "ButtonBar|Kopijuot"
+
+msgid "ButtonBar|Move"
+msgstr "ButtonBar|Perkelt"
+
+msgid "ButtonBar|Search"
+msgstr "ButtonBar|Ieškot"
+
+msgid "ButtonBar|Delete"
+msgstr "ButtonBar|Šalint"
+
+msgid "ButtonBar|PullDn"
+msgstr ""
+
+msgid "ButtonBar|Quit"
+msgstr "ButtonBar|Išeit"
+
+#, c-format
+msgid "Filtering %s: %3d%%"
+msgstr ""
+
+msgid "Filter"
+msgstr "Filtras"
+
+msgid "No lines match"
+msgstr ""
+
+msgid "< Auto >"
+msgstr "< Auto >"
+
+msgid "< Reload Current Syntax >"
+msgstr "< Įkelti esamą sintaksę iš naujo >"
+
+#, c-format
+msgid ""
+"Cannot open file\n"
+"%s"
+msgstr ""
+
+msgid "Load syntax file"
+msgstr "Įkelti sintaksės failą"
+
+#, c-format
+msgid "Error in file %s on line %d"
+msgstr "Klaida faile %s eilutėje %d"
+
+msgid ""
+"Not an xterm;\n"
+"the terminal cannot be shown."
+msgstr ""
+
+#, c-format
+msgid "Type 'exit' to return to the %s"
+msgstr ""
+
+msgid "Help file format error\n"
+msgstr "Klaidingas pagalbos failo formatas\n"
+
+msgid "Internal bug: Double start of link area"
+msgstr ""
+
+#, c-format
+msgid "Cannot find node %s in help file"
+msgstr ""
+
+msgid "See also"
+msgstr ""
+
+msgid "Help"
+msgstr "Pagalba"
+
+msgid "ButtonBar|Index"
+msgstr ""
+
+msgid "ButtonBar|Prev"
+msgstr ""
+
+#, fuzzy
+msgid "Function keys"
+msgstr "Funkcinis klav. 1"
+
+#, fuzzy
+msgid "Arrows / Navigation"
+msgstr "Navigacija"
+
+msgid "Special"
+msgstr ""
+
+#, fuzzy
+msgid "Learn key"
+msgstr "Mokytis klavišus"
+
+#, c-format
+msgid "Press %s and wait..."
+msgstr ""
+
+#, c-format
+msgid ""
+"Sequence %s is already assigned to %s.\n"
+"Reassign to %s?"
+msgstr ""
+
+#, fuzzy
+msgid "Conflict"
+msgstr "Patvirtinimas"
+
+#, c-format
+msgid ""
+"Cannot accept this key.\n"
+"You pressed: %s"
+msgstr ""
+
+#, c-format
+msgid "Learn terminal [%s]"
+msgstr ""
+
+#, fuzzy
+msgid "&Ctrl"
+msgstr "Vald"
+
+msgid "&Alt"
+msgstr ""
+
+#, fuzzy
+msgid "&Shift"
+msgstr "Lyg2"
+
+#, fuzzy
+msgid "Edit &term file"
+msgstr "Keisti &meniu failą"
+
+msgid "(not recognized)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid ""
+"Press any key...\n"
+"\n"
+"Wait until this message disappears."
+msgstr ""
+
+msgid "Shortcut:"
+msgstr ""
+
+msgid "Action:"
+msgstr ""
+
+msgid "Raw:"
+msgstr ""
+
+msgid "Keycode:"
+msgstr ""
+
+msgid "&Capture key"
+msgstr ""
+
+msgid "&Main"
+msgstr ""
+
+msgid "&Ctrl-X + ..."
+msgstr ""
+
+msgid "&Dialog"
+msgstr ""
+
+#, fuzzy
+msgid "&Menu"
+msgstr "&Meniu failas"
+
+msgid "&Input"
+msgstr ""
+
+msgid "&Listbox"
+msgstr ""
+
+msgid "&Radio"
+msgstr ""
+
+#, fuzzy
+msgid "&Help"
+msgstr "Pagalba"
+
+#, fuzzy
+msgid "&Editor"
+msgstr "R&edaguoti"
+
+msgid "&Widgets"
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+#, c-format
+msgid "Unknown sequence: %s"
+msgstr ""
+
+msgid "Assign key"
+msgstr ""
+
+msgid "Key:"
+msgstr ""
+
+msgid "Set shortcut"
+msgstr ""
+
+#, fuzzy
+msgid "Press new shortcut..."
+msgstr "Paspauskite bet kurį klavišą..."
+
+#, c-format
+msgid ""
+"%s is already bound to %s.\n"
+"Reassign anyway?"
+msgstr ""
+
+#, fuzzy
+msgid "&Back"
+msgstr "At&bulai"
+
+#, fuzzy
+msgid "Edit &keymap file"
+msgstr "Keisti &meniu failą"
+
+#, c-format
+msgid ""
+"Failed to run:\n"
+"%s\n"
+msgstr ""
+
+msgid "Home directory path is not absolute"
+msgstr "Namų aplanko kelias nėra absoliutus"
+
+#, c-format
+msgid ""
+"\n"
+"Failed while close:\n"
+"%s\n"
+msgstr ""
+
+msgid "unspecified"
+msgstr ""
+
+msgid "Lua scripts"
+msgstr ""
+
+msgid "This script has no entry file."
+msgstr ""
+
+msgid "Lua"
+msgstr ""
+
+#, fuzzy
+msgid "Unknown error"
+msgstr "<Nežinomas vart.>"
+
+msgid "This script has no settings."
+msgstr ""
+
+msgid "No global or user Lua scripts were found."
+msgstr ""
+
+msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgstr ""
+
+#, fuzzy
+msgid "&Settings"
+msgstr "&Nustatyti"
+
+msgid "Lua action failed"
+msgstr ""
+
+msgid "The selected script has no runnable actions."
+msgstr ""
+
+msgid "Run Lua action"
+msgstr ""
+
+msgid "(disabled, not loaded)"
+msgstr ""
+
+msgid "Manage Plugins"
+msgstr ""
+
+msgid "This plugin has no settings."
+msgstr ""
+
+msgid "No plugins loaded."
+msgstr ""
+
+#, fuzzy
+msgid "Runtime errors"
+msgstr "undelfs: klaida"
+
+msgid "Choose codepage"
+msgstr ""
+
+msgid "-  < No translation >"
+msgstr "–  < Jokio vertimo >"
+
+msgid "Setup"
+msgstr "Sąranka"
+
+#, c-format
+msgid "Setup saved to %s"
+msgstr ""
+
+#, c-format
+msgid "Unable to save setup to %s"
+msgstr ""
+
+#, fuzzy
+msgid "With aspell support"
+msgstr "Išjungia „subshell“ palaikymą"
+
+msgid "With mouse support on xterm and Linux console"
+msgstr ""
+
+msgid "With mouse support on xterm"
+msgstr ""
+
+msgid "With support for X11 events"
+msgstr ""
+
+msgid "With internationalization support"
+msgstr ""
+
+#, c-format
+msgid "   based on GNU Midnight Commander.\n"
+msgstr ""
+
+#, c-format
+msgid "Built with GLib %d.%d.%d (using GLib %u.%u.%u)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with S-Lang"
+msgstr ""
+
+#, c-format
+msgid " and terminfo database (using S-Lang %s)\n"
+msgstr ""
+
+#, c-format
+msgid "Built with %s"
+msgstr ""
+
+#, c-format
+msgid " (using %s)\n"
+msgstr ""
+
+msgid "Data types:"
+msgstr "Duomenų tipai:"
+
+#, fuzzy
+msgid "directory not found"
+msgstr "Eilutė nerasta"
+
+msgid "Home directory:"
+msgstr "Namų aplankas:"
+
+msgid "Profile root directory:"
+msgstr "Profilio šakninis aplankas:"
+
+msgid "System data"
+msgstr "Sistemos duomenys"
+
+msgid "Config directory:"
+msgstr "Konfigūracijos aplankas:"
+
+msgid "Data directory:"
+msgstr "Duomenų aplankas:"
+
+#, fuzzy
+msgid "Editor plugins:"
+msgstr "Redaktoriaus parinktys"
+
+msgid "Runtime plugins:"
+msgstr ""
+
+msgid "Lua scripts:"
+msgstr ""
+
+msgid "Lua modules:"
+msgstr ""
+
+msgid "User data"
+msgstr "Vartotojo duomenys"
+
+msgid "Cache directory:"
+msgstr "Podėlio aplankas:"
+
+msgid "Debug"
+msgstr "Derinimas"
+
+msgid "ERROR:"
+msgstr "KLAIDA:"
+
+msgid "True:"
+msgstr "Taip:"
+
+msgid "False:"
+msgstr "Ne:"
+
+#, fuzzy
+msgid "Cannot create temporary file"
+msgstr ""
+"Nepavyko išsaugoti failo:\n"
+"%s"
+
+msgid "Error calling program"
+msgstr "Klaida iškviečiant programą"
+
+msgid "Cannot create temporary command file"
+msgstr ""
+
+msgid "Parameter"
+msgstr "Parametras"
+
+msgid "Warning -- ignoring file"
+msgstr ""
+
+#, c-format
+msgid ""
+"File %s is not owned by root or you or is world writable.\n"
+"Using it may compromise your security"
+msgstr ""
+"Failas %s nepriklauso nei „root“, nei jums arba visi gali į ją rašyti.\n"
+"Jo naudojimas gali būti nesaugus"
+
+msgid "Cannot execute commands on non-local filesystems"
+msgstr ""
+
+#, c-format
+msgid "No suitable entries found in %s"
+msgstr ""
+
+msgid "User menu"
+msgstr "Vartotojo meniu"
+
+#, fuzzy, c-format
+msgid ""
+"Cannot copy %s to %s:\n"
+"%s"
+msgstr "Nepavyko išversti iš %s į %s"

@@ -1,0 +1,39 @@
+
+/** \file hline.h
+ *  \brief Header: WHLine widget
+ */
+
+#ifndef MC__WIDGET_HLINE_H
+#define MC__WIDGET_HLINE_H
+
+#include "lib/strutil.h"  // align_crt_t
+
+/*** typedefs(not structures) and defined constants **********************************************/
+
+#define HLINE(x) ((WHLine *) (x))
+
+/*** enums ***************************************************************************************/
+
+/*** structures declarations (and typedefs of structures)*****************************************/
+
+typedef struct
+{
+    Widget widget;
+    char *text;
+    gboolean auto_adjust_cols;  // Compute widget.cols from parent width?
+    gboolean transparent;       // Paint in the default color fg/bg
+    int text_color_idx;         // DLG_COLOR_* index for text, or -1 for default (DLG_COLOR_FRAME)
+    align_crt_t text_align;     // J_LEFT, J_CENTER (default) or J_RIGHT
+} WHLine;
+
+/*** global variables defined in .c file *********************************************************/
+
+/*** declarations of public functions ************************************************************/
+
+WHLine *hline_new (int y, int x, int width);
+void hline_set_text (WHLine *l, const char *text);
+void hline_set_textv (WHLine *l, const char *format, ...) G_GNUC_PRINTF (2, 3);
+
+/*** inline functions ****************************************************************************/
+
+#endif
