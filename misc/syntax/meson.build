@@ -96,6 +96,7 @@ install_data(
   'r.syntax',
   'ruby.syntax',
   'rust.syntax',
+  'sh-parameter.syntax',
   'sh.syntax',
   'slang.syntax',
   'smalltalk.syntax',
