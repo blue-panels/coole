@@ -35,6 +35,8 @@ if have_gmodule
     executable('extension_runtime', 'extension_runtime.c',
       c_args: test_c_args + [
         '-DTEST_RUNTIME_PLUGIN_DIR="@0@"'.format(meson.current_build_dir()),
+        # the suffix of a module is .so or .dylib, depending on the platform
+        '-DTEST_RUNTIME_PLUGIN_FIXTURE="@0@"'.format(fixture.full_path()),
       ],
       dependencies: test_lib_deps),
     depends: fixture,

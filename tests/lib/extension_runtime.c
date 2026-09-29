@@ -95,17 +95,13 @@ startup_snapshot_new (void)
 START_TEST (test_runtime_plugin_loads_and_receives_events)
 {
     GModule *fixture_module;
-    char *fixture_path;
     runtime_fixture_count_fn_t init_count;
     runtime_fixture_count_fn_t startup_count;
     runtime_fixture_count_fn_t shutdown_count;
     mc_runtime_event_snapshot_t *snapshot;
 
-    fixture_path =
-        g_build_filename (TEST_RUNTIME_PLUGIN_DIR, "runtime-plugin-fixture.so", (char *) NULL);
-    fixture_module = g_module_open (fixture_path, 0);
+    fixture_module = g_module_open (TEST_RUNTIME_PLUGIN_FIXTURE, 0);
     ck_assert_msg (fixture_module != NULL, "Failed to open runtime fixture: %s", g_module_error ());
-    g_free (fixture_path);
 
     mctest_assert_true (g_module_symbol (fixture_module, "mc_runtime_plugin_fixture_init_count",
                                          (gpointer *) &init_count));
