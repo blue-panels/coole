@@ -74,9 +74,6 @@ lib - the common library (libmc).
     skin/        skins
     strutil/     string and charset utilities
     mcconfig/    ini files and the user and system paths
-    vfs/         the file access layer; coole has only the local file
-                 system (src/vfs/local).  Use the wrappers named "mc_"
-                 plus the standard name of the function, e.g. mc_open()
     event/       the event system
     search/      search: normal, regex, glob, hex
     editor-plugin.[ch]
@@ -103,7 +100,6 @@ src - the program.
                  editor
     syntax/      the syntax highlighting engine
     lua/         the Lua runtime plugin and the Lua scripts
-    vfs/local/   the local file system
 
 The editor code has been written by Paul Sheer, the author of
 Cooledit, and developed further by many contributors over the years.
@@ -112,6 +108,11 @@ misc - data: skins, syntax files, keymaps, coole.menu.in,
 defaults.ini, macros.d examples.
 
 tests - unit tests.
+
+Files are read and written with the standard calls (open(), read(),
+stat(), ...) on plain path strings.  lib/util.h has the helpers:
+mc_path_absolute() makes a path absolute and canonical, mc_tmpdir()
+and mc_mkstemps() make the temporary directory and files.
 
 Code structure - details
 ========================

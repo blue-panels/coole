@@ -6,8 +6,8 @@ The subsystem of events used in mc is based on fast binary trees engine.
 == Introduction ==
 
 Subsystem of events is primarily designed to detach event source and event
-handler in source code level. For example, VFS module uses function to show
-messages, which is defined in the source code (not in the lib). In the lib,
+handler in source code level. For example, a module of the lib uses a function
+to show messages, which is defined in the source code (not in the lib). In the lib,
 definition of this function will be difficult (because the function does
 a lot of calls of other functions from src). In this case, the transform
 of this function to event handler is needed, and the display messages process

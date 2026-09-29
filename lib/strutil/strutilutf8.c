@@ -422,20 +422,6 @@ str_utf8_conv_gerror_message (GError *mcerror, const char *def_msg)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static estr_t
-str_utf8_vfs_convert_to (GIConv coder, const char *string, int size, GString *buffer)
-{
-    estr_t result = ESTR_SUCCESS;
-
-    if (coder == str_cnv_not_convert)
-        g_string_append_len (buffer, string, size);
-    else
-        result = str_nconvert (coder, string, size, buffer);
-
-    return result;
-}
-
-/* --------------------------------------------------------------------------------------------- */
 /* utility function, that makes string valid in utf8 and all characters printable
  * return width of string too */
 
@@ -1485,7 +1471,6 @@ str_utf8_init (void)
     struct str_class result;
 
     result.conv_gerror_message = str_utf8_conv_gerror_message;
-    result.vfs_convert_to = str_utf8_vfs_convert_to;
     result.insert_replace_char = str_utf8_insert_replace_char;
     result.is_valid_string = str_utf8_is_valid_string;
     result.is_valid_char = str_utf8_is_valid_char;

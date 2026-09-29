@@ -310,29 +310,6 @@ str_conv_gerror_message (GError *mcerror, const char *def_msg)
 
 /* --------------------------------------------------------------------------------------------- */
 
-estr_t
-str_vfs_convert_from (GIConv coder, const char *string, GString *buffer)
-{
-    estr_t result = ESTR_SUCCESS;
-
-    if (coder == str_cnv_not_convert)
-        g_string_append (buffer, string != NULL ? string : "");
-    else
-        result = _str_convert (coder, string, -1, buffer);
-
-    return result;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-estr_t
-str_vfs_convert_to (GIConv coder, const char *string, int size, GString *buffer)
-{
-    return used_class.vfs_convert_to (coder, string, size, buffer);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 void
 str_printf (GString *buffer, const char *format, ...)
 {

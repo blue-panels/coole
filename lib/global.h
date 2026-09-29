@@ -172,12 +172,6 @@ typedef struct
            and M-- and keypad + / - */
         gboolean alternate_plus_minus;
     } tty;
-
-    struct
-    {
-        // Set when cd symlink following is desirable (bash mode)
-        gboolean cd_symlinks;
-    } vfs;
 } mc_global_t;
 
 /*** global variables defined in .c file *********************************************************/

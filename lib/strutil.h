@@ -104,7 +104,6 @@ typedef enum
 struct str_class
 {
     gchar *(*conv_gerror_message) (GError *error, const char *def_msg);
-    /*I*/ estr_t (*vfs_convert_to) (GIConv coder, const char *string, int size, GString *buffer);
     /*I*/ void (*insert_replace_char) (GString *buffer);
     gboolean (*is_valid_string) (const char *text);
     /*I*/ int (*is_valid_char) (const char *ch, size_t size);
@@ -198,19 +197,6 @@ estr_t str_nconvert (GIConv coder, const char *string, int size, GString *buffer
  * I
  */
 gchar *str_conv_gerror_message (GError *error, const char *def_msg);
-
-/* return only ESTR_SUCCESS or ESTR_FAILURE, because vfs must be able to convert
- * result to original string. (so no replace with questionmark)
- * if coder is str_cnv_from_term or str_cnv_not_convert, string is only copied,
- * so is possible to show file, that is not valid in terminal encoding
- */
-estr_t str_vfs_convert_from (GIConv coder, const char *string, GString *buffer);
-
-/* if coder is str_cnv_to_term or str_cnv_not_convert, string is only copied,
- * does replace with question mark
- * I
- */
-estr_t str_vfs_convert_to (GIConv coder, const char *string, int size, GString *buffer);
 
 /* printf function for str_buffer, append result of printf at the end of buffer
  */

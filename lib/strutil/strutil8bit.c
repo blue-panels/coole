@@ -270,21 +270,6 @@ str_8bit_conv_gerror_message (GError *mcerror, const char *def_msg)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static estr_t
-str_8bit_vfs_convert_to (GIConv coder, const char *string, int size, GString *buffer)
-{
-    estr_t result = ESTR_SUCCESS;
-
-    if (coder == str_cnv_not_convert)
-        g_string_append_len (buffer, string, size);
-    else
-        result = str_nconvert (coder, string, size, buffer);
-
-    return result;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 static const char *
 str_8bit_term_form (const char *text)
 {
@@ -820,7 +805,6 @@ str_8bit_init (void)
     struct str_class result;
 
     result.conv_gerror_message = str_8bit_conv_gerror_message;
-    result.vfs_convert_to = str_8bit_vfs_convert_to;
     result.insert_replace_char = str_8bit_insert_replace_char;
     result.is_valid_string = str_8bit_is_valid_string;
     result.is_valid_char = str_8bit_is_valid_char;
