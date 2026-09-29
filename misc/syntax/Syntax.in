@@ -39,6 +39,9 @@
 file [Ss]yntax$ Syntax\sHighlighting\sdefinitions ^#\ssyntax\srules\sversion\s
 include syntax.syntax
 
+file .\*/(\\.?(coole|mc)\\.menu|(coole|mc)/menu)$ User\smenu
+include usermenu.syntax
+
 file ..\*\\.e$ Eiffel\sSource\sFile
 include eiffel.syntax
 

@@ -112,6 +112,7 @@ install_data(
   'tt.syntax',
   'turtle.syntax',
   'unknown.syntax',
+  'usermenu.syntax',
   'verilog.syntax',
   'vhdl.syntax',
   'xml.syntax',

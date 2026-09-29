@@ -1,0 +1,48 @@
+# User menu of coole and mc: coole.menu, .coole.menu, mc.menu, .mc.menu and
+# the "menu" file of the configuration directory.
+#
+# What stands in the first column is read here: comments, the conditions an
+# entry is shown under, and the key and title of an entry.  The commands of
+# an entry stand below it, indented, and are read by the rules of the shell
+# up to the next line that is not indented.
+
+context default
+    keyword linestart shell_patterns=\{01\} yellow
+    # the hot key of an entry
+    keyword linestart \{!"$%&'()\*,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\} brightcyan
+
+# a comment
+context linestart # \n brown
+
+# the condition an entry is shown or made the default under
+context linestart \+ \n yellow
+    keyword whole f brightgreen
+    keyword whole F brightgreen
+    keyword whole d brightgreen
+    keyword whole D brightgreen
+    keyword whole t brightgreen
+    keyword whole T brightgreen
+    keyword whole x brightgreen
+    keyword whole y brightgreen
+    keyword ! brightred
+    keyword & brightred
+    keyword | brightred
+context linestart = \n yellow
+    keyword whole f brightgreen
+    keyword whole F brightgreen
+    keyword whole d brightgreen
+    keyword whole D brightgreen
+    keyword whole t brightgreen
+    keyword whole T brightgreen
+    keyword whole x brightgreen
+    keyword whole y brightgreen
+    keyword ! brightred
+    keyword & brightred
+    keyword | brightred
+
+# the commands of an entry: from the first indented line up to the first line
+# that is not indented; a blank line does not end them
+context exclusive linestart \t \n\{!"#$%&'()\*\+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\}
+    embed Shell\sScript
+context exclusive linestart \s \n\{!"#$%&'()\*\+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\}
+    embed Shell\sScript
