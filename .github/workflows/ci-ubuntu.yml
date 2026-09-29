@@ -63,7 +63,7 @@ jobs:
       - name: Build distribution archive
         run: meson dist -C build-full --formats=xztar
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-logs-ubuntu
@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Build and test with GLib 2.58
         run: sh maint/check-glib-api.sh
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: glib-258-logs

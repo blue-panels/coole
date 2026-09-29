@@ -50,7 +50,7 @@ jobs:
           packaging/release-source.sh "$version" "$TAG" "dist/coole-$version.tar.gz"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: source-archive
           path: dist/*.tar.gz
@@ -177,7 +177,7 @@ jobs:
 
       # Also on failure: a lintian error fails the step above, and the packages
       # it produced are what one looks at to understand why.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ${{ matrix.artifact }}
@@ -234,7 +234,7 @@ jobs:
           mkdir -p out
           cp /home/build/rpmbuild/RPMS/*/*.rpm /home/build/rpmbuild/SRPMS/*.rpm out/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: out/*
@@ -280,7 +280,7 @@ jobs:
           mkdir -p out
           cp packaging/arch/*.pkg.tar.* out/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: arch-packages
           path: out/*
@@ -450,7 +450,7 @@ jobs:
 
       - name: Keep the meson log of a failed build
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-config-log
           path: coole-*/build/meson-logs/meson-log.txt
@@ -658,14 +658,14 @@ jobs:
 
       - name: Keep the meson log of a failed build
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-${{ matrix.suffix }}-config-log
           path: coole-*/build/meson-logs/meson-log.txt
           if-no-files-found: warn
           overwrite: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-${{ matrix.suffix }}-packages
           path: out/*
@@ -731,7 +731,7 @@ jobs:
           UPLOAD="$upload" packaging/ppa-source.sh \
               "$VERSION" "dist/coole-$VERSION.tar.gz" $SERIES
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ppa-source
           path: dist/ppa/*
