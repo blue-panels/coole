@@ -28,7 +28,7 @@
 #include "tests/mctest.h"
 
 #include "lib/charsets.h"
-#include "src/vfs/local/local.c"
+#include "lib/util.h"  // mc_path_absolute()
 #include "src/selcodepage.h"
 
 #include "src/editor/editwidget.h"
@@ -71,10 +71,6 @@ setup (void)
     WRect r;
 
     str_init_strings (NULL);
-
-    vfs_init ();
-    vfs_init_localfs ();
-    vfs_setup_work_dir ();
 
     mc_global.sysconfig_dir = (char *) TEST_SHARE_DIR;
     load_codepages_list ();
@@ -251,7 +247,7 @@ START_TEST (test_insert_column_from_clip_width)
 {
     char *clip = make_clip_path ();
     off_t start_mark, end_mark;
-    vfs_path_t *vp;
+    char *vp;
     GString *actual;
 
     for (const char *ti = "1\n22\n333\nWWWW\nWWWW\nWWWW\n"; *ti != '\0'; ti++)
@@ -275,9 +271,9 @@ START_TEST (test_insert_column_from_clip_width)
 
     // paste at the start of the first "WWWW" line (offset 9)
     edit_cursor_move (test_edit, 9 - test_edit->buffer.curs1);
-    vp = vfs_path_from_str (clip);
+    vp = mc_path_absolute (clip);
     edit_insert_file (test_edit, vp);
-    vfs_path_free (vp, TRUE);
+    g_free (vp);
 
     actual = g_string_new ("");
     for (off_t i = 0; i < test_edit->buffer.size; i++)
@@ -302,7 +298,7 @@ START_TEST (test_insert_column_from_clip_utf8)
 {
     char *clip = make_clip_path ();
     off_t start_mark, end_mark;
-    vfs_path_t *vp;
+    char *vp;
     GString *actual;
     gboolean old_disp;
 
@@ -331,9 +327,9 @@ START_TEST (test_insert_column_from_clip_utf8)
 
     // paste at column 0 of the first line
     edit_cursor_move (test_edit, 0 - test_edit->buffer.curs1);
-    vp = vfs_path_from_str (clip);
+    vp = mc_path_absolute (clip);
     edit_insert_file (test_edit, vp);
-    vfs_path_free (vp, TRUE);
+    g_free (vp);
 
     actual = g_string_new ("");
     for (off_t i = 0; i < test_edit->buffer.size; i++)

@@ -28,11 +28,9 @@
 #include "tests/mctest.h"
 
 #include "lib/strutil.h"
-#include "lib/vfs/vfs.h"
 #include "lib/fileloc.h"
 
 #include "lib/mcconfig.h"
-#include "src/vfs/local/local.c"
 
 #define HOME_DIR   "/home/testuser"
 
@@ -51,8 +49,6 @@ setup (void)
     g_setenv ("XDG_DATA_HOME", CONF_DATA, TRUE);
     g_setenv ("XDG_CACHE_HOME", CONF_CACHE, TRUE);
     str_init_strings ("UTF-8");
-    vfs_init ();
-    vfs_init_localfs ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -61,7 +57,6 @@ setup (void)
 static void
 teardown (void)
 {
-    vfs_shut ();
     str_uninit_strings ();
 }
 

@@ -30,8 +30,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "lib/vfs/vfs.h"
-
 /* --------------------------------------------------------------------------------------------- */
 
 /* @CapturedValue */

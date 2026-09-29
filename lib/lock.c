@@ -55,7 +55,6 @@
 #include <stdlib.h>
 
 #include "lib/global.h"
-#include "lib/vfs/vfs.h"
 #include "lib/util.h"
 #include "lib/lock.h"
 #include "lib/widget.h"  // query_dialog()
@@ -116,16 +115,12 @@ lock_build_name (void)
 /* --------------------------------------------------------------------------------------------- */
 
 static char *
-lock_build_symlink_name (const vfs_path_t *fname_vpath)
+lock_build_symlink_name (const char *fname)
 {
-    const char *elpath;
     char *str_filename, *str_dirname, *symlink_name;
 
-    // get first path piece
-    elpath = vfs_path_get_by_index (fname_vpath, 0)->path;
-
-    str_filename = g_path_get_basename (elpath);
-    str_dirname = g_path_get_dirname (elpath);
+    str_filename = g_path_get_basename (fname);
+    str_dirname = g_path_get_dirname (fname);
     symlink_name = g_strconcat (str_dirname, PATH_SEP_STR ".#", str_filename, (char *) NULL);
     g_free (str_dirname);
     g_free (str_filename);
@@ -197,32 +192,20 @@ lock_get_info (const char *lockfname)
    Warning: Might do screen refresh and lose edit->force */
 
 int
-lock_file (const vfs_path_t *fname_vpath)
+lock_file (const char *fname)
 {
-    char *lockfname = NULL, *newlock, *msg;
+    char *lockfname, *newlock, *msg;
     struct stat statbuf;
     lock_s *lockinfo;
-    gboolean is_local;
     gboolean symlink_ok = FALSE;
-    const char *elpath;
 
-    if (fname_vpath == NULL)
-        return 0;
-
-    elpath = vfs_path_get_by_index (fname_vpath, 0)->path;
     // Just to be sure (and don't lock new file)
-    if (*elpath == '\0')
+    if (fname == NULL || *fname == '\0')
         return 0;
 
-    // Locking on VFS is not supported
-    is_local = vfs_file_is_local (fname_vpath);
-    if (is_local)
-    {
-        // Check if already locked
-        lockfname = lock_build_symlink_name (fname_vpath);
-    }
-
-    if (!is_local || lockfname == NULL)
+    // Check if already locked
+    lockfname = lock_build_symlink_name (fname);
+    if (lockfname == NULL)
         return 0;
 
     if (lstat (lockfname, &statbuf) == 0)
@@ -274,20 +257,15 @@ ret:
  */
 
 int
-unlock_file (const vfs_path_t *fname_vpath)
+unlock_file (const char *fname)
 {
     char *lockfname;
-    const char *elpath;
 
-    if (fname_vpath == NULL)
-        return 0;
-
-    elpath = vfs_path_get_by_index (fname_vpath, 0)->path;
     // Just to be sure (and don't lock new file)
-    if (*elpath == '\0')
+    if (fname == NULL || *fname == '\0')
         return 0;
 
-    lockfname = lock_build_symlink_name (fname_vpath);
+    lockfname = lock_build_symlink_name (fname);
     if (lockfname != NULL)
     {
         struct stat statbuf;

@@ -1,10 +1,12 @@
 lib_tests = {
   'key': 'key.c',
   'library_independ': 'library_independ.c',
+  'canonicalize_pathname': 'canonicalize_pathname.c',
   'mc_build_filename': 'mc_build_filename.c',
   'mc_realpath': 'mc_realpath.c',
   'name_quote': 'name_quote.c',
   'serialize': 'serialize.c',
+  'tempdir': 'tempdir.c',
   'runtime_events': 'runtime_events.c',
   'terminal': 'terminal.c',
   'tty': 'tty.c',
@@ -63,5 +65,4 @@ endif
 subdir('mcconfig')
 subdir('search')
 subdir('strutil')
-subdir('vfs')
 subdir('widget')

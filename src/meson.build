@@ -23,8 +23,6 @@ libinternal_sources = files(
   'syntax/syntax.c',
   'syntax/tty-backend.c',
 
-  'vfs/plugins_init.c',
-  'vfs/local/local.c',
 
   'editor/bookmark.c',
   'editor/edit.c',

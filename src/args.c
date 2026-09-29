@@ -28,11 +28,11 @@
 #include <config.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 #include "lib/global.h"
 #include "lib/tty/tty.h"
 #include "lib/strutil.h"
-#include "lib/vfs/vfs.h"
 #include "lib/util.h"
 
 #include "src/textconf.h"
@@ -406,27 +406,18 @@ parse_mcedit_arguments (int argc, char **argv)
         if (tmp < p && p < end && p[-1] == ':')
         {
             char *fname;
-            vfs_path_t *tmp_vpath, *fname_vpath;
             struct stat st;
 
             fname = g_strndup (tmp, p - 1 - tmp);
-            tmp_vpath = vfs_path_from_str (tmp);
-            fname_vpath = vfs_path_from_str (fname);
 
             /*
              * Check that the file before the colon actually exists.
              * If it doesn't exist, create new file.
              */
-            if (mc_stat (tmp_vpath, &st) == -1 && mc_stat (fname_vpath, &st) != -1)
-            {
-                arg = edit_arg_vpath_new (fname_vpath, atoi (p));
-                vfs_path_free (tmp_vpath, TRUE);
-            }
+            if (stat (tmp, &st) == -1 && stat (fname, &st) != -1)
+                arg = edit_arg_new (fname, atoi (p));
             else
-            {
-                arg = edit_arg_vpath_new (tmp_vpath, 0);
-                vfs_path_free (fname_vpath, TRUE);
-            }
+                arg = edit_arg_new (tmp, 0);
 
             g_free (fname);
         }

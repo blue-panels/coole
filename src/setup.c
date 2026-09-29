@@ -45,7 +45,6 @@
 #include "lib/terminal.h"  // convert_controls()
 #include "lib/util.h"
 #include "lib/charsets.h"
-#include "lib/vfs/vfs.h"
 #include "lib/widget.h"  // mouse_close_dialog
 
 #include "execute.h"  // pause_after_run
@@ -565,18 +564,23 @@ save_setup (void)
 void
 save_setup_cmd (void)
 {
-    vfs_path_t *vpath;
-    const char *path;
+    const char *home = mc_config_get_home_dir ();
+    const char *config = mc_config_get_path ();
+    char *path;
 
-    vpath = vfs_path_from_str_flags (mc_config_get_path (), VPF_STRIP_HOME);
-    path = vfs_path_as_str (vpath);
+    // show the configuration directory as ~/... when it is in the home directory
+    if (home != NULL && *home != '\0' && g_str_has_prefix (config, home)
+        && IS_PATH_SEP (config[strlen (home)]))
+        path = g_strconcat ("~", config + strlen (home), (char *) NULL);
+    else
+        path = g_strdup (config);
 
     if (save_setup ())
         message (D_NORMAL, _ ("Setup"), _ ("Setup saved to %s"), path);
     else
         message (D_ERROR, _ ("Setup"), _ ("Unable to save setup to %s"), path);
 
-    vfs_path_free (vpath, TRUE);
+    g_free (path);
 }
 
 /* --------------------------------------------------------------------------------------------- */

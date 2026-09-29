@@ -45,7 +45,6 @@
 #include "lib/tty/key.h"
 #include "lib/tty/tty.h"
 #include "lib/util.h"
-#include "lib/vfs/vfs.h"
 #include "lib/widget.h"
 
 #include "editor/edit-impl.h"
@@ -365,10 +364,7 @@ runtime_host_editor_path (const mc_runtime_handle_t *handle, mc_runtime_string_t
         return runtime_host_set_error (error, "invalid_argument");
 
     runtime_host_string_set (
-        path,
-        editor->filename_vpath != NULL
-            ? vfs_path_to_str_flags (editor->filename_vpath, 0, VPF_STRIP_PASSWORD)
-            : g_strdup (""));
+        path, editor->filename != NULL ? g_strdup (editor->filename) : g_strdup (""));
     return TRUE;
 }
 
@@ -399,12 +395,12 @@ runtime_host_editor_info (const mc_runtime_handle_t *handle, mc_runtime_editor_i
         return runtime_host_set_error (error, "invalid_argument");
 
     memset (info, 0, sizeof (*info));
-    if (editor->filename_vpath != NULL)
+    if (editor->filename != NULL)
     {
-        info->path = vfs_path_to_str_flags (editor->filename_vpath, 0, VPF_STRIP_PASSWORD);
+        info->path = g_strdup (editor->filename);
         info->path_length = strlen (info->path);
         info->has_path = info->path_length != 0;
-        name = vfs_path_get_last_path_str (editor->filename_vpath);
+        name = editor->filename;
         info->name = g_strdup (name != NULL ? name : "");
     }
     else

@@ -13,9 +13,8 @@
 
 #include <stdio.h>
 
-#include "lib/search.h"   // mc_search_type_t
-#include "lib/widget.h"   // cb_ret_t
-#include "lib/vfs/vfs.h"  // vfs_path_t
+#include "lib/search.h"  // mc_search_type_t
+#include "lib/widget.h"  // cb_ret_t
 
 #include "src/setup.h"  // option_tab_spacing
 
@@ -172,7 +171,7 @@ void edit_push_redo_action (WEdit *edit, long c);
 void edit_push_key_press (WEdit *edit);
 void edit_insert_ahead (WEdit *edit, int c);
 off_t edit_write_stream (WEdit *edit, FILE *f);
-char *edit_get_write_filter (const vfs_path_t *write_name_vpath, const vfs_path_t *filename_vpath);
+char *edit_get_write_filter (const char *write_name_path, const char *filename_path);
 gboolean edit_save_confirm_cmd (WEdit *edit);
 gboolean edit_save_as_cmd (WEdit *edit);
 gboolean edit_runtime_save (WEdit *edit);
@@ -204,7 +203,7 @@ gboolean edit_save_clip_block (WEdit *edit, const char *filename, off_t start, o
 gboolean edit_save_block_cmd (WEdit *edit);
 gboolean edit_insert_file_cmd (WEdit *edit);
 
-off_t edit_insert_file (WEdit *edit, const vfs_path_t *filename_vpath);
+off_t edit_insert_file (WEdit *edit, const char *filename_path);
 const char *edit_get_codeset (void);
 gboolean edit_load_back_cmd (WEdit *edit);
 gboolean edit_load_forward_cmd (WEdit *edit);
@@ -236,7 +235,7 @@ void edit_select_codepage_cmd (WEdit *edit);
 
 void edit_paste_from_history (WEdit *edit);
 
-void edit_set_filename (WEdit *edit, const vfs_path_t *name_vpath);
+void edit_set_filename (WEdit *edit, const char *name);
 
 MC_MOCKABLE void edit_load_syntax (WEdit *edit, GPtrArray *pnames, const char *type);
 void edit_free_syntax_rules (WEdit *edit);
@@ -296,11 +295,11 @@ int editcmd_dialog_raw_key_query (const char *heading, const char *query, gboole
  * @return TRUE on success, FALSE on failure.
  */
 static inline gboolean
-edit_reload (WEdit *edit, const vfs_path_t *filename_vpath)
+edit_reload (WEdit *edit, const char *filename_path)
 {
     edit_arg_t arg;
 
-    edit_arg_init (&arg, (vfs_path_t *) filename_vpath, 0);
+    edit_arg_init (&arg, (char *) filename_path, 0);
 
     return edit_reload_line (edit, &arg);
 }

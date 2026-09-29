@@ -256,13 +256,13 @@ edit_load_syntax (WEdit *edit, GPtrArray *pnames, const char *type)
         if (pnames != NULL)
             r = syntax_rules_list_types (f, pnames);
     }
-    else if (edit->filename_vpath != NULL)
+    else if (edit->filename != NULL)
     {
         syntax_select_t sel;
         syntax_rules_t *rules = NULL;
 
         sel.type = saved_type;
-        sel.filename = vfs_path_as_str (edit->filename_vpath);
+        sel.filename = edit->filename;
         sel.first_line = edit_first_line (edit);
 
         r = syntax_rules_load (f, &sel, &rules, &error_file);

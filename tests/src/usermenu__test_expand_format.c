@@ -25,8 +25,6 @@
 
 #include "tests/mctest.h"
 
-#include "src/vfs/local/local.h"
-
 /* what the editor would say comes from the test */
 #define edit_get_file_name     test_edit_get_file_name
 #define edit_get_cursor_offset test_edit_get_cursor_offset
@@ -86,9 +84,6 @@ static void
 setup (void)
 {
     str_init_strings (NULL);
-    vfs_init ();
-    vfs_init_localfs ();
-    vfs_setup_work_dir ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -96,7 +91,6 @@ setup (void)
 static void
 teardown (void)
 {
-    vfs_shut ();
     str_uninit_strings ();
 }
 
@@ -127,7 +121,12 @@ START_PARAMETRIZED_TEST (check_expand_format, check_expand_format_ds)
     if (data->expected != NULL)
         ck_assert_str_eq (data->expected, result);
     else
-        ck_assert_str_eq (vfs_get_current_dir (), result);
+    {
+        char *cwd = g_get_current_dir ();
+
+        ck_assert_str_eq (cwd, result);
+        g_free (cwd);
+    }
 
     g_free (result);
 }

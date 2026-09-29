@@ -1,10 +1,11 @@
-/* lib/vfs - test vfs_path_from_str_flags() function
+/*
+   lib - canonicalize path
 
-   Copyright (C) 2013-2025
+   Copyright (C) 2011-2025
    Free Software Foundation, Inc.
 
    Written by:
-   Slava Zanko <slavazanko@gmail.com>, 2013
+   Slava Zanko <slavazanko@gmail.com>, 2011, 2013
 
    This file is part of the Midnight Commander.
 
@@ -22,34 +23,20 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#define TEST_SUITE_NAME "/lib/vfs"
+#define TEST_SUITE_NAME "/lib"
 
 #include "tests/mctest.h"
 
 #include "lib/strutil.h"
-#include "lib/vfs/path.h"
-
-#include "src/vfs/local/local.c"
+#include "lib/util.h"
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* @Mock */
-const char *
-mc_config_get_home_dir (void)
-{
-    return "/mock/test";
-}
-
-/* --------------------------------------------------------------------------------------------- */
 /* @Before */
 static void
 setup (void)
 {
     str_init_strings (NULL);
-
-    vfs_init ();
-    vfs_init_localfs ();
-    vfs_setup_work_dir ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -58,43 +45,82 @@ setup (void)
 static void
 teardown (void)
 {
-    vfs_shut ();
     str_uninit_strings ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* @DataSource("test_from_to_string_ds") */
-static const struct test_strip_home_ds
+/* @DataSource("test_canonicalize_path_ds") */
+static const struct test_canonicalize_path_ds
 {
-    const char *input_string;
-    const char *expected_result;
-} test_strip_home_ds[] = {
+    const char *input_path;
+    const char *expected_path;
+} test_canonicalize_path_ds[] = {
     {
-        // 0.
-        "/mock/test/some/path",
-        "~/some/path",
+        // 0. UNC path
+        "//some_server/ww",
+        "//some_server/ww",
     },
     {
-        // 1.
-        "/mock/testttt/some/path",
-        "/mock/testttt/some/path",
+        // 1. join slashes
+        "///some_server/////////ww",
+        "/some_server/ww",
+    },
+    {
+        // 2. Collapse "/./" -> "/"
+        "//some_server//.///////ww/./././.",
+        "//some_server/ww",
+    },
+    {
+        // 3. Remove leading "./"
+        "./some_server/ww",
+        "some_server/ww",
+    },
+    {
+        // 4. some/.. -> .
+        "some_server/..",
+        ".",
+    },
+    {
+        // 5. Collapse "/.." with the previous part of path
+        "/some_server/ww/some_server/../ww/../some_server/..//ww/some_server/ww",
+        "/some_server/ww/ww/some_server/ww",
+    },
+    {
+        // 6. Remove trailing slashes
+        "/some_server/ww///",
+        "/some_server/ww",
+    },
+    {
+        // 7. "/.." at the root
+        "/../ww",
+        "/ww",
+    },
+    {
+        // 8. a relative ".." that cannot be collapsed
+        "../../ww",
+        "../../ww",
+    },
+    {
+        // 9. the root stays
+        "/",
+        "/",
     },
 };
 
-/* @Test */
-START_PARAMETRIZED_TEST (test_strip_home, test_strip_home_ds)
+/* @Test(dataSource = "test_canonicalize_path_ds") */
+START_PARAMETRIZED_TEST (test_canonicalize_path, test_canonicalize_path_ds)
 {
     // given
-    vfs_path_t *actual_result;
+    char *actual_path;
+
+    actual_path = g_strdup (data->input_path);
 
     // when
-    actual_result = vfs_path_from_str_flags (data->input_string, VPF_STRIP_HOME);
+    canonicalize_pathname (actual_path);
 
     // then
-    mctest_assert_str_eq (actual_result->str, data->expected_result);
-
-    vfs_path_free (actual_result, TRUE);
+    mctest_assert_str_eq (actual_path, data->expected_path) g_free (actual_path);
 }
 END_PARAMETRIZED_TEST
 
@@ -110,7 +136,7 @@ main (void)
     tcase_add_checked_fixture (tc_core, setup, teardown);
 
     // Add new tests here: ***************
-    mctest_add_parameterized_test (tc_core, test_strip_home, test_strip_home_ds);
+    mctest_add_parameterized_test (tc_core, test_canonicalize_path, test_canonicalize_path_ds);
     // ***********************************
 
     return mctest_run_all (tc_core);

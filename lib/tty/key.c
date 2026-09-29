@@ -52,8 +52,6 @@
 
 #include "lib/global.h"
 
-#include "lib/vfs/vfs.h"
-
 #include "tty.h"
 #include "tty-internal.h"  // mouse_enabled
 #include "mouse.h"
@@ -2133,8 +2131,6 @@ tty_get_event (struct Gpm_Event *event, gboolean redo_event, gboolean block)
         }
     }
 
-    vfs_timeout_handler ();
-
     /* Ok, we use (event->x < 0) to signal that the event does not contain
        a suitable position for the mouse, so we can't use show_mouse_pointer
        on it.
@@ -2191,24 +2187,7 @@ tty_get_event (struct Gpm_Event *event, gboolean redo_event, gboolean block)
             time_addr = &time_out;
         }
         else
-        {
-            int seconds;
-
-            seconds = vfs_timeouts ();
             time_addr = NULL;
-
-            if (seconds != 0)
-            {
-                /* the timeout could be improved and actually be
-                 * the number of seconds until the next vfs entry
-                 * timeouts in the stamp list.
-                 */
-
-                time_out.tv_sec = seconds;
-                time_out.tv_usec = 0;
-                time_addr = &time_out;
-            }
-        }
 
         if (!block || tty_got_winch ())
         {
@@ -2228,7 +2207,6 @@ tty_get_event (struct Gpm_Event *event, gboolean redo_event, gboolean block)
         /* select timed out: it could be for any of the following reasons:
          * redo_event -> it was because of the MOU_REPEAT handler
          * !block     -> we did not block in the select call
-         * else       -> 10 second timeout to check the vfs status.
          */
         if (flag == 0)
         {
@@ -2236,7 +2214,6 @@ tty_get_event (struct Gpm_Event *event, gboolean redo_event, gboolean block)
                 return EV_MOUSE;
             if (!block || tty_got_winch ())
                 return EV_NONE;
-            vfs_timeout_handler ();
         }
         if (flag == -1 && errno == EINTR)
             return EV_NONE;

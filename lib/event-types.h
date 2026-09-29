@@ -17,21 +17,6 @@
 
 /*** structures declarations (and typedefs of structures)*****************************************/
 
-/* MCEVENT_GROUP_CORE:vfs_timestamp */
-struct vfs_class;
-typedef struct
-{
-    struct vfs_class *vclass;
-    gpointer id;
-    gboolean ret;
-} ev_vfs_stamp_create_t;
-
-/* MCEVENT_GROUP_CORE:vfs_print_message */
-typedef struct
-{
-    char *msg;
-} ev_vfs_print_message_t;
-
 /* MCEVENT_GROUP_CORE:clipboard_text_from_file */
 typedef struct
 {

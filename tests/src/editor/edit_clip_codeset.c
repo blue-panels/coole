@@ -28,7 +28,7 @@
 #include <unistd.h>
 
 #include "lib/charsets.h"
-#include "src/vfs/local/local.c"
+#include "lib/util.h"  // mc_path_absolute()
 #include "src/selcodepage.h"
 #include "src/clipboard.h"
 
@@ -61,10 +61,6 @@ setup (void)
     WRect r;
 
     str_init_strings (NULL);
-
-    vfs_init ();
-    vfs_init_localfs ();
-    vfs_setup_work_dir ();
 
     mc_global.sysconfig_dir = (char *) TEST_SHARE_DIR;
     load_codepages_list ();
@@ -190,7 +186,7 @@ to_koi8r (const char *utf8)
 START_TEST (test_paste_recodes_to_editor_codeset)
 {
     char *clip = make_clip_path ();
-    vfs_path_t *vp;
+    char *vp;
     GString *actual, *expected, *saved;
 
     load_text ("привет\n");
@@ -212,9 +208,9 @@ START_TEST (test_paste_recodes_to_editor_codeset)
     set_codeset (CP_KOI8R);
 
     edit_cursor_move (test_edit, test_edit->buffer.size - test_edit->buffer.curs1);
-    vp = vfs_path_from_str (clip);
+    vp = mc_path_absolute (clip);
     ck_assert (edit_insert_file (test_edit, vp) >= 0);
-    vfs_path_free (vp, TRUE);
+    g_free (vp);
 
     actual = buffer_text ();
     expected = g_string_new ("привет\n");
@@ -243,16 +239,16 @@ END_TEST
 START_TEST (test_paste_koi8r_clip_into_utf8_editor)
 {
     char *clip = make_clip_path ();
-    vfs_path_t *vp;
+    char *vp;
     GString *actual, *body;
 
     body = to_koi8r ("мир\n");
     write_clip (clip, body->str, body->len, FALSE, "KOI8-R");
     g_string_free (body, TRUE);
 
-    vp = vfs_path_from_str (clip);
+    vp = mc_path_absolute (clip);
     ck_assert (edit_insert_file (test_edit, vp) >= 0);
-    vfs_path_free (vp, TRUE);
+    g_free (vp);
 
     actual = buffer_text ();
     mctest_assert_str_eq (actual->str, "мир\n");
@@ -271,16 +267,16 @@ END_TEST
 START_TEST (test_paste_unrepresentable_char)
 {
     char *clip = make_clip_path ();
-    vfs_path_t *vp;
+    char *vp;
     GString *actual;
 
     write_clip (clip, "a€b\n", 6, FALSE, "UTF-8");
 
     set_codeset (CP_KOI8R);
 
-    vp = vfs_path_from_str (clip);
+    vp = mc_path_absolute (clip);
     ck_assert (edit_insert_file (test_edit, vp) >= 0);
-    vfs_path_free (vp, TRUE);
+    g_free (vp);
 
     // glibc iconv reports the character and mc puts '?'; musl iconv substitutes '*' itself
     actual = buffer_text ();
@@ -301,15 +297,15 @@ END_TEST
 START_TEST (test_paste_same_codeset_keeps_bytes)
 {
     char *clip = make_clip_path ();
-    vfs_path_t *vp;
+    char *vp;
     GString *actual;
 
     // invalid UTF-8 inside: no recoding must touch it
     write_clip (clip, "ab\xff\xfe\n", 5, FALSE, "UTF-8");
 
-    vp = vfs_path_from_str (clip);
+    vp = mc_path_absolute (clip);
     ck_assert (edit_insert_file (test_edit, vp) >= 0);
-    vfs_path_free (vp, TRUE);
+    g_free (vp);
 
     actual = buffer_text ();
     ck_assert (actual->len == 5);
@@ -329,7 +325,7 @@ END_TEST
 START_TEST (test_paste_vertical_block_recoded)
 {
     char *clip = make_clip_path ();
-    vfs_path_t *vp;
+    char *vp;
     GString *actual, *expected;
 
     write_clip (clip, "п\nр\n", 6, TRUE, "UTF-8");
@@ -338,9 +334,9 @@ START_TEST (test_paste_vertical_block_recoded)
     load_text ("xx\nyy\n");
     edit_cursor_move (test_edit, -test_edit->buffer.curs1);
 
-    vp = vfs_path_from_str (clip);
+    vp = mc_path_absolute (clip);
     ck_assert (edit_insert_file (test_edit, vp) >= 0);
-    vfs_path_free (vp, TRUE);
+    g_free (vp);
 
     actual = buffer_text ();
     expected = to_koi8r ("пxx\nрyy\n");
@@ -362,16 +358,16 @@ END_TEST
 START_TEST (test_paste_plain_clip)
 {
     char *clip = make_clip_path ();
-    vfs_path_t *vp;
+    char *vp;
     GString *actual;
 
     g_file_set_contents (clip, "plain\n", 6, NULL);
 
     set_codeset (CP_KOI8R);
 
-    vp = vfs_path_from_str (clip);
+    vp = mc_path_absolute (clip);
     ck_assert (edit_insert_file (test_edit, vp) >= 0);
-    vfs_path_free (vp, TRUE);
+    g_free (vp);
 
     actual = buffer_text ();
     mctest_assert_str_eq (actual->str, "plain\n");
@@ -389,15 +385,15 @@ END_TEST
 START_TEST (test_paste_stale_info)
 {
     char *clip = make_clip_path ();
-    vfs_path_t *vp;
+    char *vp;
     GString *actual;
 
     write_clip (clip, "old\n", 4, TRUE, "KOI8-R");
     g_file_set_contents (clip, "new text\n", 9, NULL);
 
-    vp = vfs_path_from_str (clip);
+    vp = mc_path_absolute (clip);
     ck_assert (edit_insert_file (test_edit, vp) >= 0);
-    vfs_path_free (vp, TRUE);
+    g_free (vp);
 
     // neither a column nor recoded
     actual = buffer_text ();

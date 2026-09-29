@@ -48,7 +48,6 @@
 #include "lib/global.h"
 #include "lib/mcconfig.h"
 #include "lib/fileloc.h"
-#include "lib/vfs/vfs.h"
 #include "lib/strutil.h"
 #include "lib/util.h"
 
@@ -214,8 +213,7 @@ fake_name_quote (const char *s, gboolean quote_percent)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * path_trunc() is the same as str_trunc() but it deletes possible password from path
- * for security reasons.
+ * path_trunc() is str_trunc() for a path.
  *
  * @param path file path to trancate
  * @param width width (in characters) of truncation result. If negative, full path will be kept.
@@ -227,21 +225,10 @@ fake_name_quote (const char *s, gboolean quote_percent)
 const char *
 path_trunc (const char *path, const ssize_t width)
 {
-    vfs_path_t *vpath;
-    const char *ret;
-
-    vpath = vfs_path_from_str_flags (path, VPF_STRIP_PASSWORD);
-
-    const char *p = vfs_path_as_str (vpath);
-
     if (width < 0)
-        ret = str_trunc (p, -1);
-    else
-        ret = str_trunc (p, (size_t) width);
+        return str_trunc (path, -1);
 
-    vfs_path_free (vpath, TRUE);
-
-    return ret;
+    return str_trunc (path, (size_t) width);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -385,32 +372,20 @@ extract_line (const char *s, const char *top, size_t *len)
 const char *
 x_basename (const char *s)
 {
-    const char *url_delim, *path_sep;
+    const char *path_sep;
 
-    url_delim = g_strrstr (s, VFS_PATH_URL_DELIMITER);
     path_sep = strrchr (s, PATH_SEP);
 
     if (path_sep == NULL)
         return s;
 
-    if (url_delim == NULL || url_delim < path_sep - strlen (VFS_PATH_URL_DELIMITER)
-        || url_delim - s + strlen (VFS_PATH_URL_DELIMITER) < strlen (s))
-    {
-        // avoid trailing PATH_SEP, if present
-        if (!IS_PATH_SEP (s[strlen (s) - 1]))
-            return path_sep + 1;
+    // avoid trailing PATH_SEP, if present
+    if (!IS_PATH_SEP (s[strlen (s) - 1]))
+        return path_sep + 1;
 
-        while (--path_sep > s && !IS_PATH_SEP (*path_sep))
-            ;
-        return (path_sep != s) ? path_sep + 1 : s;
-    }
-
-    while (--url_delim > s && !IS_PATH_SEP (*url_delim))
+    while (--path_sep > s && !IS_PATH_SEP (*path_sep))
         ;
-    while (--url_delim > s && !IS_PATH_SEP (*url_delim))
-        ;
-
-    return url_delim == s ? s : url_delim + 1;
+    return (path_sep != s) ? path_sep + 1 : s;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -429,39 +404,6 @@ unix_error_string (int error_num)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-
-const char *
-decompress_extension (int type)
-{
-    switch (type)
-    {
-    case COMPRESSION_ZIP:
-        return "/uz" VFS_PATH_URL_DELIMITER;
-    case COMPRESSION_GZIP:
-        return "/ugz" VFS_PATH_URL_DELIMITER;
-    case COMPRESSION_BZIP:
-        return "/ubz" VFS_PATH_URL_DELIMITER;
-    case COMPRESSION_BZIP2:
-        return "/ubz2" VFS_PATH_URL_DELIMITER;
-    case COMPRESSION_LZIP:
-        return "/ulz" VFS_PATH_URL_DELIMITER;
-    case COMPRESSION_LZ4:
-        return "/ulz4" VFS_PATH_URL_DELIMITER;
-    case COMPRESSION_LZMA:
-        return "/ulzma" VFS_PATH_URL_DELIMITER;
-    case COMPRESSION_LZO:
-        return "/ulzo" VFS_PATH_URL_DELIMITER;
-    case COMPRESSION_XZ:
-        return "/uxz" VFS_PATH_URL_DELIMITER;
-    case COMPRESSION_ZSTD:
-        return "/uzst" VFS_PATH_URL_DELIMITER;
-    default:
-        break;
-    }
-    // Should never reach this place
-    fprintf (stderr, "Fatal: decompress_extension called with an unknown argument\n");
-    return 0;
-}
 
 /* --------------------------------------------------------------------------------------------- */
 /**
@@ -515,13 +457,13 @@ list_append_unique (GList *list, char *text)
  */
 
 MC_MOCKABLE void
-load_file_position (const vfs_path_t *filename_vpath, long *line, long *column, off_t *offset,
+load_file_position (const char *filename, long *line, long *column, off_t *offset,
                     GArray **bookmarks)
 {
     char *fn, *filename_str;
     FILE *f;
     char buf[MC_MAXPATHLEN + 100];
-    const size_t len = vfs_path_len (filename_vpath);
+    const size_t len = strlen (filename);
 
     // defaults
     *line = 1;
@@ -539,7 +481,7 @@ load_file_position (const vfs_path_t *filename_vpath, long *line, long *column, 
     if (bookmarks != NULL)
         *bookmarks = g_array_sized_new (FALSE, FALSE, sizeof (size_t), MAX_SAVED_BOOKMARKS);
 
-    filename_str = str_escape (vfs_path_as_str (filename_vpath), -1, "", TRUE);
+    filename_str = str_escape (filename, -1, "", TRUE);
 
     while (fgets (buf, sizeof (buf), f) != NULL)
     {
@@ -609,8 +551,7 @@ load_file_position (const vfs_path_t *filename_vpath, long *line, long *column, 
  */
 
 void
-save_file_position (const vfs_path_t *filename_vpath, long line, long column, off_t offset,
-                    GArray *bookmarks)
+save_file_position (const char *filename, long line, long column, off_t offset, GArray *bookmarks)
 {
     static size_t filepos_max_saved_entries = 0;
     char *fn, *tmp_fn;
@@ -618,7 +559,7 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
     FILE *f, *tmp_f;
     char buf[MC_MAXPATHLEN + 100];
     size_t i;
-    const size_t len = vfs_path_len (filename_vpath);
+    const size_t len = strlen (filename);
     gboolean src_error = FALSE;
 
     if (filepos_max_saved_entries == 0)
@@ -644,7 +585,7 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
         goto open_source_error;
     }
 
-    filename_str = str_escape (vfs_path_as_str (filename_vpath), -1, "", TRUE);
+    filename_str = str_escape (filename, -1, "", TRUE);
 
     // put the new record
     if (line != 1 || column != 0 || bookmarks != NULL)
@@ -774,13 +715,7 @@ mc_util_unlink_backup_if_possible (const char *file_name, const char *backup_suf
         return FALSE;
 
     if (exist_file (backup_path))
-    {
-        vfs_path_t *vpath;
-
-        vpath = vfs_path_from_str (backup_path);
-        mc_unlink (vpath);
-        vfs_path_free (vpath, TRUE);
-    }
+        unlink (backup_path);
 
     g_free (backup_path);
     return TRUE;

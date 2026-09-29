@@ -63,8 +63,7 @@ struct WEdit
     // save location before move/resize or toggle to fullscreen
     WRect loc_prev;
 
-    vfs_path_t *filename_vpath;  // Name of the file
-    vfs_path_t *dir_vpath;       // NULL if filename is absolute
+    char *filename;  // Absolute name of the file, NULL for a new one
 
     // dynamic buffers and cursor position for editor:
     edit_buffer_t buffer;
@@ -161,9 +160,7 @@ struct WEdit
     gboolean redo_has_content;         /* redo stack has at least one content-changing op */
     unsigned int redo_stack_reset : 1; /* If 1, need clear redo stack */
 
-    struct stat stat1;    // Result of mc_fstat() on the file
-    unsigned long attrs;  // Result of mc_fgetflags() on the file
-    gboolean attrs_ok;    // mc_fgetflags() == 0
+    struct stat stat1;  // Result of fstat() on the file
 
     unsigned int skip_detach_prompt : 1;  // Do not prompt whether to detach a file anymore
 

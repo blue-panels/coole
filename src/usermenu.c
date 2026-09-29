@@ -44,7 +44,6 @@
 #include "lib/tty/tty.h"
 #include "lib/skin.h"
 #include "lib/search.h"
-#include "lib/vfs/vfs.h"
 #include "lib/strutil.h"
 #include "lib/util.h"
 
@@ -263,9 +262,15 @@ test_condition (const Widget *edit_widget, char *p, gboolean *condition)
             }
             break;
         case 'd':  // current directory pattern
+        {
+            char *cwd;
+
             p = extract_arg (p, arg, sizeof (arg));
-            *condition = mc_search (arg, NULL, vfs_get_current_dir (), search_type);
+            cwd = g_get_current_dir ();
+            *condition = mc_search (arg, NULL, cwd, search_type);
+            g_free (cwd);
             break;
+        }
         case 't':  // type of the edited file
             p = extract_arg (p, arg, sizeof (arg));
             *condition = test_type (edit_filename, arg);
@@ -410,12 +415,12 @@ test_line (const Widget *edit_widget, char *p, gboolean *result)
 static void
 run_menu_command_to_editor (const char *cmd)
 {
-    vfs_path_t *out_vpath;
+    char *out_path;
     char *full_cmd;
     int out_fd;
     int status;
 
-    out_fd = mc_mkstemps (&out_vpath, "output", NULL);
+    out_fd = mc_mkstemps (&out_path, "output", NULL);
     if (out_fd == -1)
     {
         file_error_message (_ ("Cannot create temporary file"), NULL);
@@ -423,7 +428,7 @@ run_menu_command_to_editor (const char *cmd)
     }
     close (out_fd);
 
-    full_cmd = g_strconcat (cmd, " > ", vfs_path_as_str (out_vpath), " 2>&1", (char *) NULL);
+    full_cmd = g_strconcat (cmd, " > ", out_path, " 2>&1", (char *) NULL);
 
     tty_reset_shell_mode ();
     status = system (full_cmd);
@@ -433,10 +438,10 @@ run_menu_command_to_editor (const char *cmd)
     if (status == -1)
         message (D_ERROR, MSG_ERROR, "%s", _ ("Error calling program"));
     else
-        edit_file_at_line (out_vpath, 0);
+        edit_file_at_line (out_path, 0);
 
-    mc_unlink (out_vpath);
-    vfs_path_free (out_vpath, TRUE);
+    unlink (out_path);
+    g_free (out_path);
     repaint_screen ();
 }
 
@@ -453,7 +458,7 @@ execute_menu_command (const Widget *edit_widget, const char *commands, gboolean 
     gboolean do_quote = FALSE;
     char lc_prompt[80];
     int col;
-    vfs_path_t *file_name_vpath;
+    char *file_name;
     gboolean run_view = FALSE;
     char *cmd;
 
@@ -462,7 +467,7 @@ execute_menu_command (const Widget *edit_widget, const char *commands, gboolean 
     if (commands == NULL)
         return;
 
-    cmd_file_fd = mc_mkstemps (&file_name_vpath, "usermenu", SCRIPT_SUFFIX);
+    cmd_file_fd = mc_mkstemps (&file_name, "usermenu", SCRIPT_SUFFIX);
 
     if (cmd_file_fd == -1)
     {
@@ -502,8 +507,8 @@ execute_menu_command (const Widget *edit_widget, const char *commands, gboolean 
                     // User canceled
                     g_free (parameter);
                     fclose (cmd_file);
-                    mc_unlink (file_name_vpath);
-                    vfs_path_free (file_name_vpath, TRUE);
+                    unlink (file_name);
+                    g_free (file_name);
                     return;
                 }
                 if (do_quote)
@@ -569,10 +574,10 @@ execute_menu_command (const Widget *edit_widget, const char *commands, gboolean 
     }
 
     fclose (cmd_file);
-    mc_chmod (file_name_vpath, S_IRWXU);
+    chmod (file_name, S_IRWXU);
 
     // Execute the command indirectly to allow execution even on no-exec filesystems.
-    cmd = g_strconcat ("/bin/sh ", vfs_path_as_str (file_name_vpath), (char *) NULL);
+    cmd = g_strconcat ("/bin/sh ", file_name, (char *) NULL);
 
     if (run_view)
         run_menu_command_to_editor (cmd);
@@ -601,7 +606,7 @@ execute_menu_command (const Widget *edit_widget, const char *commands, gboolean 
 
     g_free (cmd);
 
-    vfs_path_free (file_name_vpath, TRUE);
+    g_free (file_name);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -728,8 +733,14 @@ expand_format (const Widget *edit_widget, char c, gboolean do_quote)
         result = strip_ext (quote_func (fname, FALSE));
         goto ret;
     case 'd':
-        result = quote_func (vfs_get_current_dir (), FALSE);
+    {
+        char *cwd;
+
+        cwd = g_get_current_dir ();
+        result = quote_func (cwd, FALSE);
+        g_free (cwd);
         goto ret;
+    }
     case 'c':
         if (e != NULL)
         {
@@ -809,12 +820,6 @@ user_menu_cmd (const Widget *edit_widget, const char *menu_file, int selected_en
     gboolean old_patterns;
     gboolean res = FALSE;
     gboolean interactive = TRUE;
-
-    if (!vfs_current_is_local ())
-    {
-        message (D_ERROR, MSG_ERROR, "%s", _ ("Cannot execute commands on non-local filesystems"));
-        return FALSE;
-    }
 
     menu = g_strdup (menu_file != NULL ? menu_file : EDIT_LOCAL_MENU);
 

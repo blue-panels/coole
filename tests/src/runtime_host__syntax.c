@@ -24,6 +24,7 @@
 
 #include "tests/mctest.h"
 
+#include <stdio.h>
 #include <unistd.h>
 
 #include "lib/global.h"

@@ -1,8 +1,6 @@
 #ifndef MC__CONFIG_H
 #define MC__CONFIG_H
 
-#include "lib/vfs/vfs.h"  // vfs_path_t
-
 /*** typedefs(not structures) and defined constants **********************************************/
 
 #define CONFIG_APP_SECTION    "coole"
@@ -92,7 +90,6 @@ const char *mc_config_get_cache_path (void);
 MC_MOCKABLE const char *mc_config_get_home_dir (void);
 const char *mc_config_get_path (void);
 char *mc_config_get_full_path (const char *config_name);
-vfs_path_t *mc_config_get_full_vpath (const char *config_name);
 
 /* mcconfig/history.h */
 

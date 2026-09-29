@@ -53,7 +53,6 @@
 #include "lib/tty/key.h"  // is_idle()
 #include "lib/skin.h"     // EDITOR_NORMAL_COLOR
 #include "lib/fileloc.h"  // EDIT_HOME_BLOCK_FILE
-#include "lib/vfs/vfs.h"
 #include "lib/strutil.h"  // utf string functions
 #include "lib/util.h"     // load_file_position(), save_file_position()
 #include "lib/lock.h"
@@ -224,17 +223,17 @@ edit_load_status_update_cb (status_msg_t *sm)
  */
 
 static gboolean
-edit_load_file_fast (edit_buffer_t *buf, const vfs_path_t *filename_vpath)
+edit_load_file_fast (edit_buffer_t *buf, const char *filename_path)
 {
     int file;
     gboolean ret;
     edit_buffer_read_file_status_msg_t rsm;
     gboolean aborted;
 
-    file = mc_open (filename_vpath, O_RDONLY | O_BINARY);
+    file = open (filename_path, O_RDONLY | O_BINARY);
     if (file < 0)
     {
-        file_error_message (_ ("Cannot open\n%s"), vfs_path_as_str (filename_vpath));
+        file_error_message (_ ("Cannot open\n%s"), filename_path);
         return FALSE;
     }
 
@@ -250,9 +249,9 @@ edit_load_file_fast (edit_buffer_t *buf, const vfs_path_t *filename_vpath)
     status_msg_deinit (STATUS_MSG (&rsm));
 
     if (!ret && !aborted)
-        message (D_ERROR, MSG_ERROR, _ ("Error reading %s"), vfs_path_as_str (filename_vpath));
+        message (D_ERROR, MSG_ERROR, _ ("Error reading %s"), filename_path);
 
-    mc_close (file);
+    close (file);
     return ret;
 }
 
@@ -260,14 +259,14 @@ edit_load_file_fast (edit_buffer_t *buf, const vfs_path_t *filename_vpath)
 /** Return index of the filter or -1 is there is no appropriate filter */
 
 static int
-edit_find_filter (const vfs_path_t *filename_vpath)
+edit_find_filter (const char *filename_path)
 {
-    if (filename_vpath != NULL)
+    if (filename_path != NULL)
     {
         const char *s;
         size_t i;
 
-        s = vfs_path_as_str (filename_vpath);
+        s = filename_path;
 
         for (i = 0; i < G_N_ELEMENTS (all_filters); i++)
             if (g_str_has_suffix (s, all_filters[i].extension))
@@ -280,17 +279,17 @@ edit_find_filter (const vfs_path_t *filename_vpath)
 /* --------------------------------------------------------------------------------------------- */
 
 static char *
-edit_get_filter (const vfs_path_t *filename_vpath)
+edit_get_filter (const char *filename_path)
 {
     int i;
     char *quoted_name;
     char *p = NULL;
 
-    i = edit_find_filter (filename_vpath);
+    i = edit_find_filter (filename_path);
     if (i < 0)
         return NULL;
 
-    quoted_name = name_quote (vfs_path_as_str (filename_vpath), FALSE);
+    quoted_name = name_quote (filename_path, FALSE);
     if (quoted_name != NULL)
     {
         p = g_strdup_printf (all_filters[i].read, quoted_name);
@@ -319,13 +318,13 @@ edit_insert_stream (WEdit *edit, FILE *f)
  * Open file and create it if necessary.
  *
  * @param edit           editor object
- * @param filename_vpath file name
+ * @param filename_path file name
  * @param st             buffer for store stat info
  * @return TRUE for success, FALSE for error.
  */
 
 static gboolean
-check_file_access (WEdit *edit, const vfs_path_t *filename_vpath, struct stat *st)
+check_file_access (WEdit *edit, const char *filename_path, struct stat *st)
 {
     static uintmax_t threshold = UINTMAX_MAX;
     int file;
@@ -333,17 +332,17 @@ check_file_access (WEdit *edit, const vfs_path_t *filename_vpath, struct stat *s
     gboolean ret = TRUE;
 
     // Try opening an existing file
-    file = mc_open (filename_vpath, O_NONBLOCK | O_RDONLY | O_BINARY, 0666);
+    file = open (filename_path, O_NONBLOCK | O_RDONLY | O_BINARY, 0666);
     if (file < 0)
     {
         /*
          * Try creating the file. O_EXCL prevents following broken links
          * and opening existing files.
          */
-        file = mc_open (filename_vpath, O_NONBLOCK | O_RDONLY | O_BINARY | O_CREAT | O_EXCL, 0666);
+        file = open (filename_path, O_NONBLOCK | O_RDONLY | O_BINARY | O_CREAT | O_EXCL, 0666);
         if (file < 0)
         {
-            file_error_message (_ ("Cannot open\n%s"), vfs_path_as_str (filename_vpath));
+            file_error_message (_ ("Cannot open\n%s"), filename_path);
             return FALSE;
         }
 
@@ -352,17 +351,16 @@ check_file_access (WEdit *edit, const vfs_path_t *filename_vpath, struct stat *s
     }
 
     // Check what we have opened
-    if (mc_fstat (file, st) < 0)
+    if (fstat (file, st) < 0)
     {
-        file_error_message (_ ("Cannot stat\n%s"), vfs_path_as_str (filename_vpath));
+        file_error_message (_ ("Cannot stat\n%s"), filename_path);
         return FALSE;
     }
 
     // We want to open regular files only
     if (!S_ISREG (st->st_mode))
     {
-        errmsg =
-            g_strdup_printf (_ ("%s\nis not a regular file"), vfs_path_as_str (filename_vpath));
+        errmsg = g_strdup_printf (_ ("%s\nis not a regular file"), filename_path);
         goto cleanup;
     }
 
@@ -387,8 +385,7 @@ check_file_access (WEdit *edit, const vfs_path_t *filename_vpath, struct stat *s
     {
         int act;
 
-        errmsg = g_strdup_printf (_ ("File \"%s\" is too large.\nOpen it anyway?"),
-                                  vfs_path_as_str (filename_vpath));
+        errmsg = g_strdup_printf (_ ("File \"%s\" is too large.\nOpen it anyway?"), filename_path);
         act = edit_query_dialog2 (_ ("Warning"), errmsg, _ ("&Yes"), _ ("&No"));
         MC_PTR_FREE (errmsg);
 
@@ -397,7 +394,7 @@ check_file_access (WEdit *edit, const vfs_path_t *filename_vpath, struct stat *s
     }
 
 cleanup:
-    (void) mc_close (file);
+    (void) close (file);
 
     if (errmsg != NULL)
     {
@@ -429,24 +426,17 @@ edit_load_file (WEdit *edit)
     gboolean fast_load = TRUE;
 
     // Cannot do fast load if a filter is used
-    if (edit_find_filter (edit->filename_vpath) >= 0)
+    if (edit_find_filter (edit->filename) >= 0)
         fast_load = FALSE;
 
     /*
      * FIXME: line end translation should disable fast loading as well
      * Consider doing fseek() to the end and ftell() for the real size.
      */
-    if (edit->filename_vpath != NULL)
+    if (edit->filename != NULL)
     {
-        /*
-         * VFS may report file size incorrectly, and slow load is not a big
-         * deal considering overhead in VFS.
-         */
-        if (!vfs_file_is_local (edit->filename_vpath))
-            fast_load = FALSE;
-
         // If we are dealing with a real file, check that it exists
-        if (!check_file_access (edit, edit->filename_vpath, &edit->stat1))
+        if (!check_file_access (edit, edit->filename, &edit->stat1))
         {
             edit_clean (edit);
             return FALSE;
@@ -462,7 +452,7 @@ edit_load_file (WEdit *edit)
     {
         edit_buffer_init (&edit->buffer, edit->stat1.st_size);
 
-        if (!edit_load_file_fast (&edit->buffer, edit->filename_vpath))
+        if (!edit_load_file_fast (&edit->buffer, edit->filename))
         {
             edit_clean (edit);
             return FALSE;
@@ -472,11 +462,10 @@ edit_load_file (WEdit *edit)
     {
         edit_buffer_init (&edit->buffer, 0);
 
-        if (edit->filename_vpath != NULL
-            && *(vfs_path_get_by_index (edit->filename_vpath, 0)->path) != '\0')
+        if (edit->filename != NULL && *(edit->filename) != '\0')
         {
             edit->undo_stack_disable = 1;
-            if (edit_insert_file (edit, edit->filename_vpath) < 0)
+            if (edit_insert_file (edit, edit->filename) < 0)
             {
                 edit_clean (edit);
                 return FALSE;
@@ -542,11 +531,10 @@ edit_load_position (WEdit *edit, gboolean load_position)
     long line, column;
     off_t offset;
 
-    if (edit->filename_vpath == NULL
-        || *(vfs_path_get_by_index (edit->filename_vpath, 0)->path) == '\0')
+    if (edit->filename == NULL || *(edit->filename) == '\0')
         return;
 
-    load_file_position (edit->filename_vpath, &line, &column, &offset, &edit->serialized_bookmarks);
+    load_file_position (edit->filename, &line, &column, &offset, &edit->serialized_bookmarks);
     // apply bookmarks in any case
     book_mark_restore (edit, EDITOR_BOOKMARK_COLOR);
 
@@ -575,12 +563,11 @@ edit_load_position (WEdit *edit, gboolean load_position)
 static void
 edit_save_position (WEdit *edit)
 {
-    if (edit->filename_vpath == NULL
-        || *(vfs_path_get_by_index (edit->filename_vpath, 0)->path) == '\0')
+    if (edit->filename == NULL || *(edit->filename) == '\0')
         return;
 
     book_mark_serialize (edit, EDITOR_BOOKMARK_COLOR);
-    save_file_position (edit->filename_vpath, edit->buffer.curs_line + 1, edit->curs_col,
+    save_file_position (edit->filename, edit->buffer.curs_line + 1, edit->curs_col,
                         edit->buffer.curs1, edit->serialized_bookmarks);
     edit->serialized_bookmarks = NULL;
 }
@@ -700,7 +687,7 @@ edit_modification (WEdit *edit)
 
     // raise lock when file modified
     if (edit->modified == 0 && edit->delete_file == 0)
-        edit->locked = lock_file (edit->filename_vpath);
+        edit->locked = lock_file (edit->filename);
     edit->modified = 1;
 }
 
@@ -1484,7 +1471,7 @@ edit_check_and_clear_modified (WEdit *edit)
     {
         edit->modified = 0;
         if (edit->locked != 0)
-            edit->locked = unlock_file (edit->filename_vpath);
+            edit->locked = unlock_file (edit->filename);
     }
 }
 
@@ -2213,19 +2200,19 @@ edit_user_menu (WEdit *edit, const char *menu_file, int selected_entry)
 {
     char *block_file;
     struct stat status_before;
-    vfs_path_t *block_file_vpath;
+    char *block_file_path;
     gboolean modified = FALSE;
 
     block_file = mc_config_get_full_path (EDIT_HOME_BLOCK_FILE);
-    block_file_vpath = vfs_path_from_str (block_file);
+    block_file_path = mc_path_absolute (block_file);
 
-    const gboolean status_before_ok = mc_stat (block_file_vpath, &status_before) == 0;
+    const gboolean status_before_ok = stat (block_file_path, &status_before) == 0;
 
     // run menu command. It can or can not create or modify block_file
     if (user_menu_cmd (CONST_WIDGET (edit), menu_file, selected_entry))
     {
         struct stat status_after;
-        const gboolean status_after_ok = mc_stat (block_file_vpath, &status_after) == 0;
+        const gboolean status_after_ok = stat (block_file_path, &status_after) == 0;
 
         // was block file created or modified by menu command?
         modified = (!status_before_ok && status_after_ok)
@@ -2250,19 +2237,19 @@ edit_user_menu (WEdit *edit, const char *menu_file, int selected_entry)
         {
             off_t ins_len;
 
-            ins_len = edit_insert_file (edit, block_file_vpath);
+            ins_len = edit_insert_file (edit, block_file_path);
             if (mark && ins_len > 0)
                 edit_set_markers (edit, start_mark, start_mark + ins_len, 0, 0);
         }
 
         // delete block file
-        mc_unlink (block_file_vpath);
+        unlink (block_file_path);
 
         edit_cursor_move (edit, curs - edit->buffer.curs1);
     }
 
     g_free (block_file);
-    vfs_path_free (block_file_vpath, TRUE);
+    g_free (block_file_path);
 
     edit->force |= REDRAW_PAGE;
     widget_draw (WIDGET (edit));
@@ -2271,18 +2258,18 @@ edit_user_menu (WEdit *edit, const char *menu_file, int selected_entry)
 /* --------------------------------------------------------------------------------------------- */
 
 char *
-edit_get_write_filter (const vfs_path_t *write_name_vpath, const vfs_path_t *filename_vpath)
+edit_get_write_filter (const char *write_name_path, const char *filename_path)
 {
     int i;
     const char *write_name;
     char *write_name_quoted;
     char *p = NULL;
 
-    i = edit_find_filter (filename_vpath);
+    i = edit_find_filter (filename_path);
     if (i < 0)
         return NULL;
 
-    write_name = vfs_path_get_last_path_str (write_name_vpath);
+    write_name = write_name_path;
     write_name_quoted = name_quote (write_name, FALSE);
     if (write_name_quoted != NULL)
     {
@@ -2409,13 +2396,13 @@ is_break_char (char c)
 /** inserts a file at the cursor, returns count of inserted bytes on success */
 
 off_t
-edit_insert_file (WEdit *edit, const vfs_path_t *filename_vpath)
+edit_insert_file (WEdit *edit, const char *filename_path)
 {
     char *p;
     off_t current;
     off_t ins_len = 0;
 
-    p = edit_get_filter (filename_vpath);
+    p = edit_get_filter (filename_path);
     current = edit->buffer.curs1;
 
     if (p != NULL)
@@ -2451,25 +2438,22 @@ edit_insert_file (WEdit *edit, const vfs_path_t *filename_vpath)
         int file;
         off_t blocklen;
         gboolean vertical_insertion = FALSE;
-        char *buf;
+        char buf[TEMP_BUF_LEN];
         GString *block = NULL;
         char digest[CLIP_DIGEST_LEN + 1];
         char codeset[CLIP_CODESET_MAX + 1];
 
-        file = mc_open (filename_vpath, O_RDONLY | O_BINARY);
+        file = open (filename_path, O_RDONLY | O_BINARY);
         if (file == -1)
             return -1;
 
-        buf = g_malloc0 (TEMP_BUF_LEN);
-
-        if (clipboard_info_read (vfs_path_as_str (filename_vpath), digest, &vertical_insertion,
-                                 codeset))
+        if (clipboard_info_read (filename_path, digest, &vertical_insertion, codeset))
         {
             // the clipfile: the info holds for the content it was written for
             char *sum;
 
             block = g_string_sized_new (TEMP_BUF_LEN);
-            while ((blocklen = mc_read (file, buf, TEMP_BUF_LEN)) > 0)
+            while ((blocklen = read (file, buf, TEMP_BUF_LEN)) > 0)
                 g_string_append_len (block, buf, blocklen);
 
             sum = g_compute_checksum_for_data (CLIP_DIGEST_TYPE, (const guchar *) block->str,
@@ -2482,20 +2466,21 @@ edit_insert_file (WEdit *edit, const vfs_path_t *filename_vpath)
         }
         else
         {
-            blocklen = mc_read (file, buf, sizeof (VERTICAL_MAGIC));
+            blocklen = read (file, buf, sizeof (VERTICAL_MAGIC));
             if (blocklen > 0)
             {
                 // if contain signature VERTICAL_MAGIC then it vertical block
-                if (memcmp (buf, VERTICAL_MAGIC, sizeof (VERTICAL_MAGIC)) == 0)
+                if (blocklen == (off_t) sizeof (VERTICAL_MAGIC)
+                    && memcmp (buf, VERTICAL_MAGIC, sizeof (VERTICAL_MAGIC)) == 0)
                     vertical_insertion = TRUE;
                 else
-                    mc_lseek (file, 0, SEEK_SET);
+                    lseek (file, 0, SEEK_SET);
             }
 
             if (vertical_insertion)
             {
                 block = g_string_sized_new (TEMP_BUF_LEN);
-                while ((blocklen = mc_read (file, buf, TEMP_BUF_LEN)) > 0)
+                while ((blocklen = read (file, buf, TEMP_BUF_LEN)) > 0)
                     g_string_append_len (block, buf, blocklen);
             }
         }
@@ -2524,7 +2509,7 @@ edit_insert_file (WEdit *edit, const vfs_path_t *filename_vpath)
                 for (gsize k = 0; k < block->len; k++)
                     edit_insert (edit, block->str[k]);
             else
-                while ((blocklen = mc_read (file, (char *) buf, TEMP_BUF_LEN)) > 0)
+                while ((blocklen = read (file, buf, TEMP_BUF_LEN)) > 0)
                 {
                     for (i = 0; i < blocklen; i++)
                         edit_insert (edit, buf[i]);
@@ -2549,8 +2534,7 @@ edit_insert_file (WEdit *edit, const vfs_path_t *filename_vpath)
         if (block != NULL)
             g_string_free (block, TRUE);
         edit->force |= REDRAW_PAGE;
-        g_free (buf);
-        mc_close (file);
+        close (file);
         if (blocklen != 0)
             ins_len = 0;
     }
@@ -2614,11 +2598,6 @@ edit_init (WEdit *edit, const WRect *r, const edit_arg_t *arg)
     edit->stat1.st_gid = getgid ();
     edit->stat1.st_mtime = 0;
 
-    if (arg != NULL)
-        edit->attrs_ok = (mc_fgetflags (arg->file_vpath, &edit->attrs) == 0);
-    else
-        edit->attrs_ok = FALSE;
-
     edit->over_col = 0;
     edit->bracket = -1;
     edit->last_bracket = -1;
@@ -2627,7 +2606,7 @@ edit_init (WEdit *edit, const WRect *r, const edit_arg_t *arg)
     // set file name before load file
     if (arg != NULL)
     {
-        edit_set_filename (edit, arg->file_vpath);
+        edit_set_filename (edit, arg->file_name);
         line = arg->line_number;
     }
     else
@@ -2710,7 +2689,7 @@ edit_clean_internal (WEdit *edit, gboolean invalidate_runtime_handle)
 
     // a stale lock, remove it
     if (edit->locked)
-        edit->locked = unlock_file (edit->filename_vpath);
+        edit->locked = unlock_file (edit->filename);
 
     // save cursor position
     if (edit_options.save_position)
@@ -2720,7 +2699,7 @@ edit_clean_internal (WEdit *edit, gboolean invalidate_runtime_handle)
 
     // File specified on the mcedit command line and never saved
     if (edit->delete_file != 0)
-        unlink (vfs_path_get_last_path_str (edit->filename_vpath));
+        unlink (edit->filename);
 
     edit_free_syntax_rules (edit);
     book_mark_flush (edit, -1);
@@ -2730,8 +2709,7 @@ edit_clean_internal (WEdit *edit, gboolean invalidate_runtime_handle)
 
     g_free (edit->undo_stack);
     g_free (edit->redo_stack);
-    vfs_path_free (edit->filename_vpath, TRUE);
-    vfs_path_free (edit->dir_vpath, TRUE);
+    g_free (edit->filename);
     edit_search_deinit (edit);
 
     if (edit->converter != str_cnv_from_term)
@@ -5705,7 +5683,7 @@ void
 edit_stack_free (void)
 {
     for (edit_stack_iterator = 0; edit_stack_iterator < MAX_HISTORY_MOVETO; edit_stack_iterator++)
-        vfs_path_free (edit_history_moveto[edit_stack_iterator].file_vpath, TRUE);
+        g_free (edit_history_moveto[edit_stack_iterator].file_name);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -5728,20 +5706,20 @@ edit_move_down (WEdit *edit, long i, gboolean do_scroll)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Create edit_arg_t object from vfs_path_t object and the line number.
+ * Create edit_arg_t object from file name and the line number.
  *
- * @param file_vpath  file path object
+ * @param file_name   file name, made absolute
  * @param line_number line number. If value is 0, try to restore saved position.
  * @return edit_arg_t object
  */
 
 edit_arg_t *
-edit_arg_vpath_new (vfs_path_t *file_vpath, long line_number)
+edit_arg_new (const char *file_name, long line_number)
 {
     edit_arg_t *arg;
 
     arg = g_new0 (edit_arg_t, 1);
-    arg->file_vpath = file_vpath;
+    arg->file_name = mc_path_absolute (file_name);
     arg->line_number = line_number;
     arg->start_line = -1;
 
@@ -5750,32 +5728,17 @@ edit_arg_vpath_new (vfs_path_t *file_vpath, long line_number)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Create edit_arg_t object from file name and the line number.
- *
- * @param file_name   file name
- * @param line_number line number. If value is 0, try to restore saved position.
- * @return edit_arg_t object
- */
-
-edit_arg_t *
-edit_arg_new (const char *file_name, long line_number)
-{
-    return edit_arg_vpath_new (vfs_path_from_str (file_name), line_number);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-/**
  * Initialize edit_arg_t object.
  *
  * @param arg  edit_arg_t object
- * @param vpath vfs_path_t object
+ * @param file_name file name; the object does not own it
  * @param line line number
  */
 
 void
-edit_arg_init (edit_arg_t *arg, vfs_path_t *vpath, long line)
+edit_arg_init (edit_arg_t *arg, char *file_name, long line)
 {
-    arg->file_vpath = (vfs_path_t *) vpath;
+    arg->file_name = file_name;
     arg->line_number = line;
     arg->column = 0;
     arg->start_line = -1;
@@ -5786,15 +5749,15 @@ edit_arg_init (edit_arg_t *arg, vfs_path_t *vpath, long line)
  * Apply new values to edit_arg_t object members.
  *
  * @param arg  edit_arg_t object
- * @param vpath vfs_path_t object
+ * @param file_name file name; the object takes it over
  * @param line line number
  */
 
 void
-edit_arg_assign (edit_arg_t *arg, vfs_path_t *vpath, long line)
+edit_arg_assign (edit_arg_t *arg, char *file_name, long line)
 {
-    vfs_path_free (arg->file_vpath, TRUE);
-    edit_arg_init (arg, vpath, line);
+    g_free (arg->file_name);
+    edit_arg_init (arg, file_name, line);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -5807,7 +5770,7 @@ edit_arg_assign (edit_arg_t *arg, vfs_path_t *vpath, long line)
 void
 edit_arg_free (edit_arg_t *arg)
 {
-    vfs_path_free (arg->file_vpath, TRUE);
+    g_free (arg->file_name);
     g_free (arg);
 }
 
@@ -5816,7 +5779,7 @@ edit_arg_free (edit_arg_t *arg)
 const char *
 edit_get_file_name (const WEdit *edit)
 {
-    return vfs_path_as_str (edit->filename_vpath);
+    return edit->filename;
 }
 
 /* --------------------------------------------------------------------------------------------- */
