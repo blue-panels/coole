@@ -4,6 +4,9 @@
  *  A window is a widget of the editor screen with a frame of its own: it is moved and resized,
  *  shown full screen, listed and closed the same way whatever it holds. The file windows are
  *  windows; what a window shows and does besides is up to its class.
+ *
+ *  A window is a group, the way a window of Turbo Vision is: it may hold widgets of its own,
+ *  which move and resize with it and get the focus with it. A file window holds none.
  */
 
 #ifndef MC__EDIT_WINDOW_H
@@ -39,9 +42,11 @@ typedef struct WEditWindow WEditWindow;
 /* What a kind of window does on its own */
 typedef struct
 {
-    /* Messages to the window; the unhandled ones go to widget_default_callback() */
+    /* Messages to the window; the unhandled ones go to group_default_callback() for a window
+       that holds widgets, to widget_default_callback() for one that draws itself */
     widget_cb_fn callback;
-    /* Mouse events inside the window that the frame does not take */
+    /* Mouse events inside the window that the frame does not take; NULL passes them to the
+       widgets of the window */
     widget_mouse_cb_fn mouse_callback;
     /* The name of the window in the list of windows. Caller frees */
     char *(*get_title) (const WEditWindow *win);
@@ -56,7 +61,7 @@ typedef struct
 
 struct WEditWindow
 {
-    Widget widget;
+    WGroup group;
     const edit_window_class_t *klass;
     edit_window_drag_state_t drag_state;
     int drag_state_start;  // save cursor position before window moving

@@ -29,7 +29,7 @@ static test_window_t *test_win;
 static cb_ret_t
 test_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
-    return widget_default_callback (w, sender, msg, parm, data);
+    return group_default_callback (w, sender, msg, parm, data);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -99,6 +99,8 @@ static void
 teardown (void)
 {
     group_remove_widget (WIDGET (test_win));
+    // the widgets of the window go with it
+    send_message (test_win, NULL, MSG_DESTROY, 0, NULL);
     g_free (test_win);
     str_uninit_strings ();
 }
@@ -244,6 +246,45 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The widgets of a window move and resize with it */
+START_TEST (test_window_holds_widgets)
+{
+    WEditWindow *win = &test_win->window;
+    Widget *child;
+    WRect r;
+    int i;
+
+    edit_window_toggle_fullscreen (win);
+
+    // placed in the window, one cell in from its corner
+    child = g_new0 (Widget, 1);
+    rect_init (&r, 1, 1, 8, 28);
+    widget_init (child, &r, widget_default_callback, NULL);
+    group_add_widget_autopos (GROUP (win), child, WPOS_KEEP_ALL, NULL);
+    test_assert_rect (&child->rect, 6, 6, 8, 28);
+
+    ck_assert (edit_window_handle_move_resize (win, CK_WindowMove));
+    for (i = 0; i < 2; i++)
+        ck_assert (edit_window_handle_move_resize (win, CK_Down));
+    ck_assert (edit_window_handle_move_resize (win, CK_Right));
+    ck_assert (edit_window_handle_move_resize (win, CK_Enter));
+    test_assert_rect (&WIDGET (win)->rect, 7, 6, 10, 30);
+    test_assert_rect (&child->rect, 8, 7, 8, 28);
+
+    ck_assert (edit_window_handle_move_resize (win, CK_WindowResize));
+    ck_assert (edit_window_handle_move_resize (win, CK_Right));
+    ck_assert (edit_window_handle_move_resize (win, CK_Up));
+    ck_assert (edit_window_handle_move_resize (win, CK_Enter));
+    test_assert_rect (&WIDGET (win)->rect, 7, 6, 9, 31);
+    test_assert_rect (&child->rect, 8, 7, 7, 29);
+
+    edit_window_toggle_fullscreen (win);
+    test_assert_rect (&child->rect, 2, 1, 20, 78);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A file window is a window of the editor class */
 START_TEST (test_editor_is_window)
 {
@@ -276,6 +317,7 @@ main (void)
     tcase_add_test (tc_core, test_window_fullscreen_does_not_move);
     tcase_add_test (tc_core, test_window_move);
     tcase_add_test (tc_core, test_window_resize);
+    tcase_add_test (tc_core, test_window_holds_widgets);
     tcase_add_test (tc_core, test_editor_is_window);
 
     return mctest_run_all (tc_core);

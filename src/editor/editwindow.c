@@ -67,6 +67,23 @@ edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
 
 /* --------------------------------------------------------------------------------------------- */
 /**
+ * Mouse events: the frame and the class first, then the widgets of the window.
+ */
+
+static int
+edit_window_mouse_handler (Widget *w, Gpm_Event *event)
+{
+    int mou;
+
+    mou = mouse_handle_event (w, event);
+    if (mou != MOU_UNHANDLED)
+        return mou;
+
+    return group_handle_mouse_event (w, event);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
  * Draw the window and the button bar it may overlap.
  */
 
@@ -91,7 +108,7 @@ static void
 edit_window_move (WEditWindow *win, long command)
 {
     Widget *w = WIDGET (win);
-    WRect *r = &w->rect;
+    WRect r = w->rect;
     WRect a;
 
     edit_window_area (DIALOG (w->owner), &a);
@@ -99,25 +116,27 @@ edit_window_move (WEditWindow *win, long command)
     switch (command)
     {
     case CK_Up:
-        if (r->y > a.y)
-            r->y--;
+        if (r.y > a.y)
+            r.y--;
         break;
     case CK_Down:
-        if (r->y < a.y + a.lines - 1)
-            r->y++;
+        if (r.y < a.y + a.lines - 1)
+            r.y++;
         break;
     case CK_Left:
-        if (r->x + a.cols > a.x)
-            r->x--;
+        if (r.x + a.cols > a.x)
+            r.x--;
         break;
     case CK_Right:
-        if (r->x < a.x + a.cols)
-            r->x++;
+        if (r.x < a.x + a.cols)
+            r.x++;
         break;
     default:
         return;
     }
 
+    // the widgets of the window move with it
+    widget_set_size_rect (w, &r);
     widget_draw (WIDGET (w->owner));
 }
 
@@ -133,7 +152,7 @@ static void
 edit_window_resize (WEditWindow *win, long command)
 {
     Widget *w = WIDGET (win);
-    WRect *r = &w->rect;
+    WRect r = w->rect;
     WRect a;
 
     edit_window_area (DIALOG (w->owner), &a);
@@ -141,25 +160,27 @@ edit_window_resize (WEditWindow *win, long command)
     switch (command)
     {
     case CK_Up:
-        if (r->lines > win->klass->min_lines)
-            r->lines--;
+        if (r.lines > win->klass->min_lines)
+            r.lines--;
         break;
     case CK_Down:
-        if (r->y + r->lines < a.y + a.lines)
-            r->lines++;
+        if (r.y + r.lines < a.y + a.lines)
+            r.lines++;
         break;
     case CK_Left:
-        if (r->cols > win->klass->min_cols)
-            r->cols--;
+        if (r.cols > win->klass->min_cols)
+            r.cols--;
         break;
     case CK_Right:
-        if (r->x + r->cols < a.x + a.cols)
-            r->cols++;
+        if (r.x + r.cols < a.x + a.cols)
+            r.cols++;
         break;
     default:
         return;
     }
 
+    // the widgets of the window resize with it
+    widget_set_size_rect (w, &r);
     widget_draw (WIDGET (w->owner));
 }
 
@@ -172,7 +193,7 @@ static void
 edit_window_mouse_move_resize (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 {
     WEditWindow *win = EDIT_WINDOW (w);
-    WRect *r = &w->rect;
+    WRect r = w->rect;
     WRect a;
     int global_x, global_y;
 
@@ -194,8 +215,8 @@ edit_window_mouse_move_resize (Widget *w, mouse_msg_t msg, mouse_event_t *event)
         return;
 
     // Convert point to global coordinates for easier calculations.
-    global_x = event->x + r->x;
-    global_y = event->y + r->y;
+    global_x = event->x + r.x;
+    global_y = event->y + r.y;
 
     // Clamp the point to the area of the windows.
     edit_window_area (DIALOG (w->owner), &a);
@@ -204,14 +225,17 @@ edit_window_mouse_move_resize (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 
     if (win->drag_state == EDIT_WINDOW_DRAG_MOVE)
     {
-        r->y = global_y;
-        r->x = global_x - win->drag_state_start;
+        r.y = global_y;
+        r.x = global_x - win->drag_state_start;
     }
     else if (win->drag_state == EDIT_WINDOW_DRAG_RESIZE)
     {
-        r->lines = MAX (win->klass->min_lines, global_y - r->y + 1);
-        r->cols = MAX (win->klass->min_cols, global_x - r->x + 1);
+        r.lines = MAX (win->klass->min_lines, global_y - r.y + 1);
+        r.cols = MAX (win->klass->min_cols, global_x - r.x + 1);
     }
+
+    // the widgets of the window move and resize with it
+    widget_set_size_rect (w, &r);
 
     // We draw the whole dialog because dragging/resizing exposes area beneath
     widget_draw (WIDGET (w->owner));
@@ -301,6 +325,9 @@ edit_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 
     if (win->klass->mouse_callback != NULL)
         win->klass->mouse_callback (w, msg, event);
+    else
+        // the widgets of the window take it
+        event->result.abort = TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -333,7 +360,8 @@ edit_window_init (WEditWindow *win, const WRect *r, const edit_window_class_t *k
 {
     Widget *w = WIDGET (win);
 
-    widget_init (w, r, edit_window_callback, edit_window_mouse_callback);
+    group_init (GROUP (win), r, edit_window_callback, edit_window_mouse_callback);
+    w->mouse_handler = edit_window_mouse_handler;
     w->options |= WOP_SELECTABLE | WOP_TOP_SELECT | WOP_WANT_CURSOR;
     win->klass = klass;
     win->drag_state = EDIT_WINDOW_DRAG_NONE;
