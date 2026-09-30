@@ -198,24 +198,61 @@ edit_publish_runtime_key (WEdit *edit, int keycode)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The editor is idle: tell the runtime that the text changed and that the cursor is on another
-   line, once for all the changes and moves since it was told last.  A file window that comes to
-   the front is told of as changed and moved. */
+/* Tell the plugins of the screen of @edit about an event of it */
+static void
+edit_plugins_tell (WEdit *edit, int event_id)
+{
+    const Widget *owner = CONST_WIDGET (CONST_WIDGET (edit)->owner);
+    const editor_plugin_ctx_t *ctx;
+    guint i;
+
+    if (owner == NULL)
+        return;
+
+    ctx = (const editor_plugin_ctx_t *) CONST_DIALOG (owner)->data.p;
+    if (ctx == NULL)
+        return;
+
+    for (i = 0; i < ctx->instances->len; i++)
+    {
+        const editor_plugin_instance_t *inst =
+            (const editor_plugin_instance_t *) g_ptr_array_index (ctx->instances, i);
+
+        if (inst->plugin->handle_event != NULL)
+            (void) inst->plugin->handle_event (inst->plugin_data, edit, event_id, NULL);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The editor is idle: tell the runtime and the plugins that the text changed and that the cursor
+   is on another line, once for all the changes and moves since they were told last.  A file
+   window that comes to the front is told of as changed and moved. */
 static void
 edit_publish_runtime_idle (WEdit *edit)
 {
     const gboolean other = runtime_told_editor != edit;
+    const gboolean changed = other || edit->runtime_told_revision != edit->runtime_revision;
+    const gboolean moved = other || edit->runtime_told_line != edit->buffer.curs_line;
+    const gboolean runtime = events_runtime_is_started () && mc_runtime_events_is_initialized ();
     mc_runtime_event_snapshot_t *snapshot;
 
-    if (!events_runtime_is_started () || !mc_runtime_events_is_initialized ())
+    runtime_told_editor = edit;
+    edit->runtime_told_revision = edit->runtime_revision;
+    edit->runtime_told_line = edit->buffer.curs_line;
+
+    if (changed)
+        edit_plugins_tell (edit, MC_EP_EVENT_TEXT_CHANGED);
+    if (moved)
+        edit_plugins_tell (edit, MC_EP_EVENT_CURSOR_MOVED);
+
+    if (!runtime)
         return;
 
-    runtime_told_editor = edit;
     runtime_host_set_current_editor (edit);
 
-    if (other || edit->runtime_told_revision != edit->runtime_revision)
+    if (changed)
     {
-        edit->runtime_told_revision = edit->runtime_revision;
         snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_CHANGE);
         snapshot->data.editor_change.editor =
             mc_runtime_handle_for_object (MC_RUNTIME_HANDLE_EDITOR, edit);
@@ -225,9 +262,8 @@ edit_publish_runtime_idle (WEdit *edit)
         mc_runtime_event_snapshot_free (snapshot);
     }
 
-    if (other || edit->runtime_told_line != edit->buffer.curs_line)
+    if (moved)
     {
-        edit->runtime_told_line = edit->buffer.curs_line;
         snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_CURSOR);
         snapshot->data.editor_cursor.editor =
             mc_runtime_handle_for_object (MC_RUNTIME_HANDLE_EDITOR, edit);
@@ -527,6 +563,49 @@ editor_host_window_current_impl (mc_editor_host_t *host)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: all the text of a file window.
+ */
+
+static char *
+editor_host_get_text_impl (mc_editor_host_t *host, void *edit, gsize *len)
+{
+    const WEdit *e = (const WEdit *) edit;
+    GString *text;
+    off_t i;
+
+    (void) host;
+
+    if (e == NULL)
+    {
+        if (len != NULL)
+            *len = 0;
+        return NULL;
+    }
+
+    text = g_string_sized_new ((gsize) e->buffer.size + 1);
+    for (i = 0; i < e->buffer.size; i++)
+        g_string_append_c (text, (char) edit_buffer_get_byte (&e->buffer, i));
+
+    if (len != NULL)
+        *len = text->len;
+    return g_string_free (text, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: the revision of the text of a file window.
+ */
+
+static guint64
+editor_host_get_revision_impl (mc_editor_host_t *host, void *edit)
+{
+    (void) host;
+
+    return edit != NULL ? ((const WEdit *) edit)->runtime_revision : 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /* Host callbacks: the services, passed on to lib/plugin-service.c */
 
 static gboolean
@@ -628,6 +707,8 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_make_room = editor_host_window_make_room_impl;
     ctx->host->window_give_room_back = editor_host_window_give_room_back_impl;
     ctx->host->window_current = editor_host_window_current_impl;
+    ctx->host->get_text = editor_host_get_text_impl;
+    ctx->host->get_revision = editor_host_get_revision_impl;
     ctx->host->service_register = editor_host_service_register_impl;
     ctx->host->service_unregister = editor_host_service_unregister_impl;
     ctx->host->service_call = editor_host_service_call_impl;
@@ -2347,8 +2428,11 @@ edit_update_screen (WEdit *e)
         if ((e->force & REDRAW_COMPLETELY) != 0)
             e->force |= REDRAW_PAGE;
         edit_render_keypress (e);
-        // what came of the keys is on the screen: the runtime hears of it once
-        edit_publish_runtime_idle (e);
+        /* What came of the keys is on the screen: the runtime and the plugins hear of it once.
+           Only from the file window with the focus: another one is drawn again when a window over
+           it moves, and that is no change of it. */
+        if (widget_get_state (WIDGET (e), WST_FOCUSED))
+            edit_publish_runtime_idle (e);
     }
 
     widget_draw (WIDGET (buttonbar_find (DIALOG (WIDGET (e)->owner))));
