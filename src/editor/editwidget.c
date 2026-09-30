@@ -465,6 +465,61 @@ editor_host_window_give_room_back_impl (mc_editor_host_t *host, void *window)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/* Host callbacks: the services, passed on to lib/plugin-service.c */
+
+static gboolean
+editor_host_service_register_impl (mc_editor_host_t *host, const char *name,
+                                   mc_service_call_fn call, void *data, GError **error)
+{
+    (void) host;
+
+    return mc_service_register (name, call, data, error);
+}
+
+static void
+editor_host_service_unregister_impl (mc_editor_host_t *host, const char *name)
+{
+    (void) host;
+
+    mc_service_unregister (name);
+}
+
+static GVariant *
+editor_host_service_call_impl (mc_editor_host_t *host, const char *name, const char *method,
+                               GVariant *args, GError **error)
+{
+    (void) host;
+
+    return mc_service_call (name, method, args, error);
+}
+
+static guint
+editor_host_service_connect_impl (mc_editor_host_t *host, const char *name, mc_service_signal_fn fn,
+                                  void *user_data)
+{
+    (void) host;
+
+    return mc_service_connect (name, fn, user_data);
+}
+
+static void
+editor_host_service_disconnect_impl (mc_editor_host_t *host, guint id)
+{
+    (void) host;
+
+    mc_service_disconnect (id);
+}
+
+static void
+editor_host_service_emit_impl (mc_editor_host_t *host, const char *name, const char *signal,
+                               GVariant *args)
+{
+    (void) host;
+
+    mc_service_emit (name, signal, args);
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 static void
 editor_plugin_instance_free (gpointer data)
@@ -510,6 +565,12 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_hide = editor_host_window_hide_impl;
     ctx->host->window_make_room = editor_host_window_make_room_impl;
     ctx->host->window_give_room_back = editor_host_window_give_room_back_impl;
+    ctx->host->service_register = editor_host_service_register_impl;
+    ctx->host->service_unregister = editor_host_service_unregister_impl;
+    ctx->host->service_call = editor_host_service_call_impl;
+    ctx->host->service_connect = editor_host_service_connect_impl;
+    ctx->host->service_disconnect = editor_host_service_disconnect_impl;
+    ctx->host->service_emit = editor_host_service_emit_impl;
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
 
     for (; plugins != NULL; plugins = g_slist_next (plugins))

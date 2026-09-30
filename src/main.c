@@ -51,6 +51,7 @@
 #include "lib/strutil.h"
 #include "lib/util.h"
 #include "lib/extension-runtime.h"
+#include "lib/plugin-service.h"
 #include "lib/widget.h"
 
 #include "editor/edit.h"  // edit_files(), edit_arg_free()
@@ -293,6 +294,7 @@ main (int argc, char *argv[])
     (void) rmdir (tmpdir);
 
     mc_runtime_plugins_shutdown ();
+    mc_service_shutdown ();
 
     mc_skin_deinit ();
     tty_colors_done ();

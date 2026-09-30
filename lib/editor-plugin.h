@@ -7,6 +7,7 @@
 
 #include "lib/global.h"
 #include "lib/widget/rect.h"  // WRect
+#include "lib/plugin-service.h"
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
@@ -98,6 +99,19 @@ typedef struct mc_editor_host_t
     void (*window_make_room) (struct mc_editor_host_t *host, void *window);
     /* Make that window fullscreen again, unless the user has moved or resized it since. */
     void (*window_give_room_back) (struct mc_editor_host_t *host, void *window);
+
+    /* v6: services, which plugins and scripts offer one another (lib/plugin-service.h).
+     * A plugin offers a service from open() and takes it back in close(). */
+    gboolean (*service_register) (struct mc_editor_host_t *host, const char *name,
+                                  mc_service_call_fn call, void *data, GError **error);
+    void (*service_unregister) (struct mc_editor_host_t *host, const char *name);
+    GVariant *(*service_call) (struct mc_editor_host_t *host, const char *name, const char *method,
+                               GVariant *args, GError **error);
+    guint (*service_connect) (struct mc_editor_host_t *host, const char *name,
+                              mc_service_signal_fn fn, void *user_data);
+    void (*service_disconnect) (struct mc_editor_host_t *host, guint id);
+    void (*service_emit) (struct mc_editor_host_t *host, const char *name, const char *signal,
+                          GVariant *args);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.
