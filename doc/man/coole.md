@@ -240,6 +240,10 @@ see
 **Ctrl-o**
 : Show or hide the window of the terminal. See [Terminal](#terminal).
 
+**Ctrl-Alt-p**
+: Show or hide the preview of a markdown file. See
+[Markdown preview](#markdown-preview).
+
 **Ctrl-l**
 : Redraw the screen.
 
@@ -1327,9 +1331,27 @@ The terminal plugin runs your shell in a window of the editor.
 **Ctrl-o**
 shows the window at the bottom of the screen, a file shown full screen going
 into a window above it, and in the terminal hides it again, the file taking
-the whole screen back; the shell goes on running while the window is hidden. The window is
-moved, resized, shown full screen and closed like the window of a file. See
-[Terminal](terminal.md#terminal).
+the whole screen back; the shell goes on running while the window is hidden.
+The window is moved, resized, shown full screen and closed like the window of
+a file. See [Terminal](terminal.md#terminal).
+
+# Markdown preview
+
+The Lua script markdown-preview shows a markdown file the way it is meant to
+read, in a window at the right of the file: headings, lists, tables with
+rules, blocks of code in the colors of the editor, formulas as symbols and
+mermaid diagrams as drawings.
+**Ctrl-Alt-p**,
+or Markdown preview in the Plugins menu, shows and hides it. The file keeps
+the focus; the preview is drawn again as the text changes, and follows the
+cursor. The window is moved, resized and closed like the window of a file,
+and scrolls with the keys of the editor, sideways too for what is wider than
+it.
+
+The preview needs the Lua scripts and the viewer plugin, viewer.so, whose
+windows show the text of the scripts. The rendering is lua-markdown of
+Midnight Commander. Its settings, from Manage plugins, are kept in
+**~/.config/coole/markdown-preview.ini**.
 
 # Dialogs
 
