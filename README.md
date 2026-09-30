@@ -35,10 +35,12 @@ there and develops it as a program of its own.
 - **Terminal** (`Ctrl-O`): your shell in a window at the bottom of the screen,
   under the file, hidden and shown again as it was; the terminal of Midnight
   Commander, with its scrollback, search and marking of the output.
-- **Markdown preview** (`Ctrl-Alt-P`): the markdown file rendered beside it,
-  as you type and following the cursor: tables, code in colors, formulas and
-  mermaid diagrams.  The viewer plugin shows it; scripts and plugins can show
-  any text of theirs in its windows.
+- **Preview** (`Ctrl-Alt-P`): the file in a window beside it, the way it is
+  meant to read, as you type and following the cursor.  The viewer tells the
+  type of the file and asks a renderer for it: markdown comes out with tables,
+  code in colors, formulas and mermaid diagrams; a type without a renderer is
+  shown as its text.  Scripts and plugins can show any text of theirs in the
+  windows of the viewer.
 - **Editor plugins**: a plugin framework the ctags, etags and spell plugins are
   built on; see [`doc/PLUGINS`](doc/PLUGINS).
 - **Lua scripts** for the editor, run by the Lua runtime plugin and managed

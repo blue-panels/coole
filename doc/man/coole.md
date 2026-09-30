@@ -241,8 +241,7 @@ see
 : Show or hide the window of the terminal. See [Terminal](#terminal).
 
 **Ctrl-Alt-p**
-: Show or hide the preview of a markdown file. See
-[Markdown preview](#markdown-preview).
+: Show or hide the Preview of the file. See [Preview](#preview).
 
 **Ctrl-l**
 : Redraw the screen.
@@ -1335,23 +1334,30 @@ the whole screen back; the shell goes on running while the window is hidden.
 The window is moved, resized, shown full screen and closed like the window of
 a file. See [Terminal](terminal.md#terminal).
 
-# Markdown preview
+# Preview
 
-The Lua script markdown-preview shows a markdown file the way it is meant to
-read, in a window at the right of the file: headings, lists, tables with
-rules, blocks of code in the colors of the editor, formulas as symbols and
-mermaid diagrams as drawings.
+The viewer plugin shows the file the way it is meant to read, whatever the
+file is, in a window named Preview at the right of it.
 **Ctrl-Alt-p**,
-or Markdown preview in the Plugins menu, shows and hides it. The file keeps
-the focus; the preview is drawn again as the text changes, and follows the
-cursor. The window is moved, resized and closed like the window of a file,
-and scrolls with the keys of the editor, sideways too for what is wider than
-it.
+or Preview in the Plugins menu, shows and hides it. The file keeps the
+focus; the Preview is drawn again as the text changes, follows the cursor,
+and shows the file window that comes to the front. The window is moved,
+resized and closed like the window of a file, and scrolls with the keys of
+the editor, sideways too for what is wider than it. The key is set in
+**viewer.ini**,
+section
+**[Preview]**,
+entry
+**key**.
 
-The preview needs the Lua scripts and the viewer plugin, viewer.so, whose
-windows show the text of the scripts. The rendering is lua-markdown of
-Midnight Commander. Its settings, from Manage plugins, are kept in
-**~/.config/coole/markdown-preview.ini**.
+The viewer tells the type of the file by its name and has it drawn by a
+renderer of that type: a markdown file comes out with its headings, lists,
+tables with rules, blocks of code in the colors of the editor, formulas as
+symbols and mermaid diagrams as drawings; that renderer is the Lua script
+preview-markdown, lua-markdown of Midnight Commander, whose settings, from
+Manage plugins, are kept in
+**~/.config/coole/preview-markdown.ini**.
+A file of a type no renderer knows is shown as its text.
 
 # Dialogs
 

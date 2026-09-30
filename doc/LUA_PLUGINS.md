@@ -405,6 +405,24 @@ tells of something, `"*"` for any signal; `service:off(id)` stops it.
 The methods a service has are listed where it is described; those of the
 viewer are in `src/editor-plugins/viewer/viewer.c` and in `doc/PLUGINS`.
 
+A script can render a type of file for the Preview of the viewer: the
+viewer asks with the signal `render` (`id`, `type`, `path`, `text`, `width`,
+`revision`), and the script that knows the type answers with `set_text` for
+that `id`; `follow` (`id`, `type`, `line` of the file) asks where the cursor
+is in the view, answered with `scroll_to`.  A type nobody answers for is
+shown as the text of the file.  `preview-markdown` is the renderer of
+markdown:
+
+```lua
+local viewer = mc.service("viewer")
+
+viewer:on("render", function(args)
+    if args.type == "json" then
+        viewer:call("set_text", { id = args.id, text = pretty(args.text) })
+    end
+end)
+```
+
 ## Trust boundary
 
 Lua scripts run with the permissions of the current coole process.  Install

@@ -59,13 +59,19 @@ module is (section 3), and are examples of one:
                                  when openpty() and GModule are
                                  found, installed into the system
                                  directory of the plugins.
-  src/editor-plugins/viewer/     viewer.so: the service "viewer"
-                                 (section 10), windows of their own
-                                 that show the text a script or a
-                                 plugin gives them, with the
+  src/editor-plugins/viewer/     viewer.so: the Preview, Ctrl-Alt-P,
+                                 of whatever file has the focus, and
+                                 the service "viewer" (section 10),
+                                 windows that show the text a script
+                                 or a plugin gives them, with the
                                  overstrikes of nroff and ANSI colors.
-                                 Its methods are listed in viewer.c.
-                                 Built when GModule is found.
+                                 Its methods and signals are listed in
+                                 viewer.c.  The Preview asks the
+                                 renderers for the view of a type of
+                                 file with the signal "render"; the
+                                 Lua script preview-markdown is the
+                                 renderer of markdown.  Built when
+                                 GModule is found.
 
 The terminal module holds the terminal of mc as well (src/mcterm and
 src/viewer).  The modules call the functions of the editor, which the
@@ -192,6 +198,12 @@ What the editor provides to the plugin, passed to open():
                              zoomed it since
   window_current(host)
                              the window with the focus, or NULL
+  get_text(host, edit, &len)
+                             all the text of a file window; caller
+                             frees
+  get_revision(host, edit)
+                             the revision of that text, which grows
+                             with every change
   service_register(host, name, call, data, &error)
   service_unregister(host, name)
   service_call(host, name, method, args, &error)
@@ -232,6 +244,8 @@ All are optional except open and close.
                              keymap is consulted;
                              return MC_EPR_OK to consume the key
   handle_event(plugin_data, edit, event_id, payload)
+                             MC_EP_EVENT_TEXT_CHANGED and
+                             MC_EP_EVENT_CURSOR_MOVED, below
   on_file_open(plugin_data, edit)
   on_file_close(plugin_data, edit)
                              declared in the header; the editor core
@@ -252,6 +266,15 @@ Event ids reserved for handle_event():
   MC_EP_EVENT_FILE_RENAMED    Save As completed; payload = new path
   MC_EP_EVENT_FOCUS_IN        editor window got focus
   MC_EP_EVENT_FOCUS_OUT       editor window lost focus
+  MC_EP_EVENT_TEXT_CHANGED    the text of edit changed; payload = NULL
+  MC_EP_EVENT_CURSOR_MOVED    the cursor of edit is on another line;
+                              payload = NULL
+
+The last two are called: once the editor is idle after the keys that
+came together, for the file window with the focus, and both when
+another file window comes to the front.  get_text() and get_revision()
+of the host give the text and its revision; the Lua scripts hear the
+same as editor.change and editor.cursor.
 
 
 8. Actions and Menu Entries
