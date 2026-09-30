@@ -71,6 +71,11 @@ struct WEditWindow
     // save location before move/resize or toggle to fullscreen
     WRect loc_prev;
     unsigned int fullscreen : 1;  // Is window fullscreen or not
+
+    // the fullscreen window that made room for this one, 0 when none did
+    unsigned long room_id;
+    WRect room_rect;      // where that window was put
+    WRect room_loc_prev;  // where that window goes back to when it is not fullscreen
 };
 
 /*** global variables defined in .c file *********************************************************/
@@ -89,6 +94,10 @@ void edit_window_add (WDialog *h, WEditWindow *win);
 void edit_window_show (WEditWindow *win);
 /* Hide a window as it is; the next window is selected */
 void edit_window_hide (WEditWindow *win);
+/* The fullscreen window under @win is made a window in the area above @win, and
+   edit_window_give_room_back() makes it fullscreen again */
+void edit_window_make_room (WEditWindow *win);
+void edit_window_give_room_back (WEditWindow *win);
 
 /* The part of the editor screen the windows take: all but the menu bar and the button bar */
 void edit_window_area (const WDialog *h, WRect *r);

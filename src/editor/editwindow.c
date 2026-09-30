@@ -440,6 +440,92 @@ edit_window_hide (WEditWindow *win)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Make room for a window that does not fill the screen: the topmost fullscreen window of the
+ * screen stops being fullscreen and takes the area above @win. Nothing is done when there is no
+ * such window, or no room above @win for it.
+ *
+ * @param win window to make room for
+ */
+
+void
+edit_window_make_room (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+    WGroup *g = w->owner;
+    WEditWindow *top = NULL;
+    WRect a, r;
+    GList *l;
+
+    if (g == NULL || win->fullscreen != 0 || win->room_id != 0)
+        return;
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+    {
+        Widget *wl = WIDGET (l->data);
+
+        if (wl != w && edit_window_is_window (wl) && widget_get_state (wl, WST_VISIBLE)
+            && EDIT_WINDOW (wl)->fullscreen != 0)
+            top = EDIT_WINDOW (wl);
+    }
+
+    if (top == NULL)
+        return;
+
+    edit_window_area (DIALOG (g), &a);
+    r = a;
+    r.lines = w->rect.y - a.y;
+    if (r.lines < top->klass->min_lines)
+        return;
+
+    win->room_id = WIDGET (top)->id;
+    win->room_rect = r;
+    win->room_loc_prev = top->loc_prev;
+
+    top->fullscreen = 0;
+    WIDGET (top)->pos_flags = WPOS_KEEP_DEFAULT;
+    widget_set_size_rect (WIDGET (top), &r);
+    widget_draw (WIDGET (g));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Give back the room edit_window_make_room() made: the window made fullscreen again. A window the
+ * user has moved, resized or made fullscreen since is left as it is.
+ *
+ * @param win window the room was made for
+ */
+
+void
+edit_window_give_room_back (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+    Widget *wt;
+    unsigned long id = win->room_id;
+
+    win->room_id = 0;
+
+    if (id == 0 || w->owner == NULL)
+        return;
+
+    wt = widget_find_by_id (WIDGET (w->owner), id);
+    if (wt != NULL && wt != w && edit_window_is_window (wt) && EDIT_WINDOW (wt)->fullscreen == 0
+        && wt->rect.y == win->room_rect.y && wt->rect.x == win->room_rect.x
+        && wt->rect.lines == win->room_rect.lines && wt->rect.cols == win->room_rect.cols)
+    {
+        WEditWindow *top = EDIT_WINDOW (wt);
+        WRect a;
+
+        top->fullscreen = 1;
+        top->loc_prev = win->room_loc_prev;
+        edit_window_area (DIALOG (w->owner), &a);
+        widget_set_size_rect (wt, &a);
+        wt->pos_flags = WPOS_KEEP_ALL;
+        widget_draw (WIDGET (w->owner));
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 void
 edit_window_area (const WDialog *h, WRect *r)

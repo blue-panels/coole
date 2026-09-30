@@ -158,6 +158,14 @@ What the editor provides to the plugin, passed to open():
   window_hide(host, window)
                              hide a window as it is; the next window
                              is selected
+  window_make_room(host, window)
+                             the topmost fullscreen window stops being
+                             fullscreen and takes the area above the
+                             window, which does not fill the screen
+  window_give_room_back(host, window)
+                             that window is made fullscreen again,
+                             unless the user has moved, resized or
+                             zoomed it since
 
 Fields:
 

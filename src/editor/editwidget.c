@@ -440,6 +440,32 @@ editor_host_window_hide_impl (mc_editor_host_t *host, void *window)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: the fullscreen window makes room for a window of a plugin.
+ */
+
+static void
+editor_host_window_make_room_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+
+    edit_window_make_room (EDIT_WINDOW (window));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: the room made for a window of a plugin is given back.
+ */
+
+static void
+editor_host_window_give_room_back_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+
+    edit_window_give_room_back (EDIT_WINDOW (window));
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 static void
 editor_plugin_instance_free (gpointer data)
@@ -483,6 +509,8 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_add = editor_host_window_add_impl;
     ctx->host->window_show = editor_host_window_show_impl;
     ctx->host->window_hide = editor_host_window_hide_impl;
+    ctx->host->window_make_room = editor_host_window_make_room_impl;
+    ctx->host->window_give_room_back = editor_host_window_give_room_back_impl;
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
 
     for (; plugins != NULL; plugins = g_slist_next (plugins))
