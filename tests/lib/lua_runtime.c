@@ -2087,8 +2087,9 @@ test_count_shipped_package (const char *runtime_name, const char *id, const char
                             gboolean enabled, gpointer user_data)
 {
     static const char *const shipped[] = {
-        "base64-decode",   "draw-table",     "format-paragraph", "insert-command-output",
-        "insert-datetime", "insert-literal", "sort-selection",   "notify-editor-save",
+        "base64-decode",         "draw-table",         "format-paragraph",
+        "insert-command-output", "insert-datetime",    "insert-literal",
+        "sort-selection",        "notify-editor-save", "markdown-preview",
     };
     guint *count = (guint *) user_data;
     guint i;
@@ -2141,9 +2142,9 @@ START_TEST (test_lua_runtime_loads_the_shipped_editor_scripts)
                    runtime_error_details != NULL ? runtime_error_details : "");
 
     mc_runtime_plugins_enumerate_package_details (test_count_shipped_package, &packages);
-    ck_assert_uint_eq (packages, 8);
+    ck_assert_uint_eq (packages, 9);
     mc_runtime_plugins_enumerate_actions ("editor", test_count_action, &actions);
-    ck_assert_uint_ge (actions, 7);
+    ck_assert_uint_ge (actions, 8);
 }
 END_TEST
 
