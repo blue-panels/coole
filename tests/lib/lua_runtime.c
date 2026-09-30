@@ -415,6 +415,16 @@ create_event_shape_script (void)
         "    assert(ev.key.code == 19 and ev.key.text == nil and ev.key.modifiers.ctrl)\n"
         "    record(\"editor-key\")\n"
         "    return mc.CONSUME\n"
+        "end)\n"
+        "mc.on(\"editor.change\", function(ev)\n"
+        "    assert(type(ev.editor) == \"userdata\" and ev.path == \"/new/edit\")\n"
+        "    assert(ev.revision == 12)\n"
+        "    record(\"editor-change\")\n"
+        "end)\n"
+        "mc.on(\"editor.cursor\", function(ev)\n"
+        "    assert(type(ev.editor) == \"userdata\" and ev.path == \"/new/edit\")\n"
+        "    assert(ev.line == 7 and ev.column == 3)\n"
+        "    record(\"editor-cursor\")\n"
         "end)\n",
         output_path);
     write_file (entry_path, script);
@@ -1917,6 +1927,21 @@ START_TEST (test_lua_runtime_converts_all_domain_event_snapshots)
     mctest_assert_true (snapshot->consumed);
     mc_runtime_event_snapshot_free (snapshot);
 
+    snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_CHANGE);
+    snapshot->data.editor_change.editor = (mc_runtime_handle_t) { MC_RUNTIME_HANDLE_EDITOR, 2, 1 };
+    snapshot->data.editor_change.path = g_strdup ("/new/edit");
+    snapshot->data.editor_change.revision = 12;
+    mctest_assert_true (mc_runtime_event_publish (snapshot, &error));
+    mc_runtime_event_snapshot_free (snapshot);
+
+    snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_CURSOR);
+    snapshot->data.editor_cursor.editor = (mc_runtime_handle_t) { MC_RUNTIME_HANDLE_EDITOR, 2, 1 };
+    snapshot->data.editor_cursor.path = g_strdup ("/new/edit");
+    snapshot->data.editor_cursor.line = 7;
+    snapshot->data.editor_cursor.column = 3;
+    mctest_assert_true (mc_runtime_event_publish (snapshot, &error));
+    mc_runtime_event_snapshot_free (snapshot);
+
     snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_SHUTDOWN);
     snapshot->data.shutdown.reason = g_strdup ("quit");
     mctest_assert_true (mc_runtime_event_publish (snapshot, &error));
@@ -1926,7 +1951,7 @@ START_TEST (test_lua_runtime_converts_all_domain_event_snapshots)
     g_clear_error (&error);
     ck_assert_str_eq (contents,
                       "user-alpha:data\nuser-beta:data\nstartup\neditor-open\neditor-save\n"
-                      "editor-key\nshutdown\n");
+                      "editor-key\neditor-change\neditor-cursor\nshutdown\n");
     g_free (contents);
     g_unsetenv ("MC_LUA_TEST_EVENT_SHAPES");
 }

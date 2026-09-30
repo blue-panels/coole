@@ -190,6 +190,13 @@ Available event names are:
 
 - `startup`, `shutdown`
 - `editor.open`, `editor.save`, `editor.key`
+- `editor.change`, `editor.cursor`
+
+`editor.change` tells that the text changed and `editor.cursor` that the
+cursor is on another line.  Both come once the editor is idle, after the keys
+that came together have been handled: a paste or a fast typist gives one of
+each, not one for every key.  A file window that comes to the front is told of
+by both, so a script that follows the current file needs no other event.
 
 `mc.on()` returns `nil` and an "unknown event" message for any other name.
 
@@ -203,6 +210,8 @@ are:
 | `editor.open` | `editor`, `path`, `readonly`, `line`, `column` |
 | `editor.save` | `editor`, `path`, `previous_path`, `save_as` |
 | `editor.key` | `editor`, `key` (`name`, `code`, optional `text`, `modifiers`) |
+| `editor.change` | `editor`, `path`, `revision` (grows with every change) |
+| `editor.cursor` | `editor`, `path`, `line`, `column` (from 1) |
 
 ### Objects and commands
 

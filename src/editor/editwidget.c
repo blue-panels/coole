@@ -124,6 +124,9 @@ const edit_window_class_t edit_class = {
 
 static unsigned int edit_dlg_init_refcounter = 0;
 
+/* The file window the runtime was told of last by editor.change and editor.cursor */
+static const WEdit *runtime_told_editor = NULL;
+
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -191,6 +194,49 @@ edit_publish_runtime_key (WEdit *edit, int keycode)
     mc_runtime_event_snapshot_free (snapshot);
 
     return consumed;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The editor is idle: tell the runtime that the text changed and that the cursor is on another
+   line, once for all the changes and moves since it was told last.  A file window that comes to
+   the front is told of as changed and moved. */
+static void
+edit_publish_runtime_idle (WEdit *edit)
+{
+    const gboolean other = runtime_told_editor != edit;
+    mc_runtime_event_snapshot_t *snapshot;
+
+    if (!events_runtime_is_started () || !mc_runtime_events_is_initialized ())
+        return;
+
+    runtime_told_editor = edit;
+    runtime_host_set_current_editor (edit);
+
+    if (other || edit->runtime_told_revision != edit->runtime_revision)
+    {
+        edit->runtime_told_revision = edit->runtime_revision;
+        snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_CHANGE);
+        snapshot->data.editor_change.editor =
+            mc_runtime_handle_for_object (MC_RUNTIME_HANDLE_EDITOR, edit);
+        snapshot->data.editor_change.path = g_strdup (edit->filename != NULL ? edit->filename : "");
+        snapshot->data.editor_change.revision = edit->runtime_revision;
+        (void) mc_runtime_event_publish (snapshot, NULL);
+        mc_runtime_event_snapshot_free (snapshot);
+    }
+
+    if (other || edit->runtime_told_line != edit->buffer.curs_line)
+    {
+        edit->runtime_told_line = edit->buffer.curs_line;
+        snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_CURSOR);
+        snapshot->data.editor_cursor.editor =
+            mc_runtime_handle_for_object (MC_RUNTIME_HANDLE_EDITOR, edit);
+        snapshot->data.editor_cursor.path = g_strdup (edit->filename != NULL ? edit->filename : "");
+        snapshot->data.editor_cursor.line = (guint) MAX (edit->buffer.curs_line, 0) + 1;
+        snapshot->data.editor_cursor.column = (guint) MAX (edit->curs_col, 0) + 1;
+        (void) mc_runtime_event_publish (snapshot, NULL);
+        mc_runtime_event_snapshot_free (snapshot);
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1975,6 +2021,8 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
         return MSG_HANDLED;
 
     case MSG_DESTROY:
+        if (runtime_told_editor == e)
+            runtime_told_editor = NULL;
         edit_clean (e);
         return MSG_HANDLED;
 
@@ -2299,6 +2347,8 @@ edit_update_screen (WEdit *e)
         if ((e->force & REDRAW_COMPLETELY) != 0)
             e->force |= REDRAW_PAGE;
         edit_render_keypress (e);
+        // what came of the keys is on the screen: the runtime hears of it once
+        edit_publish_runtime_idle (e);
     }
 
     widget_draw (WIDGET (buttonbar_find (DIALOG (WIDGET (e)->owner))));

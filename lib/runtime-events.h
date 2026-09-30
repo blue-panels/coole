@@ -9,13 +9,15 @@
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
-#define MCEVENT_GROUP_RUNTIME       "Runtime"
+#define MCEVENT_GROUP_RUNTIME         "Runtime"
 
-#define MCEVENT_RUNTIME_STARTUP     "startup"
-#define MCEVENT_RUNTIME_SHUTDOWN    "shutdown"
-#define MCEVENT_RUNTIME_EDITOR_OPEN "editor.open"
-#define MCEVENT_RUNTIME_EDITOR_SAVE "editor.save"
-#define MCEVENT_RUNTIME_EDITOR_KEY  "editor.key"
+#define MCEVENT_RUNTIME_STARTUP       "startup"
+#define MCEVENT_RUNTIME_SHUTDOWN      "shutdown"
+#define MCEVENT_RUNTIME_EDITOR_OPEN   "editor.open"
+#define MCEVENT_RUNTIME_EDITOR_SAVE   "editor.save"
+#define MCEVENT_RUNTIME_EDITOR_KEY    "editor.key"
+#define MCEVENT_RUNTIME_EDITOR_CHANGE "editor.change"
+#define MCEVENT_RUNTIME_EDITOR_CURSOR "editor.cursor"
 
 /*** enums ***************************************************************************************/
 
@@ -27,6 +29,10 @@ typedef enum
     MC_RUNTIME_EVENT_EDITOR_OPEN,
     MC_RUNTIME_EVENT_EDITOR_SAVE,
     MC_RUNTIME_EVENT_EDITOR_KEY,
+    /* the text changed; told once the editor is idle after the changes */
+    MC_RUNTIME_EVENT_EDITOR_CHANGE,
+    /* the cursor is on another line; told once the editor is idle */
+    MC_RUNTIME_EVENT_EDITOR_CURSOR,
     MC_RUNTIME_EVENT_COUNT
 } mc_runtime_event_id_t;
 
@@ -102,6 +108,21 @@ typedef struct
             mc_runtime_handle_t editor;
             mc_runtime_key_snapshot_t key;
         } editor_key;
+
+        struct
+        {
+            mc_runtime_handle_t editor;
+            char *path;
+            guint64 revision;
+        } editor_change;
+
+        struct
+        {
+            mc_runtime_handle_t editor;
+            char *path;
+            guint line;
+            guint column;
+        } editor_cursor;
     } data;
 } mc_runtime_event_snapshot_t;
 

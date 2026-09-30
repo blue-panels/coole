@@ -602,6 +602,8 @@ mc_lua_event_id_from_name (const char *event_name)
         MCEVENT_RUNTIME_EDITOR_OPEN,
         MCEVENT_RUNTIME_EDITOR_SAVE,
         MCEVENT_RUNTIME_EDITOR_KEY,
+        MCEVENT_RUNTIME_EDITOR_CHANGE,
+        MCEVENT_RUNTIME_EDITOR_CURSOR,
     };
     mc_runtime_event_id_t event_id;
 
@@ -627,6 +629,8 @@ mc_lua_event_name (mc_runtime_event_id_t event_id)
         MCEVENT_RUNTIME_EDITOR_OPEN,
         MCEVENT_RUNTIME_EDITOR_SAVE,
         MCEVENT_RUNTIME_EDITOR_KEY,
+        MCEVENT_RUNTIME_EDITOR_CHANGE,
+        MCEVENT_RUNTIME_EDITOR_CURSOR,
     };
 
     if (event_id <= MC_RUNTIME_EVENT_INVALID || event_id >= MC_RUNTIME_EVENT_COUNT)
@@ -886,6 +890,22 @@ mc_lua_push_event (lua_State *lua, const mc_runtime_event_snapshot_t *snapshot)
         mc_lua_set_boolean_field (lua, "alt", snapshot->data.editor_key.key.alt);
         lua_setfield (lua, -2, "modifiers");
         lua_setfield (lua, -2, "key");
+        break;
+
+    case MC_RUNTIME_EVENT_EDITOR_CHANGE:
+        mc_lua_push_handle (lua, &snapshot->data.editor_change.editor);
+        lua_setfield (lua, -2, "editor");
+        mc_lua_set_string_field (lua, "path", snapshot->data.editor_change.path);
+        mc_lua_set_integer_field (lua, "revision",
+                                  (lua_Integer) snapshot->data.editor_change.revision);
+        break;
+
+    case MC_RUNTIME_EVENT_EDITOR_CURSOR:
+        mc_lua_push_handle (lua, &snapshot->data.editor_cursor.editor);
+        lua_setfield (lua, -2, "editor");
+        mc_lua_set_string_field (lua, "path", snapshot->data.editor_cursor.path);
+        mc_lua_set_integer_field (lua, "line", snapshot->data.editor_cursor.line);
+        mc_lua_set_integer_field (lua, "column", snapshot->data.editor_cursor.column);
         break;
 
     case MC_RUNTIME_EVENT_INVALID:
