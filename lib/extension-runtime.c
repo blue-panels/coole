@@ -178,6 +178,7 @@ struct mc_runtime_plugin_context
     mc_runtime_plugin_instance_t *instance;
     gpointer data;
     GDestroyNotify data_destroy;
+    GArray *service_listeners;  // guint ids of mc_service_connect()
 };
 
 static GPtrArray *mc_runtime_ui_indicators = NULL;
@@ -981,6 +982,68 @@ mc_runtime_host_syntax_result_free (mc_runtime_plugin_context_t *context,
 /* --------------------------------------------------------------------------------------------- */
 
 static gboolean
+mc_runtime_host_service_exists (mc_runtime_plugin_context_t *context, const char *name)
+{
+    return mc_runtime_plugin_context_is_known (context) && mc_service_exists (name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static GVariant *
+mc_runtime_host_service_call (mc_runtime_plugin_context_t *context, const char *name,
+                              const char *method, GVariant *args, GError **error)
+{
+    if (!mc_runtime_plugin_context_is_known (context) || name == NULL || method == NULL)
+    {
+        if (args != NULL)
+            g_variant_unref (g_variant_ref_sink (args));
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_ARGS, "invalid_context");
+        return NULL;
+    }
+    return mc_service_call (name, method, args, error);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static guint
+mc_runtime_host_service_connect (mc_runtime_plugin_context_t *context, const char *name,
+                                 mc_service_signal_fn fn, void *user_data)
+{
+    guint id;
+
+    if (!mc_runtime_plugin_context_is_known (context) || name == NULL || fn == NULL)
+        return 0;
+
+    id = mc_service_connect (name, fn, user_data);
+    if (context->service_listeners == NULL)
+        context->service_listeners = g_array_new (FALSE, FALSE, sizeof (guint));
+    g_array_append_val (context->service_listeners, id);
+
+    return id;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+mc_runtime_host_service_disconnect (mc_runtime_plugin_context_t *context, guint id)
+{
+    guint i;
+
+    if (!mc_runtime_plugin_context_is_known (context) || context->service_listeners == NULL)
+        return;
+
+    for (i = 0; i < context->service_listeners->len; i++)
+        if (g_array_index (context->service_listeners, guint, i) == id)
+        {
+            g_array_remove_index_fast (context->service_listeners, i);
+            mc_service_disconnect (id);
+            return;
+        }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
 mc_runtime_host_tty_info (mc_runtime_plugin_context_t *context, const char *section,
                           mc_runtime_tty_info_t *info, const char **error)
 {
@@ -1299,7 +1362,8 @@ mc_runtime_menu_action_enumeration_bridge (const char *id, const char *menu_path
 static mc_runtime_host_api_v1_t mc_runtime_host_api = {
     .abi_version = MC_RUNTIME_PLUGIN_ABI_VERSION,
     .struct_size = sizeof (mc_runtime_host_api_v1_t),
-    .capability_flags = MC_RUNTIME_HOST_CAP_EVENTS | MC_RUNTIME_HOST_CAP_CONTEXT_DATA,
+    .capability_flags = MC_RUNTIME_HOST_CAP_EVENTS | MC_RUNTIME_HOST_CAP_CONTEXT_DATA
+        | MC_RUNTIME_HOST_CAP_SERVICES,
     .subscribe = mc_runtime_host_subscribe,
     .unsubscribe = mc_runtime_host_unsubscribe,
     .unsubscribe_all = mc_runtime_host_unsubscribe_all,
@@ -1345,6 +1409,10 @@ static mc_runtime_host_api_v1_t mc_runtime_host_api = {
     .syntax_scan = mc_runtime_host_syntax_scan,
     .syntax_result_free = mc_runtime_host_syntax_result_free,
     .tty_info = mc_runtime_host_tty_info,
+    .service_exists = mc_runtime_host_service_exists,
+    .service_call = mc_runtime_host_service_call,
+    .service_connect = mc_runtime_host_service_connect,
+    .service_disconnect = mc_runtime_host_service_disconnect,
 };
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1462,6 +1530,14 @@ mc_runtime_plugin_context_destroy (mc_runtime_plugin_context_t *context)
 
     if (context->data_destroy != NULL)
         context->data_destroy (context->data);
+
+    // a runtime that goes must not leave a listener in the services
+    if (context->service_listeners != NULL)
+    {
+        for (i = 0; i < context->service_listeners->len; i++)
+            mc_service_disconnect (g_array_index (context->service_listeners, guint, i));
+        g_array_free (context->service_listeners, TRUE);
+    }
 
     g_free (context);
 }
@@ -2013,8 +2089,8 @@ mc_runtime_plugins_set_host_services (const mc_runtime_host_services_v1_t *servi
         return;
 
     mc_runtime_host_services = services;
-    mc_runtime_host_api.capability_flags =
-        MC_RUNTIME_HOST_CAP_EVENTS | MC_RUNTIME_HOST_CAP_CONTEXT_DATA;
+    mc_runtime_host_api.capability_flags = MC_RUNTIME_HOST_CAP_EVENTS
+        | MC_RUNTIME_HOST_CAP_CONTEXT_DATA | MC_RUNTIME_HOST_CAP_SERVICES;
     if (services != NULL && services->ui_status != NULL && services->ui_message != NULL)
         mc_runtime_host_api.capability_flags |= MC_RUNTIME_HOST_CAP_UI;
     if (services != NULL && services->log != NULL)

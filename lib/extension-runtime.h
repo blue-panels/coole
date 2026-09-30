@@ -7,6 +7,7 @@
 
 #include "lib/global.h"
 #include "lib/runtime-events.h"
+#include "lib/plugin-service.h"
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
@@ -21,6 +22,7 @@
 #define MC_RUNTIME_HOST_CAP_PROCESS      (G_GUINT64_CONSTANT (1) << 5)
 #define MC_RUNTIME_HOST_CAP_SYNTAX       (G_GUINT64_CONSTANT (1) << 6)
 #define MC_RUNTIME_HOST_CAP_TTY          (G_GUINT64_CONSTANT (1) << 7)
+#define MC_RUNTIME_HOST_CAP_SERVICES     (G_GUINT64_CONSTANT (1) << 8)
 
 /*** enums ***************************************************************************************/
 
@@ -716,6 +718,15 @@ typedef struct
      * paints a section with. */
     gboolean (*tty_info) (mc_runtime_plugin_context_t *context, const char *section,
                           mc_runtime_tty_info_t *info, const char **error);
+
+    /* Optional v1 extension: the services plugins offer one another (lib/plugin-service.h).
+     * A listener is taken off when the runtime is unloaded, if it has not been before. */
+    gboolean (*service_exists) (mc_runtime_plugin_context_t *context, const char *name);
+    GVariant *(*service_call) (mc_runtime_plugin_context_t *context, const char *name,
+                               const char *method, GVariant *args, GError **error);
+    guint (*service_connect) (mc_runtime_plugin_context_t *context, const char *name,
+                              mc_service_signal_fn fn, void *user_data);
+    void (*service_disconnect) (mc_runtime_plugin_context_t *context, guint id);
 } mc_runtime_host_api_v1_t;
 
 typedef struct

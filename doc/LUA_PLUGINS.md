@@ -367,6 +367,35 @@ there.  Copy an example into `~/.local/share/coole/lua/scripts/editor/` to try
 it, and copy an installed script before adapting it, so system updates do not
 overwrite local changes.
 
+### Services
+
+A plugin of the editor can offer a service under a name, and a script
+calls it: the viewer plugin, for one, offers `viewer`, windows that show
+the text a script gives them.
+
+```lua
+local viewer = mc.service("viewer")
+
+local function show(text)
+    local r, err = viewer:call("open", { title = "Notes", text = text, place = "right" })
+    if r == nil then
+        mc.ui.message("Notes", err)   -- "not_found" without the plugin
+        return
+    end
+    viewer:on("closed", function(args) if args.id == r.id then --[[ gone ]] end end)
+end
+```
+
+`mc.service(name)` gives the object whether the service is there yet or
+not: the scripts load before the editor opens its plugins, and a call
+says `not_found` while the service is missing.  `service:call(method,
+args)` takes a table of strings, numbers, booleans and tables and gives
+the answer as a table; a string that is not UTF-8 goes as the bytes it
+is.  `service:on(signal, fn)` calls `fn(args, signal)` when the service
+tells of something, `"*"` for any signal; `service:off(id)` stops it.
+The methods a service has are listed where it is described; those of the
+viewer are in `src/editor-plugins/viewer/viewer.c` and in `doc/PLUGINS`.
+
 ## Trust boundary
 
 Lua scripts run with the permissions of the current coole process.  Install

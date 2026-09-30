@@ -40,7 +40,7 @@
 #include "lib/tty/tty.h"
 #include "lib/skin.h"
 #include "lib/strutil.h"  // str_term_trim()
-#include "lib/util.h"      // Q_()
+#include "lib/util.h"     // Q_()
 #include "lib/widget.h"
 
 #include "src/keymap.h"  // editor_map
@@ -301,7 +301,8 @@ tw_parse (tw_text_t *text, const char *data, gsize len)
     }
 
     // a text that ends with a newline has no empty line after it
-    if (text->lines->len > 1 && g_array_index (text->lines, GArray *, text->lines->len - 1)->len == 0)
+    if (text->lines->len > 1
+        && g_array_index (text->lines, GArray *, text->lines->len - 1)->len == 0)
         g_array_set_size (text->lines, text->lines->len - 1);
 }
 
