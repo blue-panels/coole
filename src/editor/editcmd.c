@@ -1383,6 +1383,44 @@ edit_load_file_from_history (WDialog *h)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
+ * Make the Syntax file of the user where there is none.
+ *
+ * It is not a copy of the installed one: that one is still read after it, and a
+ * copy would keep the user from every type installed later.  What the user
+ * writes here comes first and wins for the files it matches.
+ *
+ * @return TRUE if the file is there now
+ */
+
+static gboolean
+editcmd_create_user_syntax_file (const char *path)
+{
+    static const char text[] =
+        "# The Syntax file of your own.\n"
+        "#\n"
+        "# It is read before the Syntax file installed with coole, which is still\n"
+        "# used for every file type not named here.  An entry here wins over the\n"
+        "# installed ones for the files it matches.  The rules an entry includes are\n"
+        "# looked for in this directory first, and among the installed ones after.\n"
+        "#\n"
+        "# file ..\\*\\\\.foo$ Foo\\sFile\n"
+        "# include foo.syntax\n";
+    GError *error = NULL;
+
+    if (exist_file (path))
+        return TRUE;
+
+    if (g_file_set_contents (path, text, sizeof (text) - 1, &error))
+        return TRUE;
+
+    message (D_ERROR, MSG_ERROR, _ ("Cannot create %s:\n%s"), path, error->message);
+    g_error_free (error);
+
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
  * Load syntax file to edit.
  *
  * @return TRUE on success
@@ -1413,9 +1451,9 @@ edit_load_syntax_file (WDialog *h)
 
         user_syntax_file_path = mc_config_get_full_path (EDIT_SYNTAX_FILE);
 
-        if (editcmd_check_and_create_user_syntax_directory (user_syntax_file_path))
+        if (editcmd_check_and_create_user_syntax_directory (user_syntax_file_path)
+            && editcmd_create_user_syntax_file (user_syntax_file_path))
         {
-            check_for_default (extdir_path, user_syntax_file_path);
             edit_arg_init (&arg, user_syntax_file_path, 0);
             ret = edit_load_file_from_filename (h, &arg);
         }
