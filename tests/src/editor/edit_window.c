@@ -393,6 +393,37 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A window of all the height at the right edge: the fullscreen window goes to its left */
+START_TEST (test_window_make_room_left)
+{
+    WEditWindow *win = &test_win->window;
+    test_window_t *right;
+    WRect r;
+
+    edit_window_toggle_fullscreen (win);
+    edit_window_toggle_fullscreen (win);
+
+    right = g_new0 (test_window_t, 1);
+    rect_init (&r, 1, 40, 22, 40);
+    edit_window_init (&right->window, &r, &test_window_class);
+    right->window.fullscreen = 0;
+    edit_window_add (&owner, &right->window);
+
+    edit_window_make_room (&right->window);
+    ck_assert_int_eq (win->fullscreen, 0);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 40);
+
+    edit_window_give_room_back (&right->window);
+    ck_assert_int_eq (win->fullscreen, 1);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 80);
+
+    group_remove_widget (WIDGET (right));
+    g_free (right);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A window destroyed gives the focus to the window left on top, not to the widget after it */
 START_TEST (test_window_destroy_selects_top)
 {
@@ -459,6 +490,7 @@ main (void)
     tcase_add_test (tc_core, test_window_hide_show);
     tcase_add_test (tc_core, test_window_holds_widgets);
     tcase_add_test (tc_core, test_window_make_room);
+    tcase_add_test (tc_core, test_window_make_room_left);
     tcase_add_test (tc_core, test_window_destroy_selects_top);
     tcase_add_test (tc_core, test_editor_is_window);
 
