@@ -9,7 +9,8 @@ foreach d : screen_deps
 endforeach
 
 # the terminal of mc, as it is there: the shell on a pty, and the emulator of the terminal, which
-# in mc is a part of the viewer.  The tests of the terminal link it too.
+# in mc is a part of the viewer.  The tests of the terminal link it too.  The ANSI colors it shares
+# with the windows of text are in the program.
 libmcterm = static_library('mcterm',
   '../../mcterm/mcterm.c',
   '../../mcterm/mcterm_cwd.c',
@@ -18,7 +19,6 @@ libmcterm = static_library('mcterm',
   '../../mcterm/mcterm_proto.c',
   '../../mcterm/mcterm_select.c',
   '../../mcterm/mcterm_setup.c',
-  '../../viewer/ansi.c',
   '../../viewer/canvas.c',
   '../../viewer/terminal_buffer.c',
   '../../viewer/vterm.c',
