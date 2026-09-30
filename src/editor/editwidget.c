@@ -75,13 +75,6 @@
 #include "editwidget.h"
 #include "editmacros.h"  // edit_execute_macro()
 
-/*** global variables ****************************************************************************/
-
-char *edit_window_state_char = NULL;
-char *edit_window_close_char = NULL;
-char *edit_fold_open_char = NULL;
-char *edit_fold_close_char = NULL;
-
 /*** file scope macro definitions ****************************************************************/
 
 #define WINDOW_MIN_LINES (2 + 2)
@@ -102,6 +95,28 @@ typedef struct
 } editor_plugin_ctx_t;
 
 /*** forward declarations (file scope functions) *************************************************/
+
+static cb_ret_t edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data);
+static void edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event);
+static char *edit_class_get_title (const WEditWindow *win);
+static gboolean edit_class_is_modified (const WEditWindow *win);
+static gboolean edit_class_close (WEditWindow *win);
+
+/*** global variables ****************************************************************************/
+
+char *edit_fold_open_char = NULL;
+char *edit_fold_close_char = NULL;
+
+/* A file window of the editor screen */
+const edit_window_class_t edit_class = {
+    .callback = edit_callback,
+    .mouse_callback = edit_mouse_callback,
+    .get_title = edit_class_get_title,
+    .is_modified = edit_class_is_modified,
+    .close = edit_class_close,
+    .min_lines = WINDOW_MIN_LINES,
+    .min_cols = WINDOW_MIN_COLS,
+};
 
 /*** file scope variables ************************************************************************/
 
@@ -999,164 +1014,6 @@ edit_help (const WDialog *h)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-/**
- * Restore saved window size.
- *
- * @param edit editor object
- */
-
-static void
-edit_restore_size (WEdit *edit)
-{
-    Widget *w = WIDGET (edit);
-
-    edit->drag_state = MCEDIT_DRAG_NONE;
-    w->mouse.forced_capture = FALSE;
-    widget_set_size_rect (w, &edit->loc_prev);
-    widget_draw (WIDGET (w->owner));
-}
-
-/* --------------------------------------------------------------------------------------------- */
-/**
- * Move window by one row or column in any direction.
- *
- * @param edit    editor object
- * @param command direction (CK_Up, CK_Down, CK_Left, CK_Right)
- */
-
-static void
-edit_window_move (WEdit *edit, long command)
-{
-    Widget *we = WIDGET (edit);
-    Widget *wo = WIDGET (we->owner);
-    WRect *w = &we->rect;
-    const WRect *wh = &wo->rect;
-
-    switch (command)
-    {
-    case CK_Up:
-        if (w->y > wh->y + 1)  // menubar
-            w->y--;
-        break;
-    case CK_Down:
-        if (w->y < wh->y + wh->lines - 2)  // buttonbar
-            w->y++;
-        break;
-    case CK_Left:
-        if (w->x + wh->cols > wh->x)
-            w->x--;
-        break;
-    case CK_Right:
-        if (w->x < wh->x + wh->cols)
-            w->x++;
-        break;
-    default:
-        return;
-    }
-
-    edit->force |= REDRAW_PAGE;
-    widget_draw (wo);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-/**
- * Resize window by one row or column in any direction.
- *
- * @param edit    editor object
- * @param command direction (CK_Up, CK_Down, CK_Left, CK_Right)
- */
-
-static void
-edit_window_resize (WEdit *edit, long command)
-{
-    Widget *we = WIDGET (edit);
-    Widget *wo = WIDGET (we->owner);
-    WRect *w = &we->rect;
-    const WRect *wh = &wo->rect;
-
-    switch (command)
-    {
-    case CK_Up:
-        if (w->lines > WINDOW_MIN_LINES)
-            w->lines--;
-        break;
-    case CK_Down:
-        if (w->y + w->lines < wh->y + wh->lines - 1)  // buttonbar
-            w->lines++;
-        break;
-    case CK_Left:
-        if (w->cols > WINDOW_MIN_COLS)
-            w->cols--;
-        break;
-    case CK_Right:
-        if (w->x + w->cols < wh->x + wh->cols)
-            w->cols++;
-        break;
-    default:
-        return;
-    }
-
-    edit->force |= REDRAW_COMPLETELY;
-    widget_draw (wo);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-/**
- * Get hotkey by number.
- *
- * @param n number
- * @return hotkey
- */
-
-static unsigned char
-get_hotkey (int n)
-{
-    return (n <= 9) ? '0' + n : 'a' + n - 10;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-edit_window_list (const WDialog *h)
-{
-    const WGroup *g = CONST_GROUP (h);
-    const size_t offset = 2;  // skip menu and buttonbar
-    const size_t dlg_num = g_list_length (g->widgets) - offset;
-    int lines, cols;
-    Listbox *listbox;
-    GList *w;
-    WEdit *selected;
-    int i = 0;
-
-    lines = MIN ((size_t) (LINES * 2 / 3), dlg_num);
-    cols = COLS * 2 / 3;
-
-    listbox = listbox_window_new (lines, cols, _ ("Open files"), "[Open files]");
-    listbox->dlg->help_file = MCEDIT_HELP_FILE;
-
-    for (w = g->widgets; w != NULL; w = g_list_next (w))
-        if (edit_widget_is_editor (CONST_WIDGET (w->data)))
-        {
-            WEdit *e = EDIT (w->data);
-            char *fname;
-
-            if (e->filename == NULL)
-                fname = g_strdup_printf ("%c [%s]", e->modified != 0 ? '*' : ' ', _ ("NoName"));
-            else
-                fname = g_strdup_printf ("%c%s", e->modified != 0 ? '*' : ' ', e->filename);
-
-            listbox_add_item (listbox->list, LISTBOX_APPEND_AT_END, get_hotkey (i++),
-                              str_term_trim (fname, WIDGET (listbox->list)->rect.cols - 2), e,
-                              FALSE);
-            g_free (fname);
-        }
-
-    selected = listbox_run_with_data (listbox, g->current->data);
-    if (selected != NULL)
-        widget_select (WIDGET (selected));
-}
-
-/* --------------------------------------------------------------------------------------------- */
 
 static char *
 edit_get_shortcut (long command)
@@ -1233,9 +1090,13 @@ edit_dialog_command_execute (WDialog *h, long command)
         break;
     case CK_Close:
         // if there are no opened files anymore, close MC editor
-        if (edit_widget_is_editor (CONST_WIDGET (g->current->data))
-            && edit_close_cmd (EDIT (g->current->data)) && edit_find_editor (h) == NULL)
-            dlg_close (h);
+        if (edit_window_is_window (CONST_WIDGET (g->current->data)))
+        {
+            WEditWindow *win = EDIT_WINDOW (g->current->data);
+
+            if (win->klass->close (win) && edit_find_editor (h) == NULL)
+                dlg_close (h);
+        }
         break;
     case CK_Help:
         edit_help (h);
@@ -1249,8 +1110,8 @@ edit_dialog_command_execute (WDialog *h, long command)
         {
             Widget *w = WIDGET (g->current->data);
 
-            if (edit_widget_is_editor (w) && EDIT (w)->drag_state != MCEDIT_DRAG_NONE)
-                edit_restore_size (EDIT (w));
+            if (edit_window_is_window (w) && EDIT_WINDOW (w)->drag_state != EDIT_WINDOW_DRAG_NONE)
+                edit_window_restore_size (EDIT_WINDOW (w));
             else if (command == CK_Quit)
                 dlg_close (h);
         }
@@ -1296,8 +1157,8 @@ edit_dialog_command_execute (WDialog *h, long command)
         break;
     case CK_WindowMove:
     case CK_WindowResize:
-        if (edit_widget_is_editor (CONST_WIDGET (g->current->data)))
-            edit_handle_move_resize (EDIT (g->current->data), command);
+        if (edit_window_is_window (CONST_WIDGET (g->current->data)))
+            edit_window_handle_move_resize (EDIT_WINDOW (g->current->data), command);
         break;
     case CK_WindowList:
         edit_window_list (h);
@@ -1458,20 +1319,20 @@ edit_quit (WDialog *h)
 
     // check window state and get modified files
     for (l = GROUP (h)->widgets; l != NULL; l = g_list_next (l))
-        if (edit_widget_is_editor (CONST_WIDGET (l->data)))
+        if (edit_window_is_window (CONST_WIDGET (l->data)))
         {
-            e = EDIT (l->data);
+            WEditWindow *win = EDIT_WINDOW (l->data);
 
-            if (e->drag_state != MCEDIT_DRAG_NONE)
+            if (win->drag_state != EDIT_WINDOW_DRAG_NONE)
             {
-                edit_restore_size (e);
+                edit_window_restore_size (win);
                 g_slist_free (m);
                 return;
             }
 
             /* create separate list because widget_select()
                changes the window position in Z order */
-            if (e->modified != 0)
+            if (edit_widget_is_editor (CONST_WIDGET (win)) && EDIT (win)->modified != 0)
                 m = g_slist_prepend (m, l->data);
         }
 
@@ -1559,8 +1420,8 @@ edit_update_cursor (WEdit *edit, const mouse_event_t *event)
     int x, y;
     gboolean done;
 
-    x = event->x - (edit->fullscreen != 0 ? 0 : 1);
-    y = event->y - (edit->fullscreen != 0 ? 0 : 1);
+    x = event->x - (EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1);
+    y = event->y - (EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1);
 
     if (edit->mark2 != -1 && event->msg == MSG_MOUSE_UP)
         return TRUE;  // don't do anything
@@ -1811,8 +1672,8 @@ edit_dialog_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 
             // Try find top fullscreen window
             for (l = g->widgets; l != NULL; l = g_list_next (l))
-                if (edit_widget_is_editor (CONST_WIDGET (l->data))
-                    && EDIT (l->data)->fullscreen != 0)
+                if (edit_window_is_window (CONST_WIDGET (l->data))
+                    && EDIT_WINDOW (l->data)->fullscreen != 0)
                     top = l;
 
             // Handle fullscreen/close buttons in the top line
@@ -1820,17 +1681,17 @@ edit_dialog_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 
             if (top != NULL && event->x >= x)
             {
-                WEdit *e = EDIT (top->data);
+                WEditWindow *win = EDIT_WINDOW (top->data);
 
                 if (top != g->current)
                 {
                     // Window is not active. Activate it
-                    widget_select (WIDGET (e));
+                    widget_select (WIDGET (win));
                 }
 
                 // Handle buttons
                 if (event->x - x <= 2)
-                    edit_toggle_fullscreen (e);
+                    edit_window_toggle_fullscreen (win);
                 else
                     send_message (h, NULL, MSG_ACTION, CK_Close, NULL);
 
@@ -1918,8 +1779,8 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
     {
         int y, x;
 
-        y = (e->fullscreen != 0 ? 0 : 1) + EDIT_TEXT_VERTICAL_OFFSET + e->curs_row;
-        x = (e->fullscreen != 0 ? 0 : 1) + EDIT_TEXT_HORIZONTAL_OFFSET
+        y = (EDIT_WINDOW (e)->fullscreen != 0 ? 0 : 1) + EDIT_TEXT_VERTICAL_OFFSET + e->curs_row;
+        x = (EDIT_WINDOW (e)->fullscreen != 0 ? 0 : 1) + EDIT_TEXT_HORIZONTAL_OFFSET
             + edit_options.line_state_width + e->curs_col + e->start_col + e->over_col;
 
         widget_gotoyx (w, y, x);
@@ -1942,65 +1803,7 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
 /* --------------------------------------------------------------------------------------------- */
 
 /**
- * Handle move/resize mouse events.
- */
-static void
-edit_mouse_handle_move_resize (Widget *w, mouse_msg_t msg, mouse_event_t *event)
-{
-    WEdit *edit = EDIT (w);
-    WRect *r = &w->rect;
-    const WRect *h = &CONST_WIDGET (w->owner)->rect;
-    int global_x, global_y;
-
-    if (msg == MSG_MOUSE_UP)
-    {
-        // Exit move/resize mode
-        edit_execute_cmd (edit, CK_Enter, -1);
-        edit_update_screen (edit);  // Paint the buttonbar over our possibly overlapping frame.
-        return;
-    }
-
-    if (msg != MSG_MOUSE_DRAG)
-        /**
-         * We ignore any other events. Specifically, MSG_MOUSE_DOWN.
-         *
-         * When the move/resize is initiated by the menu, we let the user
-         * stop it by clicking with the mouse. Which is why we don't want
-         * a mouse down to affect the window.
-         */
-        return;
-
-    // Convert point to global coordinates for easier calculations.
-    global_x = event->x + r->x;
-    global_y = event->y + r->y;
-
-    // Clamp the point to the dialog's client area.
-    global_y = CLAMP (global_y, h->y + 1, h->y + h->lines - 2);  // Status line, buttonbar
-    global_x =
-        CLAMP (global_x, h->x,
-               h->x + h->cols - 1);  // Currently a no-op, as the dialog has no left/right margins
-
-    if (edit->drag_state == MCEDIT_DRAG_MOVE)
-    {
-        r->y = global_y;
-        r->x = global_x - edit->drag_state_start;
-    }
-    else if (edit->drag_state == MCEDIT_DRAG_RESIZE)
-    {
-        r->lines = MAX (WINDOW_MIN_LINES, global_y - r->y + 1);
-        r->cols = MAX (WINDOW_MIN_COLS, global_x - r->x + 1);
-    }
-
-    edit->force |= REDRAW_COMPLETELY;  // Not really needed as WEdit's MSG_DRAW already does this.
-
-    // We draw the whole dialog because dragging/resizing exposes area beneath
-    widget_draw (WIDGET (w->owner));
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/**
- * Handle mouse events of editor window
+ * Handle mouse events of editor window that its frame does not take
  *
  * @param w Widget object (the editor window)
  * @param msg mouse event message
@@ -2010,35 +1813,10 @@ static void
 edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 {
     WEdit *edit = EDIT (w);
-    // buttons' distance from right edge
-    int dx = edit->fullscreen != 0 ? 0 : 2;
-    // location of 'Close' and 'Toggle fullscreen' pictograms
-    int close_x, toggle_fullscreen_x;
-
-    close_x = (w->rect.cols - 1) - dx - 1;
-    toggle_fullscreen_x = close_x - 3;
-
-    if (edit->drag_state != MCEDIT_DRAG_NONE)
-    {
-        // window is being resized/moved
-        edit_mouse_handle_move_resize (w, msg, event);
-        return;
-    }
-
-    /* If it's the last line on the screen, we abort the event to make the
-     * system channel it to the overlapping buttonbar instead. We have to do
-     * this because a WEdit has the WOP_TOP_SELECT flag, which makes it above
-     * the buttonbar in Z-order. */
-    if (msg == MSG_MOUSE_DOWN && (event->y + w->rect.y == LINES - 1))
-    {
-        event->result.abort = TRUE;
-        return;
-    }
 
     switch (msg)
     {
     case MSG_MOUSE_DOWN:
-        widget_select (w);
         edit_update_curs_row (edit);
         edit_update_curs_col (edit);
 
@@ -2047,39 +1825,12 @@ edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
         else if (event->count == GPM_TRIPLE)
             edit->line_highlight = TRUE;
 
-        if (edit->fullscreen == 0)
-        {
-            if (event->y == 0)
-            {
-                if (event->x >= close_x - 1 && event->x <= close_x + 1)
-                    ;  // do nothing (see MSG_MOUSE_CLICK)
-                else if (event->x >= toggle_fullscreen_x - 1 && event->x <= toggle_fullscreen_x + 1)
-                    ;  // do nothing (see MSG_MOUSE_CLICK)
-                else
-                {
-                    // start window move
-                    edit_execute_cmd (edit, CK_WindowMove, -1);
-                    edit_update_screen (
-                        edit);  // Paint the buttonbar over our possibly overlapping frame.
-                    edit->drag_state_start = event->x;
-                }
-                break;
-            }
-
-            if (event->y == w->rect.lines - 1 && event->x == w->rect.cols - 1)
-            {
-                // bottom-right corner -- start window resize
-                edit_execute_cmd (edit, CK_WindowResize, -1);
-                break;
-            }
-        }
-
         // click in the line-state gutter area - toggle fold
         if (edit_options.line_state)
         {
             int gutter_x;
 
-            gutter_x = event->x - (edit->fullscreen != 0 ? 0 : 1);
+            gutter_x = event->x - (EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1);
             if (gutter_x >= 0 && gutter_x < edit_options.line_state_width)
             {
                 int click_y;
@@ -2087,7 +1838,7 @@ edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
                 edit_fold_t *fold;
 
                 // map screen row to file line and move the cursor there
-                click_y = event->y - (edit->fullscreen != 0 ? 0 : 1);
+                click_y = event->y - (EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1);
                 line = edit_line_at_row (edit, click_y);
                 edit_cursor_move (edit,
                                   edit_buffer_get_forward_offset (&edit->buffer,
@@ -2148,19 +1899,6 @@ edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
         edit->line_highlight = FALSE;
         break;
 
-    case MSG_MOUSE_CLICK:
-        if (event->y == 0)
-        {
-            if (event->x >= close_x - 1 && event->x <= close_x + 1)
-                send_message (w->owner, NULL, MSG_ACTION, CK_Close, NULL);
-            else if (event->x >= toggle_fullscreen_x - 1 && event->x <= toggle_fullscreen_x + 1)
-                edit_toggle_fullscreen (edit);
-            else if (edit->fullscreen == 0 && event->count == GPM_DOUBLE)
-                // double click on top line (toggle fullscreen)
-                edit_toggle_fullscreen (edit);
-        }
-        break;
-
     case MSG_MOUSE_DRAG:
         edit_update_cursor (edit, event);
         edit_total_update (edit);
@@ -2185,6 +1923,34 @@ edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
     default:
         break;
     }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static char *
+edit_class_get_title (const WEditWindow *win)
+{
+    const WEdit *e = CONST_EDIT (win);
+
+    if (e->filename == NULL)
+        return g_strdup_printf (" [%s]", _ ("NoName"));
+    return g_strdup (e->filename);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+edit_class_is_modified (const WEditWindow *win)
+{
+    return CONST_EDIT (win)->modified != 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+edit_class_close (WEditWindow *win)
+{
+    return edit_close_cmd (EDIT (win));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2299,10 +2065,16 @@ WEdit *
 edit_find_editor (const WDialog *h)
 {
     const WGroup *g = CONST_GROUP (h);
+    GList *l;
 
     if (edit_widget_is_editor (CONST_WIDGET (g->current->data)))
         return EDIT (g->current->data);
-    return EDIT (widget_find_by_type (CONST_WIDGET (h), edit_callback));
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+        if (edit_widget_is_editor (CONST_WIDGET (l->data)))
+            return EDIT (l->data);
+
+    return NULL;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2316,7 +2088,7 @@ edit_find_editor (const WDialog *h)
 gboolean
 edit_widget_is_editor (const Widget *w)
 {
-    return (w != NULL && w->callback == edit_callback);
+    return (edit_window_is_window (w) && CONST_EDIT_WINDOW (w)->klass == &edit_class);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2339,19 +2111,6 @@ edit_update_screen (WEdit *e)
     }
 
     widget_draw (WIDGET (buttonbar_find (DIALOG (WIDGET (e)->owner))));
-}
-
-/* --------------------------------------------------------------------------------------------- */
-/**
- * Save current window size.
- *
- * @param edit editor object
- */
-
-void
-edit_save_size (WEdit *edit)
-{
-    edit->loc_prev = WIDGET (edit)->rect;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2380,170 +2139,12 @@ edit_add_window (WDialog *h, const WRect *r, const edit_arg_t *arg)
         return FALSE;
 
     w = WIDGET (edit);
-    w->callback = edit_callback;
-    w->mouse_callback = edit_mouse_callback;
-
     group_add_widget_autopos (GROUP (h), w, WPOS_KEEP_ALL, NULL);
     edit_set_buttonbar (edit, buttonbar_find (h));
     edit_publish_runtime_open (edit);
     widget_draw (WIDGET (h));
 
     return TRUE;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-/**
- * Handle move/resize events.
- *
- * @param edit    editor object
- * @param command action id
- * @return TRUE if the action was handled, FALSE otherwise
- */
-
-gboolean
-edit_handle_move_resize (WEdit *edit, long command)
-{
-    Widget *w = WIDGET (edit);
-    gboolean ret = FALSE;
-
-    if (edit->fullscreen != 0)
-    {
-        edit->drag_state = MCEDIT_DRAG_NONE;
-        w->mouse.forced_capture = FALSE;
-        return ret;
-    }
-
-    switch (edit->drag_state)
-    {
-    case MCEDIT_DRAG_NONE:
-        // possible start move/resize
-        switch (command)
-        {
-        case CK_WindowMove:
-            edit->drag_state = MCEDIT_DRAG_MOVE;
-            edit_save_size (edit);
-            edit_status (edit, TRUE);  // redraw frame and status
-            /**
-             * If a user initiates a move by the menu, not by the mouse, we
-             * make a subsequent mouse drag pull the frame from its middle.
-             * (We can instead choose '0' to pull it from the corner.)
-             */
-            edit->drag_state_start = w->rect.cols / 2;
-            ret = TRUE;
-            break;
-        case CK_WindowResize:
-            edit->drag_state = MCEDIT_DRAG_RESIZE;
-            edit_save_size (edit);
-            edit_status (edit, TRUE);  // redraw frame and status
-            ret = TRUE;
-            break;
-        default:
-            break;
-        }
-        break;
-
-    case MCEDIT_DRAG_MOVE:
-        switch (command)
-        {
-        case CK_WindowResize:
-            edit->drag_state = MCEDIT_DRAG_RESIZE;
-            ret = TRUE;
-            break;
-        case CK_Up:
-        case CK_Down:
-        case CK_Left:
-        case CK_Right:
-            edit_window_move (edit, command);
-            ret = TRUE;
-            break;
-        case CK_Enter:
-        case CK_WindowMove:
-            edit->drag_state = MCEDIT_DRAG_NONE;
-            edit_status (edit, TRUE);  // redraw frame and status
-            MC_FALLTHROUGH;
-        default:
-            ret = TRUE;
-            break;
-        }
-        break;
-
-    case MCEDIT_DRAG_RESIZE:
-        switch (command)
-        {
-        case CK_WindowMove:
-            edit->drag_state = MCEDIT_DRAG_MOVE;
-            ret = TRUE;
-            break;
-        case CK_Up:
-        case CK_Down:
-        case CK_Left:
-        case CK_Right:
-            edit_window_resize (edit, command);
-            ret = TRUE;
-            break;
-        case CK_Enter:
-        case CK_WindowResize:
-            edit->drag_state = MCEDIT_DRAG_NONE;
-            edit_status (edit, TRUE);  // redraw frame and status
-            MC_FALLTHROUGH;
-        default:
-            ret = TRUE;
-            break;
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    /**
-     * - We let the user stop a resize/move operation by clicking with the
-     *   mouse anywhere. ("clicking" = pressing and releasing a button.)
-     * - We let the user perform a resize/move operation by a mouse drag
-     *   initiated anywhere.
-     *
-     * "Anywhere" means: inside or outside the window. We make this happen
-     * with the 'forced_capture' flag.
-     */
-    w->mouse.forced_capture = (edit->drag_state != MCEDIT_DRAG_NONE);
-
-    return ret;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-/**
- * Toggle window fuulscreen mode.
- *
- * @param edit editor object
- */
-
-void
-edit_toggle_fullscreen (WEdit *edit)
-{
-    Widget *w = WIDGET (edit);
-
-    edit->fullscreen = edit->fullscreen != 0 ? 0 : 1;
-    edit->force = REDRAW_COMPLETELY;
-
-    if (edit->fullscreen == 0)
-    {
-        edit_restore_size (edit);
-        // do not follow screen size on resize
-        w->pos_flags = WPOS_KEEP_DEFAULT;
-    }
-    else
-    {
-        WRect r;
-
-        edit_save_size (edit);
-        r = WIDGET (w->owner)->rect;
-        rect_grow (&r, -1, 0);
-        widget_set_size_rect (w, &r);
-        // follow screen size on resize
-        w->pos_flags = WPOS_KEEP_ALL;
-        edit->force |= REDRAW_PAGE;
-        edit_update_screen (edit);
-    }
 }
 
 /* --------------------------------------------------------------------------------------------- */

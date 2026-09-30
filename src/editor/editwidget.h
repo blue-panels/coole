@@ -14,6 +14,7 @@
 
 #include "edit-impl.h"
 #include "editbuffer.h"
+#include "editwindow.h"
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
@@ -41,27 +42,9 @@ struct edit_fold_t
     edit_fold_t *prev;
 };
 
-/*
- * State of WEdit window
- * MCEDIT_DRAG_NONE   - window is in normal mode
- * MCEDIT_DRAG_MOVE   - window is being moved
- * MCEDIT_DRAG_RESIZE - window is being resized
- */
-typedef enum
-{
-    MCEDIT_DRAG_NONE = 0,
-    MCEDIT_DRAG_MOVE,
-    MCEDIT_DRAG_RESIZE
-} mcedit_drag_state_t;
-
 struct WEdit
 {
-    Widget widget;
-    mcedit_drag_state_t drag_state;
-    int drag_state_start;  // save cursor position before window moving
-
-    // save location before move/resize or toggle to fullscreen
-    WRect loc_prev;
+    WEditWindow window;
 
     char *filename;  // Absolute name of the file, NULL for a new one
 
@@ -113,7 +96,6 @@ struct WEdit
     unsigned int column_highlight : 1;
     unsigned int word_highlight : 1;  // Highlight each word the cursor crosses
     unsigned int line_highlight : 1;  // Highlight each line the cursor crosses
-    unsigned int fullscreen : 1;      // Is window fullscreen or not
     long prev_col;                    /* recent column position of the cursor - used when moving
                                          up or down past lines that are shorter than the current line */
     long start_line;                  // line number of the top of the page
@@ -173,6 +155,8 @@ struct WEdit
 };
 
 /*** global variables defined in .c file *********************************************************/
+
+extern const edit_window_class_t edit_class;
 
 /*** declarations of public functions ************************************************************/
 

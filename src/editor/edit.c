@@ -578,8 +578,9 @@ edit_save_position (WEdit *edit)
 static void
 edit_purge_widget (WEdit *edit)
 {
-    size_t len = sizeof (WEdit) - sizeof (Widget);
-    char *start = (char *) edit + sizeof (Widget);
+    // the window stays as it is
+    size_t len = sizeof (WEdit) - sizeof (WEditWindow);
+    char *start = (char *) edit + sizeof (WEditWindow);
 
     edit_layout_cache_invalidate (edit);
     memset (start, 0, len);
@@ -891,8 +892,9 @@ static void
 edit_end_page (WEdit *edit)
 {
     edit_update_curs_row (edit);
-    edit_move_down (edit, WIDGET (edit)->rect.lines - edit->curs_row - (edit->fullscreen ? 1 : 3),
-                    FALSE);
+    edit_move_down (
+        edit, WIDGET (edit)->rect.lines - edit->curs_row - (EDIT_WINDOW (edit)->fullscreen ? 1 : 3),
+        FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2561,20 +2563,7 @@ edit_init (WEdit *edit, const WRect *r, const edit_arg_t *arg)
     edit_options.line_state_width = edit_options.line_state ? LINE_STATE_WIDTH : 0;
 
     if (edit != NULL)
-    {
-        int fullscreen;
-        WRect loc_prev;
-
-        // save some widget parameters
-        fullscreen = edit->fullscreen;
-        loc_prev = edit->loc_prev;
-
         edit_purge_widget (edit);
-
-        // restore saved parameters
-        edit->fullscreen = fullscreen;
-        edit->loc_prev = loc_prev;
-    }
     else
     {
         Widget *w;
@@ -2582,16 +2571,13 @@ edit_init (WEdit *edit, const WRect *r, const edit_arg_t *arg)
         edit = g_malloc0 (sizeof (WEdit));
         to_free = TRUE;
 
+        edit_window_init (EDIT_WINDOW (edit), r, &edit_class);
         w = WIDGET (edit);
-        widget_init (w, r, NULL, NULL);
-        w->options |= WOP_SELECTABLE | WOP_TOP_SELECT | WOP_WANT_CURSOR;
         w->keymap = editor_map;
         w->ext_keymap = editor_x_map;
-        edit->fullscreen = 1;
-        edit_save_size (edit);
     }
 
-    edit->drag_state = MCEDIT_DRAG_NONE;
+    EDIT_WINDOW (edit)->drag_state = EDIT_WINDOW_DRAG_NONE;
 
     edit->stat1.st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
     edit->stat1.st_uid = getuid ();
@@ -2745,10 +2731,7 @@ edit_reload_line (WEdit *edit, const edit_arg_t *arg)
     const guint64 previous_runtime_revision = MAX (edit->runtime_revision, 1);
 
     e = g_malloc0 (sizeof (WEdit));
-    *WIDGET (e) = *w;
-    // save some widget parameters
-    e->fullscreen = edit->fullscreen;
-    e->loc_prev = edit->loc_prev;
+    *EDIT_WINDOW (e) = *EDIT_WINDOW (edit);
 
     if (edit_init (e, &w->rect, arg) == NULL)
     {
@@ -4892,12 +4875,12 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
 
     if (command == CK_WindowFullscreen)
     {
-        edit_toggle_fullscreen (edit);
+        edit_window_toggle_fullscreen (EDIT_WINDOW (edit));
         return;
     }
 
     // handle window state
-    if (edit_handle_move_resize (edit, command))
+    if (edit_window_handle_move_resize (EDIT_WINDOW (edit), command))
         return;
 
     edit->force |= REDRAW_LINE;
@@ -5212,14 +5195,14 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
         MC_FALLTHROUGH;
     case CK_PageUp:
     case CK_MarkPageUp:
-        edit_move_up (edit, w->lines - (edit->fullscreen ? 1 : 2), TRUE);
+        edit_move_up (edit, w->lines - (EDIT_WINDOW (edit)->fullscreen ? 1 : 2), TRUE);
         break;
     case CK_MarkColumnPageDown:
         edit->column_highlight = 1;
         MC_FALLTHROUGH;
     case CK_PageDown:
     case CK_MarkPageDown:
-        edit_move_down (edit, w->lines - (edit->fullscreen ? 1 : 2), TRUE);
+        edit_move_down (edit, w->lines - (EDIT_WINDOW (edit)->fullscreen ? 1 : 2), TRUE);
         break;
     case CK_MarkColumnLeft:
         edit->column_highlight = 1;

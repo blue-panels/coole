@@ -354,57 +354,6 @@ edit_status_window (WEdit *edit)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-/**
- * Draw a frame around edit area.
- *
- * @param edit   editor object
- * @param color  color pair
- * @param active TRUE if editor object is focused
- */
-
-static inline void
-edit_draw_frame (const WEdit *edit, int color, gboolean active)
-{
-    const Widget *w = CONST_WIDGET (edit);
-
-    // draw a frame around edit area
-    tty_setcolor (color);
-    // draw double frame for active window if skin supports that
-    tty_draw_box (w->rect.y, w->rect.x, w->rect.lines, w->rect.cols, !active);
-    // draw a drag marker
-    if (edit->drag_state == MCEDIT_DRAG_NONE)
-    {
-        tty_setcolor (EDITOR_FRAME_DRAG_COLOR);
-        widget_gotoyx (w, w->rect.lines - 1, w->rect.cols - 1);
-        tty_print_char (mc_tty_frm[MC_TTY_FRM_RIGHTBOTTOM]);
-    }
-}
-
-/* --------------------------------------------------------------------------------------------- */
-/**
- * Draw a window control buttons.
- *
- * @param edit  editor object
- * @param color color pair
- */
-
-static inline void
-edit_draw_window_icons (const WEdit *edit, int color)
-{
-    const Widget *w = CONST_WIDGET (edit);
-    char tmp[17];
-
-    tty_setcolor (color);
-    if (edit->fullscreen != 0)
-        widget_gotoyx (w->owner, 0, WIDGET (w->owner)->rect.cols - 6);
-    else
-        widget_gotoyx (w, 0, w->rect.cols - 8);
-    g_snprintf (tmp, sizeof (tmp), "[%s][%s]", edit_window_state_char, edit_window_close_char);
-    tty_print_string (tmp);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 static inline void
 print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long end_col,
                  line_s line[], char *status, int bookmarked)
@@ -421,7 +370,7 @@ print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long 
     y = row + EDIT_TEXT_VERTICAL_OFFSET;
     cols_to_skip = abs (x);
 
-    if (edit->fullscreen == 0)
+    if (EDIT_WINDOW (edit)->fullscreen == 0)
     {
         x1++;
         y++;
@@ -547,7 +496,8 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
     char line_stat[LINE_STATE_WIDTH + 1] = "\0";
     syntax_line_local_state_t line_syntax_state;
 
-    if (row > w->rect.lines - 1 - EDIT_TEXT_VERTICAL_OFFSET - 2 * (edit->fullscreen != 0 ? 0 : 1))
+    if (row > w->rect.lines - 1 - EDIT_TEXT_VERTICAL_OFFSET
+            - 2 * (EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1))
         return;
 
     if (book_mark_query_color (edit, edit->start_line + row, EDITOR_BOOKMARK_COLOR))
@@ -561,7 +511,7 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
         abn_style = MOD_ABNORMAL;
 
     end_col -= EDIT_TEXT_HORIZONTAL_OFFSET + edit_options.line_state_width;
-    if (edit->fullscreen == 0)
+    if (EDIT_WINDOW (edit)->fullscreen == 0)
     {
         end_col--;
         if (w->rect.x + w->rect.cols <= WIDGET (w->owner)->rect.cols)
@@ -1203,23 +1153,18 @@ edit_render (WEdit *edit, int page, int row_start, int col_start, int row_end, i
 void
 edit_status (WEdit *edit, gboolean active)
 {
-    int color;
+    const WEditWindow *win = CONST_EDIT_WINDOW (edit);
+    const int color = edit_window_frame_color (win, active);
 
-    if (edit->fullscreen != 0)
-    {
-        color = STATUSBAR_COLOR;
+    if (win->fullscreen != 0)
         edit_status_fullscreen (edit, color);
-    }
     else
     {
-        color = edit->drag_state != MCEDIT_DRAG_NONE ? EDITOR_FRAME_DRAG_COLOR
-            : active                                 ? EDITOR_FRAME_ACTIVE_COLOR
-                                                     : EDITOR_FRAME_COLOR;
-        edit_draw_frame (edit, color, active);
+        edit_window_draw_frame (win, color, active);
         edit_status_window (edit);
     }
 
-    edit_draw_window_icons (edit, color);
+    edit_window_draw_icons (win, color);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1240,7 +1185,7 @@ edit_scroll_screen_over_cursor (WEdit *edit)
     rect_resize (w, -EDIT_TEXT_VERTICAL_OFFSET,
                  -(EDIT_TEXT_HORIZONTAL_OFFSET + edit_options.line_state_width));
 
-    if (edit->fullscreen == 0)
+    if (EDIT_WINDOW (edit)->fullscreen == 0)
         rect_grow (w, -1, -1);
 
     r_extreme = EDIT_RIGHT_EXTREME;
@@ -1291,7 +1236,7 @@ edit_scroll_screen_over_cursor (WEdit *edit)
 
     rect_resize (w, EDIT_TEXT_VERTICAL_OFFSET,
                  EDIT_TEXT_HORIZONTAL_OFFSET + edit_options.line_state_width);
-    if (edit->fullscreen == 0)
+    if (EDIT_WINDOW (edit)->fullscreen == 0)
         rect_grow (w, 1, 1);
 }
 
