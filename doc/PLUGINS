@@ -49,8 +49,8 @@ src/editor/editcmd.c) holds their descriptors (and that
 of the "scripts" entry) and registers them with
 mc_editor_plugin_add() from editor_plugins_register_all().
 
-One plugin comes with coole as a module, loaded the way any other
-module is (section 3), and is an example of one:
+Two plugins come with coole as modules, loaded the way any other
+module is (section 3), and are examples of one:
 
   src/editor-plugins/terminal/   terminal.so: a window of its own
                                  (section 9), the shell in the
@@ -59,11 +59,19 @@ module is (section 3), and is an example of one:
                                  when openpty() and GModule are
                                  found, installed into the system
                                  directory of the plugins.
+  src/editor-plugins/viewer/     viewer.so: the service "viewer"
+                                 (section 10), windows of their own
+                                 that show the text a script or a
+                                 plugin gives them, with the
+                                 overstrikes of nroff and ANSI colors.
+                                 Its methods are listed in viewer.c.
+                                 Built when GModule is found.
 
-The module holds the terminal of mc as well (src/mcterm and
-src/viewer), and calls the functions of the editor, which the program
-exports.  The test module_symbols checks that the program gives every
-function the module calls.
+The terminal module holds the terminal of mc as well (src/mcterm and
+src/viewer).  The modules call the functions of the editor, which the
+program exports; what the program itself does not call it links whole
+(libforplugins in src/meson.build).  The test module_symbols checks
+that the program gives every function a module calls.
 
 The help of a plugin (ctags.md, etags.md, spell.md, terminal.md) is installed into
 $(pkgdatadir)/help next to the help of the program.
@@ -182,6 +190,8 @@ What the editor provides to the plugin, passed to open():
                              that window is made fullscreen again,
                              unless the user has moved, resized or
                              zoomed it since
+  window_current(host)
+                             the window with the focus, or NULL
   service_register(host, name, call, data, &error)
   service_unregister(host, name)
   service_call(host, name, method, args, &error)

@@ -465,6 +465,22 @@ editor_host_window_give_room_back_impl (mc_editor_host_t *host, void *window)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: the window with the focus.
+ */
+
+static void *
+editor_host_window_current_impl (mc_editor_host_t *host)
+{
+    const WGroup *g = CONST_GROUP (host->host_data);
+
+    if (g->current == NULL || !edit_window_is_window (CONST_WIDGET (g->current->data)))
+        return NULL;
+
+    return g->current->data;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /* Host callbacks: the services, passed on to lib/plugin-service.c */
 
 static gboolean
@@ -565,6 +581,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_hide = editor_host_window_hide_impl;
     ctx->host->window_make_room = editor_host_window_make_room_impl;
     ctx->host->window_give_room_back = editor_host_window_give_room_back_impl;
+    ctx->host->window_current = editor_host_window_current_impl;
     ctx->host->service_register = editor_host_service_register_impl;
     ctx->host->service_unregister = editor_host_service_unregister_impl;
     ctx->host->service_call = editor_host_service_call_impl;

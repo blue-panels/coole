@@ -1,13 +1,6 @@
 # The terminal plugin: a module the editor loads at run time from editor_plugins_dir, as any other
 # editor plugin.  It calls the functions of the editor, which the program exports.
 
-# The headers of the screen library, S-Lang or ncurses, which lib/tty/tty.h includes; not the
-# library itself: the module calls it through the program, which links it.
-screen_headers = []
-foreach d : screen_deps
-  screen_headers += d.partial_dependency(compile_args: true, includes: true)
-endforeach
-
 # the terminal of mc, as it is there: the shell on a pty, and the emulator of the terminal, which
 # in mc is a part of the viewer.  The tests of the terminal link it too.  The ANSI colors it shares
 # with the windows of text are in the program.

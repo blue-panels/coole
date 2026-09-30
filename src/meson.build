@@ -119,8 +119,19 @@ if have_terminal
   install_data('editor-plugins/terminal/terminal.md', install_dir: pkgdatadir / 'help')
 endif
 
+# The headers of the screen library, S-Lang or ncurses, which lib/tty/tty.h includes; not the
+# library itself: a module calls it through the program, which links it.
+screen_headers = []
+foreach d : screen_deps
+  screen_headers += d.partial_dependency(compile_args: true, includes: true)
+endforeach
+
 if have_terminal
   subdir('editor-plugins/terminal')
+endif
+
+if have_gmodule
+  subdir('editor-plugins/viewer')
 endif
 
 if lua.found()

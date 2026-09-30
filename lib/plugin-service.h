@@ -56,8 +56,7 @@ gboolean mc_service_exists (const char *name);
 
 /* Call a method of a service.  @args is a{sv}, or NULL for none; a floating reference is taken.
    The answer is a{sv}, which the caller unrefs, or NULL with @error set. */
-GVariant *mc_service_call (const char *name, const char *method, GVariant *args,
-                           GError **error);
+GVariant *mc_service_call (const char *name, const char *method, GVariant *args, GError **error);
 
 /* Listen to the signals of the service @name, whether it is there yet or not.  The id is what
    mc_service_disconnect() takes. */

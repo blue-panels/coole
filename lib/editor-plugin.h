@@ -99,6 +99,8 @@ typedef struct mc_editor_host_t
     void (*window_make_room) (struct mc_editor_host_t *host, void *window);
     /* Make that window fullscreen again, unless the user has moved or resized it since. */
     void (*window_give_room_back) (struct mc_editor_host_t *host, void *window);
+    /* The window with the focus, NULL when none has it. */
+    void *(*window_current) (struct mc_editor_host_t *host);
 
     /* v6: services, which plugins and scripts offer one another (lib/plugin-service.h).
      * A plugin offers a service from open() and takes it back in close(). */

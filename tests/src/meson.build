@@ -16,3 +16,6 @@ subdir('editor')
 if have_terminal
   subdir('mcterm')
 endif
+if have_gmodule
+  subdir('viewer')
+endif
