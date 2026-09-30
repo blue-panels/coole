@@ -54,6 +54,9 @@ typedef struct
     gboolean (*is_modified) (const WEditWindow *win);
     /* Close the window, asking first when it has to. TRUE when it is closed and destroyed */
     gboolean (*close) (WEditWindow *win);
+    /* The editor is about to end and the window is modified: ask whether it may go.
+       TRUE when it may; NULL lets it go unasked */
+    gboolean (*ok_to_quit) (WEditWindow *win);
     /* The smallest size the window can be resized to, with its frame */
     int min_lines;
     int min_cols;
