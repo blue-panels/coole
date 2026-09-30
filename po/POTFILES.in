@@ -41,6 +41,7 @@ src/editor/editmenu.c
 src/editor/editoptions.c
 src/editor/editsearch.c
 src/editor/editwidget.c
+src/editor/editwindow.c
 src/editor/fold.c
 src/editor/syntax.c
 src/execute.c
