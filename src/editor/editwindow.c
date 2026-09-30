@@ -323,6 +323,10 @@ edit_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
         break;
     }
 
+    // the top line of the frame is the frame's, whatever comes there
+    if (on_title)
+        return;
+
     if (win->klass->mouse_callback != NULL)
         win->klass->mouse_callback (w, msg, event);
     else
