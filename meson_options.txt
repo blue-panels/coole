@@ -8,6 +8,8 @@ option('lua', type: 'feature', value: 'auto',
        description: 'The Lua runtime plugin')
 option('spell', type: 'feature', value: 'auto',
        description: 'Spell checking through aspell or hunspell, loaded at run time')
+option('terminal', type: 'feature', value: 'auto',
+       description: 'The terminal: a shell in a window of the editor (needs openpty)')
 option('nls', type: 'feature', value: 'auto',
        description: 'Translations of the messages')
 option('tests', type: 'feature', value: 'auto',

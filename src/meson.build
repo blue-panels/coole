@@ -52,6 +52,24 @@ libinternal_sources = files(
   'editor-plugins/spell/spell.c',
 )
 
+if have_terminal
+  libinternal_sources += files(
+    'mcterm/mcterm.c',
+    'mcterm/mcterm_cwd.c',
+    'mcterm/mcterm_filter.c',
+    'mcterm/mcterm_key.c',
+    'mcterm/mcterm_proto.c',
+    'mcterm/mcterm_select.c',
+    'mcterm/mcterm_setup.c',
+
+    # the emulator of the terminal; in mc it is a part of the viewer
+    'viewer/ansi.c',
+    'viewer/canvas.c',
+    'viewer/terminal_buffer.c',
+    'viewer/vterm.c',
+  )
+endif
+
 src_c_args = [
   '-DSYSCONFDIR="@0@/"'.format(pkgsysconfdir),
   '-DLIBEXECDIR="@0@/"'.format(pkglibexecdir),
@@ -74,10 +92,11 @@ endif
 libinternal = static_library('internal',
   libinternal_sources,
   c_args: src_c_args,
-  dependencies: [libmc_dep, intl],
+  dependencies: [libmc_dep, intl, terminal_dep],
 )
 
-libinternal_dep = declare_dependency(link_with: libinternal, dependencies: [libmc_dep, intl])
+libinternal_dep = declare_dependency(link_with: libinternal,
+                                     dependencies: [libmc_dep, intl, terminal_dep])
 
 coole = executable('coole',
   'main.c',

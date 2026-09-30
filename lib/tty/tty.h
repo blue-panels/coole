@@ -159,6 +159,23 @@ extern int tty_resize (int fd);
 extern void tty_refresh (void);
 extern void tty_change_screen_size (void);
 
+/* Output the screen library has no cell for - sixel pictures - goes to the
+   terminal behind its back. Only after tty_refresh(), when the library's own
+   output is out; the cursor comes back to where the library left it. */
+extern void tty_raw_write (const char *data, size_t len);
+/* Make the library write these rows again on the next refresh, changed or
+   not: a picture drawn over them has to be erased or drawn again. */
+extern void tty_touch_area (int y, int x, int rows, int cols);
+/* Painters run after every tty_refresh(), in the order they were added. */
+typedef void (*tty_painter_fn) (void *data);
+extern void tty_painter_add (tty_painter_fn fn, void *data);
+extern void tty_painter_remove (tty_painter_fn fn, void *data);
+/* Whether the terminal draws sixel pictures. coole does not ask the terminal
+   yet, so it takes that it does not. */
+extern gboolean tty_has_sixel (void);
+/* Pixels per cell, 0 when the terminal did not say. */
+extern void tty_cell_size (int *width, int *height);
+
 /* Clear screen */
 extern void tty_clear_screen (void);
 

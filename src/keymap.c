@@ -53,10 +53,12 @@ GArray *radio_keymap = NULL;
 GArray *help_keymap = NULL;
 GArray *editor_keymap = NULL;
 GArray *editor_x_keymap = NULL;
+GArray *mcterm_keymap = NULL;
 
 const global_keymap_t *help_map = NULL;
 const global_keymap_t *editor_map = NULL;
 const global_keymap_t *editor_x_map = NULL;
+const global_keymap_t *mcterm_map = NULL;
 
 /*** file scope macro definitions ****************************************************************/
 
@@ -322,6 +324,43 @@ static const global_keymap_ini_t default_editor_x_keymap[] = {
     { NULL, NULL },
 };
 
+/* the terminal: what is bound here is taken from the shell */
+static const global_keymap_ini_t default_mcterm_keymap[] = {
+    // marking the output, and taking it out
+    { "Store", "ctrl-insert; enter; f2" },
+    { "MarkAll", "f3" },
+    { "Unmark", "ctrl-shift-u" },
+    { "MarkLeft", "shift-left" },
+    { "MarkRight", "shift-right" },
+    { "MarkUp", "shift-up" },
+    { "MarkDown", "shift-down" },
+    { "MarkPageUp", "shift-pgup" },
+    { "MarkPageDown", "shift-pgdn" },
+    { "MarkToHome", "shift-home" },
+    { "MarkToEnd", "shift-end" },
+    // the cursor over the output, while the terminal holds the focus
+    { "Left", "left" },
+    { "Right", "right" },
+    { "Up", "up" },
+    { "Down", "down" },
+    // the view alone, which moves whoever is typing
+    { "ScrollUp", "ctrl-up" },
+    { "ScrollDown", "ctrl-down" },
+    { "PageUp", "pgup" },
+    { "PageDown", "pgdn" },
+    { "Top", "ctrl-home" },
+    { "Bottom", "ctrl-end" },
+    { "Clear", "ctrl-l" },
+    { "ClearAll", "ctrl-shift-l; ctrl-alt-l; f6" },
+    // the output cut down to the rows that match
+    { "FilterWord", "f4" },
+    { "FilterToggle", "f5" },
+    // a pattern typed: the output searched, or cut down
+    { "Search", "alt-s" },
+    { "QuickFilter", "alt-shift-s" },
+    { NULL, NULL },
+};
+
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -353,6 +392,7 @@ create_default_keymap (void)
     create_default_keymap_section (keymap, KEYMAP_SECTION_HELP, default_help_keymap);
     create_default_keymap_section (keymap, KEYMAP_SECTION_EDITOR, default_editor_keymap);
     create_default_keymap_section (keymap, KEYMAP_SECTION_EDITOR_EXT, default_editor_x_keymap);
+    create_default_keymap_section (keymap, KEYMAP_SECTION_MCTERM, default_mcterm_keymap);
 
     return keymap;
 }
@@ -586,6 +626,7 @@ keymap_load (gboolean load_from_file)
         LOAD_KEYMAP (HELP, help);
         LOAD_KEYMAP (EDITOR, editor);
         LOAD_KEYMAP (EDITOR_EXT, editor_x);
+        LOAD_KEYMAP (MCTERM, mcterm);
 
 #undef LOAD_KEYMAP
         mc_config_deinit (mc_global_keymap);
@@ -601,6 +642,7 @@ keymap_load (gboolean load_from_file)
     SET_MAP (help);
     SET_MAP (editor);
     SET_MAP (editor_x);
+    SET_MAP (mcterm);
 
 #undef SET_MAP
 }
@@ -623,6 +665,7 @@ keymap_free (void)
     FREE_KEYMAP (help);
     FREE_KEYMAP (editor);
     FREE_KEYMAP (editor_x);
+    FREE_KEYMAP (mcterm);
 
 #undef FREE_KEYMAP
 }
@@ -664,6 +707,7 @@ keymap_save_old_maps (void)
     SAVE_MAP (help);
     SAVE_MAP (editor);
     SAVE_MAP (editor_x);
+    SAVE_MAP (mcterm);
 #undef SAVE_MAP
 }
 

@@ -48,6 +48,7 @@ int tty_lowlevel_getch (void);
 gboolean tty_lowlevel_input_pending (void);
 
 void tty_colorize_area (int y, int x, int rows, int cols, int color);
+void tty_run_painters (void);
 
 /*** inline functions ****************************************************************************/
 

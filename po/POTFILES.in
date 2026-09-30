@@ -51,6 +51,7 @@ src/key_sniffer.c
 src/keybind_dialog.c
 src/main.c
 src/manage_plugins.c
+src/mcterm/mcterm.c
 src/runtime-host.c
 src/selcodepage.c
 src/setup.c

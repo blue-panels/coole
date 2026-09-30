@@ -31,6 +31,8 @@
 
 #define MC_SKINS_DIR          "skins"
 
+#define MC_ZDOTDIR_SUBDIR     "zdotdir"  // the startup files the terminal gives zsh
+
 /* file names */
 #define EDIT_HOME_MACRO_FILE "macros.d" PATH_SEP_STR "macro"
 #define EDIT_HOME_CLIP_FILE  "clipboard"

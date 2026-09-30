@@ -97,7 +97,11 @@
 #define EDITOR_BOOKMARK_COLOR       mc_skin_color__cache[58]
 #define EDITOR_BOOKMARK_FOUND_COLOR mc_skin_color__cache[59]
 
-#define MC_SKIN_COLOR_CACHE_COUNT   60
+/* The terminal */
+#define MCTERM_NORMAL_COLOR       mc_skin_color__cache[60]
+#define MCTERM_SELECTED_COLOR     mc_skin_color__cache[61]
+
+#define MC_SKIN_COLOR_CACHE_COUNT 62
 
 /*** enums ***************************************************************************************/
 

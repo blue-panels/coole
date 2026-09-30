@@ -782,6 +782,17 @@ tty_refresh (void)
 {
     refresh ();
     doupdate ();
+    tty_run_painters ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_touch_area (int y, int x, int rows, int cols)
+{
+    (void) x;
+    (void) cols;
+    touchline (stdscr, y, rows);
 }
 
 /* --------------------------------------------------------------------------------------------- */

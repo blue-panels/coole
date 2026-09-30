@@ -79,6 +79,15 @@ mc_tty_char_t mc_tty_frm[MC_TTY_FRM_MAX];
 
 static SIG_ATOMIC_VOLATILE_T got_interrupt = 0;
 
+typedef struct
+{
+    tty_painter_fn fn;
+    void *data;
+} tty_painter_t;
+
+static GSList *painters = NULL;
+static gboolean painting = FALSE;
+
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -92,6 +101,96 @@ sigintr_handler (int signo)
 
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_run_painters (void)
+{
+    GSList *l;
+
+    /* A painter that refreshes would run the painters again. */
+    if (painting)
+        return;
+
+    painting = TRUE;
+    for (l = painters; l != NULL; l = g_slist_next (l))
+    {
+        const tty_painter_t *p = l->data;
+
+        p->fn (p->data);
+    }
+    painting = FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_painter_add (tty_painter_fn fn, void *data)
+{
+    tty_painter_t *p = g_new (tty_painter_t, 1);
+
+    p->fn = fn;
+    p->data = data;
+    painters = g_slist_append (painters, p);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_painter_remove (tty_painter_fn fn, void *data)
+{
+    GSList *l;
+
+    for (l = painters; l != NULL; l = g_slist_next (l))
+    {
+        tty_painter_t *p = l->data;
+
+        if (p->fn == fn && p->data == data)
+        {
+            painters = g_slist_delete_link (painters, l);
+            g_free (p);
+            return;
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_raw_write (const char *data, size_t len)
+{
+    while (len > 0)
+    {
+        ssize_t n = write (STDOUT_FILENO, data, len);
+
+        if (n < 0)
+        {
+            if (errno == EINTR || errno == EAGAIN)
+                continue;
+            return;
+        }
+        data += n;
+        len -= (size_t) n;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+tty_has_sixel (void)
+{
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_cell_size (int *width, int *height)
+{
+    *width = 0;
+    *height = 0;
+}
+
 /* --------------------------------------------------------------------------------------------- */
 /**
  * Check terminal type. If $TERM is not set or value is empty, coole finishes with EXIT_FAILURE.
