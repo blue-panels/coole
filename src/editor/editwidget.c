@@ -385,6 +385,58 @@ editor_host_insert_text_impl (mc_editor_host_t *host, void *edit, const char *te
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: the part of the screen the windows take.
+ */
+
+static void
+editor_host_window_area_impl (mc_editor_host_t *host, WRect *r)
+{
+    edit_window_area (DIALOG (host->host_data), r);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: put a window of a plugin on the screen.
+ */
+
+static void
+editor_host_window_add_impl (mc_editor_host_t *host, void *window)
+{
+    WDialog *h = DIALOG (host->host_data);
+
+    edit_window_add (h, EDIT_WINDOW (window));
+    widget_select (WIDGET (window));
+    widget_draw (WIDGET (h));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: show a hidden window of a plugin.
+ */
+
+static void
+editor_host_window_show_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+
+    edit_window_show (EDIT_WINDOW (window));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: hide a window of a plugin.
+ */
+
+static void
+editor_host_window_hide_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+
+    edit_window_hide (EDIT_WINDOW (window));
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 static void
 editor_plugin_instance_free (gpointer data)
@@ -424,6 +476,10 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->get_cursor_line = editor_host_get_cursor_line_impl;
     ctx->host->jump_to = editor_host_jump_to_impl;
     ctx->host->insert_text = editor_host_insert_text_impl;
+    ctx->host->window_area = editor_host_window_area_impl;
+    ctx->host->window_add = editor_host_window_add_impl;
+    ctx->host->window_show = editor_host_window_show_impl;
+    ctx->host->window_hide = editor_host_window_hide_impl;
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
 
     for (; plugins != NULL; plugins = g_slist_next (plugins))
@@ -1673,6 +1729,7 @@ edit_dialog_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
             // Try find top fullscreen window
             for (l = g->widgets; l != NULL; l = g_list_next (l))
                 if (edit_window_is_window (CONST_WIDGET (l->data))
+                    && widget_get_state (CONST_WIDGET (l->data), WST_VISIBLE)
                     && EDIT_WINDOW (l->data)->fullscreen != 0)
                     top = l;
 
@@ -2132,14 +2189,12 @@ gboolean
 edit_add_window (WDialog *h, const WRect *r, const edit_arg_t *arg)
 {
     WEdit *edit;
-    Widget *w;
 
     edit = edit_init (NULL, r, arg);
     if (edit == NULL)
         return FALSE;
 
-    w = WIDGET (edit);
-    group_add_widget_autopos (GROUP (h), w, WPOS_KEEP_ALL, NULL);
+    edit_window_add (h, EDIT_WINDOW (edit));
     edit_set_buttonbar (edit, buttonbar_find (h));
     edit_publish_runtime_open (edit);
     widget_draw (WIDGET (h));
