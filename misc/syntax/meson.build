@@ -98,6 +98,8 @@ install_data(
   'rust.syntax',
   'sh-parameter.syntax',
   'sh.syntax',
+  'smarty-tag.syntax',
+  'smarty.syntax',
   'slang.syntax',
   'smalltalk.syntax',
   'spec.syntax',
