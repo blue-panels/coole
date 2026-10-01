@@ -62,7 +62,21 @@ char *edit_window_close_char = NULL;
 static cb_ret_t
 edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
-    return EDIT_WINDOW (w)->klass->callback (w, sender, msg, parm, data);
+    cb_ret_t ret;
+
+    ret = EDIT_WINDOW (w)->klass->callback (w, sender, msg, parm, data);
+
+    /* The button bar is the one of the window with the focus: its class has put its labels on
+       the bar, and the bar shows them at once, whatever gave the window the focus. */
+    if (msg == MSG_FOCUS && w->owner != NULL)
+    {
+        WButtonBar *bb = buttonbar_find (DIALOG (w->owner));
+
+        if (bb != NULL)
+            widget_draw (WIDGET (bb));
+    }
+
+    return ret;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -409,6 +423,34 @@ edit_window_add (WDialog *h, WEditWindow *win)
     // a window put on a running screen comes up with it, and the widgets of the window too
     if (widget_get_state (WIDGET (h), WST_ACTIVE))
         widget_set_state (w, WST_ACTIVE, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Take a window off the screen and destroy it. The topmost visible window left is selected: the
+ * group alone would make current the widget after the window, which need not be a window.
+ *
+ * @param win window to destroy
+ */
+
+void
+edit_window_destroy (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+    WGroup *g = w->owner;
+    Widget *top = NULL;
+    GList *l;
+
+    group_remove_widget (w);
+    widget_destroy (w);
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+        if (edit_window_is_window (CONST_WIDGET (l->data))
+            && widget_get_state (WIDGET (l->data), WST_VISIBLE))
+            top = WIDGET (l->data);
+
+    if (top != NULL)
+        widget_select (top);
 }
 
 /* --------------------------------------------------------------------------------------------- */

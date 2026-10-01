@@ -275,7 +275,12 @@ given by its class, edit_window_class_t:
 
   callback                   the messages of the window (MSG_DRAW,
                              MSG_KEY, MSG_DESTROY, ...); the unhandled
-                             ones go to group_default_callback()
+                             ones go to group_default_callback().  On
+                             MSG_FOCUS the class puts its labels on
+                             the button bar (buttonbar_set_label());
+                             the editor draws the bar then, so that it
+                             is always the one of the window with the
+                             focus
   mouse_callback             mouse events inside the window that its
                              frame does not take; NULL passes them to
                              the widgets of the window
@@ -300,10 +305,12 @@ The class draws the frame with edit_window_frame_color(),
 edit_window_draw_frame() and edit_window_draw_icons().
 
 Once added, the window belongs to the editor.  It is destroyed when the
-user closes it and when the editor ends, and the class learns of that by
-MSG_DESTROY, where the plugin forgets the window.  The plugin never frees
-an added window.  When the editor ends, its windows are destroyed before
-close() of the plugin is called.
+user closes it - close() of the class destroys it with
+edit_window_destroy(), which selects the window left on top - and when
+the editor ends, and the class learns of that by MSG_DESTROY, where the
+plugin forgets the window.  The plugin never frees an added window.
+When the editor ends, its windows are destroyed before close() of the
+plugin is called.
 
 A hidden window keeps its place, size, full screen state and contents,
 and window_show() brings it back as it was.  Window -> List shows the

@@ -393,6 +393,36 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A window destroyed gives the focus to the window left on top, not to the widget after it */
+START_TEST (test_window_destroy_selects_top)
+{
+    test_window_t *other;
+    Widget *bg;
+    WRect r;
+
+    // a widget that is not a window before the windows, as the background of the editor is
+    bg = g_new0 (Widget, 1);
+    rect_init (&r, 0, 0, 24, 80);
+    widget_init (bg, &r, widget_default_callback, NULL);
+    group_add_widget_autopos (GROUP (&owner), bg, WPOS_KEEP_DEFAULT, owner.group.widgets->data);
+
+    other = g_new0 (test_window_t, 1);
+    rect_init (&r, 17, 0, 6, 80);
+    edit_window_init (&other->window, &r, &test_window_class);
+    edit_window_add (&owner, &other->window);
+    widget_select (WIDGET (other));
+    ck_assert_ptr_eq (owner.group.current->data, other);
+
+    edit_window_destroy (&other->window);
+    ck_assert_ptr_eq (owner.group.current->data, test_win);
+
+    group_remove_widget (bg);
+    g_free (bg);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A file window is a window of the editor class */
 START_TEST (test_editor_is_window)
 {
@@ -429,6 +459,7 @@ main (void)
     tcase_add_test (tc_core, test_window_hide_show);
     tcase_add_test (tc_core, test_window_holds_widgets);
     tcase_add_test (tc_core, test_window_make_room);
+    tcase_add_test (tc_core, test_window_destroy_selects_top);
     tcase_add_test (tc_core, test_editor_is_window);
 
     return mctest_run_all (tc_core);

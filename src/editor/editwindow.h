@@ -43,7 +43,8 @@ typedef struct WEditWindow WEditWindow;
 typedef struct
 {
     /* Messages to the window; the unhandled ones go to group_default_callback() for a window
-       that holds widgets, to widget_default_callback() for one that draws itself */
+       that holds widgets, to widget_default_callback() for one that draws itself. On MSG_FOCUS
+       the class puts its labels on the button bar, and the screen shows them */
     widget_cb_fn callback;
     /* Mouse events inside the window that the frame does not take; NULL passes them to the
        widgets of the window */
@@ -90,6 +91,8 @@ gboolean edit_window_is_window (const Widget *w);
 
 /* Put a window on the screen; the screen owns it from now on */
 void edit_window_add (WDialog *h, WEditWindow *win);
+/* Take a window off the screen and destroy it; the topmost window left is selected */
+void edit_window_destroy (WEditWindow *win);
 /* Show a window on top of the others and select it */
 void edit_window_show (WEditWindow *win);
 /* Hide a window as it is; the next window is selected */
