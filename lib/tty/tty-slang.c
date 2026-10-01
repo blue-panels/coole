@@ -696,6 +696,17 @@ tty_refresh (void)
         SLtt_write_string ((SLFUTURE_CONST char *) ESC_STR "[?2026l");
         SLtt_flush_output ();
     }
+    tty_run_painters ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_touch_area (int y, int x, int rows, int cols)
+{
+    (void) x;
+    (void) cols;
+    SLsmg_touch_lines (y, rows);
 }
 
 /* --------------------------------------------------------------------------------------------- */

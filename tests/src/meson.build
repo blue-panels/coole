@@ -13,3 +13,6 @@ endforeach
 
 subdir('syntax')
 subdir('editor')
+if have_terminal
+  subdir('mcterm')
+endif

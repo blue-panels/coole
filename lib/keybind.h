@@ -14,6 +14,7 @@
 #define KEYMAP_SECTION_HELP       "help"
 #define KEYMAP_SECTION_EDITOR     "editor"
 #define KEYMAP_SECTION_EDITOR_EXT "editor:xmap"
+#define KEYMAP_SECTION_MCTERM     "mcterm"
 
 #define KEYMAP_SHORTCUT_LENGTH    32  // FIXME: is 32 bytes enough for shortcut?
 
@@ -54,6 +55,7 @@ enum
     CK_BackSpace,
     CK_Redo,
     CK_Clear,
+    CK_ClearAll,
     CK_Menu,
     CK_UserMenu,
     CK_EditUserMenu,
@@ -156,6 +158,7 @@ enum
     CK_UnfoldAll,
     CK_FilterToggle,
     CK_FilterWord,
+    CK_QuickFilter,
     // mark commands
     CK_MarkColumn,
     CK_MarkWord,

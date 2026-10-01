@@ -21,10 +21,12 @@ extern GArray *radio_keymap;
 extern GArray *help_keymap;
 extern GArray *editor_keymap;
 extern GArray *editor_x_keymap;
+extern GArray *mcterm_keymap;
 
 extern const global_keymap_t *help_map;
 extern const global_keymap_t *editor_map;
 extern const global_keymap_t *editor_x_map;
+extern const global_keymap_t *mcterm_map;
 
 /*** declarations of public functions ************************************************************/
 

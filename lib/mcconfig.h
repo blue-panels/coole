@@ -3,9 +3,10 @@
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
-#define CONFIG_APP_SECTION    "coole"
-#define CONFIG_LAYOUT_SECTION "Layout"
-#define CONFIG_MISC_SECTION   "Misc"
+#define CONFIG_APP_SECTION      "coole"
+#define CONFIG_LAYOUT_SECTION   "Layout"
+#define CONFIG_MISC_SECTION     "Misc"
+#define CONFIG_TERMINAL_SECTION "Terminal"
 
 /*** enums ***************************************************************************************/
 

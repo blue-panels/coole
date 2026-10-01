@@ -199,6 +199,31 @@ if get_option('spell').enabled() and not have_gmodule
 endif
 conf.set('HAVE_ASPELL', have_spell ? 1 : false)
 
+# the terminal runs a shell on a pty; openpty() is in libc or in libutil
+terminal_dep = []
+have_terminal = false
+if not get_option('terminal').disabled()
+  if cc.has_function('openpty')
+    have_terminal = true
+  else
+    libutil = cc.find_library('util', required: false)
+    if libutil.found() and cc.has_function('openpty', dependencies: libutil)
+      have_terminal = true
+      terminal_dep = libutil
+    endif
+  endif
+endif
+if get_option('terminal').enabled() and not have_terminal
+  error('the terminal needs openpty()')
+endif
+conf.set('ENABLE_MCTERM', have_terminal ? 1 : false)
+if have_terminal
+  foreach h : ['pty.h', 'util.h', 'libutil.h']
+    conf.set('HAVE_' + h.underscorify().to_upper(), cc.has_header(h) ? 1 : false)
+  endforeach
+  conf.set('HAVE_CLOSEFROM', cc.has_function('closefrom') ? 1 : false)
+endif
+
 lua = dependency('', required: false)
 if have_gmodule and not get_option('lua').disabled()
   foreach name : ['lua5.4', 'lua-5.4', 'lua54', 'lua5.3', 'lua-5.3', 'lua53', 'lua']
@@ -286,6 +311,7 @@ conf.set_quoted('MC_CONFIGURE_ARGS', ' '.join([
   'x11=' + (x11.found() ? 'yes' : 'no'),
   'lua=' + (lua.found() ? 'yes' : 'no'),
   'spell=' + (have_spell ? 'yes' : 'no'),
+  'terminal=' + (have_terminal ? 'yes' : 'no'),
   'nls=' + (have_nls ? 'yes' : 'no'),
 ]))
 
@@ -350,6 +376,7 @@ summary({
   'Mouse': gpm.found() ? 'gpm and xterm' : 'xterm only',
   'X11 events': x11.found(),
   'Spell checking': have_spell,
+  'Terminal': have_terminal,
   'Lua runtime plugin': lua.found() ? lua.version() : false,
   'Translations': have_nls,
   'Unit tests': check.found(),
