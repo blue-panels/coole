@@ -41,13 +41,18 @@
  *    hide       id
  *    close      id
  *    info       id -> cols, lines, top, total, visible
+ *    add_type   type, suffixes (strings), starts (strings)
  *
  *  Signal "closed", id: the user closed the window.
  *
  *  Preview: Ctrl-Alt-P, or Plugins > Preview, shows a window "Preview" at the right of the file,
  *  whatever the file is, and follows it: its text as it changes, its cursor, the file window that
- *  comes to the front.  The viewer tells the type of the file by its name, and asks for the view
- *  of it with the signal "render" (id, type, path, text, width, revision): a renderer that knows
+ *  comes to the front.  The renderers name the types they know when the viewer asks with the
+ *  signal "types": add_type, the type, the ends of the names of its files (".xml") and the
+ *  starts of their texts ("<?xml"); it asks when the Preview is shown and when another file comes
+ *  into it, and forgets the types named before.  A file is of the type of the longest end of its
+ *  name named, else of how its text starts, else "text".  The viewer asks for the view of it
+ *  with the signal "render" (id, type, path, text, width, revision): a renderer that knows
  *  the type answers with set_text for that id.  The signal "follow" (id, type, line of the file,
  *  from 1) asks where the cursor is in the view: the renderer answers with scroll_to.  A type
  *  nobody renders is shown as the text of the file, line for line.
@@ -95,13 +100,24 @@ typedef struct
     int key;
     gint64 preview_id;  // its window, 0 while there is none
     char *path;         // what it shows: the file, its type, the revision and width rendered
-    const char *type;
+    char *type;
     guint64 revision;
     int width;
     gint64 asking;      // the window a signal asks a renderer about now
     gboolean answered;  // and whether a renderer answered
     const void *edit;   // the file window it follows, only to see that another comes
+
+    // the types the renderers name: by the end of the name, by the start of the text
+    GPtrArray *suffixes;  // preview_kind_t
+    GPtrArray *starts;    // preview_kind_t
 } viewer_t;
+
+/* A type a renderer named, and how a file of it is known */
+typedef struct
+{
+    char *type;
+    char *match;  // the end of the name, or the start of the text
+} preview_kind_t;
 
 /* What a window tells the viewer when it is destroyed */
 typedef struct
@@ -113,6 +129,7 @@ typedef struct
 /*** forward declarations (file scope functions) *************************************************/
 
 const mc_editor_plugin_t *mc_editor_plugin_register (void);
+static GVariant *preview_add_type (viewer_t *v, GVariant *args, GError **error);
 
 /*** file scope variables ************************************************************************/
 
@@ -199,6 +216,48 @@ viewer_arg_bool (GVariant *args, const char *key, gboolean def)
     if (!g_variant_lookup (args, key, "b", &value))
         return def;
     return value;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A list of strings: "as" from a plugin, "av" of strings from a script. NULL without it.
+   Caller frees */
+static char **
+viewer_arg_strings (GVariant *args, const char *key)
+{
+    GVariant *v;
+    GPtrArray *list;
+    GVariantIter iter;
+    GVariant *item;
+
+    v = g_variant_lookup_value (args, key, NULL);
+    if (v == NULL)
+        return NULL;
+
+    list = g_ptr_array_new ();
+    if (g_variant_is_of_type (v, G_VARIANT_TYPE_STRING))
+        g_ptr_array_add (list, g_variant_dup_string (v, NULL));
+    else if (g_variant_is_of_type (v, G_VARIANT_TYPE_STRING_ARRAY)
+             || g_variant_is_of_type (v, G_VARIANT_TYPE ("av")))
+    {
+        g_variant_iter_init (&iter, v);
+        while ((item = g_variant_iter_next_value (&iter)) != NULL)
+        {
+            GVariant *s = item;
+
+            if (g_variant_is_of_type (item, G_VARIANT_TYPE_VARIANT))
+                s = g_variant_get_variant (item);
+            if (g_variant_is_of_type (s, G_VARIANT_TYPE_STRING))
+                g_ptr_array_add (list, g_variant_dup_string (s, NULL));
+            if (s != item)
+                g_variant_unref (s);
+            g_variant_unref (item);
+        }
+    }
+    g_variant_unref (v);
+
+    g_ptr_array_add (list, NULL);
+    return (char **) g_ptr_array_free (list, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -371,6 +430,8 @@ viewer_call (void *data, const char *method, GVariant *args, GError **error)
 
     if (strcmp (method, "open") == 0)
         return viewer_open (v, args, error);
+    if (strcmp (method, "add_type") == 0)
+        return preview_add_type (v, args, error);
 
     win = viewer_window (v, args, &id, error);
     if (win == NULL)
@@ -453,34 +514,127 @@ viewer_call (void *data, const char *method, GVariant *args, GError **error)
 /*** the preview *******************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
-/* The type of a file, by its name: what the signal "render" names for the renderers */
-static const char *
-preview_type (const char *path)
+static void
+preview_kind_free (gpointer data)
 {
-    static const struct
-    {
-        const char *suffix;
-        const char *type;
-    } types[] = {
-        { ".md", "markdown" }, { ".markdown", "markdown" }, { ".mkd", "markdown" },
-        { ".html", "html" },   { ".htm", "html" },          { ".xhtml", "html" },
-        { ".json", "json" },   { ".svg", "svg" },           { ".csv", "csv" },
-    };
-    size_t i;
+    preview_kind_t *k = (preview_kind_t *) data;
 
-    if (path == NULL)
-        return "text";
+    g_free (k->type);
+    g_free (k->match);
+    g_free (k);
+}
 
-    for (i = 0; i < G_N_ELEMENTS (types); i++)
+/* --------------------------------------------------------------------------------------------- */
+
+/* The renderers are asked to name their types again; the ones they named before are forgotten,
+   so that a renderer that is gone leaves none behind */
+static void
+preview_ask_types (viewer_t *v)
+{
+    g_ptr_array_set_size (v->suffixes, 0);
+    g_ptr_array_set_size (v->starts, 0);
+    v->host->service_emit (v->host, VIEWER_SERVICE, "types", viewer_answer_empty ());
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The type of a file, what the signal "render" names for the renderers: by the longest end of
+   its name a renderer named, else by how its text starts, else "text". Of two that fit as well,
+   the one named later */
+static const char *
+preview_type (const viewer_t *v, const char *path, const char *text, gsize len)
+{
+    const char *type = "text";
+    size_t best = 0;
+    guint i;
+
+    if (path != NULL)
     {
         const size_t lp = strlen (path);
-        const size_t ls = strlen (types[i].suffix);
 
-        if (lp > ls && g_ascii_strcasecmp (path + lp - ls, types[i].suffix) == 0)
-            return types[i].type;
+        for (i = 0; i < v->suffixes->len; i++)
+        {
+            const preview_kind_t *k = (const preview_kind_t *) g_ptr_array_index (v->suffixes, i);
+            const size_t ls = strlen (k->match);
+
+            if (ls != 0 && lp > ls && ls >= best
+                && g_ascii_strcasecmp (path + lp - ls, k->match) == 0)
+            {
+                type = k->type;
+                best = ls;
+            }
+        }
+        if (best != 0)
+            return type;
     }
 
-    return "text";
+    // the start of the text, past a byte order mark and white space
+    if (len >= 3 && memcmp (text, "\xEF\xBB\xBF", 3) == 0)
+    {
+        text += 3;
+        len -= 3;
+    }
+    while (len != 0 && g_ascii_isspace (*text))
+    {
+        text++;
+        len--;
+    }
+    for (i = 0; i < v->starts->len; i++)
+    {
+        const preview_kind_t *k = (const preview_kind_t *) g_ptr_array_index (v->starts, i);
+        const size_t ls = strlen (k->match);
+
+        if (ls != 0 && ls <= len && memcmp (text, k->match, ls) == 0)
+            type = k->type;
+    }
+
+    return type;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* add_type: a renderer names a type, the ends of the names and the starts of the texts of its
+   files */
+static GVariant *
+preview_add_type (viewer_t *v, GVariant *args, GError **error)
+{
+    gsize len = 0;
+    char *type;
+    char **suffixes, **starts;
+    char **p;
+
+    type = viewer_arg_text (args, "type", &len);
+    if (type == NULL || *type == '\0')
+    {
+        g_free (type);
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_ARGS, "no type");
+        return NULL;
+    }
+
+    suffixes = viewer_arg_strings (args, "suffixes");
+    starts = viewer_arg_strings (args, "starts");
+
+    for (p = suffixes; p != NULL && *p != NULL; p++)
+    {
+        preview_kind_t *k = g_new (preview_kind_t, 1);
+
+        k->type = g_strdup (type);
+        k->match = g_strdup (*p);
+        g_ptr_array_add (v->suffixes, k);
+    }
+    for (p = starts; p != NULL && *p != NULL; p++)
+    {
+        preview_kind_t *k = g_new (preview_kind_t, 1);
+
+        k->type = g_strdup (type);
+        k->match = g_strdup (*p);
+        g_ptr_array_add (v->starts, k);
+    }
+
+    g_strfreev (starts);
+    g_strfreev (suffixes);
+    g_free (type);
+    return viewer_answer_empty ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -544,9 +698,14 @@ preview_render (viewer_t *v, void *edit)
         return;
     }
 
+    // another file: the renderers name their types again, one may have come or gone
+    if (g_strcmp0 (path, v->path) != 0)
+        preview_ask_types (v);
+
     g_free (v->path);
     v->path = path;
-    v->type = preview_type (path);
+    g_free (v->type);
+    v->type = g_strdup (preview_type (v, path, text, len));
     v->revision = revision;
     v->width = width;
 
@@ -718,11 +877,15 @@ viewer_plugin_open (mc_editor_host_t *host, void *editor_dialog)
     v->host = host;
     v->key = mc_plugin_prefs_load_hotkey (PREVIEW_CONFIG, "Preview", "key", PREVIEW_KEY, 0, NULL);
     v->windows = g_hash_table_new_full (g_int64_hash, g_int64_equal, g_free, NULL);
+    v->suffixes = g_ptr_array_new_with_free_func (preview_kind_free);
+    v->starts = g_ptr_array_new_with_free_func (preview_kind_free);
 
     if (!host->service_register (host, VIEWER_SERVICE, viewer_call, v, &error))
     {
         fprintf (stderr, "viewer: %s\n", error->message);
         g_error_free (error);
+        g_ptr_array_free (v->starts, TRUE);
+        g_ptr_array_free (v->suffixes, TRUE);
         g_hash_table_destroy (v->windows);
         g_free (v);
         return NULL;
@@ -740,7 +903,10 @@ viewer_plugin_close (void *plugin_data)
 
     // the editor has destroyed the windows before
     v->host->service_unregister (v->host, VIEWER_SERVICE);
+    g_ptr_array_free (v->starts, TRUE);
+    g_ptr_array_free (v->suffixes, TRUE);
     g_hash_table_destroy (v->windows);
+    g_free (v->type);
     g_free (v->path);
     g_free (v);
 }

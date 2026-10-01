@@ -16,7 +16,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
 override_dh_auto_configure:
 	dh_auto_configure -- \
 		-Dscreen=slang \
-		-Deditor_plugins_dir=/usr/lib/coole/editor-plugins \
+		-Dplugins_dir=/usr/lib/coole/plugins \
 		-Druntime_plugins_dir=/usr/lib/coole/runtime-plugins \
 		-Dlua=enabled
 

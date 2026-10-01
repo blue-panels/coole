@@ -9,7 +9,7 @@ man_sed_args = [
   '-e', 's|{{libexecdir}}|@0@|g'.format(libexecdir),
   '-e', 's|{{pkglibexecdir}}|@0@|g'.format(pkglibexecdir),
   '-e', 's|{{pkgdatadir}}|@0@|g'.format(pkgdatadir),
-  '-e', 's|{{editor_plugins_dir}}|@0@|g'.format(editor_plugins_dir),
+  '-e', 's|{{plugins_dir}}|@0@|g'.format(plugins_dir),
   '-e', 's|{{bindir}}|@0@|g'.format(bindir),
 ]
 

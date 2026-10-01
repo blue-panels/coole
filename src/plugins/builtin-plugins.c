@@ -7,9 +7,9 @@
 
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
-#include "src/editor-plugins/etags/etags.h"
-#include "src/editor-plugins/spell/spell.h"
-#include "src/editor-plugins/ctags/ctags-plugin.h"
+#include "src/plugins/etags/etags.h"
+#include "src/plugins/spell/spell.h"
+#include "src/plugins/ctags/ctags-plugin.h"
 
 typedef struct
 {

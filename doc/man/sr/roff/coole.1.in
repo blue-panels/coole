@@ -941,7 +941,7 @@ M\-n смењује ову опцију.
 \fB~/.local/share/coole/syntax/\fP\&.
 
 .TP
-\fI{{editor_plugins_dir}}/\fP
+\fI{{plugins_dir}}/\fP
 Прикључци уређивача.
 
 .TP
@@ -957,7 +957,7 @@ M\-n смењује ову опцију.
 \fI~/.local/share/coole/\fP
 Корисничка историја, положаји у датотекама, клипборд (clipboard), макрои
 (macros, macros.d/), синтакса (syntax/Syntax), скинови (skins/) и Lua
-скриптови (lua/scripts/editor/).
+скриптови (lua/scripts/).
 
 .TP
 \fI~/.cache/coole/\fP

@@ -14,7 +14,7 @@
 
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
-#include "src/editor-plugins/etags/etags.h"
+#include "src/plugins/etags/etags.h"
 
 /* --------------------------------------------------------------------------------------------- */
 

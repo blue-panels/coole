@@ -73,7 +73,7 @@
 #include "editcomplete.h"  // edit_complete_word_cmd()
 #include "editmacros.h"
 #ifdef HAVE_ASPELL
-#include "src/editor-plugins/spell/spell.h"
+#include "src/plugins/spell/spell.h"
 #endif
 
 /*** global variables ****************************************************************************/

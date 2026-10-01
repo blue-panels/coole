@@ -27,7 +27,7 @@
 /** \file editor-plugin.c
  *  \brief Source: editor plugins: the registry and the loader of the dynamic ones
  *
- *  Scans MC_EDITOR_PLUGINS_DIR and ~/.local/lib/coole/editor-plugins for shared
+ *  Scans MC_PLUGINS_DIR and ~/.local/lib/coole/plugins for shared
  *  objects exporting MC_EDITOR_PLUGIN_ENTRY, loads them, and registers the
  *  returned mc_editor_plugin_t descriptor via mc_editor_plugin_add().
  */
@@ -213,11 +213,11 @@ mc_editor_plugins_load (void)
     editor_plugin_modules = g_ptr_array_new ();
 
     // load from system plugin directory
-    mc_editor_plugins_load_from_dir (MC_EDITOR_PLUGINS_DIR);
+    mc_editor_plugins_load_from_dir (MC_PLUGINS_DIR);
 
-    // load from user plugin directory (~/.local/lib/coole/editor-plugins)
-    user_dir = g_build_filename (g_get_home_dir (), ".local", "lib", MC_USERCONF_DIR,
-                                 "editor-plugins", (char *) NULL);
+    // load from user plugin directory (~/.local/lib/coole/plugins)
+    user_dir = g_build_filename (g_get_home_dir (), ".local", "lib", MC_USERCONF_DIR, "plugins",
+                                 (char *) NULL);
     mc_editor_plugins_load_from_dir (user_dir);
     g_free (user_dir);
 #endif

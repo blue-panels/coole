@@ -786,7 +786,7 @@ M-n смењује ову опцију.
 постоји корисничка датотека у
 **~/.local/share/coole/syntax/**.
 
-*{{editor_plugins_dir}}/*
+*{{plugins_dir}}/*
 : Прикључци уређивача.
 
 *~/.config/coole/ini*
@@ -799,7 +799,7 @@ M-n смењује ову опцију.
 *~/.local/share/coole/*
 : Корисничка историја, положаји у датотекама, клипборд (clipboard), макрои
 (macros, macros.d/), синтакса (syntax/Syntax), скинови (skins/) и Lua
-скриптови (lua/scripts/editor/).
+скриптови (lua/scripts/).
 
 *~/.cache/coole/*
 : Блок датотека (block) и привремене датотеке уређивача.

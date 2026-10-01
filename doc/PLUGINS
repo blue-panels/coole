@@ -38,13 +38,13 @@ doc/LUA_API_REFERENCE.md.
 The plugins that come with coole are built into the program (see
 src/meson.build, which compiles them into the internal library):
 
-  src/editor-plugins/ctags/      self-registered menu entries, named
+  src/plugins/ctags/      self-registered menu entries, named
                                  actions, dynamic shortcut resolver
-  src/editor-plugins/spell/      activate + configure + query_state +
+  src/plugins/spell/      activate + configure + query_state +
                                  handle_key
-  src/editor-plugins/etags/      handle_action only
+  src/plugins/etags/      handle_action only
 
-src/editor-plugins/builtin-plugins.c (compiled as part of
+src/plugins/builtin-plugins.c (compiled as part of
 src/editor/editcmd.c) holds their descriptors (and that
 of the "scripts" entry) and registers them with
 mc_editor_plugin_add() from editor_plugins_register_all().
@@ -52,14 +52,14 @@ mc_editor_plugin_add() from editor_plugins_register_all().
 Two plugins come with coole as modules, loaded the way any other
 module is (section 3), and are examples of one:
 
-  src/editor-plugins/terminal/   terminal.so: a window of its own
+  src/plugins/terminal/   terminal.so: a window of its own
                                  (section 9), the shell in the
                                  terminal of mc, shown and hidden by
                                  Ctrl-o through handle_action.  Built
                                  when openpty() and GModule are
                                  found, installed into the system
                                  directory of the plugins.
-  src/editor-plugins/viewer/     viewer.so: the Preview, Ctrl-Alt-P,
+  src/plugins/viewer/     viewer.so: the Preview, Ctrl-Alt-P,
                                  of whatever file has the focus, and
                                  the service "viewer" (section 10),
                                  windows that show the text a script
@@ -67,11 +67,15 @@ module is (section 3), and are examples of one:
                                  overstrikes of nroff and ANSI colors.
                                  Its methods and signals are listed in
                                  viewer.c.  The Preview asks the
-                                 renderers for the view of a type of
-                                 file with the signal "render"; the
-                                 Lua script preview-markdown is the
-                                 renderer of markdown.  Built when
-                                 GModule is found.
+                                 renderers what types they know with
+                                 the signal "types" (they answer
+                                 with add_type: the type, the ends of
+                                 the names, the starts of the texts)
+                                 and for the view of a file with the
+                                 signal "render"; the Lua scripts
+                                 render-markdown, render-json and
+                                 render-xml are renderers.  Built
+                                 when GModule is found.
 
 The terminal module holds the terminal of mc as well (src/mcterm and
 src/viewer).  The modules call the functions of the editor, which the
@@ -89,12 +93,12 @@ $(pkgdatadir)/help next to the help of the program.
 When the editor starts, it first registers the built-in plugins and
 then calls mc_editor_plugins_load(), which scans two directories:
 
-    $(libdir)/coole/editor-plugins          (MC_EDITOR_PLUGINS_DIR)
-    ~/.local/lib/coole/editor-plugins
+    $(libdir)/coole/plugins          (MC_PLUGINS_DIR)
+    ~/.local/lib/coole/plugins
 
 The system directory is set at build time:
 
-    meson setup build -Deditor_plugins_dir=DIR
+    meson setup build -Dplugins_dir=DIR
 
 Every file directly in these directories whose name ends in .so (or
 .dylib, .bundle, .dll) is opened with g_module_open(); there are no
@@ -484,7 +488,7 @@ tree in $BUILD, a module can be compiled like this:
 
 The program is linked with -export-dynamic when GModule is available,
 so the module can use the functions of the editor without linking
-against them.  Copy myedit.so into ~/.local/lib/coole/editor-plugins
+against them.  Copy myedit.so into ~/.local/lib/coole/plugins
 and start coole again: the plugin appears in the Plugins menu, and
 selecting it calls my_activate().
 

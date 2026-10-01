@@ -358,7 +358,7 @@ nincs ~/.config/coole/ini fájlja.
 *{{pkgdatadir}}/syntax/\**
 : A rendszerszintű szintaxisfájlok.
 
-*{{editor_plugins_dir}}/*
+*{{plugins_dir}}/*
 : A szerkesztő bővítményei.
 
 *~/.config/coole/ini*, *~/.config/coole/keymap.ini*, *~/.config/coole/menu*
@@ -367,7 +367,7 @@ nincs ~/.config/coole/ini fájlja.
 *~/.local/share/coole/*
 : A felhasználó előzményei, fájlpozíciói, vágólapja (clipboard), makrói
 (macros, macros.d/), szintaxisa (syntax/Syntax), témái (skins/) és
-Lua-szkriptjei (lua/scripts/editor/).
+Lua-szkriptjei (lua/scripts/).
 
 *~/.cache/coole/*
 : A blokkfájl (block) és a szerkesztő ideiglenes fájljai.

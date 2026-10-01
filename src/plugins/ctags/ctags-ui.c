@@ -36,7 +36,7 @@
 #include "lib/widget/table.h"
 #include "lib/keybind.h"
 
-#include "src/editor-plugins/ctags/ctags-history.h"
+#include "src/plugins/ctags/ctags-history.h"
 
 #include "ctags-parser.h"
 #include "ctags-repository.h"

@@ -47,8 +47,8 @@ static char *config_dir = NULL;
 static char *data_dir = NULL;
 static char *system_scripts_dir = NULL;
 static char *user_scripts_dir = NULL;
-static char *system_editor_scripts_dir = NULL;
-static char *user_editor_scripts_dir = NULL;
+static char *system_modules_dir = NULL;
+static char *user_modules_dir = NULL;
 static char *output_path = NULL;
 static char *ui_status_text = NULL;
 static char *ui_message_title = NULL;
@@ -234,7 +234,7 @@ test_screen_run (mc_runtime_plugin_context_t *context,
 static void
 create_settings_script (void)
 {
-    char *root = g_build_filename (user_editor_scripts_dir, "with-settings", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "with-settings", (char *) NULL);
     char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
     char *mark_path = g_build_filename (root, "shown.txt", (char *) NULL);
@@ -352,12 +352,12 @@ create_test_packages (void)
 {
     (void) g_remove (output_path);
 
-    create_script (system_editor_scripts_dir, "alpha", "system-alpha", FALSE);
-    create_script (user_editor_scripts_dir, "alpha", "user-alpha", FALSE);
-    create_script (user_editor_scripts_dir, "beta", "user-beta", FALSE);
-    create_script (user_editor_scripts_dir, "off", "off", TRUE);
-    create_editor_script (system_editor_scripts_dir, "editor-global");
-    create_editor_script (user_editor_scripts_dir, "editor-user");
+    create_script (system_scripts_dir, "alpha", "system-alpha", FALSE);
+    create_script (user_scripts_dir, "alpha", "user-alpha", FALSE);
+    create_script (user_scripts_dir, "beta", "user-beta", FALSE);
+    create_script (user_scripts_dir, "off", "off", TRUE);
+    create_editor_script (system_scripts_dir, "editor-global");
+    create_editor_script (user_scripts_dir, "editor-user");
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -370,7 +370,7 @@ create_event_shape_script (void)
     char *entry_path;
     char *script;
 
-    root = g_build_filename (user_editor_scripts_dir, "event-shapes", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "event-shapes", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -444,7 +444,7 @@ create_ui_script (void)
     char *ini_path;
     char *entry_path;
 
-    root = g_build_filename (user_editor_scripts_dir, "ui-test", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "ui-test", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -506,7 +506,7 @@ create_error_script (void)
     char *ini_path;
     char *entry_path;
 
-    root = g_build_filename (user_editor_scripts_dir, "error-test", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "error-test", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -534,7 +534,7 @@ create_object_script (void)
     char *ini_path;
     char *entry_path;
 
-    root = g_build_filename (user_editor_scripts_dir, "object-test", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "object-test", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -615,7 +615,7 @@ create_macro_script (void)
     char *entry_path;
     char *script;
 
-    root = g_build_filename (user_editor_scripts_dir, "macro-test", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "macro-test", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -724,7 +724,7 @@ test_ui_dialog (const mc_runtime_dialog_t *dialog, mc_runtime_dialog_result_t *r
     if (g_strcmp0 (dialog->title, "Settings probe") == 0)
     {
         char *expected =
-            g_build_filename (user_editor_scripts_dir, "with-settings", "help.md", (char *) NULL);
+            g_build_filename (user_scripts_dir, "with-settings", "help.md", (char *) NULL);
 
         ck_assert_str_eq (dialog->help_node, "[Probe]");
         ck_assert_str_eq (dialog->help_file, expected);
@@ -1359,6 +1359,8 @@ test_object_string_free (mc_runtime_string_t *string)
 /* --------------------------------------------------------------------------------------------- */
 
 /* @Before */
+static void copy_script_tree (const char *source_dir, const char *target_dir);
+
 static void
 setup (void)
 {
@@ -1452,6 +1454,10 @@ setup (void)
     }
     remove_tree (system_scripts_dir);
     remove_tree (user_scripts_dir);
+    // the shared modules, as they ship
+    remove_tree (system_modules_dir);
+    remove_tree (user_modules_dir);
+    copy_script_tree (TEST_LUA_MODULES_DIR, system_modules_dir);
     create_test_packages ();
     create_event_shape_script ();
     create_ui_script ();
@@ -1527,7 +1533,7 @@ END_TEST
 static void
 create_screen_script (void)
 {
-    char *root = g_build_filename (user_editor_scripts_dir, "screen", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "screen", (char *) NULL);
     char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
 
@@ -1619,7 +1625,7 @@ test_echo_service (void *data, const char *method, GVariant *args, GError **err)
 static void
 create_service_script (void)
 {
-    char *root = g_build_filename (user_editor_scripts_dir, "service", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "service", (char *) NULL);
     char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
 
@@ -1676,6 +1682,156 @@ START_TEST (test_lua_runtime_calls_services)
 }
 END_TEST
 
+/* The view of JSON of the Preview: its lib/, as it ships, read by a script that checks it */
+START_TEST (test_lua_render_json_view)
+{
+    char *source = g_build_filename (TEST_LUA_SCRIPTS_DIR, "render-json", "lib", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "json-check", (char *) NULL);
+    char *lib = g_build_filename (root, "lib", (char *) NULL);
+    char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
+    char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
+
+    copy_script_tree (source, lib);
+    // a package of the user takes the shared modules of the user
+    copy_script_tree (TEST_LUA_MODULES_DIR, user_modules_dir);
+    write_file (ini_path, "[Lua]\nid=json-check\napi_version=1\nname=JSON check\nentry=init.lua\n");
+    write_file (entry_path,
+                "local parse = require('jsonparse').parse\n"
+                "local jv = require('jsonview')\n"
+                "local function view(text, width)\n"
+                "  local roots = assert(parse(text))\n"
+                "  return jv.view(roots, { width = width or 60 })\n"
+                "end\n"
+                "-- order of the keys, comments, a comma before the bracket, sizes\n"
+                "local v = view('{\\n\"b\": 1, // x\\n\"a\": [1, 2],\\n\"c\": {\"d\": true,},\\n'\n"
+                "  .. '\"e\": {\"k1\":1,\"k2\":2,\"k3\":3,\"k4\":4,\"k5\":5}\\n}')\n"
+                "assert(v.lines[1] == '{', v.lines[1])\n"
+                "assert(v.lines[2] == '  \"b\": 1,' and v.src[2] == 2, v.lines[2])\n"
+                "assert(v.lines[3] == '  \"a\": [1, 2],' and v.src[3] == 3, v.lines[3])\n"
+                "assert(v.lines[4] == '  \"c\": { \"d\": true },', v.lines[4])\n"
+                "assert(v.lines[5] == '  \"e\": {  /* 5 keys */', v.lines[5])\n"
+                "assert(v.lines[#v.lines] == '}' and v.src[#v.src] == 6)\n"
+                "assert(jv.find(v, 3) == 2, 'find')\n"
+                "-- an array of objects is a table; a missing key is an empty cell\n"
+                "v = view('[{\"id\": 1, \"n\": \"a\"},\\n{\"id\": 22}]')\n"
+                "assert(v.lines[2] == '  ┌────┬───┐', v.lines[2])\n"
+                "assert(v.lines[3] == '  │ id │ n │', v.lines[3])\n"
+                "assert(v.lines[5] == '  │  1 │ a │' and v.src[5] == 1, v.lines[5])\n"
+                "assert(v.lines[6] == '  │ 22 │   │' and v.src[6] == 2, v.lines[6])\n"
+                "-- a long array is cut short\n"
+                "jv.MAX_ITEMS = 3\n"
+                "v = view('[[1],[2],[3],[4],[5]]', 10)\n"
+                "assert(v.lines[1] == '[  /* 5 values */', v.lines[1])\n"
+                "assert(v.lines[5] == '  /* … 2 more values */', v.lines[5])\n"
+                "-- JSON Lines: a value to a line\n"
+                "v = view('{\"a\": 1}\\n{\"a\": 2}\\n')\n"
+                "assert(#v.lines == 2 and v.lines[2] == '{ \"a\": 2 }' and v.src[2] == 2)\n"
+                "-- where it does not read\n"
+                "local none, err = parse('{\"a\": 1,\\n \"b\": [1\\n}')\n"
+                "assert(none == nil and err.line == 3 and err.column == 1, err.message)\n"
+                "-- base64: what it holds, beside its first letters; a hash is left alone\n"
+                "local b64 = require('base64text')\n"
+                "local roots = assert(parse('{\"t\": \"aGVsbG8sIHRoaXMgaXMgYS50eHQ=\", "
+                "\"h\": \"abcd1234abcd1234abcd1234\"}'))\n"
+                "v = jv.view(roots, { width = 70, blob = b64 })\n"
+                "assert(v.lines[2] == '  \"t\": \"aGVsbG8sIHRo…\",  (base64, 20 B: hello, this is "
+                "a.txt)', v.lines[2])\n"
+                "assert(v.lines[3] == '  \"h\": \"abcd1234abcd1234abcd1234\"', v.lines[3])\n"
+                "assert(b64.inspect('iVBORw0KGgoAAAAAAAAAAAAA').what == 'PNG image')\n"
+                "assert(b64.inspect('data:image/svg+xml;base64,PHN2Zy8+').what == 'svg+xml')\n");
+
+    ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
+                   error != NULL ? error->message : "unknown error");
+    ck_assert_msg (runtime_error_count == 0, "the JSON view failed: %s / %s",
+                   runtime_error_summary != NULL ? runtime_error_summary : "",
+                   runtime_error_details != NULL ? runtime_error_details : "");
+
+    g_free (entry_path);
+    g_free (ini_path);
+    g_free (lib);
+    g_free (root);
+    g_free (source);
+}
+END_TEST
+
+/* The view of XML of the Preview: its lib/, as it ships, read by a script that checks it */
+START_TEST (test_lua_render_xml_view)
+{
+    char *source = g_build_filename (TEST_LUA_SCRIPTS_DIR, "render-xml", "lib", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "xml-check", (char *) NULL);
+    char *lib = g_build_filename (root, "lib", (char *) NULL);
+    char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
+    char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
+
+    copy_script_tree (source, lib);
+    // a package of the user takes the shared modules of the user
+    copy_script_tree (TEST_LUA_MODULES_DIR, user_modules_dir);
+    write_file (ini_path, "[Lua]\nid=xml-check\napi_version=1\nname=XML check\nentry=init.lua\n");
+    write_file (
+        entry_path,
+        "local parse = require('xmlparse').parse\n"
+        "local xv = require('xmlview')\n"
+        "local function view(text, width)\n"
+        "  local nodes = assert(parse(text))\n"
+        "  return xv.view(nodes, { width = width or 60 })\n"
+        "end\n"
+        "-- a tree; a short text on the line of its element; entities; lines of the file\n"
+        "local v = view('<?xml version=\"1.0\"?>\\n<a k=\"1\">\\n<b>x &amp; y</b>\\n<c/>\\n</a>')\n"
+        "assert(v.lines[1] == '<?xml version=\"1.0\"?>', v.lines[1])\n"
+        "assert(v.lines[2] == '<a k=\"1\">' and v.src[2] == 2, v.lines[2])\n"
+        "assert(v.lines[3] == '  <b>x & y</b>' and v.src[3] == 3, v.lines[3])\n"
+        "assert(v.lines[4] == '  <c/>' and v.src[4] == 4, v.lines[4])\n"
+        "assert(v.lines[5] == '</a>' and v.src[5] == 5, v.lines[5])\n"
+        "assert(xv.find(v, 4) == 3, 'find')\n"
+        "-- a run of one name of attributes and plain elements is a table\n"
+        "v = view('<l>\\n<p n=\"a\"><s>12</s></p>\\n<p n=\"bb\"/>\\n</l>')\n"
+        "assert(v.lines[2] == '  <!-- 2 × <p> -->', v.lines[2])\n"
+        "assert(v.lines[4] == '  │ n  │ s  │', v.lines[4])\n"
+        "assert(v.lines[6] == '  │ a  │ 12 │' and v.src[6] == 2, v.lines[6])\n"
+        "assert(v.lines[7] == '  │ bb │    │' and v.src[7] == 3, v.lines[7])\n"
+        "-- a long run is cut short; the elements are counted\n"
+        "xv.MAX_ITEMS = 2\n"
+        "v = view('<l><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i></l>')\n"
+        "assert(v.lines[1] == '<l>  <!-- 5 elements -->', v.lines[1])\n"
+        "assert(v.lines[4] == '  <!-- … 3 more <i> -->', v.lines[4])\n"
+        "-- attributes that do not fit go one to a line\n"
+        "v = view('<w aaaa=\"1111\" bbbb=\"2222\" cccc=\"3333\"/>', 20)\n"
+        "assert(v.lines[1] == '<w' and v.lines[4] == '    cccc=\"3333\"/>', v.lines[4])\n"
+        "-- where it does not read\n"
+        "local none, err = parse('<a>\\n<b></a>')\n"
+        "assert(none == nil and err.line == 2 and err.column == 4, err.message)\n"
+        "-- base64 in a text and in an attribute\n"
+        "local nodes = assert(parse('<a><t>aGVsbG8sIHRoaXMgaXMgYS50eHQ=</t>"
+        "<i src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iIi8+\"/></a>'))\n"
+        "v = xv.view(nodes, { width = 70, blob = require('base64text') })\n"
+        "assert(v.lines[2] == '  <t>aGVsbG8sIHRo…</t>  (base64, 20 B: hello, this is a.txt)', "
+        "v.lines[2])\n"
+        "assert(v.lines[3] == '  <i src=\"data:image/svg+xml;base64,PHN2ZyB4bWxu…\" "
+        "(svg+xml, 15 B: <svg xmlns=\"\"/>)/>', v.lines[3])\n"
+        "-- 16 bytes under a name of a GUID are a GUID; a line break in a value stays a reference\n"
+        "nodes = assert(parse('<s ID=\"Nquvyc4lQmeK/1RjAoBTHQ==\" "
+        "PARENTGUID=\"Nquvyc4lQmeK/1RjAoBTHQ==\" "
+        "N=\"1&#10;2\"/>'))\n"
+        "v = xv.view(nodes, { width = 60, blob = require('base64text') })\n"
+        "assert(v.lines[2] == '    ID=\"Nquvyc4lQmeK/1RjAoBTHQ==\"', v.lines[2])\n"
+        "assert(v.lines[3] == '    PARENTGUID=\"Nquvyc4lQmeK…\" "
+        "(GUID: 36abafc9-ce25-4267-8aff-54630280531d)', v.lines[3])\n"
+        "assert(v.lines[4] == '    N=\"1&#10;2\"/>' and #v.lines == 4, v.lines[4])\n");
+
+    ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
+                   error != NULL ? error->message : "unknown error");
+    ck_assert_msg (runtime_error_count == 0, "the XML view failed: %s / %s",
+                   runtime_error_summary != NULL ? runtime_error_summary : "",
+                   runtime_error_details != NULL ? runtime_error_details : "");
+
+    g_free (entry_path);
+    g_free (ini_path);
+    g_free (lib);
+    g_free (root);
+    g_free (source);
+}
+END_TEST
+
 /* A package offers its settings on request. */
 START_TEST (test_lua_package_settings_are_shown_on_request)
 {
@@ -1700,8 +1856,7 @@ START_TEST (test_lua_package_settings_are_shown_on_request)
     ck_assert_str_eq (settings_error, "package_not_found");
 
     /* the handler ran twice, once for each call that found it */
-    mark_path =
-        g_build_filename (user_editor_scripts_dir, "with-settings", "shown.txt", (char *) NULL);
+    mark_path = g_build_filename (user_scripts_dir, "with-settings", "shown.txt", (char *) NULL);
     mctest_assert_true (g_file_get_contents (mark_path, &contents, NULL, &error));
     ck_assert_str_eq (contents, "shown\nshown\n");
     g_free (contents);
@@ -1709,23 +1864,20 @@ START_TEST (test_lua_package_settings_are_shown_on_request)
 }
 END_TEST
 
-START_TEST (test_lua_runtime_requires_known_workspace_directory)
+START_TEST (test_lua_runtime_reads_packages_only_at_the_root)
 {
     mc_runtime_event_snapshot_t *snapshot;
-    char *unknown_workspace_dir;
+    char *deeper;
     char *contents = NULL;
 
-    create_script (system_scripts_dir, "outside-workspace", "outside-workspace", FALSE);
-    unknown_workspace_dir = g_build_filename (system_scripts_dir, "unknown", (char *) NULL);
-    create_script (unknown_workspace_dir, "unknown-workspace", "unknown-workspace", FALSE);
-    g_free (unknown_workspace_dir);
-    /* only the editor directory is a workspace */
-    unknown_workspace_dir = g_build_filename (user_scripts_dir, "mc", (char *) NULL);
-    create_script (unknown_workspace_dir, "old-mc", "old-mc", FALSE);
-    g_free (unknown_workspace_dir);
-    unknown_workspace_dir = g_build_filename (user_scripts_dir, "viewer", (char *) NULL);
-    create_script (unknown_workspace_dir, "old-viewer", "old-viewer", FALSE);
-    g_free (unknown_workspace_dir);
+    /* a package is a directory right in a script root: one a level deeper, where the scripts
+       of the editor were once kept, is not read */
+    deeper = g_build_filename (system_scripts_dir, "editor", (char *) NULL);
+    create_script (deeper, "old-system", "old-system", FALSE);
+    g_free (deeper);
+    deeper = g_build_filename (user_scripts_dir, "editor", (char *) NULL);
+    create_script (deeper, "old-user", "old-user", FALSE);
+    g_free (deeper);
     mctest_assert_true (mc_runtime_plugins_load (&error));
 
     snapshot = startup_snapshot_new ();
@@ -2009,8 +2161,8 @@ START_TEST (test_lua_runtime_rejects_insecure_package_paths)
     char *root;
     char *contents = NULL;
 
-    create_script (user_editor_scripts_dir, "unsafe", "unsafe", FALSE);
-    root = g_build_filename (user_editor_scripts_dir, "unsafe", (char *) NULL);
+    create_script (user_scripts_dir, "unsafe", "unsafe", FALSE);
+    root = g_build_filename (user_scripts_dir, "unsafe", (char *) NULL);
     ck_assert_int_eq (g_chmod (root, 0777), 0);
     g_free (root);
 
@@ -2087,9 +2239,9 @@ test_count_shipped_package (const char *runtime_name, const char *id, const char
                             gboolean enabled, gpointer user_data)
 {
     static const char *const shipped[] = {
-        "base64-decode",         "draw-table",         "format-paragraph",
-        "insert-command-output", "insert-datetime",    "insert-literal",
-        "sort-selection",        "notify-editor-save", "preview-markdown",
+        "base64-decode",   "draw-table",     "format-paragraph", "insert-command-output",
+        "insert-datetime", "insert-literal", "sort-selection",   "notify-editor-save",
+        "render-markdown", "render-json",    "render-xml",
     };
     guint *count = (guint *) user_data;
     guint i;
@@ -2133,8 +2285,8 @@ START_TEST (test_lua_runtime_loads_the_shipped_editor_scripts)
     guint packages = 0;
     guint actions = 0;
 
-    copy_script_tree (TEST_LUA_EDITOR_SCRIPTS_DIR, system_editor_scripts_dir);
-    copy_script_tree (TEST_LUA_EDITOR_EXAMPLES_DIR, user_editor_scripts_dir);
+    copy_script_tree (TEST_LUA_SCRIPTS_DIR, system_scripts_dir);
+    copy_script_tree (TEST_LUA_EXAMPLES_DIR, user_scripts_dir);
     ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
                    error != NULL ? error->message : "unknown error");
     ck_assert_msg (runtime_error_count == 0, "a shipped script failed: %s / %s",
@@ -2142,7 +2294,7 @@ START_TEST (test_lua_runtime_loads_the_shipped_editor_scripts)
                    runtime_error_details != NULL ? runtime_error_details : "");
 
     mc_runtime_plugins_enumerate_package_details (test_count_shipped_package, &packages);
-    ck_assert_uint_eq (packages, 9);
+    ck_assert_uint_eq (packages, 11);
     mc_runtime_plugins_enumerate_actions ("editor", test_count_action, &actions);
     ck_assert_uint_ge (actions, 7);
 }
@@ -2171,8 +2323,6 @@ main (void)
     data_dir = g_build_filename (test_root, "data", (char *) NULL);
     user_scripts_dir =
         g_build_filename (data_dir, MC_USERCONF_DIR, "lua", "scripts", (char *) NULL);
-    system_editor_scripts_dir = g_build_filename (system_scripts_dir, "editor", (char *) NULL);
-    user_editor_scripts_dir = g_build_filename (user_scripts_dir, "editor", (char *) NULL);
     output_path = g_build_filename (test_root, "events.log", (char *) NULL);
     (void) g_mkdir_with_parents (config_dir, 0700);
     {
@@ -2184,11 +2334,14 @@ main (void)
     g_setenv ("XDG_CONFIG_HOME", config_dir, TRUE);
     g_setenv ("XDG_DATA_HOME", data_dir, TRUE);
     g_setenv ("MC_LUA_TEST_SYSTEM_SCRIPTS_DIR", system_scripts_dir, TRUE);
+    system_modules_dir = g_build_filename (test_root, "system-modules", (char *) NULL);
+    user_modules_dir = g_build_filename (data_dir, MC_USERCONF_DIR, "lua", "lib", (char *) NULL);
+    g_setenv ("MC_LUA_TEST_SYSTEM_MODULES_DIR", system_modules_dir, TRUE);
 
     tc_core = tcase_create ("Core");
     tcase_add_checked_fixture (tc_core, setup, teardown);
     tcase_add_test (tc_core, test_lua_runtime_loads_user_override_and_callbacks);
-    tcase_add_test (tc_core, test_lua_runtime_requires_known_workspace_directory);
+    tcase_add_test (tc_core, test_lua_runtime_reads_packages_only_at_the_root);
     tcase_add_test (tc_core, test_lua_runtime_uses_optional_ui_host_services);
     tcase_add_test (tc_core, test_lua_runtime_isolates_callback_errors);
     tcase_add_test (tc_core, test_lua_runtime_exposes_object_api_through_opaque_handles);
@@ -2200,6 +2353,8 @@ main (void)
     tcase_add_test (tc_core, test_lua_runtime_honors_disable_environment);
     tcase_add_test (tc_core, test_lua_runtime_screen);
     tcase_add_test (tc_core, test_lua_runtime_calls_services);
+    tcase_add_test (tc_core, test_lua_render_json_view);
+    tcase_add_test (tc_core, test_lua_render_xml_view);
     tcase_add_test (tc_core, test_lua_package_settings_are_shown_on_request);
     tcase_add_test (tc_core, test_lua_runtime_loads_the_shipped_editor_scripts);
 
@@ -2226,8 +2381,6 @@ main (void)
     g_free (runtime_error_package);
     g_free (runtime_error_runtime);
     g_free (output_path);
-    g_free (user_editor_scripts_dir);
-    g_free (system_editor_scripts_dir);
     g_free (user_scripts_dir);
     g_free (system_scripts_dir);
     g_free (config_dir);

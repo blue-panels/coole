@@ -152,7 +152,7 @@ def write_markdown(path: Path, methods: list[dict[str, object]], callbacks: list
     lines = [
         "# Lua API reference",
         "",
-        "This file is generated from annotations in `src/lua/mc-lua.c`.",
+        "This file is generated from annotations in `src/plugins/lua/mc-lua.c`.",
         "Do not edit it manually; run `python3 maint/generate-lua-api.py`.",
         "",
     ]
@@ -187,7 +187,7 @@ def write_markdown(path: Path, methods: list[dict[str, object]], callbacks: list
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", type=Path, default=root / "src/lua/mc-lua.c")
+    parser.add_argument("--source", type=Path, default=root / "src/plugins/lua/mc-lua.c")
     parser.add_argument("--markdown", type=Path, default=root / "doc/LUA_API_REFERENCE.md")
     parser.add_argument("--json", type=Path, default=root / "doc/lua-api.json")
     args = parser.parse_args()

@@ -1350,13 +1350,33 @@ section
 entry
 **key**.
 
-The viewer tells the type of the file by its name and has it drawn by a
-renderer of that type: a markdown file comes out with its headings, lists,
+The renderers tell the viewer what files they draw, by the ends of their names
+or how their texts start, and the viewer has the file drawn by the renderer of
+its type: a markdown file comes out with its headings, lists,
 tables with rules, blocks of code in the colors of the editor, formulas as
 symbols and mermaid diagrams as drawings; that renderer is the Lua script
-preview-markdown, lua-markdown of Midnight Commander, whose settings, from
+render-markdown, lua-markdown of Midnight Commander, whose settings, from
 Manage plugins, are kept in
-**~/.config/coole/preview-markdown.ini**.
+**~/.config/coole/render-markdown.ini**.
+A JSON file, and JSON Lines, comes out one value to a line in the colors the
+editor gives JSON, the size of every object and array beside it, a long array
+packed to the width or cut short, and an array of objects of one kind as a
+table; comments and a comma before a closing bracket are taken. While it does
+not read, halfway through a change, the error and its place are shown above
+the last view that read. That renderer is the Lua script render-json.
+An XML file, by the end of its name or by a text that starts with <?xml, comes
+out an element to a line in the colors the editor gives XML: a short text on
+the line of its element, a long one wrapped under it, the attributes one to a
+line when they do not fit, the number of the elements an element holds beside
+it, a long run of elements of one name cut short, and a run of elements of one
+name that hold attributes and plain text as a table. That renderer is the Lua
+script render-xml, and it shows its errors the way render-json does.
+A string of base64 in JSON or XML, a text, a value or a data: URI, is cut to
+its first letters, and what it holds is shown beside it in parentheses: the
+start of the text, or the kind of file its bytes start like, and the size.
+Only the start of it is decoded, so a string of megabytes costs no more than a
+short one; a string of the letters of base64 that holds neither text nor a
+known kind of file, a hash for one, is left as it is.
 A file of a type no renderer knows is shown as its text.
 
 # Dialogs
@@ -1897,12 +1917,10 @@ Several commands of the editor are such scripts: sorting the lines, formatting
 the paragraph, inserting the output of a command, inserting a character by its
 code point, inserting the date, decoding base64 and drawing tables.
 
-Every script belongs to the
-**editor**
-workspace. The system scripts are in
-**{{pkgdatadir}}/lua/scripts/editor/**,
+The system scripts are in
+**{{pkgdatadir}}/lua/scripts/**,
 and the scripts of the user in
-**~/.local/share/coole/lua/scripts/editor/**,
+**~/.local/share/coole/lua/scripts/**,
 one directory for every script, with its
 **lua.ini**
 and its
@@ -2247,13 +2265,13 @@ is missing.
 *{{pkgdatadir}}/charsets*
 : The list of the codepages.
 
-*{{pkgdatadir}}/lua/scripts/editor/\**
+*{{pkgdatadir}}/lua/scripts/\**
 : The Lua scripts that come with the program.
 
 *{{pkgdatadir}}/examples/macros.d/\**
 : Example scripts for the macros.
 
-*{{editor_plugins_dir}}/*
+*{{plugins_dir}}/*
 : The editor plugins that are loaded at run time.
 
 *~/.config/coole/ini*
@@ -2298,7 +2316,7 @@ current directory, it is used instead of the home or system-wide menu.
 *~/.local/share/coole/skins/*
 : User's own skins.
 
-*~/.local/share/coole/lua/scripts/editor/*
+*~/.local/share/coole/lua/scripts/*
 : User's own Lua scripts.
 
 *~/.cache/coole/block*

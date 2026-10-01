@@ -17,8 +17,8 @@ option('tests', type: 'feature', value: 'auto',
 option('assert', type: 'boolean', value: true,
        description: 'Keep the GLib assertions')
 
-option('editor_plugins_dir', type: 'string', value: '',
-       description: 'Directory of the dynamic editor plugins [LIBDIR/coole/editor-plugins]')
+option('plugins_dir', type: 'string', value: '',
+       description: 'Directory of the plugin modules [LIBDIR/coole/plugins]')
 option('runtime_plugins_dir', type: 'string', value: '',
        description: 'Directory of the runtime plugins [LIBDIR/coole/runtime-plugins]')
 option('lua_scripts_dir', type: 'string', value: '',

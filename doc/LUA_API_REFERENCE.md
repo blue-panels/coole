@@ -1,6 +1,6 @@
 # Lua API reference
 
-This file is generated from annotations in `src/lua/mc-lua.c`.
+This file is generated from annotations in `src/plugins/lua/mc-lua.c`.
 Do not edit it manually; run `python3 maint/generate-lua-api.py`.
 
 ## Workspace `editor`

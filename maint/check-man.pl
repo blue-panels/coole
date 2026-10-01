@@ -19,7 +19,7 @@ die "$0: no markdown man pages under $top/doc/man\n" unless @files;
 
 # what the build substitutes; anything else is a typo
 my %placeholder = map { $_ => 1 } qw(
-    MAN_VERSION sysconfdir libexecdir pkglibexecdir pkgdatadir bindir editor_plugins_dir
+    MAN_VERSION sysconfdir libexecdir pkglibexecdir pkgdatadir bindir plugins_dir
 );
 
 my %marker = map { $_ => 1 } qw(skip notitle topics break);

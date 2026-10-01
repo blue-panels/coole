@@ -350,7 +350,7 @@ Przydatne przy szukaniu przyczyn kłopotów z klawiszami terminala.
 *{{pkgdatadir}}/syntax/\**
 : Systemowe pliki składni.
 
-*{{editor_plugins_dir}}/*
+*{{plugins_dir}}/*
 : Wtyczki edytora.
 
 *~/.config/coole/ini*, *~/.config/coole/keymap.ini*, *~/.config/coole/menu*
@@ -359,7 +359,7 @@ Przydatne przy szukaniu przyczyn kłopotów z klawiszami terminala.
 *~/.local/share/coole/*
 : Historia, pozycje w plikach, schowek (clipboard), makra (macros,
 macros.d/), składnia (syntax/Syntax), skórki (skins/) i skrypty Lua
-(lua/scripts/editor/) użytkownika.
+(lua/scripts/) użytkownika.
 
 *~/.cache/coole/*
 : Plik bloku (block) i pliki tymczasowe edytora.

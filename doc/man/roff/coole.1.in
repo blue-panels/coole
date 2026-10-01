@@ -1624,13 +1624,33 @@ entry
 \fBkey\fP\&.
 
 .PP
-The viewer tells the type of the file by its name and has it drawn by a
-renderer of that type: a markdown file comes out with its headings, lists,
+The renderers tell the viewer what files they draw, by the ends of their names
+or how their texts start, and the viewer has the file drawn by the renderer of
+its type: a markdown file comes out with its headings, lists,
 tables with rules, blocks of code in the colors of the editor, formulas as
 symbols and mermaid diagrams as drawings; that renderer is the Lua script
-preview\-markdown, lua\-markdown of Midnight Commander, whose settings, from
+render\-markdown, lua\-markdown of Midnight Commander, whose settings, from
 Manage plugins, are kept in
-\fB~/.config/coole/preview\-markdown.ini\fP\&.
+\fB~/.config/coole/render\-markdown.ini\fP\&.
+A JSON file, and JSON Lines, comes out one value to a line in the colors the
+editor gives JSON, the size of every object and array beside it, a long array
+packed to the width or cut short, and an array of objects of one kind as a
+table; comments and a comma before a closing bracket are taken. While it does
+not read, halfway through a change, the error and its place are shown above
+the last view that read. That renderer is the Lua script render\-json.
+An XML file, by the end of its name or by a text that starts with <?xml, comes
+out an element to a line in the colors the editor gives XML: a short text on
+the line of its element, a long one wrapped under it, the attributes one to a
+line when they do not fit, the number of the elements an element holds beside
+it, a long run of elements of one name cut short, and a run of elements of one
+name that hold attributes and plain text as a table. That renderer is the Lua
+script render\-xml, and it shows its errors the way render\-json does.
+A string of base64 in JSON or XML, a text, a value or a data: URI, is cut to
+its first letters, and what it holds is shown beside it in parentheses: the
+start of the text, or the kind of file its bytes start like, and the size.
+Only the start of it is decoded, so a string of megabytes costs no more than a
+short one; a string of the letters of base64 that holds neither text nor a
+known kind of file, a hash for one, is left as it is.
 A file of a type no renderer knows is shown as its text.
 
 
@@ -2244,12 +2264,10 @@ the paragraph, inserting the output of a command, inserting a character by its
 code point, inserting the date, decoding base64 and drawing tables.
 
 .PP
-Every script belongs to the
-\fBeditor\fP
-workspace. The system scripts are in
-\fB{{pkgdatadir}}/lua/scripts/editor/\fP,
+The system scripts are in
+\fB{{pkgdatadir}}/lua/scripts/\fP,
 and the scripts of the user in
-\fB~/.local/share/coole/lua/scripts/editor/\fP,
+\fB~/.local/share/coole/lua/scripts/\fP,
 one directory for every script, with its
 \fBlua.ini\fP
 and its
@@ -2667,7 +2685,7 @@ The skins that come with the program.
 The list of the codepages.
 
 .TP
-\fI{{pkgdatadir}}/lua/scripts/editor/*\fP
+\fI{{pkgdatadir}}/lua/scripts/*\fP
 The Lua scripts that come with the program.
 
 .TP
@@ -2675,7 +2693,7 @@ The Lua scripts that come with the program.
 Example scripts for the macros.
 
 .TP
-\fI{{editor_plugins_dir}}/\fP
+\fI{{plugins_dir}}/\fP
 The editor plugins that are loaded at run time.
 
 .TP
@@ -2734,7 +2752,7 @@ User's own syntax file.
 User's own skins.
 
 .TP
-\fI~/.local/share/coole/lua/scripts/editor/\fP
+\fI~/.local/share/coole/lua/scripts/\fP
 User's own Lua scripts.
 
 .TP
