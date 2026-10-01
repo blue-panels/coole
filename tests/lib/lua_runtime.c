@@ -1811,7 +1811,16 @@ START_TEST (test_lua_render_xml_view)
         "assert(v.lines[2] == '  <t>aGVsbG8sIHRo…</t>  (base64, 20 B: hello, this is a.txt)', "
         "v.lines[2])\n"
         "assert(v.lines[3] == '  <i src=\"data:image/svg+xml;base64,PHN2ZyB4bWxu…\" "
-        "(svg+xml, 15 B: <svg xmlns=\"\"/>)/>', v.lines[3])\n");
+        "(svg+xml, 15 B: <svg xmlns=\"\"/>)/>', v.lines[3])\n"
+        "-- 16 bytes under a name of a GUID are a GUID; a line break in a value stays a reference\n"
+        "nodes = assert(parse('<s ID=\"Nquvyc4lQmeK/1RjAoBTHQ==\" "
+        "PARENTGUID=\"Nquvyc4lQmeK/1RjAoBTHQ==\" "
+        "N=\"1&#10;2\"/>'))\n"
+        "v = xv.view(nodes, { width = 60, blob = require('base64text') })\n"
+        "assert(v.lines[2] == '    ID=\"Nquvyc4lQmeK/1RjAoBTHQ==\"', v.lines[2])\n"
+        "assert(v.lines[3] == '    PARENTGUID=\"Nquvyc4lQmeK…\" "
+        "(GUID: 36abafc9-ce25-4267-8aff-54630280531d)', v.lines[3])\n"
+        "assert(v.lines[4] == '    N=\"1&#10;2\"/>' and #v.lines == 4, v.lines[4])\n");
 
     ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
                    error != NULL ? error->message : "unknown error");

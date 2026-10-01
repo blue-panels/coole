@@ -52,16 +52,13 @@ local function fail(state, message, pos)
     error({ xml_error = true, line = line, column = pos - i + 1, message = message }, 0)
 end
 
--- The line of the byte at pos; pos does not go back.
+-- The line of the byte at pos; pos does not go back.  Where the next line
+-- starts is kept: a file of one long line is not searched again for each
+-- value of it.
 local function line_of(state, pos)
-    while state.line_pos < pos do
-        local nl = state.text:find("\n", state.line_pos, true)
-        if nl == nil or nl >= pos then
-            state.line_pos = pos
-            break
-        end
+    while state.next_nl < pos do
         state.line = state.line + 1
-        state.line_pos = nl + 1
+        state.next_nl = state.text:find("\n", state.next_nl + 1, true) or math.huge
     end
     return state.line
 end
@@ -234,7 +231,10 @@ end
 
 -- The nodes of text, or nil and the error, { line, column, message }.
 function M.parse(text)
-    local state = { text = text, pos = 1, line = 1, line_pos = 1, depth = 0 }
+    local state = {
+        text = text, pos = 1, line = 1, depth = 0,
+        next_nl = text:find("\n", 1, true) or math.huge,
+    }
     local nodes = {}
 
     -- a byte order mark is no text

@@ -11,7 +11,8 @@
 --     close = n }
 --   { t = "array", line = n, items = { node... }, close = n }
 --   { t = "string" | "number" | "literal", line = n, raw = "text" }
--- The key of a member is a node of type "string".
+-- The key of a member is a node of type "string"; the value of a member
+-- has the name of its key, without the quotes, in name.
 
 local M = {}
 
@@ -33,16 +34,13 @@ local function fail(state, message, pos)
     error({ json_error = true, line = line, column = col, message = message }, 0)
 end
 
--- The line of the byte at pos, counted on from the last one asked for.
+-- The line of the byte at pos; pos does not go back.  Where the next line
+-- starts is kept: a file of one long line is not searched again for each
+-- value of it.
 local function line_of(state, pos)
-    while state.line_pos < pos do
-        local nl = state.text:find("\n", state.line_pos, true)
-        if nl == nil or nl >= pos then
-            state.line_pos = pos
-            break
-        end
+    while state.next_nl < pos do
         state.line = state.line + 1
-        state.line_pos = nl + 1
+        state.next_nl = state.text:find("\n", state.next_nl + 1, true) or math.huge
     end
     return state.line
 end
@@ -151,7 +149,9 @@ local function parse_container(state, open, close)
             end
             state.pos = state.pos + 1
             skip(state)
-            list[#list + 1] = { key = key, value = parse_value(state) }
+            local value = parse_value(state)
+            value.name = key.raw:sub(2, -2)
+            list[#list + 1] = { key = key, value = value }
         else
             list[#list + 1] = parse_value(state)
         end
@@ -193,7 +193,10 @@ end
 -- The values of text, one after the other: the nodes, or nil and the
 -- error, { line, column, message }.
 function M.parse(text)
-    local state = { text = text, pos = 1, line = 1, line_pos = 1, depth = 0 }
+    local state = {
+        text = text, pos = 1, line = 1, depth = 0,
+        next_nl = text:find("\n", 1, true) or math.huge,
+    }
     local roots = {}
 
     local ok, err = pcall(function()

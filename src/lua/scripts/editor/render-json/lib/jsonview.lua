@@ -73,7 +73,7 @@ local function blob_of(view, node)
             -- the escapes a JSON writer puts in base64: \/ and broken lines
             inner = inner:gsub("\\/", "/"):gsub("\\[nrt]", " ")
         end
-        node.blob = view.blob.inspect(inner, view.width) or false
+        node.blob = view.blob.inspect(inner, view.width, node.name) or false
     end
     return node.blob or nil
 end
@@ -95,7 +95,7 @@ local function cell_text(view, node)
     end
     local info = blob_of(view, node)
     if info ~= nil then
-        return info.scheme .. info.prefix .. "… " .. blob_note(view, info, 30)
+        return info.scheme .. info.prefix .. "… " .. blob_note(view, info, 44)
     end
     if node.t == "string" then
         return node.raw:sub(2, -2)

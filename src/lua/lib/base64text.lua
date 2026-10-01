@@ -92,8 +92,10 @@ end
 -- what = "base64" or the kind of file or the type of a data: URI,
 -- size = "2.1 KB", text = the start of the text it holds or nil,
 -- more = whether the text goes on }; nil when it is not taken for base64.
--- want is how many characters of the text are wanted at most.
-function M.inspect(s, want)
+-- want is how many characters of the text are wanted at most; name, the
+-- name of the attribute, element or key the string is the value of, tells
+-- a GUID from a hash: 16 bytes under a name with "guid" or "uuid" in it.
+function M.inspect(s, want, name)
     if type(s) ~= "string" or #s < M.MIN_LENGTH then
         return nil
     end
@@ -160,6 +162,18 @@ function M.inspect(s, want)
         end
     end
 
+    if size == 16 and #bytes == 16 and name ~= nil then
+        local lower = name:lower()
+        if lower:find("guid", 1, true) or lower:find("uuid", 1, true) then
+            local hex = bytes:gsub(".", function(c) return string.format("%02x", c:byte()) end)
+            info.what = "GUID"
+            info.size = nil
+            info.text = hex:sub(1, 8) .. "-" .. hex:sub(9, 12) .. "-" .. hex:sub(13, 16) .. "-"
+                .. hex:sub(17, 20) .. "-" .. hex:sub(21, 32)
+            return info
+        end
+    end
+
     local text = as_text(bytes:sub(1, want + 3))
     if text == nil then
         -- bytes of no known kind: a data: URI says what it is, anything else is no base64 of ours
@@ -175,7 +189,7 @@ end
 -- The text of info for a view, at most width wide: "what, size: text…".
 function M.note(info, width, text_width)
     text_width = text_width or function(t) return utf8.len(t) or #t end
-    local head = info.what .. ", " .. info.size
+    local head = info.size ~= nil and (info.what .. ", " .. info.size) or info.what
     if info.text == nil then
         return head
     end

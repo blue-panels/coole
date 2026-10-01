@@ -44,6 +44,10 @@ local function paint(view, kind, text)
 end
 
 local function emit(view, text, line)
+    -- a line of the view is one line: the map of the lines of the file counts on it
+    if text:find("[\r\n]") then
+        text = text:gsub("\r?\n", "↵"):gsub("\r", "↵")
+    end
     view.lines[#view.lines + 1] = text
     view.src[#view.src + 1] = line
 end
@@ -78,12 +82,12 @@ end
 -- it (opts.blob: inspect and note, as base64text has them).  Kept on the
 -- thing it is read for, a node of text or an attribute.
 
-local function blob_of(view, holder, text)
+local function blob_of(view, holder, text, name)
     if view.blob == nil or #text < 20 then
         return nil
     end
     if holder.blob == nil then
-        holder.blob = view.blob.inspect(text, view.width) or false
+        holder.blob = view.blob.inspect(text, view.width, name) or false
     end
     return holder.blob or nil
 end
@@ -91,6 +95,11 @@ end
 local function blob_short(info)
     return info.scheme .. info.prefix .. "…"
 end
+
+-- How wide what it holds is told beside an attribute and in a cell: a
+-- GUID, "(GUID: " and its 36 letters, fits both.
+local NOTE_ATTR = 48
+local NOTE_CELL = 44
 
 -- What it holds, in parentheses, at most width wide.
 local function blob_note(view, info, width)
@@ -122,20 +131,28 @@ local function plain_text(node)
     return nil
 end
 
+-- A value of an attribute as it is written: what would end or break its
+-- line given back as character references.
+local CHAR_REF = { ['"'] = "&quot;", ["\n"] = "&#10;", ["\r"] = "&#13;", ["\t"] = "&#9;" }
+
+local function escape_value(value)
+    return (value:gsub('["\n\r\t]', CHAR_REF))
+end
+
 -- The value of an attribute as the view shows it: base64 cut short.
 local function attr_value(view, attr)
-    local info = blob_of(view, attr, attr.value)
+    local info = blob_of(view, attr, attr.value, attr.name)
     if info ~= nil then
         return blob_short(info), info
     end
-    return (attr.value:gsub('"', "&quot;"))
+    return escape_value(attr.value)
 end
 
 local function attr_plain(view, attr)
     local value, info = attr_value(view, attr)
     local text = attr.name .. '="' .. value .. '"'
     if info ~= nil then
-        text = text .. " " .. blob_note(view, info, 40)
+        text = text .. " " .. blob_note(view, info, NOTE_ATTR)
     end
     return text
 end
@@ -145,7 +162,7 @@ local function attr_text(view, attr)
     local text = paint(view, "attr", attr.name) .. paint(view, "tag", "=")
         .. paint(view, "value", '"' .. value .. '"')
     if info ~= nil then
-        text = text .. " " .. paint(view, "comment", blob_note(view, info, 40))
+        text = text .. " " .. paint(view, "comment", blob_note(view, info, NOTE_ATTR))
     end
     return text
 end
@@ -158,12 +175,12 @@ end
 local TEXT_COLUMN = "#text"
 
 -- The text of a cell: base64 cut short, with what it holds.
-local function cell_value(view, holder, text)
-    local info = blob_of(view, holder, text)
+local function cell_value(view, holder, text, name)
+    local info = blob_of(view, holder, text, name)
     if info ~= nil then
-        return blob_short(info) .. " " .. blob_note(view, info, 30)
+        return blob_short(info) .. " " .. blob_note(view, info, NOTE_CELL)
     end
-    return text
+    return (text:gsub("[\n\r\t]", CHAR_REF))
 end
 
 local function row_fields(view, node)
@@ -171,14 +188,14 @@ local function row_fields(view, node)
 
     for _, a in ipairs(node.attrs) do
         fields[#fields + 1] = {
-            key = "@" .. a.name, title = a.name, value = cell_value(view, a, a.value), attr = true,
+            key = "@" .. a.name, title = a.name, value = cell_value(view, a, a.value, a.name), attr = true,
         }
     end
     local text = plain_text(node)
     if text ~= nil then
         if text ~= "" then
             fields[#fields + 1] = {
-                key = TEXT_COLUMN, title = TEXT_COLUMN, value = cell_value(view, node.children[1], text),
+                key = TEXT_COLUMN, title = TEXT_COLUMN, value = cell_value(view, node.children[1], text, node.name),
             }
         end
         return fields
@@ -192,7 +209,7 @@ local function row_fields(view, node)
             return nil
         end
         if value ~= "" then
-            value = cell_value(view, child.children[1], value)
+            value = cell_value(view, child.children[1], value, child.name)
         end
         fields[#fields + 1] = { key = child.name, title = child.name, value = value }
     end
@@ -422,7 +439,7 @@ emit_node = function(view, node, indent)
         return
     end
 
-    local info = text ~= nil and text ~= "" and blob_of(view, node.children[1], text) or nil
+    local info = text ~= nil and text ~= "" and blob_of(view, node.children[1], text, node.name) or nil
     if info ~= nil then
         -- base64: its first letters in the element, what it holds after it
         local open, last = emit_open(view, node, indent, ">")
