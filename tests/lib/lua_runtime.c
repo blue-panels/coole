@@ -1739,6 +1739,66 @@ START_TEST (test_lua_render_json_view)
 }
 END_TEST
 
+/* The view of XML of the Preview: its lib/, as it ships, read by a script that checks it */
+START_TEST (test_lua_render_xml_view)
+{
+    char *source =
+        g_build_filename (TEST_LUA_EDITOR_SCRIPTS_DIR, "render-xml", "lib", (char *) NULL);
+    char *root = g_build_filename (user_editor_scripts_dir, "xml-check", (char *) NULL);
+    char *lib = g_build_filename (root, "lib", (char *) NULL);
+    char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
+    char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
+
+    copy_script_tree (source, lib);
+    write_file (ini_path, "[Lua]\nid=xml-check\napi_version=1\nname=XML check\nentry=init.lua\n");
+    write_file (
+        entry_path,
+        "local parse = require('xmlparse').parse\n"
+        "local xv = require('xmlview')\n"
+        "local function view(text, width)\n"
+        "  local nodes = assert(parse(text))\n"
+        "  return xv.view(nodes, { width = width or 60 })\n"
+        "end\n"
+        "-- a tree; a short text on the line of its element; entities; lines of the file\n"
+        "local v = view('<?xml version=\"1.0\"?>\\n<a k=\"1\">\\n<b>x &amp; y</b>\\n<c/>\\n</a>')\n"
+        "assert(v.lines[1] == '<?xml version=\"1.0\"?>', v.lines[1])\n"
+        "assert(v.lines[2] == '<a k=\"1\">' and v.src[2] == 2, v.lines[2])\n"
+        "assert(v.lines[3] == '  <b>x & y</b>' and v.src[3] == 3, v.lines[3])\n"
+        "assert(v.lines[4] == '  <c/>' and v.src[4] == 4, v.lines[4])\n"
+        "assert(v.lines[5] == '</a>' and v.src[5] == 5, v.lines[5])\n"
+        "assert(xv.find(v, 4) == 3, 'find')\n"
+        "-- a run of one name of attributes and plain elements is a table\n"
+        "v = view('<l>\\n<p n=\"a\"><s>12</s></p>\\n<p n=\"bb\"/>\\n</l>')\n"
+        "assert(v.lines[2] == '  <!-- 2 × <p> -->', v.lines[2])\n"
+        "assert(v.lines[4] == '  │ n  │ s  │', v.lines[4])\n"
+        "assert(v.lines[6] == '  │ a  │ 12 │' and v.src[6] == 2, v.lines[6])\n"
+        "assert(v.lines[7] == '  │ bb │    │' and v.src[7] == 3, v.lines[7])\n"
+        "-- a long run is cut short; the elements are counted\n"
+        "xv.MAX_ITEMS = 2\n"
+        "v = view('<l><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i></l>')\n"
+        "assert(v.lines[1] == '<l>  <!-- 5 elements -->', v.lines[1])\n"
+        "assert(v.lines[4] == '  <!-- … 3 more <i> -->', v.lines[4])\n"
+        "-- attributes that do not fit go one to a line\n"
+        "v = view('<w aaaa=\"1111\" bbbb=\"2222\" cccc=\"3333\"/>', 20)\n"
+        "assert(v.lines[1] == '<w' and v.lines[4] == '    cccc=\"3333\"/>', v.lines[4])\n"
+        "-- where it does not read\n"
+        "local none, err = parse('<a>\\n<b></a>')\n"
+        "assert(none == nil and err.line == 2 and err.column == 4, err.message)\n");
+
+    ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
+                   error != NULL ? error->message : "unknown error");
+    ck_assert_msg (runtime_error_count == 0, "the XML view failed: %s / %s",
+                   runtime_error_summary != NULL ? runtime_error_summary : "",
+                   runtime_error_details != NULL ? runtime_error_details : "");
+
+    g_free (entry_path);
+    g_free (ini_path);
+    g_free (lib);
+    g_free (root);
+    g_free (source);
+}
+END_TEST
+
 /* A package offers its settings on request. */
 START_TEST (test_lua_package_settings_are_shown_on_request)
 {
@@ -2152,7 +2212,7 @@ test_count_shipped_package (const char *runtime_name, const char *id, const char
     static const char *const shipped[] = {
         "base64-decode",   "draw-table",     "format-paragraph", "insert-command-output",
         "insert-datetime", "insert-literal", "sort-selection",   "notify-editor-save",
-        "render-markdown", "render-json",
+        "render-markdown", "render-json",    "render-xml",
     };
     guint *count = (guint *) user_data;
     guint i;
@@ -2205,7 +2265,7 @@ START_TEST (test_lua_runtime_loads_the_shipped_editor_scripts)
                    runtime_error_details != NULL ? runtime_error_details : "");
 
     mc_runtime_plugins_enumerate_package_details (test_count_shipped_package, &packages);
-    ck_assert_uint_eq (packages, 10);
+    ck_assert_uint_eq (packages, 11);
     mc_runtime_plugins_enumerate_actions ("editor", test_count_action, &actions);
     ck_assert_uint_ge (actions, 7);
 }
@@ -2264,6 +2324,7 @@ main (void)
     tcase_add_test (tc_core, test_lua_runtime_screen);
     tcase_add_test (tc_core, test_lua_runtime_calls_services);
     tcase_add_test (tc_core, test_lua_render_json_view);
+    tcase_add_test (tc_core, test_lua_render_xml_view);
     tcase_add_test (tc_core, test_lua_package_settings_are_shown_on_request);
     tcase_add_test (tc_core, test_lua_runtime_loads_the_shipped_editor_scripts);
 

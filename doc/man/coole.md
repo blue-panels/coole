@@ -1364,6 +1364,13 @@ packed to the width or cut short, and an array of objects of one kind as a
 table; comments and a comma before a closing bracket are taken. While it does
 not read, halfway through a change, the error and its place are shown above
 the last view that read. That renderer is the Lua script render-json.
+An XML file, by the end of its name or by a text that starts with <?xml, comes
+out an element to a line in the colors the editor gives XML: a short text on
+the line of its element, a long one wrapped under it, the attributes one to a
+line when they do not fit, the number of the elements an element holds beside
+it, a long run of elements of one name cut short, and a run of elements of one
+name that hold attributes and plain text as a table. That renderer is the Lua
+script render-xml, and it shows its errors the way render-json does.
 A file of a type no renderer knows is shown as its text.
 
 # Dialogs

@@ -73,9 +73,9 @@ module is (section 3), and are examples of one:
                                  the names, the starts of the texts)
                                  and for the view of a file with the
                                  signal "render"; the Lua scripts
-                                 render-markdown and render-json are
-                                 renderers.  Built when GModule is
-                                 found.
+                                 render-markdown, render-json and
+                                 render-xml are renderers.  Built
+                                 when GModule is found.
 
 The terminal module holds the terminal of mc as well (src/mcterm and
 src/viewer).  The modules call the functions of the editor, which the

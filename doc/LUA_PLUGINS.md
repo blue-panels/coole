@@ -416,8 +416,8 @@ with the signal `render` (`id`, `type`, `path`, `text`, `width`,
 `revision`), and the script that knows the type answers with `set_text` for
 that `id`; `follow` (`id`, `type`, `line` of the file) asks where the cursor
 is in the view, answered with `scroll_to`.  A type nobody answers for is
-shown as the text of the file.  `render-markdown` and `render-json` are
-renderers:
+shown as the text of the file.  `render-markdown`, `render-json` and
+`render-xml` are renderers:
 
 ```lua
 local viewer = mc.service("viewer")

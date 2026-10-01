@@ -40,6 +40,7 @@ there and develops it as a program of its own.
   type of the file and asks a renderer for it: markdown comes out with tables,
   code in colors, formulas and mermaid diagrams; JSON indented and colored,
   with the sizes of its objects and arrays and an array of objects as a table;
+  XML as a tree, with a run of like elements as a table;
   a type without a renderer is shown as its text.  Scripts and plugins can show any text of theirs in the
   windows of the viewer.
 - **Editor plugins**: a plugin framework the ctags, etags and spell plugins are
