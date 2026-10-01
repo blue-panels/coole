@@ -155,6 +155,18 @@ and position; a left click on the title and a mouse drag move the window; a
 left click on the lower right corner of the frame and a mouse drag resize it.
 The same is done from the
 [Window menu](#window-menu).
+A window that is not full screen has a scrollbar down the right side of its
+frame and one along the bottom, after the position of the cursor: an arrow
+scrolls a line or a few columns, the bar beside the thumb a page, and the thumb
+is dragged. Up and down the cursor goes along with the view; sideways the view
+moves alone, as far as the widest line on the screen, and the next key or a
+click on the text brings it back to the cursor. The bars are drawn as the
+section
+**[scrollbar]**
+of the skin has them: the vertical thumb six cells long and the horizontal one
+four, when they fit, by default. The horizontal bar
+measures the lines in view, not the whole file. The wheel tilted, or turned
+with Shift, scrolls sideways.
 
 Shift combined with the arrows highlights text (if the terminal supports it).
 **Ctrl-Ins**
@@ -1332,7 +1344,8 @@ shows the window at the bottom of the screen, a file shown full screen going
 into a window above it, and in the terminal hides it again, the file taking
 the whole screen back; the shell goes on running while the window is hidden.
 The window is moved, resized, shown full screen and closed like the window of
-a file. See [Terminal](terminal.md#terminal).
+a file. The scrollbar on the right of its frame scrolls the history of the
+output. See [Terminal](terminal.md#terminal).
 
 # Preview
 
@@ -1342,8 +1355,16 @@ file is, in a window named Preview at the right of it.
 or Preview in the Plugins menu, shows and hides it. The file keeps the
 focus; the Preview is drawn again as the text changes, follows the cursor,
 and shows the file window that comes to the front. The window is moved,
-resized and closed like the window of a file, and scrolls with the keys of
-the editor, sideways too for what is wider than it. The key is set in
+resized and closed like the window of a file. Once it has the focus, it has
+a cursor of its own, which the keys of the editor move as in a file: the
+arrows, Home and End, the pages, the top and the bottom of the text; the keys
+of the words, Ctrl-Left and Ctrl-Right, move it eight columns. The view
+follows it, sideways too for what is wider than it. A click
+on the text puts the cursor there.
+The mouse wheel scrolls it without the focus, sideways when it is tilted or
+turned with Shift. Its frame has a scrollbar on the right and one at the
+bottom: an arrow scrolls a step, the bar beside the thumb a page, and the
+thumb is dragged. The key is set in
 **viewer.ini**,
 section
 **[Preview]**,
