@@ -99,6 +99,9 @@ typedef struct
     WEditWindow window;
     char *title;
     tw_text_t text;
+    long cur_line;  // the cursor: the line of the text, and the column in it
+    long cur_col;
+    long want_col;  // the column it goes back to on a line long enough
     void (*on_destroy) (void *data);
     void *on_destroy_data;
 } WTextWindow;
@@ -529,6 +532,85 @@ text_window_scroll (WTextWindow *tw, long top, int left)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The columns of the line n of the text */
+static long
+tw_line_width (const tw_text_t *text, long n)
+{
+    const GArray *line;
+    long cols = 0;
+    guint i;
+
+    if (text->lines == NULL || n < 0 || n >= (long) text->lines->len)
+        return 0;
+    line = g_array_index (text->lines, GArray *, n);
+    for (i = 0; i < line->len; i++)
+        cols += g_array_index (line, tw_cell_t, i).width;
+    return cols;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The column of the cell under col, so that the cursor does not stand in half a wide character */
+static long
+tw_cell_start (const tw_text_t *text, long n, long col)
+{
+    const GArray *line;
+    long x = 0;
+    guint i;
+
+    if (text->lines == NULL || n < 0 || n >= (long) text->lines->len)
+        return col;
+    line = g_array_index (text->lines, GArray *, n);
+    for (i = 0; i < line->len; i++)
+    {
+        const long w = g_array_index (line, tw_cell_t, i).width;
+
+        if (col < x + w)
+            return x;
+        x += w;
+    }
+    return col;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Put the cursor at the line and the column, within the text, and the view where it is seen */
+static void
+text_window_move_cursor (WTextWindow *tw, long line, long col, gboolean remember)
+{
+    const long lines = tw->text.lines == NULL ? 1 : MAX (1, (long) tw->text.lines->len);
+    WRect r;
+    long top = tw->text.top;
+    long left = tw->text.left;
+
+    text_window_text_rect (tw, &r);
+
+    tw->cur_line = CLAMP (line, 0, lines - 1);
+    tw->cur_col = tw_cell_start (&tw->text, tw->cur_line,
+                                 CLAMP (col, 0, tw_line_width (&tw->text, tw->cur_line)));
+    if (remember)
+        tw->want_col = tw->cur_col;
+
+    if (tw->cur_line < top)
+        top = tw->cur_line;
+    else if (tw->cur_line >= top + r.lines)
+        top = tw->cur_line - r.lines + 1;
+    if (tw->cur_col < left)
+        left = MAX (0, tw->cur_col - TEXT_WINDOW_HSTEP);
+    else if (tw->cur_col >= left + r.cols)
+        left = tw->cur_col - r.cols + 1 + TEXT_WINDOW_HSTEP;
+
+    // the cursor may stand past the widest line: the view goes as far as it
+    tw->text.top = CLAMP (top, 0, text_window_max_top (tw));
+    tw->text.left = (int) MAX (0, left);
+    widget_draw (WIDGET (tw));
+    // the frame drawn last left the terminal cursor on it
+    if (widget_get_state (WIDGET (tw), WST_FOCUSED))
+        widget_update_cursor (WIDGET (WIDGET (tw)->owner));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 text_window_key (WTextWindow *tw, int key)
 {
@@ -539,30 +621,63 @@ text_window_key (WTextWindow *tw, int key)
     switch (keybind_lookup_keymap_command (editor_map, key))
     {
     case CK_Up:
-        text_window_scroll (tw, tw->text.top - 1, tw->text.left);
+        text_window_move_cursor (tw, tw->cur_line - 1, tw->want_col, FALSE);
         break;
     case CK_Down:
-        text_window_scroll (tw, tw->text.top + 1, tw->text.left);
+        text_window_move_cursor (tw, tw->cur_line + 1, tw->want_col, FALSE);
         break;
     case CK_PageUp:
-        text_window_scroll (tw, tw->text.top - MAX (1, r.lines - 1), tw->text.left);
+        tw->text.top = MAX (0, tw->text.top - MAX (1, r.lines - 1));
+        text_window_move_cursor (tw, tw->cur_line - MAX (1, r.lines - 1), tw->want_col, FALSE);
         break;
     case CK_PageDown:
-        text_window_scroll (tw, tw->text.top + MAX (1, r.lines - 1), tw->text.left);
+        tw->text.top = MIN (text_window_max_top (tw), tw->text.top + MAX (1, r.lines - 1));
+        text_window_move_cursor (tw, tw->cur_line + MAX (1, r.lines - 1), tw->want_col, FALSE);
         break;
     case CK_Home:
-    case CK_Top:
-        text_window_scroll (tw, 0, 0);
+        text_window_move_cursor (tw, tw->cur_line, 0, TRUE);
         break;
     case CK_End:
+        text_window_move_cursor (tw, tw->cur_line, tw_line_width (&tw->text, tw->cur_line), TRUE);
+        break;
+    case CK_Top:
+        text_window_move_cursor (tw, 0, 0, TRUE);
+        break;
     case CK_Bottom:
-        text_window_scroll (tw, text_window_max_top (tw), 0);
+        text_window_move_cursor (tw, G_MAXLONG, 0, TRUE);
+        break;
+    case CK_TopOnScreen:
+        text_window_move_cursor (tw, tw->text.top, tw->want_col, FALSE);
+        break;
+    case CK_BottomOnScreen:
+        text_window_move_cursor (tw, tw->text.top + r.lines - 1, tw->want_col, FALSE);
         break;
     case CK_Left:
-        text_window_scroll (tw, tw->text.top, tw->text.left - TEXT_WINDOW_HSTEP);
+        if (tw->cur_col > 0)
+            text_window_move_cursor (tw, tw->cur_line, tw->cur_col - 1, TRUE);
+        else if (tw->cur_line > 0)
+            text_window_move_cursor (tw, tw->cur_line - 1, G_MAXLONG, TRUE);
         break;
     case CK_Right:
-        text_window_scroll (tw, tw->text.top, tw->text.left + TEXT_WINDOW_HSTEP);
+        if (tw->cur_col < tw_line_width (&tw->text, tw->cur_line))
+        {
+            // past the whole character under the cursor, wide or not
+            long next = tw->cur_col + 1;
+
+            while (next < tw_line_width (&tw->text, tw->cur_line)
+                   && tw_cell_start (&tw->text, tw->cur_line, next) == tw->cur_col)
+                next++;
+            text_window_move_cursor (tw, tw->cur_line, next, TRUE);
+        }
+        else if (tw->text.lines != NULL && tw->cur_line + 1 < (long) tw->text.lines->len)
+            text_window_move_cursor (tw, tw->cur_line + 1, 0, TRUE);
+        break;
+    // a view to read has no words to edit: the cursor goes sideways by the step of the view
+    case CK_WordLeft:
+        text_window_move_cursor (tw, tw->cur_line, tw->cur_col - TEXT_WINDOW_HSTEP, TRUE);
+        break;
+    case CK_WordRight:
+        text_window_move_cursor (tw, tw->cur_line, tw->cur_col + TEXT_WINDOW_HSTEP, TRUE);
         break;
     default:
         return MSG_NOT_HANDLED;
@@ -598,10 +713,15 @@ text_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
     case MSG_CURSOR:
     {
         WRect r;
+        const long y = tw->cur_line - tw->text.top;
+        const long x = tw->cur_col - tw->text.left;
 
-        // the cursor stands at the top left of the text, out of the way
+        // the cursor of the text, where it is seen; else the top left, out of the way
         text_window_text_rect (tw, &r);
-        tty_gotoyx (r.y, r.x);
+        if (y >= 0 && y < r.lines && x >= 0 && x < r.cols)
+            tty_gotoyx (r.y + (int) y, r.x + (int) x);
+        else
+            tty_gotoyx (r.y, r.x);
         return MSG_HANDLED;
     }
 
@@ -628,15 +748,39 @@ text_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A press on the text puts the cursor there.  FALSE when it is not on the text */
+static gboolean
+text_window_press_text (WTextWindow *tw, const mouse_event_t *event)
+{
+    const WRect *w = &WIDGET (tw)->rect;
+    WRect r;
+    int x, y;
+
+    text_window_text_rect (tw, &r);
+    // the press in the coordinates of the text
+    x = event->x - (r.x - w->x);
+    y = event->y - (r.y - w->y);
+    if (x < 0 || x >= r.cols || y < 0 || y >= r.lines)
+        return FALSE;
+
+    text_window_move_cursor (tw, tw->text.top + y, tw->text.left + x, TRUE);
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 text_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 {
     WTextWindow *tw = TEXT_WINDOW (w);
 
-    (void) event;
-
     switch (msg)
     {
+    case MSG_MOUSE_DOWN:
+        // the cursor goes where the text is pressed; the scrollbars take their own presses
+        (void) text_window_press_text (tw, event);
+        break;
+
     case MSG_MOUSE_SCROLL_UP:
         text_window_scroll (tw, tw->text.top - TEXT_WINDOW_WHEEL, tw->text.left);
         break;
@@ -739,6 +883,9 @@ edit_text_window_set_text (WEditWindow *win, const char *text, gsize len)
     tw_parse (&tw->text, text != NULL ? text : "", text != NULL ? len : 0);
     tw->text.top = MIN (tw->text.top, text_window_max_top (tw));
     tw->text.left = MIN (tw->text.left, text_window_max_left (tw));
+    // the cursor stays on the text that came
+    tw->cur_line = MIN (tw->cur_line, MAX (0, (long) tw->text.lines->len - 1));
+    tw->cur_col = MIN (tw->cur_col, tw_line_width (&tw->text, tw->cur_line));
     widget_draw (WIDGET (tw));
 }
 
