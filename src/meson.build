@@ -35,6 +35,7 @@ libinternal_sources = files(
   'editor/editoptions.c',
   'editor/editsearch.c',
   'editor/editwidget.c',
+  'editor/editwindow.c',
   'editor/fold.c',
   'editor/format.c',
   'editor/syntax.c',
