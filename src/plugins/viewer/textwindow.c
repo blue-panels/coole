@@ -89,6 +89,7 @@ typedef struct
 typedef struct
 {
     GArray *lines;  // GArray of tw_cell_t, one for every line of the text
+    long width;     // the columns of its widest line
     long top;       // the line of the text at the top of the view
     int left;       // the column of the text at the left of the view
 } tw_text_t;
@@ -109,6 +110,7 @@ static cb_ret_t text_window_callback (Widget *w, Widget *sender, widget_msg_t ms
 static void text_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event);
 static char *text_window_get_title (const WEditWindow *win);
 static gboolean text_window_close (WEditWindow *win);
+static void text_window_scroll_bar (WEditWindow *win, gboolean vertical, long pos);
 
 /*** file scope variables ************************************************************************/
 
@@ -121,6 +123,9 @@ static const edit_window_class_t text_window_class = {
     .ok_to_quit = NULL,
     .min_lines = 2 + 1,
     .min_cols = 2 + 8,
+    .vbar = TRUE,
+    .hbar_x = 1,
+    .scrolled = text_window_scroll_bar,
 };
 
 /* --------------------------------------------------------------------------------------------- */
@@ -304,6 +309,18 @@ tw_parse (tw_text_t *text, const char *data, gsize len)
     if (text->lines->len > 1
         && g_array_index (text->lines, GArray *, text->lines->len - 1)->len == 0)
         g_array_set_size (text->lines, text->lines->len - 1);
+
+    text->width = 0;
+    for (i = 0; i < text->lines->len; i++)
+    {
+        const GArray *l = g_array_index (text->lines, GArray *, i);
+        long cols = 0;
+        guint n;
+
+        for (n = 0; n < l->len; n++)
+            cols += g_array_index (l, tw_cell_t, n).width;
+        text->width = MAX (text->width, cols);
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -333,8 +350,35 @@ text_window_max_top (const WTextWindow *tw)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static int
+text_window_max_left (const WTextWindow *tw)
+{
+    WRect r;
+
+    text_window_text_rect (tw, &r);
+
+    return (int) MAX (0, tw->text.width - r.cols);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The scrollbars of the window over its lines and its columns */
 static void
-text_window_draw_frame (const WTextWindow *tw)
+text_window_set_bars (WTextWindow *tw)
+{
+    WEditWindow *win = EDIT_WINDOW (tw);
+    WRect r;
+
+    text_window_text_rect (tw, &r);
+    edit_window_set_scroll (win, TRUE, tw->text.lines == NULL ? 0 : (long) tw->text.lines->len,
+                            r.lines, tw->text.top);
+    edit_window_set_scroll (win, FALSE, tw->text.width, r.cols, tw->text.left);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+text_window_draw_frame (WTextWindow *tw)
 {
     const WEditWindow *win = &tw->window;
     const Widget *w = CONST_WIDGET (tw);
@@ -364,6 +408,8 @@ text_window_draw_frame (const WTextWindow *tw)
             tty_print_string (str_term_trim (title, cols));
             tty_print_char (']');
         }
+        text_window_set_bars (tw);
+        edit_window_draw_bars (EDIT_WINDOW (tw), color);
     }
 
     edit_window_draw_icons (win, color);
@@ -477,7 +523,7 @@ static void
 text_window_scroll (WTextWindow *tw, long top, int left)
 {
     tw->text.top = CLAMP (top, 0, text_window_max_top (tw));
-    tw->text.left = MAX (0, left);
+    tw->text.left = CLAMP (left, 0, text_window_max_left (tw));
     widget_draw (WIDGET (tw));
 }
 
@@ -543,6 +589,7 @@ text_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         (void) group_default_callback (w, sender, msg, parm, data);
         // the lines at the bottom stay on the screen
         tw->text.top = MIN (tw->text.top, text_window_max_top (tw));
+        tw->text.left = MIN (tw->text.left, text_window_max_left (tw));
         return MSG_HANDLED;
 
     case MSG_KEY:
@@ -596,6 +643,12 @@ text_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
     case MSG_MOUSE_SCROLL_DOWN:
         text_window_scroll (tw, tw->text.top + TEXT_WINDOW_WHEEL, tw->text.left);
         break;
+    case MSG_MOUSE_SCROLL_LEFT:
+        text_window_scroll (tw, tw->text.top, tw->text.left - TEXT_WINDOW_HSTEP);
+        break;
+    case MSG_MOUSE_SCROLL_RIGHT:
+        text_window_scroll (tw, tw->text.top, tw->text.left + TEXT_WINDOW_HSTEP);
+        break;
     default:
         break;
     }
@@ -621,6 +674,20 @@ text_window_close (WEditWindow *win)
     edit_window_destroy (win);
 
     return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A scrollbar of the frame has moved: the view goes with it */
+static void
+text_window_scroll_bar (WEditWindow *win, gboolean vertical, long pos)
+{
+    WTextWindow *tw = TEXT_WINDOW (win);
+
+    if (vertical)
+        text_window_scroll (tw, pos, tw->text.left);
+    else
+        text_window_scroll (tw, tw->text.top, (int) pos);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -671,6 +738,7 @@ edit_text_window_set_text (WEditWindow *win, const char *text, gsize len)
 
     tw_parse (&tw->text, text != NULL ? text : "", text != NULL ? len : 0);
     tw->text.top = MIN (tw->text.top, text_window_max_top (tw));
+    tw->text.left = MIN (tw->text.left, text_window_max_left (tw));
     widget_draw (WIDGET (tw));
 }
 
