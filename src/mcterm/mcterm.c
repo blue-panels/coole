@@ -75,6 +75,9 @@ mcterm_search_dir_t mcterm_search_direction = MCTERM_SEARCH_DOWN;
 
 /*** file scope variables ************************************************************************/
 
+/* Whether the host shows its panels when an mc started in the terminal asks with SIGUSR1 */
+static gboolean nested_mc_request = TRUE;
+
 #define MCTERM_INTERNAL_SYNC_TIMEOUT_USEC G_USEC_PER_SEC
 
 #define MCTERM_INITIAL_OSC7_MARKER        "7;file://__mc_sync__/"
@@ -817,7 +820,9 @@ mcterm_exec_shell (int pty_slave, const char *start_dir, const mcterm_shell_rc_t
     g_setenv ("TERM", "xterm-256color", TRUE);
 
     /* Tell an mc started from here how to reach us: it should ask for the panels
-       instead of running a second copy inside our own terminal. */
+       instead of running a second copy inside our own terminal. A host with no panels
+       says nothing, and that mc runs in the terminal as any other program. */
+    if (nested_mc_request)
     {
         char pid_str[32];
 
@@ -825,6 +830,12 @@ mcterm_exec_shell (int pty_slave, const char *start_dir, const mcterm_shell_rc_t
         g_setenv ("MC_PID", pid_str, TRUE);
         if (tty_name[0] != '\0')
             g_setenv ("MC_TTY", tty_name, TRUE);
+    }
+    else
+    {
+        // nor one the host was started from, which is not the one around this shell
+        g_unsetenv ("MC_PID");
+        g_unsetenv ("MC_TTY");
     }
 
     if (start_dir != NULL && chdir (start_dir) != 0)
@@ -3032,6 +3043,14 @@ mcterm_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
     default:
         break;
     }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+mcterm_set_nested_mc_request (gboolean enabled)
+{
+    nested_mc_request = enabled;
 }
 
 /* --------------------------------------------------------------------------------------------- */
