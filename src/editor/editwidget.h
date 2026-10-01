@@ -81,6 +81,9 @@ struct WEdit
     GPtrArray *line_layout_caches;  // recently used byte offset to visual column indexes
     guint64 line_layout_cache_serial;
     guint64 runtime_revision;  // public runtime ABI document revision
+    // what the runtime was told last: the revision of editor.change, the line of editor.cursor
+    guint64 runtime_told_revision;
+    long runtime_told_line;
     guint runtime_edit_depth;  // coalesces runtime mutations into one public revision
     gboolean runtime_edit_changed;
     unsigned int curs_bol_valid : 1;

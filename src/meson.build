@@ -82,13 +82,26 @@ libinternal = static_library('internal',
   implicit_include_directories: false,
 )
 
-libinternal_dep = declare_dependency(link_with: libinternal, dependencies: [libmc_dep, intl])
+# What the program keeps for the plugins alone: the program itself calls none of it, so it is
+# linked whole, or the linker would leave it out and a module calling it would not load.
+libforplugins = static_library('forplugins',
+  # the ANSI colors, for the terminal and the viewer; in mc a part of the viewer
+  'viewer/ansi.c',
+  'viewer/ansi_color.c',
+  c_args: src_c_args,
+  dependencies: [libmc_dep, intl],
+  implicit_include_directories: false,
+)
+
+libinternal_dep = declare_dependency(link_with: [libinternal, libforplugins],
+                                     dependencies: [libmc_dep, intl])
 
 coole = executable('coole',
   'main.c',
   c_args: src_c_args,
   dependencies: libinternal_dep,
   implicit_include_directories: false,
+  link_whole: libforplugins,
   # the runtime plugins call back into the program
   export_dynamic: have_gmodule,
   install: true,
@@ -106,8 +119,19 @@ if have_terminal
   install_data('editor-plugins/terminal/terminal.md', install_dir: pkgdatadir / 'help')
 endif
 
+# The headers of the screen library, S-Lang or ncurses, which lib/tty/tty.h includes; not the
+# library itself: a module calls it through the program, which links it.
+screen_headers = []
+foreach d : screen_deps
+  screen_headers += d.partial_dependency(compile_args: true, includes: true)
+endforeach
+
 if have_terminal
   subdir('editor-plugins/terminal')
+endif
+
+if have_gmodule
+  subdir('editor-plugins/viewer')
 endif
 
 if lua.found()

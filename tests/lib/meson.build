@@ -7,6 +7,7 @@ lib_tests = {
   'name_quote': 'name_quote.c',
   'serialize': 'serialize.c',
   'tempdir': 'tempdir.c',
+  'plugin_service': 'plugin_service.c',
   'runtime_events': 'runtime_events.c',
   'terminal': 'terminal.c',
   'tty': 'tty.c',

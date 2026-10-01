@@ -96,6 +96,8 @@ static const char *const mc_runtime_event_names[MC_RUNTIME_EVENT_COUNT] = {
     MCEVENT_RUNTIME_EDITOR_OPEN,
     MCEVENT_RUNTIME_EDITOR_SAVE,
     MCEVENT_RUNTIME_EDITOR_KEY,
+    MCEVENT_RUNTIME_EDITOR_CHANGE,
+    MCEVENT_RUNTIME_EDITOR_CURSOR,
 };
 
 /*** file scope functions ************************************************************************/
@@ -661,6 +663,19 @@ mc_runtime_event_snapshot_copy (const mc_runtime_event_snapshot_t *snapshot)
         mc_runtime_key_snapshot_copy (&copy->data.editor_key.key, &snapshot->data.editor_key.key);
         break;
 
+    case MC_RUNTIME_EVENT_EDITOR_CHANGE:
+        copy->data.editor_change.editor = snapshot->data.editor_change.editor;
+        copy->data.editor_change.path = g_strdup (snapshot->data.editor_change.path);
+        copy->data.editor_change.revision = snapshot->data.editor_change.revision;
+        break;
+
+    case MC_RUNTIME_EVENT_EDITOR_CURSOR:
+        copy->data.editor_cursor.editor = snapshot->data.editor_cursor.editor;
+        copy->data.editor_cursor.path = g_strdup (snapshot->data.editor_cursor.path);
+        copy->data.editor_cursor.line = snapshot->data.editor_cursor.line;
+        copy->data.editor_cursor.column = snapshot->data.editor_cursor.column;
+        break;
+
     case MC_RUNTIME_EVENT_INVALID:
     case MC_RUNTIME_EVENT_COUNT:
         g_assert_not_reached ();
@@ -704,6 +719,14 @@ mc_runtime_event_snapshot_free (mc_runtime_event_snapshot_t *snapshot)
 
     case MC_RUNTIME_EVENT_EDITOR_KEY:
         mc_runtime_key_snapshot_clear (&snapshot->data.editor_key.key);
+        break;
+
+    case MC_RUNTIME_EVENT_EDITOR_CHANGE:
+        g_free (snapshot->data.editor_change.path);
+        break;
+
+    case MC_RUNTIME_EVENT_EDITOR_CURSOR:
+        g_free (snapshot->data.editor_cursor.path);
         break;
 
     case MC_RUNTIME_EVENT_INVALID:
@@ -762,6 +785,20 @@ mc_runtime_event_snapshot_validate (const mc_runtime_event_snapshot_t *snapshot,
                                                MC_RUNTIME_HANDLE_EDITOR)
             || snapshot->data.editor_key.key.name == NULL)
             return mc_runtime_event_set_error (mcerror, "Invalid editor.key event snapshot");
+        break;
+
+    case MC_RUNTIME_EVENT_EDITOR_CHANGE:
+        if (!mc_runtime_event_handle_has_kind (&snapshot->data.editor_change.editor,
+                                               MC_RUNTIME_HANDLE_EDITOR)
+            || snapshot->data.editor_change.path == NULL)
+            return mc_runtime_event_set_error (mcerror, "Invalid editor.change event snapshot");
+        break;
+
+    case MC_RUNTIME_EVENT_EDITOR_CURSOR:
+        if (!mc_runtime_event_handle_has_kind (&snapshot->data.editor_cursor.editor,
+                                               MC_RUNTIME_HANDLE_EDITOR)
+            || snapshot->data.editor_cursor.path == NULL)
+            return mc_runtime_event_set_error (mcerror, "Invalid editor.cursor event snapshot");
         break;
 
     case MC_RUNTIME_EVENT_INVALID:

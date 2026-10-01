@@ -13,10 +13,6 @@ foreach name : ['mcterm_key_encode', 'mcterm_osc7_parse', 'mcterm_protocol_parse
 endforeach
 
 # the terminal plugin loads only when the program gives it every function it calls
-nm = find_program('nm', required: false)
-ldd = find_program('ldd', required: false)
-if host_machine.system() == 'linux' and nm.found() and ldd.found()
-  test('module_symbols', find_program('module_symbols.sh'),
-    args: [coole, terminal_module],
-    suite: 'src/mcterm')
+if module_symbols_sh.found()
+  test('module_symbols', module_symbols_sh, args: [coole, terminal_module], suite: 'src/mcterm')
 endif

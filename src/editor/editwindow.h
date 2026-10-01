@@ -97,8 +97,8 @@ void edit_window_destroy (WEditWindow *win);
 void edit_window_show (WEditWindow *win);
 /* Hide a window as it is; the next window is selected */
 void edit_window_hide (WEditWindow *win);
-/* The fullscreen window under @win is made a window in the area above @win, and
-   edit_window_give_room_back() makes it fullscreen again */
+/* The fullscreen window under @win is made a window in the area to the left of @win, when @win
+   takes all the height, or above it, and edit_window_give_room_back() makes it fullscreen again */
 void edit_window_make_room (WEditWindow *win);
 void edit_window_give_room_back (WEditWindow *win);
 

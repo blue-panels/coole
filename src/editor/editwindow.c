@@ -484,8 +484,9 @@ edit_window_hide (WEditWindow *win)
 /* --------------------------------------------------------------------------------------------- */
 /**
  * Make room for a window that does not fill the screen: the topmost fullscreen window of the
- * screen stops being fullscreen and takes the area above @win. Nothing is done when there is no
- * such window, or no room above @win for it.
+ * screen stops being fullscreen and takes the area to the left of @win, when @win takes all the
+ * height of the screen, or else the area above it. Nothing is done when there is no such window,
+ * or no room for it.
  *
  * @param win window to make room for
  */
@@ -516,9 +517,20 @@ edit_window_make_room (WEditWindow *win)
 
     edit_window_area (DIALOG (g), &a);
     r = a;
-    r.lines = w->rect.y - a.y;
-    if (r.lines < top->klass->min_lines)
-        return;
+    if (w->rect.y <= a.y && w->rect.y + w->rect.lines >= a.y + a.lines && w->rect.x > a.x)
+    {
+        // a window of all the height: the room is to the left of it
+        r.cols = w->rect.x - a.x;
+        if (r.cols < top->klass->min_cols)
+            return;
+    }
+    else
+    {
+        // the room is above the window
+        r.lines = w->rect.y - a.y;
+        if (r.lines < top->klass->min_lines)
+            return;
+    }
 
     win->room_id = WIDGET (top)->id;
     win->room_rect = r;

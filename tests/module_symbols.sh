@@ -1,5 +1,5 @@
 #!/bin/sh
-# The terminal plugin is a module that calls the functions of the program.  The program exports
+# A plugin module calls the functions of the program.  The program exports
 # them, but only those its own code keeps: check that every symbol the module needs is there, in
 # the program, in a library the program loads, or in one the module loads itself: openpty() is in
 # libutil before glibc 2.34, and the module links libutil then.

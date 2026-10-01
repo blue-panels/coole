@@ -38,6 +38,7 @@ Do not edit it manually; run `python3 maint/generate-lua-api.py`.
 | `mc.off(subscription) -> boolean` | Remove an event subscription owned by the package. | `events` | yes |
 | `mc.on(event, callback, options?) -> integer\|nil, error?` | Subscribe the package to a named event. | `events` | yes |
 | `mc.process.run(spec) -> ProcessResult\|nil, error?` | Run a shell command and capture its bounded output. | `process` | yes |
+| `mc.service(name) -> service` | A service a plugin offers, by its name ("viewer").  The object is there whether the service is yet or not: a call says "not_found" while it is not. | `services` | no |
 | `mc.settings(handler) -> true\|nil, error?` | Register the dialog this package shows when its settings are asked for in Manage Plugins.  The handler takes no argument and returns nothing; it owns the dialog and whatever it keeps. | `—` | yes |
 | `mc.syntax.scan(text, options?) -> table\|nil, error?` | Color text with the syntax rules of the editor.  options.type names the rule set the way the Syntax file does ("C Program"), options.filename picks it by name; without both, the first line of the text decides.  Returns { type = "C Program", colors = { { fg = "yellow", bg = nil, attrs = "bold" } }, runs = { { offset = 1, length = 6, color = 1 } } }, offsets counting bytes from one and color indexing colors. | `syntax` | no |
 | `mc.tty.info(section?) -> table\|nil, error?` | What the terminal shows and what the skin paints a section with.  The section is named the way the skin names it ("editor", "dialog"); the default is the core.  Returns { colors = 256, fg = "white", bg = "black" }, colors being 16, 256 or 16777216 for true color, and fg and bg the color names of the skin, nil when it names none. | `tty` | no |
@@ -52,6 +53,9 @@ Do not edit it manually; run `python3 maint/generate-lua-api.py`.
 | `screen:run() -> boolean\|nil, error?` | Show the screen and return when it is closed: by F10 or Esc, by the "close" action, by screen:close(), or by a callback returning { close = true }. | `ui` | yes |
 | `screen:status(text) -> boolean\|nil, error?` | Change the status line of a running screen. | `ui` | yes |
 | `screen:update(control, patch) -> boolean\|nil, error?` | Change a running screen's control: patch.text for a label, status or text cell, patch.value for an input or checkbox, and for a table patch.rows (a new rows function), patch.row_count, patch.invalidate (drop the rows fetched so far) and patch.row (the current row, from 0). | `ui` | yes |
+| `service:call(method, args?) -> table\|nil, error?` | Call a method of the service.  args is a table of strings, numbers, booleans and tables; the answer is a table the same way.  The error is the one the service gives, or "not_found" when there is no such service. | `services` | yes |
+| `service:off(id) -> boolean` | Stop listening: id is what service:on() returned. | `services` | yes |
+| `service:on(signal, callback) -> integer\|nil, error?` | Call callback(args, signal) when the service tells of signal ("closed"), or of any signal for "*".  It listens whether the service is there yet or not.  The id is what service:off() takes. | `services` | yes |
 
 ## Callback contracts
 
@@ -59,3 +63,4 @@ Do not edit it manually; run `python3 maint/generate-lua-api.py`.
 |---|---|---|
 | `action(event) -> mc.PASS\|mc.CONSUME` | `editor` | `events` |
 | `event(snapshot) -> nil` | `any` | `events` |
+| `signal(args, name) -> nil` | `any` | `services` |

@@ -215,6 +215,10 @@ START_TEST (test_runtime_event_names)
                       MC_RUNTIME_EVENT_STARTUP);
     ck_assert_str_eq (mc_runtime_event_name (MC_RUNTIME_EVENT_EDITOR_KEY),
                       MCEVENT_RUNTIME_EDITOR_KEY);
+    ck_assert_int_eq (mc_runtime_event_id_from_name ("editor.change"),
+                      MC_RUNTIME_EVENT_EDITOR_CHANGE);
+    ck_assert_int_eq (mc_runtime_event_id_from_name ("editor.cursor"),
+                      MC_RUNTIME_EVENT_EDITOR_CURSOR);
     mctest_assert_true (mc_runtime_event_name_is_valid (MCEVENT_RUNTIME_EDITOR_SAVE));
     mctest_assert_false (mc_runtime_event_name_is_valid ("Startup"));
     /* names outside the editor are not events */

@@ -49,8 +49,8 @@ src/editor/editcmd.c) holds their descriptors (and that
 of the "scripts" entry) and registers them with
 mc_editor_plugin_add() from editor_plugins_register_all().
 
-One plugin comes with coole as a module, loaded the way any other
-module is (section 3), and is an example of one:
+Two plugins come with coole as modules, loaded the way any other
+module is (section 3), and are examples of one:
 
   src/editor-plugins/terminal/   terminal.so: a window of its own
                                  (section 9), the shell in the
@@ -59,11 +59,25 @@ module is (section 3), and is an example of one:
                                  when openpty() and GModule are
                                  found, installed into the system
                                  directory of the plugins.
+  src/editor-plugins/viewer/     viewer.so: the Preview, Ctrl-Alt-P,
+                                 of whatever file has the focus, and
+                                 the service "viewer" (section 10),
+                                 windows that show the text a script
+                                 or a plugin gives them, with the
+                                 overstrikes of nroff and ANSI colors.
+                                 Its methods and signals are listed in
+                                 viewer.c.  The Preview asks the
+                                 renderers for the view of a type of
+                                 file with the signal "render"; the
+                                 Lua script preview-markdown is the
+                                 renderer of markdown.  Built when
+                                 GModule is found.
 
-The module holds the terminal of mc as well (src/mcterm and
-src/viewer), and calls the functions of the editor, which the program
-exports.  The test module_symbols checks that the program gives every
-function the module calls.
+The terminal module holds the terminal of mc as well (src/mcterm and
+src/viewer).  The modules call the functions of the editor, which the
+program exports; what the program itself does not call it links whole
+(libforplugins in src/meson.build).  The test module_symbols checks
+that the program gives every function a module calls.
 
 The help of a plugin (ctags.md, etags.md, spell.md, terminal.md) is installed into
 $(pkgdatadir)/help next to the help of the program.
@@ -182,6 +196,22 @@ What the editor provides to the plugin, passed to open():
                              that window is made fullscreen again,
                              unless the user has moved, resized or
                              zoomed it since
+  window_current(host)
+                             the window with the focus, or NULL
+  get_text(host, edit, &len)
+                             all the text of a file window; caller
+                             frees
+  get_revision(host, edit)
+                             the revision of that text, which grows
+                             with every change
+  service_register(host, name, call, data, &error)
+  service_unregister(host, name)
+  service_call(host, name, method, args, &error)
+  service_connect(host, name, fn, user_data)
+  service_disconnect(host, id)
+  service_emit(host, name, signal, args)
+                             the services plugins and scripts offer
+                             one another; see section 10
 
 Fields:
 
@@ -214,6 +244,8 @@ All are optional except open and close.
                              keymap is consulted;
                              return MC_EPR_OK to consume the key
   handle_event(plugin_data, edit, event_id, payload)
+                             MC_EP_EVENT_TEXT_CHANGED and
+                             MC_EP_EVENT_CURSOR_MOVED, below
   on_file_open(plugin_data, edit)
   on_file_close(plugin_data, edit)
                              declared in the header; the editor core
@@ -234,6 +266,15 @@ Event ids reserved for handle_event():
   MC_EP_EVENT_FILE_RENAMED    Save As completed; payload = new path
   MC_EP_EVENT_FOCUS_IN        editor window got focus
   MC_EP_EVENT_FOCUS_OUT       editor window lost focus
+  MC_EP_EVENT_TEXT_CHANGED    the text of edit changed; payload = NULL
+  MC_EP_EVENT_CURSOR_MOVED    the cursor of edit is on another line;
+                              payload = NULL
+
+The last two are called: once the editor is idle after the keys that
+came together, for the file window with the focus, and both when
+another file window comes to the front.  get_text() and get_revision()
+of the host give the text and its revision; the Lua scripts hear the
+same as editor.change and editor.cursor.
 
 
 8. Actions and Menu Entries
@@ -338,7 +379,43 @@ editor, so F9, F10 and the other keys of the screen work in a window of a
 plugin unless the window takes them itself.
 
 
-10. Registry
+10. Services
+------------
+
+A plugin can offer a service to other plugins and to the Lua scripts:
+the viewer plugin, for one, shows the text a script gives it.  The
+declarations are in lib/plugin-service.h; a plugin reaches them through
+the host.
+
+A service has a name and one function every call goes through:
+
+    GVariant *call (void *data, const char *method, GVariant *args,
+                    GError **error);
+
+The arguments and the answer are GVariant dictionaries, a{sv}, of
+simple values: strings, integers, booleans, numbers, arrays of
+strings.  The same call comes from a plugin in C, which builds the
+dictionary itself, and from a script, whose table becomes one.  A
+method the service does not have is an MC_SERVICE_ERROR_METHOD error,
+arguments it does not take MC_SERVICE_ERROR_ARGS.
+
+  service_register()         offer the service, from open(); a name
+                             taken already is MC_SERVICE_ERROR_EXISTS
+  service_unregister()       take it back, in close()
+  service_call()             call a method of a service; the answer
+                             is a new reference the caller unrefs, or
+                             NULL with the error.  A service that is
+                             not there is MC_SERVICE_ERROR_NOT_FOUND
+  service_emit()             tell those who listen that something
+                             happened: a window of the service closed
+  service_connect()          listen to the signals of a service,
+  service_disconnect()       whether it is there yet or not
+
+The editor passes the calls and the signals on and knows nothing of
+what they mean.
+
+
+11. Registry
 ------------
 
   mc_editor_plugin_add(plugin)
@@ -346,7 +423,7 @@ plugin unless the window takes them itself.
   mc_editor_plugin_find_by_name(name)
 
 
-11. Minimal Skeleton
+12. Minimal Skeleton
 --------------------
 
 A plugin that registers and reacts to its Plugins menu entry (no extra
@@ -416,7 +493,7 @@ module built against headers of another API version is not loaded.
 Rebuild plugins when coole is upgraded.
 
 
-12. Testing Checklist
+13. Testing Checklist
 ---------------------
 
 - the plugin appears in the Plugins menu, and in Options -> Plugin info
@@ -429,7 +506,7 @@ Rebuild plugins when coole is upgraded.
   after a restart
 
 
-13. Troubleshooting
+14. Troubleshooting
 -------------------
 
 - Plugin not loaded:

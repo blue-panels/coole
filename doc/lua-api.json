@@ -322,6 +322,38 @@
       "mutation": "no",
       "errors": [],
       "summary": "Measure UTF-8 text using terminal display columns."
+    },
+    {
+      "signature": "mc.service(name) -> service",
+      "workspace": "any",
+      "capability": "services",
+      "mutation": "no",
+      "errors": [],
+      "summary": "A service a plugin offers, by its name (\"viewer\").  The object is there whether the service is yet or not: a call says \"not_found\" while it is not."
+    },
+    {
+      "signature": "service:call(method, args?) -> table|nil, error?",
+      "workspace": "any",
+      "capability": "services",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Call a method of the service.  args is a table of strings, numbers, booleans and tables; the answer is a table the same way.  The error is the one the service gives, or \"not_found\" when there is no such service."
+    },
+    {
+      "signature": "service:on(signal, callback) -> integer|nil, error?",
+      "workspace": "any",
+      "capability": "services",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Call callback(args, signal) when the service tells of signal (\"closed\"), or of any signal for \"*\".  It listens whether the service is there yet or not.  The id is what service:off() takes."
+    },
+    {
+      "signature": "service:off(id) -> boolean",
+      "workspace": "any",
+      "capability": "services",
+      "mutation": "yes",
+      "errors": [],
+      "summary": "Stop listening: id is what service:on() returned."
     }
   ],
   "callbacks": [
@@ -337,6 +369,14 @@
       "signature": "action(event) -> mc.PASS|mc.CONSUME",
       "workspace": "editor",
       "capability": "events",
+      "mutation": "no",
+      "errors": [],
+      "summary": ""
+    },
+    {
+      "signature": "signal(args, name) -> nil",
+      "workspace": "any",
+      "capability": "services",
       "mutation": "no",
       "errors": [],
       "summary": ""

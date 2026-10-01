@@ -134,6 +134,11 @@
 #define MC_LUA_HOST_API_TTY_SIZE                                                                   \
     (G_STRUCT_OFFSET (mc_runtime_host_api_v1_t, tty_info)                                          \
      + sizeof (((mc_runtime_host_api_v1_t *) NULL)->tty_info))
+#define MC_LUA_HOST_API_SERVICES_SIZE                                                              \
+    (G_STRUCT_OFFSET (mc_runtime_host_api_v1_t, service_disconnect)                                \
+     + sizeof (((mc_runtime_host_api_v1_t *) NULL)->service_disconnect))
+#define MC_LUA_SERVICE_MT          "mc.service"
+#define MC_LUA_VARIANT_MAX_DEPTH   8
 #define MC_LUA_DIALOG_MAX_CONTROLS 32
 #define MC_LUA_DIALOG_MAX_OPTIONS  64
 #define MC_LUA_DIALOG_MAX_DEPTH    8
@@ -193,7 +198,8 @@ struct mc_lua_package
     lua_State *lua;
     GHashTable *subscriptions;
     GPtrArray *macros;
-    int settings_ref;  // the callback mc.settings() registered, or LUA_NOREF
+    int settings_ref;              // the callback mc.settings() registered, or LUA_NOREF
+    GPtrArray *service_listeners;  // mc_lua_service_listener_t
     gboolean closed;
     guint callback_depth;
     mc_runtime_event_id_t active_event;
@@ -204,6 +210,21 @@ typedef struct
     mc_runtime_dialog_t dialog;
     guint control_count;
 } mc_lua_dialog_spec_t;
+
+/* A service, by its name: the object mc.service() gives */
+typedef struct
+{
+    char *name;
+} mc_lua_service_t;
+
+/* A callback of a script that listens to a service */
+typedef struct
+{
+    mc_lua_package_t *package;
+    guint id;
+    int callback_ref;
+    char *signal;  // the signal it waits for, "*" for any
+} mc_lua_service_listener_t;
 
 struct mc_lua_subscription
 {
@@ -256,6 +277,7 @@ struct mc_lua_package_info
 /*** forward declarations (file scope functions) *************************************************/
 
 static void mc_lua_subscription_destroy (gpointer data);
+static void mc_lua_service_listener_free (mc_lua_service_listener_t *listener);
 static void mc_lua_macro_destroy (gpointer data);
 static void mc_lua_package_destroy (mc_lua_package_t *package);
 static mc_runtime_event_result_t mc_lua_event_callback (gpointer runtime_context,
@@ -580,6 +602,8 @@ mc_lua_event_id_from_name (const char *event_name)
         MCEVENT_RUNTIME_EDITOR_OPEN,
         MCEVENT_RUNTIME_EDITOR_SAVE,
         MCEVENT_RUNTIME_EDITOR_KEY,
+        MCEVENT_RUNTIME_EDITOR_CHANGE,
+        MCEVENT_RUNTIME_EDITOR_CURSOR,
     };
     mc_runtime_event_id_t event_id;
 
@@ -605,6 +629,8 @@ mc_lua_event_name (mc_runtime_event_id_t event_id)
         MCEVENT_RUNTIME_EDITOR_OPEN,
         MCEVENT_RUNTIME_EDITOR_SAVE,
         MCEVENT_RUNTIME_EDITOR_KEY,
+        MCEVENT_RUNTIME_EDITOR_CHANGE,
+        MCEVENT_RUNTIME_EDITOR_CURSOR,
     };
 
     if (event_id <= MC_RUNTIME_EVENT_INVALID || event_id >= MC_RUNTIME_EVENT_COUNT)
@@ -864,6 +890,22 @@ mc_lua_push_event (lua_State *lua, const mc_runtime_event_snapshot_t *snapshot)
         mc_lua_set_boolean_field (lua, "alt", snapshot->data.editor_key.key.alt);
         lua_setfield (lua, -2, "modifiers");
         lua_setfield (lua, -2, "key");
+        break;
+
+    case MC_RUNTIME_EVENT_EDITOR_CHANGE:
+        mc_lua_push_handle (lua, &snapshot->data.editor_change.editor);
+        lua_setfield (lua, -2, "editor");
+        mc_lua_set_string_field (lua, "path", snapshot->data.editor_change.path);
+        mc_lua_set_integer_field (lua, "revision",
+                                  (lua_Integer) snapshot->data.editor_change.revision);
+        break;
+
+    case MC_RUNTIME_EVENT_EDITOR_CURSOR:
+        mc_lua_push_handle (lua, &snapshot->data.editor_cursor.editor);
+        lua_setfield (lua, -2, "editor");
+        mc_lua_set_string_field (lua, "path", snapshot->data.editor_cursor.path);
+        mc_lua_set_integer_field (lua, "line", snapshot->data.editor_cursor.line);
+        mc_lua_set_integer_field (lua, "column", snapshot->data.editor_cursor.column);
         break;
 
     case MC_RUNTIME_EVENT_INVALID:
@@ -1743,6 +1785,15 @@ mc_lua_package_close (mc_lua_package_t *package)
 
     if (package->macros != NULL)
         g_ptr_array_set_size (package->macros, 0);
+    if (package->service_listeners != NULL)
+    {
+        guint i;
+
+        for (i = 0; i < package->service_listeners->len; i++)
+            mc_lua_service_listener_free (
+                (mc_lua_service_listener_t *) g_ptr_array_index (package->service_listeners, i));
+        g_ptr_array_set_size (package->service_listeners, 0);
+    }
     if (package->settings_ref != LUA_NOREF && package->lua != NULL)
     {
         luaL_unref (package->lua, LUA_REGISTRYINDEX, package->settings_ref);
@@ -1770,6 +1821,8 @@ mc_lua_package_destroy (mc_lua_package_t *package)
         g_hash_table_destroy (package->subscriptions);
     if (package->macros != NULL)
         g_ptr_array_free (package->macros, TRUE);
+    if (package->service_listeners != NULL)
+        g_ptr_array_free (package->service_listeners, TRUE);
     g_free (package->id);
     g_free (package->workspace);
     g_free (package->root);
@@ -4098,6 +4151,439 @@ mc_lua_require (lua_State *lua)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/* The services plugins offer one another: a table of Lua is the a{sv} of the call, and the a{sv}
+   of the answer and of a signal a table again. */
+
+static GVariant *mc_lua_to_variant (lua_State *lua, int index, int depth, const char **error);
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A table with the keys 1 to n and no other is a list; an empty table is a dictionary */
+static gboolean
+mc_lua_table_is_list (lua_State *lua, int index)
+{
+    const lua_Unsigned len = lua_rawlen (lua, index);
+    lua_Unsigned count = 0;
+
+    if (len == 0)
+        return FALSE;
+
+    lua_pushnil (lua);
+    while (lua_next (lua, index) != 0)
+    {
+        count++;
+        lua_pop (lua, 1);
+    }
+
+    return count == len;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The table at @index as a{sv}; its keys are strings */
+static GVariant *
+mc_lua_table_to_vardict (lua_State *lua, int index, int depth, const char **error)
+{
+    GVariantBuilder builder;
+
+    index = lua_absindex (lua, index);
+    g_variant_builder_init (&builder, G_VARIANT_TYPE_VARDICT);
+
+    lua_pushnil (lua);
+    while (lua_next (lua, index) != 0)
+    {
+        GVariant *value;
+
+        if (lua_type (lua, -2) != LUA_TSTRING)
+        {
+            lua_pop (lua, 2);
+            g_variant_builder_clear (&builder);
+            *error = "the keys of the arguments are strings";
+            return NULL;
+        }
+
+        value = mc_lua_to_variant (lua, -1, depth + 1, error);
+        if (value == NULL)
+        {
+            lua_pop (lua, 2);
+            g_variant_builder_clear (&builder);
+            return NULL;
+        }
+        g_variant_builder_add (&builder, "{sv}", lua_tostring (lua, -2), value);
+        lua_pop (lua, 1);
+    }
+
+    return g_variant_builder_end (&builder);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static GVariant *
+mc_lua_to_variant (lua_State *lua, int index, int depth, const char **error)
+{
+    index = lua_absindex (lua, index);
+
+    if (depth > MC_LUA_VARIANT_MAX_DEPTH)
+    {
+        *error = "the arguments are nested too deep";
+        return NULL;
+    }
+
+    switch (lua_type (lua, index))
+    {
+    case LUA_TBOOLEAN:
+        return g_variant_new_boolean (lua_toboolean (lua, index));
+
+    case LUA_TNUMBER:
+        if (lua_isinteger (lua, index))
+            return g_variant_new_int64 ((gint64) lua_tointeger (lua, index));
+        return g_variant_new_double ((double) lua_tonumber (lua, index));
+
+    case LUA_TSTRING:
+    {
+        size_t len;
+        const char *s = lua_tolstring (lua, index, &len);
+
+        // text that is not UTF-8, or holds a zero, goes as the bytes it is
+        if (g_utf8_validate (s, (gssize) len, NULL) && memchr (s, '\0', len) == NULL)
+            return g_variant_new_string (s);
+        return g_variant_new_fixed_array (G_VARIANT_TYPE_BYTE, s, len, 1);
+    }
+
+    case LUA_TTABLE:
+        if (mc_lua_table_is_list (lua, index))
+        {
+            GVariantBuilder builder;
+            const lua_Unsigned len = lua_rawlen (lua, index);
+            lua_Unsigned i;
+
+            g_variant_builder_init (&builder, G_VARIANT_TYPE ("av"));
+            for (i = 1; i <= len; i++)
+            {
+                GVariant *value;
+
+                lua_rawgeti (lua, index, (lua_Integer) i);
+                value = mc_lua_to_variant (lua, -1, depth + 1, error);
+                lua_pop (lua, 1);
+                if (value == NULL)
+                {
+                    g_variant_builder_clear (&builder);
+                    return NULL;
+                }
+                g_variant_builder_add (&builder, "v", value);
+            }
+            return g_variant_builder_end (&builder);
+        }
+        return mc_lua_table_to_vardict (lua, index, depth, error);
+
+    default:
+        *error = "a value of the arguments is not a string, a number, a boolean or a table";
+        return NULL;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+mc_lua_push_variant (lua_State *lua, GVariant *value, int depth)
+{
+    const GVariantType *type = g_variant_get_type (value);
+
+    if (depth > MC_LUA_VARIANT_MAX_DEPTH)
+    {
+        lua_pushnil (lua);
+        return;
+    }
+
+    if (g_variant_type_equal (type, G_VARIANT_TYPE_BOOLEAN))
+        lua_pushboolean (lua, g_variant_get_boolean (value));
+    else if (g_variant_type_equal (type, G_VARIANT_TYPE_INT64))
+        lua_pushinteger (lua, (lua_Integer) g_variant_get_int64 (value));
+    else if (g_variant_type_equal (type, G_VARIANT_TYPE_INT32))
+        lua_pushinteger (lua, (lua_Integer) g_variant_get_int32 (value));
+    else if (g_variant_type_equal (type, G_VARIANT_TYPE_UINT32))
+        lua_pushinteger (lua, (lua_Integer) g_variant_get_uint32 (value));
+    else if (g_variant_type_equal (type, G_VARIANT_TYPE_UINT64))
+        lua_pushinteger (lua, (lua_Integer) g_variant_get_uint64 (value));
+    else if (g_variant_type_equal (type, G_VARIANT_TYPE_DOUBLE))
+        lua_pushnumber (lua, (lua_Number) g_variant_get_double (value));
+    else if (g_variant_type_equal (type, G_VARIANT_TYPE_STRING))
+        lua_pushstring (lua, g_variant_get_string (value, NULL));
+    else if (g_variant_type_equal (type, G_VARIANT_TYPE_BYTESTRING))
+    {
+        gsize len;
+        const char *bytes = g_variant_get_fixed_array (value, &len, 1);
+
+        lua_pushlstring (lua, bytes, len);
+    }
+    else if (g_variant_type_equal (type, G_VARIANT_TYPE_VARIANT))
+    {
+        GVariant *inner = g_variant_get_variant (value);
+
+        mc_lua_push_variant (lua, inner, depth + 1);
+        g_variant_unref (inner);
+    }
+    else if (g_variant_type_is_subtype_of (type, G_VARIANT_TYPE ("a{s*}")))
+    {
+        GVariantIter iter;
+        GVariant *entry;
+
+        lua_createtable (lua, 0, (int) g_variant_n_children (value));
+        g_variant_iter_init (&iter, value);
+        while ((entry = g_variant_iter_next_value (&iter)) != NULL)
+        {
+            GVariant *key = g_variant_get_child_value (entry, 0);
+            GVariant *v = g_variant_get_child_value (entry, 1);
+
+            mc_lua_push_variant (lua, v, depth + 1);
+            lua_setfield (lua, -2, g_variant_get_string (key, NULL));
+            g_variant_unref (key);
+            g_variant_unref (v);
+            g_variant_unref (entry);
+        }
+    }
+    else if (g_variant_type_is_array (type) || g_variant_type_is_tuple (type))
+    {
+        const gsize n = g_variant_n_children (value);
+        gsize i;
+
+        lua_createtable (lua, (int) n, 0);
+        for (i = 0; i < n; i++)
+        {
+            GVariant *v = g_variant_get_child_value (value, i);
+
+            mc_lua_push_variant (lua, v, depth + 1);
+            lua_rawseti (lua, -2, (lua_Integer) (i + 1));
+            g_variant_unref (v);
+        }
+    }
+    else
+    {
+        char *text = g_variant_print (value, FALSE);
+
+        lua_pushstring (lua, text);
+        g_free (text);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+mc_lua_services_ready (const mc_lua_package_t *package)
+{
+    return mc_lua_host_has_capability (package, MC_RUNTIME_HOST_CAP_SERVICES,
+                                       MC_LUA_HOST_API_SERVICES_SIZE)
+        && package->runtime->host->service_call != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static mc_lua_service_t *
+mc_lua_service_check (lua_State *lua, int index)
+{
+    return (mc_lua_service_t *) luaL_checkudata (lua, index, MC_LUA_SERVICE_MT);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+mc_lua_service_listener_free (mc_lua_service_listener_t *listener)
+{
+    const mc_lua_package_t *package = listener->package;
+
+    if (package->runtime != NULL && package->runtime->host != NULL
+        && package->runtime->host->service_disconnect != NULL)
+        package->runtime->host->service_disconnect (package->runtime->context, listener->id);
+    if (package->lua != NULL && listener->callback_ref != LUA_NOREF)
+        luaL_unref (package->lua, LUA_REGISTRYINDEX, listener->callback_ref);
+    g_free (listener->signal);
+    g_free (listener);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A service told what happened: the callback of the script gets the arguments and the signal */
+static void
+mc_lua_service_signal (const char *name, const char *signal, GVariant *args, void *user_data)
+{
+    mc_lua_service_listener_t *listener = (mc_lua_service_listener_t *) user_data;
+    mc_lua_package_t *package = listener->package;
+    lua_State *lua = package->lua;
+
+    (void) name;
+
+    if (package->closed || lua == NULL)
+        return;
+    if (strcmp (listener->signal, "*") != 0 && strcmp (listener->signal, signal) != 0)
+        return;
+
+    lua_rawgeti (lua, LUA_REGISTRYINDEX, listener->callback_ref);
+    if (!lua_isfunction (lua, -1))
+    {
+        lua_pop (lua, 1);
+        return;
+    }
+
+    mc_lua_push_variant (lua, args, 0);
+    lua_pushstring (lua, signal);
+    package->callback_depth++;
+    if (lua_pcall (lua, 2, 0, 0) != LUA_OK)
+        mc_lua_report_error (package, MC_RUNTIME_ERROR_PHASE_EVENT, "Lua service callback failed");
+    package->callback_depth--;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** @lua mc.service(name) -> service @capability services @mutation no
+ * @summary A service a plugin offers, by its name ("viewer").  The object is there whether the
+ * service is yet or not: a call says "not_found" while it is not. */
+static int
+mc_lua_service (lua_State *lua)
+{
+    const char *name = luaL_checkstring (lua, 1);
+    mc_lua_service_t *service;
+
+    service = (mc_lua_service_t *) lua_newuserdatauv (lua, sizeof (*service), 0);
+    service->name = g_strdup (name);
+    luaL_setmetatable (lua, MC_LUA_SERVICE_MT);
+    return 1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** @lua service:call(method, args?) -> table|nil, error? @capability services @mutation yes
+ * @summary Call a method of the service.  args is a table of strings, numbers, booleans and
+ * tables; the answer is a table the same way.  The error is the one the service gives, or
+ * "not_found" when there is no such service. */
+static int
+mc_lua_service_call (lua_State *lua)
+{
+    mc_lua_package_t *package = mc_lua_package_from_state (lua);
+    const mc_lua_service_t *service = mc_lua_service_check (lua, 1);
+    const char *method = luaL_checkstring (lua, 2);
+    GVariant *args = NULL;
+    GVariant *answer;
+    GError *error = NULL;
+    const char *convert_error = NULL;
+
+    if (!mc_lua_require_active_context (lua, package))
+        return 2;
+    if (!mc_lua_services_ready (package))
+        return mc_lua_not_ready (lua);
+
+    if (!lua_isnoneornil (lua, 3))
+    {
+        luaL_checktype (lua, 3, LUA_TTABLE);
+        args = mc_lua_table_to_vardict (lua, 3, 0, &convert_error);
+        if (args == NULL)
+            return mc_lua_return_error (lua, convert_error);
+    }
+
+    if (!package->runtime->host->service_exists (package->runtime->context, service->name))
+    {
+        if (args != NULL)
+            g_variant_unref (g_variant_ref_sink (args));
+        return mc_lua_return_error (lua, "not_found");
+    }
+
+    answer = package->runtime->host->service_call (package->runtime->context, service->name, method,
+                                                   args, &error);
+    if (answer == NULL)
+    {
+        lua_pushnil (lua);
+        lua_pushstring (lua, error != NULL ? error->message : "failed");
+        g_clear_error (&error);
+        return 2;
+    }
+
+    mc_lua_push_variant (lua, answer, 0);
+    g_variant_unref (answer);
+    return 1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** @lua service:on(signal, callback) -> integer|nil, error? @capability services @mutation yes
+ * @summary Call callback(args, signal) when the service tells of signal ("closed"), or of any
+ * signal for "*".  It listens whether the service is there yet or not.  The id is what
+ * service:off() takes.
+ * @lua-callback signal(args, name) -> nil */
+static int
+mc_lua_service_on (lua_State *lua)
+{
+    mc_lua_package_t *package = mc_lua_package_from_state (lua);
+    const mc_lua_service_t *service = mc_lua_service_check (lua, 1);
+    const char *signal = luaL_checkstring (lua, 2);
+    mc_lua_service_listener_t *listener;
+
+    luaL_checktype (lua, 3, LUA_TFUNCTION);
+    if (package == NULL || package->closed || !mc_lua_services_ready (package))
+        return mc_lua_not_ready (lua);
+
+    listener = g_new0 (mc_lua_service_listener_t, 1);
+    listener->package = package;
+    listener->signal = g_strdup (signal);
+    lua_pushvalue (lua, 3);
+    listener->callback_ref = luaL_ref (lua, LUA_REGISTRYINDEX);
+    listener->id = package->runtime->host->service_connect (
+        package->runtime->context, service->name, mc_lua_service_signal, listener);
+    if (listener->id == 0)
+    {
+        luaL_unref (lua, LUA_REGISTRYINDEX, listener->callback_ref);
+        g_free (listener->signal);
+        g_free (listener);
+        return mc_lua_return_error (lua, "could not listen to the service");
+    }
+
+    g_ptr_array_add (package->service_listeners, listener);
+    lua_pushinteger (lua, (lua_Integer) listener->id);
+    return 1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** @lua service:off(id) -> boolean @capability services @mutation yes
+ * @summary Stop listening: id is what service:on() returned. */
+static int
+mc_lua_service_off (lua_State *lua)
+{
+    mc_lua_package_t *package = mc_lua_package_from_state (lua);
+    const lua_Integer id = luaL_checkinteger (lua, 2);
+    guint i;
+
+    (void) mc_lua_service_check (lua, 1);
+
+    for (i = 0; package != NULL && i < package->service_listeners->len; i++)
+    {
+        mc_lua_service_listener_t *listener =
+            (mc_lua_service_listener_t *) g_ptr_array_index (package->service_listeners, i);
+
+        if ((lua_Integer) listener->id == id)
+        {
+            g_ptr_array_remove_index_fast (package->service_listeners, i);
+            mc_lua_service_listener_free (listener);
+            lua_pushboolean (lua, TRUE);
+            return 1;
+        }
+    }
+
+    lua_pushboolean (lua, FALSE);
+    return 1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+mc_lua_service_gc (lua_State *lua)
+{
+    mc_lua_service_t *service = mc_lua_service_check (lua, 1);
+
+    g_free (service->name);
+    service->name = NULL;
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 static void
 mc_lua_install_api (mc_lua_package_t *package)
@@ -4105,6 +4591,21 @@ mc_lua_install_api (mc_lua_package_t *package)
     lua_State *lua = package->lua;
     const char *const levels[] = { "debug", "info", "warn", "error" };
     guint i;
+
+    if (luaL_newmetatable (lua, MC_LUA_SERVICE_MT))
+    {
+        lua_pushcfunction (lua, mc_lua_service_gc);
+        lua_setfield (lua, -2, "__gc");
+        lua_createtable (lua, 0, 3);
+        lua_pushcfunction (lua, mc_lua_service_call);
+        lua_setfield (lua, -2, "call");
+        lua_pushcfunction (lua, mc_lua_service_on);
+        lua_setfield (lua, -2, "on");
+        lua_pushcfunction (lua, mc_lua_service_off);
+        lua_setfield (lua, -2, "off");
+        lua_setfield (lua, -2, "__index");
+    }
+    lua_pop (lua, 1);
 
     if (luaL_newmetatable (lua, MC_LUA_SCREEN_MT))
     {
@@ -4188,6 +4689,9 @@ mc_lua_install_api (mc_lua_package_t *package)
 
     lua_pushcfunction (lua, mc_lua_settings);
     lua_setfield (lua, -2, "settings");
+
+    lua_pushcfunction (lua, mc_lua_service);
+    lua_setfield (lua, -2, "service");
 
     lua_createtable (lua, 0, 1);
     lua_pushcfunction (lua, mc_lua_editor_current);
@@ -4562,6 +5066,7 @@ mc_lua_package_load (mc_lua_runtime_t *runtime, const mc_lua_package_candidate_t
     package->subscriptions = g_hash_table_new (g_int64_hash, g_int64_equal);
     package->macros = g_ptr_array_new_with_free_func (mc_lua_macro_destroy);
     package->settings_ref = LUA_NOREF;
+    package->service_listeners = g_ptr_array_new ();
     package->lua = luaL_newstate ();
 
     if (package->lua == NULL)

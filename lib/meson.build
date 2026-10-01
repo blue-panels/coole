@@ -8,6 +8,7 @@ libmc_sources = files(
   'keybind.c',
   'lock.c',
   'plugin-prefs.c',
+  'plugin-service.c',
   'runtime-events.c',
   'serialize.c',
   'shell.c',

@@ -35,6 +35,7 @@
 #include "lib/event.h"
 #include "lib/fileloc.h"
 #include "lib/extension-runtime.h"
+#include "lib/plugin-service.h"
 #include "lib/runtime-events.h"
 #include "lib/strutil.h"
 
@@ -414,6 +415,16 @@ create_event_shape_script (void)
         "    assert(ev.key.code == 19 and ev.key.text == nil and ev.key.modifiers.ctrl)\n"
         "    record(\"editor-key\")\n"
         "    return mc.CONSUME\n"
+        "end)\n"
+        "mc.on(\"editor.change\", function(ev)\n"
+        "    assert(type(ev.editor) == \"userdata\" and ev.path == \"/new/edit\")\n"
+        "    assert(ev.revision == 12)\n"
+        "    record(\"editor-change\")\n"
+        "end)\n"
+        "mc.on(\"editor.cursor\", function(ev)\n"
+        "    assert(type(ev.editor) == \"userdata\" and ev.path == \"/new/edit\")\n"
+        "    assert(ev.line == 7 and ev.column == 3)\n"
+        "    record(\"editor-cursor\")\n"
         "end)\n",
         output_path);
     write_file (entry_path, script);
@@ -1588,6 +1599,83 @@ START_TEST (test_lua_runtime_screen)
 }
 END_TEST
 
+/* A service of C the scripts call: echo gives back its arguments, ping tells "pong" */
+static GVariant *
+test_echo_service (void *data, const char *method, GVariant *args, GError **err)
+{
+    (void) data;
+
+    if (strcmp (method, "echo") == 0)
+        return g_variant_ref (args);
+    if (strcmp (method, "ping") == 0)
+    {
+        mc_service_emit ("echo", "pong", g_variant_ref (args));
+        return g_variant_new_array (G_VARIANT_TYPE ("{sv}"), NULL, 0);
+    }
+    g_set_error (err, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD, "no method %s", method);
+    return NULL;
+}
+
+static void
+create_service_script (void)
+{
+    char *root = g_build_filename (user_editor_scripts_dir, "service", (char *) NULL);
+    char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
+    char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
+
+    ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
+    write_file (ini_path,
+                "[Lua]\nid=service\napi_version=1\nname=Service\nentry=init.lua\n"
+                "provides=macros\n");
+    write_file (
+        entry_path,
+        "local echo = mc.service('echo')\n"
+        "local seen, seen_name\n"
+        "local function run()\n"
+        "local r = assert(echo:call('echo', { text = 'hi', n = 42, x = 1.5, flag = true,\n"
+        "  list = { 'a', 'b' }, sub = { deep = { v = 'd' } }, bytes = 'a\\0\\255' }))\n"
+        "assert(r.text == 'hi' and r.n == 42 and r.x == 1.5 and r.flag == true, 'scalars')\n"
+        "assert(r.list[1] == 'a' and r.list[2] == 'b', 'list')\n"
+        "assert(r.sub.deep.v == 'd', 'nested')\n"
+        "assert(r.bytes == 'a\\0\\255', 'bytes')\n"
+        "local none, err = echo:call('other')\n"
+        "assert(none == nil and err:find('no method'), 'method error')\n"
+        "local id = assert(echo:on('pong', function(args, name) seen = args.v; seen_name = name "
+        "end))\n"
+        "assert(echo:call('ping', { v = 7 }))\n"
+        "assert(seen == 7 and seen_name == 'pong', 'signal')\n"
+        "assert(echo:off(id) and not echo:off(id), 'off')\n"
+        "assert(echo:call('ping', { v = 8 }))\n"
+        "assert(seen == 7, 'no signal after off')\n"
+        "local missing, merr = mc.service('none'):call('x')\n"
+        "assert(missing == nil and merr == 'not_found', 'not found')\n"
+        "end\n"
+        "assert(mc.macro { id = 'run', area = 'editor', description = 'Call the service',\n"
+        " action = function() run(); return mc.CONSUME end })\n");
+    g_free (entry_path);
+    g_free (ini_path);
+    g_free (root);
+}
+
+/* A script calls a service, with the values of Lua going and coming, and hears its signals */
+START_TEST (test_lua_runtime_calls_services)
+{
+    const char *action_error = NULL;
+
+    ck_assert (mc_service_register ("echo", test_echo_service, NULL, NULL));
+    create_service_script ();
+    ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
+                   error != NULL ? error->message : "unknown error");
+    mctest_assert_true (
+        mc_runtime_plugins_invoke_action ("lua", "editor", "service:run", &action_error));
+    ck_assert_ptr_null (action_error);
+    ck_assert_msg (runtime_error_count == 0, "service script failed: %s / %s",
+                   runtime_error_summary != NULL ? runtime_error_summary : "",
+                   runtime_error_details != NULL ? runtime_error_details : "");
+    mc_service_shutdown ();
+}
+END_TEST
+
 /* A package offers its settings on request. */
 START_TEST (test_lua_package_settings_are_shown_on_request)
 {
@@ -1839,6 +1927,21 @@ START_TEST (test_lua_runtime_converts_all_domain_event_snapshots)
     mctest_assert_true (snapshot->consumed);
     mc_runtime_event_snapshot_free (snapshot);
 
+    snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_CHANGE);
+    snapshot->data.editor_change.editor = (mc_runtime_handle_t) { MC_RUNTIME_HANDLE_EDITOR, 2, 1 };
+    snapshot->data.editor_change.path = g_strdup ("/new/edit");
+    snapshot->data.editor_change.revision = 12;
+    mctest_assert_true (mc_runtime_event_publish (snapshot, &error));
+    mc_runtime_event_snapshot_free (snapshot);
+
+    snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_CURSOR);
+    snapshot->data.editor_cursor.editor = (mc_runtime_handle_t) { MC_RUNTIME_HANDLE_EDITOR, 2, 1 };
+    snapshot->data.editor_cursor.path = g_strdup ("/new/edit");
+    snapshot->data.editor_cursor.line = 7;
+    snapshot->data.editor_cursor.column = 3;
+    mctest_assert_true (mc_runtime_event_publish (snapshot, &error));
+    mc_runtime_event_snapshot_free (snapshot);
+
     snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_SHUTDOWN);
     snapshot->data.shutdown.reason = g_strdup ("quit");
     mctest_assert_true (mc_runtime_event_publish (snapshot, &error));
@@ -1848,7 +1951,7 @@ START_TEST (test_lua_runtime_converts_all_domain_event_snapshots)
     g_clear_error (&error);
     ck_assert_str_eq (contents,
                       "user-alpha:data\nuser-beta:data\nstartup\neditor-open\neditor-save\n"
-                      "editor-key\nshutdown\n");
+                      "editor-key\neditor-change\neditor-cursor\nshutdown\n");
     g_free (contents);
     g_unsetenv ("MC_LUA_TEST_EVENT_SHAPES");
 }
@@ -1984,8 +2087,9 @@ test_count_shipped_package (const char *runtime_name, const char *id, const char
                             gboolean enabled, gpointer user_data)
 {
     static const char *const shipped[] = {
-        "base64-decode",   "draw-table",     "format-paragraph", "insert-command-output",
-        "insert-datetime", "insert-literal", "sort-selection",   "notify-editor-save",
+        "base64-decode",         "draw-table",         "format-paragraph",
+        "insert-command-output", "insert-datetime",    "insert-literal",
+        "sort-selection",        "notify-editor-save", "preview-markdown",
     };
     guint *count = (guint *) user_data;
     guint i;
@@ -2038,7 +2142,7 @@ START_TEST (test_lua_runtime_loads_the_shipped_editor_scripts)
                    runtime_error_details != NULL ? runtime_error_details : "");
 
     mc_runtime_plugins_enumerate_package_details (test_count_shipped_package, &packages);
-    ck_assert_uint_eq (packages, 8);
+    ck_assert_uint_eq (packages, 9);
     mc_runtime_plugins_enumerate_actions ("editor", test_count_action, &actions);
     ck_assert_uint_ge (actions, 7);
 }
@@ -2095,6 +2199,7 @@ main (void)
     tcase_add_test (tc_core, test_lua_runtime_rejects_insecure_package_paths);
     tcase_add_test (tc_core, test_lua_runtime_honors_disable_environment);
     tcase_add_test (tc_core, test_lua_runtime_screen);
+    tcase_add_test (tc_core, test_lua_runtime_calls_services);
     tcase_add_test (tc_core, test_lua_package_settings_are_shown_on_request);
     tcase_add_test (tc_core, test_lua_runtime_loads_the_shipped_editor_scripts);
 

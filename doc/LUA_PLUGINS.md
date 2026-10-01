@@ -190,6 +190,13 @@ Available event names are:
 
 - `startup`, `shutdown`
 - `editor.open`, `editor.save`, `editor.key`
+- `editor.change`, `editor.cursor`
+
+`editor.change` tells that the text changed and `editor.cursor` that the
+cursor is on another line.  Both come once the editor is idle, after the keys
+that came together have been handled: a paste or a fast typist gives one of
+each, not one for every key.  A file window that comes to the front is told of
+by both, so a script that follows the current file needs no other event.
 
 `mc.on()` returns `nil` and an "unknown event" message for any other name.
 
@@ -203,6 +210,8 @@ are:
 | `editor.open` | `editor`, `path`, `readonly`, `line`, `column` |
 | `editor.save` | `editor`, `path`, `previous_path`, `save_as` |
 | `editor.key` | `editor`, `key` (`name`, `code`, optional `text`, `modifiers`) |
+| `editor.change` | `editor`, `path`, `revision` (grows with every change) |
+| `editor.cursor` | `editor`, `path`, `line`, `column` (from 1) |
 
 ### Objects and commands
 
@@ -366,6 +375,53 @@ The teaching example `notify-editor-save` is installed under
 there.  Copy an example into `~/.local/share/coole/lua/scripts/editor/` to try
 it, and copy an installed script before adapting it, so system updates do not
 overwrite local changes.
+
+### Services
+
+A plugin of the editor can offer a service under a name, and a script
+calls it: the viewer plugin, for one, offers `viewer`, windows that show
+the text a script gives them.
+
+```lua
+local viewer = mc.service("viewer")
+
+local function show(text)
+    local r, err = viewer:call("open", { title = "Notes", text = text, place = "right" })
+    if r == nil then
+        mc.ui.message("Notes", err)   -- "not_found" without the plugin
+        return
+    end
+    viewer:on("closed", function(args) if args.id == r.id then --[[ gone ]] end end)
+end
+```
+
+`mc.service(name)` gives the object whether the service is there yet or
+not: the scripts load before the editor opens its plugins, and a call
+says `not_found` while the service is missing.  `service:call(method,
+args)` takes a table of strings, numbers, booleans and tables and gives
+the answer as a table; a string that is not UTF-8 goes as the bytes it
+is.  `service:on(signal, fn)` calls `fn(args, signal)` when the service
+tells of something, `"*"` for any signal; `service:off(id)` stops it.
+The methods a service has are listed where it is described; those of the
+viewer are in `src/editor-plugins/viewer/viewer.c` and in `doc/PLUGINS`.
+
+A script can render a type of file for the Preview of the viewer: the
+viewer asks with the signal `render` (`id`, `type`, `path`, `text`, `width`,
+`revision`), and the script that knows the type answers with `set_text` for
+that `id`; `follow` (`id`, `type`, `line` of the file) asks where the cursor
+is in the view, answered with `scroll_to`.  A type nobody answers for is
+shown as the text of the file.  `preview-markdown` is the renderer of
+markdown:
+
+```lua
+local viewer = mc.service("viewer")
+
+viewer:on("render", function(args)
+    if args.type == "json" then
+        viewer:call("set_text", { id = args.id, text = pretty(args.text) })
+    end
+end)
+```
 
 ## Trust boundary
 

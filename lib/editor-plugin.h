@@ -7,6 +7,7 @@
 
 #include "lib/global.h"
 #include "lib/widget/rect.h"  // WRect
+#include "lib/plugin-service.h"
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
@@ -52,6 +53,12 @@ typedef struct mc_ep_state_t
 #define MC_EP_EVENT_FILE_RENAMED 2 /* file renamed via Save As; payload = const char *new_path */
 #define MC_EP_EVENT_FOCUS_IN     3 /* editor window got focus */
 #define MC_EP_EVENT_FOCUS_OUT    4 /* editor window lost focus */
+/* The editor is idle after the text of @edit changed: told once for the changes that came
+   together, and when another file window comes to the front.  payload = NULL */
+#define MC_EP_EVENT_TEXT_CHANGED 5
+/* The editor is idle with the cursor of @edit on another line, or another file window in
+   front.  payload = NULL */
+#define MC_EP_EVENT_CURSOR_MOVED 6
 
 /*** structures declarations (and typedefs of structures)*****************************************/
 
@@ -98,6 +105,26 @@ typedef struct mc_editor_host_t
     void (*window_make_room) (struct mc_editor_host_t *host, void *window);
     /* Make that window fullscreen again, unless the user has moved or resized it since. */
     void (*window_give_room_back) (struct mc_editor_host_t *host, void *window);
+    /* The window with the focus, NULL when none has it. */
+    void *(*window_current) (struct mc_editor_host_t *host);
+
+    /* v6: the text of a file window.  get_text() gives all of it, @len bytes; caller frees.
+     * get_revision() grows with every change of the text. */
+    char *(*get_text) (struct mc_editor_host_t *host, void *edit, gsize *len);
+    guint64 (*get_revision) (struct mc_editor_host_t *host, void *edit);
+
+    /* v6: services, which plugins and scripts offer one another (lib/plugin-service.h).
+     * A plugin offers a service from open() and takes it back in close(). */
+    gboolean (*service_register) (struct mc_editor_host_t *host, const char *name,
+                                  mc_service_call_fn call, void *data, GError **error);
+    void (*service_unregister) (struct mc_editor_host_t *host, const char *name);
+    GVariant *(*service_call) (struct mc_editor_host_t *host, const char *name, const char *method,
+                               GVariant *args, GError **error);
+    guint (*service_connect) (struct mc_editor_host_t *host, const char *name,
+                              mc_service_signal_fn fn, void *user_data);
+    void (*service_disconnect) (struct mc_editor_host_t *host, guint id);
+    void (*service_emit) (struct mc_editor_host_t *host, const char *name, const char *signal,
+                          GVariant *args);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.
