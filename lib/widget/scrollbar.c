@@ -297,10 +297,12 @@ scrollbar_mouse (WScrollBar *b, mouse_msg_t msg, int at)
         break;
 
     case MSG_MOUSE_SCROLL_UP:
+    case MSG_MOUSE_SCROLL_LEFT:
         scrollbar_move (b, b->pos - 2);
         break;
 
     case MSG_MOUSE_SCROLL_DOWN:
+    case MSG_MOUSE_SCROLL_RIGHT:
         scrollbar_move (b, b->pos + 2);
         break;
 
