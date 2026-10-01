@@ -118,6 +118,14 @@ local function lines_text(lines)
     return table.concat(lines, "\n") .. "\n"
 end
 
+-- The viewer asks what files are whose: these are JSON.
+viewer:on("types", function()
+    viewer:call("add_type", {
+        type = "json",
+        suffixes = { ".json", ".jsonl", ".ndjson", ".jsonc", ".geojson", ".webmanifest" },
+    })
+end)
+
 viewer:on("render", function(args)
     if args.type ~= "json" then
         return

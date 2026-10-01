@@ -405,16 +405,26 @@ tells of something, `"*"` for any signal; `service:off(id)` stops it.
 The methods a service has are listed where it is described; those of the
 viewer are in `src/editor-plugins/viewer/viewer.c` and in `doc/PLUGINS`.
 
-A script can render a type of file for the Preview of the viewer: the
-viewer asks with the signal `render` (`id`, `type`, `path`, `text`, `width`,
+A script can render a type of file for the Preview of the viewer.  The
+viewer asks the renderers what types they know with the signal `types`,
+when the Preview is shown and when another file comes into it; a renderer
+answers with `add_type`: `type`, `suffixes` (the ends of the names of its
+files, any case) and `starts` (how their texts start, past white space).
+A file is of the type of the longest end of its name a renderer named,
+else of how its text starts, else `text`.  The viewer asks for the view
+with the signal `render` (`id`, `type`, `path`, `text`, `width`,
 `revision`), and the script that knows the type answers with `set_text` for
 that `id`; `follow` (`id`, `type`, `line` of the file) asks where the cursor
 is in the view, answered with `scroll_to`.  A type nobody answers for is
-shown as the text of the file.  `render-markdown` is the renderer of
-markdown:
+shown as the text of the file.  `render-markdown` and `render-json` are
+renderers:
 
 ```lua
 local viewer = mc.service("viewer")
+
+viewer:on("types", function()
+    viewer:call("add_type", { type = "json", suffixes = { ".json" } })
+end)
 
 viewer:on("render", function(args)
     if args.type == "json" then

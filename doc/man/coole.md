@@ -1350,8 +1350,9 @@ section
 entry
 **key**.
 
-The viewer tells the type of the file by its name and has it drawn by a
-renderer of that type: a markdown file comes out with its headings, lists,
+The renderers tell the viewer what files they draw, by the ends of their names
+or how their texts start, and the viewer has the file drawn by the renderer of
+its type: a markdown file comes out with its headings, lists,
 tables with rules, blocks of code in the colors of the editor, formulas as
 symbols and mermaid diagrams as drawings; that renderer is the Lua script
 render-markdown, lua-markdown of Midnight Commander, whose settings, from

@@ -97,6 +97,11 @@ end
 
 ------------------------------------------------------------------------
 
+-- The viewer asks what files are whose: these are markdown.
+viewer:on("types", function()
+    viewer:call("add_type", { type = "markdown", suffixes = { ".md", ".markdown", ".mkd" } })
+end)
+
 viewer:on("render", function(args)
     if args.type ~= "markdown" then
         return
