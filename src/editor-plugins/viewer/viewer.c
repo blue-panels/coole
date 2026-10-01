@@ -464,7 +464,8 @@ preview_type (const char *path)
     } types[] = {
         { ".md", "markdown" }, { ".markdown", "markdown" }, { ".mkd", "markdown" },
         { ".html", "html" },   { ".htm", "html" },          { ".xhtml", "html" },
-        { ".json", "json" },   { ".svg", "svg" },           { ".csv", "csv" },
+        { ".json", "json" },   { ".jsonl", "json" },        { ".ndjson", "json" },
+        { ".jsonc", "json" },  { ".svg", "svg" },           { ".csv", "csv" },
     };
     size_t i;
 

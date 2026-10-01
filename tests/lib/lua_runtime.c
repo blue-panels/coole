@@ -1676,6 +1676,69 @@ START_TEST (test_lua_runtime_calls_services)
 }
 END_TEST
 
+static void copy_script_tree (const char *source_dir, const char *target_dir);
+
+/* The view of JSON of the Preview: its lib/, as it ships, read by a script that checks it */
+START_TEST (test_lua_preview_json_view)
+{
+    char *source =
+        g_build_filename (TEST_LUA_EDITOR_SCRIPTS_DIR, "preview-json", "lib", (char *) NULL);
+    char *root = g_build_filename (user_editor_scripts_dir, "json-check", (char *) NULL);
+    char *lib = g_build_filename (root, "lib", (char *) NULL);
+    char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
+    char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
+
+    copy_script_tree (source, lib);
+    write_file (ini_path, "[Lua]\nid=json-check\napi_version=1\nname=JSON check\nentry=init.lua\n");
+    write_file (entry_path,
+                "local parse = require('jsonparse').parse\n"
+                "local jv = require('jsonview')\n"
+                "local function view(text, width)\n"
+                "  local roots = assert(parse(text))\n"
+                "  return jv.view(roots, { width = width or 60 })\n"
+                "end\n"
+                "-- order of the keys, comments, a comma before the bracket, sizes\n"
+                "local v = view('{\\n\"b\": 1, // x\\n\"a\": [1, 2],\\n\"c\": {\"d\": true,},\\n'\n"
+                "  .. '\"e\": {\"k1\":1,\"k2\":2,\"k3\":3,\"k4\":4,\"k5\":5}\\n}')\n"
+                "assert(v.lines[1] == '{', v.lines[1])\n"
+                "assert(v.lines[2] == '  \"b\": 1,' and v.src[2] == 2, v.lines[2])\n"
+                "assert(v.lines[3] == '  \"a\": [1, 2],' and v.src[3] == 3, v.lines[3])\n"
+                "assert(v.lines[4] == '  \"c\": { \"d\": true },', v.lines[4])\n"
+                "assert(v.lines[5] == '  \"e\": {  /* 5 keys */', v.lines[5])\n"
+                "assert(v.lines[#v.lines] == '}' and v.src[#v.src] == 6)\n"
+                "assert(jv.find(v, 3) == 2, 'find')\n"
+                "-- an array of objects is a table; a missing key is an empty cell\n"
+                "v = view('[{\"id\": 1, \"n\": \"a\"},\\n{\"id\": 22}]')\n"
+                "assert(v.lines[2] == '  ┌────┬───┐', v.lines[2])\n"
+                "assert(v.lines[3] == '  │ id │ n │', v.lines[3])\n"
+                "assert(v.lines[5] == '  │  1 │ a │' and v.src[5] == 1, v.lines[5])\n"
+                "assert(v.lines[6] == '  │ 22 │   │' and v.src[6] == 2, v.lines[6])\n"
+                "-- a long array is cut short\n"
+                "jv.MAX_ITEMS = 3\n"
+                "v = view('[[1],[2],[3],[4],[5]]', 10)\n"
+                "assert(v.lines[1] == '[  /* 5 values */', v.lines[1])\n"
+                "assert(v.lines[5] == '  /* … 2 more values */', v.lines[5])\n"
+                "-- JSON Lines: a value to a line\n"
+                "v = view('{\"a\": 1}\\n{\"a\": 2}\\n')\n"
+                "assert(#v.lines == 2 and v.lines[2] == '{ \"a\": 2 }' and v.src[2] == 2)\n"
+                "-- where it does not read\n"
+                "local none, err = parse('{\"a\": 1,\\n \"b\": [1\\n}')\n"
+                "assert(none == nil and err.line == 3 and err.column == 1, err.message)\n");
+
+    ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
+                   error != NULL ? error->message : "unknown error");
+    ck_assert_msg (runtime_error_count == 0, "the JSON view failed: %s / %s",
+                   runtime_error_summary != NULL ? runtime_error_summary : "",
+                   runtime_error_details != NULL ? runtime_error_details : "");
+
+    g_free (entry_path);
+    g_free (ini_path);
+    g_free (lib);
+    g_free (root);
+    g_free (source);
+}
+END_TEST
+
 /* A package offers its settings on request. */
 START_TEST (test_lua_package_settings_are_shown_on_request)
 {
@@ -2087,9 +2150,9 @@ test_count_shipped_package (const char *runtime_name, const char *id, const char
                             gboolean enabled, gpointer user_data)
 {
     static const char *const shipped[] = {
-        "base64-decode",         "draw-table",         "format-paragraph",
-        "insert-command-output", "insert-datetime",    "insert-literal",
-        "sort-selection",        "notify-editor-save", "preview-markdown",
+        "base64-decode",    "draw-table",     "format-paragraph", "insert-command-output",
+        "insert-datetime",  "insert-literal", "sort-selection",   "notify-editor-save",
+        "preview-markdown", "preview-json",
     };
     guint *count = (guint *) user_data;
     guint i;
@@ -2142,7 +2205,7 @@ START_TEST (test_lua_runtime_loads_the_shipped_editor_scripts)
                    runtime_error_details != NULL ? runtime_error_details : "");
 
     mc_runtime_plugins_enumerate_package_details (test_count_shipped_package, &packages);
-    ck_assert_uint_eq (packages, 9);
+    ck_assert_uint_eq (packages, 10);
     mc_runtime_plugins_enumerate_actions ("editor", test_count_action, &actions);
     ck_assert_uint_ge (actions, 7);
 }
@@ -2200,6 +2263,7 @@ main (void)
     tcase_add_test (tc_core, test_lua_runtime_honors_disable_environment);
     tcase_add_test (tc_core, test_lua_runtime_screen);
     tcase_add_test (tc_core, test_lua_runtime_calls_services);
+    tcase_add_test (tc_core, test_lua_preview_json_view);
     tcase_add_test (tc_core, test_lua_package_settings_are_shown_on_request);
     tcase_add_test (tc_core, test_lua_runtime_loads_the_shipped_editor_scripts);
 

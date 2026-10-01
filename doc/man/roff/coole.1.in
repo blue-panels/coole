@@ -1631,6 +1631,12 @@ symbols and mermaid diagrams as drawings; that renderer is the Lua script
 preview\-markdown, lua\-markdown of Midnight Commander, whose settings, from
 Manage plugins, are kept in
 \fB~/.config/coole/preview\-markdown.ini\fP\&.
+A JSON file, and JSON Lines, comes out one value to a line in the colors the
+editor gives JSON, the size of every object and array beside it, a long array
+packed to the width or cut short, and an array of objects of one kind as a
+table; comments and a comma before a closing bracket are taken. While it does
+not read, halfway through a change, the error and its place are shown above
+the last view that read. That renderer is the Lua script preview\-json.
 A file of a type no renderer knows is shown as its text.
 
 
