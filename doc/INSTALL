@@ -131,6 +131,12 @@ listed there as well.
      Spell checking through aspell or hunspell, opened at run time; it
      needs GModule.
 
+-Dterminal=auto|enabled|disabled
+     The terminal plugin, a shell in a window of the editor: the module
+     terminal.so, installed into the directory of the editor plugins
+     (auto: when openpty(), in libc or in libutil, and GModule are
+     found).  `enabled' makes a missing one an error.
+
 -Dnls=auto|enabled|disabled
      Translations of the messages.
 

@@ -31,7 +31,6 @@ extern int pause_after_run;
 void shell_execute (const char *command, int flags);
 
 /* Show the terminal behind the editor: Ctrl-O */
-void toggle_terminal (void);
 
 /* Suspend the editor: Ctrl-Z */
 gboolean execute_suspend (const gchar *event_group_name, const gchar *event_name,

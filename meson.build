@@ -199,10 +199,11 @@ if get_option('spell').enabled() and not have_gmodule
 endif
 conf.set('HAVE_ASPELL', have_spell ? 1 : false)
 
-# the terminal runs a shell on a pty; openpty() is in libc or in libutil
+# the terminal plugin runs a shell on a pty; openpty() is in libc or in libutil. It is a module
+# the editor loads, so it needs gmodule.
 terminal_dep = []
 have_terminal = false
-if not get_option('terminal').disabled()
+if have_gmodule and not get_option('terminal').disabled()
   if cc.has_function('openpty')
     have_terminal = true
   else
@@ -214,7 +215,7 @@ if not get_option('terminal').disabled()
   endif
 endif
 if get_option('terminal').enabled() and not have_terminal
-  error('the terminal needs openpty()')
+  error(have_gmodule ? 'the terminal needs openpty()' : 'the terminal plugin needs gmodule')
 endif
 conf.set('ENABLE_MCTERM', have_terminal ? 1 : false)
 if have_terminal

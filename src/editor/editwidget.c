@@ -62,8 +62,7 @@
 
 #include "src/keymap.h"  // keybind_lookup_keymap_command()
 #include "src/runtime-host.h"
-#include "src/setup.h"    // save_setup_cmd()
-#include "src/execute.h"  // toggle_terminal()
+#include "src/setup.h"  // save_setup_cmd()
 #include "src/events_init.h"
 #include "src/appearance.h"      // appearance_box()
 #include "src/keybind_dialog.h"  // keybind_dialog()
@@ -1242,7 +1241,7 @@ edit_dialog_command_execute (WDialog *h, long command)
         edit_refresh_cmd ();
         break;
     case CK_Shell:
-        toggle_terminal ();
+        // the terminal plugin shows its window; without it there is nothing to show
         break;
     case CK_LearnKeys:
         key_learn ();

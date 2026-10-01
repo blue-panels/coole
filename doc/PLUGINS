@@ -49,7 +49,23 @@ src/editor/editcmd.c) holds their descriptors (and that
 of the "scripts" entry) and registers them with
 mc_editor_plugin_add() from editor_plugins_register_all().
 
-The help of a plugin (ctags.md, etags.md, spell.md) is installed into
+One plugin comes with coole as a module, loaded the way any other
+module is (section 3), and is an example of one:
+
+  src/editor-plugins/terminal/   terminal.so: a window of its own
+                                 (section 9), the shell in the
+                                 terminal of mc, shown and hidden by
+                                 Ctrl-o through handle_action.  Built
+                                 when openpty() and GModule are
+                                 found, installed into the system
+                                 directory of the plugins.
+
+The module holds the terminal of mc as well (src/mcterm and
+src/viewer), and calls the functions of the editor, which the program
+exports.  The test module_symbols checks that the program gives every
+function the module calls.
+
+The help of a plugin (ctags.md, etags.md, spell.md, terminal.md) is installed into
 $(pkgdatadir)/help next to the help of the program.
 
 

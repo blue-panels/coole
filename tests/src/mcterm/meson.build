@@ -4,10 +4,19 @@ foreach name : ['mcterm_key_encode', 'mcterm_osc7_parse', 'mcterm_protocol_parse
   test(name,
     executable(name, name + '.c',
       c_args: test_c_args,
-      dependencies: test_src_deps),
+      dependencies: [test_src_deps, libmcterm_dep]),
     workdir: meson.current_build_dir(),
     # Solaris closes a pty with bytes nobody read in a STREAMS queue only
     # after a wait: the paste test takes some 30 s there
     timeout: name == 'mcterm_pty_send' ? 120 : 30,
     suite: 'src/mcterm')
 endforeach
+
+# the terminal plugin loads only when the program gives it every function it calls
+nm = find_program('nm', required: false)
+ldd = find_program('ldd', required: false)
+if host_machine.system() == 'linux' and nm.found() and ldd.found()
+  test('module_symbols', find_program('module_symbols.sh'),
+    args: [coole, terminal_module],
+    suite: 'src/mcterm')
+endif
