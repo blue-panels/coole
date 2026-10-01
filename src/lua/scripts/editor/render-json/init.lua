@@ -114,6 +114,9 @@ end
 -- the last view that read, for a file that does not read now.
 local shown = {}
 
+-- The windows that show an error now.
+local failed = {}
+
 local function lines_text(lines)
     return table.concat(lines, "\n") .. "\n"
 end
@@ -141,6 +144,7 @@ viewer:on("render", function(args)
     local roots, err = parse(args.text)
 
     if roots ~= nil then
+        failed[args.id] = nil
         local view = jsonview.view(roots, { width = args.width, colors = c, text_width = text_width })
         shown[args.id] = view
         viewer:call("set_text", { id = args.id, text = lines_text(view.lines) })
@@ -158,12 +162,19 @@ viewer:on("render", function(args)
     else
         body = args.text
     end
+    failed[args.id] = true
     viewer:call("set_text", { id = args.id, text = head .. "\n\n" .. body })
+    viewer:call("scroll_to", { id = args.id, line = 0 })
 end)
 
 viewer:on("follow", function(args)
     local view = shown[args.id]
     if args.type ~= "json" or view == nil then
+        return
+    end
+    -- the error stays in sight: the lines under it are not where the view says
+    if failed[args.id] then
+        viewer:call("scroll_to", { id = args.id, line = 0 })
         return
     end
 
@@ -178,4 +189,5 @@ end)
 
 viewer:on("closed", function(args)
     shown[args.id] = nil
+    failed[args.id] = nil
 end)
