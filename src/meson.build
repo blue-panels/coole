@@ -89,10 +89,15 @@ if lua.found()
   ]
 endif
 
+# Not the directory of the sources on the path of <...>: src/util.h would
+# hide the <util.h> of the system, which has openpty() on macOS and NetBSD.
+# The sources include what is beside them by "...", and the rest by its
+# path from the top.
 libinternal = static_library('internal',
   libinternal_sources,
   c_args: src_c_args,
   dependencies: [libmc_dep, intl, terminal_dep],
+  implicit_include_directories: false,
 )
 
 libinternal_dep = declare_dependency(link_with: libinternal,
@@ -102,6 +107,7 @@ coole = executable('coole',
   'main.c',
   c_args: src_c_args,
   dependencies: libinternal_dep,
+  implicit_include_directories: false,
   # the runtime plugins call back into the program
   export_dynamic: have_gmodule,
   install: true,
