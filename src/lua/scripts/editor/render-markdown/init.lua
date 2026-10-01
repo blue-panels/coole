@@ -26,7 +26,7 @@ settings.path = function()
         end
         dir = home .. "/.config/coole"
     end
-    return dir .. "/preview-markdown.ini"
+    return dir .. "/render-markdown.ini"
 end
 
 -- The shade of a code block is taken from the colors of the viewer of mc.

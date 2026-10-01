@@ -69,7 +69,7 @@ module is (section 3), and are examples of one:
                                  viewer.c.  The Preview asks the
                                  renderers for the view of a type of
                                  file with the signal "render"; the
-                                 Lua script preview-markdown is the
+                                 Lua script render-markdown is the
                                  renderer of markdown.  Built when
                                  GModule is found.
 

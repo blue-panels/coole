@@ -1679,10 +1679,10 @@ END_TEST
 static void copy_script_tree (const char *source_dir, const char *target_dir);
 
 /* The view of JSON of the Preview: its lib/, as it ships, read by a script that checks it */
-START_TEST (test_lua_preview_json_view)
+START_TEST (test_lua_render_json_view)
 {
     char *source =
-        g_build_filename (TEST_LUA_EDITOR_SCRIPTS_DIR, "preview-json", "lib", (char *) NULL);
+        g_build_filename (TEST_LUA_EDITOR_SCRIPTS_DIR, "render-json", "lib", (char *) NULL);
     char *root = g_build_filename (user_editor_scripts_dir, "json-check", (char *) NULL);
     char *lib = g_build_filename (root, "lib", (char *) NULL);
     char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
@@ -2150,9 +2150,9 @@ test_count_shipped_package (const char *runtime_name, const char *id, const char
                             gboolean enabled, gpointer user_data)
 {
     static const char *const shipped[] = {
-        "base64-decode",    "draw-table",     "format-paragraph", "insert-command-output",
-        "insert-datetime",  "insert-literal", "sort-selection",   "notify-editor-save",
-        "preview-markdown", "preview-json",
+        "base64-decode",   "draw-table",     "format-paragraph", "insert-command-output",
+        "insert-datetime", "insert-literal", "sort-selection",   "notify-editor-save",
+        "render-markdown", "render-json",
     };
     guint *count = (guint *) user_data;
     guint i;
@@ -2263,7 +2263,7 @@ main (void)
     tcase_add_test (tc_core, test_lua_runtime_honors_disable_environment);
     tcase_add_test (tc_core, test_lua_runtime_screen);
     tcase_add_test (tc_core, test_lua_runtime_calls_services);
-    tcase_add_test (tc_core, test_lua_preview_json_view);
+    tcase_add_test (tc_core, test_lua_render_json_view);
     tcase_add_test (tc_core, test_lua_package_settings_are_shown_on_request);
     tcase_add_test (tc_core, test_lua_runtime_loads_the_shipped_editor_scripts);
 
