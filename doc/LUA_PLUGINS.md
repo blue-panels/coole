@@ -92,7 +92,12 @@ modules are disabled for these lookups.
 
 The shared directories are `${datadir}/coole/lua/lib/` for system scripts and
 `${XDG_DATA_HOME:-~/.local/share}/coole/lua/lib/` for user scripts.  A system script
-never searches the user shared directory.
+never searches the user shared directory.  coole ships one shared module,
+`base64text`: what a string of base64 holds, told short enough for a line
+(`inspect(s, want)` and `note(info, width)`); the renderers of JSON and XML
+show it beside such a string.  A copy of a renderer among the user scripts
+needs a copy of the module in the user shared directory, or shows the
+strings as they are.
 
 ## API
 

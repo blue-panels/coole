@@ -48,6 +48,8 @@ static char *data_dir = NULL;
 static char *system_scripts_dir = NULL;
 static char *user_scripts_dir = NULL;
 static char *system_editor_scripts_dir = NULL;
+static char *system_modules_dir = NULL;
+static char *user_modules_dir = NULL;
 static char *user_editor_scripts_dir = NULL;
 static char *output_path = NULL;
 static char *ui_status_text = NULL;
@@ -1359,6 +1361,8 @@ test_object_string_free (mc_runtime_string_t *string)
 /* --------------------------------------------------------------------------------------------- */
 
 /* @Before */
+static void copy_script_tree (const char *source_dir, const char *target_dir);
+
 static void
 setup (void)
 {
@@ -1452,6 +1456,10 @@ setup (void)
     }
     remove_tree (system_scripts_dir);
     remove_tree (user_scripts_dir);
+    // the shared modules, as they ship
+    remove_tree (system_modules_dir);
+    remove_tree (user_modules_dir);
+    copy_script_tree (TEST_LUA_MODULES_DIR, system_modules_dir);
     create_test_packages ();
     create_event_shape_script ();
     create_ui_script ();
@@ -1676,8 +1684,6 @@ START_TEST (test_lua_runtime_calls_services)
 }
 END_TEST
 
-static void copy_script_tree (const char *source_dir, const char *target_dir);
-
 /* The view of JSON of the Preview: its lib/, as it ships, read by a script that checks it */
 START_TEST (test_lua_render_json_view)
 {
@@ -1689,6 +1695,8 @@ START_TEST (test_lua_render_json_view)
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
 
     copy_script_tree (source, lib);
+    // a package of the user takes the shared modules of the user
+    copy_script_tree (TEST_LUA_MODULES_DIR, user_modules_dir);
     write_file (ini_path, "[Lua]\nid=json-check\napi_version=1\nname=JSON check\nentry=init.lua\n");
     write_file (entry_path,
                 "local parse = require('jsonparse').parse\n"
@@ -1723,7 +1731,17 @@ START_TEST (test_lua_render_json_view)
                 "assert(#v.lines == 2 and v.lines[2] == '{ \"a\": 2 }' and v.src[2] == 2)\n"
                 "-- where it does not read\n"
                 "local none, err = parse('{\"a\": 1,\\n \"b\": [1\\n}')\n"
-                "assert(none == nil and err.line == 3 and err.column == 1, err.message)\n");
+                "assert(none == nil and err.line == 3 and err.column == 1, err.message)\n"
+                "-- base64: what it holds, beside its first letters; a hash is left alone\n"
+                "local b64 = require('base64text')\n"
+                "local roots = assert(parse('{\"t\": \"aGVsbG8sIHRoaXMgaXMgYS50eHQ=\", "
+                "\"h\": \"abcd1234abcd1234abcd1234\"}'))\n"
+                "v = jv.view(roots, { width = 70, blob = b64 })\n"
+                "assert(v.lines[2] == '  \"t\": \"aGVsbG8sIHRo…\",  (base64, 20 B: hello, this is "
+                "a.txt)', v.lines[2])\n"
+                "assert(v.lines[3] == '  \"h\": \"abcd1234abcd1234abcd1234\"', v.lines[3])\n"
+                "assert(b64.inspect('iVBORw0KGgoAAAAAAAAAAAAA').what == 'PNG image')\n"
+                "assert(b64.inspect('data:image/svg+xml;base64,PHN2Zy8+').what == 'svg+xml')\n");
 
     ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
                    error != NULL ? error->message : "unknown error");
@@ -1750,6 +1768,8 @@ START_TEST (test_lua_render_xml_view)
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
 
     copy_script_tree (source, lib);
+    // a package of the user takes the shared modules of the user
+    copy_script_tree (TEST_LUA_MODULES_DIR, user_modules_dir);
     write_file (ini_path, "[Lua]\nid=xml-check\napi_version=1\nname=XML check\nentry=init.lua\n");
     write_file (
         entry_path,
@@ -1783,7 +1803,15 @@ START_TEST (test_lua_render_xml_view)
         "assert(v.lines[1] == '<w' and v.lines[4] == '    cccc=\"3333\"/>', v.lines[4])\n"
         "-- where it does not read\n"
         "local none, err = parse('<a>\\n<b></a>')\n"
-        "assert(none == nil and err.line == 2 and err.column == 4, err.message)\n");
+        "assert(none == nil and err.line == 2 and err.column == 4, err.message)\n"
+        "-- base64 in a text and in an attribute\n"
+        "local nodes = assert(parse('<a><t>aGVsbG8sIHRoaXMgaXMgYS50eHQ=</t>"
+        "<i src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iIi8+\"/></a>'))\n"
+        "v = xv.view(nodes, { width = 70, blob = require('base64text') })\n"
+        "assert(v.lines[2] == '  <t>aGVsbG8sIHRo…</t>  (base64, 20 B: hello, this is a.txt)', "
+        "v.lines[2])\n"
+        "assert(v.lines[3] == '  <i src=\"data:image/svg+xml;base64,PHN2ZyB4bWxu…\" "
+        "(svg+xml, 15 B: <svg xmlns=\"\"/>)/>', v.lines[3])\n");
 
     ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
                    error != NULL ? error->message : "unknown error");
@@ -2307,6 +2335,9 @@ main (void)
     g_setenv ("XDG_CONFIG_HOME", config_dir, TRUE);
     g_setenv ("XDG_DATA_HOME", data_dir, TRUE);
     g_setenv ("MC_LUA_TEST_SYSTEM_SCRIPTS_DIR", system_scripts_dir, TRUE);
+    system_modules_dir = g_build_filename (test_root, "system-modules", (char *) NULL);
+    user_modules_dir = g_build_filename (data_dir, MC_USERCONF_DIR, "lua", "lib", (char *) NULL);
+    g_setenv ("MC_LUA_TEST_SYSTEM_MODULES_DIR", system_modules_dir, TRUE);
 
     tc_core = tcase_create ("Core");
     tcase_add_checked_fixture (tc_core, setup, teardown);

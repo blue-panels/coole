@@ -31,6 +31,7 @@ local function new_view(opts)
         width = opts.width or 80,
         colors = opts.colors or {},
         text_width = opts.text_width or function(s) return utf8.len(s) or #s end,
+        blob = opts.blob,
     }
 end
 
@@ -60,15 +61,51 @@ local function scalar_kind(node)
     return node.t == "string" and "string" or node.t
 end
 
+-- What a string of base64 holds, when the view is given a reader of it
+-- (opts.blob: inspect and note, as base64text has them), or nil.
+local function blob_of(view, node)
+    if view.blob == nil or node.t ~= "string" or #node.raw < 22 then
+        return nil
+    end
+    if node.blob == nil then
+        local inner = node.raw:sub(2, -2)
+        if inner:find("\\", 1, true) then
+            -- the escapes a JSON writer puts in base64: \/ and broken lines
+            inner = inner:gsub("\\/", "/"):gsub("\\[nrt]", " ")
+        end
+        node.blob = view.blob.inspect(inner, view.width) or false
+    end
+    return node.blob or nil
+end
+
+-- A string of base64 cut to its first letters, in its quotes.
+local function blob_short(info)
+    return '"' .. info.scheme .. info.prefix .. '…"'
+end
+
+-- What it holds, in parentheses, at most width wide.
+local function blob_note(view, info, width)
+    return "(" .. view.blob.note(info, width - 2, view.text_width) .. ")"
+end
+
 -- The text of a value in a cell: a string without its quotes.
-local function cell_text(node)
+local function cell_text(view, node)
     if node == nil then
         return ""
+    end
+    local info = blob_of(view, node)
+    if info ~= nil then
+        return info.scheme .. info.prefix .. "… " .. blob_note(view, info, 30)
     end
     if node.t == "string" then
         return node.raw:sub(2, -2)
     end
     return node.raw
+end
+
+-- A value that goes on a line with others: plain, and no base64.
+local function is_simple(view, node)
+    return is_scalar(node) and blob_of(view, node) == nil
 end
 
 ------------------------------------------------------------------------
@@ -133,7 +170,7 @@ local function emit_table(view, node, columns, indent, shown)
         for i, key in ipairs(columns) do
             local value = by_key[key]
             row[i] = value
-            widths[i] = math.max(widths[i], view.text_width(cell_text(value)))
+            widths[i] = math.max(widths[i], view.text_width(cell_text(view, value)))
         end
         rows[r] = row
     end
@@ -162,7 +199,7 @@ local function emit_table(view, node, columns, indent, shown)
         -- a row may lack keys: every column is gone through, not up to the first it lacks
         for i = 1, #columns do
             local value = row[i]
-            local text = pad(view, cell_text(value), widths[i], value ~= nil and value.t == "number")
+            local text = pad(view, cell_text(view, value), widths[i], value ~= nil and value.t == "number")
             if value ~= nil then
                 text = paint(view, scalar_kind(value), text)
             end
@@ -183,7 +220,7 @@ local function inline_array(view, node, prefix_width)
     end
     local parts, plain = {}, {}
     for i, item in ipairs(node.items) do
-        if not is_scalar(item) then
+        if not is_simple(view, item) then
             return nil
         end
         parts[i] = paint(view, scalar_kind(item), item.raw)
@@ -204,7 +241,7 @@ local function inline_object(view, node, prefix_width)
     end
     local parts, plain = {}, {}
     for i, m in ipairs(node.members) do
-        if not is_scalar(m.value) then
+        if not is_simple(view, m.value) then
             return nil
         end
         parts[i] = paint(view, "key", m.key.raw) .. paint(view, "punct", ": ")
@@ -253,9 +290,9 @@ local function emit_packed(view, node, indent)
     end
 end
 
-local function all_scalar(list)
+local function all_simple(view, list)
     for _, item in ipairs(list) do
-        if not is_scalar(item) then
+        if not is_simple(view, item) then
             return false
         end
     end
@@ -295,6 +332,15 @@ emit_node = function(view, node, indent, key, comma)
     local line = key ~= nil and key.line or node.line
 
     if is_scalar(node) then
+        local info = blob_of(view, node)
+        if info ~= nil then
+            -- base64: its first letters, and what it holds in the rest of the line
+            local short = blob_short(info)
+            local used = prefix_width + view.text_width(short) + (comma ~= "" and 1 or 0) + 2
+            emit(view, prefix .. paint(view, "string", short) .. comma .. "  "
+                .. paint(view, "comment", blob_note(view, info, view.width - used)), line)
+            return
+        end
         emit(view, prefix .. paint(view, scalar_kind(node), node.raw) .. comma, line)
         return
     end
@@ -349,7 +395,7 @@ emit_node = function(view, node, indent, key, comma)
     end
 
     emit(view, prefix .. paint(view, "punct", open) .. count, line)
-    if node.t == "array" and all_scalar(list) then
+    if node.t == "array" and all_simple(view, list) then
         emit_packed(view, node, indent)
     else
         emit_children(view, node, indent)

@@ -30,6 +30,7 @@ local function new_view(opts)
         width = opts.width or 80,
         colors = opts.colors or {},
         text_width = opts.text_width or function(s) return utf8.len(s) or #s end,
+        blob = opts.blob,
     }
 end
 
@@ -73,6 +74,30 @@ local function wrap(view, text, width)
 end
 
 ------------------------------------------------------------------------
+-- Base64: what a text or a value holds, when the view is given a reader of
+-- it (opts.blob: inspect and note, as base64text has them).  Kept on the
+-- thing it is read for, a node of text or an attribute.
+
+local function blob_of(view, holder, text)
+    if view.blob == nil or #text < 20 then
+        return nil
+    end
+    if holder.blob == nil then
+        holder.blob = view.blob.inspect(text, view.width) or false
+    end
+    return holder.blob or nil
+end
+
+local function blob_short(info)
+    return info.scheme .. info.prefix .. "…"
+end
+
+-- What it holds, in parentheses, at most width wide.
+local function blob_note(view, info, width)
+    return "(" .. view.blob.note(info, width - 2, view.text_width) .. ")"
+end
+
+------------------------------------------------------------------------
 -- What an element is made of.
 
 local function elements_of(node)
@@ -97,13 +122,32 @@ local function plain_text(node)
     return nil
 end
 
-local function attr_text(view, attr)
-    return paint(view, "attr", attr.name) .. paint(view, "tag", "=")
-        .. paint(view, "value", '"' .. attr.value:gsub('"', "&quot;") .. '"')
+-- The value of an attribute as the view shows it: base64 cut short.
+local function attr_value(view, attr)
+    local info = blob_of(view, attr, attr.value)
+    if info ~= nil then
+        return blob_short(info), info
+    end
+    return (attr.value:gsub('"', "&quot;"))
 end
 
-local function attr_plain(attr)
-    return attr.name .. '="' .. attr.value:gsub('"', "&quot;") .. '"'
+local function attr_plain(view, attr)
+    local value, info = attr_value(view, attr)
+    local text = attr.name .. '="' .. value .. '"'
+    if info ~= nil then
+        text = text .. " " .. blob_note(view, info, 40)
+    end
+    return text
+end
+
+local function attr_text(view, attr)
+    local value, info = attr_value(view, attr)
+    local text = paint(view, "attr", attr.name) .. paint(view, "tag", "=")
+        .. paint(view, "value", '"' .. value .. '"')
+    if info ~= nil then
+        text = text .. " " .. paint(view, "comment", blob_note(view, info, 40))
+    end
+    return text
 end
 
 ------------------------------------------------------------------------
@@ -113,16 +157,29 @@ end
 
 local TEXT_COLUMN = "#text"
 
-local function row_fields(node)
+-- The text of a cell: base64 cut short, with what it holds.
+local function cell_value(view, holder, text)
+    local info = blob_of(view, holder, text)
+    if info ~= nil then
+        return blob_short(info) .. " " .. blob_note(view, info, 30)
+    end
+    return text
+end
+
+local function row_fields(view, node)
     local fields = {}
 
     for _, a in ipairs(node.attrs) do
-        fields[#fields + 1] = { key = "@" .. a.name, title = a.name, value = a.value, attr = true }
+        fields[#fields + 1] = {
+            key = "@" .. a.name, title = a.name, value = cell_value(view, a, a.value), attr = true,
+        }
     end
     local text = plain_text(node)
     if text ~= nil then
         if text ~= "" then
-            fields[#fields + 1] = { key = TEXT_COLUMN, title = TEXT_COLUMN, value = text }
+            fields[#fields + 1] = {
+                key = TEXT_COLUMN, title = TEXT_COLUMN, value = cell_value(view, node.children[1], text),
+            }
         end
         return fields
     end
@@ -134,18 +191,21 @@ local function row_fields(node)
         if value == nil then
             return nil
         end
+        if value ~= "" then
+            value = cell_value(view, child.children[1], value)
+        end
         fields[#fields + 1] = { key = child.name, title = child.name, value = value }
     end
     return fields
 end
 
 -- The columns of the elements first .. last, and the fields of each, or nil.
-local function table_of(run)
+local function table_of(view, run)
     local columns, seen, rows = {}, {}, {}
     local titles = {}
 
     for r, node in ipairs(run) do
-        local fields = row_fields(node)
+        local fields = row_fields(view, node)
         if fields == nil then
             return nil
         end
@@ -204,7 +264,7 @@ end
 -- The run as a table under a line that names it, or FALSE when it is
 -- wider than the view.
 local function emit_table(view, run, total, indent)
-    local columns, titles, rows = table_of(run)
+    local columns, titles, rows = table_of(view, run)
     if columns == nil then
         return false
     end
@@ -259,7 +319,7 @@ local emit_node
 local function open_width(view, node, ending)
     local plain = { "<" .. node.name }
     for i, a in ipairs(node.attrs) do
-        plain[i + 1] = attr_plain(a)
+        plain[i + 1] = attr_plain(view, a)
     end
     return view.text_width(table.concat(plain, " ") .. ending)
 end
@@ -330,6 +390,14 @@ end
 
 emit_node = function(view, node, indent)
     if node.t == "text" then
+        local info = blob_of(view, node, node.text)
+        if info ~= nil then
+            local short = blob_short(info)
+            local used = #indent + view.text_width(short) + 2
+            emit(view, indent .. paint(view, "text", short) .. "  "
+                .. paint(view, "comment", blob_note(view, info, view.width - used)), node.line)
+            return
+        end
         for _, line in ipairs(wrap(view, node.text, view.width - #indent)) do
             emit(view, indent .. paint(view, "text", line), node.line)
         end
@@ -351,6 +419,28 @@ emit_node = function(view, node, indent)
     if text == "" then
         local line, last = emit_open(view, node, indent, "/>")
         emit(view, line, last or node.line)
+        return
+    end
+
+    local info = text ~= nil and text ~= "" and blob_of(view, node.children[1], text) or nil
+    if info ~= nil then
+        -- base64: its first letters in the element, what it holds after it
+        local open, last = emit_open(view, node, indent, ">")
+        local short = blob_short(info)
+        local plain_open = open_width(view, node, ">")
+        local used = #indent + plain_open + view.text_width(short)
+            + view.text_width("</" .. node.name .. ">") + 2
+        if last == nil then
+            emit(view, open .. paint(view, "text", short) .. close .. "  "
+                .. paint(view, "comment", blob_note(view, info, view.width - used)), node.line)
+        else
+            emit(view, open, last)
+            local inner = indent .. (" "):rep(M.INDENT)
+            used = #inner + view.text_width(short) + 2
+            emit(view, inner .. paint(view, "text", short) .. "  "
+                .. paint(view, "comment", blob_note(view, info, view.width - used)), node.children[1].line)
+            emit(view, indent .. close, node.close or node.line)
+        end
         return
     end
 

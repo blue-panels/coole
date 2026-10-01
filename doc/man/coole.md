@@ -1371,6 +1371,12 @@ line when they do not fit, the number of the elements an element holds beside
 it, a long run of elements of one name cut short, and a run of elements of one
 name that hold attributes and plain text as a table. That renderer is the Lua
 script render-xml, and it shows its errors the way render-json does.
+A string of base64 in JSON or XML, a text, a value or a data: URI, is cut to
+its first letters, and what it holds is shown beside it in parentheses: the
+start of the text, or the kind of file its bytes start like, and the size.
+Only the start of it is decoded, so a string of megabytes costs no more than a
+short one; a string of the letters of base64 that holds neither text nor a
+known kind of file, a hash for one, is left as it is.
 A file of a type no renderer knows is shown as its text.
 
 # Dialogs

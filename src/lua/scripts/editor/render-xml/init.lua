@@ -15,6 +15,11 @@ local xmlview = require("xmlview")
 
 local viewer = mc.service("viewer")
 
+-- What a string of base64 holds, shown beside it: a module shared by the
+-- renderers.  Without it the strings are shown as they are.
+local blob_ok, base64text = pcall(require, "base64text")
+local blob = blob_ok and base64text or nil
+
 -- Larger files are shown as their text: reading them would hold the editor.
 local MAX_SIZE = 16 * 1024 * 1024
 
@@ -151,7 +156,9 @@ viewer:on("render", function(args)
 
     if nodes ~= nil then
         failed[args.id] = nil
-        local view = xmlview.view(nodes, { width = args.width, colors = c, text_width = text_width })
+        local view = xmlview.view(nodes, {
+            width = args.width, colors = c, text_width = text_width, blob = blob,
+        })
         shown[args.id] = view
         viewer:call("set_text", { id = args.id, text = lines_text(view.lines) })
         return
