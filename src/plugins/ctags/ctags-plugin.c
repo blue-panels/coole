@@ -34,7 +34,7 @@
 
 #include "lib/global.h"
 #include "lib/mcconfig.h"
-#include "src/editor-plugins/ctags/ctags-history.h"
+#include "src/plugins/ctags/ctags-history.h"
 #include "lib/tty/key.h"
 #include "lib/strutil.h"
 #include "lib/util.h"

@@ -2264,12 +2264,10 @@ the paragraph, inserting the output of a command, inserting a character by its
 code point, inserting the date, decoding base64 and drawing tables.
 
 .PP
-Every script belongs to the
-\fBeditor\fP
-workspace. The system scripts are in
-\fB{{pkgdatadir}}/lua/scripts/editor/\fP,
+The system scripts are in
+\fB{{pkgdatadir}}/lua/scripts/\fP,
 and the scripts of the user in
-\fB~/.local/share/coole/lua/scripts/editor/\fP,
+\fB~/.local/share/coole/lua/scripts/\fP,
 one directory for every script, with its
 \fBlua.ini\fP
 and its
@@ -2687,7 +2685,7 @@ The skins that come with the program.
 The list of the codepages.
 
 .TP
-\fI{{pkgdatadir}}/lua/scripts/editor/*\fP
+\fI{{pkgdatadir}}/lua/scripts/*\fP
 The Lua scripts that come with the program.
 
 .TP
@@ -2695,7 +2693,7 @@ The Lua scripts that come with the program.
 Example scripts for the macros.
 
 .TP
-\fI{{editor_plugins_dir}}/\fP
+\fI{{plugins_dir}}/\fP
 The editor plugins that are loaded at run time.
 
 .TP
@@ -2754,7 +2752,7 @@ User's own syntax file.
 User's own skins.
 
 .TP
-\fI~/.local/share/coole/lua/scripts/editor/\fP
+\fI~/.local/share/coole/lua/scripts/\fP
 User's own Lua scripts.
 
 .TP

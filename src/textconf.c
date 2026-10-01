@@ -214,8 +214,8 @@ show_datadirs_extended (void)
     PRINTF_SECTION (_ ("Config directory:"), mc_global.sysconfig_dir);
     PRINTF_SECTION (_ ("Data directory:"), mc_global.share_data_dir);
 
-#ifdef MC_EDITOR_PLUGINS_DIR
-    print_plugins_in_dir (_ ("Editor plugins:"), MC_EDITOR_PLUGINS_DIR);
+#ifdef MC_PLUGINS_DIR
+    print_plugins_in_dir (_ ("Editor plugins:"), MC_PLUGINS_DIR);
 #endif
 #ifdef MC_RUNTIME_PLUGINS_DIR
     print_plugins_in_dir (_ ("Runtime plugins:"), MC_RUNTIME_PLUGINS_DIR);
@@ -248,11 +248,11 @@ show_datadirs_extended (void)
 #endif
     PRINTF_SECTION2 (_ ("Cache directory:"), mc_config_get_cache_path ());
 
-#ifdef MC_EDITOR_PLUGINS_DIR
+#ifdef MC_PLUGINS_DIR
     {
         gchar *user_lib_dir =
             g_build_filename (g_get_home_dir (), ".local", "lib", MC_USERCONF_DIR, (char *) NULL);
-        gchar *user_editor_dir = g_build_filename (user_lib_dir, "editor-plugins", (char *) NULL);
+        gchar *user_editor_dir = g_build_filename (user_lib_dir, "plugins", (char *) NULL);
 
         print_plugins_in_dir (_ ("Editor plugins:"), user_editor_dir);
         g_free (user_editor_dir);

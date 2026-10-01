@@ -40,16 +40,16 @@ libinternal_sources = files(
   'editor/format.c',
   'editor/syntax.c',
 
-  # src/editor-plugins/builtin-plugins.c is included by editor/editcmd.c
-  'editor-plugins/ctags/ctags-config.c',
-  'editor-plugins/ctags/ctags-fuzzy.c',
-  'editor-plugins/ctags/ctags-index.c',
-  'editor-plugins/ctags/ctags-parser.c',
-  'editor-plugins/ctags/ctags-plugin.c',
-  'editor-plugins/ctags/ctags-repository.c',
-  'editor-plugins/ctags/ctags-ui.c',
-  'editor-plugins/etags/etags.c',
-  'editor-plugins/spell/spell.c',
+  # src/plugins/builtin-plugins.c is included by editor/editcmd.c
+  'plugins/ctags/ctags-config.c',
+  'plugins/ctags/ctags-fuzzy.c',
+  'plugins/ctags/ctags-index.c',
+  'plugins/ctags/ctags-parser.c',
+  'plugins/ctags/ctags-plugin.c',
+  'plugins/ctags/ctags-repository.c',
+  'plugins/ctags/ctags-ui.c',
+  'plugins/etags/etags.c',
+  'plugins/spell/spell.c',
 )
 
 src_c_args = [
@@ -57,7 +57,7 @@ src_c_args = [
   '-DLIBEXECDIR="@0@/"'.format(pkglibexecdir),
   '-DDATADIR="@0@/"'.format(pkgdatadir),
   '-DLOCALEDIR="@0@"'.format(localedir),
-  '-DMC_EDITOR_PLUGINS_DIR="@0@"'.format(editor_plugins_dir),
+  '-DMC_PLUGINS_DIR="@0@"'.format(plugins_dir),
   '-DMC_RUNTIME_PLUGINS_DIR="@0@"'.format(runtime_plugins_dir),
   '-DMC_PKGDATADIR="@0@"'.format(pkgdatadir),
   '-DMC_SYSCONFDIR="@0@"'.format(sysconfdir),
@@ -110,13 +110,13 @@ coole = executable('coole',
 # the help of the editor plugins, installed beside the help of the editor so
 # that a dialog of a plugin can name its own file
 install_data(
-  'editor-plugins/ctags/ctags.md',
-  'editor-plugins/etags/etags.md',
-  'editor-plugins/spell/spell.md',
+  'plugins/ctags/ctags.md',
+  'plugins/etags/etags.md',
+  'plugins/spell/spell.md',
   install_dir: pkgdatadir / 'help',
 )
 if have_terminal
-  install_data('editor-plugins/terminal/terminal.md', install_dir: pkgdatadir / 'help')
+  install_data('plugins/terminal/terminal.md', install_dir: pkgdatadir / 'help')
 endif
 
 # The headers of the screen library, S-Lang or ncurses, which lib/tty/tty.h includes; not the
@@ -127,13 +127,13 @@ foreach d : screen_deps
 endforeach
 
 if have_terminal
-  subdir('editor-plugins/terminal')
+  subdir('plugins/terminal')
 endif
 
 if have_gmodule
-  subdir('editor-plugins/viewer')
+  subdir('plugins/viewer')
 endif
 
 if lua.found()
-  subdir('lua')
+  subdir('plugins/lua')
 endif

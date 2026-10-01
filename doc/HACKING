@@ -95,11 +95,10 @@ src - the program.
     runtime-host.c, runtime-screen.c
                  what the editor offers to the runtime plugins
     editor/      the editor itself
-    editor-plugins/
-                 the ctags, etags and spell plugins, built into the
-                 editor
+    plugins/     the plugins: ctags, etags and spell built into the
+                 editor; terminal and viewer, modules; lua, the Lua
+                 runtime plugin, with the Lua scripts in lua/scripts
     syntax/      the syntax highlighting engine
-    lua/         the Lua runtime plugin and the Lua scripts
 
 The editor code has been written by Paul Sheer, the author of
 Cooledit, and developed further by many contributors over the years.

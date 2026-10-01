@@ -33,9 +33,9 @@ pkgdatadir = datadir / package
 pkgsysconfdir = sysconfdir / package
 pkglibexecdir = libexecdir / package
 
-editor_plugins_dir = get_option('editor_plugins_dir')
-if editor_plugins_dir == ''
-  editor_plugins_dir = libdir / package / 'editor-plugins'
+plugins_dir = get_option('plugins_dir')
+if plugins_dir == ''
+  plugins_dir = libdir / package / 'plugins'
 endif
 runtime_plugins_dir = get_option('runtime_plugins_dir')
 if runtime_plugins_dir == ''

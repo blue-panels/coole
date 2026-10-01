@@ -302,7 +302,7 @@ msgstr ""
 msgid "Extended key prefix"
 msgstr ""
 
-#: lib/keybind.c:138 src/editor-plugins/ctags/ctags-plugin.c:1639
+#: lib/keybind.c:138 src/plugins/ctags/ctags-plugin.c:1639
 msgid "Find declaration"
 msgstr ""
 
@@ -322,7 +322,7 @@ msgstr ""
 msgid "Help index"
 msgstr ""
 
-#: lib/keybind.c:152 src/editor-plugins/ctags/ctags-plugin.c:1643
+#: lib/keybind.c:152 src/plugins/ctags/ctags-plugin.c:1643
 msgid "Go back"
 msgstr ""
 
@@ -1320,20 +1320,20 @@ msgid "Do you want clean this history?"
 msgstr ""
 
 #: lib/widget/quick.h:230 lib/widget/wtools.c:351
-#: src/editor-plugins/ctags/ctags-config.c:174
-#: src/editor-plugins/ctags/ctags-ui.c:362
-#: src/editor-plugins/ctags/ctags-ui.c:757
-#: src/editor-plugins/ctags/ctags-ui.c:884 src/editor/editsearch.c:164
+#: src/plugins/ctags/ctags-config.c:174
+#: src/plugins/ctags/ctags-ui.c:362
+#: src/plugins/ctags/ctags-ui.c:757
+#: src/plugins/ctags/ctags-ui.c:884 src/editor/editsearch.c:164
 #: src/editor/editsearch.c:1092 src/editor/editwidget.c:723
 #: src/keybind_dialog.c:650 src/keybind_dialog.c:655
 msgid "&OK"
 msgstr ""
 
-#: lib/widget/quick.h:231 src/editor-plugins/ctags/ctags-config.c:176
-#: src/editor-plugins/ctags/ctags-ui.c:365
-#: src/editor-plugins/ctags/ctags-ui.c:760
-#: src/editor-plugins/ctags/ctags-ui.c:887 src/editor-plugins/etags/etags.c:371
-#: src/editor-plugins/spell/spell.c:846 src/editor-plugins/spell/spell.c:854
+#: lib/widget/quick.h:231 src/plugins/ctags/ctags-config.c:176
+#: src/plugins/ctags/ctags-ui.c:365
+#: src/plugins/ctags/ctags-ui.c:760
+#: src/plugins/ctags/ctags-ui.c:887 src/plugins/etags/etags.c:371
+#: src/plugins/spell/spell.c:846 src/plugins/spell/spell.c:854
 #: src/editor/editcmd.c:297 src/editor/editcmd.c:401 src/editor/editcmd.c:424
 #: src/editor/editcmd.c:590 src/editor/editcmd.c:770 src/editor/editcmd.c:1313
 #: src/editor/editcmd.c:1394 src/editor/editcmd.c:1845
@@ -1480,365 +1480,365 @@ msgstr ""
 msgid "Arguments parse error!"
 msgstr ""
 
-#: src/editor-plugins/builtin-plugins.c:365
-#: src/editor-plugins/builtin-plugins.c:410
-#: src/editor-plugins/spell/spell.c:1667 src/editor-plugins/spell/spell.c:1748
-#: src/editor-plugins/spell/spell.c:1812
+#: src/plugins/builtin-plugins.c:365
+#: src/plugins/builtin-plugins.c:410
+#: src/plugins/spell/spell.c:1667 src/plugins/spell/spell.c:1748
+#: src/plugins/spell/spell.c:1812
 msgid "Spell"
 msgstr ""
 
-#: src/editor-plugins/builtin-plugins.c:366
-#: src/editor-plugins/builtin-plugins.c:411
-#: src/editor-plugins/spell/spell.c:1668
+#: src/plugins/builtin-plugins.c:366
+#: src/plugins/builtin-plugins.c:411
+#: src/plugins/spell/spell.c:1668
 msgid "Spell backend is unavailable."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-config.c:146
+#: src/plugins/ctags/ctags-config.c:146
 msgid "Ctags Configuration"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-config.c:149
+#: src/plugins/ctags/ctags-config.c:149
 msgid "Ctags executable:"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-config.c:155
+#: src/plugins/ctags/ctags-config.c:155
 msgid "Command line options:"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-config.c:163
+#: src/plugins/ctags/ctags-config.c:163
 msgid "Case sensitive filter"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-config.c:167
+#: src/plugins/ctags/ctags-config.c:167
 msgid "Auto-discover tags file in parent directories"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:358
+#: src/plugins/ctags/ctags-plugin.c:358
 #, c-format
 msgid "Cannot jump to %s:%ld."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:359
-#: src/editor-plugins/ctags/ctags-plugin.c:527
-#: src/editor-plugins/ctags/ctags-plugin.c:634
-#: src/editor-plugins/ctags/ctags-plugin.c:649
-#: src/editor-plugins/ctags/ctags-plugin.c:662
-#: src/editor-plugins/ctags/ctags-plugin.c:672
-#: src/editor-plugins/ctags/ctags-plugin.c:703
-#: src/editor-plugins/ctags/ctags-plugin.c:727
-#: src/editor-plugins/ctags/ctags-plugin.c:772
-#: src/editor-plugins/ctags/ctags-plugin.c:817
-#: src/editor-plugins/ctags/ctags-plugin.c:870
-#: src/editor-plugins/ctags/ctags-plugin.c:912
-#: src/editor-plugins/ctags/ctags-plugin.c:960
-#: src/editor-plugins/ctags/ctags-plugin.c:1292
-#: src/editor-plugins/ctags/ctags-plugin.c:1339
-#: src/editor-plugins/ctags/ctags-plugin.c:1345
-#: src/editor-plugins/ctags/ctags-plugin.c:1374
-#: src/editor-plugins/ctags/ctags-plugin.c:1401
-#: src/editor-plugins/ctags/ctags-plugin.c:1444
-#: src/editor-plugins/ctags/ctags-plugin.c:1458
-#: src/editor-plugins/ctags/ctags-plugin.c:1475
-#: src/editor-plugins/ctags/ctags-plugin.c:1493
-#: src/editor-plugins/ctags/ctags-plugin.c:1537
-#: src/editor-plugins/ctags/ctags-plugin.c:1664
-#: src/editor-plugins/ctags/ctags-ui.c:309
-#: src/editor-plugins/ctags/ctags-ui.c:704
+#: src/plugins/ctags/ctags-plugin.c:359
+#: src/plugins/ctags/ctags-plugin.c:527
+#: src/plugins/ctags/ctags-plugin.c:634
+#: src/plugins/ctags/ctags-plugin.c:649
+#: src/plugins/ctags/ctags-plugin.c:662
+#: src/plugins/ctags/ctags-plugin.c:672
+#: src/plugins/ctags/ctags-plugin.c:703
+#: src/plugins/ctags/ctags-plugin.c:727
+#: src/plugins/ctags/ctags-plugin.c:772
+#: src/plugins/ctags/ctags-plugin.c:817
+#: src/plugins/ctags/ctags-plugin.c:870
+#: src/plugins/ctags/ctags-plugin.c:912
+#: src/plugins/ctags/ctags-plugin.c:960
+#: src/plugins/ctags/ctags-plugin.c:1292
+#: src/plugins/ctags/ctags-plugin.c:1339
+#: src/plugins/ctags/ctags-plugin.c:1345
+#: src/plugins/ctags/ctags-plugin.c:1374
+#: src/plugins/ctags/ctags-plugin.c:1401
+#: src/plugins/ctags/ctags-plugin.c:1444
+#: src/plugins/ctags/ctags-plugin.c:1458
+#: src/plugins/ctags/ctags-plugin.c:1475
+#: src/plugins/ctags/ctags-plugin.c:1493
+#: src/plugins/ctags/ctags-plugin.c:1537
+#: src/plugins/ctags/ctags-plugin.c:1664
+#: src/plugins/ctags/ctags-ui.c:309
+#: src/plugins/ctags/ctags-ui.c:704
 msgid "Ctags"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:527
+#: src/plugins/ctags/ctags-plugin.c:527
 #, c-format
 msgid "Symbol '%s' not found in any loaded repository."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:538
+#: src/plugins/ctags/ctags-plugin.c:538
 msgid "Go to Declaration"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:591
+#: src/plugins/ctags/ctags-plugin.c:591
 msgid "Find Declaration"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:634
+#: src/plugins/ctags/ctags-plugin.c:634
 msgid "No word at cursor."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:649
+#: src/plugins/ctags/ctags-plugin.c:649
 #, c-format
 msgid "'%s' is not a known symbol."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:662
+#: src/plugins/ctags/ctags-plugin.c:662
 msgid "Failed to create temporary file."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:672
+#: src/plugins/ctags/ctags-plugin.c:672
 msgid "Failed to open temporary file."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:703
+#: src/plugins/ctags/ctags-plugin.c:703
 msgid "No indexed files found."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:727
+#: src/plugins/ctags/ctags-plugin.c:727
 msgid "Failed to run grep."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:772
+#: src/plugins/ctags/ctags-plugin.c:772
 #, c-format
 msgid "No references found for '%s'."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:777
-#: src/editor-plugins/ctags/ctags-ui.c:737
+#: src/plugins/ctags/ctags-plugin.c:777
+#: src/plugins/ctags/ctags-ui.c:737
 msgid "Find References"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:817
+#: src/plugins/ctags/ctags-plugin.c:817
 msgid "No repository loaded."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:838
-#: src/editor-plugins/ctags/ctags-ui.c:411
+#: src/plugins/ctags/ctags-plugin.c:838
+#: src/plugins/ctags/ctags-ui.c:411
 msgid "Search Symbol"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:870
+#: src/plugins/ctags/ctags-plugin.c:870
 msgid "No file is open."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:912
+#: src/plugins/ctags/ctags-plugin.c:912
 msgid "No tags found for the current file."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:917
+#: src/plugins/ctags/ctags-plugin.c:917
 msgid "Symbols in Current File"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:960
+#: src/plugins/ctags/ctags-plugin.c:960
 #, c-format
 msgid "No files matching '%s'."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:966
-#: src/editor-plugins/ctags/ctags-ui.c:420
+#: src/plugins/ctags/ctags-plugin.c:966
+#: src/plugins/ctags/ctags-ui.c:420
 msgid "Search File"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1056
+#: src/plugins/ctags/ctags-plugin.c:1056
 msgid "Complete Symbol"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1292
+#: src/plugins/ctags/ctags-plugin.c:1292
 #, c-format
 msgid "No members found for '%s'."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1339
+#: src/plugins/ctags/ctags-plugin.c:1339
 #, c-format
 msgid "Failed to load tags file: %s"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1345
+#: src/plugins/ctags/ctags-plugin.c:1345
 #, c-format
 msgid "Loaded %u symbols from %s"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1374
+#: src/plugins/ctags/ctags-plugin.c:1374
 #, c-format
 msgid "Cannot create temp file: %s"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1401
+#: src/plugins/ctags/ctags-plugin.c:1401
 #, c-format
 msgid "Cannot rename %s to %s: %s"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1432
+#: src/plugins/ctags/ctags-plugin.c:1432
 msgid "Ctags: Create Index"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1432
+#: src/plugins/ctags/ctags-plugin.c:1432
 msgid "Project root directory to index:"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1444
+#: src/plugins/ctags/ctags-plugin.c:1444
 #, c-format
 msgid "Failed to create index in %s"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1458
+#: src/plugins/ctags/ctags-plugin.c:1458
 #, c-format
 msgid "Indexed: %u symbols"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1475
+#: src/plugins/ctags/ctags-plugin.c:1475
 #, c-format
 msgid "Reindex failed for %s"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1493
+#: src/plugins/ctags/ctags-plugin.c:1493
 #, c-format
 msgid "Reindexed: %u symbols"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1537
+#: src/plugins/ctags/ctags-plugin.c:1537
 msgid "Navigation history is empty."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1541
+#: src/plugins/ctags/ctags-plugin.c:1541
 msgid "Navigation History"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1638
+#: src/plugins/ctags/ctags-plugin.c:1638
 msgid "Go to declaration"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1640
+#: src/plugins/ctags/ctags-plugin.c:1640
 msgid "Find references"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1641
+#: src/plugins/ctags/ctags-plugin.c:1641
 msgid "Complete symbol"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1642
+#: src/plugins/ctags/ctags-plugin.c:1642
 msgid "Navigation history"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1644
+#: src/plugins/ctags/ctags-plugin.c:1644
 msgid "Go forward"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1645
+#: src/plugins/ctags/ctags-plugin.c:1645
 msgid "Search symbol"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1646
+#: src/plugins/ctags/ctags-plugin.c:1646
 msgid "Search file"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1647
+#: src/plugins/ctags/ctags-plugin.c:1647
 msgid "Symbols in current file"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1648
+#: src/plugins/ctags/ctags-plugin.c:1648
 msgid "Class/struct members"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1649
+#: src/plugins/ctags/ctags-plugin.c:1649
 msgid "Load tags file"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1650
+#: src/plugins/ctags/ctags-plugin.c:1650
 msgid "Manage repositories"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1651
+#: src/plugins/ctags/ctags-plugin.c:1651
 msgid "Reindex repository"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1652
+#: src/plugins/ctags/ctags-plugin.c:1652
 msgid "Configuration"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1947
+#: src/plugins/ctags/ctags-plugin.c:1947
 msgid "Go to &declaration"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1948
+#: src/plugins/ctags/ctags-plugin.c:1948
 msgid "&Find declaration"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1949
+#: src/plugins/ctags/ctags-plugin.c:1949
 msgid "Find &references"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1951
+#: src/plugins/ctags/ctags-plugin.c:1951
 msgid "Navigation &history"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1952
+#: src/plugins/ctags/ctags-plugin.c:1952
 msgid "Go &back"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1953
+#: src/plugins/ctags/ctags-plugin.c:1953
 msgid "Go for&ward"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1955
+#: src/plugins/ctags/ctags-plugin.c:1955
 msgid "Class/struct &members"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1956
+#: src/plugins/ctags/ctags-plugin.c:1956
 msgid "&Search symbol"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1957
+#: src/plugins/ctags/ctags-plugin.c:1957
 msgid "S&ymbols in file"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-plugin.c:1958
+#: src/plugins/ctags/ctags-plugin.c:1958
 msgid "&Complete symbol"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:309
+#: src/plugins/ctags/ctags-ui.c:309
 msgid "No matching symbols found."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:328
+#: src/plugins/ctags/ctags-ui.c:328
 msgid "Select symbol"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:411
+#: src/plugins/ctags/ctags-ui.c:411
 msgid "Symbol name:"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:420
+#: src/plugins/ctags/ctags-ui.c:420
 msgid "File name or path:"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:429
+#: src/plugins/ctags/ctags-ui.c:429
 msgid "Class/Struct Members"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:429
+#: src/plugins/ctags/ctags-ui.c:429
 msgid "Scope name (class, struct, namespace):"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:439
+#: src/plugins/ctags/ctags-ui.c:439
 msgid "Load Tags File"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:439
+#: src/plugins/ctags/ctags-ui.c:439
 msgid "Tags file path:"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:463
+#: src/plugins/ctags/ctags-ui.c:463
 msgid "Manage Tag Repositories"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:476
+#: src/plugins/ctags/ctags-ui.c:476
 msgid "(unknown)"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:485 src/editor/editmenu.c:232
+#: src/plugins/ctags/ctags-ui.c:485 src/editor/editmenu.c:232
 #: src/key_learn.c:646 src/key_learn.c:656 src/key_sniffer.c:240
 #: src/keybind_dialog.c:1144 src/keybind_dialog.c:1157 src/manage_plugins.c:514
 #: src/manage_plugins.c:958
 msgid "&Close"
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:704
+#: src/plugins/ctags/ctags-ui.c:704
 msgid "No references found."
 msgstr ""
 
-#: src/editor-plugins/ctags/ctags-ui.c:861
+#: src/plugins/ctags/ctags-ui.c:861
 msgid "Members"
 msgstr ""
 
-#: src/editor-plugins/etags/etags.c:368 src/editor/edit.c:392
+#: src/plugins/etags/etags.c:368 src/editor/edit.c:392
 #: src/editor/editcmd.c:400 src/editor/editcmd.c:422 src/editor/editcmd.c:588
 #: src/editor/editcmd.c:768 src/editor/editcmd.c:1312 src/editor/editcmd.c:2279
 #: src/editor/editcmd.c:2308 src/help.c:755 src/key_learn.c:420
@@ -1846,69 +1846,69 @@ msgstr ""
 msgid "Warning"
 msgstr ""
 
-#: src/editor-plugins/etags/etags.c:369 src/editor/editcmd.c:2280
+#: src/plugins/etags/etags.c:369 src/editor/editcmd.c:2280
 #: src/editor/editcmd.c:2309
 msgid ""
 "Current text was modified without a file save.\n"
 "Continue discards these changes."
 msgstr ""
 
-#: src/editor-plugins/etags/etags.c:371 src/editor/editcmd.c:590
+#: src/plugins/etags/etags.c:371 src/editor/editcmd.c:590
 #: src/editor/editcmd.c:770 src/editor/editcmd.c:2282 src/editor/editcmd.c:2311
 msgid "C&ontinue"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:839
+#: src/plugins/spell/spell.c:839
 msgid "&Add word"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:843 src/editor/editsearch.c:853
+#: src/plugins/spell/spell.c:843 src/editor/editsearch.c:853
 msgid "&Replace"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:845 src/editor-plugins/spell/spell.c:853
+#: src/plugins/spell/spell.c:845 src/plugins/spell/spell.c:853
 #: src/editor/editsearch.c:855
 msgid "&Skip"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:865
+#: src/plugins/spell/spell.c:865
 msgid "Language"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:866
+#: src/plugins/spell/spell.c:866
 msgid "Misspelled"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:874
+#: src/plugins/spell/spell.c:874
 msgid "Check word"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:881
+#: src/plugins/spell/spell.c:881
 msgid "Suggest"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:885
+#: src/plugins/spell/spell.c:885
 msgid "(no suggestions)"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1194
+#: src/plugins/spell/spell.c:1194
 msgid ""
 "The hunspell library is not installed.\n"
 "Install it, and a dictionary for the language you write in."
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1204
+#: src/plugins/spell/spell.c:1204
 msgid ""
 "The aspell library is not installed.\n"
 "Install it, and a dictionary for the language you write in."
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1215 src/editor-plugins/spell/spell.c:1359
+#: src/plugins/spell/spell.c:1215 src/plugins/spell/spell.c:1359
 #: src/textconf.c:199
 msgid "none"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1251
+#: src/plugins/spell/spell.c:1251
 #, c-format
 msgid ""
 "Aspell has no dictionary for \"%s\".\n"
@@ -1916,7 +1916,7 @@ msgid ""
 "Install a dictionary, then set Language to the name it goes by."
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1368
+#: src/plugins/spell/spell.c:1368
 #, c-format
 msgid ""
 "Hunspell has no dictionary for \"%s\".\n"
@@ -1924,45 +1924,45 @@ msgid ""
 "Install a dictionary, then set Language to the name it goes by."
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1534
+#: src/plugins/spell/spell.c:1534
 msgid ""
 "Spell checking is off.\n"
 "Set a language in the Spell plugin settings to turn it on."
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1638
+#: src/plugins/spell/spell.c:1638
 msgid "Add word"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1638
+#: src/plugins/spell/spell.c:1638
 msgid "Word to add to the dictionary:"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1738
+#: src/plugins/spell/spell.c:1738
 msgid "Aspell"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1739
+#: src/plugins/spell/spell.c:1739
 msgid "Hunspell"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1744
+#: src/plugins/spell/spell.c:1744
 msgid "Engine"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1749
+#: src/plugins/spell/spell.c:1749
 msgid "Language:"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1752
+#: src/plugins/spell/spell.c:1752
 msgid "&Select..."
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1761
+#: src/plugins/spell/spell.c:1761
 msgid "Spell plugin settings"
 msgstr ""
 
-#: src/editor-plugins/spell/spell.c:1839
+#: src/plugins/spell/spell.c:1839
 msgid "Select language"
 msgstr ""
 

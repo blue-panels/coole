@@ -439,7 +439,7 @@ A rendszerszintű billentyűk és felhasználói menü.
 A rendszerszintű szintaxisfájlok.
 
 .TP
-\fI{{editor_plugins_dir}}/\fP
+\fI{{plugins_dir}}/\fP
 A szerkesztő bővítményei.
 
 .TP
@@ -450,7 +450,7 @@ A felhasználó saját beállításai, billentyűi és menüje.
 \fI~/.local/share/coole/\fP
 A felhasználó előzményei, fájlpozíciói, vágólapja (clipboard), makrói
 (macros, macros.d/), szintaxisa (syntax/Syntax), témái (skins/) és
-Lua\-szkriptjei (lua/scripts/editor/).
+Lua\-szkriptjei (lua/scripts/).
 
 .TP
 \fI~/.cache/coole/\fP

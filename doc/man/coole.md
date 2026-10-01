@@ -1917,12 +1917,10 @@ Several commands of the editor are such scripts: sorting the lines, formatting
 the paragraph, inserting the output of a command, inserting a character by its
 code point, inserting the date, decoding base64 and drawing tables.
 
-Every script belongs to the
-**editor**
-workspace. The system scripts are in
-**{{pkgdatadir}}/lua/scripts/editor/**,
+The system scripts are in
+**{{pkgdatadir}}/lua/scripts/**,
 and the scripts of the user in
-**~/.local/share/coole/lua/scripts/editor/**,
+**~/.local/share/coole/lua/scripts/**,
 one directory for every script, with its
 **lua.ini**
 and its
@@ -2267,13 +2265,13 @@ is missing.
 *{{pkgdatadir}}/charsets*
 : The list of the codepages.
 
-*{{pkgdatadir}}/lua/scripts/editor/\**
+*{{pkgdatadir}}/lua/scripts/\**
 : The Lua scripts that come with the program.
 
 *{{pkgdatadir}}/examples/macros.d/\**
 : Example scripts for the macros.
 
-*{{editor_plugins_dir}}/*
+*{{plugins_dir}}/*
 : The editor plugins that are loaded at run time.
 
 *~/.config/coole/ini*
@@ -2318,7 +2316,7 @@ current directory, it is used instead of the home or system-wide menu.
 *~/.local/share/coole/skins/*
 : User's own skins.
 
-*~/.local/share/coole/lua/scripts/editor/*
+*~/.local/share/coole/lua/scripts/*
 : User's own Lua scripts.
 
 *~/.cache/coole/block*

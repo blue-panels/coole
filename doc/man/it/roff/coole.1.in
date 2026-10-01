@@ -437,7 +437,7 @@ I tasti e il menu utente di sistema.
 I file di sintassi di sistema.
 
 .TP
-\fI{{editor_plugins_dir}}/\fP
+\fI{{plugins_dir}}/\fP
 I componenti aggiuntivi dell'editor.
 
 .TP
@@ -448,7 +448,7 @@ Le impostazioni, i tasti e il menu utente propri.
 \fI~/.local/share/coole/\fP
 La cronologia, le posizioni dei file, gli appunti (clipboard), le macro
 (macros, macros.d/), la sintassi (syntax/Syntax), i temi (skins/) e gli script
-Lua (lua/scripts/editor/) dell'utente.
+Lua (lua/scripts/) dell'utente.
 
 .TP
 \fI~/.cache/coole/\fP

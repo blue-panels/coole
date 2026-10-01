@@ -18,7 +18,7 @@ b2sums=('@B2SUMS@')
 build() {
   arch-meson "coole-${pkgver}" build \
     -Dscreen=slang \
-    -Deditor_plugins_dir=/usr/lib/coole/editor-plugins \
+    -Dplugins_dir=/usr/lib/coole/plugins \
     -Druntime_plugins_dir=/usr/lib/coole/runtime-plugins \
     -Dlua=enabled
   meson compile -C build

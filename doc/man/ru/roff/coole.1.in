@@ -2243,12 +2243,10 @@ coole понимает "\ee[[1;6D" как Ctrl\-Alt\-Left.
 вставка даты, декодирование base64 и рисование таблиц.
 
 .PP
-Каждый скрипт относится к рабочей области
-\fBeditor\fP\&.
 Системные скрипты лежат в
-\fB{{pkgdatadir}}/lua/scripts/editor/\fP,
+\fB{{pkgdatadir}}/lua/scripts/\fP,
 а скрипты пользователя \- в
-\fB~/.local/share/coole/lua/scripts/editor/\fP,
+\fB~/.local/share/coole/lua/scripts/\fP,
 по каталогу на скрипт, со своими
 \fBlua.ini\fP
 и
@@ -2658,7 +2656,7 @@ editor_show_control_chars=0 каждый из них занимает одну �
 Список кодовых страниц.
 
 .TP
-\fI{{pkgdatadir}}/lua/scripts/editor/*\fP
+\fI{{pkgdatadir}}/lua/scripts/*\fP
 Lua\-скрипты, которые поставляются с программой.
 
 .TP
@@ -2666,7 +2664,7 @@ Lua\-скрипты, которые поставляются с программ
 Примеры скриптов для макросов.
 
 .TP
-\fI{{editor_plugins_dir}}/\fP
+\fI{{plugins_dir}}/\fP
 Плагины редактора, загружаемые при работе.
 
 .TP
@@ -2725,7 +2723,7 @@ Lua\-скрипты, которые поставляются с программ
 Собственные скины пользователя.
 
 .TP
-\fI~/.local/share/coole/lua/scripts/editor/\fP
+\fI~/.local/share/coole/lua/scripts/\fP
 Собственные Lua\-скрипты пользователя.
 
 .TP

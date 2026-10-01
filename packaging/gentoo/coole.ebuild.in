@@ -37,7 +37,7 @@ BDEPEND="
 src_configure() {
 	local emesonargs=(
 		-Dscreen="$(usex slang slang ncurses)"
-		-Deditor_plugins_dir="/usr/$(get_libdir)/coole/editor-plugins"
+		-Dplugins_dir="/usr/$(get_libdir)/coole/plugins"
 		-Druntime_plugins_dir="/usr/$(get_libdir)/coole/runtime-plugins"
 		$(meson_feature gpm)
 		$(meson_feature lua)

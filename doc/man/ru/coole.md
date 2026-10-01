@@ -1896,12 +1896,10 @@ coole понимает "\\e[[1;6D" как Ctrl-Alt-Left.
 форматирование абзаца, вставка вывода команды, вставка символа по его коду,
 вставка даты, декодирование base64 и рисование таблиц.
 
-Каждый скрипт относится к рабочей области
-**editor**.
 Системные скрипты лежат в
-**{{pkgdatadir}}/lua/scripts/editor/**,
+**{{pkgdatadir}}/lua/scripts/**,
 а скрипты пользователя - в
-**~/.local/share/coole/lua/scripts/editor/**,
+**~/.local/share/coole/lua/scripts/**,
 по каталогу на скрипт, со своими
 **lua.ini**
 и
@@ -2238,13 +2236,13 @@ editor_show_control_chars=0 каждый из них занимает одну �
 *{{pkgdatadir}}/charsets*
 : Список кодовых страниц.
 
-*{{pkgdatadir}}/lua/scripts/editor/\**
+*{{pkgdatadir}}/lua/scripts/\**
 : Lua-скрипты, которые поставляются с программой.
 
 *{{pkgdatadir}}/examples/macros.d/\**
 : Примеры скриптов для макросов.
 
-*{{editor_plugins_dir}}/*
+*{{plugins_dir}}/*
 : Плагины редактора, загружаемые при работе.
 
 *~/.config/coole/ini*
@@ -2289,7 +2287,7 @@ editor_show_control_chars=0 каждый из них занимает одну �
 *~/.local/share/coole/skins/*
 : Собственные скины пользователя.
 
-*~/.local/share/coole/lua/scripts/editor/*
+*~/.local/share/coole/lua/scripts/*
 : Собственные Lua-скрипты пользователя.
 
 *~/.cache/coole/block*

@@ -33,7 +33,7 @@
 #include "lib/mcconfig.h"
 #include "lib/widget.h"
 
-#include "src/editor-plugins/ctags/ctags-history.h"
+#include "src/plugins/ctags/ctags-history.h"
 
 #include "ctags-config.h"
 

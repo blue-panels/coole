@@ -28,7 +28,7 @@ done
 test "$count" -gt 0 || { echo "no runtime plugin in $dir" >&2; exit 1; }
 
 for script in insert-datetime sort-selection format-paragraph; do
-    test -f "/usr/share/coole/lua/scripts/editor/$script/init.lua" \
+    test -f "/usr/share/coole/lua/scripts/$script/init.lua" \
         || { echo "missing editor script: $script" >&2; exit 1; }
 done
 echo "lua runtime and scripts in place"

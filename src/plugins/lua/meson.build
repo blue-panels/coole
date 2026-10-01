@@ -11,9 +11,9 @@ mc_lua = shared_module('mc-lua',
   install_dir: runtime_plugins_dir,
 )
 
-install_subdir('scripts/editor', install_dir: lua_scripts_dir)
+install_subdir('scripts', install_dir: lua_scripts_dir, strip_directory: true)
 # the modules any script may require
 install_subdir('lib', install_dir: lua_modules_dir, strip_directory: true)
 
 # teaching examples: installed for reference only, never loaded by the engine
-install_subdir('examples/editor', install_dir: pkgdatadir / 'lua' / 'examples')
+install_subdir('examples', install_dir: pkgdatadir / 'lua' / 'examples', strip_directory: true)

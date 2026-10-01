@@ -431,7 +431,7 @@ Systemowe klawisze i menu użytkownika.
 Systemowe pliki składni.
 
 .TP
-\fI{{editor_plugins_dir}}/\fP
+\fI{{plugins_dir}}/\fP
 Wtyczki edytora.
 
 .TP
@@ -442,7 +442,7 @@ Własne ustawienia, klawisze i menu użytkownika.
 \fI~/.local/share/coole/\fP
 Historia, pozycje w plikach, schowek (clipboard), makra (macros,
 macros.d/), składnia (syntax/Syntax), skórki (skins/) i skrypty Lua
-(lua/scripts/editor/) użytkownika.
+(lua/scripts/) użytkownika.
 
 .TP
 \fI~/.cache/coole/\fP

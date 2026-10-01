@@ -38,8 +38,8 @@
 #include "lib/extension-runtime.h"
 #include "lib/plugin-prefs.h"
 
-#include "src/editor-plugins/builtin-plugins.h"  // editor_plugins_register_all
-#include "src/editor/edit.h"                     // edit_file_at_line()
+#include "src/plugins/builtin-plugins.h"  // editor_plugins_register_all
+#include "src/editor/edit.h"              // edit_file_at_line()
 
 #include "manage_plugins.h"
 

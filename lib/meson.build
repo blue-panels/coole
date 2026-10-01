@@ -106,7 +106,7 @@ libmc_deps = [glib_dep, screen_deps, gpm, x11_dep]
 libmc = static_library('mc',
   libmc_sources, version_h,
   c_args: [
-    '-DMC_EDITOR_PLUGINS_DIR="@0@"'.format(editor_plugins_dir),
+    '-DMC_PLUGINS_DIR="@0@"'.format(plugins_dir),
     '-DMC_RUNTIME_PLUGINS_DIR="@0@"'.format(runtime_plugins_dir),
   ],
   dependencies: libmc_deps,

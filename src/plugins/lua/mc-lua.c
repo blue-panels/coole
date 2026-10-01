@@ -23,7 +23,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** \file src/lua/mc-lua.c
+/** \file src/plugins/lua/mc-lua.c
  *  \brief Source: optional Lua implementation of the runtime extension ABI
  */
 
@@ -62,8 +62,8 @@
 #define MC_LUA_ID_MAX_LENGTH  64
 #define MC_LUA_MANIFEST_FILE  "lua.ini"
 #define MC_LUA_MANIFEST_GROUP "Lua"
-/* The workspace of every package: the editor, whose scripts live in the
-   "editor" directory of a script root. */
+/* The workspace of every package: the editor.  The packages are the directories of a script
+   root, scripts/<id>/. */
 #define MC_LUA_EDITOR_WORKSPACE "editor"
 #define MC_LUA_REGISTRY_PACKAGE "mc.lua.package"
 #define MC_LUA_REGISTRY_MODULES "mc.lua.modules"
@@ -5024,15 +5024,11 @@ static void
 mc_lua_discover_script_root (const char *directory, mc_lua_package_origin_t origin,
                              GHashTable *candidates)
 {
-    char *workspace_directory;
-
     if (directory == NULL)
         return;
 
-    workspace_directory = g_build_filename (directory, MC_LUA_EDITOR_WORKSPACE, (char *) NULL);
-    mc_lua_discover_workspace_directory (workspace_directory, origin, MC_LUA_EDITOR_WORKSPACE,
-                                         candidates);
-    g_free (workspace_directory);
+    // a package is a directory right in the root: every one is of the editor
+    mc_lua_discover_workspace_directory (directory, origin, MC_LUA_EDITOR_WORKSPACE, candidates);
 }
 
 /* --------------------------------------------------------------------------------------------- */

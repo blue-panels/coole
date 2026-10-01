@@ -50,19 +50,16 @@ during a session.
 ## Script layout
 
 System scripts live in `${datadir}/coole/lua/scripts/`; user scripts live in
-`${XDG_DATA_HOME:-~/.local/share}/coole/lua/scripts/`.  Every script belongs to
-the `editor` workspace and lives in the `editor/` directory immediately below
-`scripts/`:
+`${XDG_DATA_HOME:-~/.local/share}/coole/lua/scripts/`.  A script is a directory
+right below `scripts/`:
 
 ```text
-scripts/editor/base64-decode/lua.ini
-scripts/editor/base64-decode/init.lua
-scripts/editor/base64-decode/lib/format.lua       # optional
+scripts/base64-decode/lua.ini
+scripts/base64-decode/init.lua
+scripts/base64-decode/lib/format.lua       # optional
 ```
 
-The workspace is not a `lua.ini` property.  A top-level directory such as
-`scripts/my-script/`, or one in any other directory below `scripts/`, is not
-discovered; place it under `scripts/editor/` instead.
+A directory deeper below `scripts/` is not discovered.
 
 The script manifest is named `lua.ini`.  It must contain:
 
@@ -376,8 +373,8 @@ may be combined.  For example:
 script ID.
 
 The teaching example `notify-editor-save` is installed under
-`PREFIX/share/coole/lua/examples/editor/`; coole never loads scripts from
-there.  Copy an example into `~/.local/share/coole/lua/scripts/editor/` to try
+`PREFIX/share/coole/lua/examples/`; coole never loads scripts from
+there.  Copy an example into `~/.local/share/coole/lua/scripts/` to try
 it, and copy an installed script before adapting it, so system updates do not
 overwrite local changes.
 
@@ -408,7 +405,7 @@ the answer as a table; a string that is not UTF-8 goes as the bytes it
 is.  `service:on(signal, fn)` calls `fn(args, signal)` when the service
 tells of something, `"*"` for any signal; `service:off(id)` stops it.
 The methods a service has are listed where it is described; those of the
-viewer are in `src/editor-plugins/viewer/viewer.c` and in `doc/PLUGINS`.
+viewer are in `src/plugins/viewer/viewer.c` and in `doc/PLUGINS`.
 
 A script can render a type of file for the Preview of the viewer.  The
 viewer asks the renderers what types they know with the signal `types`,

@@ -1,5 +1,5 @@
 /*
-   src/editor-plugins/ctags - tests for the ctags file parser
+   src/plugins/ctags - tests for the ctags file parser
 
    Copyright (C) 2026
    Free Software Foundation, Inc.
@@ -23,7 +23,7 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#define TEST_SUITE_NAME "/src/editor-plugins/ctags"
+#define TEST_SUITE_NAME "/src/plugins/ctags"
 
 #include "tests/mctest.h"
 
@@ -31,7 +31,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include "src/editor-plugins/ctags/ctags-parser.h"
+#include "src/plugins/ctags/ctags-parser.h"
 
 /* --------------------------------------------------------------------------------------------- */
 

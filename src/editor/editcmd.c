@@ -72,13 +72,13 @@
 #include "editwidget.h"
 #include "editcmd_private.h"
 #include "editsearch.h"
-#include "src/editor-plugins/builtin-plugins.h"
+#include "src/plugins/builtin-plugins.h"
 
 /*
  * Temporary wiring: compile builtin editor plugins implementation from its own
  * source tree without changing autotools files in this step.
  */
-#include "src/editor-plugins/builtin-plugins.c"
+#include "src/plugins/builtin-plugins.c"
 
 /*** global variables ****************************************************************************/
 

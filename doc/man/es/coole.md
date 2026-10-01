@@ -362,7 +362,7 @@ Código        Código numérico interno
 *{{pkgdatadir}}/syntax/\**
 : Los archivos de sintaxis generales.
 
-*{{editor_plugins_dir}}/*
+*{{plugins_dir}}/*
 : Los complementos del editor.
 
 *~/.config/coole/ini*, *~/.config/coole/keymap.ini*, *~/.config/coole/menu*
@@ -371,7 +371,7 @@ Código        Código numérico interno
 *~/.local/share/coole/*
 : El historial, las posiciones de los archivos, el portapapeles
 (clipboard), las macros (macros, macros.d/), la sintaxis (syntax/Syntax), los
-temas (skins/) y los guiones Lua (lua/scripts/editor/) del usuario.
+temas (skins/) y los guiones Lua (lua/scripts/) del usuario.
 
 *~/.cache/coole/*
 : El archivo de bloque (block) y los temporales del editor.

@@ -147,9 +147,9 @@ listed there as well.
 -Dassert=true|false
      Keep the GLib assertions (on by default).
 
--Deditor_plugins_dir=DIR
+-Dplugins_dir=DIR
      The directory where coole looks for dynamic editor plugins at run
-     time [default=LIBDIR/coole/editor-plugins].  A dynamic editor
+     time [default=LIBDIR/coole/plugins].  A dynamic editor
      plugin is a shared object that exports the
      mc_editor_plugin_register symbol; see doc/PLUGINS.
 

@@ -443,7 +443,7 @@ Las teclas y el menú de usuario generales.
 Los archivos de sintaxis generales.
 
 .TP
-\fI{{editor_plugins_dir}}/\fP
+\fI{{plugins_dir}}/\fP
 Los complementos del editor.
 
 .TP
@@ -454,7 +454,7 @@ La configuración, las teclas y el menú de usuario propios.
 \fI~/.local/share/coole/\fP
 El historial, las posiciones de los archivos, el portapapeles
 (clipboard), las macros (macros, macros.d/), la sintaxis (syntax/Syntax), los
-temas (skins/) y los guiones Lua (lua/scripts/editor/) del usuario.
+temas (skins/) y los guiones Lua (lua/scripts/) del usuario.
 
 .TP
 \fI~/.cache/coole/\fP

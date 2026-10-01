@@ -50,13 +50,13 @@ if have_gmodule
     test('lua_runtime',
       executable('lua_runtime', 'lua_runtime.c',
         c_args: test_c_args + [
-          '-DTEST_LUA_RUNTIME_DIR="@0@"'.format(meson.project_build_root() / 'src' / 'lua'),
-          '-DTEST_LUA_EDITOR_SCRIPTS_DIR="@0@"'.format(
-            meson.project_source_root() / 'src' / 'lua' / 'scripts' / 'editor'),
+          '-DTEST_LUA_RUNTIME_DIR="@0@"'.format(meson.project_build_root() / 'src' / 'plugins' / 'lua'),
+          '-DTEST_LUA_SCRIPTS_DIR="@0@"'.format(
+            meson.project_source_root() / 'src' / 'plugins' / 'lua' / 'scripts'),
           '-DTEST_LUA_MODULES_DIR="@0@"'.format(
-            meson.project_source_root() / 'src' / 'lua' / 'lib'),
-          '-DTEST_LUA_EDITOR_EXAMPLES_DIR="@0@"'.format(
-            meson.project_source_root() / 'src' / 'lua' / 'examples' / 'editor'),
+            meson.project_source_root() / 'src' / 'plugins' / 'lua' / 'lib'),
+          '-DTEST_LUA_EXAMPLES_DIR="@0@"'.format(
+            meson.project_source_root() / 'src' / 'plugins' / 'lua' / 'examples'),
         ],
         dependencies: test_lib_deps),
       depends: mc_lua,

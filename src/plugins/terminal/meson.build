@@ -1,4 +1,4 @@
-# The terminal plugin: a module the editor loads at run time from editor_plugins_dir, as any other
+# The terminal plugin: a module the editor loads at run time from plugins_dir, as any other
 # editor plugin.  It calls the functions of the editor, which the program exports.
 
 # the terminal of mc, as it is there: the shell on a pty, and the emulator of the terminal, which
@@ -29,5 +29,5 @@ terminal_module = shared_module('terminal',
   dependencies: [glib_dep, intl, terminal_dep, screen_headers],
   link_whole: libmcterm,
   install: true,
-  install_dir: editor_plugins_dir,
+  install_dir: plugins_dir,
 )

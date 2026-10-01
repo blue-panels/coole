@@ -356,7 +356,7 @@ Utile per capire i problemi con i tasti del terminale.
 *{{pkgdatadir}}/syntax/\**
 : I file di sintassi di sistema.
 
-*{{editor_plugins_dir}}/*
+*{{plugins_dir}}/*
 : I componenti aggiuntivi dell'editor.
 
 *~/.config/coole/ini*, *~/.config/coole/keymap.ini*, *~/.config/coole/menu*
@@ -365,7 +365,7 @@ Utile per capire i problemi con i tasti del terminale.
 *~/.local/share/coole/*
 : La cronologia, le posizioni dei file, gli appunti (clipboard), le macro
 (macros, macros.d/), la sintassi (syntax/Syntax), i temi (skins/) e gli script
-Lua (lua/scripts/editor/) dell'utente.
+Lua (lua/scripts/) dell'utente.
 
 *~/.cache/coole/*
 : Il file del blocco (block) e i file temporanei dell'editor.

@@ -707,7 +707,7 @@ md_substitute (GString *text)
         { "{{pkgdatadir}}", MC_PKGDATADIR },
         { "{{sysconfdir}}", MC_SYSCONFDIR },
         { "{{pkglibexecdir}}", MC_PKGLIBEXECDIR },
-        { "{{editor_plugins_dir}}", MC_EDITOR_PLUGINS_DIR },
+        { "{{plugins_dir}}", MC_PLUGINS_DIR },
         { "{{bindir}}", MC_BINDIR },
     };
 

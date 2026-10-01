@@ -512,8 +512,8 @@ line!
    An editor plugin is a shared library that adds commands to the
    editor menus, for example the ctags source navigator.  The ctags,
    etags and spell plugins are built into the program; others are
-   loaded from $libdir/coole/editor-plugins and from
-   ~/.local/lib/coole/editor-plugins.  doc/PLUGINS in the source
+   loaded from $libdir/coole/plugins and from
+   ~/.local/lib/coole/plugins.  doc/PLUGINS in the source
    distribution describes how to write one.
 
    Lua scripts are smaller and need no compiler.  They live in

@@ -47,10 +47,8 @@ static char *config_dir = NULL;
 static char *data_dir = NULL;
 static char *system_scripts_dir = NULL;
 static char *user_scripts_dir = NULL;
-static char *system_editor_scripts_dir = NULL;
 static char *system_modules_dir = NULL;
 static char *user_modules_dir = NULL;
-static char *user_editor_scripts_dir = NULL;
 static char *output_path = NULL;
 static char *ui_status_text = NULL;
 static char *ui_message_title = NULL;
@@ -236,7 +234,7 @@ test_screen_run (mc_runtime_plugin_context_t *context,
 static void
 create_settings_script (void)
 {
-    char *root = g_build_filename (user_editor_scripts_dir, "with-settings", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "with-settings", (char *) NULL);
     char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
     char *mark_path = g_build_filename (root, "shown.txt", (char *) NULL);
@@ -354,12 +352,12 @@ create_test_packages (void)
 {
     (void) g_remove (output_path);
 
-    create_script (system_editor_scripts_dir, "alpha", "system-alpha", FALSE);
-    create_script (user_editor_scripts_dir, "alpha", "user-alpha", FALSE);
-    create_script (user_editor_scripts_dir, "beta", "user-beta", FALSE);
-    create_script (user_editor_scripts_dir, "off", "off", TRUE);
-    create_editor_script (system_editor_scripts_dir, "editor-global");
-    create_editor_script (user_editor_scripts_dir, "editor-user");
+    create_script (system_scripts_dir, "alpha", "system-alpha", FALSE);
+    create_script (user_scripts_dir, "alpha", "user-alpha", FALSE);
+    create_script (user_scripts_dir, "beta", "user-beta", FALSE);
+    create_script (user_scripts_dir, "off", "off", TRUE);
+    create_editor_script (system_scripts_dir, "editor-global");
+    create_editor_script (user_scripts_dir, "editor-user");
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -372,7 +370,7 @@ create_event_shape_script (void)
     char *entry_path;
     char *script;
 
-    root = g_build_filename (user_editor_scripts_dir, "event-shapes", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "event-shapes", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -446,7 +444,7 @@ create_ui_script (void)
     char *ini_path;
     char *entry_path;
 
-    root = g_build_filename (user_editor_scripts_dir, "ui-test", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "ui-test", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -508,7 +506,7 @@ create_error_script (void)
     char *ini_path;
     char *entry_path;
 
-    root = g_build_filename (user_editor_scripts_dir, "error-test", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "error-test", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -536,7 +534,7 @@ create_object_script (void)
     char *ini_path;
     char *entry_path;
 
-    root = g_build_filename (user_editor_scripts_dir, "object-test", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "object-test", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -617,7 +615,7 @@ create_macro_script (void)
     char *entry_path;
     char *script;
 
-    root = g_build_filename (user_editor_scripts_dir, "macro-test", (char *) NULL);
+    root = g_build_filename (user_scripts_dir, "macro-test", (char *) NULL);
     ck_assert_int_eq (g_mkdir_with_parents (root, 0700), 0);
     ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -726,7 +724,7 @@ test_ui_dialog (const mc_runtime_dialog_t *dialog, mc_runtime_dialog_result_t *r
     if (g_strcmp0 (dialog->title, "Settings probe") == 0)
     {
         char *expected =
-            g_build_filename (user_editor_scripts_dir, "with-settings", "help.md", (char *) NULL);
+            g_build_filename (user_scripts_dir, "with-settings", "help.md", (char *) NULL);
 
         ck_assert_str_eq (dialog->help_node, "[Probe]");
         ck_assert_str_eq (dialog->help_file, expected);
@@ -1535,7 +1533,7 @@ END_TEST
 static void
 create_screen_script (void)
 {
-    char *root = g_build_filename (user_editor_scripts_dir, "screen", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "screen", (char *) NULL);
     char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
 
@@ -1627,7 +1625,7 @@ test_echo_service (void *data, const char *method, GVariant *args, GError **err)
 static void
 create_service_script (void)
 {
-    char *root = g_build_filename (user_editor_scripts_dir, "service", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "service", (char *) NULL);
     char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
 
@@ -1687,9 +1685,8 @@ END_TEST
 /* The view of JSON of the Preview: its lib/, as it ships, read by a script that checks it */
 START_TEST (test_lua_render_json_view)
 {
-    char *source =
-        g_build_filename (TEST_LUA_EDITOR_SCRIPTS_DIR, "render-json", "lib", (char *) NULL);
-    char *root = g_build_filename (user_editor_scripts_dir, "json-check", (char *) NULL);
+    char *source = g_build_filename (TEST_LUA_SCRIPTS_DIR, "render-json", "lib", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "json-check", (char *) NULL);
     char *lib = g_build_filename (root, "lib", (char *) NULL);
     char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -1760,9 +1757,8 @@ END_TEST
 /* The view of XML of the Preview: its lib/, as it ships, read by a script that checks it */
 START_TEST (test_lua_render_xml_view)
 {
-    char *source =
-        g_build_filename (TEST_LUA_EDITOR_SCRIPTS_DIR, "render-xml", "lib", (char *) NULL);
-    char *root = g_build_filename (user_editor_scripts_dir, "xml-check", (char *) NULL);
+    char *source = g_build_filename (TEST_LUA_SCRIPTS_DIR, "render-xml", "lib", (char *) NULL);
+    char *root = g_build_filename (user_scripts_dir, "xml-check", (char *) NULL);
     char *lib = g_build_filename (root, "lib", (char *) NULL);
     char *ini_path = g_build_filename (root, "lua.ini", (char *) NULL);
     char *entry_path = g_build_filename (root, "init.lua", (char *) NULL);
@@ -1860,8 +1856,7 @@ START_TEST (test_lua_package_settings_are_shown_on_request)
     ck_assert_str_eq (settings_error, "package_not_found");
 
     /* the handler ran twice, once for each call that found it */
-    mark_path =
-        g_build_filename (user_editor_scripts_dir, "with-settings", "shown.txt", (char *) NULL);
+    mark_path = g_build_filename (user_scripts_dir, "with-settings", "shown.txt", (char *) NULL);
     mctest_assert_true (g_file_get_contents (mark_path, &contents, NULL, &error));
     ck_assert_str_eq (contents, "shown\nshown\n");
     g_free (contents);
@@ -1869,23 +1864,20 @@ START_TEST (test_lua_package_settings_are_shown_on_request)
 }
 END_TEST
 
-START_TEST (test_lua_runtime_requires_known_workspace_directory)
+START_TEST (test_lua_runtime_reads_packages_only_at_the_root)
 {
     mc_runtime_event_snapshot_t *snapshot;
-    char *unknown_workspace_dir;
+    char *deeper;
     char *contents = NULL;
 
-    create_script (system_scripts_dir, "outside-workspace", "outside-workspace", FALSE);
-    unknown_workspace_dir = g_build_filename (system_scripts_dir, "unknown", (char *) NULL);
-    create_script (unknown_workspace_dir, "unknown-workspace", "unknown-workspace", FALSE);
-    g_free (unknown_workspace_dir);
-    /* only the editor directory is a workspace */
-    unknown_workspace_dir = g_build_filename (user_scripts_dir, "mc", (char *) NULL);
-    create_script (unknown_workspace_dir, "old-mc", "old-mc", FALSE);
-    g_free (unknown_workspace_dir);
-    unknown_workspace_dir = g_build_filename (user_scripts_dir, "viewer", (char *) NULL);
-    create_script (unknown_workspace_dir, "old-viewer", "old-viewer", FALSE);
-    g_free (unknown_workspace_dir);
+    /* a package is a directory right in a script root: one a level deeper, where the scripts
+       of the editor were once kept, is not read */
+    deeper = g_build_filename (system_scripts_dir, "editor", (char *) NULL);
+    create_script (deeper, "old-system", "old-system", FALSE);
+    g_free (deeper);
+    deeper = g_build_filename (user_scripts_dir, "editor", (char *) NULL);
+    create_script (deeper, "old-user", "old-user", FALSE);
+    g_free (deeper);
     mctest_assert_true (mc_runtime_plugins_load (&error));
 
     snapshot = startup_snapshot_new ();
@@ -2169,8 +2161,8 @@ START_TEST (test_lua_runtime_rejects_insecure_package_paths)
     char *root;
     char *contents = NULL;
 
-    create_script (user_editor_scripts_dir, "unsafe", "unsafe", FALSE);
-    root = g_build_filename (user_editor_scripts_dir, "unsafe", (char *) NULL);
+    create_script (user_scripts_dir, "unsafe", "unsafe", FALSE);
+    root = g_build_filename (user_scripts_dir, "unsafe", (char *) NULL);
     ck_assert_int_eq (g_chmod (root, 0777), 0);
     g_free (root);
 
@@ -2293,8 +2285,8 @@ START_TEST (test_lua_runtime_loads_the_shipped_editor_scripts)
     guint packages = 0;
     guint actions = 0;
 
-    copy_script_tree (TEST_LUA_EDITOR_SCRIPTS_DIR, system_editor_scripts_dir);
-    copy_script_tree (TEST_LUA_EDITOR_EXAMPLES_DIR, user_editor_scripts_dir);
+    copy_script_tree (TEST_LUA_SCRIPTS_DIR, system_scripts_dir);
+    copy_script_tree (TEST_LUA_EXAMPLES_DIR, user_scripts_dir);
     ck_assert_msg (mc_runtime_plugins_load (&error), "Failed to load runtime: %s",
                    error != NULL ? error->message : "unknown error");
     ck_assert_msg (runtime_error_count == 0, "a shipped script failed: %s / %s",
@@ -2331,8 +2323,6 @@ main (void)
     data_dir = g_build_filename (test_root, "data", (char *) NULL);
     user_scripts_dir =
         g_build_filename (data_dir, MC_USERCONF_DIR, "lua", "scripts", (char *) NULL);
-    system_editor_scripts_dir = g_build_filename (system_scripts_dir, "editor", (char *) NULL);
-    user_editor_scripts_dir = g_build_filename (user_scripts_dir, "editor", (char *) NULL);
     output_path = g_build_filename (test_root, "events.log", (char *) NULL);
     (void) g_mkdir_with_parents (config_dir, 0700);
     {
@@ -2351,7 +2341,7 @@ main (void)
     tc_core = tcase_create ("Core");
     tcase_add_checked_fixture (tc_core, setup, teardown);
     tcase_add_test (tc_core, test_lua_runtime_loads_user_override_and_callbacks);
-    tcase_add_test (tc_core, test_lua_runtime_requires_known_workspace_directory);
+    tcase_add_test (tc_core, test_lua_runtime_reads_packages_only_at_the_root);
     tcase_add_test (tc_core, test_lua_runtime_uses_optional_ui_host_services);
     tcase_add_test (tc_core, test_lua_runtime_isolates_callback_errors);
     tcase_add_test (tc_core, test_lua_runtime_exposes_object_api_through_opaque_handles);
@@ -2391,8 +2381,6 @@ main (void)
     g_free (runtime_error_package);
     g_free (runtime_error_runtime);
     g_free (output_path);
-    g_free (user_editor_scripts_dir);
-    g_free (system_editor_scripts_dir);
     g_free (user_scripts_dir);
     g_free (system_scripts_dir);
     g_free (config_dir);
