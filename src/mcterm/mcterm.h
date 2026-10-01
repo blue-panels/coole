@@ -45,6 +45,11 @@ void mcterm_free (WMcTerm *t);
 gboolean mcterm_is_alive (const WMcTerm *t);
 gboolean mcterm_in_alt_screen (const WMcTerm *t);
 void mcterm_scroll_to_end (WMcTerm *t);
+/* The rows of the history above the screen, and how many of them the view is back; FALSE when
+   the view does not scroll (the full-screen programs, a filter, scrolling not allowed) */
+gboolean mcterm_scroll_state (const WMcTerm *t, int *history, int *back);
+/* Move the view delta rows, up when negative. TRUE if it moved */
+gboolean mcterm_scroll_by (WMcTerm *t, int delta);
 void mcterm_set_scroll_allowed (WMcTerm *t, gboolean allowed);
 Widget *mcterm_widget (WMcTerm *t);
 gboolean mcterm_send_line (WMcTerm *t, const char *line);
