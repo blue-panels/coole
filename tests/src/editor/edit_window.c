@@ -246,6 +246,68 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A window keeps its place on the screen unless it is fullscreen, which follows the screen */
+START_TEST (test_window_add)
+{
+    test_window_t *other;
+    WRect r;
+
+    other = g_new0 (test_window_t, 1);
+    rect_init (&r, 16, 0, 7, 80);
+    edit_window_init (&other->window, &r, &test_window_class);
+    other->window.fullscreen = 0;
+    edit_window_add (&owner, &other->window);
+
+    ck_assert_ptr_eq (WIDGET (other)->owner, GROUP (&owner));
+    ck_assert_int_eq (WIDGET (other)->pos_flags, WPOS_KEEP_DEFAULT);
+    test_assert_rect (&WIDGET (other)->rect, 16, 0, 7, 80);
+
+    group_remove_widget (WIDGET (other));
+    g_free (other);
+
+    group_remove_widget (WIDGET (test_win));
+    edit_window_add (&owner, &test_win->window);
+    ck_assert_int_eq (WIDGET (test_win)->pos_flags, WPOS_KEEP_ALL);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A hidden window stays as it was, and shown it comes on top and is selected */
+START_TEST (test_window_hide_show)
+{
+    WEditWindow *win = &test_win->window;
+    test_window_t *other;
+    WRect r;
+
+    edit_window_toggle_fullscreen (win);
+    ck_assert (edit_window_handle_move_resize (win, CK_WindowMove));
+
+    other = g_new0 (test_window_t, 1);
+    rect_init (&r, 1, 0, 22, 80);
+    edit_window_init (&other->window, &r, &test_window_class);
+    edit_window_add (&owner, &other->window);
+
+    edit_window_hide (win);
+    ck_assert (!widget_get_state (WIDGET (win), WST_VISIBLE));
+    ck_assert_int_eq (win->drag_state, EDIT_WINDOW_DRAG_NONE);
+    ck_assert (!WIDGET (win)->mouse.forced_capture);
+    ck_assert (!widget_is_focusable (WIDGET (win)));
+
+    edit_window_show (win);
+    ck_assert (widget_get_state (WIDGET (win), WST_VISIBLE));
+    ck_assert_ptr_eq (owner.group.current->data, win);
+    ck_assert_ptr_eq (g_list_last (owner.group.widgets)->data, win);
+    ck_assert_int_eq (win->fullscreen, 0);
+    test_assert_rect (&WIDGET (win)->rect, 5, 5, 10, 30);
+
+    group_remove_widget (WIDGET (other));
+    g_free (other);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The widgets of a window move and resize with it */
 START_TEST (test_window_holds_widgets)
 {
@@ -317,6 +379,8 @@ main (void)
     tcase_add_test (tc_core, test_window_fullscreen_does_not_move);
     tcase_add_test (tc_core, test_window_move);
     tcase_add_test (tc_core, test_window_resize);
+    tcase_add_test (tc_core, test_window_add);
+    tcase_add_test (tc_core, test_window_hide_show);
     tcase_add_test (tc_core, test_window_holds_widgets);
     tcase_add_test (tc_core, test_editor_is_window);
 

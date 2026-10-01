@@ -77,7 +77,7 @@ a build without it has the built-in plugins only.
 mc_editor_plugin_add() rejects a descriptor
 
 - whose api_version differs from MC_EDITOR_PLUGIN_API_VERSION
-  (currently 5), with a message on stderr;
+  (currently 6), with a message on stderr;
 - that has no name, no open() or no close(), with a message on stderr;
 - whose name was disabled in Options -> Manage plugins;
 - whose name is already registered.  The built-in plugins are
@@ -144,6 +144,20 @@ What the editor provides to the plugin, passed to open():
   insert_text(host, edit, text, remove_before)
                              insert at cursor after deleting
                              remove_before bytes backwards
+  window_area(host, &rect)
+                             the part of the screen the windows take:
+                             all of it but the menu bar and the button
+                             bar
+  window_add(host, window)
+                             put a window of the plugin on the screen,
+                             on top of the others and selected; see
+                             section 9
+  window_show(host, window)
+                             show a hidden window as it was when it
+                             was hidden, on top and selected
+  window_hide(host, window)
+                             hide a window as it is; the next window
+                             is selected
 
 Fields:
 
@@ -241,15 +255,67 @@ registry is MC_EDITOR_PLUGIN_CMD_BASE + N; action A of that plugin is
 MC_EDITOR_PLUGIN_ACTION_BASE + N * MC_EDITOR_PLUGIN_ACTIONS_MAX + A.
 
 
-9. Registry
------------
+9. Windows
+----------
+
+A plugin can put a window of its own on the editor screen, next to the
+windows of the files.  A window is a WEditWindow (src/editor/editwindow.h),
+and the screen treats all windows alike: they have a frame, are moved and
+resized, shown full screen, listed in Window -> List, selected with
+Window -> Next and Previous, and closed.  What a window shows and does is
+given by its class, edit_window_class_t:
+
+  callback                   the messages of the window (MSG_DRAW,
+                             MSG_KEY, MSG_DESTROY, ...); the unhandled
+                             ones go to group_default_callback()
+  mouse_callback             mouse events inside the window that its
+                             frame does not take; NULL passes them to
+                             the widgets of the window
+  get_title                  the name of the window in the list of
+                             windows; caller frees
+  is_modified                whether the window holds unsaved changes;
+                             may be NULL
+  close                      close the window, asking first when it has
+                             to; TRUE when the window was destroyed
+  min_lines, min_cols        the smallest size, with the frame
+
+A window is a group, as a window of Turbo Vision is: it may hold widgets
+of its own, added with group_add_widget_autopos() at places relative to
+the window.  They move and resize with the window, get the focus with
+it, and are destroyed with it.
+
+The plugin allocates the window, fills it in with edit_window_init()
+and gives it to window_add().  A window starts full screen and keeps the
+rectangle it was made with to go back to; one that should start at that
+rectangle is made with its fullscreen field cleared before window_add().
+The class draws the frame with edit_window_frame_color(),
+edit_window_draw_frame() and edit_window_draw_icons().
+
+Once added, the window belongs to the editor.  It is destroyed when the
+user closes it and when the editor ends, and the class learns of that by
+MSG_DESTROY, where the plugin forgets the window.  The plugin never frees
+an added window.  When the editor ends, its windows are destroyed before
+close() of the plugin is called.
+
+A hidden window keeps its place, size, full screen state and contents,
+and window_show() brings it back as it was.  Window -> List shows the
+hidden windows too, and picking one shows it.
+
+A key goes to the current window first.  A key the window does not
+handle goes to the editor screen, which looks it up in the keymap of the
+editor, so F9, F10 and the other keys of the screen work in a window of a
+plugin unless the window takes them itself.
+
+
+10. Registry
+------------
 
   mc_editor_plugin_add(plugin)
   mc_editor_plugin_list()
   mc_editor_plugin_find_by_name(name)
 
 
-10. Minimal Skeleton
+11. Minimal Skeleton
 --------------------
 
 A plugin that registers and reacts to its Plugins menu entry (no extra
@@ -319,7 +385,7 @@ module built against headers of another API version is not loaded.
 Rebuild plugins when coole is upgraded.
 
 
-11. Testing Checklist
+12. Testing Checklist
 ---------------------
 
 - the plugin appears in the Plugins menu, and in Options -> Plugin info
@@ -332,7 +398,7 @@ Rebuild plugins when coole is upgraded.
   after a restart
 
 
-12. Troubleshooting
+13. Troubleshooting
 -------------------
 
 - Plugin not loaded:

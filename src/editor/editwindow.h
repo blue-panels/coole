@@ -80,6 +80,13 @@ extern char *edit_window_close_char;
 void edit_window_init (WEditWindow *win, const WRect *r, const edit_window_class_t *klass);
 gboolean edit_window_is_window (const Widget *w);
 
+/* Put a window on the screen; the screen owns it from now on */
+void edit_window_add (WDialog *h, WEditWindow *win);
+/* Show a window on top of the others and select it */
+void edit_window_show (WEditWindow *win);
+/* Hide a window as it is; the next window is selected */
+void edit_window_hide (WEditWindow *win);
+
 /* The part of the editor screen the windows take: all but the menu bar and the button bar */
 void edit_window_area (const WDialog *h, WRect *r);
 

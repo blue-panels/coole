@@ -388,6 +388,58 @@ edit_window_is_window (const Widget *w)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Put a window on the screen and select it; the caller draws the screen. The screen owns the window
+ * from now on: it is destroyed with the screen or when it is closed, and its class learns of that
+ * by MSG_DESTROY.
+ *
+ * @param h   editor screen
+ * @param win window made with edit_window_init()
+ */
+
+void
+edit_window_add (WDialog *h, WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+
+    // a fullscreen window follows the size of the screen, another one keeps its place
+    group_add_widget_autopos (GROUP (h), w,
+                              win->fullscreen != 0 ? WPOS_KEEP_ALL : WPOS_KEEP_DEFAULT, NULL);
+
+    // a window put on a running screen comes up with it, and the widgets of the window too
+    if (widget_get_state (WIDGET (h), WST_ACTIVE))
+        widget_set_state (w, WST_ACTIVE, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_window_show (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+
+    widget_show (w);
+    widget_select (w);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_window_hide (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+
+    // a window stops moving or resizing when it goes
+    if (win->drag_state != EDIT_WINDOW_DRAG_NONE)
+    {
+        win->drag_state = EDIT_WINDOW_DRAG_NONE;
+        w->mouse.forced_capture = FALSE;
+    }
+
+    widget_hide (w);
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 void
 edit_window_area (const WDialog *h, WRect *r)
@@ -691,7 +743,7 @@ edit_window_list (const WDialog *h)
 
     selected = listbox_run_with_data (listbox, g->current->data);
     if (selected != NULL)
-        widget_select (selected);
+        edit_window_show (EDIT_WINDOW (selected));
 }
 
 /* --------------------------------------------------------------------------------------------- */

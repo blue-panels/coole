@@ -6,10 +6,11 @@
 #define MC__EDITOR_PLUGIN_H
 
 #include "lib/global.h"
+#include "lib/widget/rect.h"  // WRect
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
-#define MC_EDITOR_PLUGIN_API_VERSION 5
+#define MC_EDITOR_PLUGIN_API_VERSION 6
 #define MC_EDITOR_PLUGIN_ENTRY       "mc_editor_plugin_register"
 #define MC_EDITOR_PLUGIN_CMD_BASE    30000L /* Plugins-menu: base + plugin_index */
 #define MC_EDITOR_PLUGIN_ACTION_BASE 31000L /* per-action menu commands           */
@@ -77,6 +78,21 @@ typedef struct mc_editor_host_t
     /* Insert text at cursor, first removing remove_before bytes backwards. */
     void (*insert_text) (struct mc_editor_host_t *host, void *edit, const char *text,
                          gsize remove_before);
+
+    /* v6: windows of the editor screen.
+     * A window is a WEditWindow (src/editor/editwindow.h) of a class of the plugin, made with
+     * edit_window_init().  Once added the editor owns it: the window is destroyed when the user
+     * closes it and when the editor ends, and the class learns of that by MSG_DESTROY; the plugin
+     * never frees an added window.  The windows are destroyed before close() of the plugin. */
+
+    /* The part of the screen the windows take. */
+    void (*window_area) (struct mc_editor_host_t *host, WRect *r);
+    /* Put a window on the screen, on top of the others and selected. */
+    void (*window_add) (struct mc_editor_host_t *host, void *window);
+    /* Show a window as it was when hidden, on top of the others and selected. */
+    void (*window_show) (struct mc_editor_host_t *host, void *window);
+    /* Hide a window as it is; the next window is selected. */
+    void (*window_hide) (struct mc_editor_host_t *host, void *window);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.
