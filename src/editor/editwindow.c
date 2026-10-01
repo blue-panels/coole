@@ -53,6 +53,8 @@ char *edit_window_close_char = NULL;
 
 /*** forward declarations (file scope functions) *************************************************/
 
+static void edit_window_place_bars (WEditWindow *win);
+
 /*** file scope variables ************************************************************************/
 
 /* --------------------------------------------------------------------------------------------- */
@@ -62,9 +64,24 @@ char *edit_window_close_char = NULL;
 static cb_ret_t
 edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
+    WEditWindow *win = EDIT_WINDOW (w);
     cb_ret_t ret;
 
-    ret = EDIT_WINDOW (w)->klass->callback (w, sender, msg, parm, data);
+    // a scrollbar has moved: the class moves the view
+    if (msg == MSG_NOTIFY && sender != NULL
+        && (sender == WIDGET (win->vbar) || sender == WIDGET (win->hbar)))
+    {
+        if (win->klass->scrolled != NULL)
+            win->klass->scrolled (win, sender == WIDGET (win->vbar),
+                                  scrollbar_get_pos (SCROLLBAR (sender)));
+        return MSG_HANDLED;
+    }
+
+    ret = win->klass->callback (w, sender, msg, parm, data);
+
+    // the frame has moved: its scrollbars with it
+    if (msg == MSG_RESIZE)
+        edit_window_place_bars (win);
 
     /* The button bar is the one of the window with the focus: its class has put its labels on
        the bar, and the bar shows them at once, whatever gave the window the focus. */
@@ -81,13 +98,56 @@ edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Mouse events: the frame and the class first, then the widgets of the window.
+ * Put the scrollbars on the frame: the vertical one down the right side between the corners, the
+ * horizontal one along the bottom from the column of the class to before the corner that resizes
+ * the window.  A fullscreen window has no frame, and hides them.
+ */
+
+static void
+edit_window_place_bars (WEditWindow *win)
+{
+    const WRect *r = &CONST_WIDGET (win)->rect;
+    const gboolean shown = (win->fullscreen == 0);
+
+    if (win->vbar != NULL)
+    {
+        WRect br = { r->y + 1, r->x + r->cols - 1, MAX (1, r->lines - 2), 1 };
+
+        widget_set_size_rect (WIDGET (win->vbar), &br);
+        widget_set_visibility (WIDGET (win->vbar), shown);
+    }
+    if (win->hbar != NULL)
+    {
+        const int x = win->klass->hbar_x;
+        WRect br = { r->y + r->lines - 1, r->x + x, 1, MAX (1, r->cols - 2 - x) };
+
+        widget_set_size_rect (WIDGET (win->hbar), &br);
+        widget_set_visibility (WIDGET (win->hbar), shown && r->cols - 2 - x >= 4);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Mouse events: the scrollbars first, then the frame and the class, then the other widgets of the
+ * window.  A scrollbar that holds the mouse, its thumb dragged, takes the events wherever they are.
  */
 
 static int
 edit_window_mouse_handler (Widget *w, Gpm_Event *event)
 {
+    WEditWindow *win = EDIT_WINDOW (w);
+    Widget *bars[] = { WIDGET (win->vbar), WIDGET (win->hbar) };
+    size_t i;
     int mou;
+
+    for (i = 0; i < G_N_ELEMENTS (bars); i++)
+        if (bars[i] != NULL && widget_get_state (bars[i], WST_VISIBLE)
+            && (bars[i]->mouse.capture || mouse_global_in_widget (event, bars[i])))
+        {
+            mou = mouse_handle_event (bars[i], event);
+            if (mou != MOU_UNHANDLED)
+                return mou;
+        }
 
     mou = mouse_handle_event (w, event);
     if (mou != MOU_UNHANDLED)
@@ -385,6 +445,49 @@ edit_window_init (WEditWindow *win, const WRect *r, const edit_window_class_t *k
     win->drag_state = EDIT_WINDOW_DRAG_NONE;
     win->fullscreen = 1;
     edit_window_save_size (win);
+
+    // the scrollbars of the frame, placed where the frame is
+    if (klass->vbar)
+    {
+        win->vbar = scrollbar_new (0, 0, 1, SCROLLBAR_VERTICAL);
+        group_add_widget (GROUP (win), win->vbar);
+    }
+    if (klass->hbar_x > 0)
+    {
+        win->hbar = scrollbar_new (0, 0, 1, SCROLLBAR_HORIZONTAL);
+        group_add_widget (GROUP (win), win->hbar);
+    }
+    edit_window_place_bars (win);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_window_set_scroll (WEditWindow *win, gboolean vertical, long total, long visible, long pos)
+{
+    WScrollBar *b = vertical ? win->vbar : win->hbar;
+
+    if (b != NULL)
+        scrollbar_set_range (b, total, visible, pos);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_window_draw_bars (WEditWindow *win, int color)
+{
+    WScrollBar *bars[] = { win->vbar, win->hbar };
+    size_t i;
+
+    // where the frame is now, and whether there is one
+    edit_window_place_bars (win);
+
+    for (i = 0; i < G_N_ELEMENTS (bars); i++)
+        if (bars[i] != NULL && widget_get_state (WIDGET (bars[i]), WST_VISIBLE))
+        {
+            scrollbar_set_color (bars[i], color);
+            send_message (WIDGET (bars[i]), NULL, MSG_DRAW, 0, NULL);
+        }
 }
 
 /* --------------------------------------------------------------------------------------------- */
