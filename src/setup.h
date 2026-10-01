@@ -41,7 +41,6 @@ extern gboolean verbose;
 extern gboolean easy_patterns;
 extern int option_tab_spacing;
 extern gboolean auto_save_setup;
-extern gboolean output_starts_shell;
 
 extern int default_source_codepage;
 extern char *autodetect_codeset;

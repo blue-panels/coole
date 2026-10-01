@@ -52,24 +52,6 @@ libinternal_sources = files(
   'editor-plugins/spell/spell.c',
 )
 
-if have_terminal
-  libinternal_sources += files(
-    'mcterm/mcterm.c',
-    'mcterm/mcterm_cwd.c',
-    'mcterm/mcterm_filter.c',
-    'mcterm/mcterm_key.c',
-    'mcterm/mcterm_proto.c',
-    'mcterm/mcterm_select.c',
-    'mcterm/mcterm_setup.c',
-
-    # the emulator of the terminal; in mc it is a part of the viewer
-    'viewer/ansi.c',
-    'viewer/canvas.c',
-    'viewer/terminal_buffer.c',
-    'viewer/vterm.c',
-  )
-endif
-
 src_c_args = [
   '-DSYSCONFDIR="@0@/"'.format(pkgsysconfdir),
   '-DLIBEXECDIR="@0@/"'.format(pkglibexecdir),
@@ -96,12 +78,11 @@ endif
 libinternal = static_library('internal',
   libinternal_sources,
   c_args: src_c_args,
-  dependencies: [libmc_dep, intl, terminal_dep],
+  dependencies: [libmc_dep, intl],
   implicit_include_directories: false,
 )
 
-libinternal_dep = declare_dependency(link_with: libinternal,
-                                     dependencies: [libmc_dep, intl, terminal_dep])
+libinternal_dep = declare_dependency(link_with: libinternal, dependencies: [libmc_dep, intl])
 
 coole = executable('coole',
   'main.c',
@@ -121,6 +102,13 @@ install_data(
   'editor-plugins/spell/spell.md',
   install_dir: pkgdatadir / 'help',
 )
+if have_terminal
+  install_data('editor-plugins/terminal/terminal.md', install_dir: pkgdatadir / 'help')
+endif
+
+if have_terminal
+  subdir('editor-plugins/terminal')
+endif
 
 if lua.found()
   subdir('lua')

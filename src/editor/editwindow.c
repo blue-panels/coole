@@ -62,7 +62,21 @@ char *edit_window_close_char = NULL;
 static cb_ret_t
 edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
-    return EDIT_WINDOW (w)->klass->callback (w, sender, msg, parm, data);
+    cb_ret_t ret;
+
+    ret = EDIT_WINDOW (w)->klass->callback (w, sender, msg, parm, data);
+
+    /* The button bar is the one of the window with the focus: its class has put its labels on
+       the bar, and the bar shows them at once, whatever gave the window the focus. */
+    if (msg == MSG_FOCUS && w->owner != NULL)
+    {
+        WButtonBar *bb = buttonbar_find (DIALOG (w->owner));
+
+        if (bb != NULL)
+            widget_draw (WIDGET (bb));
+    }
+
+    return ret;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -412,6 +426,34 @@ edit_window_add (WDialog *h, WEditWindow *win)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Take a window off the screen and destroy it. The topmost visible window left is selected: the
+ * group alone would make current the widget after the window, which need not be a window.
+ *
+ * @param win window to destroy
+ */
+
+void
+edit_window_destroy (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+    WGroup *g = w->owner;
+    Widget *top = NULL;
+    GList *l;
+
+    group_remove_widget (w);
+    widget_destroy (w);
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+        if (edit_window_is_window (CONST_WIDGET (l->data))
+            && widget_get_state (WIDGET (l->data), WST_VISIBLE))
+            top = WIDGET (l->data);
+
+    if (top != NULL)
+        widget_select (top);
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 void
 edit_window_show (WEditWindow *win)
@@ -437,6 +479,92 @@ edit_window_hide (WEditWindow *win)
     }
 
     widget_hide (w);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Make room for a window that does not fill the screen: the topmost fullscreen window of the
+ * screen stops being fullscreen and takes the area above @win. Nothing is done when there is no
+ * such window, or no room above @win for it.
+ *
+ * @param win window to make room for
+ */
+
+void
+edit_window_make_room (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+    WGroup *g = w->owner;
+    WEditWindow *top = NULL;
+    WRect a, r;
+    GList *l;
+
+    if (g == NULL || win->fullscreen != 0 || win->room_id != 0)
+        return;
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+    {
+        Widget *wl = WIDGET (l->data);
+
+        if (wl != w && edit_window_is_window (wl) && widget_get_state (wl, WST_VISIBLE)
+            && EDIT_WINDOW (wl)->fullscreen != 0)
+            top = EDIT_WINDOW (wl);
+    }
+
+    if (top == NULL)
+        return;
+
+    edit_window_area (DIALOG (g), &a);
+    r = a;
+    r.lines = w->rect.y - a.y;
+    if (r.lines < top->klass->min_lines)
+        return;
+
+    win->room_id = WIDGET (top)->id;
+    win->room_rect = r;
+    win->room_loc_prev = top->loc_prev;
+
+    top->fullscreen = 0;
+    WIDGET (top)->pos_flags = WPOS_KEEP_DEFAULT;
+    widget_set_size_rect (WIDGET (top), &r);
+    widget_draw (WIDGET (g));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Give back the room edit_window_make_room() made: the window made fullscreen again. A window the
+ * user has moved, resized or made fullscreen since is left as it is.
+ *
+ * @param win window the room was made for
+ */
+
+void
+edit_window_give_room_back (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+    Widget *wt;
+    unsigned long id = win->room_id;
+
+    win->room_id = 0;
+
+    if (id == 0 || w->owner == NULL)
+        return;
+
+    wt = widget_find_by_id (WIDGET (w->owner), id);
+    if (wt != NULL && wt != w && edit_window_is_window (wt) && EDIT_WINDOW (wt)->fullscreen == 0
+        && wt->rect.y == win->room_rect.y && wt->rect.x == win->room_rect.x
+        && wt->rect.lines == win->room_rect.lines && wt->rect.cols == win->room_rect.cols)
+    {
+        WEditWindow *top = EDIT_WINDOW (wt);
+        WRect a;
+
+        top->fullscreen = 1;
+        top->loc_prev = win->room_loc_prev;
+        edit_window_area (DIALOG (w->owner), &a);
+        widget_set_size_rect (wt, &a);
+        wt->pos_flags = WPOS_KEEP_ALL;
+        widget_draw (WIDGET (w->owner));
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */

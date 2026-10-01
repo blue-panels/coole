@@ -91,6 +91,10 @@ cb_ret_t mcterm_query_key (WMcTerm *t, int key);
 /* Whether the host types on a command line of its own. Without one the plain
    arrows are left to the shell, there being nowhere else for typing to go. */
 void mcterm_set_typing_elsewhere (WMcTerm *t, gboolean elsewhere);
+/* Whether an mc started in the terminal is told to ask the host for its panels (MC_PID and
+   MC_TTY) instead of running there. TRUE unless a host without panels says otherwise; the host
+   that keeps it must take SIGUSR1. */
+void mcterm_set_nested_mc_request (gboolean enabled);
 /* Whether some of the output is marked, for Store to take. */
 gboolean mcterm_mark_active (const WMcTerm *t);
 /* Type @text into the shell. FALSE when the shell is gone or took none of it for a second;
@@ -310,6 +314,11 @@ mcterm_set_typing_elsewhere (WMcTerm *t, gboolean elsewhere)
 {
     (void) t;
     (void) elsewhere;
+}
+static inline void
+mcterm_set_nested_mc_request (gboolean enabled)
+{
+    (void) enabled;
 }
 static inline gboolean
 mcterm_mark_active (const WMcTerm *t)

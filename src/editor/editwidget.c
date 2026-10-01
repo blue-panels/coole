@@ -62,8 +62,7 @@
 
 #include "src/keymap.h"  // keybind_lookup_keymap_command()
 #include "src/runtime-host.h"
-#include "src/setup.h"    // save_setup_cmd()
-#include "src/execute.h"  // toggle_terminal()
+#include "src/setup.h"  // save_setup_cmd()
 #include "src/events_init.h"
 #include "src/appearance.h"      // appearance_box()
 #include "src/keybind_dialog.h"  // keybind_dialog()
@@ -101,6 +100,8 @@ static void edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *even
 static char *edit_class_get_title (const WEditWindow *win);
 static gboolean edit_class_is_modified (const WEditWindow *win);
 static gboolean edit_class_close (WEditWindow *win);
+static gboolean edit_class_ok_to_quit (WEditWindow *win);
+static void edit_quit (WDialog *h);
 
 /*** global variables ****************************************************************************/
 
@@ -114,6 +115,7 @@ const edit_window_class_t edit_class = {
     .get_title = edit_class_get_title,
     .is_modified = edit_class_is_modified,
     .close = edit_class_close,
+    .ok_to_quit = edit_class_ok_to_quit,
     .min_lines = WINDOW_MIN_LINES,
     .min_cols = WINDOW_MIN_COLS,
 };
@@ -437,6 +439,32 @@ editor_host_window_hide_impl (mc_editor_host_t *host, void *window)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: the fullscreen window makes room for a window of a plugin.
+ */
+
+static void
+editor_host_window_make_room_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+
+    edit_window_make_room (EDIT_WINDOW (window));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Host callback: the room made for a window of a plugin is given back.
+ */
+
+static void
+editor_host_window_give_room_back_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+
+    edit_window_give_room_back (EDIT_WINDOW (window));
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 static void
 editor_plugin_instance_free (gpointer data)
@@ -480,6 +508,8 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_add = editor_host_window_add_impl;
     ctx->host->window_show = editor_host_window_show_impl;
     ctx->host->window_hide = editor_host_window_hide_impl;
+    ctx->host->window_make_room = editor_host_window_make_room_impl;
+    ctx->host->window_give_room_back = editor_host_window_give_room_back_impl;
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
 
     for (; plugins != NULL; plugins = g_slist_next (plugins))
@@ -1118,6 +1148,21 @@ edit_get_title (const WDialog *h, const ssize_t width)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether @edit is the one file window of the screen */
+static gboolean
+edit_is_last_editor (const WDialog *h, const WEdit *edit)
+{
+    GList *l;
+
+    for (l = CONST_GROUP (h)->widgets; l != NULL; l = g_list_next (l))
+        if (l->data != edit && edit_widget_is_editor (CONST_WIDGET (l->data)))
+            return FALSE;
+
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 edit_dialog_command_execute (WDialog *h, long command)
 {
@@ -1145,13 +1190,15 @@ edit_dialog_command_execute (WDialog *h, long command)
         edit_load_menu_file (h);
         break;
     case CK_Close:
-        // if there are no opened files anymore, close MC editor
         if (edit_window_is_window (CONST_WIDGET (g->current->data)))
         {
             WEditWindow *win = EDIT_WINDOW (g->current->data);
 
-            if (win->klass->close (win) && edit_find_editor (h) == NULL)
-                dlg_close (h);
+            // closing the last file is quitting the editor, the other windows asked as well
+            if (edit_widget_is_editor (CONST_WIDGET (win)) && edit_is_last_editor (h, EDIT (win)))
+                edit_quit (h);
+            else
+                (void) win->klass->close (win);
         }
         break;
     case CK_Help:
@@ -1194,7 +1241,7 @@ edit_dialog_command_execute (WDialog *h, long command)
         edit_refresh_cmd ();
         break;
     case CK_Shell:
-        toggle_terminal ();
+        // the terminal plugin shows its window; without it there is nothing to show
         break;
     case CK_LearnKeys:
         key_learn ();
@@ -1362,11 +1409,10 @@ fin:
 
 /* --------------------------------------------------------------------------------------------- */
 
-static inline void
+static void
 edit_quit (WDialog *h)
 {
     GList *l;
-    WEdit *e = NULL;
     GSList *m = NULL;
     GSList *me;
 
@@ -1388,17 +1434,19 @@ edit_quit (WDialog *h)
 
             /* create separate list because widget_select()
                changes the window position in Z order */
-            if (edit_widget_is_editor (CONST_WIDGET (win)) && EDIT (win)->modified != 0)
+            if (win->klass->ok_to_quit != NULL && win->klass->is_modified != NULL
+                && win->klass->is_modified (win))
                 m = g_slist_prepend (m, l->data);
         }
 
     for (me = m; me != NULL; me = g_slist_next (me))
     {
-        e = EDIT (me->data);
+        WEditWindow *win = EDIT_WINDOW (me->data);
 
-        widget_select (WIDGET (e));
+        // the window is shown to the user who is asked about it, a hidden one too
+        edit_window_show (win);
 
-        if (!edit_ok_to_quit (e))
+        if (!win->klass->ok_to_quit (win))
             break;
     }
 
@@ -2008,6 +2056,14 @@ static gboolean
 edit_class_close (WEditWindow *win)
 {
     return edit_close_cmd (EDIT (win));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+edit_class_ok_to_quit (WEditWindow *win)
+{
+    return edit_ok_to_quit (EDIT (win));
 }
 
 /* --------------------------------------------------------------------------------------------- */

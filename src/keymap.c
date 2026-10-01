@@ -324,7 +324,8 @@ static const global_keymap_ini_t default_editor_x_keymap[] = {
     { NULL, NULL },
 };
 
-/* the terminal: what is bound here is taken from the shell */
+/* the terminal: what is bound here is taken from the shell. The cursor keys are not: the line
+   editor of the shell has them, with its history. */
 static const global_keymap_ini_t default_mcterm_keymap[] = {
     // marking the output, and taking it out
     { "Store", "ctrl-insert; enter; f2" },
@@ -338,11 +339,6 @@ static const global_keymap_ini_t default_mcterm_keymap[] = {
     { "MarkPageDown", "shift-pgdn" },
     { "MarkToHome", "shift-home" },
     { "MarkToEnd", "shift-end" },
-    // the cursor over the output, while the terminal holds the focus
-    { "Left", "left" },
-    { "Right", "right" },
-    { "Up", "up" },
-    { "Down", "down" },
     // the view alone, which moves whoever is typing
     { "ScrollUp", "ctrl-up" },
     { "ScrollDown", "ctrl-down" },

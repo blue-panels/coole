@@ -93,6 +93,11 @@ typedef struct mc_editor_host_t
     void (*window_show) (struct mc_editor_host_t *host, void *window);
     /* Hide a window as it is; the next window is selected. */
     void (*window_hide) (struct mc_editor_host_t *host, void *window);
+    /* Make room for a window that does not fill the screen: the topmost fullscreen window stops
+       being fullscreen and takes the area above it. */
+    void (*window_make_room) (struct mc_editor_host_t *host, void *window);
+    /* Make that window fullscreen again, unless the user has moved or resized it since. */
+    void (*window_give_room_back) (struct mc_editor_host_t *host, void *window);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.

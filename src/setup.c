@@ -72,7 +72,6 @@ gboolean easy_patterns = TRUE;
 gboolean auto_save_setup = TRUE;
 
 /* If set, running a command hands the screen over instead of using the terminal */
-gboolean output_starts_shell = FALSE;
 
 gboolean verbose = TRUE;
 
@@ -133,7 +132,6 @@ static const struct
     { "old_esc_mode", &old_esc_mode },
     { "show_all_if_ambiguous", &mc_global.widget.show_all_if_ambiguous },
     { "alternate_plus_minus", &mc_global.tty.alternate_plus_minus },
-    { "show_output_starts_shell", &output_starts_shell },
     { "editor_fill_tabs_with_spaces", &edit_options.fill_tabs_with_spaces },
     { "editor_return_does_auto_indent", &edit_options.return_does_auto_indent },
     { "editor_backspace_through_tabs", &edit_options.backspace_through_tabs },

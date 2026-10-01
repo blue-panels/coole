@@ -170,12 +170,9 @@ the terminal itself is had by holding down the Shift key while dragging; that
 selection is not shared with the clipboard file of coole.
 
 **Ctrl-o**
-hides the editor and shows the terminal screen behind it, with the output of
-the last command the editor ran; any key comes back to the editor. Where the
-*show_output_starts_shell*
-setting is on, a shell is started there instead, and
-*exit*
-returns to the editor.
+shows a window with your shell at the bottom of the screen, the file in a
+window above it, and hides it again as it is, the file taking the whole screen
+back; see [Terminal](#terminal).
 
 # Keys
 
@@ -241,7 +238,7 @@ see
 : The [user menu](#edit-menu-file).
 
 **Ctrl-o**
-: Show the terminal screen behind the editor.
+: Show or hide the window of the terminal. See [Terminal](#terminal).
 
 **Ctrl-l**
 : Redraw the screen.
@@ -1324,6 +1321,16 @@ The spell plugin checks the text with aspell or hunspell.
 checks the word under the cursor, and the Plugins menu checks the whole file.
 See [Spell](spell.md#spell).
 
+# Terminal
+
+The terminal plugin runs your shell in a window of the editor.
+**Ctrl-o**
+shows the window at the bottom of the screen, a file shown full screen going
+into a window above it, and in the terminal hides it again, the file taking
+the whole screen back; the shell goes on running while the window is hidden. The window is
+moved, resized, shown full screen and closed like the window of a file. See
+[Terminal](terminal.md#terminal).
+
 # Dialogs
 
 ## Save As <a id="save-file-as"></a>
@@ -1939,9 +1946,6 @@ expressions (0).
 
 *confirm_history_cleanup*
 : Ask before a history is cleared.
-
-*show_output_starts_shell*
-: Ctrl-o starts a shell instead of only showing the terminal screen.
 
 *clear_before_exec*
 : Clear the screen before a command of the user menu runs.

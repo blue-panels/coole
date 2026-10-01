@@ -49,7 +49,23 @@ src/editor/editcmd.c) holds their descriptors (and that
 of the "scripts" entry) and registers them with
 mc_editor_plugin_add() from editor_plugins_register_all().
 
-The help of a plugin (ctags.md, etags.md, spell.md) is installed into
+One plugin comes with coole as a module, loaded the way any other
+module is (section 3), and is an example of one:
+
+  src/editor-plugins/terminal/   terminal.so: a window of its own
+                                 (section 9), the shell in the
+                                 terminal of mc, shown and hidden by
+                                 Ctrl-o through handle_action.  Built
+                                 when openpty() and GModule are
+                                 found, installed into the system
+                                 directory of the plugins.
+
+The module holds the terminal of mc as well (src/mcterm and
+src/viewer), and calls the functions of the editor, which the program
+exports.  The test module_symbols checks that the program gives every
+function the module calls.
+
+The help of a plugin (ctags.md, etags.md, spell.md, terminal.md) is installed into
 $(pkgdatadir)/help next to the help of the program.
 
 
@@ -158,6 +174,14 @@ What the editor provides to the plugin, passed to open():
   window_hide(host, window)
                              hide a window as it is; the next window
                              is selected
+  window_make_room(host, window)
+                             the topmost fullscreen window stops being
+                             fullscreen and takes the area above the
+                             window, which does not fill the screen
+  window_give_room_back(host, window)
+                             that window is made fullscreen again,
+                             unless the user has moved, resized or
+                             zoomed it since
 
 Fields:
 
@@ -267,7 +291,12 @@ given by its class, edit_window_class_t:
 
   callback                   the messages of the window (MSG_DRAW,
                              MSG_KEY, MSG_DESTROY, ...); the unhandled
-                             ones go to group_default_callback()
+                             ones go to group_default_callback().  On
+                             MSG_FOCUS the class puts its labels on
+                             the button bar (buttonbar_set_label());
+                             the editor draws the bar then, so that it
+                             is always the one of the window with the
+                             focus
   mouse_callback             mouse events inside the window that its
                              frame does not take; NULL passes them to
                              the widgets of the window
@@ -292,10 +321,12 @@ The class draws the frame with edit_window_frame_color(),
 edit_window_draw_frame() and edit_window_draw_icons().
 
 Once added, the window belongs to the editor.  It is destroyed when the
-user closes it and when the editor ends, and the class learns of that by
-MSG_DESTROY, where the plugin forgets the window.  The plugin never frees
-an added window.  When the editor ends, its windows are destroyed before
-close() of the plugin is called.
+user closes it - close() of the class destroys it with
+edit_window_destroy(), which selects the window left on top - and when
+the editor ends, and the class learns of that by MSG_DESTROY, where the
+plugin forgets the window.  The plugin never frees an added window.
+When the editor ends, its windows are destroyed before close() of the
+plugin is called.
 
 A hidden window keeps its place, size, full screen state and contents,
 and window_show() brings it back as it was.  Window -> List shows the

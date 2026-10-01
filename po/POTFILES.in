@@ -32,6 +32,7 @@ src/editor-plugins/ctags/ctags-plugin.c
 src/editor-plugins/ctags/ctags-ui.c
 src/editor-plugins/etags/etags.c
 src/editor-plugins/spell/spell.c
+src/editor-plugins/terminal/terminal.c
 src/editor/edit.c
 src/editor/editcmd.c
 src/editor/editcomplete.c

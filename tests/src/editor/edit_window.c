@@ -347,6 +347,82 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A fullscreen window makes room above a window at the bottom, and takes the screen back; one the
+   user has moved since is left where it is */
+START_TEST (test_window_make_room)
+{
+    WEditWindow *win = &test_win->window;
+    test_window_t *bottom;
+    WRect r;
+
+    // fullscreen, and at 5,5 when it is not
+    edit_window_toggle_fullscreen (win);
+    edit_window_toggle_fullscreen (win);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 80);
+
+    bottom = g_new0 (test_window_t, 1);
+    rect_init (&r, 17, 0, 6, 80);
+    edit_window_init (&bottom->window, &r, &test_window_class);
+    bottom->window.fullscreen = 0;
+    edit_window_add (&owner, &bottom->window);
+
+    edit_window_make_room (&bottom->window);
+    ck_assert_int_eq (win->fullscreen, 0);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 16, 80);
+    ck_assert_int_eq (WIDGET (win)->pos_flags, WPOS_KEEP_DEFAULT);
+
+    edit_window_give_room_back (&bottom->window);
+    ck_assert_int_eq (win->fullscreen, 1);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 80);
+    test_assert_rect (&win->loc_prev, 5, 5, 10, 30);
+    ck_assert_int_eq (WIDGET (win)->pos_flags, WPOS_KEEP_ALL);
+
+    // moved by the user in between: it stays where the user put it
+    edit_window_make_room (&bottom->window);
+    ck_assert (edit_window_handle_move_resize (win, CK_WindowMove));
+    ck_assert (edit_window_handle_move_resize (win, CK_Right));
+    ck_assert (edit_window_handle_move_resize (win, CK_Enter));
+    edit_window_give_room_back (&bottom->window);
+    ck_assert_int_eq (win->fullscreen, 0);
+    test_assert_rect (&WIDGET (win)->rect, 1, 1, 16, 80);
+
+    group_remove_widget (WIDGET (bottom));
+    g_free (bottom);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A window destroyed gives the focus to the window left on top, not to the widget after it */
+START_TEST (test_window_destroy_selects_top)
+{
+    test_window_t *other;
+    Widget *bg;
+    WRect r;
+
+    // a widget that is not a window before the windows, as the background of the editor is
+    bg = g_new0 (Widget, 1);
+    rect_init (&r, 0, 0, 24, 80);
+    widget_init (bg, &r, widget_default_callback, NULL);
+    group_add_widget_autopos (GROUP (&owner), bg, WPOS_KEEP_DEFAULT, owner.group.widgets->data);
+
+    other = g_new0 (test_window_t, 1);
+    rect_init (&r, 17, 0, 6, 80);
+    edit_window_init (&other->window, &r, &test_window_class);
+    edit_window_add (&owner, &other->window);
+    widget_select (WIDGET (other));
+    ck_assert_ptr_eq (owner.group.current->data, other);
+
+    edit_window_destroy (&other->window);
+    ck_assert_ptr_eq (owner.group.current->data, test_win);
+
+    group_remove_widget (bg);
+    g_free (bg);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A file window is a window of the editor class */
 START_TEST (test_editor_is_window)
 {
@@ -382,6 +458,8 @@ main (void)
     tcase_add_test (tc_core, test_window_add);
     tcase_add_test (tc_core, test_window_hide_show);
     tcase_add_test (tc_core, test_window_holds_widgets);
+    tcase_add_test (tc_core, test_window_make_room);
+    tcase_add_test (tc_core, test_window_destroy_selects_top);
     tcase_add_test (tc_core, test_editor_is_window);
 
     return mctest_run_all (tc_core);

@@ -32,6 +32,9 @@ there and develops it as a program of its own.
   directory.
 - **Multiple windows**: several files open at once, moved, resized, shown full
   screen and listed.
+- **Terminal** (`Ctrl-O`): your shell in a window at the bottom of the screen,
+  under the file, hidden and shown again as it was; the terminal of Midnight
+  Commander, with its scrollback, search and marking of the output.
 - **Editor plugins**: a plugin framework the ctags, etags and spell plugins are
   built on; see [`doc/PLUGINS`](doc/PLUGINS).
 - **Lua scripts** for the editor, run by the Lua runtime plugin and managed
