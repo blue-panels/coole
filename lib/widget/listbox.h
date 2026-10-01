@@ -50,6 +50,7 @@ typedef struct WListbox
     int current;                // The current element displayed
     gboolean allow_duplicates;  // Do we allow duplicates on the list?
     gboolean scrollbar;         // Draw a scrollbar?
+    WScrollBar *bar;            // The scrollbar, the list's own
     gboolean deletable;         // Can list entries be deleted?
     lcback_fn callback;         // The callback function
     int cursor_x, cursor_y;     // Cache the values

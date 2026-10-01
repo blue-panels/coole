@@ -69,6 +69,7 @@ typedef struct
     int normal_color;            /* absolute skin color for rows, -1 = dialog colors */
     int selected_color;          /* absolute skin color for the current row, -1 = dialog colors */
     int scrollbar_color;         /* absolute skin color for the scrollbar, -1 = dialog frame */
+    WScrollBar *bar;             /* the scrollbar, the table's own */
     gboolean has_check_cols;     /* TRUE when at least one col has TABLE_COL_CHECK */
     gboolean has_choice_cols;    /* a choice column adds the column cursor */
 
