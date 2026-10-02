@@ -1043,6 +1043,16 @@ mcterm_compose_filtered (WMcTerm *t, const mcterm_geom_t *g)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The view has moved and is drawn: the host draws what it shows beside it, a scrollbar */
+static void
+mcterm_view_moved (WMcTerm *t)
+{
+    if (t->on_after_redraw != NULL)
+        t->on_after_redraw (t->on_after_redraw_data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* Move the view @delta rows, up when negative. TRUE if it moved. */
 static gboolean
 mcterm_scroll_view (WMcTerm *t, int delta)
@@ -1065,6 +1075,7 @@ mcterm_scroll_view (WMcTerm *t, int delta)
 
         t->filter.top = top;
         widget_draw (WIDGET (t));
+        mcterm_view_moved (t);
 
         return TRUE;
     }
@@ -1078,8 +1089,32 @@ mcterm_scroll_view (WMcTerm *t, int delta)
 
     t->scrollback = back;
     widget_draw (WIDGET (t));
+    mcterm_view_moved (t);
 
     return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The scroll of the history, for a scrollbar of the host */
+gboolean
+mcterm_scroll_state (const WMcTerm *t, int *history, int *back)
+{
+    if (t == NULL || t->vterm == NULL || mcview_vterm_in_alt_screen (t->vterm) || !t->scroll_allowed
+        || mcterm_filter_active (&t->filter))
+        return FALSE;
+
+    *history = mcview_vterm_history_len (t->vterm);
+    *back = t->scrollback;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+mcterm_scroll_by (WMcTerm *t, int delta)
+{
+    return mcterm_scroll_view (t, delta);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1111,6 +1146,7 @@ mcterm_follow_end (WMcTerm *t)
     {
         t->scrollback = 0;
         widget_draw (WIDGET (t));
+        mcterm_view_moved (t);
     }
 }
 

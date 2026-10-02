@@ -146,6 +146,8 @@ void edit_scroll_left (WEdit *edit, long i);
 void edit_move_up (WEdit *edit, long i, gboolean do_scroll);
 void edit_move_down (WEdit *edit, long i, gboolean do_scroll);
 void edit_move_to_prev_col (WEdit *edit, off_t p);
+void edit_set_scrollbars (WEdit *edit);
+long edit_hscroll_max (WEdit *edit, long *view_cols);
 long edit_get_col (WEdit *edit);
 long edit_block_line_columns (const WEdit *edit, long start_col, const char *line, gsize len);
 void edit_update_curs_row (WEdit *edit);

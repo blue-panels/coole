@@ -62,7 +62,10 @@
 
 /*** file scope macro definitions ****************************************************************/
 
-#define MAX_LINE_LEN 1024
+/* A line in view longer than this is not measured to its end for the horizontal scrollbar */
+#define EDIT_VIEW_WIDTH_BYTES (64 * 1024)
+
+#define MAX_LINE_LEN          1024
 
 /* Text styles */
 #define MOD_ABNORMAL                  (1 << 8)
@@ -351,6 +354,38 @@ edit_status_window (WEdit *edit)
     }
 
     g_free (indicator);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The columns of the widest line in view, of the cursor, and of the view itself.  The file is not
+   read through for its widest line.  A line is measured to its end, but for one of more than
+   EDIT_VIEW_WIDTH_BYTES, which is not read further than twice the view past its left edge, and is
+   as wide as that */
+static long
+edit_view_width (WEdit *edit, int lines, int cols)
+{
+    const long left = -edit->start_col;
+    const long far = left + 2 * (long) cols;
+    long width = MAX (edit_get_col (edit) + edit->over_col + 1, left + cols);
+    off_t bol = edit->start_display;
+    int row;
+
+    for (row = 0; row < lines && bol < edit->buffer.size; row++)
+    {
+        const off_t eol = edit_buffer_get_eol (&edit->buffer, bol);
+        if (eol - bol <= EDIT_VIEW_WIDTH_BYTES)
+            width = MAX (width, (long) edit_move_forward3 (edit, bol, 0, eol));
+        else
+        {
+            // the offset of the column far, or of the end of a shorter line
+            const off_t at = edit_move_forward3 (edit, bol, far, 0);
+
+            width = MAX (width, at < eol ? far : (long) edit_move_forward3 (edit, bol, 0, eol));
+        }
+        bol = eol + 1;
+    }
+    return width;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1150,6 +1185,41 @@ edit_render (WEdit *edit, int page, int row_start, int col_start, int row_end, i
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
+/* The columns of the text of the window, and the farthest the view may go sideways: as far as
+   the widest line in view takes it, or the cursor, or where the view is */
+long
+edit_hscroll_max (WEdit *edit, long *view_cols)
+{
+    const WRect *w = &CONST_WIDGET (edit)->rect;
+    const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 2;
+    const int lines = w->lines - frame - EDIT_TEXT_VERTICAL_OFFSET;
+    const int cols =
+        w->cols - frame - (EDIT_TEXT_HORIZONTAL_OFFSET + edit_options.line_state_width);
+
+    if (view_cols != NULL)
+        *view_cols = cols;
+    return MAX (0, edit_view_width (edit, lines, cols) - cols);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The scrollbars of a windowed file window: the lines of the file down the right side, the columns
+   in view along the bottom */
+void
+edit_set_scrollbars (WEdit *edit)
+{
+    WEditWindow *win = EDIT_WINDOW (edit);
+    const WRect *w = &CONST_WIDGET (edit)->rect;
+    const int lines = w->lines - 2 - EDIT_TEXT_VERTICAL_OFFSET;
+    const int cols = w->cols - 2 - (EDIT_TEXT_HORIZONTAL_OFFSET + edit_options.line_state_width);
+
+    edit_window_set_scroll (win, TRUE, edit->buffer.lines + 1, lines, edit->start_line);
+    edit_window_set_scroll (win, FALSE, edit_view_width (edit, lines, cols), cols,
+                            -edit->start_col);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 void
 edit_status (WEdit *edit, gboolean active)
 {
@@ -1162,6 +1232,8 @@ edit_status (WEdit *edit, gboolean active)
     {
         edit_window_draw_frame (win, color, active);
         edit_status_window (edit);
+        edit_set_scrollbars (edit);
+        edit_window_draw_bars (EDIT_WINDOW (edit), color);
     }
 
     edit_window_draw_icons (win, color);
@@ -1219,12 +1291,16 @@ edit_scroll_screen_over_cursor (WEdit *edit)
     }
     p = edit_get_col (edit) + edit->over_col;
     edit_update_curs_row (edit);
-    outby = p + edit->start_col - w->cols + 1 + (r_extreme + edit->found_len);
-    if (outby > 0)
-        edit_scroll_right (edit, outby);
-    outby = l_extreme - p - edit->start_col;
-    if (outby > 0)
-        edit_scroll_left (edit, outby);
+    // a view scrolled sideways by the mouse stays where it is till the next command
+    if (!edit->view_free)
+    {
+        outby = p + edit->start_col - w->cols + 1 + (r_extreme + edit->found_len);
+        if (outby > 0)
+            edit_scroll_right (edit, outby);
+        outby = l_extreme - p - edit->start_col;
+        if (outby > 0)
+            edit_scroll_left (edit, outby);
+    }
     p = edit->curs_row;
     outby = p - w->lines + 1 + b_extreme;
     if (outby > 0)

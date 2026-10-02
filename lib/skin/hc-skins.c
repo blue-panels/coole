@@ -33,7 +33,8 @@
 
 /*** file scope macro definitions ****************************************************************/
 
-#define set_lines(x, y) mc_config_set_string (mc_skin->config, "lines", x, y)
+#define set_lines(x, y)     mc_config_set_string (mc_skin->config, "lines", x, y)
+#define set_scrollbar(x, y) mc_config_set_string (mc_skin->config, "scrollbar", x, y)
 
 /*** file scope type declarations ****************************************************************/
 
@@ -110,6 +111,9 @@ mc_skin_hardcoded_space_lines (mc_skin_t *mc_skin)
     set_lines ("dbottommiddle", " ");
     set_lines ("dleftmiddle", " ");
     set_lines ("drightmiddle", " ");
+
+    set_scrollbar ("vthumb", "#");
+    set_scrollbar ("hthumb", "#");
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -141,6 +145,9 @@ mc_skin_hardcoded_ugly_lines (mc_skin_t *mc_skin)
     set_lines ("dbottommiddle", "-");
     set_lines ("dleftmiddle", "|");
     set_lines ("drightmiddle", "|");
+
+    set_scrollbar ("vthumb", "#");
+    set_scrollbar ("hthumb", "#");
 }
 
 /* --------------------------------------------------------------------------------------------- */

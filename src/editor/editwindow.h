@@ -61,6 +61,14 @@ typedef struct
     /* The smallest size the window can be resized to, with its frame */
     int min_lines;
     int min_cols;
+    /* The scrollbars of the frame of a window that is not fullscreen: whether there is the vertical
+       one down the right side, and the column of the bottom where the horizontal one starts, 0
+       for none */
+    gboolean vbar;
+    int hbar_x;
+    /* A scrollbar has moved: the view goes to pos, as near as it can, and the class gives the
+       bars the range again (edit_window_set_scroll ()).  NULL for a window without bars */
+    void (*scrolled) (WEditWindow *win, gboolean vertical, long pos);
 } edit_window_class_t;
 
 struct WEditWindow
@@ -77,6 +85,10 @@ struct WEditWindow
     unsigned long room_id;
     WRect room_rect;      // where that window was put
     WRect room_loc_prev;  // where that window goes back to when it is not fullscreen
+
+    // the scrollbars of the frame, widgets of the window; hidden while it is fullscreen
+    WScrollBar *vbar;
+    WScrollBar *hbar;
 };
 
 /*** global variables defined in .c file *********************************************************/
@@ -87,6 +99,12 @@ extern char *edit_window_close_char;
 /*** declarations of public functions ************************************************************/
 
 void edit_window_init (WEditWindow *win, const WRect *r, const edit_window_class_t *klass);
+
+/* The range of a scrollbar of the window: the view of visible of total at pos */
+void edit_window_set_scroll (WEditWindow *win, gboolean vertical, long total, long visible,
+                             long pos);
+/* Draw the scrollbars over the frame, after the frame */
+void edit_window_draw_bars (WEditWindow *win, int color);
 gboolean edit_window_is_window (const Widget *w);
 
 /* Put a window on the screen; the screen owns it from now on */

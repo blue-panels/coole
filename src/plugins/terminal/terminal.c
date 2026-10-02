@@ -87,6 +87,7 @@ static char *terminal_window_get_title (const WEditWindow *win);
 static gboolean terminal_window_is_modified (const WEditWindow *win);
 static gboolean terminal_window_close (WEditWindow *win);
 static gboolean terminal_window_ok_to_quit (WEditWindow *win);
+static void terminal_window_scroll_bar (WEditWindow *win, gboolean vertical, long pos);
 
 /*** file scope variables ************************************************************************/
 
@@ -99,6 +100,10 @@ static const edit_window_class_t terminal_window_class = {
     .ok_to_quit = terminal_window_ok_to_quit,
     .min_lines = 2 + 1,
     .min_cols = 2 + 8,
+    // the history scrolls; nothing is wider than the window
+    .vbar = TRUE,
+    .hbar_x = 0,
+    .scrolled = terminal_window_scroll_bar,
 };
 
 /* --------------------------------------------------------------------------------------------- */
@@ -181,6 +186,23 @@ terminal_window_title (const terminal_window_t *tw, int width)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The scrollbar of the history down the right side of the frame; nothing to show for a
+   full-screen program, a filter of the output, or a history that fits */
+static void
+terminal_window_set_bar (terminal_window_t *tw)
+{
+    const WRect *w = &CONST_WIDGET (tw)->rect;
+    const int rows = w->lines - 2;
+    int history = 0, back = 0;
+
+    if (!mcterm_scroll_state (tw->term, &history, &back))
+        history = back = 0;
+    edit_window_set_scroll (EDIT_WINDOW (tw), TRUE, (long) history + rows, rows,
+                            (long) (history - back));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The frame and the title of the window, or the top line of the screen when it is fullscreen */
 static void
 terminal_window_draw_frame (terminal_window_t *tw)
@@ -216,10 +238,27 @@ terminal_window_draw_frame (terminal_window_t *tw)
             tty_print_string (str_term_trim (title, cols));
             tty_print_char (']');
         }
+
+        terminal_window_set_bar (tw);
+        edit_window_draw_bars (EDIT_WINDOW (tw), color);
     }
 
     g_free (title);
     edit_window_draw_icons (win, color);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The scrollbar of the frame has moved: the view of the history goes with it, pos rows from the
+   oldest */
+static void
+terminal_window_scroll_bar (WEditWindow *win, gboolean vertical, long pos)
+{
+    terminal_window_t *tw = (terminal_window_t *) win;
+    int history = 0, back = 0;
+
+    if (vertical && mcterm_scroll_state (tw->term, &history, &back))
+        (void) mcterm_scroll_by (tw->term, back - (int) (history - pos));
 }
 
 /* --------------------------------------------------------------------------------------------- */

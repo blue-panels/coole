@@ -4870,6 +4870,9 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
 {
     WRect *w = &WIDGET (edit)->rect;
 
+    // a command brings the view back over the cursor
+    edit->view_free = FALSE;
+
     if (edit_runtime_menu_action (command))
         return;
 

@@ -71,6 +71,7 @@ struct WEdit
     // display information
     long start_display;             // First char displayed
     long start_col;                 // First displayed column, negative
+    gboolean view_free;             // scrolled sideways away from the cursor, till the next command
     long curs_row;                  // row position of cursor on the screen
     long curs_col;                  // column position on screen
     long over_col;                  // pos after '\n'

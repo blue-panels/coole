@@ -97,6 +97,7 @@ typedef struct
 
 static cb_ret_t edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data);
 static void edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event);
+static void edit_class_scroll (WEditWindow *win, gboolean vertical, long pos);
 static char *edit_class_get_title (const WEditWindow *win);
 static gboolean edit_class_is_modified (const WEditWindow *win);
 static gboolean edit_class_close (WEditWindow *win);
@@ -118,6 +119,10 @@ const edit_window_class_t edit_class = {
     .ok_to_quit = edit_class_ok_to_quit,
     .min_lines = WINDOW_MIN_LINES,
     .min_cols = WINDOW_MIN_COLS,
+    // the horizontal bar past the position of the cursor at the bottom of the frame
+    .vbar = TRUE,
+    .hbar_x = 50,
+    .scrolled = edit_class_scroll,
 };
 
 /*** file scope variables ************************************************************************/
@@ -2087,11 +2092,19 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
 
     case MSG_CURSOR:
     {
+        const int x0 = (EDIT_WINDOW (e)->fullscreen != 0 ? 0 : 1) + EDIT_TEXT_HORIZONTAL_OFFSET
+            + edit_options.line_state_width;
+        long view_cols = 0;
         int y, x;
 
         y = (EDIT_WINDOW (e)->fullscreen != 0 ? 0 : 1) + EDIT_TEXT_VERTICAL_OFFSET + e->curs_row;
-        x = (EDIT_WINDOW (e)->fullscreen != 0 ? 0 : 1) + EDIT_TEXT_HORIZONTAL_OFFSET
-            + edit_options.line_state_width + e->curs_col + e->start_col + e->over_col;
+        x = x0 + e->curs_col + e->start_col + e->over_col;
+        // a cursor the view was scrolled away from stands at the edge of the text
+        if (e->view_free)
+        {
+            (void) edit_hscroll_max (e, &view_cols);
+            x = CLAMP (x, x0, x0 + (int) MAX (1, view_cols) - 1);
+        }
 
         widget_gotoyx (w, y, x);
         return MSG_HANDLED;
@@ -2114,8 +2127,50 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Scroll a file window sideways by cols, as far as the widest line in view goes.  The cursor stays
+   where it is, out of the view if it comes to that: the view goes back to it with the next
+   command */
+static void
+edit_scroll_sideways (WEdit *edit, long cols)
+{
+    const long left = CLAMP (-edit->start_col + cols, 0, edit_hscroll_max (edit, NULL));
+
+    if (left == -edit->start_col)
+        return;
+
+    edit->start_col = -left;
+    edit->view_free = TRUE;
+    edit->force |= REDRAW_PAGE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A scrollbar of the frame has moved: the cursor and the view go together, the editor keeping the
+   view over the cursor */
+static void
+edit_class_scroll (WEditWindow *win, gboolean vertical, long pos)
+{
+    WEdit *edit = EDIT (win);
+
+    if (vertical)
+    {
+        const long delta = pos - edit->start_line;
+
+        if (delta < 0)
+            edit_move_up (edit, -delta, TRUE);
+        else if (delta > 0)
+            edit_move_down (edit, delta, TRUE);
+    }
+    else
+        edit_scroll_sideways (edit, pos + edit->start_col);
+
+    edit_total_update (edit);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /**
- * Handle mouse events of editor window that its frame does not take
+ * Handle mouse events of editor window that its frame and its scrollbars do not take
  *
  * @param w Widget object (the editor window)
  * @param msg mouse event message
@@ -2129,6 +2184,8 @@ edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
     switch (msg)
     {
     case MSG_MOUSE_DOWN:
+        // the click puts the cursor where it is seen: the view goes along with the cursor again
+        edit->view_free = FALSE;
         edit_update_curs_row (edit);
         edit_update_curs_col (edit);
 
@@ -2229,6 +2286,16 @@ edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 
     case MSG_MOUSE_SCROLL_DOWN:
         edit_move_down (edit, 2, TRUE);
+        edit_total_update (edit);
+        break;
+
+    case MSG_MOUSE_SCROLL_LEFT:
+        edit_scroll_sideways (edit, -8);
+        edit_total_update (edit);
+        break;
+
+    case MSG_MOUSE_SCROLL_RIGHT:
+        edit_scroll_sideways (edit, 8);
         edit_total_update (edit);
         break;
 
