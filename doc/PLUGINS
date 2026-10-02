@@ -246,7 +246,13 @@ All are optional except open and close.
                              raw key interception.  Called for every
                              key after the macro hotkeys and before the
                              keymap is consulted;
-                             return MC_EPR_OK to consume the key
+                             return MC_EPR_OK to consume the key.
+                             With a window that is no file in front,
+                             the terminal for one, it is called with
+                             edit NULL before the window gets the key:
+                             a plugin that needs a file returns
+                             MC_EPR_NOT_SUPPORTED, and the key is the
+                             window's
   handle_event(plugin_data, edit, event_id, payload)
                              MC_EP_EVENT_TEXT_CHANGED and
                              MC_EP_EVENT_CURSOR_MOVED, below

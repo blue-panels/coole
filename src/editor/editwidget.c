@@ -1923,6 +1923,10 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
                     we->ext_mode = FALSE;
             }
         }
+        /* A window that is no file, the terminal for one: the keys of the plugins that work with no
+           file go to them first, the Preview for one; every other key is the window's */
+        else if (edit_window_is_window (we) && edit_plugin_handle_key (h, parm, NULL))
+            return MSG_HANDLED;
 
         /*
          * Due to the "end of bracket" escape the editor sees input with is_idle() == false
