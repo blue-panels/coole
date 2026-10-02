@@ -420,6 +420,31 @@ text_window_draw_frame (WTextWindow *tw)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Bold text: the letters of the bold of the editor on the background of its plain text.  The bold
+   of the editor has a background of its own, for what it marks in a file, which would make a bar
+   of every bold word of the Preview */
+static int
+text_window_bold_color (void)
+{
+    const tty_color_pair_t *bold, *normal;
+    tty_color_pair_t color;
+
+    bold =
+        (const tty_color_pair_t *) g_hash_table_lookup (mc_skin__default.colors, "editor.editbold");
+    normal = (const tty_color_pair_t *) g_hash_table_lookup (mc_skin__default.colors,
+                                                             "editor._default_");
+    if (bold == NULL || normal == NULL)
+        return EDITOR_BOLD_COLOR;
+
+    color.fg = bold->fg;
+    color.bg = normal->bg;
+    color.attrs = bold->attrs;
+    color.pair_index = 0;
+    return tty_try_alloc_color_pair (&color, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 text_window_draw_text (const WTextWindow *tw)
 {
@@ -431,7 +456,7 @@ text_window_draw_text (const WTextWindow *tw)
     int row;
 
     colors.normal = EDITOR_NORMAL_COLOR;
-    colors.bold = EDITOR_BOLD_COLOR;
+    colors.bold = text_window_bold_color ();
 
     text_window_text_rect (tw, &r);
 
