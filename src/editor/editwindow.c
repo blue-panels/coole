@@ -38,8 +38,12 @@
 #include "lib/skin.h"
 #include "lib/strutil.h"  // str_term_trim()
 #include "lib/widget.h"
+#include "lib/keybind.h"  // keybind_lookup_keymap_command()
 
-#include "edit.h"  // MCEDIT_HELP_FILE
+#include "src/keymap.h"  // editor_map
+
+#include "edit.h"       // MCEDIT_HELP_FILE
+#include "edit-impl.h"  // edit_widget_is_editor()
 #include "editwindow.h"
 
 /*** global variables ****************************************************************************/
@@ -77,7 +81,33 @@ edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         return MSG_HANDLED;
     }
 
+    /* A window that is no file, being moved or resized, takes the keys of the editor for that: the
+       class would take them for its own, the terminal giving them to the shell.  A file window
+       has them in its own keymap */
+    if (msg == MSG_KEY && win->drag_state != EDIT_WINDOW_DRAG_NONE && !edit_widget_is_editor (w))
+    {
+        const long command = keybind_lookup_keymap_command (editor_map, parm);
+
+        if (command == CK_Quit || command == CK_Cancel)
+            edit_window_restore_size (win);
+        else
+            (void) edit_window_handle_move_resize (win, command);
+        return MSG_HANDLED;
+    }
+
+    // the same for the commands of the button bar: they would do what the class does with them
+    if (msg == MSG_ACTION && win->drag_state != EDIT_WINDOW_DRAG_NONE && !edit_widget_is_editor (w))
+    {
+        if (parm == CK_Quit || parm == CK_Cancel)
+            edit_window_restore_size (win);
+        return MSG_HANDLED;
+    }
+
     ret = win->klass->callback (w, sender, msg, parm, data);
+
+    // the room made for it is forgotten with it
+    if (msg == MSG_DESTROY && win->rooms != NULL)
+        g_clear_pointer (&win->rooms, g_array_unref);
 
     // the frame has moved: its scrollbars with it
     if (msg == MSG_RESIZE)
@@ -171,6 +201,427 @@ edit_window_redraw (WEditWindow *win)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/*
+ * Sticky windows.  With edit_options.sticky_windows on, windows whose frames stand next to each
+ * other, the left column of one right after the right column of the other (or the top row right
+ * after the bottom row), resize together: the edge of one moves the edge of its neighbors, and
+ * nothing comes apart.  Nothing is kept of it: the neighbors are found from where the windows are.
+ *
+ * An edge is the column (or the row) of the frames of the windows before it, with those windows
+ * and the ones right after it, in one run along it: a window after it shares part of a side with a
+ * window before it, and a window on either side that touches one on the same side, one above the
+ * other, carries the run on.  A window that only meets another at a corner is no part of it.  An
+ * edge with no window after it is the window's own.
+ */
+
+typedef struct
+{
+    gboolean vertical;  // a column between windows side by side, else a row between ones stacked
+    int at;             // the last column (row) of the frames of the windows before it
+    GPtrArray *before;  // WEditWindow: the ones that grow when it moves forward
+    GPtrArray *after;   // WEditWindow: the ones that shrink and move
+} sticky_edge_t;
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+sticky_window (const Widget *w)
+{
+    return edit_window_is_window (w) && widget_get_state (w, WST_VISIBLE)
+        && CONST_EDIT_WINDOW (w)->fullscreen == 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The span of a window along an edge: its rows for a column, its columns for a row */
+static void
+sticky_span (const Widget *w, gboolean vertical, int *from, int *to)
+{
+    *from = vertical ? w->rect.y : w->rect.x;
+    *to = *from + (vertical ? w->rect.lines : w->rect.cols) - 1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether o shares part of its span with one of the windows of list, or, with touch, touches one */
+static gboolean
+sticky_meets (const GPtrArray *list, const Widget *o, gboolean vertical, gboolean touch)
+{
+    const int slack = touch ? 1 : 0;
+    int from, to;
+    guint i;
+
+    sticky_span (o, vertical, &from, &to);
+    for (i = 0; i < list->len; i++)
+    {
+        int lfrom, lto;
+
+        sticky_span (CONST_WIDGET (g_ptr_array_index (list, i)), vertical, &lfrom, &lto);
+        if (from <= lto + slack && to >= lfrom - slack)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The edge after the right side (vertical) or the bottom (horizontal) of the frame of win */
+static void
+sticky_edge_find (WEditWindow *win, gboolean vertical, sticky_edge_t *e)
+{
+    const Widget *w = CONST_WIDGET (win);
+    gboolean grown;
+
+    e->vertical = vertical;
+    e->at = vertical ? w->rect.x + w->rect.cols - 1 : w->rect.y + w->rect.lines - 1;
+    e->before = g_ptr_array_new ();
+    e->after = g_ptr_array_new ();
+    g_ptr_array_add (e->before, win);
+
+    // the run along the edge grows by every window that comes into it, till none does
+    do
+    {
+        const GList *l;
+
+        grown = FALSE;
+        for (l = w->owner->widgets; l != NULL; l = g_list_next (l))
+        {
+            Widget *o = WIDGET (l->data);
+            WEditWindow *ow = EDIT_WINDOW (o);
+            int first, last;
+
+            if (!sticky_window (o) || g_ptr_array_find (e->before, ow, NULL)
+                || g_ptr_array_find (e->after, ow, NULL))
+                continue;
+
+            first = vertical ? o->rect.x : o->rect.y;
+            last = first + (vertical ? o->rect.cols : o->rect.lines) - 1;
+
+            if (last == e->at
+                && (sticky_meets (e->after, o, vertical, FALSE)
+                    || sticky_meets (e->before, o, vertical, TRUE)))
+                g_ptr_array_add (e->before, ow);
+            else if (first == e->at + 1
+                     && (sticky_meets (e->before, o, vertical, FALSE)
+                         || sticky_meets (e->after, o, vertical, TRUE)))
+                g_ptr_array_add (e->after, ow);
+            else
+                continue;
+
+            grown = TRUE;
+        }
+    }
+    while (grown);
+
+    // no neighbor after it: an edge of the window alone, the windows in line with it stay
+    if (e->after->len == 0)
+        g_ptr_array_set_size (e->before, 1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+sticky_edge_free (sticky_edge_t *e)
+{
+    g_ptr_array_free (e->before, TRUE);
+    g_ptr_array_free (e->after, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* How far the edge can move of d: no window smaller than its smallest size, no window grown past
+   the area a or over a window that is no part of the edge */
+static int
+sticky_edge_clamp (const sticky_edge_t *e, const WRect *a, int d)
+{
+    const WGroup *g = CONST_WIDGET (g_ptr_array_index (e->before, 0))->owner;
+    const int end = e->vertical ? a->x + a->cols - 1 : a->y + a->lines - 1;
+    const GList *l;
+    guint i;
+
+    if (d > 0)
+        d = MIN (d, MAX (0, end - e->at));
+
+    for (i = 0; i < e->before->len; i++)
+    {
+        const WEditWindow *bw = EDIT_WINDOW (g_ptr_array_index (e->before, i));
+        const WRect *r = &CONST_WIDGET (bw)->rect;
+
+        d = MAX (d,
+                 (e->vertical ? bw->klass->min_cols - r->cols : bw->klass->min_lines - r->lines));
+    }
+    for (i = 0; i < e->after->len; i++)
+    {
+        const WEditWindow *aw = EDIT_WINDOW (g_ptr_array_index (e->after, i));
+        const WRect *r = &CONST_WIDGET (aw)->rect;
+
+        d = MIN (d,
+                 (e->vertical ? r->cols - aw->klass->min_cols : r->lines - aw->klass->min_lines));
+    }
+
+    // the windows in the way: the ones before stop short of them, and so do the ones after
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+    {
+        const Widget *o = CONST_WIDGET (l->data);
+        int first, last;
+
+        if (!sticky_window (o) || g_ptr_array_find (e->before, o, NULL)
+            || g_ptr_array_find (e->after, o, NULL))
+            continue;
+        first = e->vertical ? o->rect.x : o->rect.y;
+        last = first + (e->vertical ? o->rect.cols : o->rect.lines) - 1;
+
+        if (d > 0 && first > e->at && sticky_meets (e->before, o, e->vertical, FALSE))
+            d = MIN (d, first - e->at - 1);
+        else if (d < 0 && last <= e->at && sticky_meets (e->after, o, e->vertical, FALSE))
+            d = MAX (d, last - e->at);
+    }
+
+    return d;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+sticky_edge_move (const sticky_edge_t *e, int d)
+{
+    const gboolean shared = (e->after->len != 0);
+    guint i;
+
+    for (i = 0; i < e->before->len; i++)
+    {
+        WEditWindow *bw = EDIT_WINDOW (g_ptr_array_index (e->before, i));
+        WRect r = WIDGET (bw)->rect;
+
+        if (e->vertical)
+        {
+            r.cols += d;
+            bw->moved_vedge = bw->moved_vedge || shared;
+        }
+        else
+        {
+            r.lines += d;
+            bw->moved_hedge = bw->moved_hedge || shared;
+        }
+        widget_set_size_rect (WIDGET (bw), &r);
+    }
+    for (i = 0; i < e->after->len; i++)
+    {
+        Widget *aw = WIDGET (g_ptr_array_index (e->after, i));
+        WRect r = aw->rect;
+
+        if (e->vertical)
+        {
+            r.x += d;
+            r.cols -= d;
+        }
+        else
+        {
+            r.y += d;
+            r.lines -= d;
+        }
+        widget_set_size_rect (aw, &r);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Mark the windows of the edges as dragged along with win, and no other window of the screen */
+static void
+sticky_mark (WEditWindow *win, const sticky_edge_t *edges, int n)
+{
+    GList *l;
+    int k;
+
+    for (l = WIDGET (win)->owner->widgets; l != NULL; l = g_list_next (l))
+        if (edit_window_is_window (WIDGET (l->data)))
+            EDIT_WINDOW (l->data)->dragged_along = 0;
+
+    for (k = 0; k < n; k++)
+    {
+        guint i;
+
+        if (edges[k].after->len == 0)
+            continue;
+        for (i = 0; i < edges[k].before->len; i++)
+            EDIT_WINDOW (g_ptr_array_index (edges[k].before, i))->dragged_along = 1;
+        for (i = 0; i < edges[k].after->len; i++)
+            EDIT_WINDOW (g_ptr_array_index (edges[k].after, i))->dragged_along = 1;
+    }
+    win->dragged_along = 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Resize win by dx columns and dy rows at its bottom right corner, its sticky neighbors along: an
+   edge of it with windows after it moves with them, and a side that was on the edge of the area
+   when the resize began stays there */
+static void
+sticky_resize (WEditWindow *win, int dx, int dy)
+{
+    Widget *w = WIDGET (win);
+    sticky_edge_t edges[2];
+    WRect a;
+    int k;
+
+    edit_window_area (DIALOG (w->owner), &a);
+    sticky_edge_find (win, TRUE, &edges[0]);
+    sticky_edge_find (win, FALSE, &edges[1]);
+
+    for (k = 0; k < 2; k++)
+    {
+        const sticky_edge_t *e = &edges[k];
+        int d = e->vertical ? dx : dy;
+
+        if (d == 0 || (e->vertical ? win->pin_right : win->pin_bottom))
+            continue;
+
+        d = sticky_edge_clamp (e, &a, d);
+        if (d != 0)
+        {
+            sticky_edge_move (e, d);
+            // an edge of its own is the user's resize of it
+            if (e->after->len == 0 && e->vertical)
+                win->drag_own_dx += d;
+            else if (e->after->len == 0)
+                win->drag_own_dy += d;
+        }
+    }
+
+    sticky_mark (win, edges, 2);
+    sticky_edge_free (&edges[0]);
+    sticky_edge_free (&edges[1]);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* No window of the screen is drawn as dragged along */
+static void
+sticky_unmark (WGroup *g)
+{
+    GList *l;
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+        if (edit_window_is_window (WIDGET (l->data)))
+            EDIT_WINDOW (l->data)->dragged_along = 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A move or resize of win begins: where every window of the screen is, to go back to */
+static void
+drag_begin (WEditWindow *win)
+{
+    GList *l;
+
+    for (l = WIDGET (win)->owner->widgets; l != NULL; l = g_list_next (l))
+        if (edit_window_is_window (WIDGET (l->data)))
+        {
+            WEditWindow *ow = EDIT_WINDOW (l->data);
+
+            ow->drag_rect = WIDGET (ow)->rect;
+            ow->moved_vedge = ow->moved_hedge = 0;
+            ow->dragged_along = 0;
+        }
+
+    win->drag_open = 1;
+    win->drag_own = 0;
+    win->drag_own_dx = win->drag_own_dy = 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The resize begins, from where win is now: which sides of it stay on the edge of the screen;
+   with sticky windows, the neighbors that will resize along drawn as dragged */
+static void
+resize_begin (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+    WRect a;
+
+    edit_window_area (DIALOG (w->owner), &a);
+    win->pin_right = (w->rect.x + w->rect.cols == a.x + a.cols);
+    win->pin_bottom = (w->rect.y + w->rect.lines == a.y + a.lines);
+
+    if (edit_options.sticky_windows)
+        sticky_resize (win, 0, 0);
+    else
+        sticky_unmark (w->owner);
+    widget_draw (WIDGET (w->owner));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The move or resize of win ends.  Kept: a window that made room for another keeps being in it
+   though an edge it shares with neighbors has moved its edge of the room, so that hiding the other
+   puts it back as before; and win changed by itself counts as moved by the user.  Not kept: every
+   window goes back where it was when it began.  Either way no window is drawn as dragged any
+   more */
+static void
+drag_end (WEditWindow *win, gboolean keep)
+{
+    Widget *w = WIDGET (win);
+    WGroup *g = w->owner;
+    GList *l;
+
+    win->drag_state = EDIT_WINDOW_DRAG_NONE;
+    w->mouse.forced_capture = FALSE;
+
+    if (g == NULL || win->drag_open == 0)
+        return;
+    win->drag_open = 0;
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+    {
+        Widget *wl = WIDGET (l->data);
+        WEditWindow *ow;
+
+        if (!edit_window_is_window (wl))
+            continue;
+        ow = EDIT_WINDOW (wl);
+
+        if (keep && ow->rooms != NULL)
+        {
+            guint i;
+
+            for (i = 0; i < ow->rooms->len; i++)
+            {
+                edit_window_room_t *room = &g_array_index (ow->rooms, edit_window_room_t, i);
+                Widget *m = widget_find_by_id (WIDGET (g), room->id);
+                WEditWindow *mw;
+
+                if (m == NULL || !edit_window_is_window (m))
+                    continue;
+                mw = EDIT_WINDOW (m);
+                if (room->above && mw->moved_hedge)
+                    room->edge_after = m->rect.y + m->rect.lines - 1;
+                else if (!room->above && mw->moved_vedge)
+                    room->edge_after = m->rect.x + m->rect.cols - 1;
+            }
+        }
+        else if (!keep && ow->fullscreen == 0 && !rects_are_equal (&wl->rect, &ow->drag_rect))
+            widget_set_size_rect (wl, &ow->drag_rect);
+    }
+
+    // an edge of its own moved and moved back is no change
+    if (keep
+        && ((win->drag_own != 0 && !rects_are_equal (&w->rect, &win->drag_rect))
+            || win->drag_own_dx != 0 || win->drag_own_dy != 0))
+        win->user_moves++;
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+        if (edit_window_is_window (WIDGET (l->data)))
+        {
+            WEditWindow *ow = EDIT_WINDOW (l->data);
+
+            ow->dragged_along = ow->moved_vedge = ow->moved_hedge = 0;
+        }
+    win->pin_right = win->pin_bottom = 0;
+    win->drag_own = 0;
+    win->drag_own_dx = win->drag_own_dy = 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /**
  * Move window by one row or column in any direction.
  *
@@ -209,8 +660,12 @@ edit_window_move (WEditWindow *win, long command)
         return;
     }
 
+    if (rects_are_equal (&r, &w->rect))
+        return;
+
     // the widgets of the window move with it
     widget_set_size_rect (w, &r);
+    win->drag_own = 1;
     widget_draw (WIDGET (w->owner));
 }
 
@@ -228,6 +683,19 @@ edit_window_resize (WEditWindow *win, long command)
     Widget *w = WIDGET (win);
     WRect r = w->rect;
     WRect a;
+
+    if (edit_options.sticky_windows)
+    {
+        sticky_resize (win,
+                       command == CK_Left        ? -1
+                           : command == CK_Right ? 1
+                                                 : 0,
+                       command == CK_Up         ? -1
+                           : command == CK_Down ? 1
+                                                : 0);
+        widget_draw (WIDGET (w->owner));
+        return;
+    }
 
     edit_window_area (DIALOG (w->owner), &a);
 
@@ -253,8 +721,12 @@ edit_window_resize (WEditWindow *win, long command)
         return;
     }
 
+    if (rects_are_equal (&r, &w->rect))
+        return;
+
     // the widgets of the window resize with it
     widget_set_size_rect (w, &r);
+    win->drag_own = 1;
     widget_draw (WIDGET (w->owner));
 }
 
@@ -302,14 +774,25 @@ edit_window_mouse_move_resize (Widget *w, mouse_msg_t msg, mouse_event_t *event)
         r.y = global_y;
         r.x = global_x - win->drag_state_start;
     }
+    else if (win->drag_state == EDIT_WINDOW_DRAG_RESIZE && edit_options.sticky_windows)
+    {
+        // the corner goes under the mouse, the sticky neighbors along
+        sticky_resize (win, global_x - (r.x + r.cols - 1), global_y - (r.y + r.lines - 1));
+        widget_draw (WIDGET (w->owner));
+        return;
+    }
     else if (win->drag_state == EDIT_WINDOW_DRAG_RESIZE)
     {
         r.lines = MAX (win->klass->min_lines, global_y - r.y + 1);
         r.cols = MAX (win->klass->min_cols, global_x - r.x + 1);
     }
 
+    if (rects_are_equal (&r, &w->rect))
+        return;
+
     // the widgets of the window move and resize with it
     widget_set_size_rect (w, &r);
+    win->drag_own = 1;
 
     // We draw the whole dialog because dragging/resizing exposes area beneath
     widget_draw (WIDGET (w->owner));
@@ -544,6 +1027,8 @@ edit_window_destroy (WEditWindow *win)
     Widget *top = NULL;
     GList *l;
 
+    // a window stops moving or resizing when it goes, its neighbors left where they are
+    drag_end (win, TRUE);
     group_remove_widget (w);
     widget_destroy (w);
 
@@ -554,6 +1039,20 @@ edit_window_destroy (WEditWindow *win)
 
     if (top != NULL)
         widget_select (top);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * End a move or resize of a window where it is: the window goes, or something else is done
+ * with it.
+ *
+ * @param win window
+ */
+
+void
+edit_window_drag_end (WEditWindow *win)
+{
+    drag_end (win, TRUE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -574,22 +1073,19 @@ edit_window_hide (WEditWindow *win)
 {
     Widget *w = WIDGET (win);
 
-    // a window stops moving or resizing when it goes
-    if (win->drag_state != EDIT_WINDOW_DRAG_NONE)
-    {
-        win->drag_state = EDIT_WINDOW_DRAG_NONE;
-        w->mouse.forced_capture = FALSE;
-    }
-
+    // a window stops moving or resizing when it goes, its neighbors left where they are
+    drag_end (win, TRUE);
     widget_hide (w);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Make room for a window that does not fill the screen: the topmost fullscreen window of the
- * screen stops being fullscreen and takes the area to the left of @win, when @win takes all the
- * height of the screen, or else the area above it. Nothing is done when there is no such window,
- * or no room for it.
+ * Make room for a window that does not fill the screen: to the left of @win, when @win takes all
+ * the height of the screen, or else above it.  The topmost fullscreen window stops being
+ * fullscreen and takes that area; every other window that goes into @win shrinks out of it, its
+ * right side (or its bottom) put next to @win.  Nothing is done when the fullscreen window has no
+ * room; a window that would become smaller than its smallest size is left as it is.  The edge
+ * each window moved is remembered, to be put back.
  *
  * @param win window to make room for
  */
@@ -600,11 +1096,16 @@ edit_window_make_room (WEditWindow *win)
     Widget *w = WIDGET (win);
     WGroup *g = w->owner;
     WEditWindow *top = NULL;
-    WRect a, r;
+    gboolean left;
+    WRect a;
     GList *l;
 
-    if (g == NULL || win->fullscreen != 0 || win->room_id != 0)
+    if (g == NULL || win->fullscreen != 0 || win->rooms != NULL)
         return;
+
+    edit_window_area (DIALOG (g), &a);
+    // a window of all the height: the room is to the left of it, else above it
+    left = (w->rect.y <= a.y && w->rect.y + w->rect.lines >= a.y + a.lines && w->rect.x > a.x);
 
     for (l = g->widgets; l != NULL; l = g_list_next (l))
     {
@@ -615,40 +1116,88 @@ edit_window_make_room (WEditWindow *win)
             top = EDIT_WINDOW (wl);
     }
 
-    if (top == NULL)
+    // a fullscreen window with no room stays as it is, and so does everything else
+    if (top != NULL
+        && (left ? w->rect.x - a.x < top->klass->min_cols
+                 : w->rect.y - a.y < top->klass->min_lines))
         return;
 
-    edit_window_area (DIALOG (g), &a);
-    r = a;
-    if (w->rect.y <= a.y && w->rect.y + w->rect.lines >= a.y + a.lines && w->rect.x > a.x)
+    win->rooms = g_array_new (FALSE, FALSE, sizeof (edit_window_room_t));
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
     {
-        // a window of all the height: the room is to the left of it
-        r.cols = w->rect.x - a.x;
-        if (r.cols < top->klass->min_cols)
-            return;
-    }
-    else
-    {
-        // the room is above the window
-        r.lines = w->rect.y - a.y;
-        if (r.lines < top->klass->min_lines)
-            return;
+        Widget *wl = WIDGET (l->data);
+        WEditWindow *ow;
+        edit_window_room_t room;
+        WRect r;
+
+        if (wl == w || !edit_window_is_window (wl) || !widget_get_state (wl, WST_VISIBLE))
+            continue;
+        ow = EDIT_WINDOW (wl);
+
+        if (ow == top)
+        {
+            r = a;
+            if (left)
+                r.cols = w->rect.x - a.x;
+            else
+                r.lines = w->rect.y - a.y;
+            // fullscreen again when it takes the whole screen again
+            ow->room_fullscreen = 1;
+            ow->room_loc_prev = ow->loc_prev;
+        }
+        else if (ow->fullscreen != 0)
+            continue;  // under the top one, unseen
+        else
+        {
+            // a window that goes into @win shrinks out of it, if it starts before it
+            r = wl->rect;
+            if (!rects_are_overlapped (&wl->rect, &w->rect))
+                continue;
+            if (left)
+            {
+                if (wl->rect.x >= w->rect.x)
+                    continue;
+                r.cols = w->rect.x - wl->rect.x;
+            }
+            else
+            {
+                if (wl->rect.y >= w->rect.y)
+                    continue;
+                r.lines = w->rect.y - wl->rect.y;
+            }
+            if (r.cols < ow->klass->min_cols || r.lines < ow->klass->min_lines)
+                continue;
+        }
+
+        room.id = wl->id;
+        room.above = !left;
+        if (ow == top)
+            room.edge_before = left ? a.x + a.cols - 1 : a.y + a.lines - 1;
+        else
+            room.edge_before =
+                left ? wl->rect.x + wl->rect.cols - 1 : wl->rect.y + wl->rect.lines - 1;
+        room.edge_after = left ? r.x + r.cols - 1 : r.y + r.lines - 1;
+        room.user_moves = ow->user_moves;
+        g_array_append_val (win->rooms, room);
+
+        ow->fullscreen = 0;
+        wl->pos_flags = WPOS_KEEP_DEFAULT;
+        widget_set_size_rect (wl, &r);
     }
 
-    win->room_id = WIDGET (top)->id;
-    win->room_rect = r;
-    win->room_loc_prev = top->loc_prev;
+    if (win->rooms->len == 0)
+        g_clear_pointer (&win->rooms, g_array_unref);
 
-    top->fullscreen = 0;
-    WIDGET (top)->pos_flags = WPOS_KEEP_DEFAULT;
-    widget_set_size_rect (WIDGET (top), &r);
     widget_draw (WIDGET (g));
 }
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Give back the room edit_window_make_room() made: the window made fullscreen again. A window the
- * user has moved, resized or made fullscreen since is left as it is.
+ * Give back the room edit_window_make_room() made: the edge each window moved for it goes back,
+ * the other sides staying where they are, so that the rooms can be given back in any order; a
+ * window that was fullscreen is again when it takes the whole screen.  A window whose edge the
+ * user has moved since, or that has been made fullscreen, is left as it is.
  *
  * @param win window the room was made for
  */
@@ -657,29 +1206,53 @@ void
 edit_window_give_room_back (WEditWindow *win)
 {
     Widget *w = WIDGET (win);
-    Widget *wt;
-    unsigned long id = win->room_id;
+    GArray *rooms = win->rooms;
+    WRect a;
+    guint i;
 
-    win->room_id = 0;
+    win->rooms = NULL;
 
-    if (id == 0 || w->owner == NULL)
-        return;
-
-    wt = widget_find_by_id (WIDGET (w->owner), id);
-    if (wt != NULL && wt != w && edit_window_is_window (wt) && EDIT_WINDOW (wt)->fullscreen == 0
-        && wt->rect.y == win->room_rect.y && wt->rect.x == win->room_rect.x
-        && wt->rect.lines == win->room_rect.lines && wt->rect.cols == win->room_rect.cols)
+    if (rooms == NULL || w->owner == NULL)
     {
-        WEditWindow *top = EDIT_WINDOW (wt);
-        WRect a;
-
-        top->fullscreen = 1;
-        top->loc_prev = win->room_loc_prev;
-        edit_window_area (DIALOG (w->owner), &a);
-        widget_set_size_rect (wt, &a);
-        wt->pos_flags = WPOS_KEEP_ALL;
-        widget_draw (WIDGET (w->owner));
+        if (rooms != NULL)
+            g_array_unref (rooms);
+        return;
     }
+
+    edit_window_area (DIALOG (w->owner), &a);
+
+    for (i = 0; i < rooms->len; i++)
+    {
+        const edit_window_room_t *room = &g_array_index (rooms, edit_window_room_t, i);
+        Widget *wt = widget_find_by_id (WIDGET (w->owner), room->id);
+        WEditWindow *ow;
+        WRect r;
+
+        if (wt == NULL || wt == w || !edit_window_is_window (wt))
+            continue;
+        ow = EDIT_WINDOW (wt);
+        r = wt->rect;
+        if (ow->fullscreen != 0 || ow->user_moves != room->user_moves
+            || (room->above ? r.y + r.lines - 1 : r.x + r.cols - 1) != room->edge_after)
+            continue;
+
+        if (room->above)
+            r.lines = room->edge_before - r.y + 1;
+        else
+            r.cols = room->edge_before - r.x + 1;
+
+        if (ow->room_fullscreen != 0 && rects_are_equal (&r, &a))
+        {
+            ow->fullscreen = 1;
+            ow->room_fullscreen = 0;
+            ow->loc_prev = ow->room_loc_prev;
+            wt->pos_flags = WPOS_KEEP_ALL;
+        }
+        widget_set_size_rect (wt, &r);
+    }
+
+    g_array_unref (rooms);
+    widget_draw (WIDGET (w->owner));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -689,6 +1262,238 @@ edit_window_area (const WDialog *h, WRect *r)
 {
     *r = CONST_WIDGET (h)->rect;
     rect_grow (r, -1, 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A window being fit into the area, and where it starts from */
+typedef struct
+{
+    Widget *w;
+    WRect from;
+} fit_window_t;
+
+/* The area the windows were first put in, before the screen was resized, while they stay as the
+   resizes put them */
+static WRect fit_base_area;
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+fit_add (GArray *v, int b)
+{
+    guint i;
+
+    for (i = 0; i < v->len && g_array_index (v, int, i) < b; i++)
+        ;
+    if (i == v->len || g_array_index (v, int, i) != b)
+        g_array_insert_val (v, i, b);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+fit_lookup (const GArray *v, const GArray *map, int b)
+{
+    guint i;
+
+    for (i = 0; i < v->len; i++)
+        if (g_array_index (v, int, i) == b)
+            return g_array_index (map, int, i);
+    return b;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The place each boundary of the windows (a first column, or the one after the last) goes along
+   one axis when the area ends at @end instead of @old_end: what was at the old end goes to the new
+   one, what is past the new end comes to it, and the windows before make way for those after,
+   down to their smallest size.  Returns the boundaries, sorted, and their places in @map */
+static GArray *
+fit_axis (const GArray *wins, gboolean vertical, int start, int old_end, int end, GArray **map)
+{
+    GArray *v, *m;
+    guint i, k;
+
+    v = g_array_new (FALSE, FALSE, sizeof (int));
+    for (k = 0; k < wins->len; k++)
+    {
+        const WRect *r = &g_array_index (wins, fit_window_t, k).from;
+
+        fit_add (v, vertical ? r->y : r->x);
+        fit_add (v, vertical ? r->y + r->lines : r->x + r->cols);
+    }
+    fit_add (v, old_end);
+
+    m = g_array_sized_new (FALSE, TRUE, sizeof (int), v->len);
+    g_array_set_size (m, v->len);
+
+    for (i = v->len; i-- > 0;)
+    {
+        const int b = g_array_index (v, int, i);
+        int p = (b == old_end) ? end : MIN (b, end);
+
+        // no further than the boundary after it
+        if (i + 1 < v->len)
+            p = MIN (p, g_array_index (m, int, i + 1));
+
+        // each window that starts here keeps its smallest size
+        for (k = 0; k < wins->len; k++)
+        {
+            const fit_window_t *f = &g_array_index (wins, fit_window_t, k);
+            const WEditWindow *ow = CONST_EDIT_WINDOW (f->w);
+            const int first = vertical ? f->from.y : f->from.x;
+            const int last = first + (vertical ? f->from.lines : f->from.cols);
+
+            if (first == b)
+                p = MIN (p,
+                         fit_lookup (v, m, last)
+                             - (vertical ? ow->klass->min_lines : ow->klass->min_cols));
+        }
+
+        // out of the area before it: left as it is
+        g_array_index (m, int, i) = (b >= start) ? MAX (p, start) : b;
+    }
+
+    *map = m;
+    return v;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Where @edge (the last row or column of a frame) of a room goes: to where the window whose edge
+   it was has its edge now */
+static int
+fit_room_edge (const GArray *wins, gboolean vertical, int edge, int old_end, int end)
+{
+    guint k;
+
+    if (edge + 1 == old_end)
+        return end - 1;
+
+    for (k = 0; k < wins->len; k++)
+    {
+        const fit_window_t *f = &g_array_index (wins, fit_window_t, k);
+        const WRect *was = &f->w->rect;
+        const WRect *now = &EDIT_WINDOW (f->w)->fit_done;
+
+        if (vertical && was->y + was->lines - 1 == edge)
+            return now->y + now->lines - 1;
+        if (!vertical && was->x + was->cols - 1 == edge)
+            return now->x + now->cols - 1;
+    }
+    return MIN (edge, end - 1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Fit the windows into the area of the editor screen after the screen has been resized: the
+ * windows at the right (bottom) of the old area stay at the right of the new one, growing or
+ * shrinking, and the windows before them make way down to their smallest size; windows that stand
+ * side by side stay so.  While nobody moves them, the screen grown back gets the windows back as
+ * they were.  A fullscreen window follows the screen by itself.
+ *
+ * @param h editor dialog
+ * @param old the area before the screen was resized
+ */
+
+void
+edit_window_fit_area (WDialog *h, const WRect *old)
+{
+    GArray *wins, *vx, *vy, *mx, *my;
+    gboolean as_put = TRUE;
+    WRect a, from;
+    GList *l;
+    guint i, k;
+
+    edit_window_area (h, &a);
+    if (a.lines == old->lines && a.cols == old->cols)
+        return;
+
+    // a move or resize ends where it is: what it would go back to is of the old screen
+    for (l = GROUP (h)->widgets; l != NULL; l = g_list_next (l))
+        if (edit_window_is_window (WIDGET (l->data)))
+            drag_end (EDIT_WINDOW (l->data), TRUE);
+
+    wins = g_array_new (FALSE, FALSE, sizeof (fit_window_t));
+    for (l = GROUP (h)->widgets; l != NULL; l = g_list_next (l))
+    {
+        fit_window_t f;
+
+        f.w = WIDGET (l->data);
+        // hidden ones too: shown again, they have to fit
+        if (!edit_window_is_window (f.w) || EDIT_WINDOW (f.w)->fullscreen != 0)
+            continue;
+        f.from = f.w->rect;
+        g_array_append_val (wins, f);
+        if (EDIT_WINDOW (f.w)->fit_valid == 0
+            || !rects_are_equal (&f.w->rect, &EDIT_WINDOW (f.w)->fit_done))
+            as_put = FALSE;
+    }
+
+    // the windows as the last resizes put them: from where they were first
+    from = *old;
+    if (as_put && wins->len != 0)
+    {
+        from = fit_base_area;
+        for (k = 0; k < wins->len; k++)
+        {
+            fit_window_t *f = &g_array_index (wins, fit_window_t, k);
+
+            f->from = EDIT_WINDOW (f->w)->fit_base;
+        }
+    }
+    else
+        fit_base_area = *old;
+
+    vx = fit_axis (wins, FALSE, a.x, from.x + from.cols, a.x + a.cols, &mx);
+    vy = fit_axis (wins, TRUE, a.y, from.y + from.lines, a.y + a.lines, &my);
+
+    for (k = 0; k < wins->len; k++)
+    {
+        fit_window_t *f = &g_array_index (wins, fit_window_t, k);
+        WEditWindow *ow = EDIT_WINDOW (f->w);
+        WRect r;
+
+        r.x = fit_lookup (vx, mx, f->from.x);
+        r.cols = MAX (1, fit_lookup (vx, mx, f->from.x + f->from.cols) - r.x);
+        r.y = fit_lookup (vy, my, f->from.y);
+        r.lines = MAX (1, fit_lookup (vy, my, f->from.y + f->from.lines) - r.y);
+
+        ow->fit_base = f->from;
+        ow->fit_done = r;
+        ow->fit_valid = 1;
+    }
+
+    // the edges the rooms were made with move along, to be given back
+    for (k = 0; k < wins->len; k++)
+    {
+        WEditWindow *ow = EDIT_WINDOW (g_array_index (wins, fit_window_t, k).w);
+
+        for (i = 0; ow->rooms != NULL && i < ow->rooms->len; i++)
+        {
+            edit_window_room_t *room = &g_array_index (ow->rooms, edit_window_room_t, i);
+            const int old_end = room->above ? old->y + old->lines : old->x + old->cols;
+            const int end = room->above ? a.y + a.lines : a.x + a.cols;
+
+            room->edge_before = fit_room_edge (wins, room->above, room->edge_before, old_end, end);
+            room->edge_after = fit_room_edge (wins, room->above, room->edge_after, old_end, end);
+        }
+    }
+
+    for (k = 0; k < wins->len; k++)
+    {
+        Widget *wl = g_array_index (wins, fit_window_t, k).w;
+
+        if (!rects_are_equal (&wl->rect, &EDIT_WINDOW (wl)->fit_done))
+            widget_set_size_rect (wl, &EDIT_WINDOW (wl)->fit_done);
+    }
+
+    g_array_free (my, TRUE);
+    g_array_free (mx, TRUE);
+    g_array_free (vy, TRUE);
+    g_array_free (vx, TRUE);
+    g_array_free (wins, TRUE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -716,8 +1521,8 @@ edit_window_restore_size (WEditWindow *win)
 {
     Widget *w = WIDGET (win);
 
-    win->drag_state = EDIT_WINDOW_DRAG_NONE;
-    w->mouse.forced_capture = FALSE;
+    // a move or resize given up: the neighbors go back too
+    drag_end (win, FALSE);
     widget_set_size_rect (w, &win->loc_prev);
     widget_draw (WIDGET (w->owner));
 }
@@ -739,8 +1544,7 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
 
     if (win->fullscreen != 0)
     {
-        win->drag_state = EDIT_WINDOW_DRAG_NONE;
-        w->mouse.forced_capture = FALSE;
+        drag_end (win, TRUE);
         return ret;
     }
 
@@ -753,6 +1557,7 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
         case CK_WindowMove:
             win->drag_state = EDIT_WINDOW_DRAG_MOVE;
             edit_window_save_size (win);
+            drag_begin (win);
             edit_window_redraw (win);  // redraw frame and status
             /**
              * If a user initiates a move by the menu, not by the mouse, we
@@ -765,7 +1570,8 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
         case CK_WindowResize:
             win->drag_state = EDIT_WINDOW_DRAG_RESIZE;
             edit_window_save_size (win);
-            edit_window_redraw (win);  // redraw frame and status
+            drag_begin (win);
+            resize_begin (win);
             ret = TRUE;
             break;
         default:
@@ -778,6 +1584,7 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
         {
         case CK_WindowResize:
             win->drag_state = EDIT_WINDOW_DRAG_RESIZE;
+            resize_begin (win);
             ret = TRUE;
             break;
         case CK_Up:
@@ -789,7 +1596,7 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
             break;
         case CK_Enter:
         case CK_WindowMove:
-            win->drag_state = EDIT_WINDOW_DRAG_NONE;
+            drag_end (win, TRUE);
             edit_window_redraw (win);  // redraw frame and status
             MC_FALLTHROUGH;
         default:
@@ -802,7 +1609,10 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
         switch (command)
         {
         case CK_WindowMove:
+            // the window goes alone; Esc still puts the neighbors back
             win->drag_state = EDIT_WINDOW_DRAG_MOVE;
+            sticky_unmark (w->owner);
+            widget_draw (WIDGET (w->owner));
             ret = TRUE;
             break;
         case CK_Up:
@@ -814,8 +1624,9 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
             break;
         case CK_Enter:
         case CK_WindowResize:
-            win->drag_state = EDIT_WINDOW_DRAG_NONE;
-            edit_window_redraw (win);  // redraw frame and status
+            // the neighbors resized along are drawn as before
+            drag_end (win, TRUE);
+            widget_draw (WIDGET (w->owner));
             MC_FALLTHROUGH;
         default:
             ret = TRUE;
@@ -853,7 +1664,11 @@ edit_window_toggle_fullscreen (WEditWindow *win)
 {
     Widget *w = WIDGET (win);
 
+    // a move or resize ends where it is: the window has gone elsewhere
+    drag_end (win, TRUE);
     win->fullscreen = win->fullscreen != 0 ? 0 : 1;
+    // the user has decided: no room gives it the screen back any more
+    win->room_fullscreen = 0;
 
     if (win->fullscreen == 0)
     {
@@ -888,9 +1703,10 @@ edit_window_frame_color (const WEditWindow *win, gboolean active)
     if (win->fullscreen != 0)
         return STATUSBAR_COLOR;
 
-    return win->drag_state != EDIT_WINDOW_DRAG_NONE ? EDITOR_FRAME_DRAG_COLOR
-        : active                                    ? EDITOR_FRAME_ACTIVE_COLOR
-                                                    : EDITOR_FRAME_COLOR;
+    return win->drag_state != EDIT_WINDOW_DRAG_NONE || win->dragged_along != 0
+        ? EDITOR_FRAME_DRAG_COLOR
+        : active ? EDITOR_FRAME_ACTIVE_COLOR
+                 : EDITOR_FRAME_COLOR;
 }
 
 /* --------------------------------------------------------------------------------------------- */

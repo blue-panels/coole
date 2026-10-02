@@ -107,6 +107,8 @@ typedef struct mc_editor_host_t
     void (*window_give_room_back) (struct mc_editor_host_t *host, void *window);
     /* The window with the focus, NULL when none has it. */
     void *(*window_current) (struct mc_editor_host_t *host);
+    /* The topmost file window seen on the screen, NULL when there is none. */
+    void *(*window_top_file) (struct mc_editor_host_t *host);
 
     /* v6: the text of a file window.  get_text() gives all of it, @len bytes; caller frees.
      * get_revision() grows with every change of the text. */

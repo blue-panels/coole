@@ -240,6 +240,7 @@ static name_keymap_t command_names[] = {
     ADD_KEYMAP_NAME_DESC (WindowResize, N_ ("Resize window")),
     ADD_KEYMAP_NAME_DESC (WindowFullscreen, N_ ("Toggle fullscreen")),
     ADD_KEYMAP_NAME_DESC (WindowList, N_ ("Window list")),
+    ADD_KEYMAP_NAME_DESC (WindowSticky, N_ ("Toggle sticky windows")),
     ADD_KEYMAP_NAME_DESC (WindowNext, N_ ("Next window")),
     ADD_KEYMAP_NAME_DESC (WindowPrev, N_ ("Previous window")),
 

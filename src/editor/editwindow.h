@@ -39,6 +39,17 @@ typedef enum
 
 typedef struct WEditWindow WEditWindow;
 
+/* A window that made room for another: the edge of it that moved out of the way, its bottom for
+   a room above the other, else its right side, where it was and where it was put */
+typedef struct
+{
+    unsigned long id;
+    gboolean above;           // its bottom moved, else its right side
+    int edge_before;          // the last row (column) of its frame before
+    int edge_after;           // and after
+    unsigned int user_moves;  // the moves of the window by the user then
+} edit_window_room_t;
+
 /* What a kind of window does on its own */
 typedef struct
 {
@@ -80,11 +91,39 @@ struct WEditWindow
     // save location before move/resize or toggle to fullscreen
     WRect loc_prev;
     unsigned int fullscreen : 1;  // Is window fullscreen or not
+    // resized along with the window dragged, its neighbors being sticky: drawn as dragged
+    unsigned int dragged_along : 1;
+    // a resize moved it at an edge it shares with neighbors: its right side (vertical) or its
+    // bottom (horizontal)
+    unsigned int moved_vedge : 1;
+    unsigned int moved_hedge : 1;
+    // its right side and its bottom were on the edge of the screen when the resize began: they
+    // stay there
+    unsigned int pin_right : 1;
+    unsigned int pin_bottom : 1;
+    // a move or resize of it is going on: Esc puts every window back where it was then
+    unsigned int drag_open : 1;
+    // the move or resize has changed it by itself, sticky windows off
+    unsigned int drag_own : 1;
+    // and with sticky windows on: how far it has moved the edges of its own, without neighbors
+    int drag_own_dx;
+    int drag_own_dy;
+    // fullscreen till it gave room to another: it is again when it takes the whole screen again
+    unsigned int room_fullscreen : 1;
+    WRect room_loc_prev;  // where it goes back to then, when it is not fullscreen
+    WRect drag_rect;      // where it was when the move or resize of a window began
+    // where it was before the screen was resized, and where that put it: while the windows stay as
+    // they were put, the next resize starts from the first, so that the screen grown back gets
+    // them back
+    WRect fit_base;
+    WRect fit_done;
+    unsigned int fit_valid : 1;
+    // the moves and resizes of it by the user that changed it, but at an edge shared with sticky
+    // neighbors
+    unsigned int user_moves;
 
-    // the fullscreen window that made room for this one, 0 when none did
-    unsigned long room_id;
-    WRect room_rect;      // where that window was put
-    WRect room_loc_prev;  // where that window goes back to when it is not fullscreen
+    // edit_window_room_t: the windows that made room for this one; NULL when none did
+    GArray *rooms;
 
     // the scrollbars of the frame, widgets of the window; hidden while it is fullscreen
     WScrollBar *vbar;
@@ -115,13 +154,16 @@ void edit_window_destroy (WEditWindow *win);
 void edit_window_show (WEditWindow *win);
 /* Hide a window as it is; the next window is selected */
 void edit_window_hide (WEditWindow *win);
-/* The fullscreen window under @win is made a window in the area to the left of @win, when @win
-   takes all the height, or above it, and edit_window_give_room_back() makes it fullscreen again */
+void edit_window_drag_end (WEditWindow *win);
+/* Room for @win: to the left of it, when it takes all the height, or above it.  The fullscreen
+   window under it becomes a window there, and the other windows that go into it shrink out of it;
+   edit_window_give_room_back() puts each back as it was, unless it has been moved since */
 void edit_window_make_room (WEditWindow *win);
 void edit_window_give_room_back (WEditWindow *win);
 
 /* The part of the editor screen the windows take: all but the menu bar and the button bar */
 void edit_window_area (const WDialog *h, WRect *r);
+void edit_window_fit_area (WDialog *h, const WRect *old);
 
 void edit_window_save_size (WEditWindow *win);
 void edit_window_restore_size (WEditWindow *win);

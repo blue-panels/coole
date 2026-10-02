@@ -569,6 +569,26 @@ editor_host_window_current_impl (mc_editor_host_t *host)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
+ * Host callback: the topmost file window seen on the screen.
+ */
+
+static void *
+editor_host_window_top_file_impl (mc_editor_host_t *host)
+{
+    const WGroup *g = CONST_GROUP (host->host_data);
+    const GList *l;
+    void *edit = NULL;
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+        if (edit_widget_is_editor (CONST_WIDGET (l->data))
+            && widget_get_state (CONST_WIDGET (l->data), WST_VISIBLE))
+            edit = l->data;  // the last one is the topmost
+
+    return edit;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
  * Host callback: all the text of a file window.
  */
 
@@ -712,6 +732,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_make_room = editor_host_window_make_room_impl;
     ctx->host->window_give_room_back = editor_host_window_give_room_back_impl;
     ctx->host->window_current = editor_host_window_current_impl;
+    ctx->host->window_top_file = editor_host_window_top_file_impl;
     ctx->host->get_text = editor_host_get_text_impl;
     ctx->host->get_revision = editor_host_get_revision_impl;
     ctx->host->service_register = editor_host_service_register_impl;
@@ -777,6 +798,18 @@ editor_plugin_ctx_destroy (WDialog *edit_dlg)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A window is being moved or resized: it takes the keys for that alone, the plugins none */
+static gboolean
+edit_dlg_dragging (const WDialog *h)
+{
+    const WGroup *g = CONST_GROUP (h);
+
+    return g->current != NULL && edit_window_is_window (CONST_WIDGET (g->current->data))
+        && CONST_EDIT_WINDOW (g->current->data)->drag_state != EDIT_WINDOW_DRAG_NONE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 gboolean
 edit_plugin_handle_action (WDialog *edit_dlg, long command, WEdit *edit)
 {
@@ -790,7 +823,7 @@ edit_plugin_handle_action (WDialog *edit_dlg, long command, WEdit *edit)
         return FALSE;
 
     ctx = (editor_plugin_ctx_t *) edit_dlg->data.p;
-    if (ctx == NULL)
+    if (ctx == NULL || edit_dlg_dragging (edit_dlg))
         return FALSE;
 
     if (edit == NULL && GROUP (edit_dlg)->current != NULL
@@ -924,7 +957,7 @@ edit_plugin_handle_key (WDialog *edit_dlg, int key, WEdit *edit)
         return FALSE;
 
     ctx = (editor_plugin_ctx_t *) edit_dlg->data.p;
-    if (ctx == NULL)
+    if (ctx == NULL || edit_dlg_dragging (edit_dlg))
         return FALSE;
 
     if (edit == NULL && GROUP (edit_dlg)->current != NULL
@@ -1476,6 +1509,10 @@ edit_dialog_command_execute (WDialog *h, long command)
     case CK_WindowList:
         edit_window_list (h);
         break;
+    case CK_WindowSticky:
+        // windows next to each other resize together from now on, or each by itself
+        edit_options.sticky_windows = !edit_options.sticky_windows;
+        break;
     case CK_WindowNext:
         group_select_next_widget (g);
         break;
@@ -1870,9 +1907,16 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         return MSG_HANDLED;
 
     case MSG_RESIZE:
+    {
+        WRect old;
+
+        edit_window_area (h, &old);
         dlg_default_callback (w, NULL, MSG_RESIZE, 0, NULL);
+        // the windows not on the whole screen stay on it
+        edit_window_fit_area (h, &old);
         menubar_arrange (menubar_find (h));
         return MSG_HANDLED;
+    }
 
     case MSG_ACTION:
     {
@@ -1919,6 +1963,10 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
                     we->ext_mode = FALSE;
             }
         }
+        /* A window that is no file, the terminal for one: the keys of the plugins that work with no
+           file go to them first, the Preview for one; every other key is the window's */
+        else if (edit_window_is_window (we) && edit_plugin_handle_key (h, parm, NULL))
+            return MSG_HANDLED;
 
         /*
          * Due to the "end of bracket" escape the editor sees input with is_idle() == false

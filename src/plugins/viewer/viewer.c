@@ -775,6 +775,9 @@ preview_toggle (viewer_t *v, void *edit)
         return MC_EPR_OK;
     }
 
+    // the focus on a window that is no file: the file seen on top
+    if (edit == NULL)
+        edit = v->host->window_top_file (v->host);
     if (edit == NULL)
         return MC_EPR_FAILED;
 

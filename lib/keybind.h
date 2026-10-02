@@ -199,6 +199,7 @@ enum
     CK_WindowResize,
     CK_WindowFullscreen,
     CK_WindowList,
+    CK_WindowSticky,
     CK_WindowNext,
     CK_WindowPrev,
     // misc commands

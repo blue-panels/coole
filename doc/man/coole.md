@@ -716,6 +716,17 @@ the jumps, back and forward, the symbols of the file and so on. See
 **Toggle fullscreen**
 : Switch the window between full screen and its own size.
 
+**Toggle sticky windows**
+: With sticky windows, windows whose frames stand next to each other resize
+together: the corner of a window moves the edge it is on with all the windows
+along it, on both sides, and no gap opens between them. Where four windows
+meet, the corner moves both edges. A side that is on the edge of the screen
+when the resize begins stays there, a window keeps its smallest size, and an
+edge stops at a window in its way, which from then on resizes along. Esc puts
+every window back. A window moved by its title goes alone. The setting is kept as
+**editor_sticky_windows**
+in the ini file.
+
 **Next, Previous**
 : Go to the next or to the previous window.
 
@@ -1341,8 +1352,10 @@ See [Spell](spell.md#spell).
 The terminal plugin runs your shell in a window of the editor.
 **Ctrl-o**
 shows the window at the bottom of the screen, a file shown full screen going
-into a window above it, and in the terminal hides it again, the file taking
-the whole screen back; the shell goes on running while the window is hidden.
+into a window above it, and the windows already there, a file beside the
+Preview for one, going up out of its way; in the terminal it hides it again,
+and each of them goes back where it was. The shell goes on running while the
+window is hidden.
 The window is moved, resized, shown full screen and closed like the window of
 a file. The scrollbar on the right of its frame scrolls the history of the
 output. See [Terminal](terminal.md#terminal).
