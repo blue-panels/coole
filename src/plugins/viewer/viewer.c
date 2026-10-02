@@ -70,7 +70,6 @@
 #include "lib/plugin-service.h"
 
 #include "src/editor/editwindow.h"
-#include "src/editor/editwidget.h"  // edit_widget_is_editor()
 
 #include "textwindow.h"
 
@@ -762,28 +761,6 @@ preview_follow (viewer_t *v, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The file window to show when the window with the focus is no file, the terminal for one: the
-   topmost file window seen on the screen, NULL when there is none */
-static void *
-preview_file_window (viewer_t *v)
-{
-    Widget *current = WIDGET (v->host->window_current (v->host));
-    const GList *l;
-    void *edit = NULL;
-
-    if (current == NULL || current->owner == NULL)
-        return NULL;
-
-    for (l = current->owner->widgets; l != NULL; l = g_list_next (l))
-        if (edit_widget_is_editor (CONST_WIDGET (l->data))
-            && widget_get_state (CONST_WIDGET (l->data), WST_VISIBLE))
-            edit = l->data;  // the last one is the topmost
-
-    return edit;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 /* Ctrl-Alt-P: the preview shown for the file of @edit, or hidden */
 static mc_ep_result_t
 preview_toggle (viewer_t *v, void *edit)
@@ -800,7 +777,7 @@ preview_toggle (viewer_t *v, void *edit)
 
     // the focus on a window that is no file: the file seen on top
     if (edit == NULL)
-        edit = preview_file_window (v);
+        edit = v->host->window_top_file (v->host);
     if (edit == NULL)
         return MC_EPR_FAILED;
 

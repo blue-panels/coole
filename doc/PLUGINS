@@ -202,6 +202,9 @@ What the editor provides to the plugin, passed to open():
                              zoomed it since
   window_current(host)
                              the window with the focus, or NULL
+  window_top_file(host)
+                             the topmost file window seen on the
+                             screen, or NULL
   get_text(host, edit, &len)
                              all the text of a file window; caller
                              frees

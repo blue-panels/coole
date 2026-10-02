@@ -38,8 +38,12 @@
 #include "lib/skin.h"
 #include "lib/strutil.h"  // str_term_trim()
 #include "lib/widget.h"
+#include "lib/keybind.h"  // keybind_lookup_keymap_command()
 
-#include "edit.h"  // MCEDIT_HELP_FILE
+#include "src/keymap.h"  // editor_map
+
+#include "edit.h"       // MCEDIT_HELP_FILE
+#include "edit-impl.h"  // edit_widget_is_editor()
 #include "editwindow.h"
 
 /*** global variables ****************************************************************************/
@@ -74,6 +78,20 @@ edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         if (win->klass->scrolled != NULL)
             win->klass->scrolled (win, sender == WIDGET (win->vbar),
                                   scrollbar_get_pos (SCROLLBAR (sender)));
+        return MSG_HANDLED;
+    }
+
+    /* A window that is no file, being moved or resized, takes the keys of the editor for that: the
+       class would take them for its own, the terminal giving them to the shell.  A file window
+       has them in its own keymap */
+    if (msg == MSG_KEY && win->drag_state != EDIT_WINDOW_DRAG_NONE && !edit_widget_is_editor (w))
+    {
+        const long command = keybind_lookup_keymap_command (editor_map, parm);
+
+        if (command == CK_Quit || command == CK_Cancel)
+            edit_window_restore_size (win);
+        else
+            (void) edit_window_handle_move_resize (win, command);
         return MSG_HANDLED;
     }
 
@@ -286,6 +304,10 @@ sticky_edge_find (WEditWindow *win, gboolean vertical, sticky_edge_t *e)
         }
     }
     while (grown);
+
+    // no neighbor after it: an edge of the window alone, the windows in line with it stay
+    if (e->after->len == 0)
+        g_ptr_array_set_size (e->before, 1);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -452,7 +474,7 @@ sticky_resize (WEditWindow *win, int dx, int dy)
             sticky_edge_move (e, d);
             // an edge of its own is the user's resize of it
             if (e->after->len == 0)
-                win->user_moves++;
+                win->drag_own = 1;
         }
     }
 
@@ -463,47 +485,80 @@ sticky_resize (WEditWindow *win, int dx, int dy)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A sticky resize begins: where every window of the screen is, to go back to; which sides of win
-   stay on the edge of the screen; the neighbors that will resize along drawn as dragged */
+/* No window of the screen is drawn as dragged along */
 static void
-sticky_start (WEditWindow *win)
+sticky_unmark (WGroup *g)
 {
-    Widget *w = WIDGET (win);
-    WRect a;
     GList *l;
 
-    for (l = w->owner->widgets; l != NULL; l = g_list_next (l))
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+        if (edit_window_is_window (WIDGET (l->data)))
+            EDIT_WINDOW (l->data)->dragged_along = 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A move or resize of win begins: where every window of the screen is, to go back to */
+static void
+drag_begin (WEditWindow *win)
+{
+    GList *l;
+
+    for (l = WIDGET (win)->owner->widgets; l != NULL; l = g_list_next (l))
         if (edit_window_is_window (WIDGET (l->data)))
         {
             WEditWindow *ow = EDIT_WINDOW (l->data);
 
             ow->drag_rect = WIDGET (ow)->rect;
             ow->moved_vedge = ow->moved_hedge = 0;
+            ow->dragged_along = 0;
         }
 
-    win->sticky_drag = 1;
-    edit_window_area (DIALOG (w->owner), &a);
-    win->pin_right = (w->rect.x + w->rect.cols == a.x + a.cols);
-    win->pin_bottom = (w->rect.y + w->rect.lines == a.y + a.lines);
-
-    sticky_resize (win, 0, 0);
+    win->drag_open = 1;
+    win->drag_own = 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A sticky resize ends.  Kept: a window that made room for another keeps being in it though an
-   edge it shares with neighbors has moved its edge of the room, so that hiding the other puts it
-   back as before.  Not kept: every window goes back where it was when it began.  Either way no
-   window is drawn as dragged any more */
+/* The resize begins, from where win is now: which sides of it stay on the edge of the screen;
+   with sticky windows, the neighbors that will resize along drawn as dragged */
 static void
-sticky_finish (WEditWindow *win, gboolean keep)
+resize_begin (WEditWindow *win)
 {
-    WGroup *g = WIDGET (win)->owner;
+    Widget *w = WIDGET (win);
+    WRect a;
+
+    edit_window_area (DIALOG (w->owner), &a);
+    win->pin_right = (w->rect.x + w->rect.cols == a.x + a.cols);
+    win->pin_bottom = (w->rect.y + w->rect.lines == a.y + a.lines);
+
+    if (edit_options.sticky_windows)
+        sticky_resize (win, 0, 0);
+    else
+        sticky_unmark (w->owner);
+    widget_draw (WIDGET (w->owner));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The move or resize of win ends.  Kept: a window that made room for another keeps being in it
+   though an edge it shares with neighbors has moved its edge of the room, so that hiding the other
+   puts it back as before; and win changed by itself counts as moved by the user.  Not kept: every
+   window goes back where it was when it began.  Either way no window is drawn as dragged any
+   more */
+static void
+drag_end (WEditWindow *win, gboolean keep)
+{
+    Widget *w = WIDGET (win);
+    WGroup *g = w->owner;
     GList *l;
 
-    if (g == NULL || win->sticky_drag == 0)
+    win->drag_state = EDIT_WINDOW_DRAG_NONE;
+    w->mouse.forced_capture = FALSE;
+
+    if (g == NULL || win->drag_open == 0)
         return;
-    win->sticky_drag = 0;
+    win->drag_open = 0;
 
     for (l = g->widgets; l != NULL; l = g_list_next (l))
     {
@@ -533,12 +588,12 @@ sticky_finish (WEditWindow *win, gboolean keep)
                     room->edge_after = m->rect.x + m->rect.cols - 1;
             }
         }
-        else if (!keep && ow != win && ow->fullscreen == 0
-                 && (wl->rect.y != ow->drag_rect.y || wl->rect.x != ow->drag_rect.x
-                     || wl->rect.lines != ow->drag_rect.lines
-                     || wl->rect.cols != ow->drag_rect.cols))
+        else if (!keep && ow->fullscreen == 0 && !rects_are_equal (&wl->rect, &ow->drag_rect))
             widget_set_size_rect (wl, &ow->drag_rect);
     }
+
+    if (keep && win->drag_own != 0 && !rects_are_equal (&w->rect, &win->drag_rect))
+        win->user_moves++;
 
     for (l = g->widgets; l != NULL; l = g_list_next (l))
         if (edit_window_is_window (WIDGET (l->data)))
@@ -548,23 +603,7 @@ sticky_finish (WEditWindow *win, gboolean keep)
             ow->dragged_along = ow->moved_vedge = ow->moved_hedge = 0;
         }
     win->pin_right = win->pin_bottom = 0;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* A resize begins: with sticky windows, the neighbors that will resize along are drawn as dragged
-   too; else the window alone is drawn again */
-static void
-edit_window_sticky_start (WEditWindow *win)
-{
-    if (!edit_options.sticky_windows)
-    {
-        edit_window_redraw (win);  // redraw frame and status
-        return;
-    }
-
-    sticky_start (win);
-    widget_draw (WIDGET (WIDGET (win)->owner));
+    win->drag_own = 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -606,9 +645,12 @@ edit_window_move (WEditWindow *win, long command)
         return;
     }
 
+    if (rects_are_equal (&r, &w->rect))
+        return;
+
     // the widgets of the window move with it
     widget_set_size_rect (w, &r);
-    win->user_moves++;
+    win->drag_own = 1;
     widget_draw (WIDGET (w->owner));
 }
 
@@ -664,9 +706,12 @@ edit_window_resize (WEditWindow *win, long command)
         return;
     }
 
+    if (rects_are_equal (&r, &w->rect))
+        return;
+
     // the widgets of the window resize with it
     widget_set_size_rect (w, &r);
-    win->user_moves++;
+    win->drag_own = 1;
     widget_draw (WIDGET (w->owner));
 }
 
@@ -727,9 +772,12 @@ edit_window_mouse_move_resize (Widget *w, mouse_msg_t msg, mouse_event_t *event)
         r.cols = MAX (win->klass->min_cols, global_x - r.x + 1);
     }
 
+    if (rects_are_equal (&r, &w->rect))
+        return;
+
     // the widgets of the window move and resize with it
     widget_set_size_rect (w, &r);
-    win->user_moves++;
+    win->drag_own = 1;
 
     // We draw the whole dialog because dragging/resizing exposes area beneath
     widget_draw (WIDGET (w->owner));
@@ -964,6 +1012,8 @@ edit_window_destroy (WEditWindow *win)
     Widget *top = NULL;
     GList *l;
 
+    // a window stops moving or resizing when it goes, its neighbors left where they are
+    drag_end (win, TRUE);
     group_remove_widget (w);
     widget_destroy (w);
 
@@ -995,13 +1045,7 @@ edit_window_hide (WEditWindow *win)
     Widget *w = WIDGET (win);
 
     // a window stops moving or resizing when it goes, its neighbors left where they are
-    if (win->drag_state != EDIT_WINDOW_DRAG_NONE)
-    {
-        sticky_finish (win, TRUE);
-        win->drag_state = EDIT_WINDOW_DRAG_NONE;
-        w->mouse.forced_capture = FALSE;
-    }
-
+    drag_end (win, TRUE);
     widget_hide (w);
 }
 
@@ -1168,8 +1212,7 @@ edit_window_give_room_back (WEditWindow *win)
         else
             r.cols = room->edge_before - r.x + 1;
 
-        if (ow->room_fullscreen != 0 && r.y == a.y && r.x == a.x && r.lines == a.lines
-            && r.cols == a.cols)
+        if (ow->room_fullscreen != 0 && rects_are_equal (&r, &a))
         {
             ow->fullscreen = 1;
             ow->room_fullscreen = 0;
@@ -1194,7 +1237,7 @@ edit_window_area (const WDialog *h, WRect *r)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A window being fit into the area: where it starts from, and its smallest size */
+/* A window being fit into the area, and where it starts from */
 typedef struct
 {
     Widget *w;
@@ -1338,6 +1381,11 @@ edit_window_fit_area (WDialog *h, const WRect *old)
     if (a.lines == old->lines && a.cols == old->cols)
         return;
 
+    // a move or resize ends where it is: what it would go back to is of the old screen
+    for (l = GROUP (h)->widgets; l != NULL; l = g_list_next (l))
+        if (edit_window_is_window (WIDGET (l->data)))
+            drag_end (EDIT_WINDOW (l->data), TRUE);
+
     wins = g_array_new (FALSE, FALSE, sizeof (fit_window_t));
     for (l = GROUP (h)->widgets; l != NULL; l = g_list_next (l))
     {
@@ -1444,10 +1492,8 @@ edit_window_restore_size (WEditWindow *win)
 {
     Widget *w = WIDGET (win);
 
-    // a sticky resize given up: the neighbors go back too
-    sticky_finish (win, FALSE);
-    win->drag_state = EDIT_WINDOW_DRAG_NONE;
-    w->mouse.forced_capture = FALSE;
+    // a move or resize given up: the neighbors go back too
+    drag_end (win, FALSE);
     widget_set_size_rect (w, &win->loc_prev);
     widget_draw (WIDGET (w->owner));
 }
@@ -1469,8 +1515,7 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
 
     if (win->fullscreen != 0)
     {
-        win->drag_state = EDIT_WINDOW_DRAG_NONE;
-        w->mouse.forced_capture = FALSE;
+        drag_end (win, TRUE);
         return ret;
     }
 
@@ -1483,6 +1528,7 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
         case CK_WindowMove:
             win->drag_state = EDIT_WINDOW_DRAG_MOVE;
             edit_window_save_size (win);
+            drag_begin (win);
             edit_window_redraw (win);  // redraw frame and status
             /**
              * If a user initiates a move by the menu, not by the mouse, we
@@ -1495,7 +1541,8 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
         case CK_WindowResize:
             win->drag_state = EDIT_WINDOW_DRAG_RESIZE;
             edit_window_save_size (win);
-            edit_window_sticky_start (win);
+            drag_begin (win);
+            resize_begin (win);
             ret = TRUE;
             break;
         default:
@@ -1508,7 +1555,7 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
         {
         case CK_WindowResize:
             win->drag_state = EDIT_WINDOW_DRAG_RESIZE;
-            edit_window_sticky_start (win);
+            resize_begin (win);
             ret = TRUE;
             break;
         case CK_Up:
@@ -1520,7 +1567,7 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
             break;
         case CK_Enter:
         case CK_WindowMove:
-            win->drag_state = EDIT_WINDOW_DRAG_NONE;
+            drag_end (win, TRUE);
             edit_window_redraw (win);  // redraw frame and status
             MC_FALLTHROUGH;
         default:
@@ -1533,8 +1580,9 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
         switch (command)
         {
         case CK_WindowMove:
+            // the window goes alone; Esc still puts the neighbors back
             win->drag_state = EDIT_WINDOW_DRAG_MOVE;
-            sticky_finish (win, TRUE);
+            sticky_unmark (w->owner);
             widget_draw (WIDGET (w->owner));
             ret = TRUE;
             break;
@@ -1547,15 +1595,9 @@ edit_window_handle_move_resize (WEditWindow *win, long command)
             break;
         case CK_Enter:
         case CK_WindowResize:
-            win->drag_state = EDIT_WINDOW_DRAG_NONE;
-            if (win->sticky_drag != 0)
-            {
-                // the neighbors resized along are drawn as before
-                sticky_finish (win, TRUE);
-                widget_draw (WIDGET (w->owner));
-            }
-            else
-                edit_window_redraw (win);  // redraw frame and status
+            // the neighbors resized along are drawn as before
+            drag_end (win, TRUE);
+            widget_draw (WIDGET (w->owner));
             MC_FALLTHROUGH;
         default:
             ret = TRUE;

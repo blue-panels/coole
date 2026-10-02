@@ -569,6 +569,26 @@ editor_host_window_current_impl (mc_editor_host_t *host)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
+ * Host callback: the topmost file window seen on the screen.
+ */
+
+static void *
+editor_host_window_top_file_impl (mc_editor_host_t *host)
+{
+    const WGroup *g = CONST_GROUP (host->host_data);
+    const GList *l;
+    void *edit = NULL;
+
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
+        if (edit_widget_is_editor (CONST_WIDGET (l->data))
+            && widget_get_state (CONST_WIDGET (l->data), WST_VISIBLE))
+            edit = l->data;  // the last one is the topmost
+
+    return edit;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
  * Host callback: all the text of a file window.
  */
 
@@ -712,6 +732,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_make_room = editor_host_window_make_room_impl;
     ctx->host->window_give_room_back = editor_host_window_give_room_back_impl;
     ctx->host->window_current = editor_host_window_current_impl;
+    ctx->host->window_top_file = editor_host_window_top_file_impl;
     ctx->host->get_text = editor_host_get_text_impl;
     ctx->host->get_revision = editor_host_get_revision_impl;
     ctx->host->service_register = editor_host_service_register_impl;
@@ -777,6 +798,18 @@ editor_plugin_ctx_destroy (WDialog *edit_dlg)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A window is being moved or resized: it takes the keys for that alone, the plugins none */
+static gboolean
+edit_dlg_dragging (const WDialog *h)
+{
+    const WGroup *g = CONST_GROUP (h);
+
+    return g->current != NULL && edit_window_is_window (CONST_WIDGET (g->current->data))
+        && CONST_EDIT_WINDOW (g->current->data)->drag_state != EDIT_WINDOW_DRAG_NONE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 gboolean
 edit_plugin_handle_action (WDialog *edit_dlg, long command, WEdit *edit)
 {
@@ -790,7 +823,7 @@ edit_plugin_handle_action (WDialog *edit_dlg, long command, WEdit *edit)
         return FALSE;
 
     ctx = (editor_plugin_ctx_t *) edit_dlg->data.p;
-    if (ctx == NULL)
+    if (ctx == NULL || edit_dlg_dragging (edit_dlg))
         return FALSE;
 
     if (edit == NULL && GROUP (edit_dlg)->current != NULL
@@ -924,7 +957,7 @@ edit_plugin_handle_key (WDialog *edit_dlg, int key, WEdit *edit)
         return FALSE;
 
     ctx = (editor_plugin_ctx_t *) edit_dlg->data.p;
-    if (ctx == NULL)
+    if (ctx == NULL || edit_dlg_dragging (edit_dlg))
         return FALSE;
 
     if (edit == NULL && GROUP (edit_dlg)->current != NULL

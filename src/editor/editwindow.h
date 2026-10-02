@@ -101,19 +101,22 @@ struct WEditWindow
     // stay there
     unsigned int pin_right : 1;
     unsigned int pin_bottom : 1;
-    // a sticky resize of it is going on
-    unsigned int sticky_drag : 1;
+    // a move or resize of it is going on: Esc puts every window back where it was then
+    unsigned int drag_open : 1;
+    // the move or resize has changed it by itself, not at an edge shared with neighbors
+    unsigned int drag_own : 1;
     // fullscreen till it gave room to another: it is again when it takes the whole screen again
     unsigned int room_fullscreen : 1;
     WRect room_loc_prev;  // where it goes back to then, when it is not fullscreen
-    WRect drag_rect;      // where it was when a sticky resize began
+    WRect drag_rect;      // where it was when the move or resize of a window began
     // where it was before the screen was resized, and where that put it: while the windows stay as
     // they were put, the next resize starts from the first, so that the screen grown back gets
     // them back
     WRect fit_base;
     WRect fit_done;
     unsigned int fit_valid : 1;
-    // the times the user has moved or resized it, but at an edge shared with sticky neighbors
+    // the moves and resizes of it by the user that changed it, but at an edge shared with sticky
+    // neighbors
     unsigned int user_moves;
 
     // edit_window_room_t: the windows that made room for this one; NULL when none did
