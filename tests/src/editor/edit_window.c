@@ -934,6 +934,78 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* An edge of its own moved and moved back is no move by the user; the shared edge moved keeps the
+   room */
+START_TEST (test_window_drag_own_back)
+{
+    test_window_t *a = sticky_window_new (1, 0, 20, 40);
+    test_window_t *p = sticky_window_new (17, 0, 6, 80);
+
+    edit_window_make_room (&p->window);
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 16, 40);
+
+    edit_options.sticky_windows = TRUE;
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_WindowResize));
+    sticky_keys (&a->window, CK_Right, 1);
+    sticky_keys (&a->window, CK_Left, 1);
+    sticky_keys (&a->window, CK_Down, 1);
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_Enter));
+    ck_assert_uint_eq (a->window.user_moves, 0);
+
+    edit_window_give_room_back (&p->window);
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 20, 40);
+
+    edit_options.sticky_windows = FALSE;
+    sticky_window_free (p);
+    sticky_window_free (a);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Fullscreen in a sticky resize ends it where it is: back from it, the windows do not overlap */
+START_TEST (test_window_drag_fullscreen)
+{
+    test_window_t *a = sticky_window_new (1, 0, 22, 40);
+    test_window_t *b = sticky_window_new (1, 40, 22, 40);
+
+    edit_options.sticky_windows = TRUE;
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_WindowResize));
+    sticky_keys (&a->window, CK_Right, 4);
+    edit_window_toggle_fullscreen (&a->window);
+    ck_assert_int_eq (b->window.dragged_along, 0);
+    edit_window_toggle_fullscreen (&a->window);
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 22, 44);
+    test_assert_rect (&WIDGET (b)->rect, 1, 44, 22, 36);
+
+    edit_options.sticky_windows = FALSE;
+    sticky_window_free (b);
+    sticky_window_free (a);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The button bar in a move of a window that is no file: Quit gives the move up, the other commands
+   wait */
+START_TEST (test_window_drag_buttonbar)
+{
+    test_window_t *a = sticky_window_new (5, 5, 10, 30);
+
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_WindowMove));
+    sticky_keys (&a->window, CK_Right, 3);
+    ck_assert_int_eq (send_message (a, NULL, MSG_ACTION, CK_Copy, NULL), MSG_HANDLED);
+    ck_assert_int_eq (a->window.drag_state, EDIT_WINDOW_DRAG_MOVE);
+    ck_assert_int_eq (send_message (a, NULL, MSG_ACTION, CK_Quit, NULL), MSG_HANDLED);
+    ck_assert_int_eq (a->window.drag_state, EDIT_WINDOW_DRAG_NONE);
+    test_assert_rect (&WIDGET (a)->rect, 5, 5, 10, 30);
+
+    sticky_window_free (a);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A window of all the height at the right edge: the fullscreen window goes to its left */
 START_TEST (test_window_make_room_left)
 {
@@ -1048,6 +1120,9 @@ main (void)
     tcase_add_test (tc_core, test_window_drag_cancel_any);
     tcase_add_test (tc_core, test_window_sticky_alone);
     tcase_add_test (tc_core, test_window_drag_ends);
+    tcase_add_test (tc_core, test_window_drag_own_back);
+    tcase_add_test (tc_core, test_window_drag_fullscreen);
+    tcase_add_test (tc_core, test_window_drag_buttonbar);
     tcase_add_test (tc_core, test_window_destroy_selects_top);
     tcase_add_test (tc_core, test_editor_is_window);
 

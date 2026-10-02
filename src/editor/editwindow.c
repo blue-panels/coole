@@ -95,6 +95,14 @@ edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         return MSG_HANDLED;
     }
 
+    // the same for the commands of the button bar: they would do what the class does with them
+    if (msg == MSG_ACTION && win->drag_state != EDIT_WINDOW_DRAG_NONE && !edit_widget_is_editor (w))
+    {
+        if (parm == CK_Quit || parm == CK_Cancel)
+            edit_window_restore_size (win);
+        return MSG_HANDLED;
+    }
+
     ret = win->klass->callback (w, sender, msg, parm, data);
 
     // the room made for it is forgotten with it
@@ -473,8 +481,10 @@ sticky_resize (WEditWindow *win, int dx, int dy)
         {
             sticky_edge_move (e, d);
             // an edge of its own is the user's resize of it
-            if (e->after->len == 0)
-                win->drag_own = 1;
+            if (e->after->len == 0 && e->vertical)
+                win->drag_own_dx += d;
+            else if (e->after->len == 0)
+                win->drag_own_dy += d;
         }
     }
 
@@ -516,6 +526,7 @@ drag_begin (WEditWindow *win)
 
     win->drag_open = 1;
     win->drag_own = 0;
+    win->drag_own_dx = win->drag_own_dy = 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -592,7 +603,10 @@ drag_end (WEditWindow *win, gboolean keep)
             widget_set_size_rect (wl, &ow->drag_rect);
     }
 
-    if (keep && win->drag_own != 0 && !rects_are_equal (&w->rect, &win->drag_rect))
+    // an edge of its own moved and moved back is no change
+    if (keep
+        && ((win->drag_own != 0 && !rects_are_equal (&w->rect, &win->drag_rect))
+            || win->drag_own_dx != 0 || win->drag_own_dy != 0))
         win->user_moves++;
 
     for (l = g->widgets; l != NULL; l = g_list_next (l))
@@ -604,6 +618,7 @@ drag_end (WEditWindow *win, gboolean keep)
         }
     win->pin_right = win->pin_bottom = 0;
     win->drag_own = 0;
+    win->drag_own_dx = win->drag_own_dy = 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1024,6 +1039,20 @@ edit_window_destroy (WEditWindow *win)
 
     if (top != NULL)
         widget_select (top);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * End a move or resize of a window where it is: the window goes, or something else is done
+ * with it.
+ *
+ * @param win window
+ */
+
+void
+edit_window_drag_end (WEditWindow *win)
+{
+    drag_end (win, TRUE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1635,6 +1664,8 @@ edit_window_toggle_fullscreen (WEditWindow *win)
 {
     Widget *w = WIDGET (win);
 
+    // a move or resize ends where it is: the window has gone elsewhere
+    drag_end (win, TRUE);
     win->fullscreen = win->fullscreen != 0 ? 0 : 1;
     // the user has decided: no room gives it the screen back any more
     win->room_fullscreen = 0;

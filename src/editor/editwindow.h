@@ -103,8 +103,11 @@ struct WEditWindow
     unsigned int pin_bottom : 1;
     // a move or resize of it is going on: Esc puts every window back where it was then
     unsigned int drag_open : 1;
-    // the move or resize has changed it by itself, not at an edge shared with neighbors
+    // the move or resize has changed it by itself, sticky windows off
     unsigned int drag_own : 1;
+    // and with sticky windows on: how far it has moved the edges of its own, without neighbors
+    int drag_own_dx;
+    int drag_own_dy;
     // fullscreen till it gave room to another: it is again when it takes the whole screen again
     unsigned int room_fullscreen : 1;
     WRect room_loc_prev;  // where it goes back to then, when it is not fullscreen
@@ -151,6 +154,7 @@ void edit_window_destroy (WEditWindow *win);
 void edit_window_show (WEditWindow *win);
 /* Hide a window as it is; the next window is selected */
 void edit_window_hide (WEditWindow *win);
+void edit_window_drag_end (WEditWindow *win);
 /* Room for @win: to the left of it, when it takes all the height, or above it.  The fullscreen
    window under it becomes a window there, and the other windows that go into it shrink out of it;
    edit_window_give_room_back() puts each back as it was, unless it has been moved since */

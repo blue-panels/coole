@@ -1558,6 +1558,8 @@ edit_close_cmd (WEdit *edit)
         if (edit->locked != 0)
             edit->locked = unlock_file (edit->filename);
 
+        // a move or resize of it ends: its neighbors are drawn as before
+        edit_window_drag_end (EDIT_WINDOW (edit));
         group_remove_widget (w);
         widget_destroy (w);
 
