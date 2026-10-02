@@ -65,8 +65,8 @@ local function split_lines(text)
     return lines
 end
 
-local function render(text, width)
-    local ok, out = pcall(md.render, text, { width = width })
+local function render(text, width, screen)
+    local ok, out = pcall(md.render, text, { width = width, screen = screen })
     if ok then
         return out
     end
@@ -89,7 +89,7 @@ local function view_line(state, line)
 
     local cached = state.blocks[start]
     if cached == nil then
-        cached = count_lines(render(table.concat(lines, "\n", 1, start - 1), state.width))
+        cached = count_lines(render(table.concat(lines, "\n", 1, start - 1), state.width, state.screen))
         state.blocks[start] = cached
     end
     return cached
@@ -107,10 +107,11 @@ viewer:on("render", function(args)
         return
     end
 
-    local width = math.max(20, math.min(args.width or cfg.DEFAULT_WIDTH, cfg.MAX_WIDTH))
+    local screen = math.max(20, args.width or cfg.DEFAULT_WIDTH)
+    local width = math.min(screen, cfg.MAX_WIDTH)
 
-    shown[args.id] = { lines = split_lines(args.text), width = width, blocks = {} }
-    viewer:call("set_text", { id = args.id, text = render(args.text, width) })
+    shown[args.id] = { lines = split_lines(args.text), width = width, screen = screen, blocks = {} }
+    viewer:call("set_text", { id = args.id, text = render(args.text, width, screen) })
 end)
 
 viewer:on("follow", function(args)
