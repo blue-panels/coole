@@ -154,6 +154,7 @@ static const struct
     { "editor_show_control_chars", &edit_options.show_control_chars },
     { "editor_group_undo", &edit_options.group_undo },
     { "editor_state_full_filename", &edit_options.state_full_filename },
+    { "editor_sticky_windows", &edit_options.sticky_windows },
     { "shadows", &mc_global.tty.shadows },
     {
         NULL,

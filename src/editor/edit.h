@@ -65,6 +65,7 @@ typedef struct
     gboolean show_control_chars;
     gboolean simple_statusbar;  // statusbar draw style
     gboolean check_nl_at_eof;
+    gboolean sticky_windows;  // windows next to each other resize together
 } edit_options_t;
 
 typedef struct

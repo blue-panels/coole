@@ -1476,6 +1476,10 @@ edit_dialog_command_execute (WDialog *h, long command)
     case CK_WindowList:
         edit_window_list (h);
         break;
+    case CK_WindowSticky:
+        // windows next to each other resize together from now on, or each by itself
+        edit_options.sticky_windows = !edit_options.sticky_windows;
+        break;
     case CK_WindowNext:
         group_select_next_widget (g);
         break;

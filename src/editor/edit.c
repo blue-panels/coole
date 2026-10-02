@@ -107,6 +107,7 @@ edit_options_t edit_options = {
     .show_control_chars = TRUE,
     .simple_statusbar = FALSE,
     .check_nl_at_eof = FALSE,
+    .sticky_windows = FALSE,
 };
 
 int max_undo = 32768;

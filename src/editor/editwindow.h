@@ -80,6 +80,8 @@ struct WEditWindow
     // save location before move/resize or toggle to fullscreen
     WRect loc_prev;
     unsigned int fullscreen : 1;  // Is window fullscreen or not
+    // resized along with the window dragged, its neighbors being sticky: drawn as dragged
+    unsigned int dragged_along : 1;
 
     // the fullscreen window that made room for this one, 0 when none did
     unsigned long room_id;
