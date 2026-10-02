@@ -507,6 +507,9 @@ msgstr "Изменить размер окна"
 msgid "Toggle fullscreen"
 msgstr "Переключить полноэкранный режим"
 
+msgid "Toggle sticky windows"
+msgstr "Переключить липкие окна"
+
 msgid "Window list"
 msgstr "Список окон"
 
@@ -2037,6 +2040,9 @@ msgstr "Изменить &размер"
 
 msgid "&Toggle fullscreen"
 msgstr "Окно во весь &экран"
+
+msgid "Toggle &sticky windows"
+msgstr "&Липкие окна"
 
 msgid "&Next"
 msgstr "&Следующее"
