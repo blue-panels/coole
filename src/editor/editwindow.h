@@ -107,6 +107,12 @@ struct WEditWindow
     unsigned int room_fullscreen : 1;
     WRect room_loc_prev;  // where it goes back to then, when it is not fullscreen
     WRect drag_rect;      // where it was when a sticky resize began
+    // where it was before the screen was resized, and where that put it: while the windows stay as
+    // they were put, the next resize starts from the first, so that the screen grown back gets
+    // them back
+    WRect fit_base;
+    WRect fit_done;
+    unsigned int fit_valid : 1;
     // the times the user has moved or resized it, but at an edge shared with sticky neighbors
     unsigned int user_moves;
 
@@ -150,6 +156,7 @@ void edit_window_give_room_back (WEditWindow *win);
 
 /* The part of the editor screen the windows take: all but the menu bar and the button bar */
 void edit_window_area (const WDialog *h, WRect *r);
+void edit_window_fit_area (WDialog *h, const WRect *old);
 
 void edit_window_save_size (WEditWindow *win);
 void edit_window_restore_size (WEditWindow *win);

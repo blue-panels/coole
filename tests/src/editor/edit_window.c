@@ -784,6 +784,49 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The screen resized: the windows at its right and bottom stay there, the ones before them make
+   way down to their smallest size, and the screen grown back gets them back as they were */
+START_TEST (test_window_fit_area)
+{
+    test_window_t *a = sticky_window_new (1, 0, 16, 60);
+    test_window_t *term = sticky_window_new (17, 0, 6, 60);
+    test_window_t *pv = sticky_window_new (1, 60, 22, 20);
+    WRect old;
+
+    edit_window_area (&owner, &old);
+    rect_init (&WIDGET (&owner)->rect, 0, 0, 12, 40);
+    edit_window_fit_area (&owner, &old);
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 6, 34);
+    test_assert_rect (&WIDGET (term)->rect, 7, 0, 4, 34);
+    test_assert_rect (&WIDGET (pv)->rect, 1, 34, 10, 6);
+
+    edit_window_area (&owner, &old);
+    rect_init (&WIDGET (&owner)->rect, 0, 0, 24, 80);
+    edit_window_fit_area (&owner, &old);
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 16, 60);
+    test_assert_rect (&WIDGET (term)->rect, 17, 0, 6, 60);
+    test_assert_rect (&WIDGET (pv)->rect, 1, 60, 22, 20);
+
+    // moved in between: the next resize starts from where it is
+    edit_window_area (&owner, &old);
+    rect_init (&WIDGET (&owner)->rect, 0, 0, 12, 40);
+    edit_window_fit_area (&owner, &old);
+    ck_assert (edit_window_handle_move_resize (&pv->window, CK_WindowResize));
+    sticky_keys (&pv->window, CK_Up, 1);
+    ck_assert (edit_window_handle_move_resize (&pv->window, CK_Enter));
+    edit_window_area (&owner, &old);
+    rect_init (&WIDGET (&owner)->rect, 0, 0, 24, 80);
+    edit_window_fit_area (&owner, &old);
+    test_assert_rect (&WIDGET (pv)->rect, 1, 34, 9, 46);
+
+    sticky_window_free (pv);
+    sticky_window_free (term);
+    sticky_window_free (a);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A window of all the height at the right edge: the fullscreen window goes to its left */
 START_TEST (test_window_make_room_left)
 {
@@ -893,6 +936,7 @@ main (void)
     tcase_add_test (tc_core, test_window_sticky_unmark);
     tcase_add_test (tc_core, test_window_room_by_edge);
     tcase_add_test (tc_core, test_window_room_none);
+    tcase_add_test (tc_core, test_window_fit_area);
     tcase_add_test (tc_core, test_window_destroy_selects_top);
     tcase_add_test (tc_core, test_editor_is_window);
 

@@ -1874,9 +1874,16 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         return MSG_HANDLED;
 
     case MSG_RESIZE:
+    {
+        WRect old;
+
+        edit_window_area (h, &old);
         dlg_default_callback (w, NULL, MSG_RESIZE, 0, NULL);
+        // the windows not on the whole screen stay on it
+        edit_window_fit_area (h, &old);
         menubar_arrange (menubar_find (h));
         return MSG_HANDLED;
+    }
 
     case MSG_ACTION:
     {

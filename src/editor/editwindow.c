@@ -1193,6 +1193,233 @@ edit_window_area (const WDialog *h, WRect *r)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* A window being fit into the area: where it starts from, and its smallest size */
+typedef struct
+{
+    Widget *w;
+    WRect from;
+} fit_window_t;
+
+/* The area the windows were first put in, before the screen was resized, while they stay as the
+   resizes put them */
+static WRect fit_base_area;
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+fit_add (GArray *v, int b)
+{
+    guint i;
+
+    for (i = 0; i < v->len && g_array_index (v, int, i) < b; i++)
+        ;
+    if (i == v->len || g_array_index (v, int, i) != b)
+        g_array_insert_val (v, i, b);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+fit_lookup (const GArray *v, const GArray *map, int b)
+{
+    guint i;
+
+    for (i = 0; i < v->len; i++)
+        if (g_array_index (v, int, i) == b)
+            return g_array_index (map, int, i);
+    return b;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The place each boundary of the windows (a first column, or the one after the last) goes along
+   one axis when the area ends at @end instead of @old_end: what was at the old end goes to the new
+   one, what is past the new end comes to it, and the windows before make way for those after,
+   down to their smallest size.  Returns the boundaries, sorted, and their places in @map */
+static GArray *
+fit_axis (const GArray *wins, gboolean vertical, int start, int old_end, int end, GArray **map)
+{
+    GArray *v, *m;
+    guint i, k;
+
+    v = g_array_new (FALSE, FALSE, sizeof (int));
+    for (k = 0; k < wins->len; k++)
+    {
+        const WRect *r = &g_array_index (wins, fit_window_t, k).from;
+
+        fit_add (v, vertical ? r->y : r->x);
+        fit_add (v, vertical ? r->y + r->lines : r->x + r->cols);
+    }
+    fit_add (v, old_end);
+
+    m = g_array_sized_new (FALSE, TRUE, sizeof (int), v->len);
+    g_array_set_size (m, v->len);
+
+    for (i = v->len; i-- > 0;)
+    {
+        const int b = g_array_index (v, int, i);
+        int p = (b == old_end) ? end : MIN (b, end);
+
+        // no further than the boundary after it
+        if (i + 1 < v->len)
+            p = MIN (p, g_array_index (m, int, i + 1));
+
+        // each window that starts here keeps its smallest size
+        for (k = 0; k < wins->len; k++)
+        {
+            const fit_window_t *f = &g_array_index (wins, fit_window_t, k);
+            const WEditWindow *ow = CONST_EDIT_WINDOW (f->w);
+            const int first = vertical ? f->from.y : f->from.x;
+            const int last = first + (vertical ? f->from.lines : f->from.cols);
+
+            if (first == b)
+                p = MIN (p,
+                         fit_lookup (v, m, last)
+                             - (vertical ? ow->klass->min_lines : ow->klass->min_cols));
+        }
+
+        // out of the area before it: left as it is
+        g_array_index (m, int, i) = (b >= start) ? MAX (p, start) : b;
+    }
+
+    *map = m;
+    return v;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Where @edge (the last row or column of a frame) of a room goes: to where the window whose edge
+   it was has its edge now */
+static int
+fit_room_edge (const GArray *wins, gboolean vertical, int edge, int old_end, int end)
+{
+    guint k;
+
+    if (edge + 1 == old_end)
+        return end - 1;
+
+    for (k = 0; k < wins->len; k++)
+    {
+        const fit_window_t *f = &g_array_index (wins, fit_window_t, k);
+        const WRect *was = &f->w->rect;
+        const WRect *now = &EDIT_WINDOW (f->w)->fit_done;
+
+        if (vertical && was->y + was->lines - 1 == edge)
+            return now->y + now->lines - 1;
+        if (!vertical && was->x + was->cols - 1 == edge)
+            return now->x + now->cols - 1;
+    }
+    return MIN (edge, end - 1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Fit the windows into the area of the editor screen after the screen has been resized: the
+ * windows at the right (bottom) of the old area stay at the right of the new one, growing or
+ * shrinking, and the windows before them make way down to their smallest size; windows that stand
+ * side by side stay so.  While nobody moves them, the screen grown back gets the windows back as
+ * they were.  A fullscreen window follows the screen by itself.
+ *
+ * @param h editor dialog
+ * @param old the area before the screen was resized
+ */
+
+void
+edit_window_fit_area (WDialog *h, const WRect *old)
+{
+    GArray *wins, *vx, *vy, *mx, *my;
+    gboolean as_put = TRUE;
+    WRect a, from;
+    GList *l;
+    guint i, k;
+
+    edit_window_area (h, &a);
+    if (a.lines == old->lines && a.cols == old->cols)
+        return;
+
+    wins = g_array_new (FALSE, FALSE, sizeof (fit_window_t));
+    for (l = GROUP (h)->widgets; l != NULL; l = g_list_next (l))
+    {
+        fit_window_t f;
+
+        f.w = WIDGET (l->data);
+        // hidden ones too: shown again, they have to fit
+        if (!edit_window_is_window (f.w) || EDIT_WINDOW (f.w)->fullscreen != 0)
+            continue;
+        f.from = f.w->rect;
+        g_array_append_val (wins, f);
+        if (EDIT_WINDOW (f.w)->fit_valid == 0
+            || !rects_are_equal (&f.w->rect, &EDIT_WINDOW (f.w)->fit_done))
+            as_put = FALSE;
+    }
+
+    // the windows as the last resizes put them: from where they were first
+    from = *old;
+    if (as_put && wins->len != 0)
+    {
+        from = fit_base_area;
+        for (k = 0; k < wins->len; k++)
+        {
+            fit_window_t *f = &g_array_index (wins, fit_window_t, k);
+
+            f->from = EDIT_WINDOW (f->w)->fit_base;
+        }
+    }
+    else
+        fit_base_area = *old;
+
+    vx = fit_axis (wins, FALSE, a.x, from.x + from.cols, a.x + a.cols, &mx);
+    vy = fit_axis (wins, TRUE, a.y, from.y + from.lines, a.y + a.lines, &my);
+
+    for (k = 0; k < wins->len; k++)
+    {
+        fit_window_t *f = &g_array_index (wins, fit_window_t, k);
+        WEditWindow *ow = EDIT_WINDOW (f->w);
+        WRect r;
+
+        r.x = fit_lookup (vx, mx, f->from.x);
+        r.cols = MAX (1, fit_lookup (vx, mx, f->from.x + f->from.cols) - r.x);
+        r.y = fit_lookup (vy, my, f->from.y);
+        r.lines = MAX (1, fit_lookup (vy, my, f->from.y + f->from.lines) - r.y);
+
+        ow->fit_base = f->from;
+        ow->fit_done = r;
+        ow->fit_valid = 1;
+    }
+
+    // the edges the rooms were made with move along, to be given back
+    for (k = 0; k < wins->len; k++)
+    {
+        WEditWindow *ow = EDIT_WINDOW (g_array_index (wins, fit_window_t, k).w);
+
+        for (i = 0; ow->rooms != NULL && i < ow->rooms->len; i++)
+        {
+            edit_window_room_t *room = &g_array_index (ow->rooms, edit_window_room_t, i);
+            const int old_end = room->above ? old->y + old->lines : old->x + old->cols;
+            const int end = room->above ? a.y + a.lines : a.x + a.cols;
+
+            room->edge_before = fit_room_edge (wins, room->above, room->edge_before, old_end, end);
+            room->edge_after = fit_room_edge (wins, room->above, room->edge_after, old_end, end);
+        }
+    }
+
+    for (k = 0; k < wins->len; k++)
+    {
+        Widget *wl = g_array_index (wins, fit_window_t, k).w;
+
+        if (!rects_are_equal (&wl->rect, &EDIT_WINDOW (wl)->fit_done))
+            widget_set_size_rect (wl, &EDIT_WINDOW (wl)->fit_done);
+    }
+
+    g_array_free (my, TRUE);
+    g_array_free (mx, TRUE);
+    g_array_free (vy, TRUE);
+    g_array_free (vx, TRUE);
+    g_array_free (wins, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /**
  * Save current window size.
  *
