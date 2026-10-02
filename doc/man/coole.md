@@ -720,9 +720,10 @@ the jumps, back and forward, the symbols of the file and so on. See
 : With sticky windows, windows whose frames stand next to each other resize
 together: the corner of a window moves the edge it is on with all the windows
 along it, on both sides, and no gap opens between them. Where four windows
-meet, the corner moves both edges. An edge on the edge of the screen does not
-move, and a window keeps its smallest size. A window moved by its title goes
-alone. The setting is kept as
+meet, the corner moves both edges. A side that is on the edge of the screen
+when the resize begins stays there, a window keeps its smallest size, and an
+edge stops at a window in its way, which from then on resizes along. Esc puts
+every window back. A window moved by its title goes alone. The setting is kept as
 **editor_sticky_windows**
 in the ini file.
 

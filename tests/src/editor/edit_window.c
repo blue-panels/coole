@@ -602,6 +602,188 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Esc puts the neighbors back too, and draws them as before */
+START_TEST (test_window_sticky_cancel)
+{
+    test_window_t *a = sticky_window_new (1, 0, 22, 40);
+    test_window_t *b = sticky_window_new (1, 40, 22, 40);
+
+    edit_options.sticky_windows = TRUE;
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_WindowResize));
+    sticky_keys (&a->window, CK_Right, 10);
+    test_assert_rect (&WIDGET (b)->rect, 1, 50, 22, 30);
+    edit_window_restore_size (&a->window);
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 22, 40);
+    test_assert_rect (&WIDGET (b)->rect, 1, 40, 22, 40);
+    ck_assert_int_eq (b->window.dragged_along, 0);
+
+    edit_options.sticky_windows = FALSE;
+    sticky_window_free (b);
+    sticky_window_free (a);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A side grown to the edge of the screen in a resize comes back in it; a side on the edge when it
+   began stays; a window partly off the screen shrinks */
+START_TEST (test_window_sticky_screen_edge)
+{
+    test_window_t *a = sticky_window_new (1, 0, 10, 60);
+    test_window_t *off = sticky_window_new (12, 50, 8, 40);
+
+    edit_options.sticky_windows = TRUE;
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_WindowResize));
+    sticky_keys (&a->window, CK_Right, 25);
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 10, 80);
+    sticky_keys (&a->window, CK_Left, 5);
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 10, 75);
+    sticky_keys (&a->window, CK_Right, 5);
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_Enter));
+
+    // on the edge when the resize began: it stays
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_WindowResize));
+    sticky_keys (&a->window, CK_Right, 5);
+    sticky_keys (&a->window, CK_Left, 3);
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_Enter));
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 10, 80);
+
+    ck_assert (edit_window_handle_move_resize (&off->window, CK_WindowResize));
+    sticky_keys (&off->window, CK_Left, 5);
+    ck_assert (edit_window_handle_move_resize (&off->window, CK_Enter));
+    test_assert_rect (&WIDGET (off)->rect, 12, 50, 8, 35);
+
+    edit_options.sticky_windows = FALSE;
+    sticky_window_free (off);
+    sticky_window_free (a);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A window in the way, no part of the edge, is not run over: the edge stops at it, and from there
+   on it stands next to the edge, a neighbor, and moves along.  One that meets the window only at
+   a corner is no part of the edge */
+START_TEST (test_window_sticky_in_the_way)
+{
+    test_window_t *a = sticky_window_new (1, 0, 11, 40);
+    test_window_t *b = sticky_window_new (1, 40, 5, 40);
+    test_window_t *e = sticky_window_new (6, 45, 6, 35);
+    test_window_t *corner = sticky_window_new (12, 40, 11, 40);
+
+    edit_options.sticky_windows = TRUE;
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_WindowResize));
+    sticky_keys (&a->window, CK_Right, 10);
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_Enter));
+    test_assert_rect (&WIDGET (a)->rect, 1, 0, 11, 50);
+    test_assert_rect (&WIDGET (b)->rect, 1, 50, 5, 30);
+    test_assert_rect (&WIDGET (e)->rect, 6, 50, 6, 30);
+    test_assert_rect (&WIDGET (corner)->rect, 12, 40, 11, 40);
+
+    edit_options.sticky_windows = FALSE;
+    sticky_window_free (corner);
+    sticky_window_free (e);
+    sticky_window_free (b);
+    sticky_window_free (a);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The neighbors are drawn as before when the window is hidden, or the mode turned off, in a
+   resize */
+START_TEST (test_window_sticky_unmark)
+{
+    test_window_t *a = sticky_window_new (1, 0, 22, 40);
+    test_window_t *b = sticky_window_new (1, 40, 22, 40);
+
+    edit_options.sticky_windows = TRUE;
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_WindowResize));
+    ck_assert_int_eq (b->window.dragged_along, 1);
+    edit_options.sticky_windows = FALSE;
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_Enter));
+    ck_assert_int_eq (b->window.dragged_along, 0);
+
+    edit_options.sticky_windows = TRUE;
+    ck_assert (edit_window_handle_move_resize (&a->window, CK_WindowResize));
+    ck_assert_int_eq (b->window.dragged_along, 1);
+    edit_window_hide (&a->window);
+    ck_assert_int_eq (b->window.dragged_along, 0);
+
+    edit_options.sticky_windows = FALSE;
+    sticky_window_free (b);
+    sticky_window_free (a);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The rooms are given back edge by edge: in any order, a column moved between keeps, and a side
+   the user moved by itself is left as it is */
+START_TEST (test_window_room_by_edge)
+{
+    WEditWindow *win = &test_win->window;
+    test_window_t *right = sticky_window_new (1, 50, 22, 30);
+    test_window_t *bottom;
+
+    edit_window_toggle_fullscreen (win);
+    edit_window_toggle_fullscreen (win);
+    edit_window_make_room (&right->window);
+    bottom = sticky_window_new (17, 0, 6, 80);
+    edit_window_make_room (&bottom->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 16, 50);
+
+    // the column between the file and the right one moved: it stays when the bottom goes
+    edit_options.sticky_windows = TRUE;
+    ck_assert (edit_window_handle_move_resize (win, CK_WindowResize));
+    sticky_keys (win, CK_Right, 5);
+    ck_assert (edit_window_handle_move_resize (win, CK_Enter));
+    test_assert_rect (&WIDGET (right)->rect, 1, 55, 16, 25);
+
+    // given back the other way round: the right one first, the bottom last
+    edit_window_hide (&right->window);
+    edit_window_give_room_back (&right->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 16, 80);
+    edit_window_give_room_back (&bottom->window);
+    ck_assert_int_eq (win->fullscreen, 1);
+
+    // a side of its own moved by the user: the window stays as the user left it
+    edit_window_toggle_fullscreen (win);
+    test_assert_rect (&WIDGET (win)->rect, 5, 5, 10, 30);
+    edit_window_make_room (&bottom->window);
+    ck_assert (edit_window_handle_move_resize (win, CK_WindowResize));
+    sticky_keys (win, CK_Right, 3);
+    ck_assert (edit_window_handle_move_resize (win, CK_Enter));
+    edit_window_give_room_back (&bottom->window);
+    test_assert_rect (&WIDGET (win)->rect, 5, 5, 10, 33);
+
+    edit_options.sticky_windows = FALSE;
+    sticky_window_free (bottom);
+    sticky_window_free (right);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* No room for the fullscreen window: nothing moves */
+START_TEST (test_window_room_none)
+{
+    WEditWindow *win = &test_win->window;
+    test_window_t *floating = sticky_window_new (5, 50, 10, 20);
+    test_window_t *bottom = sticky_window_new (3, 0, 20, 80);
+
+    edit_window_make_room (&bottom->window);
+    ck_assert_int_eq (win->fullscreen, 1);
+    test_assert_rect (&WIDGET (floating)->rect, 5, 50, 10, 20);
+    ck_assert (bottom->window.rooms == NULL);
+
+    sticky_window_free (bottom);
+    sticky_window_free (floating);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A window of all the height at the right edge: the fullscreen window goes to its left */
 START_TEST (test_window_make_room_left)
 {
@@ -705,6 +887,12 @@ main (void)
     tcase_add_test (tc_core, test_window_sticky_two_over_one);
     tcase_add_test (tc_core, test_window_sticky_keeps_the_room);
     tcase_add_test (tc_core, test_window_make_room_from_two);
+    tcase_add_test (tc_core, test_window_sticky_cancel);
+    tcase_add_test (tc_core, test_window_sticky_screen_edge);
+    tcase_add_test (tc_core, test_window_sticky_in_the_way);
+    tcase_add_test (tc_core, test_window_sticky_unmark);
+    tcase_add_test (tc_core, test_window_room_by_edge);
+    tcase_add_test (tc_core, test_window_room_none);
     tcase_add_test (tc_core, test_window_destroy_selects_top);
     tcase_add_test (tc_core, test_editor_is_window);
 

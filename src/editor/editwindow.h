@@ -39,14 +39,15 @@ typedef enum
 
 typedef struct WEditWindow WEditWindow;
 
-/* A window that made room for another: where it was, and where it was put */
+/* A window that made room for another: the edge of it that moved out of the way, its bottom for
+   a room above the other, else its right side, where it was and where it was put */
 typedef struct
 {
     unsigned long id;
-    gboolean fullscreen;  // it was fullscreen, and is to be again
-    WRect before;         // where it was, when it was not fullscreen
-    WRect after;          // where it was put
-    WRect loc_prev;       // where it goes back to when it is not fullscreen
+    gboolean above;           // its bottom moved, else its right side
+    int edge_before;          // the last row (column) of its frame before
+    int edge_after;           // and after
+    unsigned int user_moves;  // the moves of the window by the user then
 } edit_window_room_t;
 
 /* What a kind of window does on its own */
@@ -92,6 +93,22 @@ struct WEditWindow
     unsigned int fullscreen : 1;  // Is window fullscreen or not
     // resized along with the window dragged, its neighbors being sticky: drawn as dragged
     unsigned int dragged_along : 1;
+    // a resize moved it at an edge it shares with neighbors: its right side (vertical) or its
+    // bottom (horizontal)
+    unsigned int moved_vedge : 1;
+    unsigned int moved_hedge : 1;
+    // its right side and its bottom were on the edge of the screen when the resize began: they
+    // stay there
+    unsigned int pin_right : 1;
+    unsigned int pin_bottom : 1;
+    // a sticky resize of it is going on
+    unsigned int sticky_drag : 1;
+    // fullscreen till it gave room to another: it is again when it takes the whole screen again
+    unsigned int room_fullscreen : 1;
+    WRect room_loc_prev;  // where it goes back to then, when it is not fullscreen
+    WRect drag_rect;      // where it was when a sticky resize began
+    // the times the user has moved or resized it, but at an edge shared with sticky neighbors
+    unsigned int user_moves;
 
     // edit_window_room_t: the windows that made room for this one; NULL when none did
     GArray *rooms;
