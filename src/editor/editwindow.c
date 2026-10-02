@@ -79,6 +79,10 @@ edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
 
     ret = win->klass->callback (w, sender, msg, parm, data);
 
+    // the room made for it is forgotten with it
+    if (msg == MSG_DESTROY && win->rooms != NULL)
+        g_clear_pointer (&win->rooms, g_array_unref);
+
     // the frame has moved: its scrollbars with it
     if (msg == MSG_RESIZE)
         edit_window_place_bars (win);
@@ -387,8 +391,8 @@ sticky_moved (const WEditWindow *win, const sticky_edge_t *edges, int n, const W
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A window the screen made room for keeps its room though it has been resized at a sticky edge:
-   hiding the window it made room for gives it the whole screen back, as before */
+/* A window that made room for another keeps being in it though it has been resized at a sticky
+   edge: hiding the window it made room for puts it back, as before */
 static void
 sticky_keep_rooms (const WEditWindow *win, const sticky_edge_t *edges, int n)
 {
@@ -398,16 +402,21 @@ sticky_keep_rooms (const WEditWindow *win, const sticky_edge_t *edges, int n)
     for (l = g->widgets; l != NULL; l = g_list_next (l))
     {
         Widget *wl = WIDGET (l->data);
-        WEditWindow *ml;
-        Widget *top;
+        GArray *rooms;
+        guint i;
 
-        if (!edit_window_is_window (wl) || EDIT_WINDOW (wl)->room_id == 0)
+        if (!edit_window_is_window (wl) || EDIT_WINDOW (wl)->rooms == NULL)
             continue;
-        ml = EDIT_WINDOW (wl);
-        top = widget_find_by_id (WIDGET (g), ml->room_id);
-        if (top != NULL && edit_window_is_window (top) && EDIT_WINDOW (top)->fullscreen == 0
-            && sticky_moved (win, edges, n, top))
-            ml->room_rect = top->rect;
+        rooms = EDIT_WINDOW (wl)->rooms;
+        for (i = 0; i < rooms->len; i++)
+        {
+            edit_window_room_t *room = &g_array_index (rooms, edit_window_room_t, i);
+            Widget *moved = widget_find_by_id (WIDGET (g), room->id);
+
+            if (moved != NULL && edit_window_is_window (moved)
+                && EDIT_WINDOW (moved)->fullscreen == 0 && sticky_moved (win, edges, n, moved))
+                room->after = moved->rect;
+        }
     }
 }
 
@@ -933,10 +942,11 @@ edit_window_hide (WEditWindow *win)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Make room for a window that does not fill the screen: the topmost fullscreen window of the
- * screen stops being fullscreen and takes the area to the left of @win, when @win takes all the
- * height of the screen, or else the area above it. Nothing is done when there is no such window,
- * or no room for it.
+ * Make room for a window that does not fill the screen: to the left of @win, when @win takes all
+ * the height of the screen, or else above it.  The topmost fullscreen window stops being
+ * fullscreen and takes that area; every other window that goes into @win shrinks out of it, its
+ * bottom (or its right side) put next to @win.  A window that would become smaller than its
+ * smallest size is left as it is.  Each window that moves is remembered to be put back.
  *
  * @param win window to make room for
  */
@@ -947,11 +957,16 @@ edit_window_make_room (WEditWindow *win)
     Widget *w = WIDGET (win);
     WGroup *g = w->owner;
     WEditWindow *top = NULL;
-    WRect a, r;
+    gboolean left;
+    WRect a;
     GList *l;
 
-    if (g == NULL || win->fullscreen != 0 || win->room_id != 0)
+    if (g == NULL || win->fullscreen != 0 || win->rooms != NULL)
         return;
+
+    edit_window_area (DIALOG (g), &a);
+    // a window of all the height: the room is to the left of it, else above it
+    left = (w->rect.y <= a.y && w->rect.y + w->rect.lines >= a.y + a.lines && w->rect.x > a.x);
 
     for (l = g->widgets; l != NULL; l = g_list_next (l))
     {
@@ -962,40 +977,76 @@ edit_window_make_room (WEditWindow *win)
             top = EDIT_WINDOW (wl);
     }
 
-    if (top == NULL)
-        return;
+    win->rooms = g_array_new (FALSE, FALSE, sizeof (edit_window_room_t));
 
-    edit_window_area (DIALOG (g), &a);
-    r = a;
-    if (w->rect.y <= a.y && w->rect.y + w->rect.lines >= a.y + a.lines && w->rect.x > a.x)
+    for (l = g->widgets; l != NULL; l = g_list_next (l))
     {
-        // a window of all the height: the room is to the left of it
-        r.cols = w->rect.x - a.x;
-        if (r.cols < top->klass->min_cols)
-            return;
-    }
-    else
-    {
-        // the room is above the window
-        r.lines = w->rect.y - a.y;
-        if (r.lines < top->klass->min_lines)
-            return;
+        Widget *wl = WIDGET (l->data);
+        WEditWindow *ow;
+        edit_window_room_t room;
+        WRect r;
+
+        if (wl == w || !edit_window_is_window (wl) || !widget_get_state (wl, WST_VISIBLE))
+            continue;
+        ow = EDIT_WINDOW (wl);
+
+        if (ow == top)
+        {
+            r = a;
+            if (left)
+                r.cols = w->rect.x - a.x;
+            else
+                r.lines = w->rect.y - a.y;
+            if (r.cols < ow->klass->min_cols || r.lines < ow->klass->min_lines)
+                continue;
+        }
+        else if (ow->fullscreen != 0)
+            continue;  // under the top one, unseen
+        else
+        {
+            // a window that goes into @win shrinks out of it, if it starts before it
+            r = wl->rect;
+            if (!rects_are_overlapped (&wl->rect, &w->rect))
+                continue;
+            if (left)
+            {
+                if (wl->rect.x >= w->rect.x)
+                    continue;
+                r.cols = w->rect.x - wl->rect.x;
+            }
+            else
+            {
+                if (wl->rect.y >= w->rect.y)
+                    continue;
+                r.lines = w->rect.y - wl->rect.y;
+            }
+            if (r.cols < ow->klass->min_cols || r.lines < ow->klass->min_lines)
+                continue;
+        }
+
+        room.id = wl->id;
+        room.fullscreen = (ow->fullscreen != 0);
+        room.before = wl->rect;
+        room.after = r;
+        room.loc_prev = ow->loc_prev;
+        g_array_append_val (win->rooms, room);
+
+        ow->fullscreen = 0;
+        wl->pos_flags = WPOS_KEEP_DEFAULT;
+        widget_set_size_rect (wl, &r);
     }
 
-    win->room_id = WIDGET (top)->id;
-    win->room_rect = r;
-    win->room_loc_prev = top->loc_prev;
+    if (win->rooms->len == 0)
+        g_clear_pointer (&win->rooms, g_array_unref);
 
-    top->fullscreen = 0;
-    WIDGET (top)->pos_flags = WPOS_KEEP_DEFAULT;
-    widget_set_size_rect (WIDGET (top), &r);
     widget_draw (WIDGET (g));
 }
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Give back the room edit_window_make_room() made: the window made fullscreen again. A window the
- * user has moved, resized or made fullscreen since is left as it is.
+ * Give back the room edit_window_make_room() made: each window that moved for it goes back where
+ * it was, fullscreen again if it was.  A window the user has moved, resized or made fullscreen
+ * since is left as it is.
  *
  * @param win window the room was made for
  */
@@ -1004,29 +1055,49 @@ void
 edit_window_give_room_back (WEditWindow *win)
 {
     Widget *w = WIDGET (win);
-    Widget *wt;
-    unsigned long id = win->room_id;
+    GArray *rooms = win->rooms;
+    guint i;
 
-    win->room_id = 0;
+    win->rooms = NULL;
 
-    if (id == 0 || w->owner == NULL)
-        return;
-
-    wt = widget_find_by_id (WIDGET (w->owner), id);
-    if (wt != NULL && wt != w && edit_window_is_window (wt) && EDIT_WINDOW (wt)->fullscreen == 0
-        && wt->rect.y == win->room_rect.y && wt->rect.x == win->room_rect.x
-        && wt->rect.lines == win->room_rect.lines && wt->rect.cols == win->room_rect.cols)
+    if (rooms == NULL || w->owner == NULL)
     {
-        WEditWindow *top = EDIT_WINDOW (wt);
-        WRect a;
-
-        top->fullscreen = 1;
-        top->loc_prev = win->room_loc_prev;
-        edit_window_area (DIALOG (w->owner), &a);
-        widget_set_size_rect (wt, &a);
-        wt->pos_flags = WPOS_KEEP_ALL;
-        widget_draw (WIDGET (w->owner));
+        if (rooms != NULL)
+            g_array_unref (rooms);
+        return;
     }
+
+    for (i = 0; i < rooms->len; i++)
+    {
+        const edit_window_room_t *room = &g_array_index (rooms, edit_window_room_t, i);
+        Widget *wt = widget_find_by_id (WIDGET (w->owner), room->id);
+        WEditWindow *ow;
+        WRect r;
+
+        if (wt == NULL || wt == w || !edit_window_is_window (wt))
+            continue;
+        ow = EDIT_WINDOW (wt);
+        if (ow->fullscreen != 0 || wt->rect.y != room->after.y || wt->rect.x != room->after.x
+            || wt->rect.lines != room->after.lines || wt->rect.cols != room->after.cols)
+            continue;
+
+        if (room->fullscreen)
+        {
+            ow->fullscreen = 1;
+            ow->loc_prev = room->loc_prev;
+            edit_window_area (DIALOG (w->owner), &r);
+            widget_set_size_rect (wt, &r);
+            wt->pos_flags = WPOS_KEEP_ALL;
+        }
+        else
+        {
+            r = room->before;
+            widget_set_size_rect (wt, &r);
+        }
+    }
+
+    g_array_unref (rooms);
+    widget_draw (WIDGET (w->owner));
 }
 
 /* --------------------------------------------------------------------------------------------- */

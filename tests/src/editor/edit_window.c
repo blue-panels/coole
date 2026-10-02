@@ -570,6 +570,38 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A file and the Preview side by side, then the terminal below: both make room for it, and both
+   go back when it goes */
+START_TEST (test_window_make_room_from_two)
+{
+    WEditWindow *win = &test_win->window;
+    test_window_t *right = sticky_window_new (1, 50, 22, 30);
+    test_window_t *bottom;
+
+    edit_window_toggle_fullscreen (win);
+    edit_window_toggle_fullscreen (win);
+    edit_window_make_room (&right->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 50);
+
+    bottom = sticky_window_new (17, 0, 6, 80);
+    edit_window_make_room (&bottom->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 16, 50);
+    test_assert_rect (&WIDGET (right)->rect, 1, 50, 16, 30);
+
+    edit_window_give_room_back (&bottom->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 50);
+    test_assert_rect (&WIDGET (right)->rect, 1, 50, 22, 30);
+
+    edit_window_give_room_back (&right->window);
+    ck_assert_int_eq (win->fullscreen, 1);
+
+    sticky_window_free (bottom);
+    sticky_window_free (right);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A window of all the height at the right edge: the fullscreen window goes to its left */
 START_TEST (test_window_make_room_left)
 {
@@ -672,6 +704,7 @@ main (void)
     tcase_add_test (tc_core, test_window_sticky_four);
     tcase_add_test (tc_core, test_window_sticky_two_over_one);
     tcase_add_test (tc_core, test_window_sticky_keeps_the_room);
+    tcase_add_test (tc_core, test_window_make_room_from_two);
     tcase_add_test (tc_core, test_window_destroy_selects_top);
     tcase_add_test (tc_core, test_editor_is_window);
 

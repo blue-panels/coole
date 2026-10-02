@@ -39,6 +39,16 @@ typedef enum
 
 typedef struct WEditWindow WEditWindow;
 
+/* A window that made room for another: where it was, and where it was put */
+typedef struct
+{
+    unsigned long id;
+    gboolean fullscreen;  // it was fullscreen, and is to be again
+    WRect before;         // where it was, when it was not fullscreen
+    WRect after;          // where it was put
+    WRect loc_prev;       // where it goes back to when it is not fullscreen
+} edit_window_room_t;
+
 /* What a kind of window does on its own */
 typedef struct
 {
@@ -83,10 +93,8 @@ struct WEditWindow
     // resized along with the window dragged, its neighbors being sticky: drawn as dragged
     unsigned int dragged_along : 1;
 
-    // the fullscreen window that made room for this one, 0 when none did
-    unsigned long room_id;
-    WRect room_rect;      // where that window was put
-    WRect room_loc_prev;  // where that window goes back to when it is not fullscreen
+    // edit_window_room_t: the windows that made room for this one; NULL when none did
+    GArray *rooms;
 
     // the scrollbars of the frame, widgets of the window; hidden while it is fullscreen
     WScrollBar *vbar;
@@ -117,8 +125,9 @@ void edit_window_destroy (WEditWindow *win);
 void edit_window_show (WEditWindow *win);
 /* Hide a window as it is; the next window is selected */
 void edit_window_hide (WEditWindow *win);
-/* The fullscreen window under @win is made a window in the area to the left of @win, when @win
-   takes all the height, or above it, and edit_window_give_room_back() makes it fullscreen again */
+/* Room for @win: to the left of it, when it takes all the height, or above it.  The fullscreen
+   window under it becomes a window there, and the other windows that go into it shrink out of it;
+   edit_window_give_room_back() puts each back as it was, unless it has been moved since */
 void edit_window_make_room (WEditWindow *win);
 void edit_window_give_room_back (WEditWindow *win);
 

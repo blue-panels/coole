@@ -1351,8 +1351,10 @@ See [Spell](spell.md#spell).
 The terminal plugin runs your shell in a window of the editor.
 **Ctrl-o**
 shows the window at the bottom of the screen, a file shown full screen going
-into a window above it, and in the terminal hides it again, the file taking
-the whole screen back; the shell goes on running while the window is hidden.
+into a window above it, and the windows already there, a file beside the
+Preview for one, going up out of its way; in the terminal it hides it again,
+and each of them goes back where it was. The shell goes on running while the
+window is hidden.
 The window is moved, resized, shown full screen and closed like the window of
 a file. The scrollbar on the right of its frame scrolls the history of the
 output. See [Terminal](terminal.md#terminal).
