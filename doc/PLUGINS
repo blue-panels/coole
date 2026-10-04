@@ -43,6 +43,9 @@ src/meson.build, which compiles them into the internal library):
   src/plugins/spell/      activate + configure + query_state +
                                  handle_key
   src/plugins/etags/      handle_action only
+  src/plugins/project/    the project of a file: its files at hand,
+                         the recent ones, its tree; the "project"
+                         service
   src/plugins/debugger/   GDB/MI, Debug menu, source markers and
                          viewer windows for program output and state
 
@@ -85,8 +88,9 @@ program exports; what the program itself does not call it links whole
 (libforplugins in src/meson.build).  The test module_symbols checks
 that the program gives every function a module calls.
 
-The help of a plugin (ctags.md, debugger.md, etags.md, spell.md, terminal.md) is installed into
-$(pkgdatadir)/help next to the help of the program.
+The help of a plugin (ctags.md, debugger.md, etags.md, project.md, spell.md,
+terminal.md) is installed into $(pkgdatadir)/help next to the help of the
+program.
 
 
 3. Lifecycle and Location

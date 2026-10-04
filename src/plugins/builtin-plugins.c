@@ -11,6 +11,7 @@
 #include "src/plugins/spell/spell.h"
 #include "src/plugins/ctags/ctags-plugin.h"
 #include "src/plugins/debugger/debugger.h"
+#include "src/plugins/project/project.h"
 
 typedef struct
 {
@@ -488,5 +489,6 @@ editor_plugins_register_all (void)
     (void) mc_editor_plugin_add (&edit_builtin_etags_plugin);
     (void) mc_editor_plugin_add (&edit_builtin_spell_plugin);
     (void) mc_editor_plugin_add (ctags_get_plugin ());
+    (void) mc_editor_plugin_add (project_get_plugin ());
     (void) mc_editor_plugin_add (debugger_get_plugin ());
 }

@@ -31,6 +31,7 @@ src/plugins/ctags/ctags-config.c
 src/plugins/ctags/ctags-plugin.c
 src/plugins/ctags/ctags-ui.c
 src/plugins/debugger/debugger.c
+src/plugins/project/project.c
 src/plugins/etags/etags.c
 src/plugins/spell/spell.c
 src/plugins/terminal/terminal.c

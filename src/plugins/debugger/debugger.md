@@ -23,12 +23,19 @@ cc -g -O0 -Iinclude src/main.c src/calc.c -o build/calculator
    lines are inserted or deleted above it. On **Start**, GDB opens the source
    file where the program stops and `▶` marks the line it stopped on.
 
-   | Mark | Meaning                                              |
-   |------|------------------------------------------------------|
-   | `●`  | a breakpoint                                         |
-   | `◌`  | a breakpoint GDB has not taken yet, or has refused   |
-   | `▶`  | the line the program stopped on                      |
-   | `◉`  | the line the program stopped on, with a breakpoint   |
+   The marks:
+
+   **●**
+   : a breakpoint
+
+   **◌**
+   : a breakpoint GDB has not taken yet, or has refused
+
+   **▶**
+   : the line the program stopped on
+
+   **◉**
+   : the line the program stopped on, with a breakpoint
 
    GDB stops only on lines with code: a breakpoint on another line moves to
    the next line GDB stops on. The skin sets the marks and their colors
@@ -41,18 +48,29 @@ cc -g -O0 -Iinclude src/main.c src/calc.c -o build/calculator
    **step mode**: they take the debugger keys, and the keys that move around
    the text, search, select or switch windows work as usual.
 
-   | Key      | In step mode                                  |
-   |----------|-----------------------------------------------|
-   | F5       | continue                                      |
-   | F6       | pause the running program                     |
-   | F7       | step into                                     |
-   | F8       | step over                                     |
-   | F9       | step out                                      |
-   | F4       | run to the line of the cursor                 |
-   | F2       | toggle a breakpoint on the line of the cursor |
-   | Enter    | evaluate the selection or the word under the cursor |
-   | Shift-F5 | stop the program                              |
-   | Esc      | go back to editing until the next stop        |
+   **F5**
+   : continue
+
+   **F6**
+   : pause the running program
+
+   **F7**, **F8**, **F9**
+   : step into, step over, step out
+
+   **F4**
+   : run to the line of the cursor
+
+   **F2**
+   : toggle a breakpoint on the line of the cursor
+
+   **Enter**
+   : evaluate the selection or the word under the cursor
+
+   **Shift-F5**
+   : stop the program
+
+   **Esc**
+   : go back to editing until the next stop
 
    A key that would change the text only beeps. The value of an evaluated
    expression comes in a dialog that can add it to the Watches.

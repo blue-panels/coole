@@ -44,10 +44,14 @@ there and develops it as a program of its own.
   short, with what it holds beside it;
   a type without a renderer is shown as its text.  Scripts and plugins can show any text of theirs in the
   windows of the viewer.
+- **Project**: the project of a file, found from its git repository or its
+  build files: any file of it a few letters away (`Alt+Shift+P`), the recent
+  ones (`Ctrl+E`), its tree at the left (`Alt+Shift+T`), and the header of a
+  source (`Alt+Shift+A`). See [`project.md`](src/plugins/project/project.md).
 - **Debugger**: run a local program under GDB, set line breakpoints, step through
   source, and inspect the call stack and local variables from the Debug menu.
   See [`debugger.md`](src/plugins/debugger/debugger.md).
-- **Editor plugins**: a plugin framework the debugger, ctags, etags and spell plugins are
+- **Editor plugins**: a plugin framework the project, debugger, ctags, etags and spell plugins are
   built on; see [`doc/PLUGINS`](doc/PLUGINS).
 - **Lua scripts** for the editor, run by the Lua runtime plugin and managed
   from the Options menu; see [`doc/LUA_PLUGINS.md`](doc/LUA_PLUGINS.md).

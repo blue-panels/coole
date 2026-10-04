@@ -21,3 +21,7 @@ endforeach
 test('gdb_mi', executable('gdb_mi', 'gdb_mi.c',
                          '../../../src/plugins/debugger/gdb-mi.c',
                          dependencies: [glib_dep]), suite: 'src/editor')
+
+test('project_core', executable('project_core', 'project_core.c',
+                                '../../../src/plugins/project/project-core.c',
+                                dependencies: [glib_dep]), suite: 'src/editor')

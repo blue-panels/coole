@@ -1922,23 +1922,38 @@ debug_setup_next (debugger_t *debug)
         debug->state = DEBUG_FINISHED;
 }
 
-static mc_ep_result_t
-debug_open_project (void *data, void *edit)
+/* The project of a file, as the project plugin sees it; NULL without that plugin */
+static char *
+debug_project_of (debugger_t *debug, void *edit)
 {
-    debugger_t *debug = (debugger_t *) data;
     char *file = edit != NULL ? debug->host->get_current_file (debug->host, edit) : NULL;
-    char *default_dir = file != NULL ? g_path_get_dirname (file) : g_get_current_dir ();
-    char *chosen, *project;
+    GVariantDict args;
+    GVariant *reply;
+    char *root = NULL;
 
-    chosen = input_dialog (_ ("Open debug project"), _ ("Project directory:"), NULL,
-                           debug->project_dir != NULL ? debug->project_dir : default_dir,
-                           INPUT_COMPLETE_FILENAMES);
-    g_free (default_dir);
+    if (debug->host->service_call == NULL)
+    {
+        g_free (file);
+        return NULL;
+    }
+    g_variant_dict_init (&args, NULL);
+    if (file != NULL)
+        g_variant_dict_insert (&args, "file", "s", file);
+    reply = debug->host->service_call (debug->host, "project", "root", g_variant_dict_end (&args),
+                                       NULL);
+    if (reply != NULL)
+    {
+        (void) g_variant_lookup (reply, "root", "s", &root);
+        g_variant_unref (reply);
+    }
     g_free (file);
-    if (chosen == NULL)
-        return MC_EPR_FAILED;
-    project = g_canonicalize_filename (chosen, NULL);
-    g_free (chosen);
+    return root;
+}
+
+/* Work on the project of that directory: its configurations, breakpoints and watches */
+static mc_ep_result_t
+debug_project_switch (debugger_t *debug, char *project)
+{
     if (!g_file_test (project, G_FILE_TEST_IS_DIR))
     {
         debug_error (debug, _ ("The project directory does not exist."));
@@ -1993,11 +2008,44 @@ debug_open_project (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+static mc_ep_result_t
+debug_open_project (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+    char *file = edit != NULL ? debug->host->get_current_file (debug->host, edit) : NULL;
+    char *suggested =
+        debug->project_dir != NULL ? g_strdup (debug->project_dir) : debug_project_of (debug, edit);
+    char *chosen;
+
+    if (suggested == NULL)
+        suggested = file != NULL ? g_path_get_dirname (file) : g_get_current_dir ();
+    chosen = input_dialog (_ ("Open debug project"), _ ("Project directory:"), NULL, suggested,
+                           INPUT_COMPLETE_FILENAMES);
+    g_free (suggested);
+    g_free (file);
+    if (chosen == NULL)
+        return MC_EPR_FAILED;
+    {
+        char *project = g_canonicalize_filename (chosen, NULL);
+
+        g_free (chosen);
+        return debug_project_switch (debug, project);
+    }
+}
+
+/* The debugger works on a project: the one the project plugin knows, else the one the user
+   names */
 static gboolean
 debug_require_project (debugger_t *debug, void *edit)
 {
+    char *root;
+
     if (debug->project_dir != NULL)
         return TRUE;
+    root =
+        debug_project_of (debug, edit != NULL ? edit : debug->host->window_top_file (debug->host));
+    if (root != NULL)
+        return debug_project_switch (debug, root) == MC_EPR_OK;
     return debug_open_project (debug, edit) == MC_EPR_OK;
 }
 

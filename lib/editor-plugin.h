@@ -178,6 +178,9 @@ typedef struct mc_editor_host_t
                                const char *title, const mc_ep_command_t *commands);
     long (*command_id) (struct mc_editor_host_t *host, const char *name);
     long (*command_lookup) (struct mc_editor_host_t *host, const char *section, int key);
+
+    /* v9: show the window of a file, or open it in a new one; its cursor stays where it was */
+    gboolean (*open_file) (struct mc_editor_host_t *host, const char *file);
     /* Show a debugger location without adding each step to the navigation stack. */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
     /* v8: offer to save modified source files within a project root. */
