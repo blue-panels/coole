@@ -257,8 +257,8 @@ static gboolean
 edit_menu_is_builtin (const char *menu_name)
 {
     static const char *const names[] = {
-        MC_EP_MENU_FILE, "Edit",    "Search", MC_EP_MENU_COMMAND, MC_EP_MENU_NAVIGATE, "Window",
-        "Plugins",       "Options", NULL
+        MC_EP_MENU_FILE,    "Edit",    "Search", MC_EP_MENU_COMMAND, MC_EP_MENU_NAVIGATE, "Window",
+        MC_EP_MENU_PLUGINS, "Options", NULL
     };
     int i;
 
@@ -474,11 +474,21 @@ create_plugins_menu (void)
         command_id++;
     }
 
+    entries = g_list_reverse (entries);
+    {
+        // the windows of the plugins: the tree of the project, the panel of the debugger...
+        GList *windows = create_plugin_menu_entries (MC_EP_MENU_PLUGINS);
+
+        if (windows != NULL && entries != NULL)
+            entries = g_list_append (entries, menu_separator_new ());
+        entries = g_list_concat (entries, windows);
+    }
+
     if (entries == NULL)
         entries =
             g_list_prepend (entries, menu_entry_new (_ ("(no plugins loaded)"), CK_IgnoreKey));
 
-    return g_list_reverse (entries);
+    return entries;
 }
 
 /* --------------------------------------------------------------------------------------------- */

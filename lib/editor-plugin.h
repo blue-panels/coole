@@ -26,6 +26,9 @@
 #define MC_EP_MENU_COMMAND  "Command"
 #define MC_EP_MENU_FILE     "File"
 #define MC_EP_MENU_NAVIGATE "Navigate"
+/* the Plugins menu: entries after the list of the plugins (a window goes to the Window menu with
+   window_kind()) */
+#define MC_EP_MENU_PLUGINS "Plugins"
 
 /*** enums ***************************************************************************************/
 
