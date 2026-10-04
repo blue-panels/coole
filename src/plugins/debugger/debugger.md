@@ -20,8 +20,10 @@ newest come first in a list to choose from.
 3. A program without debug information, or built with optimization, is
 told of, with the command that builds it fit for debugging.
 4. The form **Debug configuration** shows it all at once: the name, the
-program, its arguments, the directory it runs in, its environment, GDB, and
-whether the project is built before every start. Enter takes it.
+program, its arguments, the directory it runs in, its environment, GDB, the
+options of ctags for the index of the symbols of the project (when the
+plugin ctags is on; a change indexes the project again), and whether the
+project is built before every start. Enter takes it.
 
 Then the project is built (its modified files saved first), GDB starts, and
 the program runs to the first breakpoint. When the build fails, the start
@@ -38,6 +40,22 @@ but no shell runs them: an entry of the environment with spaces is
 debug it: its latest file instead of an empty one, and at the right the tree
 of the project with the panel of the debugger under it. The panel says what
 to do next while nothing runs.
+
+In debug mode the file windows take the keys of the debugger all the time,
+not only while the program is stopped: F3 to F8 are the debugger's, F2, F9
+and F10 stay Save, the menu and Quit, and the text can be edited as ever.
+**Debug → Debug keys in files** turns debug mode on and off without
+*--debug*.
+
+**F3**
+: Index the symbols of the project again, in the background (with the
+plugin ctags); **Navigate** jumps by them.
+
+**F6**
+: Toggle a breakpoint on the line of the cursor.
+
+**F5**
+: Build and run, or go on when the program is stopped.
 
 **The keys anywhere**
 
@@ -71,17 +89,22 @@ editor's, and a key that would change the text beeps.
 **F5**
 : Continue.
 
-**F6**
+**Shift-F6**
 : Pause the running program.
 
-**F7**, **F8**, **F9**
+**F7**, **F8**, **Shift-F8**
 : Step into, step over, step out.
 
 **F4**
 : Run to the line of the cursor.
 
-**F2**
+**F6**
 : Toggle a breakpoint on the line of the cursor.
+
+**F3**
+: Index the symbols of the project again.
+
+F2, F9 and F10 stay Save, the menu and Quit.
 
 **Enter**
 : Evaluate the selection or the word under the cursor; the value comes in a
@@ -95,7 +118,7 @@ dialog that can add it to the watches.
 
 The keys can be changed in **Options → Key bindings → Editor → Debugger**, or
 in the *[debugger]* section of the keymap, *DebugStepOver = alt-o* for one;
-*f15* is the name of Shift-F5.
+*f15* is the name of Shift-F5, *f18* that of Shift-F8.
 
 **The panel and the console**
 
@@ -106,7 +129,7 @@ the breakpoints; the console has the output of the program and what GDB
 says. **Plugins → Debugger panel** and **Plugins → Debug console** open them
 again, beside the windows of the other plugins.
 
-In the panel the debugger keys work as in step mode (there F2 and F4 work on
+In the panel the debugger keys work as in step mode (there F6 and F4 work on
 the cursor of the topmost file window, F10 closes the panel), and:
 
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**

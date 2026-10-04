@@ -29,6 +29,11 @@ sudo apt install universal-ctags
 
 When it is not there, a command of the plugin says so, once.
 
+The options of ctags for the index of a project are those of the settings
+(*ctags_args*), unless the project has its own: the form **Debug
+configuration** of the debugger has a line for them, kept with the settings
+of the user by the root of the project.
+
 **The keys**
 
 These are the default keys; they are kept in

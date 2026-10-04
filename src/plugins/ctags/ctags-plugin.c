@@ -111,6 +111,7 @@ typedef struct
     ctags_job_t job;
     gboolean told_no_ctags;  // that the program is not there, once
     gboolean quiet;          // what the plugin does by itself, a file opened: it says nothing
+    gboolean service;
 } ctags_data_t;
 
 /*** file scope variables ************************************************************************/
@@ -581,6 +582,62 @@ ctags_index_loaded (ctags_data_t *d, const char *root, const char *tags_path)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The options of ctags for a project, which the Debug configuration sets: kept by the root */
+static char *
+ctags_project_options_path (const char *root)
+{
+    char *hash = g_compute_checksum_for_string (G_CHECKSUM_SHA256, root, -1);
+    char *name = g_strconcat (hash, ".ini", (char *) NULL);
+    char *path = g_build_filename (g_get_user_config_dir (), "coole", "ctags", name, (char *) NULL);
+
+    g_free (name);
+    g_free (hash);
+    return path;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The options of ctags for the index of a project: its own, else those of the settings */
+static char *
+ctags_project_options (const ctags_data_t *d, const char *root)
+{
+    GKeyFile *keyfile = g_key_file_new ();
+    char *path = ctags_project_options_path (root);
+    char *options = NULL;
+
+    if (g_key_file_load_from_file (keyfile, path, G_KEY_FILE_NONE, NULL))
+        options = g_key_file_get_string (keyfile, "Index", "options", NULL);
+    g_key_file_free (keyfile);
+    g_free (path);
+    if (options == NULL)
+        options = g_strdup (d->cfg.ctags_args != NULL ? d->cfg.ctags_args : "");
+    return options;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+ctags_project_options_save (const char *root, const char *options)
+{
+    GKeyFile *keyfile = g_key_file_new ();
+    char *path = ctags_project_options_path (root);
+    char *dir = g_path_get_dirname (path);
+    char *contents;
+    gsize len;
+
+    g_key_file_set_string (keyfile, "Index", "root", root);
+    g_key_file_set_string (keyfile, "Index", "options", options);
+    contents = g_key_file_to_data (keyfile, &len, NULL);
+    if (g_mkdir_with_parents (dir, 0700) == 0)
+        (void) g_file_set_contents (path, contents, (gssize) len, NULL);
+    g_free (contents);
+    g_free (dir);
+    g_free (path);
+    g_key_file_free (keyfile);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void ctags_index_start (ctags_data_t *d, const char *root, const char *tags_path);
 
 static void
@@ -718,10 +775,14 @@ ctags_index_start (ctags_data_t *d, const char *root, const char *tags_path)
 
     argv = g_ptr_array_new ();
     g_ptr_array_add (argv, program);
-    if (d->cfg.ctags_args != NULL && *d->cfg.ctags_args != '\0'
-        && g_shell_parse_argv (d->cfg.ctags_args, NULL, &args, NULL))
-        for (i = 0; args[i] != NULL; i++)
-            g_ptr_array_add (argv, args[i]);
+    {
+        char *options = ctags_project_options (d, root);
+
+        if (*options != '\0' && g_shell_parse_argv (options, NULL, &args, NULL))
+            for (i = 0; args[i] != NULL; i++)
+                g_ptr_array_add (argv, args[i]);
+        g_free (options);
+    }
     g_ptr_array_add (argv, (char *) "-f");
     g_ptr_array_add (argv, job->tmp_path);
     g_ptr_array_add (argv, (char *) "-L");
@@ -2050,6 +2111,76 @@ ctags_show_menu (ctags_data_t *d, WEdit *edit)
 /* Plugin callbacks */
 /* --------------------------------------------------------------------------------------------- */
 
+/* The service "ctags": the index of a project asked for by the other plugins.
+   reindex (file): build the index of the project of the file, in the background -> started
+   options (root) -> options: the options of ctags for the project
+   set_options (root, options): keep them, and build the index again when they change */
+static GVariant *
+ctags_call (void *data, const char *method, GVariant *args, GError **error)
+{
+    ctags_data_t *d = (ctags_data_t *) data;
+    const char *file = NULL, *root = NULL, *options = NULL;
+    GVariantDict reply;
+
+    if (args != NULL)
+    {
+        (void) g_variant_lookup (args, "file", "&s", &file);
+        (void) g_variant_lookup (args, "root", "&s", &root);
+        (void) g_variant_lookup (args, "options", "&s", &options);
+    }
+    g_variant_dict_init (&reply, NULL);
+    if (strcmp (method, "reindex") == 0 && (file != NULL || root != NULL))
+    {
+        char *project = root != NULL ? g_strdup (root) : ctags_project_root (d, file);
+        gboolean started = FALSE;
+
+        if (project != NULL && !ctags_root_too_wide (project))
+        {
+            gboolean own;
+            char *tags = ctags_index_path (project, &own);
+
+            ctags_index_start (d, project, tags);
+            started = d->job.pid != 0;
+            g_free (tags);
+        }
+        g_free (project);
+        g_variant_dict_insert (&reply, "started", "b", started);
+    }
+    else if (strcmp (method, "options") == 0 && root != NULL)
+    {
+        char *o = ctags_project_options (d, root);
+
+        g_variant_dict_insert (&reply, "options", "s", o);
+        g_free (o);
+    }
+    else if (strcmp (method, "set_options") == 0 && root != NULL && options != NULL)
+    {
+        char *old = ctags_project_options (d, root);
+
+        if (strcmp (old, options) != 0)
+        {
+            gboolean own;
+            char *tags = ctags_index_path (root, &own);
+
+            ctags_project_options_save (root, options);
+            if (!ctags_root_too_wide (root))
+                ctags_index_start (d, root, tags);
+            g_free (tags);
+        }
+        g_free (old);
+    }
+    else
+    {
+        g_variant_dict_clear (&reply);
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD,
+                     "ctags: no method %s, or not its arguments", method);
+        return NULL;
+    }
+    return g_variant_dict_end (&reply);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void *
 ctags_plugin_open (mc_editor_host_t *host, void *editor_dialog)
 {
@@ -2063,6 +2194,8 @@ ctags_plugin_open (mc_editor_host_t *host, void *editor_dialog)
     d->job.err_fd = -1;
     ctags_config_load (&d->cfg);
     d->keymap = ctags_keymap_load ();
+    if (host->service_register != NULL)
+        d->service = host->service_register (host, "ctags", ctags_call, d, NULL);
     return d;
 }
 
@@ -2087,6 +2220,8 @@ ctags_plugin_close (void *plugin_data)
             (void) unlink (d->job.tmp_path);
         ctags_job_clear (&d->job);
     }
+    if (d->service)
+        d->host->service_unregister (d->host, "ctags");
     g_slist_free_full (d->repos, (GDestroyNotify) ctags_repo_free);
     ctags_config_free (&d->cfg);
     if (d->keymap != NULL)

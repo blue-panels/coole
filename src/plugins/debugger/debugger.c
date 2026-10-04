@@ -105,6 +105,7 @@ enum
     DEBUG_CMD_LEAVE,
     DEBUG_CMD_CLOSE,
     DEBUG_CMD_PANEL,
+    DEBUG_CMD_INDEX,
     DEBUG_CMD_COUNT
 };
 
@@ -114,18 +115,20 @@ enum
 static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
     { "Help", NULL, "f1" },
     { "DebugStartContinue", N_ ("Start or continue debugging"), "f5; alt-shift-r" },
-    { "DebugPause", N_ ("Pause debugging"), "f6" },
+    // F2, F9 and F10 stay Save, the menu and Quit
+    { "DebugPause", N_ ("Pause debugging"), "f16" },
     { "DebugStepInto", N_ ("Step into"), "f7" },
     { "DebugStepOver", N_ ("Step over"), "f8" },
-    { "DebugStepOut", N_ ("Step out"), "f9" },
+    { "DebugStepOut", N_ ("Step out"), "f18" },
     { "DebugStop", N_ ("Stop debugging"), "f15" },
-    { "DebugToggleBreakpoint", N_ ("Toggle breakpoint"), "f2; ctrl-b" },
+    { "DebugToggleBreakpoint", N_ ("Toggle breakpoint"), "f6; ctrl-b" },
     { "DebugRunToCursor", N_ ("Run to cursor"), "f4" },
     { "DebugEvaluate", N_ ("Evaluate expression"), "enter" },
     { "DebugLeave", N_ ("Leave step mode"), "esc" },
     { "DebugClose", N_ ("Close debug session window"), "f10" },
     // from any window: to the panel of the debugger, and back to the file
     { "DebugPanel", N_ ("Go to the panel of the debugger and back"), "alt-shift-g" },
+    { "DebugIndex", N_ ("Index the symbols of the project"), "f3" },
     { NULL, NULL, NULL },
 };
 
@@ -197,6 +200,9 @@ typedef struct
     gboolean start_after_build;
     gboolean built_for_start;
     guint build_signal;
+    // debug mode: the file windows take the keys of the debugger, F3 to F8, whether the program
+    // runs or not (coole --debug, or Debug > Debug keys in files)
+    gboolean debug_mode;
     debug_session_window_t *session_window;
 } debugger_t;
 
@@ -231,7 +237,8 @@ enum
     DEBUG_ACT_INPUT,
     DEBUG_ACT_SESSION,
     DEBUG_ACT_STOP,
-    DEBUG_ACT_GDB_COMMAND
+    DEBUG_ACT_GDB_COMMAND,
+    DEBUG_ACT_MODE
 };
 
 static mc_ep_result_t debug_start (void *data, void *edit);
@@ -262,6 +269,7 @@ static void debug_output_console (debugger_t *debug, const char *text_value, gbo
 static void debug_notes_show (debugger_t *debug);
 static mc_ep_result_t debug_session_show (void *data, void *edit);
 static int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
+static void debug_error (debugger_t *debug, const char *message_text);
 static void debug_session_refresh (debugger_t *debug);
 
 static void
@@ -386,6 +394,8 @@ debug_session_button_label (int cmd, debug_state_t state)
         return state == DEBUG_STOPPED ? _ ("ToCurs") : NULL;
     case DEBUG_CMD_CLOSE:
         return _ ("Close");
+    case DEBUG_CMD_INDEX:
+        return _ ("Index");
     default:
         return NULL;
     }
@@ -544,7 +554,7 @@ debug_editor_buttonbar (debugger_t *debug, Widget *edit)
     if (bb == NULL)
         return;
     edit_set_buttonbar (EDIT (edit), bb);
-    if (debug_stepping (debug))
+    if (debug_stepping (debug) || debug->debug_mode)
         for (i = 1; i <= 10; i++)
         {
             const int cmd = debug_command_of_key (debug, KEY_F (i));
@@ -556,8 +566,9 @@ debug_editor_buttonbar (debugger_t *debug, Widget *edit)
                 buttonbar_set_label_command (bb, i, debug_session_button_label (cmd, debug->state),
                                              debug->commands[cmd], NULL);
             else if (!editors
-                     || !debug_step_passes (
-                         keybind_lookup_keymap_command (edit->keymap, KEY_F (i))))
+                     || (debug_stepping (debug)
+                         && !debug_step_passes (
+                             keybind_lookup_keymap_command (edit->keymap, KEY_F (i)))))
                 buttonbar_clear_label (bb, i, NULL);
         }
     widget_draw (WIDGET (bb));
@@ -635,9 +646,12 @@ debug_panel_rows (const debugger_t *debug)
     {
         debug_panel_add (rows, PANEL_TITLE, 0, g_strdup (_ ("Next")));
         if (debug->breakpoints->len == 0)
-            debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Ctrl-B on a line: breakpoint")));
+            debug_panel_add (rows, PANEL_TEXT, 0,
+                             g_strdup (debug->debug_mode ? _ ("  F6 on a line: breakpoint")
+                                                         : _ ("  Ctrl-B on a line: breakpoint")));
         debug_panel_add (rows, PANEL_TEXT, 0,
-                         g_strdup (_ ("  F5 here, Alt-Shift-R anywhere: run")));
+                         g_strdup (debug->debug_mode ? _ ("  F5: build and run")
+                                                     : _ ("  F5 here, Alt-Shift-R anywhere: run")));
         debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Alt-Shift-G: here and back")));
         if (debug_active_launch (debug) == NULL)
             debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  the first F5 asks what to run")));
@@ -699,7 +713,9 @@ debug_panel_rows (const debugger_t *debug)
                                           x_basename (bp->file), bp->line));
     }
     if (debug->breakpoints->len == 0)
-        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Ctrl-B on a line puts one")));
+        debug_panel_add (rows, PANEL_TEXT, 0,
+                         g_strdup (debug->debug_mode ? _ ("  F6 on a line puts one")
+                                                     : _ ("  Ctrl-B on a line puts one")));
     return rows;
 }
 
@@ -976,6 +992,35 @@ debug_run_command (debugger_t *debug, int cmd, void *edit)
         if (debug->session_window != NULL)
             (void) debug_session_close_window (&debug->session_window->window);
         return TRUE;
+    case DEBUG_CMD_INDEX:
+    {
+        char *file =
+            file_window != NULL ? debug->host->get_current_file (debug->host, file_window) : NULL;
+        GVariantDict args;
+        GVariant *reply;
+        gboolean started = FALSE;
+
+        g_variant_dict_init (&args, NULL);
+        if (file != NULL)
+            g_variant_dict_insert (&args, "file", "s", file);
+        else if (debug->project_dir != NULL)
+            g_variant_dict_insert (&args, "root", "s", debug->project_dir);
+        reply = debug->host->service_call (debug->host, "ctags", "reindex",
+                                           g_variant_dict_end (&args), NULL);
+        if (reply == NULL)
+            debug_error (debug, _ ("The symbols are indexed by the plugin ctags, which is off."));
+        else
+        {
+            (void) g_variant_lookup (reply, "started", "b", &started);
+            g_variant_unref (reply);
+            if (started)
+                debug->host->message (debug->host, D_NORMAL, _ ("Debug"),
+                                      _ ("The symbols of the project are indexed in the "
+                                         "background."));
+        }
+        g_free (file);
+        return TRUE;
+    }
     case DEBUG_CMD_PANEL:
         if (debug->session_window != NULL
             && debug->host->window_current (debug->host) == debug->session_window)
@@ -2845,10 +2890,30 @@ static gboolean
 debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch_t *self,
                    gboolean *in_project)
 {
+    // the options of the index of the symbols, when the plugin ctags is there
+    char *index_options = NULL;
+    gboolean result = FALSE;
+
+    if (debug->project_dir != NULL)
+    {
+        GVariantDict args;
+        GVariant *reply;
+
+        g_variant_dict_init (&args, NULL);
+        g_variant_dict_insert (&args, "root", "s", debug->project_dir);
+        reply = debug->host->service_call (debug->host, "ctags", "options",
+                                           g_variant_dict_end (&args), NULL);
+        if (reply != NULL)
+        {
+            (void) g_variant_lookup (reply, "options", "s", &index_options);
+            g_variant_unref (reply);
+        }
+    }
+
     while (TRUE)
     {
         char *name = NULL, *executable = NULL, *arguments = NULL, *directory = NULL;
-        char *environment = NULL, *gdb_path = NULL;
+        char *environment = NULL, *gdb_path = NULL, *ctags = NULL;
         char **entries = NULL;
         gboolean build = launch->build, keep = *in_project;
         const char *problem = NULL;
@@ -2879,6 +2944,10 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
                                      launch->gdb_path != NULL ? launch->gdb_path : "gdb",
                                      "debug-gdb", &gdb_path, NULL, FALSE, FALSE,
                                      INPUT_COMPLETE_FILENAMES | INPUT_COMPLETE_COMMANDS),
+                QUICK_LABELED_INPUT (_ ("Options of ctags, for the index of the symbols:"),
+                                     input_label_above, index_options != NULL ? index_options : "",
+                                     "debug-ctags", &ctags, NULL, FALSE, FALSE,
+                                     INPUT_COMPLETE_NONE),
                 QUICK_SEPARATOR (TRUE),
                 QUICK_CHECKBOX (_ ("&Build the project before the start"), &build, NULL),
                 QUICK_CHECKBOX (_ ("&Keep in the project, in .coole/debug.ini"), &keep, NULL),
@@ -2886,7 +2955,17 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
                 QUICK_END,
             };
             WRect r = { -1, -1, 0, MIN (76, COLS - 4) };
-            quick_dialog_t qdlg = {
+            quick_dialog_t qdlg;
+
+            // without the plugin ctags its line is not there
+            if (index_options == NULL)
+            {
+                const size_t at = 6;
+
+                memmove (&widgets[at], &widgets[at + 1],
+                         sizeof (widgets) - (at + 1) * sizeof (widgets[0]));
+            }
+            qdlg = (quick_dialog_t) {
                 .rect = r,
                 .title = _ ("Debug configuration"),
                 .help = "[Debugger]",
@@ -2906,7 +2985,14 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
             g_free (directory);
             g_free (environment);
             g_free (gdb_path);
-            return FALSE;
+            g_free (ctags);
+            break;
+        }
+        if (ctags != NULL)
+        {
+            g_free (index_options);
+            index_options = g_strdup (g_strstrip (ctags));
+            g_free (ctags);
         }
 
         // what was typed stays for the next round
@@ -2946,8 +3032,28 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
             problem = "";
         g_strfreev (entries);
         if (problem == NULL)
-            return TRUE;
+        {
+            result = TRUE;
+            break;
+        }
     }
+
+    if (result && index_options != NULL)
+    {
+        GVariantDict args;
+        GVariant *reply;
+
+        // the plugin ctags keeps them, and indexes again when they change
+        g_variant_dict_init (&args, NULL);
+        g_variant_dict_insert (&args, "root", "s", debug->project_dir);
+        g_variant_dict_insert (&args, "options", "s", index_options);
+        reply = debug->host->service_call (debug->host, "ctags", "set_options",
+                                           g_variant_dict_end (&args), NULL);
+        if (reply != NULL)
+            g_variant_unref (reply);
+    }
+    g_free (index_options);
+    return result;
 }
 
 /* A configuration made or changed: a new one is guessed from the project first */
@@ -3428,8 +3534,18 @@ debug_handle_key (void *data, int key, void *edit)
     if (edit == NULL)
         return MC_EPR_NOT_SUPPORTED;
     cmd = debug_command_of_key (debug, key);
+    // debug mode: the commands of the debugger have their keys, the editor's F3 to F8 too
+    if (!debug_stepping (debug) && debug->debug_mode && cmd != DEBUG_CMD_NONE
+        && cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && cmd != DEBUG_CMD_LEAVE
+        && cmd != DEBUG_CMD_EVALUATE)
+    {
+        // a step with nothing running is no Search of the editor either
+        if (!debug_run_command (debug, cmd, edit))
+            tty_beep ();
+        return MC_EPR_OK;
+    }
     /* out of step mode, a key of the debugger the editor has nothing on is the debugger's:
-       Alt-Shift-G, Ctrl-B, Alt-Shift-R; F2 and F5 stay Save and Copy */
+       Alt-Shift-G, Ctrl-B, Alt-Shift-R; F5 stays Copy */
     if (!debug_stepping (debug))
     {
         if (cmd == DEBUG_CMD_NONE || cmd == DEBUG_CMD_HELP || cmd == DEBUG_CMD_CLOSE
@@ -3479,7 +3595,8 @@ debug_handle_event (void *data, void *edit, int event_id, void *payload)
         g_free (file);
         return MC_EPR_NOT_SUPPORTED;
     }
-    if (event_id != MC_EP_EVENT_FOCUS_IN || edit == NULL || !debug_stepping (debug))
+    if (event_id != MC_EP_EVENT_FOCUS_IN || edit == NULL
+        || !(debug_stepping (debug) || debug->debug_mode))
         return MC_EPR_NOT_SUPPORTED;
     debug_editor_buttonbar (debug, WIDGET (edit));
     return MC_EPR_OK;
@@ -3757,6 +3874,7 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     if (host->startup_option (host, "debug") != NULL)
     {
         (void) debug_project_switch (debug, g_strdup (host->startup_option (host, "debug")));
+        debug->debug_mode = TRUE;
         host->call_later (host, debug_startup, debug);
     }
     return debug;
@@ -3827,6 +3945,18 @@ debug_file_open (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+/* Debug mode on and off: the file windows take the keys of the debugger, F3 to F8 */
+static mc_ep_result_t
+debug_act_mode (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+
+    (void) edit;
+    debug->debug_mode = !debug->debug_mode;
+    debug_session_refresh (debug);
+    return MC_EPR_OK;
+}
+
 static mc_ep_result_t
 debug_act_gdb_command (void *data, void *edit)
 {
@@ -3869,6 +3999,7 @@ static const mc_ep_action_t debug_actions[] = {
     { "Debug session", debug_session_show },
     { "Stop", debug_stop },
     { "GDB command", debug_act_gdb_command },
+    { "Debug keys", debug_act_mode },
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
@@ -3877,6 +4008,7 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("&Start or continue"), DEBUG_ACT_START, NULL },
     { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
     { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
+    { DEBUG_MENU, N_ ("Debug ke&ys in files"), DEBUG_ACT_MODE, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
     { DEBUG_MENU, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
     { DEBUG_MENU, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
@@ -3947,9 +4079,11 @@ debug_menu_shortcut (int action_index)
         found = first;
     if (found == NULL)
         return NULL;
-    // "Alt-G" of the keymap is Alt with Shift and g: said so
+    // "Alt-G" of the keymap is Alt with Shift and g, F18 is Shift-F8: said so
     if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
         return g_strdup_printf ("Alt-Shift-%c", found[4]);
+    if ((found[0] == 'F' || found[0] == 'f') && atoi (found + 1) > 10 && atoi (found + 1) <= 20)
+        return g_strdup_printf ("Shift-F%d", atoi (found + 1) - 10);
     return g_strdup (found);
 }
 
