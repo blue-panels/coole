@@ -2153,6 +2153,7 @@ typedef struct
 {
     const ctags_entry_t *e;
     int score;
+    long line;  // of the symbols of a file: where it is, the tags file naming no line or not
 } ctags_scored_t;
 
 static gint
@@ -2181,7 +2182,7 @@ ctags_line_compare (gconstpointer a, gconstpointer b)
     const ctags_scored_t *x = (const ctags_scored_t *) a;
     const ctags_scored_t *y = (const ctags_scored_t *) b;
 
-    return (x->e->line > y->e->line) - (x->e->line < y->e->line);
+    return (x->line > y->line) - (x->line < y->line);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2231,6 +2232,8 @@ ctags_symbols (ctags_data_t *d, const char *root, const char *file, const char *
 
         m.e = (const ctags_entry_t *) g_ptr_array_index (entries, i);
         m.score = query == NULL || *query == '\0' ? 1 : ctags_fuzzy_score (m.e->name, query);
+        // a tags file made without --fields=+n has the patterns alone: the line is looked for
+        m.line = file != NULL && m.score > 0 ? ctags_entry_resolve_line (m.e, file) : m.e->line;
         // a project with nothing typed has too many to list
         if (m.score > 0 && (file != NULL || (query != NULL && *query != '\0')))
             g_array_append_val (found, m);

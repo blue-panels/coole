@@ -731,6 +731,7 @@ debug_panel_rows (const debugger_t *debug)
             const debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
             GPtrArray *in_file;
             const char *function = NULL;
+            long best;
             guint j;
 
             if (!g_hash_table_lookup_extended (functions, bp->file, NULL, (gpointer *) &in_file))
@@ -738,13 +739,16 @@ debug_panel_rows (const debugger_t *debug)
                 in_file = debug_functions (debug, debug->project_dir, bp->file, "");
                 g_hash_table_insert (functions, g_strdup (bp->file), in_file);
             }
-            for (j = 0; in_file != NULL && j < in_file->len; j++)
+            // the nearest function that starts above it, in whatever order they come
+            for (j = 0, best = 0; in_file != NULL && j < in_file->len; j++)
             {
                 const debug_function_t *f = g_ptr_array_index (in_file, j);
 
-                if (f->line > bp->line)
-                    break;
-                function = f->name;
+                if (f->line <= bp->line && f->line > best)
+                {
+                    best = f->line;
+                    function = f->name;
+                }
             }
             debug_panel_add (
                 rows, PANEL_BREAKPOINT, i,
