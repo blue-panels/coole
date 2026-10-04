@@ -68,7 +68,7 @@ typedef struct mc_ep_state_t
 /*** structures declarations (and typedefs of structures)*****************************************/
 
 /* A kind of mark in the gutter of the file windows, which a plugin registers (marker_kind()).
- * The mark sits in the column between the line number and the fold mark; the skin gives its
+ * The mark sits in the first column of the gutter, before the line number; the skin gives its
  * glyph in [widget-editor] and its colours in [editor]. */
 typedef struct
 {
