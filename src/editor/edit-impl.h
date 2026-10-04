@@ -13,8 +13,9 @@
 
 #include <stdio.h>
 
-#include "lib/search.h"  // mc_search_type_t
-#include "lib/widget.h"  // cb_ret_t
+#include "lib/editor-plugin.h"  // mc_ep_marker_kind_t
+#include "lib/search.h"         // mc_search_type_t
+#include "lib/widget.h"         // cb_ret_t
 
 #include "src/setup.h"  // option_tab_spacing
 
@@ -67,8 +68,10 @@
 #define HALF_TAB_SIZE ((int) option_tab_spacing / 2)
 
 /* max count stack files */
-#define MAX_HISTORY_MOVETO                50
-#define LINE_STATE_WIDTH                  9
+#define MAX_HISTORY_MOVETO 50
+#define LINE_STATE_WIDTH   9
+/* bookmarks of this color and up are the gutter marks of the plugins */
+#define EDIT_MARKER_BASE                  0x40000000
 
 #define LB_NAMES                          (LB_MAC + 1)
 
@@ -248,6 +251,11 @@ void edit_syntax_dialog (WEdit *edit);
 void book_mark_insert (WEdit *edit, long line, int c);
 gboolean book_mark_query_color (WEdit *edit, long line, int c);
 struct edit_book_mark_t *book_mark_find (WEdit *edit, long line);
+struct edit_book_mark_t *edit_book_mark_first (WEdit *edit);
+int edit_marker_kind_register (const mc_ep_marker_kind_t *kind);
+gboolean edit_marker_is (int c);
+gboolean edit_marker_find (WEdit *edit, long line, const char **glyph, int *glyph_color,
+                           int *line_color);
 gboolean book_mark_clear (WEdit *edit, long line, int c);
 void book_mark_flush (WEdit *edit, int c);
 void book_mark_inc (WEdit *edit, long line);

@@ -146,6 +146,7 @@ gboolean mc_skin_load_from_config (mc_config_t *config, const char *name, GError
 void mc_skin_deinit (void);
 
 int mc_skin_color_get (const gchar *group, const gchar *name);
+gboolean mc_skin_color_is_set (const gchar *group, const gchar *name);
 
 void mc_skin_lines_parse_ini_file (mc_skin_t *mc_skin);
 
