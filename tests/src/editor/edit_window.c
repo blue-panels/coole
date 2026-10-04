@@ -3,6 +3,9 @@
 
    Copyright (C) 2026
    Free Software Foundation, Inc.
+
+   Written by:
+   Ilia Maslakov <il.smind@gmail.com>, 2026
 */
 
 #define TEST_SUITE_NAME "/src/editor"

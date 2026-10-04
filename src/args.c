@@ -3,6 +3,8 @@
 
    Copyright (C) 2009-2025
    Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
 
    Written by:
    Slava Zanko <slavazanko@gmail.com>, 2009.

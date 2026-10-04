@@ -3,9 +3,12 @@
 
    Copyright (C) 2001-2025
    Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
 
    Written by:
    Paul Sheer, 1996, 1997
+   Ilia Maslakov <il.smind@gmail.com>, 2026
 
    This file is part of the Midnight Commander.
 

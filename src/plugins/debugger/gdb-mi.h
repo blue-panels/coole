@@ -1,3 +1,7 @@
+/** \file gdb-mi.h
+ *  \brief Header: a session of GDB with its machine interface, and its records
+ */
+
 #ifndef MC__GDB_MI_H
 #define MC__GDB_MI_H
 

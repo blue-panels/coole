@@ -1,3 +1,7 @@
+/** \file project.h
+ *  \brief Header: the project plugin of the editor
+ */
+
 #ifndef MC__PROJECT_PLUGIN_H
 #define MC__PROJECT_PLUGIN_H
 

@@ -1,3 +1,7 @@
+/** \file debugger.h
+ *  \brief Header: the debugger plugin of the editor
+ */
+
 #ifndef MC__DEBUGGER_PLUGIN_H
 #define MC__DEBUGGER_PLUGIN_H
 

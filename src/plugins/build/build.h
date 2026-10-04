@@ -1,3 +1,7 @@
+/** \file build.h
+ *  \brief Header: the build plugin of the editor
+ */
+
 #ifndef MC__BUILD_PLUGIN_H
 #define MC__BUILD_PLUGIN_H
 
