@@ -3374,7 +3374,11 @@ debug_start (void *data, void *edit)
     debug_watches_clear_values (debug);
     g_string_truncate (debug->console, 0);
     g_queue_push_tail (debug->startup_commands, g_strdup ("-gdb-set mi-async on"));
-    g_queue_push_tail (debug->startup_commands, g_strdup ("-gdb-set startup-with-shell off"));
+    // the arguments go through sh, as they are split: quotes and spaces as typed
+    g_queue_push_tail (debug->startup_commands, g_strdup ("-gdb-set startup-with-shell on"));
+    if (g_getenv ("SHELL") != NULL && strchr (g_getenv ("SHELL"), '\n') == NULL)
+        g_queue_push_tail (debug->startup_commands,
+                           g_strconcat ("-gdb-set environment SHELL=", g_getenv ("SHELL"), NULL));
     debug_queue_quoted (debug, "-file-exec-and-symbols", absolute);
     debug_queue_quoted (debug, "-environment-cd", launch->directory);
     for (i = 0; environment_entries != NULL && environment_entries[i] != NULL; i++)
@@ -3387,11 +3391,13 @@ debug_start (void *data, void *edit)
         debug_queue_quoted (debug, "-inferior-tty-set", debug->pty_name);
     if (argc > 0)
     {
+        /* -exec-arguments is "set args": the line as it is, which sh splits; MI quotes would
+           reach the program */
         GString *args = g_string_new ("-exec-arguments");
 
         for (i = 0; i < argc; i++)
         {
-            char *quoted = gdb_mi_quote (argv[i]);
+            char *quoted = g_shell_quote (argv[i]);
 
             g_string_append_c (args, ' ');
             g_string_append (args, quoted);

@@ -112,13 +112,23 @@ gdb_mi_session_start (gdb_mi_session_t *session, const char *gdb_path, GError **
 {
     char *argv[] = { (char *) (gdb_path != NULL ? gdb_path : "gdb"), (char *) "--nx",
                      (char *) "--quiet", (char *) "--interpreter=mi3", NULL };
+    char **envp;
+    gboolean spawned;
 
     if (session->pid != 0)
         return FALSE;
-    if (!g_spawn_async_with_pipes (
-            NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL,
-            &session->pid, &session->input, &session->output, &session->errors, error))
+    /* GDB starts the program with $SHELL, and the arguments are written the way sh reads them:
+       the user's shell, fish for one, would read them otherwise.  The program gets the user's
+       shell back with -gdb-set environment. */
+    envp = g_environ_setenv (g_get_environ (), "SHELL", "/bin/sh", TRUE);
+    spawned = g_spawn_async_with_pipes (
+        NULL, argv, envp, G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL,
+        &session->pid, &session->input, &session->output, &session->errors, error);
+    g_strfreev (envp);
+    if (!spawned)
         return FALSE;
+    // what the GDB before left of a line is not the start of this one's
+    g_string_truncate (session->pending, 0);
 
     (void) fcntl (session->output, F_SETFL, fcntl (session->output, F_GETFL) | O_NONBLOCK);
     (void) fcntl (session->errors, F_SETFL, fcntl (session->errors, F_GETFL) | O_NONBLOCK);
