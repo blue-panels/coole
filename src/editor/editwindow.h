@@ -39,13 +39,21 @@ typedef enum
 
 typedef struct WEditWindow WEditWindow;
 
-/* A window that made room for another: the edge of it that moved out of the way, its bottom for
-   a room above the other, else its right side, where it was and where it was put */
+/* Where a window made room for another went */
+typedef enum
+{
+    EDIT_WINDOW_ROOM_ABOVE,  // above the other: its bottom moved
+    EDIT_WINDOW_ROOM_LEFT,   // to the left of it: its right side moved
+    EDIT_WINDOW_ROOM_RIGHT   // to the right of it: its left side moved
+} edit_window_room_side_t;
+
+/* A window that made room for another: the edge of it that moved out of the way, where it was
+   and where it was put */
 typedef struct
 {
     unsigned long id;
-    gboolean above;           // its bottom moved, else its right side
-    int edge_before;          // the last row (column) of its frame before
+    edit_window_room_side_t side;
+    int edge_before;          // the row (column) of its frame on that edge before
     int edge_after;           // and after
     unsigned int user_moves;  // the moves of the window by the user then
 } edit_window_room_t;
