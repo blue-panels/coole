@@ -619,6 +619,18 @@ terminal_toggle (terminal_plugin_t *tp, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether a window of the terminal is open: seen, or a tab of the bottom not seen */
+static gboolean
+terminal_window_open (const terminal_plugin_t *tp, const terminal_window_t *tw)
+{
+    return tw != NULL
+        && (widget_get_state (CONST_WIDGET (tw), WST_VISIBLE)
+            || (tp->host->window_docked != NULL
+                && tp->host->window_docked (tp->host, (void *) tw)));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The window of the terminal of the program the debugger runs, at the bottom; no shell in it */
 static terminal_window_t *
 terminal_program_new (terminal_plugin_t *tp)
@@ -699,7 +711,7 @@ terminal_program_state (void *data)
 {
     const terminal_plugin_t *tp = (const terminal_plugin_t *) data;
 
-    if (tp->program == NULL || !widget_get_state (WIDGET (tp->program), WST_VISIBLE))
+    if (!terminal_window_open (tp, tp->program))
         return MC_EP_WINDOW_CLOSED;
     return widget_get_state (WIDGET (tp->program), WST_FOCUSED) ? MC_EP_WINDOW_FOCUSED
                                                                 : MC_EP_WINDOW_OPEN;
@@ -756,7 +768,7 @@ terminal_kind_state (void *data)
 {
     const terminal_plugin_t *tp = (const terminal_plugin_t *) data;
 
-    if (tp->win == NULL || !widget_get_state (WIDGET (tp->win), WST_VISIBLE))
+    if (!terminal_window_open (tp, tp->win))
         return MC_EP_WINDOW_CLOSED;
     return widget_get_state (WIDGET (tp->win), WST_FOCUSED) ? MC_EP_WINDOW_FOCUSED
                                                             : MC_EP_WINDOW_OPEN;
@@ -775,7 +787,7 @@ terminal_kind_window (void *data)
 {
     const terminal_plugin_t *tp = (const terminal_plugin_t *) data;
 
-    return tp->win != NULL && widget_get_state (WIDGET (tp->win), WST_VISIBLE) ? tp->win : NULL;
+    return terminal_window_open (tp, tp->win) ? tp->win : NULL;
 }
 
 static const mc_ep_window_kind_t terminal_kind = {

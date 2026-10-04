@@ -311,6 +311,20 @@ layout_apply (WDialog *h, const layout_t *l)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A group of the file of a layout or of a project: its name escaped, a group of a key file being
+   no place for '[', ']' and the control characters */
+static char *
+layout_group (const char *prefix, const char *name)
+{
+    char *escaped = g_uri_escape_string (name, "/ ._-~+,:@!$&'()*=", TRUE);
+    char *group = g_strconcat (prefix, escaped, (char *) NULL);
+
+    g_free (escaped);
+    return group;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static char *
 layouts_path (void)
 {
@@ -487,7 +501,7 @@ static layout_t *
 layout_load (const char *name)
 {
     GKeyFile *kf = layouts_load ();
-    char *group = g_strconcat (LAYOUT_GROUP, name, (char *) NULL);
+    char *group = layout_group (LAYOUT_GROUP, name);
     layout_t *l = layout_from_group (kf, group);
 
     g_free (group);
@@ -509,9 +523,15 @@ layout_names (void)
     for (i = 0; i < G_N_ELEMENTS (builtin_names); i++)
         g_ptr_array_add (names, g_strdup (builtin_names[i]));
     for (i = 0; groups[i] != NULL; i++)
-        if (g_str_has_prefix (groups[i], LAYOUT_GROUP)
-            && !names_have (names, groups[i] + strlen (LAYOUT_GROUP)))
-            g_ptr_array_add (names, g_strdup (groups[i] + strlen (LAYOUT_GROUP)));
+        if (g_str_has_prefix (groups[i], LAYOUT_GROUP))
+        {
+            char *name = g_uri_unescape_string (groups[i] + strlen (LAYOUT_GROUP), NULL);
+
+            if (name != NULL && !names_have (names, name))
+                g_ptr_array_add (names, name);
+            else
+                g_free (name);
+        }
     g_strfreev (groups);
     g_key_file_free (kf);
     return names;
@@ -591,6 +611,11 @@ edit_layout_startup (void *dialog)
     char *root, *group;
     layout_t *l;
 
+    void *data;
+
+    // no window of a plugin: nothing to put anywhere
+    if (edit_window_kind_at (h, 0, &data) == NULL)
+        return;
     if (edit_startup_option ("debug") != NULL)
     {
         layout_use (h, LAYOUT_DEBUG);
@@ -601,7 +626,7 @@ edit_layout_startup (void *dialog)
     if (root == NULL)
         return;
     kf = layouts_load ();
-    group = g_strconcat (PROJECT_GROUP, root, (char *) NULL);
+    group = layout_group (PROJECT_GROUP, root);
     l = layout_from_group (kf, group);
     if (l != NULL)
     {
@@ -622,16 +647,23 @@ void
 edit_layout_quit (WDialog *h)
 {
     char *root = layout_project_root (h);
+    void *data;
     GKeyFile *kf;
     char *group;
     layout_t *l;
 
     if (root == NULL)
         return;
+    // no window of a plugin, the plugins off: the layout kept is not overwritten by an empty one
+    if (edit_window_kind_at (h, 0, &data) == NULL)
+    {
+        g_free (root);
+        return;
+    }
     // while debugging, the windows as they were before
     l = pushed != NULL ? pushed : layout_capture (h);
     kf = layouts_load ();
-    group = g_strconcat (PROJECT_GROUP, root, (char *) NULL);
+    group = layout_group (PROJECT_GROUP, root);
     layout_to_group (kf, group, l);
     g_key_file_set_string (kf, group, "layout", current_name != NULL ? current_name : "");
     layouts_store (kf);
@@ -735,7 +767,7 @@ edit_layout_dialog (WDialog *h)
         if (ret == B_USER + 1 && chosen != NULL)
         {
             // the user's one goes: the editor's of that name comes back
-            char *group = g_strconcat (LAYOUT_GROUP, chosen, (char *) NULL);
+            char *group = layout_group (LAYOUT_GROUP, chosen);
 
             (void) g_key_file_remove_group (kf, group, NULL);
             g_free (group);
@@ -755,7 +787,7 @@ edit_layout_dialog (WDialog *h)
         if (name != NULL && *g_strstrip (name) != '\0')
         {
             GKeyFile *kf = layouts_load ();
-            char *group = g_strconcat (LAYOUT_GROUP, name, (char *) NULL);
+            char *group = layout_group (LAYOUT_GROUP, name);
             layout_t *l = layout_capture (h);
 
             layout_to_group (kf, group, l);

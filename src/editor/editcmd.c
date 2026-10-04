@@ -1104,6 +1104,7 @@ edit_show_control_chars_cmd (WDialog *h)
 void
 edit_show_numbers_cmd (WDialog *h)
 {
+    edit_marker_gutter_forget ();
     edit_options.line_state = !edit_options.line_state;
     edit_options.line_state_width = edit_options.line_state ? LINE_STATE_WIDTH : 0;
     widget_draw (WIDGET (h));

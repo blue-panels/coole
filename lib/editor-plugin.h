@@ -248,6 +248,9 @@ typedef struct mc_editor_host_t
     /* the windows as they were at layout_push(), but those of the row at the bottom, kept to be
        read */
     void (*layout_pop) (struct mc_editor_host_t *host);
+    /* v10: whether a window is in a dock, a tab of the bottom not seen too: open, for the menu
+       Window and the layouts */
+    gboolean (*window_docked) (struct mc_editor_host_t *host, void *window);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.

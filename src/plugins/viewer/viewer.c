@@ -528,8 +528,11 @@ viewer_call (void *data, const char *method, GVariant *args, GError **error)
         g_variant_dict_insert (&dict, "lines", "x", (gint64) edit_text_window_text_lines (win));
         g_variant_dict_insert (&dict, "top", "x", (gint64) edit_text_window_top (win));
         g_variant_dict_insert (&dict, "total", "x", (gint64) edit_text_window_lines (win));
-        g_variant_dict_insert (&dict, "visible", "b",
-                               widget_get_state (CONST_WIDGET (win), WST_VISIBLE));
+        // a tab of the bottom not seen is there all the same
+        g_variant_dict_insert (
+            &dict, "visible", "b",
+            widget_get_state (CONST_WIDGET (win), WST_VISIBLE)
+                || (v->host->window_docked != NULL && v->host->window_docked (v->host, win)));
         g_variant_dict_insert (&dict, "focused", "b",
                                v->host->window_current (v->host) == (void *) win);
         // the window itself, for the layouts of the editor in the same program
