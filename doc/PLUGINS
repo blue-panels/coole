@@ -256,6 +256,14 @@ What the editor provides to the plugin, passed to open():
                              button bar for one, goes to handle_action()
   command_lookup(host, section, key)
                              the command a key is bound to in a section
+  open_file(host, file)      the window of a file to the front, or a new
+                             one with the cursor where it was
+  set_line_note(host, file, line, text)
+                             a note after the text of a line, in the
+                             editnote color of the skin; NULL takes it
+                             off
+  clear_line_notes(host, file)
+                             all the notes off a file, or off all files
   show_location(host, file, line)
                              open a source location without pushing
                              each debugger step onto navigation history

@@ -72,17 +72,58 @@ dialog that can add it to the watches.
 **Esc**
 : Go back to editing until the next stop.
 
-The Debug session window takes the same keys when it has the focus; there F2
-and F4 work on the cursor of the topmost file window, and F10 closes the
-window. **Debug → Debug session...** opens it again. The keys can be changed
-in **Options → Key bindings → Editor → Debugger**, or in the *[debugger]*
-section of the keymap, *DebugStepOver = alt-o* for one; *f15* is the name of
-Shift-F5.
+The keys can be changed in **Options → Key bindings → Editor → Debugger**, or
+in the *[debugger]* section of the keymap, *DebugStepOver = alt-o* for one;
+*f15* is the name of Shift-F5.
+
+**The panel and the console**
+
+The start puts the panel of the debugger at the right of the source, all its
+height, and the console under the source. The panel has the state of the
+program, the local variables of the frame, the watches, the call stack and
+the breakpoints; the console has the output of the program and what GDB
+says. **Debug → Panel of the debugger** and **Debug → Console** open them
+again.
+
+In the panel the debugger keys work as in step mode (there F2 and F4 work on
+the cursor of the topmost file window, F10 closes the panel), and:
+
+**Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
+: Move from one row to another.
+
+**Enter**
+: On a variable or a watch, its whole value, a structure for one, in a
+dialog that can add it to the watches; on a frame, go to it; on a
+breakpoint, go to its line.
+
+**Space**
+: Disable a breakpoint, or enable it again: GDB keeps it but does not stop
+on it, and its mark is an empty circle.
+
+**Del**
+: Remove a watch or a breakpoint.
+
+**Ins**
+: Add a watch.
+
+**:**
+: A command of GDB itself, for what the panel does not have: *p x*,
+*info registers*, *x/8x buf*. What GDB answers comes in the console.
+
+**The values in the source**
+
+While the program is stopped the lines of the function, from its start down
+to the line it stopped on, show the values of the local variables they name,
+after their text. The values go when the program runs on and when the text
+is edited. The skin gives their color, *editnote* in *[editor]*.
 
 **The marks**
 
 **●**
 : a breakpoint
+
+**○**
+: a breakpoint that is disabled
 
 **◌**
 : a breakpoint GDB has not taken yet, or has refused
@@ -101,14 +142,11 @@ gives the marks in *[widget-editor]* (*breakpoint-char*, *exec-char* and the
 others) and their colors in *[editor]* (*breakpoint*, *execmark*,
 *execline*); a terminal that is not UTF-8 shows *o*, *?*, *>* and *@*.
 
-**What the program is at**
+**The rest of the Debug menu**
 
-**Call stack...** chooses a frame: the mark of the current line goes to it,
-and its variables come in **Local variables**. **Add watch...** keeps an
-expression for the project; **Watches** shows its value in the frame. A
-watch shows a value: it does not stop the program when the value changes.
-
-The output of the program comes in **Debug output**; **Send line...** gives
+**Call stack...** chooses a frame in a list, as Enter in the panel does.
+**Add watch...** keeps an expression for the project; a watch shows a value,
+it does not stop the program when the value changes. **Send line...** gives
 a line to a program that reads lines. **Stop** ends the session and keeps the
 breakpoints, the configurations and the watches.
 

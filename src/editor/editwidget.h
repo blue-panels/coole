@@ -120,6 +120,8 @@ struct WEdit
 
     edit_book_mark_t *book_mark;
     GArray *serialized_bookmarks;
+    // the notes of the plugins after the text of a line: line (from 0) to text
+    GHashTable *line_notes;
 
     // code folding
     edit_fold_t *folds;

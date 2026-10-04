@@ -181,6 +181,12 @@ typedef struct mc_editor_host_t
 
     /* v9: show the window of a file, or open it in a new one; its cursor stays where it was */
     gboolean (*open_file) (struct mc_editor_host_t *host, const char *file);
+
+    /* v9: a note after the text of a line (1-based) of every window of a file, NULL takes it
+     * off; clear_line_notes() takes all of them off a file, or (file NULL) off all files */
+    void (*set_line_note) (struct mc_editor_host_t *host, const char *file, long line,
+                           const char *text);
+    void (*clear_line_notes) (struct mc_editor_host_t *host, const char *file);
     /* Show a debugger location without adding each step to the navigation stack. */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
     /* v8: offer to save modified source files within a project root. */

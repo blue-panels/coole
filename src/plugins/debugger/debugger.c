@@ -23,6 +23,7 @@
 #include "lib/global.h"
 #include "lib/skin.h"
 #include "lib/strutil.h"
+#include "lib/util.h"
 #include "lib/widget.h"
 #include "lib/tty/key.h"
 #include "lib/tty/tty.h"
@@ -50,6 +51,7 @@ typedef struct
     long line;
     char *gdb_number;
     unsigned int pending_token;
+    gboolean disabled;  // kept, but GDB does not stop on it
 } debug_breakpoint_t;
 
 typedef struct
@@ -158,18 +160,10 @@ typedef struct
     guint active_launch;
     GPtrArray *breakpoints;
     GPtrArray *watches;
-    GString *output;
     // what GDB says of itself, apart from the output of the program
     GString *console;
     gint64 console_window;
-    gint64 output_window;
-    GString *stack_text;
-    gint64 stack_window;
     GPtrArray *frames;
-    GString *variables_text;
-    gint64 variables_window;
-    GString *watches_text;
-    gint64 watches_window;
     int pty_master;
     int pty_slave;
     char *pty_name;
@@ -202,6 +196,8 @@ struct debug_session_window_t
 {
     WEditWindow window;
     debugger_t *debug;
+    int cursor;  // the row of the panel the cursor is on
+    int top;     // the first row in sight
 };
 
 enum
@@ -226,7 +222,8 @@ enum
     DEBUG_ACT_WATCHES,
     DEBUG_ACT_INPUT,
     DEBUG_ACT_SESSION,
-    DEBUG_ACT_STOP
+    DEBUG_ACT_STOP,
+    DEBUG_ACT_GDB_COMMAND
 };
 
 static mc_ep_result_t debug_start (void *data, void *edit);
@@ -246,6 +243,15 @@ static gboolean debug_session_live (const debugger_t *debug);
 static void debug_reply_watch (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data);
 static void debug_setup_next (debugger_t *debug);
 static void debug_marks_show (debugger_t *debug, const char *file);
+static void debug_select_frame (debugger_t *debug, const debug_frame_t *frame);
+static mc_ep_result_t debug_evaluate_text (debugger_t *debug, char *expression);
+static mc_ep_result_t debug_add_watch (void *data, void *edit);
+static void debug_gdb_command (debugger_t *debug);
+static void debug_breakpoint_remove (debugger_t *debug, guint index);
+static void debug_breakpoint_toggle_enabled (debugger_t *debug, guint index);
+static void debug_config_save (debugger_t *debug);
+static void debug_output_console (debugger_t *debug, const char *text_value, gboolean line);
+static void debug_notes_show (debugger_t *debug);
 static void debug_session_refresh (debugger_t *debug);
 
 static void
@@ -547,76 +553,344 @@ debug_editor_buttonbar (debugger_t *debug, Widget *edit)
     widget_draw (WIDGET (bb));
 }
 
+/* A row of the panel of the debugger */
+typedef enum
+{
+    PANEL_TITLE,  // the name of a part
+    PANEL_TEXT,   // a line to read
+    PANEL_LOCAL,
+    PANEL_WATCH,
+    PANEL_FRAME,
+    PANEL_BREAKPOINT
+} debug_panel_kind_t;
+
+typedef struct
+{
+    debug_panel_kind_t kind;
+    guint index;  // of the variable, the watch, the frame or the breakpoint
+    char *text;
+} debug_panel_row_t;
+
+static void
+debug_panel_row_free (gpointer p)
+{
+    debug_panel_row_t *row = (debug_panel_row_t *) p;
+
+    g_free (row->text);
+    g_free (row);
+}
+
+static void
+debug_panel_add (GPtrArray *rows, debug_panel_kind_t kind, guint index, char *text)
+{
+    debug_panel_row_t *row = g_new (debug_panel_row_t, 1);
+
+    row->kind = kind;
+    row->index = index;
+    row->text = text;
+    g_ptr_array_add (rows, row);
+}
+
+static gboolean
+debug_panel_selectable (const debug_panel_row_t *row)
+{
+    return row->kind != PANEL_TITLE && row->kind != PANEL_TEXT;
+}
+
+/* What the panel shows: the state, the variables of the frame, the watches, the call stack and
+   the breakpoints */
+static GPtrArray *
+debug_panel_rows (const debugger_t *debug)
+{
+    GPtrArray *rows = g_ptr_array_new_with_free_func (debug_panel_row_free);
+    const debug_launch_t *launch = debug_active_launch (debug);
+    guint i;
+
+    debug_panel_add (rows, PANEL_TEXT, 0,
+                     g_strdup_printf ("%s  %s",
+                                      debug->start_after_build ? _ ("Building")
+                                                               : debug_state_name (debug->state),
+                                      launch != NULL ? launch->name : _ ("<no configuration>")));
+    if (debug->current_file != NULL)
+        debug_panel_add (rows, PANEL_TEXT, 0,
+                         g_strdup_printf ("%s %s:%ld",
+                                          debug->current_func != NULL ? debug->current_func : "",
+                                          x_basename (debug->current_file), debug->current_line));
+    else if (debug->state == DEBUG_STOPPED && debug->current_func != NULL)
+        debug_panel_add (rows, PANEL_TEXT, 0,
+                         g_strdup_printf (_ ("%s, with no source"), debug->current_func));
+
+    if (debug->state == DEBUG_STOPPED)
+    {
+        debug_panel_add (rows, PANEL_TITLE, 0, g_strdup (_ ("Locals")));
+        for (i = 0; i < debug->locals->len; i++)
+        {
+            const debug_local_t *local = g_ptr_array_index (debug->locals, i);
+
+            debug_panel_add (rows, PANEL_LOCAL, i,
+                             g_strdup_printf ("%s = %s", local->name, local->value));
+        }
+    }
+
+    debug_panel_add (rows, PANEL_TITLE, 0, g_strdup (_ ("Watches")));
+    for (i = 0; i < debug->watches->len; i++)
+    {
+        const debug_watch_t *watch = g_ptr_array_index (debug->watches, i);
+
+        debug_panel_add (rows, PANEL_WATCH, i,
+                         g_strdup_printf ("%s = %s", watch->expression,
+                                          watch->value != NULL ? watch->value : "?"));
+    }
+    if (debug->watches->len == 0)
+        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Ins adds one")));
+
+    if (debug->state == DEBUG_STOPPED)
+    {
+        debug_panel_add (rows, PANEL_TITLE, 0, g_strdup (_ ("Call stack")));
+        for (i = 0; i < debug->frames->len; i++)
+        {
+            const debug_frame_t *frame = g_ptr_array_index (debug->frames, i);
+            const char *base = frame->file != NULL ? x_basename (frame->file) : NULL;
+            const char *label = strchr (frame->label, ' ');
+
+            // "#0 func  file:line" with the file without its directories
+            if (base != NULL)
+                debug_panel_add (
+                    rows, PANEL_FRAME, i,
+                    g_strdup_printf ("#%ld %.*s %s:%ld", frame->level,
+                                     label != NULL ? (int) strcspn (label + 1, " ") : 0,
+                                     label != NULL ? label + 1 : "", base, frame->line));
+            else
+                debug_panel_add (rows, PANEL_FRAME, i, g_strdup (frame->label));
+        }
+    }
+
+    debug_panel_add (rows, PANEL_TITLE, 0, g_strdup (_ ("Breakpoints")));
+    for (i = 0; i < debug->breakpoints->len; i++)
+    {
+        const debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+
+        debug_panel_add (rows, PANEL_BREAKPOINT, i,
+                         g_strdup_printf ("%s %s:%ld", bp->disabled ? "[ ]" : "[x]",
+                                          x_basename (bp->file), bp->line));
+    }
+    if (debug->breakpoints->len == 0)
+        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  F2 in a file puts one")));
+    return rows;
+}
+
+/* The cursor on a row that can be chosen, the nearest one in that direction */
+static void
+debug_panel_cursor (debug_session_window_t *session, const GPtrArray *rows, int to, int step)
+{
+    const int last = (int) rows->len - 1;
+    int i;
+
+    to = CLAMP (to, 0, MAX (last, 0));
+    for (i = to; i >= 0 && i <= last; i += step)
+        if (debug_panel_selectable (g_ptr_array_index (rows, i)))
+        {
+            session->cursor = i;
+            return;
+        }
+    for (i = to; i >= 0 && i <= last; i -= step)
+        if (debug_panel_selectable (g_ptr_array_index (rows, i)))
+        {
+            session->cursor = i;
+            return;
+        }
+    session->cursor = 0;
+}
+
 static void
 debug_session_draw (debug_session_window_t *session)
 {
     WEditWindow *win = &session->window;
     Widget *w = WIDGET (session);
     debugger_t *debug = session->debug;
-    const int color = edit_window_frame_color (win, widget_get_state (w, WST_FOCUSED));
-    const debug_launch_t *launch = debug != NULL ? debug_active_launch (debug) : NULL;
-    GString *body = g_string_new (NULL);
-    char **lines;
-    gsize line_count;
+    const gboolean focused = widget_get_state (w, WST_FOCUSED);
+    const int color = edit_window_frame_color (win, focused);
+    const int lines = MAX (1, w->rect.lines - 2);
+    const int width = MAX (0, w->rect.cols - 2);
+    GPtrArray *rows;
     int row;
-    guint i;
 
-    edit_window_draw_frame (win, color, widget_get_state (w, WST_FOCUSED));
+    edit_window_draw_frame (win, color, focused);
     tty_setcolor (color);
     widget_gotoyx (w, 0, 2);
-    tty_print_string (str_term_trim (_ ("[Debug session]"), MAX (0, w->rect.cols - 10)));
+    tty_print_string (str_term_trim (_ ("[Debugger]"), MAX (0, w->rect.cols - 10)));
     edit_window_draw_icons (win, color);
 
     if (debug == NULL)
     {
         widget_gotoyx (w, 1, 1);
         tty_print_string (_ ("Debug session ended."));
-        g_string_free (body, TRUE);
         return;
     }
 
-    g_string_append_printf (body, _ ("Project: %s\n"),
-                            debug->project_dir != NULL ? debug->project_dir : _ ("<none>"));
-    g_string_append_printf (body, _ ("Configuration: %s\n"),
-                            launch != NULL ? launch->name : _ ("<none>"));
-    g_string_append_printf (body, _ ("State: %s\n"),
-                            debug->start_after_build ? _ ("Building")
-                                                     : debug_state_name (debug->state));
-    if (debug->current_file != NULL)
-        g_string_append_printf (body, _ ("At: %s:%ld\n"), debug->current_file, debug->current_line);
-    else if (debug->state == DEBUG_STOPPED && debug->current_func != NULL)
-        g_string_append_printf (body, _ ("In: %s, with no source\n"), debug->current_func);
-    else
-        g_string_append_c (body, '\n');
-    if (debug_stepping (debug))
-        g_string_append (body,
-                         _ ("Step mode: the source window takes the debugger keys; "
-                            "Esc goes back to editing.\n"));
-    if (debug->watches->len > 0)
-    {
-        g_string_append (body, _ ("Watches:\n"));
-        for (i = 0; i < debug->watches->len; i++)
-        {
-            const debug_watch_t *watch = g_ptr_array_index (debug->watches, i);
+    rows = debug_panel_rows (debug);
+    if (session->cursor >= (int) rows->len
+        || !debug_panel_selectable (g_ptr_array_index (rows, session->cursor)))
+        debug_panel_cursor (session, rows, session->cursor, 1);
+    if (session->cursor < session->top)
+        session->top = session->cursor;
+    else if (session->cursor >= session->top + lines)
+        session->top = session->cursor - lines + 1;
 
-            g_string_append_printf (body, "  %s = %s\n", watch->expression,
-                                    watch->value != NULL ? watch->value : _ ("<not evaluated>"));
-        }
-    }
-    lines = g_strsplit (body->str, "\n", -1);
-    line_count = g_strv_length (lines);
-    for (row = 1; row < w->rect.lines - 1; row++)
+    for (row = 0; row < lines; row++)
     {
-        tty_setcolor (EDITOR_NORMAL_COLOR);
-        tty_draw_hline (w->rect.y + row, w->rect.x + 1, ' ', MAX (0, w->rect.cols - 2));
-        if ((gsize) (row - 1) < line_count)
+        const int index = session->top + row;
+        int c = EDITOR_NORMAL_COLOR;
+        const char *text = "";
+        char *indented = NULL;
+
+        if (index < (int) rows->len)
         {
-            widget_gotoyx (w, row, 1);
-            tty_print_string (str_term_trim (lines[row - 1], MAX (0, w->rect.cols - 2)));
+            const debug_panel_row_t *r = g_ptr_array_index (rows, index);
+
+            if (r->kind == PANEL_TITLE)
+                c = EDITOR_BOLD_COLOR;
+            else if (index == session->cursor && focused && debug_panel_selectable (r))
+                c = EDITOR_MARKED_COLOR;
+            text = r->text;
+            if (debug_panel_selectable (r))
+                text = indented = g_strconcat ("  ", r->text, (char *) NULL);
         }
+        tty_setcolor (EDITOR_NORMAL_COLOR);
+        tty_draw_hline (w->rect.y + row + 1, w->rect.x + 1, ' ', width);
+        tty_setcolor (c);
+        widget_gotoyx (w, row + 1, 1);
+        tty_print_string (str_fit_to_term (text, width, J_LEFT_FIT));
+        g_free (indented);
     }
-    g_strfreev (lines);
-    g_string_free (body, TRUE);
+    g_ptr_array_free (rows, TRUE);
+}
+
+/* Enter, Del, Ins, Space and the moves in the panel; FALSE for a key that is none of them */
+static gboolean
+debug_panel_key (debug_session_window_t *session, int key)
+{
+    debugger_t *debug = session->debug;
+    GPtrArray *rows = debug_panel_rows (debug);
+    const int lines = MAX (1, WIDGET (session)->rect.lines - 2);
+    const debug_panel_row_t *row =
+        session->cursor < (int) rows->len ? g_ptr_array_index (rows, session->cursor) : NULL;
+    gboolean handled = TRUE;
+
+    switch (key)
+    {
+    case KEY_UP:
+        debug_panel_cursor (session, rows, session->cursor - 1, -1);
+        break;
+    case KEY_DOWN:
+        debug_panel_cursor (session, rows, session->cursor + 1, 1);
+        break;
+    case KEY_PPAGE:
+        debug_panel_cursor (session, rows, session->cursor - lines, -1);
+        break;
+    case KEY_NPAGE:
+        debug_panel_cursor (session, rows, session->cursor + lines, 1);
+        break;
+    case KEY_HOME:
+        debug_panel_cursor (session, rows, 0, 1);
+        break;
+    case KEY_END:
+        debug_panel_cursor (session, rows, (int) rows->len - 1, -1);
+        break;
+    case KEY_IC:
+        (void) debug_add_watch (debug, NULL);
+        break;
+    case ':':
+        debug_gdb_command (debug);
+        break;
+    case '\n':
+    case KEY_ENTER:
+        if (row == NULL)
+            break;
+        if (row->kind == PANEL_LOCAL)
+            (void) debug_evaluate_text (
+                debug,
+                g_strdup (((debug_local_t *) g_ptr_array_index (debug->locals, row->index))->name));
+        else if (row->kind == PANEL_WATCH)
+            (void) debug_evaluate_text (
+                debug,
+                g_strdup (((debug_watch_t *) g_ptr_array_index (debug->watches, row->index))
+                              ->expression));
+        else if (row->kind == PANEL_FRAME)
+            debug_select_frame (debug, g_ptr_array_index (debug->frames, row->index));
+        else if (row->kind == PANEL_BREAKPOINT)
+        {
+            const debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, row->index);
+
+            (void) debug->host->show_location (debug->host, bp->file, bp->line);
+        }
+        else
+            handled = FALSE;
+        break;
+    case KEY_DC:
+        if (row != NULL && row->kind == PANEL_WATCH)
+        {
+            g_ptr_array_remove_index (debug->watches, row->index);
+            debug_config_save (debug);
+        }
+        else if (row != NULL && row->kind == PANEL_BREAKPOINT)
+        {
+            debug_breakpoint_remove (debug, row->index);
+            debug_marks_show (debug, NULL);
+            debug_config_save (debug);
+        }
+        break;
+    case ' ':
+        if (row != NULL && row->kind == PANEL_BREAKPOINT)
+            debug_breakpoint_toggle_enabled (debug, row->index);
+        break;
+    default:
+        handled = FALSE;
+        break;
+    }
+    g_ptr_array_free (rows, TRUE);
+    if (handled && session->debug != NULL)
+        widget_draw (WIDGET (session));
+    return handled;
+}
+
+static void
+debug_panel_mouse (Widget *w, mouse_msg_t msg, mouse_event_t *event)
+{
+    debug_session_window_t *session = (debug_session_window_t *) w;
+    const int index = session->top + event->y - 1;
+
+    if (session->debug == NULL)
+        return;
+    switch (msg)
+    {
+    case MSG_MOUSE_DOWN:
+    {
+        GPtrArray *rows = debug_panel_rows (session->debug);
+
+        widget_select (w);
+        if (index >= 0 && index < (int) rows->len
+            && debug_panel_selectable (g_ptr_array_index (rows, index)))
+            session->cursor = index;
+        g_ptr_array_free (rows, TRUE);
+        widget_draw (w);
+        break;
+    }
+    case MSG_MOUSE_CLICK:
+        if (event->count == GPM_DOUBLE && index == session->cursor)
+            (void) debug_panel_key (session, '\n');
+        break;
+    case MSG_MOUSE_SCROLL_UP:
+        session->top = MAX (0, session->top - 3);
+        widget_draw (w);
+        break;
+    case MSG_MOUSE_SCROLL_DOWN:
+        session->top += 3;
+        widget_draw (w);
+        break;
+    default:
+        break;
+    }
 }
 
 static gboolean
@@ -703,6 +977,8 @@ debug_session_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, v
     case MSG_KEY:
         if (session->debug == NULL)
             return MSG_NOT_HANDLED;
+        if (debug_panel_key (session, parm))
+            return MSG_HANDLED;
         if (debug_run_command (session->debug, debug_command_of_key (session->debug, parm), NULL))
             return MSG_HANDLED;
         // the F keys of the editor mean nothing here
@@ -716,7 +992,7 @@ debug_session_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, v
             return MSG_HANDLED;
         return MSG_NOT_HANDLED;
     case MSG_CURSOR:
-        widget_gotoyx (w, 1, 1);
+        widget_gotoyx (w, 1 + session->cursor - session->top, 1);
         return MSG_HANDLED;
     case MSG_DESTROY:
         if (session->debug != NULL)
@@ -731,15 +1007,16 @@ static char *
 debug_session_title (const WEditWindow *win)
 {
     (void) win;
-    return g_strdup (_ ("Debug session"));
+    return g_strdup (_ ("Debugger"));
 }
 
 static const edit_window_class_t debug_session_class = {
     .callback = debug_session_callback,
+    .mouse_callback = debug_panel_mouse,
     .get_title = debug_session_title,
     .close = debug_session_close_window,
     .min_lines = 6,
-    .min_cols = 32,
+    .min_cols = 24,
 };
 
 static void
@@ -770,10 +1047,12 @@ debug_session_show (void *data, void *edit)
         debug->host->window_show (debug->host, debug->session_window);
         return MC_EPR_OK;
     }
+    // at the right, of all the height: the source keeps the rest
     debug->host->window_area (debug->host, &area);
     rect = area;
-    rect.lines = MIN (area.lines, MAX (8, area.lines * 30 / 100));
-    rect.y = area.y + area.lines - rect.lines;
+    rect.cols = CLAMP (area.cols * 35 / 100, 30, 60);
+    rect.cols = MIN (rect.cols, area.cols);
+    rect.x = area.x + area.cols - rect.cols;
     session = g_new0 (debug_session_window_t, 1);
     edit_window_init (&session->window, &rect, &debug_session_class);
     session->window.fullscreen = 0;
@@ -967,6 +1246,16 @@ debug_config_save (debugger_t *debug)
     }
     g_key_file_set_string_list (keyfile, "Debug", "breakpoints", (const gchar *const *) locations,
                                 debug->breakpoints->len);
+    {
+        GPtrArray *off = g_ptr_array_new ();
+
+        for (i = 0; i < debug->breakpoints->len; i++)
+            if (((debug_breakpoint_t *) g_ptr_array_index (debug->breakpoints, i))->disabled)
+                g_ptr_array_add (off, locations[i]);
+        g_key_file_set_string_list (keyfile, "Debug", "breakpoints_disabled",
+                                    (const gchar *const *) off->pdata, off->len);
+        g_ptr_array_free (off, TRUE);
+    }
     expressions = g_new0 (char *, debug->watches->len + 1);
     for (i = 0; i < debug->watches->len; i++)
     {
@@ -1027,6 +1316,23 @@ debug_config_load (debugger_t *debug)
             bp->file = g_strndup (locations[i], separator - locations[i]);
             bp->line = (long) line;
             g_ptr_array_add (debug->breakpoints, bp);
+        }
+        g_strfreev (locations);
+        locations =
+            g_key_file_get_string_list (keyfile, "Debug", "breakpoints_disabled", &count, NULL);
+        for (i = 0; locations != NULL && i < count; i++)
+        {
+            guint k;
+
+            for (k = 0; k < debug->breakpoints->len; k++)
+            {
+                debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, k);
+                char *location = g_strdup_printf ("%s:%ld", bp->file, bp->line);
+
+                if (strcmp (location, locations[i]) == 0)
+                    bp->disabled = TRUE;
+                g_free (location);
+            }
         }
         g_strfreev (locations);
     }
@@ -1173,7 +1479,9 @@ debug_text_show (debugger_t *debug, const char *title, const char *content, gint
     if (*window_id == 0)
     {
         g_variant_dict_insert (&dict, "title", "s", title);
-        g_variant_dict_insert (&dict, "place", "s", "right");
+        // under the source, the panel of the debugger keeping the right
+        g_variant_dict_insert (&dict, "place", "s", "bottom");
+        g_variant_dict_insert (&dict, "size", "i", 25);
         g_variant_dict_insert (&dict, "focus", "b", FALSE);
         reply = debug_viewer_call (debug, "open", g_variant_dict_end (&dict));
         if (reply != NULL)
@@ -1195,23 +1503,31 @@ debug_text_show (debugger_t *debug, const char *title, const char *content, gint
 static void
 debug_output_show (debugger_t *debug)
 {
-    debug_text_show (debug, _ ("Debug output"), debug->output->str, &debug->output_window);
+    GVariantDict dict;
+    GVariant *reply;
+    gint64 lines = 1;
+    const char *p;
+
+    debug_text_show (debug, _ ("Debug console"), debug->console->str, &debug->console_window);
+    if (debug->console_window == 0)
+        return;
+    // the last of it in sight
+    for (p = debug->console->str; *p != '\0'; p++)
+        if (*p == '\n' && p[1] != '\0')
+            lines++;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", debug->console_window);
+    g_variant_dict_insert (&dict, "line", "x", lines);
+    reply = debug_viewer_call (debug, "scroll_to", g_variant_dict_end (&dict));
+    if (reply != NULL)
+        g_variant_unref (reply);
 }
 
 static void
 debug_watches_show (debugger_t *debug)
 {
-    guint i;
-
-    g_string_truncate (debug->watches_text, 0);
-    for (i = 0; i < debug->watches->len; i++)
-    {
-        const debug_watch_t *watch = g_ptr_array_index (debug->watches, i);
-
-        g_string_append_printf (debug->watches_text, "%s = %s\n", watch->expression,
-                                watch->value != NULL ? watch->value : _ ("<not evaluated>"));
-    }
-    debug_text_show (debug, _ ("Watches"), debug->watches_text->str, &debug->watches_window);
+    // the panel shows them
+    debug_session_refresh (debug);
 }
 
 static void
@@ -1238,8 +1554,7 @@ debug_watches_refresh (debugger_t *debug)
         g_free (command);
         g_free (quoted);
     }
-    if (debug->watches->len > 0 || debug->watches_window != 0)
-        debug_watches_show (debug);
+    debug_watches_show (debug);
 }
 
 static void
@@ -1254,8 +1569,7 @@ debug_watches_clear_values (debugger_t *debug)
         watch->pending_token = 0;
         g_clear_pointer (&watch->value, g_free);
     }
-    if (debug->watches_window != 0)
-        debug_watches_show (debug);
+    debug_watches_show (debug);
 }
 
 static void
@@ -1277,13 +1591,8 @@ debug_text_raise (debugger_t *debug, gint64 window_id)
 static void
 debug_output_append (debugger_t *debug, const char *text_value)
 {
-    char *valid = g_utf8_make_valid (text_value, -1);
-
-    g_string_append (debug->output, valid);
-    g_free (valid);
-    if (debug->output->len > 100000)
-        g_string_erase (debug->output, 0, debug->output->len - 100000);
-    debug_output_show (debug);
+    // the output of the program and what GDB says go to one console, as they come
+    debug_output_console (debug, text_value, FALSE);
 }
 
 /* Whether two names name the same file: GDB gives the real path, the editor the name the file
@@ -1316,6 +1625,8 @@ debug_session_live (const debugger_t *debug)
 static int
 debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp)
 {
+    if (bp->disabled)
+        return DEBUG_MARK_DISABLED;
     if (debug_session_live (debug) && bp->gdb_number == NULL)
         return DEBUG_MARK_PENDING;
     return DEBUG_MARK_BREAKPOINT;
@@ -1390,8 +1701,8 @@ debug_output_console (debugger_t *debug, const char *text_value, gboolean line)
         g_string_append_c (debug->console, '\n');
     if (debug->console->len > 100000)
         g_string_erase (debug->console, 0, debug->console->len - 100000);
-    if (debug->console_window != 0)
-        debug_text_show (debug, _ ("GDB console"), debug->console->str, &debug->console_window);
+    if (debug->console_window != 0 || debug_session_live (debug))
+        debug_output_show (debug);
 }
 
 static void
@@ -1409,6 +1720,87 @@ debug_clear_current (debugger_t *debug)
     g_free (file);
 }
 
+/* Whether @name stands in @line as a word of its own */
+static gboolean
+debug_line_names (const char *line, const char *name)
+{
+    const gsize len = strlen (name);
+    const char *p;
+
+    for (p = strstr (line, name); p != NULL; p = strstr (p + 1, name))
+    {
+        const gboolean before = p == line || !(g_ascii_isalnum (p[-1]) || p[-1] == '_');
+        const gboolean after = !(g_ascii_isalnum (p[len]) || p[len] == '_');
+
+        if (before && after)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+static void
+debug_notes_clear (debugger_t *debug)
+{
+    if (debug->host->clear_line_notes != NULL)
+    {
+        debug->host->clear_line_notes (debug->host, NULL);
+        debug->host->redraw (debug->host);
+    }
+}
+
+/* The values of the local variables after the lines of the function that name them, from its
+   start down to the line the program stopped on */
+static void
+debug_notes_show (debugger_t *debug)
+{
+    char *text = NULL;
+    char **lines;
+    long line, first;
+
+    debug_notes_clear (debug);
+    if (debug->host->set_line_note == NULL || debug->state != DEBUG_STOPPED
+        || debug->current_file == NULL || debug->locals->len == 0
+        || !g_file_get_contents (debug->current_file, &text, NULL, NULL))
+    {
+        g_free (text);
+        return;
+    }
+    lines = g_strsplit (text, "\n", -1);
+    g_free (text);
+    if (debug->current_line > (long) g_strv_length (lines))
+    {
+        g_strfreev (lines);
+        return;
+    }
+
+    // up to the start of the function: a line that opens with a brace, 40 lines at most
+    for (first = debug->current_line; first > 1 && first > debug->current_line - 40; first--)
+        if (lines[first - 1][0] == '{')
+            break;
+
+    for (line = first; line <= debug->current_line; line++)
+    {
+        GString *note = g_string_new (NULL);
+        guint i;
+
+        for (i = 0; i < debug->locals->len; i++)
+        {
+            const debug_local_t *local = g_ptr_array_index (debug->locals, i);
+
+            if (!debug_line_names (lines[line - 1], local->name))
+                continue;
+            if (note->len > 0)
+                g_string_append (note, ", ");
+            g_string_append_printf (note, "%s = %.40s", local->name, local->value);
+        }
+        if (note->len > 0)
+            debug->host->set_line_note (debug->host, debug->current_file, line, note->str);
+        g_string_free (note, TRUE);
+    }
+    g_strfreev (lines);
+    debug->host->redraw (debug->host);
+}
+
 /* The call stack, from the reply to -stack-list-frames */
 static void
 debug_reply_stack (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
@@ -1417,7 +1809,6 @@ debug_reply_stack (debugger_t *debug, const gdb_mi_record_t *reply, gpointer dat
     guint i;
 
     (void) data;
-    g_string_truncate (debug->stack_text, 0);
     g_ptr_array_set_size (debug->frames, 0);
     for (i = 0; stack != NULL && stack->items != NULL && i < stack->items->len; i++)
     {
@@ -1441,10 +1832,9 @@ debug_reply_stack (debugger_t *debug, const gdb_mi_record_t *reply, gpointer dat
             entry->label = g_strdup_printf ("#%s %s  %s", level != NULL ? level : "?",
                                             func != NULL ? func : "?",
                                             from != NULL ? from : _ ("<no source>"));
-        g_string_append_printf (debug->stack_text, "%s\n", entry->label);
         g_ptr_array_add (debug->frames, entry);
     }
-    debug_text_show (debug, _ ("Call stack"), debug->stack_text->str, &debug->stack_window);
+    debug_session_refresh (debug);
 }
 
 /* The local variables of the frame, from the reply to -stack-list-variables */
@@ -1455,7 +1845,6 @@ debug_reply_variables (debugger_t *debug, const gdb_mi_record_t *reply, gpointer
     guint i;
 
     (void) data;
-    g_string_truncate (debug->variables_text, 0);
     g_ptr_array_set_size (debug->locals, 0);
     for (i = 0; variables != NULL && variables->items != NULL && i < variables->items->len; i++)
     {
@@ -1473,11 +1862,10 @@ debug_reply_variables (debugger_t *debug, const gdb_mi_record_t *reply, gpointer
         local->value = value != NULL ? g_strdup (value)
             : type != NULL           ? g_strdup_printf ("{%s}", type)
                                      : g_strdup (_ ("<unavailable>"));
-        g_string_append_printf (debug->variables_text, "%s = %s\n", local->name, local->value);
         g_ptr_array_add (debug->locals, local);
     }
-    debug_text_show (debug, _ ("Local variables"), debug->variables_text->str,
-                     &debug->variables_window);
+    debug_notes_show (debug);
+    debug_session_refresh (debug);
 }
 
 /* The value of a watch */
@@ -1555,6 +1943,44 @@ debug_pty_open (debugger_t *debug)
     return TRUE;
 }
 #endif
+
+/* What GDB answers to a command typed for it: its words come on the console stream */
+static void
+debug_reply_console (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
+{
+    (void) data;
+    if (g_strcmp0 (reply->klass, "error") == 0 && gdb_mi_record_string (reply, "msg") != NULL)
+        debug_output_console (debug, gdb_mi_record_string (reply, "msg"), TRUE);
+}
+
+/* A command of GDB itself, typed in: what the panel does not have */
+static void
+debug_gdb_command (debugger_t *debug)
+{
+    char *command, *quoted, *line, *echo;
+
+    if (debug->gdb == NULL || !gdb_mi_session_alive (debug->gdb))
+    {
+        debug_error (debug, _ ("GDB is not running: Start the program first."));
+        return;
+    }
+    command =
+        input_dialog (_ ("GDB command"), _ ("Command:"), "gdb-command", "", INPUT_COMPLETE_NONE);
+    if (command == NULL || *g_strstrip (command) == '\0')
+    {
+        g_free (command);
+        return;
+    }
+    echo = g_strdup_printf ("(gdb) %s\n", command);
+    debug_output_console (debug, echo, FALSE);
+    g_free (echo);
+    quoted = gdb_mi_quote (command);
+    line = g_strconcat ("-interpreter-exec console ", quoted, NULL);
+    (void) debug_request (debug, debug_reply_console, NULL, NULL, line);
+    g_free (line);
+    g_free (quoted);
+    g_free (command);
+}
 
 /* The value of an expression asked for with Enter */
 static void
@@ -1647,6 +2073,9 @@ debug_finished (debugger_t *debug)
     debug->breakpoints_installed = FALSE;
     debug_clear_current (debug);
     debug_marks_show (debug, NULL);
+    debug_notes_clear (debug);
+    g_ptr_array_set_size (debug->locals, 0);
+    g_ptr_array_set_size (debug->frames, 0);
     debug_watches_clear_values (debug);
     debug_session_refresh (debug);
 }
@@ -1773,6 +2202,7 @@ debug_record (const char *line, void *data)
         if (g_strcmp0 (record->klass, "running") == 0)
         {
             debug->state = DEBUG_RUNNING;
+            debug_notes_clear (debug);
             debug_watches_clear_values (debug);
             debug_session_refresh (debug);
         }
@@ -1838,7 +2268,8 @@ debug_breakpoint_install (debugger_t *debug, debug_breakpoint_t *bp)
     gboolean sent;
 
     // -f: a breakpoint in a library not loaded yet waits for it
-    command = g_strconcat ("-break-insert -f ", quoted, NULL);
+    command =
+        g_strconcat (bp->disabled ? "-break-insert -f -d " : "-break-insert -f ", quoted, NULL);
     bp->pending_token = debug_request (debug, debug_reply_breakpoint, NULL, NULL, command);
     sent = bp->pending_token != 0;
     g_free (command);
@@ -1860,6 +2291,27 @@ debug_breakpoint_remove (debugger_t *debug, guint index)
         g_free (command);
     }
     g_ptr_array_remove_index (debug->breakpoints, index);
+}
+
+/* A breakpoint kept but not stopped on, or stopped on again */
+static void
+debug_breakpoint_toggle_enabled (debugger_t *debug, guint index)
+{
+    debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, index);
+
+    bp->disabled = !bp->disabled;
+    if (bp->gdb_number != NULL && gdb_mi_session_alive (debug->gdb))
+    {
+        char *command =
+            g_strconcat (bp->disabled ? "-break-disable " : "-break-enable ", bp->gdb_number, NULL);
+
+        (void) debug_send (debug, command);
+        g_free (command);
+    }
+    debug_breakpoints_sync (debug);
+    debug_marks_show (debug, NULL);
+    debug_config_save (debug);
+    debug_session_refresh (debug);
 }
 
 /* Two breakpoints on one line are one: the later goes */
@@ -2082,19 +2534,10 @@ debug_project_switch (debugger_t *debug, char *project)
     g_free (debug->project_dir);
     debug->project_dir = project;
     g_ptr_array_set_size (debug->frames, 0);
-    g_string_truncate (debug->output, 0);
-    g_string_truncate (debug->stack_text, 0);
-    g_string_truncate (debug->variables_text, 0);
     debug_config_load (debug);
     debug_marks_show (debug, NULL);
-    if (debug->output_window != 0)
+    if (debug->console_window != 0)
         debug_output_show (debug);
-    if (debug->stack_window != 0)
-        debug_text_show (debug, _ ("Call stack"), "", &debug->stack_window);
-    if (debug->variables_window != 0)
-        debug_text_show (debug, _ ("Local variables"), "", &debug->variables_window);
-    if (debug->watches_window != 0)
-        debug_watches_show (debug);
     debug_session_refresh (debug);
     return MC_EPR_OK;
 }
@@ -2668,10 +3111,7 @@ debug_start (void *data, void *edit)
     g_queue_clear_full (debug->startup_commands, g_free);
     debug_requests_clear (debug);
     debug_watches_clear_values (debug);
-    g_string_truncate (debug->output, 0);
     g_string_truncate (debug->console, 0);
-    g_string_truncate (debug->stack_text, 0);
-    g_string_truncate (debug->variables_text, 0);
     g_queue_push_tail (debug->startup_commands, g_strdup ("-gdb-set mi-async on"));
     g_queue_push_tail (debug->startup_commands, g_strdup ("-gdb-set startup-with-shell off"));
     debug_queue_quoted (debug, "-file-exec-and-symbols", absolute);
@@ -2699,6 +3139,7 @@ debug_start (void *data, void *edit)
         g_queue_push_tail (debug->startup_commands, g_string_free (args, FALSE));
     }
     (void) debug_session_show (debug, NULL);
+    debug_output_show (debug);
     debug_setup_next (debug);
     g_strfreev (argv);
     g_strfreev (environment_entries);
@@ -2856,11 +3297,31 @@ debug_expression_at_cursor (debugger_t *debug, void *edit)
     return debug->host->get_cursor_word (debug->host, edit);
 }
 
+/* The value of an expression, in a dialog that can add it to the watches; takes @expression */
+static mc_ep_result_t
+debug_evaluate_text (debugger_t *debug, char *expression)
+{
+    char *quoted, *command;
+    gboolean sent;
+
+    if (debug->state != DEBUG_STOPPED || debug->eval_pending)
+    {
+        g_free (expression);
+        return MC_EPR_FAILED;
+    }
+    quoted = gdb_mi_quote (expression);
+    command = g_strconcat ("-data-evaluate-expression ", quoted, NULL);
+    sent = debug_request (debug, debug_reply_evaluate, expression, g_free, command) != 0;
+    g_free (command);
+    g_free (quoted);
+    debug->eval_pending = sent;
+    return sent ? MC_EPR_OK : MC_EPR_FAILED;
+}
+
 static mc_ep_result_t
 debug_evaluate (debugger_t *debug, void *edit)
 {
-    char *expression, *quoted, *command;
-    gboolean sent;
+    char *expression;
 
     if (debug->state != DEBUG_STOPPED || debug->eval_pending)
         return MC_EPR_FAILED;
@@ -2878,13 +3339,7 @@ debug_evaluate (debugger_t *debug, void *edit)
             return MC_EPR_FAILED;
         }
     }
-    quoted = gdb_mi_quote (expression);
-    command = g_strconcat ("-data-evaluate-expression ", quoted, NULL);
-    sent = debug_request (debug, debug_reply_evaluate, expression, g_free, command) != 0;
-    g_free (command);
-    g_free (quoted);
-    debug->eval_pending = sent;
-    return sent ? MC_EPR_OK : MC_EPR_FAILED;
+    return debug_evaluate_text (debug, expression);
 }
 
 static mc_ep_result_t
@@ -2926,6 +3381,17 @@ debug_handle_event (void *data, void *edit, int event_id, void *payload)
     debugger_t *debug = (debugger_t *) data;
 
     (void) payload;
+    // the values are of the text as it was
+    if (event_id == MC_EP_EVENT_TEXT_CHANGED && edit != NULL
+        && debug->host->clear_line_notes != NULL)
+    {
+        char *file = debug->host->get_current_file (debug->host, edit);
+
+        if (file != NULL)
+            debug->host->clear_line_notes (debug->host, file);
+        g_free (file);
+        return MC_EPR_NOT_SUPPORTED;
+    }
     if (event_id != MC_EP_EVENT_FOCUS_IN || edit == NULL || !debug_stepping (debug))
         return MC_EPR_NOT_SUPPORTED;
     debug_editor_buttonbar (debug, WIDGET (edit));
@@ -2939,10 +3405,7 @@ debug_show_output (void *data, void *edit)
 
     (void) edit;
     debug_output_show (debug);
-    if (debug->output_window != 0)
-        debug_text_raise (debug, debug->output_window);
-    else if (debug->output->len != 0)
-        debug->host->message (debug->host, D_NORMAL, _ ("Debug output"), debug->output->str);
+    debug_text_raise (debug, debug->console_window);
     return MC_EPR_OK;
 }
 
@@ -2966,6 +3429,14 @@ debug_show_stack (void *data, void *edit)
     frame = listbox_run_with_data (selector, NULL);
     if (frame == NULL)
         return MC_EPR_FAILED;
+    debug_select_frame (debug, frame);
+    return MC_EPR_OK;
+}
+
+/* A frame of the call stack chosen: its source, its variables, and the mark of the line */
+static void
+debug_select_frame (debugger_t *debug, const debug_frame_t *frame)
+{
     if (frame->file != NULL && frame->line > 0 && debug->host->show_location != NULL)
         (void) debug->host->show_location (debug->host, frame->file, frame->line);
     {
@@ -2986,7 +3457,7 @@ debug_show_stack (void *data, void *edit)
         debug_breakpoints_sync (debug);
         debug_marks_show (debug, frame->file);
     }
-    return MC_EPR_OK;
+    debug_session_refresh (debug);
 }
 
 static mc_ep_result_t
@@ -3073,12 +3544,8 @@ debug_remove_watch (void *data, void *edit)
 static mc_ep_result_t
 debug_show_watches (void *data, void *edit)
 {
-    debugger_t *debug = (debugger_t *) data;
-
-    (void) edit;
-    debug_watches_show (debug);
-    debug_text_raise (debug, debug->watches_window);
-    return MC_EPR_OK;
+    // the watches are in the panel
+    return debug_session_show (data, edit);
 }
 
 static mc_ep_result_t
@@ -3127,6 +3594,9 @@ debug_stop (void *data, void *edit)
     debug->state = DEBUG_OFF;
     debug->breakpoints_installed = FALSE;
     debug_marks_show (debug, NULL);
+    debug_notes_clear (debug);
+    g_ptr_array_set_size (debug->locals, 0);
+    g_ptr_array_set_size (debug->frames, 0);
     debug_session_refresh (debug);
     return MC_EPR_OK;
 }
@@ -3172,14 +3642,10 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->breakpoints = g_ptr_array_new_with_free_func (debug_breakpoint_free);
     debug->watches = g_ptr_array_new_with_free_func (debug_watch_free);
     debug->startup_commands = g_queue_new ();
-    debug->output = g_string_new (NULL);
     debug->console = g_string_new (NULL);
     debug->requests = g_ptr_array_new_with_free_func (debug_request_free);
     debug->locals = g_ptr_array_new_with_free_func (debug_local_free);
-    debug->stack_text = g_string_new (NULL);
     debug->frames = g_ptr_array_new_with_free_func (debug_frame_free);
-    debug->variables_text = g_string_new (NULL);
-    debug->watches_text = g_string_new (NULL);
     debug->pty_master = -1;
     debug->pty_slave = -1;
     host->commands_register (host, DEBUG_KEYMAP_SECTION, N_ ("&Debugger"), debug_commands);
@@ -3206,11 +3672,7 @@ debug_close (void *data)
     g_ptr_array_free (debug->breakpoints, TRUE);
     g_ptr_array_free (debug->watches, TRUE);
     g_queue_free_full (debug->startup_commands, g_free);
-    g_string_free (debug->output, TRUE);
-    g_string_free (debug->stack_text, TRUE);
     g_ptr_array_free (debug->frames, TRUE);
-    g_string_free (debug->variables_text, TRUE);
-    g_string_free (debug->watches_text, TRUE);
     g_free (debug->project_dir);
     g_free (debug->current_file);
     if (debug->build_signal != 0)
@@ -3251,6 +3713,14 @@ debug_file_open (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+static mc_ep_result_t
+debug_act_gdb_command (void *data, void *edit)
+{
+    (void) edit;
+    debug_gdb_command ((debugger_t *) data);
+    return MC_EPR_OK;
+}
+
 static const mc_ep_action_t debug_actions[] = {
     { "Open project", debug_open_project },
     { "Project status", debug_project_status },
@@ -3273,6 +3743,7 @@ static const mc_ep_action_t debug_actions[] = {
     { "Send input", debug_send_input },
     { "Debug session", debug_session_show },
     { "Stop", debug_stop },
+    { "GDB command", debug_act_gdb_command },
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
@@ -3292,13 +3763,13 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
     { DEBUG_MENU, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
     { DEBUG_MENU, N_ ("Step o&ut"), DEBUG_ACT_FINISH, NULL },
-    { DEBUG_MENU, N_ ("&Output"), DEBUG_ACT_OUTPUT, NULL },
+    { DEBUG_MENU, N_ ("Co&nsole"), DEBUG_ACT_OUTPUT, NULL },
     { DEBUG_MENU, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
     { DEBUG_MENU, N_ ("&Add watch..."), DEBUG_ACT_ADD_WATCH, NULL },
     { DEBUG_MENU, N_ ("&Remove watch..."), DEBUG_ACT_REMOVE_WATCH, NULL },
-    { DEBUG_MENU, N_ ("Show watc&hes"), DEBUG_ACT_WATCHES, NULL },
-    { DEBUG_MENU, N_ ("Send li&ne..."), DEBUG_ACT_INPUT, NULL },
-    { DEBUG_MENU, N_ ("Debug session..."), DEBUG_ACT_SESSION, NULL },
+    { DEBUG_MENU, N_ ("Send &line..."), DEBUG_ACT_INPUT, NULL },
+    { DEBUG_MENU, N_ ("GDB co&mmand..."), DEBUG_ACT_GDB_COMMAND, NULL },
+    { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
     { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
 };
 

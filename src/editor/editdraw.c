@@ -392,7 +392,7 @@ edit_view_width (WEdit *edit, int lines, int cols)
 static inline void
 print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long end_col,
                  line_s line[], char *status, int bookmarked, const char *marker_glyph,
-                 int marker_color)
+                 int marker_color, const char *note)
 {
     Widget *w = WIDGET (edit);
     line_s *p;
@@ -400,6 +400,7 @@ print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long 
     int i;
     int wrap_start;
     int len;
+    int printed;
 
     x = start_col_real;
     x1 = start_col + EDIT_TEXT_HORIZONTAL_OFFSET + edit_options.line_state_width;
@@ -476,6 +477,7 @@ print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long 
     edit_move (x1, y);
 
     i = 1;
+    printed = 0;
     for (p = line; p->ch != 0; p++)
     {
         int style;
@@ -517,6 +519,19 @@ print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long 
         }
 
         tty_print_anychar (textchar);
+        printed++;
+    }
+
+    // a note of a plugin after the text, the value of a variable for one, where there is room
+    if (note != NULL && len - printed > 4)
+    {
+        char *text = g_strconcat ("  ", note, (char *) NULL);
+
+        tty_setcolor (mc_skin_color_is_set ("editor", "editnote")
+                          ? mc_skin_color_get ("editor", "editnote")
+                          : EDITOR_WHITESPACE_COLOR);
+        tty_print_string (str_fit_to_term (text, len - printed, J_LEFT_FIT));
+        g_free (text);
     }
 }
 
@@ -953,7 +968,11 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
         line_stat[LINE_STATE_WIDTH - 1] = 'v';
 
     print_to_widget (edit, row, start_col, start_col_real, end_col, line, line_stat, book_mark,
-                     marker_glyph, marker_color);
+                     marker_glyph, marker_color,
+                     edit->line_notes != NULL
+                         ? g_hash_table_lookup (edit->line_notes,
+                                                GINT_TO_POINTER ((gint) (edit->start_line + row)))
+                         : NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */

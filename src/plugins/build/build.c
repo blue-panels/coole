@@ -89,6 +89,8 @@ typedef struct
     GString *output;
     GString *pending;  // a line not ended yet
     gint64 window;
+    // asked for by another plugin, before a start: the window goes when the build is fine
+    gboolean quiet;
     GPtrArray *diagnostics;  // build_diagnostic_t
     int current;
     long commands[BUILD_CMD_COUNT];
@@ -339,6 +341,18 @@ build_finished (build_t *build, int status)
     g_free (summary);
     build_output_show (build);
     build->current = -1;
+    if (build->quiet && WIFEXITED (status) && WEXITSTATUS (status) == 0 && build->window != 0)
+    {
+        GVariantDict dict;
+        GVariant *reply;
+
+        g_variant_dict_init (&dict, NULL);
+        g_variant_dict_insert (&dict, "id", "x", build->window);
+        reply = build_viewer (build, "close", &dict);
+        if (reply != NULL)
+            g_variant_unref (reply);
+        build->window = 0;
+    }
     if (build->service)
     {
         GVariantDict dict;
@@ -519,6 +533,7 @@ build_run_command (build_t *build, int cmd, void *edit)
     {
     case BUILD_CMD_RUN:
     {
+        build->quiet = FALSE;
         char *root =
             build_root_of (build, edit != NULL ? edit : build->host->window_top_file (build->host));
 
@@ -689,7 +704,12 @@ build_call (void *data, const char *method, GVariant *args, GError **error)
         g_variant_dict_insert (&reply, "optimized", "b", elf.optimized);
     }
     else if (strcmp (method, "run") == 0 && root != NULL)
-        g_variant_dict_insert (&reply, "started", "b", build_start (build, root));
+    {
+        const gboolean started = build_start (build, root);
+
+        build->quiet = started;
+        g_variant_dict_insert (&reply, "started", "b", started);
+    }
     else if (strcmp (method, "running") == 0)
         g_variant_dict_insert (&reply, "running", "b", build->pid != 0);
     else

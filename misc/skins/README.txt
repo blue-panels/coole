@@ -254,6 +254,11 @@ applies individually to each of these three properties.
             The line where the debugged program stopped; unset, the
             color of bookmarkfound
 
+        editnote
+            Notes of a plugin after the text of a line: the values of the
+            variables of the debugger; unset, the color of
+            editwhitespace
+
         builderror
         buildwarning
             Marks of a line the compiler has named an error or a
