@@ -462,8 +462,8 @@ print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long 
                 tty_print_string (edit_fold_close_char);
                 continue;
             }
-            // the mark of a plugin, between the line number and the fold mark
-            if (i == LINE_STATE_WIDTH - 2 && marker_glyph != NULL)
+            // the mark of a plugin, in the first column, before the line number and over a bookmark
+            if (i == 0 && marker_glyph != NULL)
             {
                 tty_setcolor (marker_color);
                 tty_print_string (marker_glyph);
