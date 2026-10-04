@@ -54,6 +54,9 @@
 
 /*** file scope variables ************************************************************************/
 
+/* The dialogs that list entries of an index open now: the index they come from is not freed */
+static int ui_depth = 0;
+
 /* Static state shared with the dialog callback; safe because the dialog is modal. */
 static WInput *ctags_sel_input = NULL;
 static WListbox *ctags_sel_list = NULL;
@@ -70,6 +73,19 @@ static WTable *ctags_members_table = NULL;
 static GPtrArray *ctags_members_rows = NULL; /* GPtrArray<ctags_member_row_t*>, owned */
 
 /*** file scope functions ************************************************************************/
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+ctags_ui_run (WDialog *dlg)
+{
+    int ret;
+
+    ui_depth++;
+    ret = dlg_run (dlg);
+    ui_depth--;
+    return ret;
+}
 
 /* --------------------------------------------------------------------------------------------- */
 
@@ -374,7 +390,7 @@ ctags_ui_select (const char *title, GPtrArray *entries, const char *initial_filt
     /* Initial fill */
     ctags_sel_refilter ();
 
-    if (dlg_run (dlg) == B_ENTER)
+    if (ctags_ui_run (dlg) == B_ENTER)
     {
         char *text = NULL;
 
@@ -484,7 +500,7 @@ ctags_ui_manage_repos (GSList **repos)
         GROUP (dlg),
         button_new (dlg_h - 2, (dlg_w - 10) / 2, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL));
 
-    dlg_run (dlg);
+    ctags_ui_run (dlg);
 
     {
         GSList *l = *repos;
@@ -762,7 +778,7 @@ ctags_ui_select_refs (const char *title, GPtrArray *entries)
     ctags_refs_table = tbl;
     ctags_refs_entries = entries;
 
-    if (dlg_run (dlg) == B_ENTER)
+    if (ctags_ui_run (dlg) == B_ENTER)
     {
         int row = table_get_current (tbl);
 
@@ -889,7 +905,7 @@ ctags_ui_select_members (const char *scope, GPtrArray *rows)
     ctags_members_table = tbl;
     ctags_members_rows = rows;
 
-    if (dlg_run (dlg) == B_ENTER)
+    if (ctags_ui_run (dlg) == B_ENTER)
     {
         int row = table_get_current (tbl);
 
@@ -910,3 +926,11 @@ ctags_ui_select_members (const char *scope, GPtrArray *rows)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+ctags_ui_busy (void)
+{
+    return ui_depth > 0;
+}

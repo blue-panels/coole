@@ -72,6 +72,10 @@ void ctags_ui_set_root_dir (const char *root_dir);
 /* A word for the kind letter of an entry: "func", "struct"...; "" when unknown */
 const char *ctags_kind_label (char kind);
 
+/* Whether a dialog that lists entries of an index is open: an index built again meanwhile keeps
+   the old entries till it is closed */
+gboolean ctags_ui_busy (void);
+
 /*** inline functions ****************************************************************************/
 
 #endif /* MC__CTAGS_UI_H */

@@ -1062,7 +1062,8 @@ debug_run_command (debugger_t *debug, int cmd, void *edit)
         gboolean started = FALSE;
 
         g_variant_dict_init (&args, NULL);
-        if (file != NULL)
+        // a name that is no UTF-8 cannot go as a string: the project then
+        if (file != NULL && g_utf8_validate (file, -1, NULL))
             g_variant_dict_insert (&args, "file", "s", file);
         else if (debug->project_dir != NULL)
             g_variant_dict_insert (&args, "root", "s", debug->project_dir);
