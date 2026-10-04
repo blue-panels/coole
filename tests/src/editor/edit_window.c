@@ -602,6 +602,45 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A tree on the left edge: the file moves to the right of it, the Preview on the right keeps its
+   place, and both go back when the tree goes */
+START_TEST (test_window_make_room_on_the_right)
+{
+    WEditWindow *win = &test_win->window;
+    test_window_t *right = sticky_window_new (1, 50, 22, 30);
+    test_window_t *tree;
+
+    edit_window_toggle_fullscreen (win);
+    edit_window_toggle_fullscreen (win);
+    edit_window_make_room (&right->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 50);
+
+    tree = sticky_window_new (1, 0, 22, 20);
+    edit_window_make_room (&tree->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 20, 22, 30);
+    test_assert_rect (&WIDGET (right)->rect, 1, 50, 22, 30);
+
+    edit_window_give_room_back (&tree->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 50);
+
+    edit_window_give_room_back (&right->window);
+    ck_assert_int_eq (win->fullscreen, 1);
+
+    // alone with the file: the file takes all the rest
+    edit_window_make_room (&tree->window);
+    ck_assert_int_eq (win->fullscreen, 0);
+    test_assert_rect (&WIDGET (win)->rect, 1, 20, 22, 60);
+    edit_window_give_room_back (&tree->window);
+    ck_assert_int_eq (win->fullscreen, 1);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 80);
+
+    sticky_window_free (tree);
+    sticky_window_free (right);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* Esc puts the neighbors back too, and draws them as before */
 START_TEST (test_window_sticky_cancel)
 {
@@ -1109,6 +1148,7 @@ main (void)
     tcase_add_test (tc_core, test_window_sticky_two_over_one);
     tcase_add_test (tc_core, test_window_sticky_keeps_the_room);
     tcase_add_test (tc_core, test_window_make_room_from_two);
+    tcase_add_test (tc_core, test_window_make_room_on_the_right);
     tcase_add_test (tc_core, test_window_sticky_cancel);
     tcase_add_test (tc_core, test_window_sticky_screen_edge);
     tcase_add_test (tc_core, test_window_sticky_in_the_way);

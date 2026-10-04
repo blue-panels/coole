@@ -57,6 +57,8 @@ char *edit_window_close_char = NULL;
 
 /*** forward declarations (file scope functions) *************************************************/
 
+static int edit_window_room_edge (const WRect *r, edit_window_room_side_t side);
+
 static void edit_window_place_bars (WEditWindow *win);
 
 /*** file scope variables ************************************************************************/
@@ -593,10 +595,8 @@ drag_end (WEditWindow *win, gboolean keep)
                 if (m == NULL || !edit_window_is_window (m))
                     continue;
                 mw = EDIT_WINDOW (m);
-                if (room->above && mw->moved_hedge)
-                    room->edge_after = m->rect.y + m->rect.lines - 1;
-                else if (!room->above && mw->moved_vedge)
-                    room->edge_after = m->rect.x + m->rect.cols - 1;
+                if (room->side == EDIT_WINDOW_ROOM_ABOVE ? mw->moved_hedge : mw->moved_vedge)
+                    room->edge_after = edit_window_room_edge (&m->rect, room->side);
             }
         }
         else if (!keep && ow->fullscreen == 0 && !rects_are_equal (&wl->rect, &ow->drag_rect))
@@ -1079,13 +1079,29 @@ edit_window_hide (WEditWindow *win)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/* The edge of a window a room moves: its bottom, its right side or its left side */
+static int
+edit_window_room_edge (const WRect *r, edit_window_room_side_t side)
+{
+    switch (side)
+    {
+    case EDIT_WINDOW_ROOM_ABOVE:
+        return r->y + r->lines - 1;
+    case EDIT_WINDOW_ROOM_LEFT:
+        return r->x + r->cols - 1;
+    default:
+        return r->x;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /**
- * Make room for a window that does not fill the screen: to the left of @win, when @win takes all
- * the height of the screen, or else above it.  The topmost fullscreen window stops being
- * fullscreen and takes that area; every other window that goes into @win shrinks out of it, its
- * right side (or its bottom) put next to @win.  Nothing is done when the fullscreen window has no
- * room; a window that would become smaller than its smallest size is left as it is.  The edge
- * each window moved is remembered, to be put back.
+ * Make room for a window that does not fill the screen: when @win takes all the height of the
+ * screen, to the left of it, or to the right of it when it is on the left edge; else above it.
+ * The topmost fullscreen window stops being fullscreen and takes that area; every other window
+ * that goes into @win shrinks out of it, its side (or its bottom) put next to @win.  Nothing is
+ * done when the fullscreen window has no room; a window that would become smaller than its
+ * smallest size is left as it is.  The edge each window moved is remembered, to be put back.
  *
  * @param win window to make room for
  */
@@ -1096,7 +1112,8 @@ edit_window_make_room (WEditWindow *win)
     Widget *w = WIDGET (win);
     WGroup *g = w->owner;
     WEditWindow *top = NULL;
-    gboolean left;
+    edit_window_room_side_t side;
+    gboolean full_height;
     WRect a;
     GList *l;
 
@@ -1104,8 +1121,15 @@ edit_window_make_room (WEditWindow *win)
         return;
 
     edit_window_area (DIALOG (g), &a);
-    // a window of all the height: the room is to the left of it, else above it
-    left = (w->rect.y <= a.y && w->rect.y + w->rect.lines >= a.y + a.lines && w->rect.x > a.x);
+    /* a window of all the height: the room is on the side of it the screen goes on, else above
+       it */
+    full_height = w->rect.y <= a.y && w->rect.y + w->rect.lines >= a.y + a.lines;
+    if (full_height && w->rect.x > a.x)
+        side = EDIT_WINDOW_ROOM_LEFT;
+    else if (full_height && w->rect.x + w->rect.cols < a.x + a.cols)
+        side = EDIT_WINDOW_ROOM_RIGHT;
+    else
+        side = EDIT_WINDOW_ROOM_ABOVE;
 
     for (l = g->widgets; l != NULL; l = g_list_next (l))
     {
@@ -1118,8 +1142,10 @@ edit_window_make_room (WEditWindow *win)
 
     // a fullscreen window with no room stays as it is, and so does everything else
     if (top != NULL
-        && (left ? w->rect.x - a.x < top->klass->min_cols
-                 : w->rect.y - a.y < top->klass->min_lines))
+        && (side == EDIT_WINDOW_ROOM_LEFT ? w->rect.x - a.x < top->klass->min_cols
+                : side == EDIT_WINDOW_ROOM_RIGHT
+                ? a.x + a.cols - (w->rect.x + w->rect.cols) < top->klass->min_cols
+                : w->rect.y - a.y < top->klass->min_lines))
         return;
 
     win->rooms = g_array_new (FALSE, FALSE, sizeof (edit_window_room_t));
@@ -1138,8 +1164,13 @@ edit_window_make_room (WEditWindow *win)
         if (ow == top)
         {
             r = a;
-            if (left)
+            if (side == EDIT_WINDOW_ROOM_LEFT)
                 r.cols = w->rect.x - a.x;
+            else if (side == EDIT_WINDOW_ROOM_RIGHT)
+            {
+                r.x = w->rect.x + w->rect.cols;
+                r.cols = a.x + a.cols - r.x;
+            }
             else
                 r.lines = w->rect.y - a.y;
             // fullscreen again when it takes the whole screen again
@@ -1154,11 +1185,19 @@ edit_window_make_room (WEditWindow *win)
             r = wl->rect;
             if (!rects_are_overlapped (&wl->rect, &w->rect))
                 continue;
-            if (left)
+            if (side == EDIT_WINDOW_ROOM_LEFT)
             {
                 if (wl->rect.x >= w->rect.x)
                     continue;
                 r.cols = w->rect.x - wl->rect.x;
+            }
+            else if (side == EDIT_WINDOW_ROOM_RIGHT)
+            {
+                // a window that goes into @win shrinks out of it, if it ends after it
+                if (wl->rect.x + wl->rect.cols <= w->rect.x + w->rect.cols)
+                    continue;
+                r.x = w->rect.x + w->rect.cols;
+                r.cols = wl->rect.x + wl->rect.cols - r.x;
             }
             else
             {
@@ -1171,13 +1210,13 @@ edit_window_make_room (WEditWindow *win)
         }
 
         room.id = wl->id;
-        room.above = !left;
-        if (ow == top)
-            room.edge_before = left ? a.x + a.cols - 1 : a.y + a.lines - 1;
-        else
-            room.edge_before =
-                left ? wl->rect.x + wl->rect.cols - 1 : wl->rect.y + wl->rect.lines - 1;
-        room.edge_after = left ? r.x + r.cols - 1 : r.y + r.lines - 1;
+        room.side = side;
+        {
+            const WRect *before = ow == top ? &a : &wl->rect;
+
+            room.edge_before = edit_window_room_edge (before, side);
+        }
+        room.edge_after = edit_window_room_edge (&r, side);
         room.user_moves = ow->user_moves;
         g_array_append_val (win->rooms, room);
 
@@ -1233,13 +1272,18 @@ edit_window_give_room_back (WEditWindow *win)
         ow = EDIT_WINDOW (wt);
         r = wt->rect;
         if (ow->fullscreen != 0 || ow->user_moves != room->user_moves
-            || (room->above ? r.y + r.lines - 1 : r.x + r.cols - 1) != room->edge_after)
+            || edit_window_room_edge (&r, room->side) != room->edge_after)
             continue;
 
-        if (room->above)
+        if (room->side == EDIT_WINDOW_ROOM_ABOVE)
             r.lines = room->edge_before - r.y + 1;
-        else
+        else if (room->side == EDIT_WINDOW_ROOM_LEFT)
             r.cols = room->edge_before - r.x + 1;
+        else
+        {
+            r.cols += r.x - room->edge_before;
+            r.x = room->edge_before;
+        }
 
         if (ow->room_fullscreen != 0 && rects_are_equal (&r, &a))
         {
@@ -1473,11 +1517,12 @@ edit_window_fit_area (WDialog *h, const WRect *old)
         for (i = 0; ow->rooms != NULL && i < ow->rooms->len; i++)
         {
             edit_window_room_t *room = &g_array_index (ow->rooms, edit_window_room_t, i);
-            const int old_end = room->above ? old->y + old->lines : old->x + old->cols;
-            const int end = room->above ? a.y + a.lines : a.x + a.cols;
+            const gboolean above = room->side == EDIT_WINDOW_ROOM_ABOVE;
+            const int old_end = above ? old->y + old->lines : old->x + old->cols;
+            const int end = above ? a.y + a.lines : a.x + a.cols;
 
-            room->edge_before = fit_room_edge (wins, room->above, room->edge_before, old_end, end);
-            room->edge_after = fit_room_edge (wins, room->above, room->edge_after, old_end, end);
+            room->edge_before = fit_room_edge (wins, above, room->edge_before, old_end, end);
+            room->edge_after = fit_room_edge (wins, above, room->edge_after, old_end, end);
         }
     }
 
