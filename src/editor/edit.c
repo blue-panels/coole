@@ -2690,6 +2690,8 @@ edit_clean_internal (WEdit *edit, gboolean invalidate_runtime_handle)
 
     edit_free_syntax_rules (edit);
     book_mark_flush (edit, -1);
+    if (edit->line_notes != NULL)
+        g_clear_pointer (&edit->line_notes, g_hash_table_destroy);
     edit_fold_flush (edit);
 
     edit_buffer_clean (&edit->buffer);

@@ -178,6 +178,12 @@ typedef struct mc_editor_host_t
 
     /* The window of a file to the front, or a new one; the cursor stays where it was */
     gboolean (*open_file) (struct mc_editor_host_t *host, const char *file);
+
+    /* A note after the text of a 1-based line of every window of a file, NULL takes it off;
+       clear_line_notes() takes all of them off a file, or (NULL) off all files */
+    void (*set_line_note) (struct mc_editor_host_t *host, const char *file, long line,
+                           const char *text);
+    void (*clear_line_notes) (struct mc_editor_host_t *host, const char *file);
     /* A line of a file in its window, or in a new one, without a step in the navigation
        history */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);

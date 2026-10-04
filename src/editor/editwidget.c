@@ -934,6 +934,62 @@ editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long l
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+editor_host_set_line_note_impl (mc_editor_host_t *host, const char *file, long line,
+                                const char *text)
+{
+    GList *item;
+
+    if (file == NULL || line <= 0)
+        return;
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (!editor_host_same_file (edit->filename, file))
+            continue;
+        if (edit->line_notes == NULL)
+        {
+            if (text == NULL)
+                continue;
+            edit->line_notes = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, g_free);
+        }
+        if (text != NULL)
+            g_hash_table_insert (edit->line_notes, GINT_TO_POINTER ((gint) (line - 1)),
+                                 g_strdup (text));
+        else
+            g_hash_table_remove (edit->line_notes, GINT_TO_POINTER ((gint) (line - 1)));
+        edit->force |= REDRAW_COMPLETELY;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_clear_line_notes_impl (mc_editor_host_t *host, const char *file)
+{
+    GList *item;
+
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (edit->line_notes == NULL
+            || (file != NULL && !editor_host_same_file (edit->filename, file)))
+            continue;
+        g_hash_table_remove_all (edit->line_notes);
+        edit->force |= REDRAW_COMPLETELY;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static gboolean
 editor_host_open_file_impl (mc_editor_host_t *host, const char *file)
 {
@@ -1077,6 +1133,8 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->command_id = editor_host_command_id_impl;
     ctx->host->command_lookup = editor_host_command_lookup_impl;
     ctx->host->open_file = editor_host_open_file_impl;
+    ctx->host->set_line_note = editor_host_set_line_note_impl;
+    ctx->host->clear_line_notes = editor_host_clear_line_notes_impl;
     ctx->host->show_location = editor_host_show_location_impl;
     ctx->host->save_modified_files = editor_host_save_modified_files_impl;
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
