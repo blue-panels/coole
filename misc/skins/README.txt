@@ -356,6 +356,12 @@ applies individually to each of these three properties.
             that line when it has a breakpoint (default: a pointer and a
             diamond; > @ on a terminal that is not UTF-8)
 
+        tree-closed-char
+        tree-open-char
+            Marks of a closed and an open directory in the tree of the
+            project (default: a pointer and a triangle; + and - on a
+            terminal that is not UTF-8)
+
         build-error-char
         build-warning-char
             Marks of a line the compiler has named an error or a warning

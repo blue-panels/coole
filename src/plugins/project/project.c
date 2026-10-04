@@ -88,6 +88,9 @@ typedef struct
     long commands[PROJECT_CMD_COUNT];
     project_tree_t *tree;
     gboolean service;
+    // the marks of a closed and an open directory in the tree, from the skin
+    char *glyph_closed;
+    char *glyph_open;
 } project_t;
 
 /* a row of the tree */
@@ -668,10 +671,13 @@ project_tree_draw (project_tree_t *tree)
             for (i = 0; i < r->depth; i++)
                 g_string_append (line, "  ");
             if (r->dir)
+            {
                 g_string_append (line,
                                  g_hash_table_contains (tree->expanded, r->rel)
-                                     ? (mc_global.utf8_display ? "▾ " : "- ")
-                                     : (mc_global.utf8_display ? "▸ " : "+ "));
+                                     ? tree->project->glyph_open
+                                     : tree->project->glyph_closed);
+                g_string_append_c (line, ' ');
+            }
             else
                 g_string_append (line, "  ");
             g_string_append (line, r->name);
@@ -1255,6 +1261,10 @@ project_open (mc_editor_host_t *host, void *editor_dialog)
     (void) editor_dialog;
     project->host = host;
     project->recent = g_ptr_array_new_with_free_func (g_free);
+    project->glyph_closed =
+        mc_skin_get ("widget-editor", "tree-closed-char", mc_global.utf8_display ? "\u25ba" : "+");
+    project->glyph_open =
+        mc_skin_get ("widget-editor", "tree-open-char", mc_global.utf8_display ? "\u25bc" : "-");
     host->commands_register (host, PROJECT_KEYMAP_SECTION, N_ ("&Project"), project_commands);
     for (i = 0; i < PROJECT_CMD_COUNT; i++)
         project->commands[i] = host->command_id (host, project_commands[i].name);
@@ -1281,6 +1291,8 @@ project_close (void *data)
     project_files_drop (project);
     g_ptr_array_free (project->recent, TRUE);
     g_free (project->root);
+    g_free (project->glyph_closed);
+    g_free (project->glyph_open);
     g_free (project);
 }
 
