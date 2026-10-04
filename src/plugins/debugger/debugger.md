@@ -151,13 +151,13 @@ A frame without its source is named in the panel and opens nothing.
 **○**
 : a breakpoint that is disabled
 
-**◌**
+**◊**
 : a breakpoint GDB has not taken yet, or has refused
 
-**▶**
+**►**
 : the line the program stopped on
 
-**◉**
+**♦**
 : the line the program stopped on, with a breakpoint
 
 A breakpoint moves with its line as lines are inserted or deleted above it;

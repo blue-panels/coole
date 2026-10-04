@@ -347,20 +347,20 @@ applies individually to each of these three properties.
         breakpoint-pending-char
         breakpoint-disabled-char
             Marks of a breakpoint in the gutter: taken by GDB, not taken
-            yet or refused, disabled (default: a filled, a dotted and an
-            empty circle; o ? - on a terminal that is not UTF-8)
+            yet or refused, disabled (default: a filled circle, a lozenge
+            and an empty circle; o ? - on a terminal that is not UTF-8)
 
         exec-char
         exec-breakpoint-char
             Mark of the line where the debugged program stopped, and of
-            that line when it has a breakpoint (default: a triangle and a
-            circle with a dot; > @ on a terminal that is not UTF-8)
+            that line when it has a breakpoint (default: a pointer and a
+            diamond; > @ on a terminal that is not UTF-8)
 
         build-error-char
         build-warning-char
             Marks of a line the compiler has named an error or a warning
-            of (default: a cross and !; E and ! on a terminal that is not
-            UTF-8)
+            of (default: a multiplication sign and !; E and ! on a
+            terminal that is not UTF-8)
 
 
 Aliases section

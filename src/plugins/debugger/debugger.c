@@ -144,13 +144,13 @@ static const mc_ep_marker_kind_t debug_mark_kinds[DEBUG_MARK_COUNT] = {
     { "debugger.breakpoint", "breakpoint-char", "\u25cf", "o", "breakpoint", "breakpointline", NULL,
       10, "brightred" },
     // GDB has not taken it yet, or has refused it
-    { "debugger.breakpoint-pending", "breakpoint-pending-char", "\u25cc", "?", "breakpointpending",
+    { "debugger.breakpoint-pending", "breakpoint-pending-char", "\u25ca", "?", "breakpointpending",
       "breakpointline", NULL, 12, "red" },
     { "debugger.breakpoint-disabled", "breakpoint-disabled-char", "\u25cb", "-",
       "breakpointdisabled", NULL, NULL, 11, NULL },
-    { "debugger.exec", "exec-char", "\u25b6", ">", "execmark", "execline", "bookmarkfound", 20,
+    { "debugger.exec", "exec-char", "\u25ba", ">", "execmark", "execline", "bookmarkfound", 20,
       "yellow" },
-    { "debugger.exec-breakpoint", "exec-breakpoint-char", "\u25c9", "@", "execmark", "execline",
+    { "debugger.exec-breakpoint", "exec-breakpoint-char", "\u2666", "@", "execmark", "execline",
       "bookmarkfound", 21, "brightred" },
 };
 

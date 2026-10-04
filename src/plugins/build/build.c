@@ -111,7 +111,7 @@ static const mc_ep_command_t build_commands[BUILD_CMD_COUNT + 1] = {
 };
 
 static const mc_ep_marker_kind_t build_mark_kinds[BUILD_MARK_COUNT] = {
-    { "build.error", "build-error-char", "✖", "E", "builderror", NULL, NULL, 6, "brightred" },
+    { "build.error", "build-error-char", "\u00d7", "E", "builderror", NULL, NULL, 6, "brightred" },
     { "build.warning", "build-warning-char", "!", "!", "buildwarning", NULL, NULL, 5, "yellow" },
 };
 
