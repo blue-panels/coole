@@ -244,45 +244,325 @@ gdb_mi_quote (const char *value)
     return g_string_free (out, FALSE);
 }
 
-char *
-gdb_mi_field (const char *record, const char *name)
-{
-    char *needle;
-    const char *p;
-    GString *out;
+/* --------------------------------------------------------------------------------------------- */
 
-    if (*name == '\0' && record[0] != '\0' && record[1] == '"')
-        p = record + 2;
-    else
+static void
+gdb_mi_value_free (gpointer data)
+{
+    gdb_mi_value_t *value = (gdb_mi_value_t *) data;
+
+    if (value == NULL)
+        return;
+    g_free (value->name);
+    g_free (value->string);
+    if (value->items != NULL)
+        g_ptr_array_free (value->items, TRUE);
+    g_free (value);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gdb_mi_value_t *
+gdb_mi_value_new (gdb_mi_value_kind_t kind)
+{
+    gdb_mi_value_t *value = g_new0 (gdb_mi_value_t, 1);
+
+    value->kind = kind;
+    if (kind != GDB_MI_STRING)
+        value->items = g_ptr_array_new_with_free_func (gdb_mi_value_free);
+    return value;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A C string of GDB, from its opening quote; NULL when it is not closed */
+static char *
+gdb_mi_parse_cstring (const char **p)
+{
+    GString *out = g_string_new (NULL);
+    const char *s = *p + 1;
+
+    for (; *s != '\0' && *s != '"'; s++)
     {
-        needle = g_strconcat (name, "=\"", NULL);
-        p = strstr (record, needle);
-        while (p != NULL && p > record && p[-1] != ',' && p[-1] != '{')
-            p = strstr (p + 1, needle);
-        g_free (needle);
-        if (p != NULL)
-            p += strlen (name) + 2;
-    }
-    if (p == NULL)
-        return NULL;
-    out = g_string_new (NULL);
-    while (*p != '\0' && *p != '"')
-    {
-        if (*p == '\\' && p[1] != '\0')
+        if (*s != '\\' || s[1] == '\0')
         {
-            p++;
-            if (*p == 'n')
-                g_string_append_c (out, '\n');
-            else if (*p == 'r')
-                g_string_append_c (out, '\r');
-            else if (*p == 't')
-                g_string_append_c (out, '\t');
-            else
-                g_string_append_c (out, *p);
+            g_string_append_c (out, *s);
+            continue;
+        }
+        s++;
+        switch (*s)
+        {
+        case 'n':
+            g_string_append_c (out, '\n');
+            break;
+        case 'r':
+            g_string_append_c (out, '\r');
+            break;
+        case 't':
+            g_string_append_c (out, '\t');
+            break;
+        case 'e':
+            g_string_append_c (out, '\033');
+            break;
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        {
+            // an octal byte: a character of a name in UTF-8 comes so
+            int byte = 0, n;
+
+            for (n = 0; n < 3 && *s >= '0' && *s <= '7'; n++, s++)
+                byte = byte * 8 + (*s - '0');
+            s--;
+            g_string_append_c (out, (char) byte);
+            break;
+        }
+        default:
+            g_string_append_c (out, *s);
+            break;
+        }
+    }
+    if (*s != '"')
+    {
+        g_string_free (out, TRUE);
+        return NULL;
+    }
+    *p = s + 1;
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gdb_mi_value_t *gdb_mi_parse_value (const char **p);
+
+/* name=value; NULL on an error */
+static gdb_mi_value_t *
+gdb_mi_parse_result (const char **p)
+{
+    const char *start = *p;
+    gdb_mi_value_t *value;
+    char *name;
+
+    while (**p != '\0' && **p != '=' && **p != ',' && **p != '}' && **p != ']')
+        (*p)++;
+    if (**p != '=' || *p == start)
+        return NULL;
+    name = g_strndup (start, (gsize) (*p - start));
+    (*p)++;
+    value = gdb_mi_parse_value (p);
+    if (value == NULL)
+        g_free (name);
+    else
+        value->name = name;
+    return value;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The items of a tuple or a list up to @close; a list has values or results */
+static gboolean
+gdb_mi_parse_items (const char **p, gdb_mi_value_t *container, char close)
+{
+    (*p)++;
+    if (**p == close)
+    {
+        (*p)++;
+        return TRUE;
+    }
+    while (TRUE)
+    {
+        gdb_mi_value_t *item;
+
+        if (container->kind == GDB_MI_LIST && (**p == '"' || **p == '{' || **p == '['))
+            item = gdb_mi_parse_value (p);
+        else
+            item = gdb_mi_parse_result (p);
+        if (item == NULL)
+            return FALSE;
+        g_ptr_array_add (container->items, item);
+        if (**p == ',')
+            (*p)++;
+        else if (**p == close)
+        {
+            (*p)++;
+            return TRUE;
         }
         else
-            g_string_append_c (out, *p);
-        p++;
+            return FALSE;
     }
-    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gdb_mi_value_t *
+gdb_mi_parse_value (const char **p)
+{
+    gdb_mi_value_t *value;
+
+    switch (**p)
+    {
+    case '"':
+        value = gdb_mi_value_new (GDB_MI_STRING);
+        value->string = gdb_mi_parse_cstring (p);
+        if (value->string != NULL)
+            return value;
+        break;
+    case '{':
+        value = gdb_mi_value_new (GDB_MI_TUPLE);
+        if (gdb_mi_parse_items (p, value, '}'))
+            return value;
+        break;
+    case '[':
+        value = gdb_mi_value_new (GDB_MI_LIST);
+        if (gdb_mi_parse_items (p, value, ']'))
+            return value;
+        break;
+    default:
+        return NULL;
+    }
+    gdb_mi_value_free (value);
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gdb_mi_record_t *
+gdb_mi_parse (const char *line)
+{
+    gdb_mi_record_t *record = g_new0 (gdb_mi_record_t, 1);
+    char *copy = g_strdup (line != NULL ? line : "");
+    const char *p = copy;
+    char *end;
+    gsize len = strlen (copy);
+
+    while (len > 0 && (copy[len - 1] == '\r' || copy[len - 1] == '\n'))
+        copy[--len] = '\0';
+    record->results = gdb_mi_value_new (GDB_MI_TUPLE);
+
+    if (strncmp (copy, "(gdb)", 5) == 0)
+    {
+        record->kind = GDB_MI_RECORD_PROMPT;
+        goto done;
+    }
+
+    record->token = strtoul (p, &end, 10);
+    record->has_token = end != p;
+    p = end;
+
+    switch (*p)
+    {
+    case '~':
+    case '@':
+    case '&':
+        if (record->has_token || p[1] != '"')
+            break;
+        record->kind = *p == '~' ? GDB_MI_RECORD_CONSOLE
+            : *p == '@'          ? GDB_MI_RECORD_TARGET
+                                 : GDB_MI_RECORD_LOG;
+        p++;
+        record->text = gdb_mi_parse_cstring (&p);
+        if (record->text != NULL)
+            goto done;
+        break;
+    case '^':
+    case '*':
+    case '+':
+    case '=':
+    {
+        const char kind = *p;
+        const char *start = ++p;
+
+        while (*p != '\0' && *p != ',')
+            p++;
+        if (p == start)
+            break;
+        record->klass = g_strndup (start, (gsize) (p - start));
+        while (*p == ',')
+        {
+            gdb_mi_value_t *item;
+
+            p++;
+            item = gdb_mi_parse_result (&p);
+            if (item == NULL)
+                break;
+            g_ptr_array_add (record->results->items, item);
+        }
+        record->kind = kind == '^' ? GDB_MI_RECORD_RESULT
+            : kind == '*'          ? GDB_MI_RECORD_EXEC
+            : kind == '+'          ? GDB_MI_RECORD_STATUS
+                                   : GDB_MI_RECORD_NOTIFY;
+        // what could be read of a record cut short is kept
+        goto done;
+    }
+    default:
+        break;
+    }
+
+    // no record: the text as it is
+    g_clear_pointer (&record->klass, g_free);
+    g_clear_pointer (&record->text, g_free);
+    g_ptr_array_set_size (record->results->items, 0);
+    record->kind = GDB_MI_RECORD_OTHER;
+    record->has_token = FALSE;
+    record->token = 0;
+    record->text = g_strdup (copy);
+
+done:
+    g_free (copy);
+    return record;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+gdb_mi_record_free (gdb_mi_record_t *record)
+{
+    if (record == NULL)
+        return;
+    g_free (record->klass);
+    g_free (record->text);
+    gdb_mi_value_free (record->results);
+    g_free (record);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+const gdb_mi_value_t *
+gdb_mi_get (const gdb_mi_value_t *tuple, const char *name)
+{
+    guint i;
+
+    if (tuple == NULL || tuple->items == NULL || name == NULL)
+        return NULL;
+    for (i = 0; i < tuple->items->len; i++)
+    {
+        const gdb_mi_value_t *item = g_ptr_array_index (tuple->items, i);
+
+        if (g_strcmp0 (item->name, name) == 0)
+            return item;
+    }
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+const char *
+gdb_mi_get_string (const gdb_mi_value_t *tuple, const char *name)
+{
+    const gdb_mi_value_t *value = gdb_mi_get (tuple, name);
+
+    return value != NULL && value->kind == GDB_MI_STRING ? value->string : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+const char *
+gdb_mi_record_string (const gdb_mi_record_t *record, const char *name)
+{
+    return gdb_mi_get_string (record->results, name);
 }

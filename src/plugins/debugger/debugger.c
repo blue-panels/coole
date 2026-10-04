@@ -77,6 +77,12 @@ typedef struct
     char *label;
 } debug_frame_t;
 
+typedef struct
+{
+    char *name;
+    char *value;
+} debug_local_t;
+
 typedef struct debug_session_window_t debug_session_window_t;
 
 /* the commands of the debugger, in the [debugger] section of the keymap */
@@ -152,6 +158,9 @@ typedef struct
     GPtrArray *breakpoints;
     GPtrArray *watches;
     GString *output;
+    // what GDB says of itself, apart from the output of the program
+    GString *console;
+    gint64 console_window;
     gint64 output_window;
     GString *stack_text;
     gint64 stack_window;
@@ -167,11 +176,14 @@ typedef struct
     long current_line;
     unsigned int next_token;
     GQueue *startup_commands;
-    unsigned int startup_token;
     // the breakpoints went to GDB at the start: a new one goes by itself
     gboolean breakpoints_installed;
-    unsigned int eval_token;
-    char *eval_expression;
+    // the replies GDB owes: debug_request_t
+    GPtrArray *requests;
+    gboolean eval_pending;
+    // the local variables of the frame: debug_local_t
+    GPtrArray *locals;
+    char *current_func;
     /* the user went back to editing with the program stopped; the next stop steps again */
     gboolean step_left;
     int marks[DEBUG_MARK_COUNT];
@@ -224,6 +236,9 @@ static mc_ep_result_t debug_watch_add (debugger_t *debug, const char *expression
 static void debug_breakpoints_sync (debugger_t *debug);
 static void debug_breakpoints_dedup (debugger_t *debug);
 static gboolean debug_session_live (const debugger_t *debug);
+static void debug_reply_watch (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data);
+static void debug_setup_next (debugger_t *debug);
+static void debug_marks_show (debugger_t *debug, const char *file);
 static void debug_session_refresh (debugger_t *debug);
 
 static void
@@ -560,6 +575,8 @@ debug_session_draw (debug_session_window_t *session)
     g_string_append_printf (body, _ ("State: %s\n"), debug_state_name (debug->state));
     if (debug->current_file != NULL)
         g_string_append_printf (body, _ ("At: %s:%ld\n"), debug->current_file, debug->current_line);
+    else if (debug->state == DEBUG_STOPPED && debug->current_func != NULL)
+        g_string_append_printf (body, _ ("In: %s, with no source\n"), debug->current_func);
     else
         g_string_append_c (body, '\n');
     if (debug_stepping (debug))
@@ -946,6 +963,102 @@ debug_error (debugger_t *debug, const char *message_text)
     debug->host->message (debug->host, D_ERROR, _ ("Debug"), message_text);
 }
 
+/* What to do with the reply of GDB to a command */
+typedef void (*debug_reply_fn) (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data);
+
+typedef struct
+{
+    unsigned int token;
+    debug_reply_fn reply;
+    gpointer data;
+    GDestroyNotify free_data;
+} debug_request_t;
+
+static void
+debug_request_free (gpointer p)
+{
+    debug_request_t *request = (debug_request_t *) p;
+
+    if (request->free_data != NULL)
+        request->free_data (request->data);
+    g_free (request);
+}
+
+static void
+debug_local_free (gpointer p)
+{
+    debug_local_t *local = (debug_local_t *) p;
+
+    g_free (local->name);
+    g_free (local->value);
+    g_free (local);
+}
+
+/* Send a command to GDB, its reply to go to @reply (NULL: only an error is told).  Gives the
+   token of the command, 0 when it could not be sent; @data is freed either way. */
+static unsigned int
+debug_request (debugger_t *debug, debug_reply_fn reply, gpointer data, GDestroyNotify free_data,
+               const char *command)
+{
+    debug_request_t *request;
+    char *line;
+    gboolean sent;
+
+    request = g_new0 (debug_request_t, 1);
+    request->token = ++debug->next_token;
+    request->reply = reply;
+    request->data = data;
+    request->free_data = free_data;
+    line = g_strdup_printf ("%u%s", request->token, command);
+    sent = debug->gdb != NULL && gdb_mi_session_send (debug->gdb, line);
+    g_free (line);
+    if (!sent)
+    {
+        debug_request_free (request);
+        debug_error (debug, _ ("Could not send a command to GDB."));
+        return 0;
+    }
+    g_ptr_array_add (debug->requests, request);
+    return request->token;
+}
+
+/* GDB is gone or starts again: it owes nothing */
+static void
+debug_requests_clear (debugger_t *debug)
+{
+    g_ptr_array_set_size (debug->requests, 0);
+    debug->eval_pending = FALSE;
+}
+
+/* The reply to a request: taken off the list, then handled.  FALSE when nothing asked for it. */
+static gboolean
+debug_request_reply (debugger_t *debug, const gdb_mi_record_t *reply)
+{
+    guint i;
+
+    if (!reply->has_token)
+        return FALSE;
+    for (i = 0; i < debug->requests->len; i++)
+    {
+        debug_request_t *request = g_ptr_array_index (debug->requests, i);
+
+        if (request->token == reply->token)
+        {
+            g_ptr_array_steal_index (debug->requests, i);
+            if (request->reply != NULL)
+                request->reply (debug, reply, request->data);
+            else if (g_strcmp0 (reply->klass, "error") == 0)
+                debug_error (debug,
+                             gdb_mi_record_string (reply, "msg") != NULL
+                                 ? gdb_mi_record_string (reply, "msg")
+                                 : _ ("GDB refused a command."));
+            debug_request_free (request);
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 static GVariant *
 debug_viewer_call (debugger_t *debug, const char *method, GVariant *args)
 {
@@ -1021,15 +1134,13 @@ debug_watches_refresh (debugger_t *debug)
     {
         debug_watch_t *watch = g_ptr_array_index (debug->watches, i);
         char *quoted = gdb_mi_quote (watch->expression);
-        char *command;
+        char *command = g_strconcat ("-data-evaluate-expression ", quoted, NULL);
 
-        watch->pending_token = ++debug->next_token;
-        command = g_strdup_printf ("%u-data-evaluate-expression %s", watch->pending_token, quoted);
         g_free (watch->value);
         watch->value = g_strdup (_ ("<evaluating>"));
-        if (!gdb_mi_session_send (debug->gdb, command))
+        watch->pending_token = debug_request (debug, debug_reply_watch, NULL, NULL, command);
+        if (watch->pending_token == 0)
         {
-            watch->pending_token = 0;
             g_free (watch->value);
             watch->value = g_strdup (_ ("<GDB unavailable>"));
         }
@@ -1176,6 +1287,22 @@ debug_marks_show (debugger_t *debug, const char *file)
             TRUE);
 }
 
+/* What GDB says of itself: kept for the console, @line ends a line of its own */
+static void
+debug_output_console (debugger_t *debug, const char *text_value, gboolean line)
+{
+    char *valid = g_utf8_make_valid (text_value, -1);
+
+    g_string_append (debug->console, valid);
+    g_free (valid);
+    if (line && debug->console->len > 0 && debug->console->str[debug->console->len - 1] != '\n')
+        g_string_append_c (debug->console, '\n');
+    if (debug->console->len > 100000)
+        g_string_erase (debug->console, 0, debug->console->len - 100000);
+    if (debug->console_window != 0)
+        debug_text_show (debug, _ ("GDB console"), debug->console->str, &debug->console_window);
+}
+
 static void
 debug_clear_current (debugger_t *debug)
 {
@@ -1191,98 +1318,100 @@ debug_clear_current (debugger_t *debug)
     g_free (file);
 }
 
-/* Find the end of an MI tuple, ignoring braces inside strings and nested tuples. */
-static const char *
-debug_tuple_end (const char *open)
-{
-    const char *p;
-    int depth = 0;
-    gboolean quoted = FALSE;
-
-    for (p = open; *p != '\0'; p++)
-    {
-        if (quoted && *p == '\\' && p[1] != '\0')
-        {
-            p++;
-            continue;
-        }
-        if (*p == '"')
-            quoted = !quoted;
-        else if (!quoted && *p == '{')
-            depth++;
-        else if (!quoted && *p == '}' && --depth == 0)
-            return p;
-    }
-    return NULL;
-}
-
+/* The call stack, from the reply to -stack-list-frames */
 static void
-debug_stack_record (debugger_t *debug, const char *record)
+debug_reply_stack (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
 {
-    const char *p = record;
+    const gdb_mi_value_t *stack = gdb_mi_get (reply->results, "stack");
+    guint i;
 
+    (void) data;
     g_string_truncate (debug->stack_text, 0);
     g_ptr_array_set_size (debug->frames, 0);
-    while ((p = strstr (p, "frame={")) != NULL)
+    for (i = 0; stack != NULL && stack->items != NULL && i < stack->items->len; i++)
     {
-        const char *end = debug_tuple_end (p + strlen ("frame="));
-        char *frame, *level, *func, *file, *line;
+        const gdb_mi_value_t *frame = g_ptr_array_index (stack->items, i);
+        const char *level = gdb_mi_get_string (frame, "level");
+        const char *func = gdb_mi_get_string (frame, "func");
+        const char *file = gdb_mi_get_string (frame, "fullname");
+        const char *line = gdb_mi_get_string (frame, "line");
+        const char *from = gdb_mi_get_string (frame, "from");
         debug_frame_t *entry;
 
-        if (end == NULL)
-            break;
-        frame = g_strndup (p, (gsize) (end - p + 1));
-        level = gdb_mi_field (frame, "level");
-        func = gdb_mi_field (frame, "func");
-        file = gdb_mi_field (frame, "fullname");
-        line = gdb_mi_field (frame, "line");
-        g_string_append_printf (debug->stack_text, "#%s %s  %s:%s\n", level != NULL ? level : "?",
-                                func != NULL ? func : "?", file != NULL ? file : "?",
-                                line != NULL ? line : "?");
         entry = g_new0 (debug_frame_t, 1);
         entry->level = level != NULL ? atol (level) : -1;
         entry->line = line != NULL ? atol (line) : 0;
         entry->file = g_strdup (file);
-        entry->label = g_strdup_printf ("#%s %s  %s:%s", level != NULL ? level : "?",
-                                        func != NULL ? func : "?", file != NULL ? file : "?",
-                                        line != NULL ? line : "?");
+        if (file != NULL)
+            entry->label =
+                g_strdup_printf ("#%s %s  %s:%s", level != NULL ? level : "?",
+                                 func != NULL ? func : "?", file, line != NULL ? line : "?");
+        else
+            entry->label = g_strdup_printf ("#%s %s  %s", level != NULL ? level : "?",
+                                            func != NULL ? func : "?",
+                                            from != NULL ? from : _ ("<no source>"));
+        g_string_append_printf (debug->stack_text, "%s\n", entry->label);
         g_ptr_array_add (debug->frames, entry);
-        g_free (level);
-        g_free (func);
-        g_free (file);
-        g_free (line);
-        g_free (frame);
-        p = end + 1;
     }
     debug_text_show (debug, _ ("Call stack"), debug->stack_text->str, &debug->stack_window);
 }
 
+/* The local variables of the frame, from the reply to -stack-list-variables */
 static void
-debug_variables_record (debugger_t *debug, const char *record)
+debug_reply_variables (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
 {
-    const char *p = record;
+    const gdb_mi_value_t *variables = gdb_mi_get (reply->results, "variables");
+    guint i;
 
+    (void) data;
     g_string_truncate (debug->variables_text, 0);
-    while ((p = strstr (p, "{name=")) != NULL)
+    g_ptr_array_set_size (debug->locals, 0);
+    for (i = 0; variables != NULL && variables->items != NULL && i < variables->items->len; i++)
     {
-        const char *end = debug_tuple_end (p);
-        char *item, *name, *value;
+        const gdb_mi_value_t *variable = g_ptr_array_index (variables->items, i);
+        const char *name = gdb_mi_get_string (variable, "name");
+        const char *value = gdb_mi_get_string (variable, "value");
+        const char *type = gdb_mi_get_string (variable, "type");
+        debug_local_t *local;
 
-        if (end == NULL)
-            break;
-        item = g_strndup (p, (gsize) (end - p + 1));
-        name = gdb_mi_field (item, "name");
-        value = gdb_mi_field (item, "value");
-        if (name != NULL)
-            g_string_append_printf (debug->variables_text, "%s = %s\n", name,
-                                    value != NULL ? value : "<unavailable>");
-        g_free (name);
-        g_free (value);
-        g_free (item);
-        p = end + 1;
+        if (name == NULL)
+            continue;
+        local = g_new0 (debug_local_t, 1);
+        local->name = g_strdup (name);
+        // --simple-values gives no value of a struct or an array: its type stands for it
+        local->value = value != NULL ? g_strdup (value)
+            : type != NULL           ? g_strdup_printf ("{%s}", type)
+                                     : g_strdup (_ ("<unavailable>"));
+        g_string_append_printf (debug->variables_text, "%s = %s\n", local->name, local->value);
+        g_ptr_array_add (debug->locals, local);
     }
     debug_text_show (debug, _ ("Local variables"), debug->variables_text->str,
                      &debug->variables_window);
+}
+
+/* The value of a watch */
+static void
+debug_reply_watch (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
+{
+    const gboolean failed = g_strcmp0 (reply->klass, "error") == 0;
+    guint i;
+
+    (void) data;
+    for (i = 0; i < debug->watches->len; i++)
+    {
+        debug_watch_t *watch = g_ptr_array_index (debug->watches, i);
+        const char *value;
+
+        if (watch->pending_token != reply->token)
+            continue;
+        watch->pending_token = 0;
+        value = gdb_mi_record_string (reply, failed ? "msg" : "value");
+        g_free (watch->value);
+        watch->value = g_strdup (value != NULL ? value : _ ("<unavailable>"));
+        debug_watches_show (debug);
+        debug_session_refresh (debug);
+        return;
+    }
 }
 
 static void
@@ -1336,257 +1465,267 @@ debug_pty_open (debugger_t *debug)
 }
 #endif
 
-static void debug_setup_next (debugger_t *debug);
-
+/* The value of an expression asked for with Enter */
 static void
-debug_record (const char *record, void *data)
+debug_reply_evaluate (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
 {
-    debugger_t *debug = (debugger_t *) data;
-    char *token_end;
-    unsigned long token = strtoul (record, &token_end, 10);
+    const char *expression = (const char *) data;
+    const gboolean failed = g_strcmp0 (reply->klass, "error") == 0;
+    const char *value = gdb_mi_record_string (reply, failed ? "msg" : "value");
+    char *text_value;
 
-    if (token_end != record && token == debug->eval_token && *token_end == '^')
+    debug->eval_pending = FALSE;
+    text_value =
+        g_strdup_printf ("%s = %s", expression, value != NULL ? value : _ ("<unavailable>"));
+    if (failed)
+        debug_error (debug, text_value);
+    else if (query_dialog (_ ("Evaluate"), text_value, D_NORMAL, 2, _ ("&OK"), _ ("Add &watch"))
+             == 1)
+        (void) debug_watch_add (debug, expression);
+    g_free (text_value);
+}
+
+/* GDB has taken a breakpoint, or has refused it; the reply to -break-insert */
+static void
+debug_reply_breakpoint (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
+{
+    const gdb_mi_value_t *bkpt = gdb_mi_get (reply->results, "bkpt");
+    guint i;
+
+    (void) data;
+    for (i = 0; i < debug->breakpoints->len; i++)
     {
-        gboolean failed = g_str_has_prefix (token_end, "^error");
-        char *value = gdb_mi_field (token_end, failed ? "msg" : "value");
-        char *expression = debug->eval_expression;
-        char *text_value;
+        debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+        const char *line;
 
-        debug->eval_token = 0;
-        debug->eval_expression = NULL;
-        text_value =
-            g_strdup_printf ("%s = %s", expression, value != NULL ? value : _ ("<unavailable>"));
-        if (failed)
-            debug_error (debug, text_value);
-        else if (query_dialog (_ ("Evaluate"), text_value, D_NORMAL, 2, _ ("&OK"), _ ("Add &watch"))
-                 == 1)
-            (void) debug_watch_add (debug, expression);
-        g_free (text_value);
-        g_free (value);
-        g_free (expression);
-        tty_refresh ();
-        return;
-    }
-    if (token_end != record && g_str_has_prefix (token_end, "^done,bkpt="))
-    {
-        char *number = gdb_mi_field (token_end, "number");
-        char *line = gdb_mi_field (token_end, "line");
-        guint i;
-
-        for (i = 0; i < debug->breakpoints->len; i++)
+        if (bp->pending_token != reply->token)
+            continue;
+        bp->pending_token = 0;
+        if (g_strcmp0 (reply->klass, "done") != 0 || bkpt == NULL)
         {
-            debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+            // the mark stays the one of a breakpoint GDB has not taken
+            const char *msg = gdb_mi_record_string (reply, "msg");
 
-            if (bp->pending_token == token)
-            {
-                g_free (bp->gdb_number);
-                bp->gdb_number = g_strdup (number);
-                bp->pending_token = 0;
-                // GDB stops on the next line with code: the breakpoint goes there
-                if (line != NULL && atol (line) > 0 && atol (line) != bp->line)
-                {
-                    debug_breakpoints_sync (debug);
-                    bp->line = atol (line);
-                    debug_breakpoints_dedup (debug);
-                    debug_config_save (debug);
-                }
-                debug_marks_show (debug, NULL);
-                break;
-            }
-        }
-        g_free (line);
-        g_free (number);
-        return;
-    }
-    if (token_end != record && token == debug->startup_token && debug->startup_token != 0
-        && (*token_end == '^'))
-    {
-        debug->startup_token = 0;
-        if (g_str_has_prefix (token_end, "^done"))
-            debug_setup_next (debug);
-        else
-        {
-            char *message_text = gdb_mi_field (token_end, "msg");
-
-            g_queue_clear_full (debug->startup_commands, g_free);
-            debug->state = DEBUG_FINISHED;
-            debug_error (
-                debug, message_text != NULL ? message_text : _ ("GDB rejected a startup command."));
-            g_free (message_text);
-            debug_session_refresh (debug);
-        }
-        return;
-    }
-    if (token_end != record && (*token_end == '^'))
-    {
-        guint i;
-
-        for (i = 0; i < debug->watches->len; i++)
-        {
-            debug_watch_t *watch = g_ptr_array_index (debug->watches, i);
-
-            if (watch->pending_token != token)
-                continue;
-            watch->pending_token = 0;
-            g_free (watch->value);
-            watch->value =
-                gdb_mi_field (token_end, g_str_has_prefix (token_end, "^error") ? "msg" : "value");
-            if (watch->value == NULL)
-                watch->value = g_strdup (_ ("<unavailable>"));
-            debug_watches_show (debug);
-            debug_session_refresh (debug);
-            tty_refresh ();
+            if (msg != NULL)
+                debug_output_console (debug, msg, TRUE);
+            debug_marks_show (debug, NULL);
             return;
         }
-    }
-
-    if (g_str_has_prefix (record, "=gdb-exited"))
-    {
-        g_queue_clear_full (debug->startup_commands, g_free);
-        debug->startup_token = 0;
-        debug->state = DEBUG_FINISHED;
-        debug->breakpoints_installed = FALSE;
-        debug_clear_current (debug);
+        g_free (bp->gdb_number);
+        bp->gdb_number = g_strdup (gdb_mi_get_string (bkpt, "number"));
+        // GDB stops on the next line with code: the breakpoint goes there
+        line = gdb_mi_get_string (bkpt, "line");
+        if (line != NULL && atol (line) > 0 && atol (line) != bp->line)
+        {
+            debug_breakpoints_sync (debug);
+            bp->line = atol (line);
+            debug_breakpoints_dedup (debug);
+            debug_config_save (debug);
+        }
         debug_marks_show (debug, NULL);
-        debug_watches_clear_values (debug);
-        debug_session_refresh (debug);
-        tty_refresh ();
         return;
-    }
-    if (g_str_has_prefix (record, "=thread-group-exited"))
-    {
-        if (debug->state == DEBUG_RUNNING || debug->state == DEBUG_STOPPED)
-            debug->state = DEBUG_FINISHED;
-        debug->breakpoints_installed = FALSE;
-        debug_clear_current (debug);
-        debug_marks_show (debug, NULL);
-        debug_watches_clear_values (debug);
-        debug_session_refresh (debug);
-        tty_refresh ();
-        return;
-    }
-    if (record[0] == '@')
-    {
-        char *text_value = gdb_mi_field (record, "");
-
-        if (text_value != NULL)
-        {
-            debug_output_append (debug, text_value);
-            tty_refresh ();
-            g_free (text_value);
-        }
-        return;
-    }
-    if (strstr (record, "^error") != NULL)
-    {
-        char *message_text = gdb_mi_field (record, "msg");
-        guint i;
-
-        for (i = 0; i < debug->breakpoints->len; i++)
-        {
-            debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
-
-            if (bp->pending_token == token)
-            {
-                // the mark stays the one of a breakpoint GDB has not taken
-                bp->pending_token = 0;
-                debug_marks_show (debug, NULL);
-            }
-        }
-
-        debug_error (debug, message_text != NULL ? message_text : record);
-        if (debug->state == DEBUG_STARTING)
-            debug->state = DEBUG_FINISHED;
-        debug_session_refresh (debug);
-        g_free (message_text);
-        tty_refresh ();
-        return;
-    }
-    if (strstr (record, "^done,stack=[") != NULL)
-    {
-        debug_stack_record (debug, record);
-        tty_refresh ();
-        return;
-    }
-    if (strstr (record, "^done,variables=[") != NULL)
-    {
-        debug_variables_record (debug, record);
-        tty_refresh ();
-        return;
-    }
-    if (g_str_has_prefix (record, "*running"))
-    {
-        debug->state = DEBUG_RUNNING;
-        debug_watches_clear_values (debug);
-        debug_session_refresh (debug);
-    }
-    else if (g_str_has_prefix (record, "*stopped"))
-    {
-        char *reason = gdb_mi_field (record, "reason");
-
-        if (reason != NULL && g_str_has_prefix (reason, "exited"))
-        {
-            char *exit_code = gdb_mi_field (record, "exit-code");
-            char *status = exit_code != NULL
-                ? g_strdup_printf (_ ("\nProgram exited with code %s.\n"), exit_code)
-                : g_strdup (_ ("\nProgram exited.\n"));
-
-            debug->state = DEBUG_FINISHED;
-            debug->breakpoints_installed = FALSE;
-            debug_clear_current (debug);
-            debug_marks_show (debug, NULL);
-            debug_watches_clear_values (debug);
-            debug_output_append (debug, status);
-            g_free (status);
-            g_free (exit_code);
-        }
-        else
-        {
-            char *file = gdb_mi_field (record, "fullname");
-            char *line = gdb_mi_field (record, "line");
-            gboolean keep_debug_focus = debug->session_window != NULL
-                && debug->host->window_current (debug->host) == debug->session_window;
-
-            debug->state = DEBUG_STOPPED;
-            debug->step_left = FALSE;
-            debug_clear_current (debug);
-            if (file != NULL && line != NULL && debug->host->show_location != NULL)
-                (void) debug->host->show_location (debug->host, file, atol (line));
-            if (keep_debug_focus && debug->session_window != NULL)
-                debug->host->window_show (debug->host, debug->session_window);
-            if (file != NULL && line != NULL && atol (line) > 0)
-            {
-                debug->current_file = g_strdup (file);
-                debug->current_line = atol (line);
-            }
-            if (file != NULL)
-            {
-                debug_breakpoints_sync (debug);
-                debug_marks_show (debug, file);
-            }
-            (void) gdb_mi_session_send (debug->gdb, "-stack-select-frame 0");
-            (void) gdb_mi_session_send (debug->gdb, "-stack-list-frames");
-            (void) gdb_mi_session_send (debug->gdb, "-stack-list-variables --simple-values");
-            debug_watches_refresh (debug);
-            g_free (file);
-            g_free (line);
-        }
-        g_free (reason);
-        debug_session_refresh (debug);
-        widget_draw (WIDGET (debug->host->host_data));
-        tty_refresh ();
     }
 }
 
+/* A command of the start is done: the next one goes */
+static void
+debug_reply_startup (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
+{
+    const char *msg;
+
+    (void) data;
+    if (g_strcmp0 (reply->klass, "done") == 0)
+    {
+        debug_setup_next (debug);
+        return;
+    }
+    msg = gdb_mi_record_string (reply, "msg");
+    g_queue_clear_full (debug->startup_commands, g_free);
+    debug->state = DEBUG_FINISHED;
+    debug_error (debug, msg != NULL ? msg : _ ("GDB rejected a startup command."));
+    debug_session_refresh (debug);
+}
+
+/* The program has ended, or GDB has */
+static void
+debug_finished (debugger_t *debug)
+{
+    if (debug->state != DEBUG_OFF)
+        debug->state = DEBUG_FINISHED;
+    g_queue_clear_full (debug->startup_commands, g_free);
+    debug->breakpoints_installed = FALSE;
+    debug_clear_current (debug);
+    debug_marks_show (debug, NULL);
+    debug_watches_clear_values (debug);
+    debug_session_refresh (debug);
+}
+
+/* The program has stopped: at a breakpoint, after a step, on a signal, or for good */
+static void
+debug_stopped (debugger_t *debug, const gdb_mi_record_t *record)
+{
+    const char *reason = gdb_mi_record_string (record, "reason");
+    const gdb_mi_value_t *frame = gdb_mi_get (record->results, "frame");
+    const char *file = gdb_mi_get_string (frame, "fullname");
+    const char *line = gdb_mi_get_string (frame, "line");
+    gboolean keep_debug_focus;
+
+    if (reason != NULL && g_str_has_prefix (reason, "exited"))
+    {
+        const char *exit_code = gdb_mi_record_string (record, "exit-code");
+        char *status = exit_code != NULL
+            ? g_strdup_printf (_ ("\nProgram exited with code %s.\n"), exit_code)
+            : g_strdup (_ ("\nProgram exited.\n"));
+
+        debug_output_append (debug, status);
+        g_free (status);
+        debug_finished (debug);
+        return;
+    }
+
+    if (g_strcmp0 (reason, "signal-received") == 0)
+    {
+        char *text_value = g_strdup_printf (_ ("\nProgram received signal %s, %s.\n"),
+                                            gdb_mi_record_string (record, "signal-name") != NULL
+                                                ? gdb_mi_record_string (record, "signal-name")
+                                                : "?",
+                                            gdb_mi_record_string (record, "signal-meaning") != NULL
+                                                ? gdb_mi_record_string (record, "signal-meaning")
+                                                : "");
+
+        debug_output_append (debug, text_value);
+        g_free (text_value);
+    }
+    else if (g_strcmp0 (reason, "function-finished") == 0
+             && gdb_mi_record_string (record, "return-value") != NULL)
+    {
+        char *text_value = g_strdup_printf (_ ("Value returned is %s\n"),
+                                            gdb_mi_record_string (record, "return-value"));
+
+        debug_output_console (debug, text_value, FALSE);
+        g_free (text_value);
+    }
+
+    keep_debug_focus = debug->session_window != NULL
+        && debug->host->window_current (debug->host) == debug->session_window;
+    debug->state = DEBUG_STOPPED;
+    debug->step_left = FALSE;
+    debug_clear_current (debug);
+    g_free (debug->current_func);
+    debug->current_func = g_strdup (gdb_mi_get_string (frame, "func"));
+    if (file != NULL && line != NULL && debug->host->show_location != NULL)
+        (void) debug->host->show_location (debug->host, file, atol (line));
+    if (keep_debug_focus && debug->session_window != NULL)
+        debug->host->window_show (debug->host, debug->session_window);
+    if (file != NULL && line != NULL && atol (line) > 0)
+    {
+        debug->current_file = g_strdup (file);
+        debug->current_line = atol (line);
+    }
+    if (file != NULL)
+    {
+        debug_breakpoints_sync (debug);
+        debug_marks_show (debug, file);
+    }
+    (void) debug_request (debug, NULL, NULL, NULL, "-stack-select-frame 0");
+    (void) debug_request (debug, debug_reply_stack, NULL, NULL, "-stack-list-frames");
+    (void) debug_request (debug, debug_reply_variables, NULL, NULL,
+                          "-stack-list-variables --simple-values");
+    debug_watches_refresh (debug);
+}
+
+/* GDB has moved a breakpoint: one waiting for a library is now in it */
+static void
+debug_breakpoint_modified (debugger_t *debug, const gdb_mi_record_t *record)
+{
+    const gdb_mi_value_t *bkpt = gdb_mi_get (record->results, "bkpt");
+    const char *number = gdb_mi_get_string (bkpt, "number");
+    const char *line = gdb_mi_get_string (bkpt, "line");
+    guint i;
+
+    if (number == NULL || line == NULL || atol (line) <= 0)
+        return;
+    for (i = 0; i < debug->breakpoints->len; i++)
+    {
+        debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+
+        if (g_strcmp0 (bp->gdb_number, number) == 0 && bp->line != atol (line))
+        {
+            debug_breakpoints_sync (debug);
+            bp->line = atol (line);
+            debug_breakpoints_dedup (debug);
+            debug_marks_show (debug, NULL);
+            return;
+        }
+    }
+}
+
+static void
+debug_record (const char *line, void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+    gdb_mi_record_t *record = gdb_mi_parse (line);
+
+    switch (record->kind)
+    {
+    case GDB_MI_RECORD_RESULT:
+        if (!debug_request_reply (debug, record) && g_strcmp0 (record->klass, "error") == 0)
+        {
+            const char *msg = gdb_mi_record_string (record, "msg");
+
+            debug_error (debug, msg != NULL ? msg : line);
+            if (debug->state == DEBUG_STARTING)
+                debug_finished (debug);
+        }
+        break;
+    case GDB_MI_RECORD_EXEC:
+        if (g_strcmp0 (record->klass, "running") == 0)
+        {
+            debug->state = DEBUG_RUNNING;
+            debug_watches_clear_values (debug);
+            debug_session_refresh (debug);
+        }
+        else if (g_strcmp0 (record->klass, "stopped") == 0)
+        {
+            debug_stopped (debug, record);
+            debug_session_refresh (debug);
+            widget_draw (WIDGET (debug->host->host_data));
+        }
+        break;
+    case GDB_MI_RECORD_NOTIFY:
+        if (g_strcmp0 (record->klass, "thread-group-exited") == 0
+            || g_strcmp0 (record->klass, "gdb-exited") == 0)
+        {
+            if (g_strcmp0 (record->klass, "gdb-exited") == 0)
+                debug_requests_clear (debug);
+            debug_finished (debug);
+        }
+        else if (g_strcmp0 (record->klass, "breakpoint-modified") == 0)
+            debug_breakpoint_modified (debug, record);
+        break;
+    case GDB_MI_RECORD_TARGET:
+        debug_output_append (debug, record->text);
+        break;
+    case GDB_MI_RECORD_CONSOLE:
+    case GDB_MI_RECORD_LOG:
+        debug_output_console (debug, record->text, FALSE);
+        break;
+    case GDB_MI_RECORD_OTHER:
+        // what GDB writes to stderr
+        debug_output_console (debug, record->text, TRUE);
+        break;
+    default:
+        break;
+    }
+    gdb_mi_record_free (record);
+    tty_refresh ();
+}
+
+/* Send a command whose reply matters only when it is an error */
 static gboolean
 debug_send (debugger_t *debug, const char *command)
 {
-    if (debug->gdb == NULL || !gdb_mi_session_send (debug->gdb, command))
-    {
-        debug_error (debug, _ ("Could not send a command to GDB."));
-        return FALSE;
-    }
-    return TRUE;
+    return debug_request (debug, NULL, NULL, NULL, command) != 0;
 }
 
 static void
@@ -1607,12 +1746,10 @@ debug_breakpoint_install (debugger_t *debug, debug_breakpoint_t *bp)
     char *command;
     gboolean sent;
 
-    bp->pending_token = ++debug->next_token;
     // -f: a breakpoint in a library not loaded yet waits for it
-    command = g_strdup_printf ("%u-break-insert -f %s", bp->pending_token, quoted);
-    sent = debug_send (debug, command);
-    if (!sent)
-        bp->pending_token = 0;
+    command = g_strconcat ("-break-insert -f ", quoted, NULL);
+    bp->pending_token = debug_request (debug, debug_reply_breakpoint, NULL, NULL, command);
+    sent = bp->pending_token != 0;
     g_free (command);
     g_free (quoted);
     g_free (location);
@@ -1761,17 +1898,11 @@ debug_setup_next (debugger_t *debug)
 
     if (command != NULL)
     {
-        char *line;
-
-        debug->startup_token = ++debug->next_token;
-        line = g_strdup_printf ("%u%s", debug->startup_token, command);
-        if (!debug_send (debug, line))
+        if (debug_request (debug, debug_reply_startup, NULL, NULL, command) == 0)
         {
-            debug->startup_token = 0;
             g_queue_clear_full (debug->startup_commands, g_free);
             debug->state = DEBUG_FINISHED;
         }
-        g_free (line);
         g_free (command);
         return;
     }
@@ -1832,7 +1963,7 @@ debug_open_project (void *data, void *edit)
     }
     gdb_mi_session_stop (debug->gdb);
     g_queue_clear_full (debug->startup_commands, g_free);
-    debug->startup_token = 0;
+    debug_requests_clear (debug);
     debug_pty_close (debug);
     debug_clear_current (debug);
     debug->state = DEBUG_OFF;
@@ -2231,9 +2362,10 @@ debug_start (void *data, void *edit)
     debug->state = DEBUG_STARTING;
     debug->breakpoints_installed = FALSE;
     g_queue_clear_full (debug->startup_commands, g_free);
-    debug->startup_token = 0;
+    debug_requests_clear (debug);
     debug_watches_clear_values (debug);
     g_string_truncate (debug->output, 0);
+    g_string_truncate (debug->console, 0);
     g_string_truncate (debug->stack_text, 0);
     g_string_truncate (debug->variables_text, 0);
     g_queue_push_tail (debug->startup_commands, g_strdup ("-gdb-set mi-async on"));
@@ -2426,7 +2558,7 @@ debug_evaluate (debugger_t *debug, void *edit)
     char *expression, *quoted, *command;
     gboolean sent;
 
-    if (debug->state != DEBUG_STOPPED || debug->eval_token != 0)
+    if (debug->state != DEBUG_STOPPED || debug->eval_pending)
         return MC_EPR_FAILED;
     expression = debug_expression_at_cursor (debug, edit);
     if (expression == NULL)
@@ -2442,20 +2574,13 @@ debug_evaluate (debugger_t *debug, void *edit)
             return MC_EPR_FAILED;
         }
     }
-    debug->eval_token = ++debug->next_token;
     quoted = gdb_mi_quote (expression);
-    command = g_strdup_printf ("%u-data-evaluate-expression %s", debug->eval_token, quoted);
-    sent = debug_send (debug, command);
+    command = g_strconcat ("-data-evaluate-expression ", quoted, NULL);
+    sent = debug_request (debug, debug_reply_evaluate, expression, g_free, command) != 0;
     g_free (command);
     g_free (quoted);
-    if (!sent)
-    {
-        debug->eval_token = 0;
-        g_free (expression);
-        return MC_EPR_FAILED;
-    }
-    debug->eval_expression = expression;
-    return MC_EPR_OK;
+    debug->eval_pending = sent;
+    return sent ? MC_EPR_OK : MC_EPR_FAILED;
 }
 
 static mc_ep_result_t
@@ -2543,9 +2668,19 @@ debug_show_stack (void *data, void *edit)
         char *command = g_strdup_printf ("-stack-select-frame %ld", frame->level);
 
         (void) debug_send (debug, command);
-        (void) debug_send (debug, "-stack-list-variables --simple-values");
+        (void) debug_request (debug, debug_reply_variables, NULL, NULL,
+                              "-stack-list-variables --simple-values");
         debug_watches_refresh (debug);
         g_free (command);
+    }
+    // the mark goes with the frame: the steps go on from there
+    if (frame->file != NULL && frame->line > 0)
+    {
+        debug_clear_current (debug);
+        debug->current_file = g_strdup (frame->file);
+        debug->current_line = frame->line;
+        debug_breakpoints_sync (debug);
+        debug_marks_show (debug, frame->file);
     }
     return MC_EPR_OK;
 }
@@ -2681,9 +2816,7 @@ debug_stop (void *data, void *edit)
     (void) edit;
     gdb_mi_session_stop (debug->gdb);
     g_queue_clear_full (debug->startup_commands, g_free);
-    debug->startup_token = 0;
-    debug->eval_token = 0;
-    g_clear_pointer (&debug->eval_expression, g_free);
+    debug_requests_clear (debug);
     debug_pty_close (debug);
     debug_clear_current (debug);
     debug_watches_clear_values (debug);
@@ -2707,6 +2840,9 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->watches = g_ptr_array_new_with_free_func (debug_watch_free);
     debug->startup_commands = g_queue_new ();
     debug->output = g_string_new (NULL);
+    debug->console = g_string_new (NULL);
+    debug->requests = g_ptr_array_new_with_free_func (debug_request_free);
+    debug->locals = g_ptr_array_new_with_free_func (debug_local_free);
     debug->stack_text = g_string_new (NULL);
     debug->frames = g_ptr_array_new_with_free_func (debug_frame_free);
     debug->variables_text = g_string_new (NULL);
@@ -2743,7 +2879,10 @@ debug_close (void *data)
     g_string_free (debug->watches_text, TRUE);
     g_free (debug->project_dir);
     g_free (debug->current_file);
-    g_free (debug->eval_expression);
+    g_free (debug->current_func);
+    g_ptr_array_free (debug->requests, TRUE);
+    g_ptr_array_free (debug->locals, TRUE);
+    g_string_free (debug->console, TRUE);
     g_free (debug);
 }
 
