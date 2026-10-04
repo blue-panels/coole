@@ -2167,6 +2167,15 @@ ctags_scored_compare (gconstpointer a, gconstpointer b)
 }
 
 static gint
+ctags_entry_line_compare (gconstpointer a, gconstpointer b)
+{
+    const ctags_entry_t *x = *(const ctags_entry_t *const *) a;
+    const ctags_entry_t *y = *(const ctags_entry_t *const *) b;
+
+    return (x->line > y->line) - (x->line < y->line);
+}
+
+static gint
 ctags_line_compare (gconstpointer a, gconstpointer b)
 {
     const ctags_scored_t *x = (const ctags_scored_t *) a;
@@ -2236,8 +2245,12 @@ ctags_symbols (ctags_data_t *d, const char *root, const char *file, const char *
         const ctags_entry_t *e = g_array_index (found, ctags_scored_t, i).e;
         char *path = ctags_resolve_entry_path (d, e);
 
-        if (path == NULL)
+        if (path == NULL || !g_utf8_validate (e->name, -1, NULL)
+            || !g_utf8_validate (path, -1, NULL))
+        {
+            g_free (path);
             continue;
+        }
         g_variant_builder_add (&list, "(sssi)", e->name, ctags_kind_label (e->kind), path,
                                (gint32) ctags_entry_resolve_line (e, path));
         g_free (path);
@@ -2248,9 +2261,101 @@ ctags_symbols (ctags_data_t *d, const char *root, const char *file, const char *
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The service "ctags": the index of a project asked for by the other plugins.
-   symbols (root | file, query, max) -> symbols a(sssi): name, kind, file, line; indexing b
+/* The symbols of a file as its text is, saved or not: ctags over a copy of @text, with the
+   name of the file for its language.  An array of (name, kind, file, line) in their order;
+   NULL when ctags is not there or fails. */
+static GVariant *
+ctags_outline (ctags_data_t *d, const char *file, const char *text, gsize len)
+{
+    const char *cmd =
+        d->cfg.ctags_cmd != NULL && *d->cfg.ctags_cmd != '\0' ? d->cfg.ctags_cmd : "ctags";
+    char *base = g_path_get_basename (file);
+    char *src_template = g_strconcat ("coole-outline-XXXXXX-", base, (char *) NULL);
+    char *src = NULL, *tags = NULL, *root, *options, *program;
+    char **args = NULL;
+    GPtrArray *argv, *entries;
+    GVariantBuilder list;
+    GVariant *result = NULL;
+    int fd, status = 1, i;
 
+    g_free (base);
+    program = g_find_program_in_path (cmd);
+    if (program == NULL)
+    {
+        g_free (src_template);
+        return NULL;
+    }
+    fd = g_file_open_tmp (src_template, &src, NULL);
+    g_free (src_template);
+    if (fd < 0)
+    {
+        g_free (program);
+        return NULL;
+    }
+    if (write (fd, text, len) != (ssize_t) len)
+    {
+        close (fd);
+        (void) unlink (src);
+        g_free (src);
+        g_free (program);
+        return NULL;
+    }
+    close (fd);
+    fd = g_file_open_tmp ("coole-outline-XXXXXX.tags", &tags, NULL);
+    if (fd >= 0)
+        close (fd);
+
+    // the options of the project, for the kinds it wants
+    root = ctags_project_root (d, file);
+    options = root != NULL ? ctags_project_options (d, root) : g_strdup (d->cfg.ctags_args);
+    g_free (root);
+    argv = g_ptr_array_new ();
+    g_ptr_array_add (argv, program);
+    if (options != NULL && *options != '\0' && g_shell_parse_argv (options, NULL, &args, NULL))
+        for (i = 0; args[i] != NULL; i++)
+            g_ptr_array_add (argv, args[i]);
+    g_ptr_array_add (argv, (char *) "--fields=+n");
+    g_ptr_array_add (argv, (char *) "-f");
+    g_ptr_array_add (argv, tags);
+    g_ptr_array_add (argv, src);
+    g_ptr_array_add (argv, NULL);
+    if (fd >= 0
+        && g_spawn_sync (NULL, (char **) argv->pdata, NULL,
+                         G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL, NULL, NULL, NULL,
+                         NULL, &status, NULL)
+        && status == 0)
+    {
+        entries = g_ptr_array_new_with_free_func ((GDestroyNotify) ctags_entry_free);
+        (void) ctags_parse_file (tags, entries);
+        g_ptr_array_sort (entries, ctags_entry_line_compare);
+        g_variant_builder_init (&list, G_VARIANT_TYPE ("a(sssi)"));
+        for (i = 0; i < (int) entries->len; i++)
+        {
+            const ctags_entry_t *e = g_ptr_array_index (entries, i);
+
+            if (e->line > 0 && g_utf8_validate (e->name, -1, NULL))
+                g_variant_builder_add (&list, "(sssi)", e->name, ctags_kind_label (e->kind), file,
+                                       (gint32) e->line);
+        }
+        result = g_variant_builder_end (&list);
+        g_ptr_array_free (entries, TRUE);
+    }
+    (void) unlink (src);
+    if (tags != NULL)
+        (void) unlink (tags);
+    g_free (src);
+    g_free (tags);
+    g_ptr_array_free (argv, TRUE);
+    g_strfreev (args);
+    g_free (options);
+    return result;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The service "ctags": the index of a project asked for by the other plugins.
+   outline (file, text ay) -> symbols a(sssi): those of the text of a file, in their order
+   symbols (root | file, query, max) -> symbols a(sssi): name, kind, file, line; indexing b
    reindex (file): build the index of the project of the file, in the background -> started
    options (root) -> options: the options of ctags for the project
    set_options (root, options): keep them, and build the index again when they change */
@@ -2268,7 +2373,25 @@ ctags_call (void *data, const char *method, GVariant *args, GError **error)
         (void) g_variant_lookup (args, "options", "&s", &options);
     }
     g_variant_dict_init (&reply, NULL);
-    if (strcmp (method, "symbols") == 0 && (file != NULL || root != NULL))
+    if (strcmp (method, "outline") == 0 && file != NULL)
+    {
+        GVariant *bytes = g_variant_lookup_value (args, "text", G_VARIANT_TYPE_BYTESTRING);
+        GVariant *symbols = NULL;
+
+        // the text as it is, in whatever encoding: bytes
+        if (bytes != NULL)
+        {
+            gsize len;
+            const char *text = g_variant_get_fixed_array (bytes, &len, 1);
+
+            symbols = ctags_outline (d, file, text, len);
+            g_variant_unref (bytes);
+        }
+        if (symbols == NULL)
+            symbols = g_variant_new_array (G_VARIANT_TYPE ("(sssi)"), NULL, 0);
+        g_variant_dict_insert_value (&reply, "symbols", symbols);
+    }
+    else if (strcmp (method, "symbols") == 0 && (file != NULL || root != NULL))
     {
         const char *query = "";
         gint32 max = 0;

@@ -94,7 +94,19 @@ typedef struct
     // what the list chose, opened once its dialog is gone
     char *open_file;
     long open_line;
+    // the outline of the file in front: its symbols under it in the tree, from the plugin ctags
+    char *outline_file;
+    GPtrArray *outline;   // project_symbol_t, in the order of the lines
+    int outline_current;  // the one the cursor is in, -1 for none
+    gboolean outline_closed;
 } project_t;
+
+/* a symbol of the outline */
+typedef struct
+{
+    char *label;
+    long line;
+} project_symbol_t;
 
 /* a row of the tree */
 typedef struct
@@ -103,6 +115,7 @@ typedef struct
     char *rel;  // relative to the root
     int depth;
     gboolean dir;
+    int symbol;  // a symbol of the outline: its index; -1 for a file or a directory
 } project_row_t;
 
 struct project_tree_t
@@ -155,6 +168,17 @@ static mc_editor_host_t *pick_host = NULL;
 static GPtrArray *pick_targets = NULL;  // project_target_t, what the items of the list go to
 
 /*** file scope functions ************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+project_symbol_free (gpointer p)
+{
+    project_symbol_t *sym = (project_symbol_t *) p;
+
+    g_free (sym->label);
+    g_free (sym);
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 static void
@@ -691,6 +715,46 @@ project_row_compare (gconstpointer a, gconstpointer b)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void project_outline_update (project_t *project, void *edit);
+
+/* Whether a row of the tree is the file of the outline, which has symbols */
+static gboolean
+project_row_has_outline (const project_t *project, const project_row_t *row)
+{
+    const char *rel;
+
+    if (row->dir || row->symbol >= 0 || project->outline == NULL || project->outline->len == 0)
+        return FALSE;
+    rel = project_relative ((project_t *) project, project->outline_file);
+    return rel != NULL && strcmp (rel, row->rel) == 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The symbols of the file of the outline under its row, unless they are folded */
+static void
+project_tree_add_outline (project_tree_t *tree, const project_row_t *file_row)
+{
+    const project_t *project = tree->project;
+    guint i;
+
+    if (project->outline_closed || !project_row_has_outline (project, file_row))
+        return;
+    for (i = 0; i < project->outline->len; i++)
+    {
+        const project_symbol_t *sym = g_ptr_array_index (project->outline, i);
+        project_row_t *row = g_new0 (project_row_t, 1);
+
+        row->name = g_strdup (sym->label);
+        row->rel = g_strdup (file_row->rel);
+        row->depth = file_row->depth + 1;
+        row->symbol = (int) i;
+        g_ptr_array_add (tree->rows, row);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The rows of a directory of the tree, and of the open ones in it, from the sorted names */
 static void
 project_tree_add_dir (project_tree_t *tree, const GPtrArray *files, const char *dir, int depth)
@@ -712,6 +776,7 @@ project_tree_add_dir (project_tree_t *tree, const GPtrArray *files, const char *
         slash = strchr (rest, '/');
         row = g_new0 (project_row_t, 1);
         row->depth = depth;
+        row->symbol = -1;
         if (slash == NULL)
         {
             row->name = g_strdup (rest);
@@ -740,6 +805,8 @@ project_tree_add_dir (project_tree_t *tree, const GPtrArray *files, const char *
         g_ptr_array_add (tree->rows, row);
         if (row->dir && g_hash_table_contains (tree->expanded, row->rel))
             project_tree_add_dir (tree, files, row->rel, depth + 1);
+        else if (!row->dir)
+            project_tree_add_outline (tree, row);
     }
     g_ptr_array_free (children, FALSE);
     g_hash_table_destroy (seen);
@@ -850,12 +917,13 @@ project_tree_draw (project_tree_t *tree)
 
             for (i = 0; i < r->depth; i++)
                 g_string_append (line, "  ");
-            if (r->dir)
+            if (r->dir || project_row_has_outline (tree->project, r))
             {
+                const gboolean open = r->dir ? g_hash_table_contains (tree->expanded, r->rel)
+                                             : !tree->project->outline_closed;
+
                 g_string_append (line,
-                                 g_hash_table_contains (tree->expanded, r->rel)
-                                     ? tree->project->glyph_open
-                                     : tree->project->glyph_closed);
+                                 open ? tree->project->glyph_open : tree->project->glyph_closed);
                 g_string_append_c (line, ' ');
             }
             else
@@ -865,7 +933,8 @@ project_tree_draw (project_tree_t *tree)
                 g_string_append_c (line, '/');
             if (index == tree->selected && focused)
                 c = EDITOR_MARKED_COLOR;
-            else if (current_rel != NULL && strcmp (current_rel, r->rel) == 0)
+            else if (r->symbol >= 0 ? r->symbol == tree->project->outline_current
+                                    : current_rel != NULL && strcmp (current_rel, r->rel) == 0)
                 c = EDITOR_BOLD_COLOR;
         }
         tty_setcolor (EDITOR_NORMAL_COLOR);
@@ -888,7 +957,15 @@ project_tree_activate (project_tree_t *tree)
     if (tree->selected < 0 || tree->selected >= (int) tree->rows->len)
         return;
     row = g_ptr_array_index (tree->rows, tree->selected);
-    if (row->dir)
+    if (row->symbol >= 0)
+    {
+        // the line of the symbol, in the window of the file
+        const project_symbol_t *sym = g_ptr_array_index (tree->project->outline, row->symbol);
+
+        (void) tree->project->host->show_location (tree->project->host, tree->project->outline_file,
+                                                   sym->line);
+    }
+    else if (row->dir)
     {
         if (!g_hash_table_remove (tree->expanded, row->rel))
             g_hash_table_add (tree->expanded, g_strdup (row->rel));
@@ -937,10 +1014,22 @@ project_tree_key (project_tree_t *tree, int key)
     case KEY_RIGHT:
         if (row != NULL && row->dir && !g_hash_table_contains (tree->expanded, row->rel))
             project_tree_activate (tree);
+        else if (row != NULL && project_row_has_outline (tree->project, row)
+                 && tree->project->outline_closed)
+        {
+            tree->project->outline_closed = FALSE;
+            project_tree_rebuild (tree);
+        }
         break;
     case KEY_LEFT:
         if (row != NULL && row->dir && g_hash_table_contains (tree->expanded, row->rel))
             project_tree_activate (tree);
+        else if (row != NULL && project_row_has_outline (tree->project, row)
+                 && !tree->project->outline_closed)
+        {
+            tree->project->outline_closed = TRUE;
+            project_tree_rebuild (tree);
+        }
         else if (row != NULL && row->depth > 0)
         {
             // up to the directory it is in
@@ -1166,6 +1255,7 @@ project_tree_toggle (project_t *project)
         char *file = project->host->get_current_file (project->host, top_file);
 
         project_tree_reveal (tree, file);
+        project_outline_update (project, top_file);
         g_free (file);
     }
 }
@@ -1320,6 +1410,117 @@ project_startup (void *data)
         project_tree_toggle (project);
 }
 
+/* The symbol the cursor of @edit is in: the last one that starts above it */
+static void
+project_outline_cursor (project_t *project, void *edit)
+{
+    int current = -1;
+    long line;
+    guint i;
+
+    if (project->outline != NULL && edit != NULL)
+    {
+        line = project->host->get_cursor_line (project->host, edit);
+        for (i = 0; i < project->outline->len; i++)
+            if (((project_symbol_t *) g_ptr_array_index (project->outline, i))->line <= line)
+                current = (int) i;
+    }
+    if (current != project->outline_current)
+    {
+        project->outline_current = current;
+        if (project->tree != NULL)
+            widget_draw (WIDGET (project->tree));
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A symbol of the outline as the tree shows it: divide (), struct node, VERSION */
+static char *
+project_symbol_label (const char *name, const char *kind)
+{
+    if (strcmp (kind, "func") == 0 || strcmp (kind, "proto") == 0)
+        return g_strconcat (name, " ()", (char *) NULL);
+    if (strcmp (kind, "struct") == 0 || strcmp (kind, "union") == 0 || strcmp (kind, "enum") == 0
+        || strcmp (kind, "class") == 0)
+        return g_strconcat (kind, " ", name, (char *) NULL);
+    return g_strdup (name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The outline of the file of @edit, from its text as it is now: what the plugin ctags finds in
+   it but the members of the structures and the values of the enums */
+static void
+project_outline_update (project_t *project, void *edit)
+{
+    char *file = edit != NULL ? project->host->get_current_file (project->host, edit) : NULL;
+    GPtrArray *outline = NULL;
+    char *text = NULL;
+    gsize len = 0;
+
+    if (project->tree == NULL)
+    {
+        g_free (file);
+        return;
+    }
+    if (file != NULL && project_relative (project, file) != NULL && g_utf8_validate (file, -1, NULL)
+        && project->host->service_call != NULL && project->host->get_text != NULL)
+        text = project->host->get_text (project->host, edit, &len);
+    // a file of some megabytes is no source to outline
+    if (text != NULL && len <= 4 * 1024 * 1024)
+    {
+        GVariantDict args;
+        GVariant *reply, *symbols;
+
+        g_variant_dict_init (&args, NULL);
+        g_variant_dict_insert (&args, "file", "s", file);
+        g_variant_dict_insert_value (&args, "text",
+                                     g_variant_new_fixed_array (G_VARIANT_TYPE_BYTE, text, len, 1));
+        reply = project->host->service_call (project->host, "ctags", "outline",
+                                             g_variant_dict_end (&args), NULL);
+        symbols = reply != NULL
+            ? g_variant_lookup_value (reply, "symbols", G_VARIANT_TYPE ("a(sssi)"))
+            : NULL;
+        if (symbols != NULL)
+        {
+            GVariantIter iter;
+            const char *name, *kind, *path;
+            gint32 line;
+
+            outline = g_ptr_array_new_with_free_func (project_symbol_free);
+            g_variant_iter_init (&iter, symbols);
+            while (g_variant_iter_next (&iter, "(&s&s&si)", &name, &kind, &path, &line))
+                if (strcmp (kind, "field") != 0 && strcmp (kind, "enum val") != 0)
+                {
+                    project_symbol_t *sym = g_new (project_symbol_t, 1);
+
+                    sym->label = project_symbol_label (name, kind);
+                    sym->line = line;
+                    g_ptr_array_add (outline, sym);
+                }
+            g_variant_unref (symbols);
+        }
+        if (reply != NULL)
+            g_variant_unref (reply);
+    }
+    g_free (text);
+
+    // another file comes with its outline open
+    if (g_strcmp0 (file, project->outline_file) != 0)
+        project->outline_closed = FALSE;
+    g_free (project->outline_file);
+    project->outline_file = file;
+    if (project->outline != NULL)
+        g_ptr_array_unref (project->outline);
+    project->outline = outline;
+    project->outline_current = -2;  // drawn again
+    project_tree_rebuild (project->tree);
+    project_outline_cursor (project, edit);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static mc_ep_result_t
 project_handle_event (void *data, void *edit, int event_id, void *payload)
 {
@@ -1328,6 +1529,10 @@ project_handle_event (void *data, void *edit, int event_id, void *payload)
     (void) payload;
     if (event_id == MC_EP_EVENT_FOCUS_IN && edit != NULL)
         project_file_seen (project, edit);
+    else if (event_id == MC_EP_EVENT_TEXT_CHANGED && edit != NULL)
+        project_outline_update (project, edit);
+    else if (event_id == MC_EP_EVENT_CURSOR_MOVED && edit != NULL)
+        project_outline_cursor (project, edit);
     else if (event_id == MC_EP_EVENT_FILE_SAVED || event_id == MC_EP_EVENT_FILE_RENAMED)
     {
         // a file new to the project
@@ -1499,6 +1704,9 @@ project_close (void *data)
     g_free (project->glyph_closed);
     g_free (project->glyph_open);
     g_free (project->open_file);
+    g_free (project->outline_file);
+    if (project->outline != NULL)
+        g_ptr_array_unref (project->outline);
     g_free (project);
 }
 

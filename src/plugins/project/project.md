@@ -59,10 +59,12 @@ or anywhere in the project.
 : Move in the tree.
 
 **Enter**
-: Open the file, or open or close the directory.
+: Open the file, or open or close the directory; on a symbol, go to its
+line.
 
 **Right**, **Left**
-: Open the directory, close it or go to the one above.
+: Open the directory, close it or go to the one above; on the file of the
+outline, show its symbols or fold them.
 
 **A letter**
 : Go to the next name that starts with it.
@@ -72,6 +74,12 @@ or anywhere in the project.
 
 The file of the topmost window is shown in bold, and the tree opens down to
 it whenever another file comes to the front.
+
+Under that file come its symbols, its outline: the functions, the
+structures, the types, the macros and the variables, in their order, the
+one the cursor is in shown in bold. The outline is made by the plugin
+ctags from the text as it is, saved or not, whenever the editor rests
+after a change; without ctags there is none.
 
 **For the other plugins**
 
