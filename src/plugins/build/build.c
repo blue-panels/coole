@@ -89,6 +89,7 @@ typedef struct
     int output_fd;
     GString *output;
     GString *pending;  // a line not ended yet
+    GString *partial;  // the bytes of a character a read has cut, for the next read
     gint64 window;
     // asked for by another plugin, before a start: the window goes when the build is fine
     gboolean quiet;
@@ -381,7 +382,25 @@ build_output_ready (int fd, void *data)
     if (n > 0)
     {
         char *newline;
-        char *valid = g_utf8_make_valid (buf, n);
+        char *valid;
+        const gchar *end;
+
+        /* a character cut at the end of the read waits for its other bytes: made valid alone it
+           would be a U+FFFD in the name of a file */
+        g_string_append_len (build->partial, buf, n);
+        if (!g_utf8_validate (build->partial->str, (gssize) build->partial->len, &end)
+            && build->partial->str + build->partial->len - end < 4
+            && g_utf8_get_char_validated (end, build->partial->str + build->partial->len - end)
+                == (gunichar) -2)
+        {
+            valid = g_utf8_make_valid (build->partial->str, end - build->partial->str);
+            g_string_erase (build->partial, 0, end - build->partial->str);
+        }
+        else
+        {
+            valid = g_utf8_make_valid (build->partial->str, (gssize) build->partial->len);
+            g_string_truncate (build->partial, 0);
+        }
 
         g_string_append (build->output, valid);
         g_string_append (build->pending, valid);
@@ -395,7 +414,14 @@ build_output_ready (int fd, void *data)
             g_free (line);
         }
         if (build->output->len > BUILD_OUTPUT_MAX)
-            g_string_erase (build->output, 0, build->output->len - BUILD_OUTPUT_MAX);
+        {
+            gsize cut = build->output->len - BUILD_OUTPUT_MAX;
+
+            // at the start of a character: the text stays UTF-8
+            while (cut < build->output->len && (build->output->str[cut] & 0xC0) == 0x80)
+                cut++;
+            g_string_erase (build->output, 0, (gssize) cut);
+        }
         build_output_show (build);
         tty_refresh ();
     }
@@ -409,12 +435,46 @@ build_output_ready (int fd, void *data)
         if (build->pending->len > 0)
             build_line (build, build->pending->str);
         g_string_truncate (build->pending, 0);
-        (void) waitpid (build->pid, &status, 0);
+        /* the output ends with the build, mostly: a command that sends it elsewhere, or a
+           program it left running with it, ends it before; the build is then done when it is
+           asked about */
+        if (waitpid (build->pid, &status, WNOHANG) == build->pid)
+        {
+            g_spawn_close_pid (build->pid);
+            build->pid = 0;
+            build_finished (build, status);
+        }
+    }
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+build_child_setup (gpointer data)
+{
+    (void) data;
+    (void) setsid ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the build still runs: one whose output has ended is done when its process is */
+static gboolean
+build_running (build_t *build)
+{
+    int status = 0;
+
+    if (build->pid == 0)
+        return FALSE;
+    if (build->output_fd < 0 && waitpid (build->pid, &status, WNOHANG) == build->pid)
+    {
         g_spawn_close_pid (build->pid);
         build->pid = 0;
         build_finished (build, status);
+        return FALSE;
     }
-    return 0;
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -428,7 +488,7 @@ build_start (build_t *build, const char *root)
     GError *error = NULL;
     int out;
 
-    if (build->pid != 0)
+    if (build_running (build))
     {
         build->host->message (build->host, D_NORMAL, _ ("Build"), _ ("The build is running."));
         return FALSE;
@@ -470,8 +530,9 @@ build_start (build_t *build, const char *root)
     argv[1] = (char *) "-c";
     argv[2] = shell_command;
     argv[3] = NULL;
-    if (!g_spawn_async_with_pipes (root, argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL,
-                                   &build->pid, NULL, &out, NULL, &error))
+    // a session of its own: the build is stopped as a whole, make with its compilers
+    if (!g_spawn_async_with_pipes (root, argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD, build_child_setup,
+                                   NULL, &build->pid, NULL, &out, NULL, &error))
     {
         g_string_append_printf (build->output, "%s\n", error->message);
         g_clear_error (&error);
@@ -495,6 +556,7 @@ build_go (build_t *build, int step)
 {
     const build_diagnostic_t *d;
     guint n = build->diagnostics->len;
+    gboolean errors = FALSE;
     guint i;
 
     if (n == 0)
@@ -503,14 +565,16 @@ build_go (build_t *build, int step)
                               _ ("The build has said nothing about the files."));
         return;
     }
-    // the errors first: the warnings only when there is no error
+    // the errors, one after another; the warnings only when there is no error
+    for (i = 0; i < n && !errors; i++)
+        errors = ((const build_diagnostic_t *) g_ptr_array_index (build->diagnostics, i))->error;
     for (i = 0; i < n; i++)
     {
         build->current = (build->current + step + (int) n) % (int) n;
         if (build->current < 0)
             build->current = step > 0 ? 0 : (int) n - 1;
         d = g_ptr_array_index (build->diagnostics, build->current);
-        if (d->error)
+        if (d->error || !errors)
             break;
     }
     d = g_ptr_array_index (build->diagnostics, build->current);
@@ -712,7 +776,7 @@ build_call (void *data, const char *method, GVariant *args, GError **error)
         g_variant_dict_insert (&reply, "started", "b", started);
     }
     else if (strcmp (method, "running") == 0)
-        g_variant_dict_insert (&reply, "running", "b", build->pid != 0);
+        g_variant_dict_insert (&reply, "running", "b", build_running (build));
     else
     {
         g_variant_dict_clear (&reply);
@@ -738,6 +802,7 @@ build_open (mc_editor_host_t *host, void *editor_dialog)
     build->output_fd = -1;
     build->output = g_string_new (NULL);
     build->pending = g_string_new (NULL);
+    build->partial = g_string_new (NULL);
     build->diagnostics = g_ptr_array_new_with_free_func (build_diagnostic_free_cb);
     build->current = -1;
     host->commands_register (host, BUILD_KEYMAP_SECTION, N_ ("&Build"), build_commands);
@@ -765,8 +830,17 @@ build_close (void *data)
     }
     if (build->pid != 0)
     {
-        (void) kill (build->pid, SIGTERM);
-        (void) waitpid (build->pid, NULL, 0);
+        int i;
+
+        // all of the build, the shell and what it started; killed if it does not end
+        (void) kill (-build->pid, SIGTERM);
+        for (i = 0; i < 50 && waitpid (build->pid, NULL, WNOHANG) == 0; i++)
+            g_usleep (10000);
+        if (i == 50)
+        {
+            (void) kill (-build->pid, SIGKILL);
+            (void) waitpid (build->pid, NULL, 0);
+        }
         g_spawn_close_pid (build->pid);
     }
     if (build->service)
@@ -774,6 +848,7 @@ build_close (void *data)
     g_ptr_array_free (build->diagnostics, TRUE);
     g_string_free (build->output, TRUE);
     g_string_free (build->pending, TRUE);
+    g_string_free (build->partial, TRUE);
     g_free (build->root);
     g_free (build->command);
     g_free (build->dir);
@@ -787,7 +862,7 @@ build_ok_to_quit (void *data)
 {
     build_t *build = (build_t *) data;
 
-    return build->pid == 0
+    return !build_running (build)
         || query_dialog (_ ("Build"), _ ("Stop the build and quit?"), D_NORMAL, 2, _ ("&Stop"),
                          _ ("&Cancel"))
         == 0;

@@ -54,6 +54,8 @@ typedef struct
 
 /*** forward declarations (file scope functions) *************************************************/
 
+static gboolean build_elf_read_full (const char *path, build_elf_t *elf, gboolean flags);
+
 /*** file scope variables ************************************************************************/
 
 /*** file scope functions ************************************************************************/
@@ -296,7 +298,8 @@ build_walk_programs (const char *dir, int depth, GArray *programs)
         {
             build_elf_t elf;
 
-            if (build_elf_read (path, &elf) && elf.executable && elf.debug_info)
+            // the programs to choose from: their flags are not read, megabytes each
+            if (build_elf_read_full (path, &elf, FALSE) && elf.executable && elf.debug_info)
             {
                 build_program_t p = { g_strdup (path), (gint64) st.st_mtime };
 
@@ -378,10 +381,12 @@ build_info_free (build_info_t *info)
 
 /* --------------------------------------------------------------------------------------------- */
 
-gboolean
-build_elf_read (const char *path, build_elf_t *elf)
+/* The ELF @path; with @flags, the flags of the compiler too, which takes reading its strings */
+static gboolean
+build_elf_read_full (const char *path, build_elf_t *elf, gboolean flags)
 {
     guchar head[64];
+    size_t got;
     FILE *f;
     gboolean wide, big;
     guint64 phoff, shoff;
@@ -394,10 +399,14 @@ build_elf_read (const char *path, build_elf_t *elf)
     f = fopen (path, "rb");
     if (f == NULL)
         return FALSE;
-    if (fread (head, 1, sizeof (head), f) < 52 || memcmp (head, "\177ELF", 4) != 0)
+    got = fread (head, 1, sizeof (head), f);
+    if (got < 52 || memcmp (head, "\177ELF", 4) != 0)
         goto out;
 
     wide = head[4] == 2;
+    // the header of 64 bits is 64 bytes long
+    if (wide && got < 64)
+        goto out;
     big = head[5] == 2;
     type = (guint) build_get (head + 16, 2, big);
     if (wide)
@@ -470,7 +479,7 @@ build_elf_read (const char *path, build_elf_t *elf)
         size = wide ? build_get (sh + 32, 8, big) : build_get (sh + 20, 4, big);
         if (strcmp (section, ".debug_info") == 0)
             elf->debug_info = TRUE;
-        else if (strcmp (section, ".debug_str") == 0 && size > 0)
+        else if (flags && strcmp (section, ".debug_str") == 0 && size > 0)
         {
             // the producer strings name the flags of the compiler
             const gsize len = (gsize) MIN (size, BUILD_DEBUG_STR_MAX);
@@ -486,6 +495,14 @@ out:
     g_free (names);
     fclose (f);
     return ok;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+build_elf_read (const char *path, build_elf_t *elf)
+{
+    return build_elf_read_full (path, elf, TRUE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
