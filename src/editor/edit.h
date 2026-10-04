@@ -91,6 +91,8 @@ void edit_stack_free (void);
 gboolean edit_file (const edit_arg_t *arg);
 void edit_file_at_line (const char *file_name, long start_line);
 gboolean edit_files (const GList *files);
+/* An option the program was started with, for the plugins: "debug", the directory to debug */
+void edit_set_startup_option (const char *name, const char *value);
 
 edit_arg_t *edit_arg_new (const char *file_name, long line_number);
 void edit_arg_init (edit_arg_t *arg, char *file_name, long line);

@@ -184,6 +184,15 @@ typedef struct mc_editor_host_t
     void (*set_line_note) (struct mc_editor_host_t *host, const char *file, long line,
                            const char *text);
     void (*clear_line_notes) (struct mc_editor_host_t *host, const char *file);
+
+    /* An option the program was started with, NULL when it was not: "debug" for one */
+    const char *(*startup_option) (struct mc_editor_host_t *host, const char *name);
+    /* @fn(@data) once the editor is idle: what opens windows or files when a plugin starts goes
+       so, not from open() or from an event */
+    void (*call_later) (struct mc_editor_host_t *host, void (*fn) (void *data), void *data);
+    /* Close a window as the user would, asking first when it has to; TRUE when it is gone.  Not
+       from an event of that window: from call_later() */
+    gboolean (*window_close) (struct mc_editor_host_t *host, void *window);
     /* A line of a file in its window, or in a new one, without a step in the navigation
        history */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
