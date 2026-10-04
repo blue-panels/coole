@@ -202,6 +202,9 @@ enum
     CK_WindowSticky,
     CK_WindowNext,
     CK_WindowPrev,
+    CK_WindowTabNext,
+    CK_WindowTabPrev,
+    CK_WindowLayout,
     // misc commands
     CK_SpellCheck,
     CK_SpellCheckCurrentWord,

@@ -38,6 +38,7 @@ src/editor/editcmd.c
 src/editor/editcomplete.c
 src/editor/editdraw.c
 src/editor/editmacros.c
+src/editor/editlayout.c
 src/editor/editmenu.c
 src/editor/editoptions.c
 src/editor/editsearch.c

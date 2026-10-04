@@ -243,6 +243,9 @@ static name_keymap_t command_names[] = {
     ADD_KEYMAP_NAME_DESC (WindowSticky, N_ ("Toggle sticky windows")),
     ADD_KEYMAP_NAME_DESC (WindowNext, N_ ("Next window")),
     ADD_KEYMAP_NAME_DESC (WindowPrev, N_ ("Previous window")),
+    ADD_KEYMAP_NAME_DESC (WindowTabNext, N_ ("Next tab of the bottom")),
+    ADD_KEYMAP_NAME_DESC (WindowTabPrev, N_ ("Previous tab of the bottom")),
+    ADD_KEYMAP_NAME_DESC (WindowLayout, N_ ("Layout of the windows")),
 
     { NULL, CK_IgnoreKey, NULL }
 };
