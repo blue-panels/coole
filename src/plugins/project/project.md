@@ -32,6 +32,9 @@ The same line goes further:
 *main:42*
 : The file at that line.
 
+*:42*
+: The file in front at that line.
+
 *@divi*
 : The functions, structures and the other symbols of the project whose names
 have these letters: *divide* in *calc.c*.

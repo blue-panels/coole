@@ -404,6 +404,19 @@ project_pick_add (const char *label, const char *path, long line)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A file by its name under @root when it is there, else as it is */
+static const char *
+project_relative_to (const char *root, const char *file)
+{
+    const size_t len = strlen (root);
+
+    if (strncmp (file, root, len) == 0 && file[len] == '/')
+        return file + len + 1;
+    return file;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The name of a file of the project that fits @query best; NULL when none does */
 static const char *
 project_pick_best_file (const char *query)
@@ -529,6 +542,23 @@ project_pick_refilter (void)
     if (strchr (text, '@') != NULL)
     {
         project_pick_symbols (text, strchr (text, '@'));
+        listbox_select_first (pick_list);
+        widget_draw (WIDGET (pick_list));
+        return;
+    }
+
+    // ":42": the file in front, the latest one, at that line
+    if (text[0] == ':' && text[1] != '\0' && text[strspn (text + 1, "0123456789") + 1] == '\0')
+    {
+        if (pick_recent != NULL && pick_recent->len != 0)
+        {
+            const char *file = g_ptr_array_index (pick_recent, 0);
+            const char *rel = project_relative_to (pick_root, file);
+            char *label = g_strdup_printf ("%s%s", rel, text);
+
+            project_pick_add (label, file, atol (text + 1));
+            g_free (label);
+        }
         listbox_select_first (pick_list);
         widget_draw (WIDGET (pick_list));
         return;
