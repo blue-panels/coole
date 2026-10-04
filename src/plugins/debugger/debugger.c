@@ -104,6 +104,7 @@ enum
     DEBUG_CMD_EVALUATE,
     DEBUG_CMD_LEAVE,
     DEBUG_CMD_CLOSE,
+    DEBUG_CMD_PANEL,
     DEBUG_CMD_COUNT
 };
 
@@ -112,17 +113,19 @@ enum
 
 static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
     { "Help", NULL, "f1" },
-    { "DebugStartContinue", N_ ("Start or continue debugging"), "f5" },
+    { "DebugStartContinue", N_ ("Start or continue debugging"), "f5; alt-shift-r" },
     { "DebugPause", N_ ("Pause debugging"), "f6" },
     { "DebugStepInto", N_ ("Step into"), "f7" },
     { "DebugStepOver", N_ ("Step over"), "f8" },
     { "DebugStepOut", N_ ("Step out"), "f9" },
     { "DebugStop", N_ ("Stop debugging"), "f15" },
-    { "DebugToggleBreakpoint", N_ ("Toggle breakpoint"), "f2" },
+    { "DebugToggleBreakpoint", N_ ("Toggle breakpoint"), "f2; ctrl-b" },
     { "DebugRunToCursor", N_ ("Run to cursor"), "f4" },
     { "DebugEvaluate", N_ ("Evaluate expression"), "enter" },
     { "DebugLeave", N_ ("Leave step mode"), "esc" },
     { "DebugClose", N_ ("Close debug session window"), "f10" },
+    // from any window: to the panel of the debugger, and back to the file
+    { "DebugPanel", N_ ("Go to the panel of the debugger and back"), "alt-shift-d" },
     { NULL, NULL, NULL },
 };
 
@@ -252,6 +255,7 @@ static void debug_breakpoint_toggle_enabled (debugger_t *debug, guint index);
 static void debug_config_save (debugger_t *debug);
 static void debug_output_console (debugger_t *debug, const char *text_value, gboolean line);
 static void debug_notes_show (debugger_t *debug);
+static mc_ep_result_t debug_session_show (void *data, void *edit);
 static void debug_session_refresh (debugger_t *debug);
 
 static void
@@ -620,6 +624,19 @@ debug_panel_rows (const debugger_t *debug)
         debug_panel_add (rows, PANEL_TEXT, 0,
                          g_strdup_printf (_ ("%s, with no source"), debug->current_func));
 
+    // what to do next, while nothing runs
+    if ((debug->state == DEBUG_OFF || debug->state == DEBUG_FINISHED) && !debug->start_after_build)
+    {
+        debug_panel_add (rows, PANEL_TITLE, 0, g_strdup (_ ("Next")));
+        if (debug->breakpoints->len == 0)
+            debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Ctrl-B on a line: breakpoint")));
+        debug_panel_add (rows, PANEL_TEXT, 0,
+                         g_strdup (_ ("  F5 here, Alt-Shift-R anywhere: run")));
+        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Alt-Shift-D: here and back")));
+        if (debug_active_launch (debug) == NULL)
+            debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  the first F5 asks what to run")));
+    }
+
     if (debug->state == DEBUG_STOPPED)
     {
         debug_panel_add (rows, PANEL_TITLE, 0, g_strdup (_ ("Locals")));
@@ -675,7 +692,7 @@ debug_panel_rows (const debugger_t *debug)
                                           x_basename (bp->file), bp->line));
     }
     if (debug->breakpoints->len == 0)
-        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  F2 in a file puts one")));
+        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Ctrl-B on a line puts one")));
     return rows;
 }
 
@@ -952,6 +969,18 @@ debug_run_command (debugger_t *debug, int cmd, void *edit)
         if (debug->session_window != NULL)
             (void) debug_session_close_window (&debug->session_window->window);
         return TRUE;
+    case DEBUG_CMD_PANEL:
+        if (debug->session_window != NULL
+            && debug->host->window_current (debug->host) == debug->session_window)
+        {
+            void *file = debug->host->window_top_file (debug->host);
+
+            if (file != NULL)
+                debug->host->window_show (debug->host, file);
+        }
+        else
+            (void) debug_session_show (debug, NULL);
+        return TRUE;
     default:
         return FALSE;
     }
@@ -1047,19 +1076,16 @@ debug_session_show (void *data, void *edit)
         debug->host->window_show (debug->host, debug->session_window);
         return MC_EPR_OK;
     }
-    // at the right, of all the height: the source keeps the rest
     debug->host->window_area (debug->host, &area);
     rect = area;
-    rect.cols = CLAMP (area.cols * 35 / 100, 30, 60);
-    rect.cols = MIN (rect.cols, area.cols);
-    rect.x = area.x + area.cols - rect.cols;
     session = g_new0 (debug_session_window_t, 1);
     edit_window_init (&session->window, &rect, &debug_session_class);
     session->window.fullscreen = 0;
     session->debug = debug;
     debug->session_window = session;
     debug->host->window_add (debug->host, session);
-    debug->host->window_make_room (debug->host, session);
+    // the column at the right: all of it, or under the tree of the project
+    debug->host->window_dock_right (debug->host, session, CLAMP (area.cols * 30 / 100, 30, 60));
     debug_session_refresh (debug);
     return MC_EPR_OK;
 }
@@ -3348,10 +3374,20 @@ debug_handle_key (void *data, int key, void *edit)
     debugger_t *debug = (debugger_t *) data;
     int cmd;
 
-    if (edit == NULL || !debug_stepping (debug))
+    if (edit == NULL)
         return MC_EPR_NOT_SUPPORTED;
-
     cmd = debug_command_of_key (debug, key);
+    /* out of step mode, a key of the debugger the editor has nothing on is the debugger's:
+       Alt-Shift-D, Ctrl-B, Alt-Shift-R; F2 and F5 stay Save and Copy */
+    if (!debug_stepping (debug))
+    {
+        if (cmd == DEBUG_CMD_NONE || cmd == DEBUG_CMD_HELP || cmd == DEBUG_CMD_CLOSE
+            || cmd == DEBUG_CMD_LEAVE || cmd == DEBUG_CMD_EVALUATE
+            || keybind_lookup_keymap_command (WIDGET (edit)->keymap, key) != CK_IgnoreKey)
+            return MC_EPR_NOT_SUPPORTED;
+        return debug_run_command (debug, cmd, edit) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
+    }
+
     // Help and Quit stay the editor's
     if (cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && debug_run_command (debug, cmd, edit))
         return MC_EPR_OK;
@@ -3733,6 +3769,17 @@ debug_act_gdb_command (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+/* Start, or go on when the program is stopped */
+static mc_ep_result_t
+debug_act_start (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+
+    if (debug->state == DEBUG_STOPPED)
+        return debug_continue (data, edit);
+    return debug_start (data, edit);
+}
+
 static const mc_ep_action_t debug_actions[] = {
     { "Open project", debug_open_project },
     { "Project status", debug_project_status },
@@ -3740,7 +3787,7 @@ static const mc_ep_action_t debug_actions[] = {
     { "New configuration", debug_new_configuration },
     { "Select configuration", debug_select_configuration },
     { "Delete configuration", debug_delete_configuration },
-    { "Start", debug_start },
+    { "Start", debug_act_start },
     { "Toggle breakpoint", debug_toggle_breakpoint },
     { "Continue", debug_continue },
     { "Pause", debug_pause },
@@ -3760,30 +3807,73 @@ static const mc_ep_action_t debug_actions[] = {
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { MC_EP_MENU_FILE, N_ ("Open debug &project..."), DEBUG_ACT_OPEN_PROJECT, NULL },
-    { DEBUG_MENU, N_ ("Open proj&ect..."), DEBUG_ACT_OPEN_PROJECT, NULL },
-    { DEBUG_MENU, N_ ("Project status..."), DEBUG_ACT_PROJECT_STATUS, NULL },
-    { DEBUG_MENU, N_ ("Ne&w configuration..."), DEBUG_ACT_NEW_CONFIGURATION, NULL },
-    { DEBUG_MENU, N_ ("Select con&figuration..."), DEBUG_ACT_SELECT_CONFIGURATION, NULL },
-    { DEBUG_MENU, N_ ("Confi&gure selected..."), DEBUG_ACT_CONFIGURE, NULL },
-    { DEBUG_MENU, N_ ("&Delete configuration..."), DEBUG_ACT_DELETE_CONFIGURATION, NULL },
-    { DEBUG_MENU, NULL, 0, NULL },
-    { DEBUG_MENU, N_ ("&Start"), DEBUG_ACT_START, NULL },
+    // what one does, first
+    { DEBUG_MENU, N_ ("&Start or continue"), DEBUG_ACT_START, NULL },
     { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
+    { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
-    { DEBUG_MENU, N_ ("&Continue"), DEBUG_ACT_CONTINUE, NULL },
-    { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
     { DEBUG_MENU, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
     { DEBUG_MENU, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
     { DEBUG_MENU, N_ ("Step o&ut"), DEBUG_ACT_FINISH, NULL },
+    { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
+    { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
+    { DEBUG_MENU, NULL, 0, NULL },
     { DEBUG_MENU, N_ ("Co&nsole"), DEBUG_ACT_OUTPUT, NULL },
     { DEBUG_MENU, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
     { DEBUG_MENU, N_ ("&Add watch..."), DEBUG_ACT_ADD_WATCH, NULL },
     { DEBUG_MENU, N_ ("&Remove watch..."), DEBUG_ACT_REMOVE_WATCH, NULL },
     { DEBUG_MENU, N_ ("Send &line..."), DEBUG_ACT_INPUT, NULL },
     { DEBUG_MENU, N_ ("GDB co&mmand..."), DEBUG_ACT_GDB_COMMAND, NULL },
-    { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
-    { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
+    { DEBUG_MENU, NULL, 0, NULL },
+    // what one sets once
+    { DEBUG_MENU, N_ ("Ne&w configuration..."), DEBUG_ACT_NEW_CONFIGURATION, NULL },
+    { DEBUG_MENU, N_ ("Select con&figuration..."), DEBUG_ACT_SELECT_CONFIGURATION, NULL },
+    { DEBUG_MENU, N_ ("Confi&gure selected..."), DEBUG_ACT_CONFIGURE, NULL },
+    { DEBUG_MENU, N_ ("&Delete configuration..."), DEBUG_ACT_DELETE_CONFIGURATION, NULL },
+    { DEBUG_MENU, N_ ("Open proj&ect..."), DEBUG_ACT_OPEN_PROJECT, NULL },
+    { DEBUG_MENU, N_ ("Project status..."), DEBUG_ACT_PROJECT_STATUS, NULL },
 };
+
+/* The key of a menu entry: of its command, the one the editor has nothing on first, since that
+   one works in a file window too */
+static char *
+debug_menu_shortcut (int action_index)
+{
+    static const struct
+    {
+        int action;
+        int cmd;
+    } keys[] = {
+        { DEBUG_ACT_START, DEBUG_CMD_START_CONTINUE },
+        { DEBUG_ACT_CONTINUE, DEBUG_CMD_START_CONTINUE },
+        { DEBUG_ACT_TOGGLE_BREAKPOINT, DEBUG_CMD_TOGGLE_BREAKPOINT },
+        { DEBUG_ACT_SESSION, DEBUG_CMD_PANEL },
+        { DEBUG_ACT_NEXT, DEBUG_CMD_STEP_OVER },
+        { DEBUG_ACT_STEP, DEBUG_CMD_STEP_INTO },
+        { DEBUG_ACT_FINISH, DEBUG_CMD_STEP_OUT },
+        { DEBUG_ACT_PAUSE, DEBUG_CMD_PAUSE },
+        { DEBUG_ACT_STOP, DEBUG_CMD_STOP },
+    };
+    const global_keymap_t *map = keymap_section_map (DEBUG_KEYMAP_SECTION);
+    const char *first = NULL;
+    long command;
+    size_t i, k;
+
+    for (k = 0; k < G_N_ELEMENTS (keys) && keys[k].action != action_index; k++)
+        ;
+    if (k == G_N_ELEMENTS (keys) || map == NULL)
+        return NULL;
+    command = keybind_lookup_action (debug_commands[keys[k].cmd].name);
+    for (i = 0; map[i].key != 0; i++)
+        if (map[i].command == command && map[i].caption[0] != '\0')
+        {
+            if (keybind_lookup_keymap_command (editor_map, map[i].key) == CK_IgnoreKey)
+                return g_strdup (map[i].caption);
+            if (first == NULL)
+                first = map[i].caption;
+        }
+    return first != NULL ? g_strdup (first) : NULL;
+}
 
 static const mc_editor_plugin_t debug_plugin = {
     .api_version = MC_EDITOR_PLUGIN_API_VERSION,
@@ -3801,6 +3891,7 @@ static const mc_editor_plugin_t debug_plugin = {
     .action_count = G_N_ELEMENTS (debug_actions),
     .cmd_menu_entries = debug_menu,
     .cmd_menu_entry_count = G_N_ELEMENTS (debug_menu),
+    .get_menu_shortcut = debug_menu_shortcut,
 };
 
 const mc_editor_plugin_t *

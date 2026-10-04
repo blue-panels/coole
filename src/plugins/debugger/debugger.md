@@ -8,9 +8,9 @@ local variables and the watches beside it.
 
 **The start**
 
-Put a breakpoint on a line with **Debug → Toggle breakpoint** and choose
-**Debug → Start**. The first time, the debugger makes a configuration of its
-own:
+Put a breakpoint on a line with **Ctrl-B** and run with **Alt-Shift-R** (or
+**Debug → Toggle breakpoint** and **Debug → Start or continue**). The first
+time, the debugger makes a configuration of its own:
 
 1. The project is the one the project plugin finds for the file: no
 directory has to be named. **Debug → Open project...** names another.
@@ -35,10 +35,23 @@ but no shell runs them: an entry of the environment with spaces is
 **Debug mode**
 
 *coole --debug DIR* (or *-D DIR*) opens the project of that directory to
-debug it: its latest file instead of an empty one, the tree of the project at
-the left and the panel of the debugger at the right, with the focus. F5
-there builds the program and starts it, making its configuration the first
-time.
+debug it: its latest file instead of an empty one, and at the right the tree
+of the project with the panel of the debugger under it. The panel says what
+to do next while nothing runs.
+
+**The keys anywhere**
+
+These work in a file window too, since the editor has nothing on them:
+
+**Alt-Shift-D**
+: Go to the panel of the debugger, and back to the file.
+
+**Ctrl-B**
+: Toggle a breakpoint on the line of the cursor.
+
+**Alt-Shift-R**
+: Run: build the program and start it, or go on when it is stopped. The
+first time it asks what to run.
 
 **The configurations**
 

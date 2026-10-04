@@ -11,7 +11,7 @@
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
-#define MC_EDITOR_PLUGIN_API_VERSION 9
+#define MC_EDITOR_PLUGIN_API_VERSION 10
 #define MC_EDITOR_PLUGIN_ENTRY       "mc_editor_plugin_register"
 #define MC_EDITOR_PLUGIN_CMD_BASE    30000L /* Plugins-menu: base + plugin_index */
 #define MC_EDITOR_PLUGIN_ACTION_BASE 31000L /* per-action menu commands           */
@@ -197,6 +197,11 @@ typedef struct mc_editor_host_t
     /* Close a window as the user would, asking first when it has to; TRUE when it is gone.  Not
      * from an event of that window: from call_later() */
     gboolean (*window_close) (struct mc_editor_host_t *host, void *window);
+    /* v10: a window added in the column at the right of the screen: all its height, the others
+       making room, or the lower part of the lowest window of the column there is; @cols wide
+       when it makes the column.  Its room goes back as with window_give_room_back(), a window
+       of the column under it taking its place */
+    void (*window_dock_right) (struct mc_editor_host_t *host, void *window, int cols);
     /* Show a debugger location without adding each step to the navigation stack. */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
     /* v8: offer to save modified source files within a project root. */

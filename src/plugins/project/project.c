@@ -963,7 +963,6 @@ project_tree_toggle (project_t *project)
     top_file = project->host->window_top_file (project->host);
     project->host->window_area (project->host, &area);
     rect = area;
-    rect.cols = CLAMP (area.cols / 4, 20, 40);
     tree = g_new0 (project_tree_t, 1);
     edit_window_init (&tree->window, &rect, &project_tree_class);
     tree->window.fullscreen = 0;
@@ -972,7 +971,8 @@ project_tree_toggle (project_t *project)
     tree->rows = g_ptr_array_new_with_free_func (project_row_free);
     project->tree = tree;
     project->host->window_add (project->host, tree);
-    project->host->window_make_room (project->host, tree);
+    // the column at the right, the panel of the debugger under it
+    project->host->window_dock_right (project->host, tree, CLAMP (area.cols * 30 / 100, 24, 50));
     (void) project_files (project);
     project_tree_rebuild (tree);
     if (top_file != NULL)
