@@ -91,7 +91,14 @@ typedef struct
 {
     mc_editor_host_t *host;
     GPtrArray *instances; /* editor_plugin_instance_t* */
+    GArray *later;        /* editor_later_t: the calls of the plugins for when the editor is idle */
 } editor_plugin_ctx_t;
+
+typedef struct
+{
+    void (*fn) (void *data);
+    void *data;
+} editor_later_t;
 
 /*** forward declarations (file scope functions) *************************************************/
 
@@ -900,6 +907,81 @@ editor_host_marker_lines_impl (mc_editor_host_t *host, const char *file, int kin
 
 /* A file opened for a plugin goes where the file window in front is, when that one has given
    room to other windows (the panel and the console of the debugger): it does not cover them */
+/* the options the program was started with, for the plugins */
+static GHashTable *startup_options = NULL;
+
+void
+edit_set_startup_option (const char *name, const char *value)
+{
+    if (startup_options == NULL)
+        startup_options = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    g_hash_table_insert (startup_options, g_strdup (name), g_strdup (value));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_call_later_impl (mc_editor_host_t *host, void (*fn) (void *data), void *data)
+{
+    WDialog *dialog = DIALOG (host->host_data);
+    editor_plugin_ctx_t *ctx = (editor_plugin_ctx_t *) dialog->data.p;
+    const editor_later_t call = { fn, data };
+
+    if (ctx == NULL || fn == NULL)
+        return;
+    if (ctx->later == NULL)
+        ctx->later = g_array_new (FALSE, FALSE, sizeof (editor_later_t));
+    g_array_append_val (ctx->later, call);
+    widget_idle (WIDGET (dialog), TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The calls the plugins asked for, the editor being idle; those they ask for meanwhile wait for
+   the next time */
+static void
+edit_plugins_run_later (WDialog *dialog)
+{
+    editor_plugin_ctx_t *ctx = (editor_plugin_ctx_t *) dialog->data.p;
+    GArray *calls;
+    guint i;
+
+    if (ctx == NULL || ctx->later == NULL || ctx->later->len == 0)
+        return;
+    calls = ctx->later;
+    ctx->later = NULL;
+    for (i = 0; i < calls->len; i++)
+    {
+        const editor_later_t *call = &g_array_index (calls, editor_later_t, i);
+
+        call->fn (call->data);
+    }
+    g_array_free (calls, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_window_close_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+    if (window == NULL || !edit_window_is_window (CONST_WIDGET (window))
+        || EDIT_WINDOW (window)->klass->close == NULL)
+        return FALSE;
+    return EDIT_WINDOW (window)->klass->close (EDIT_WINDOW (window));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static const char *
+editor_host_startup_option_impl (mc_editor_host_t *host, const char *name)
+{
+    (void) host;
+    return startup_options != NULL ? g_hash_table_lookup (startup_options, name) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static gboolean
 editor_host_load_in_place (mc_editor_host_t *host, edit_arg_t *arg)
 {
@@ -1160,9 +1242,14 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->open_file = editor_host_open_file_impl;
     ctx->host->set_line_note = editor_host_set_line_note_impl;
     ctx->host->clear_line_notes = editor_host_clear_line_notes_impl;
+    ctx->host->startup_option = editor_host_startup_option_impl;
+    ctx->host->call_later = editor_host_call_later_impl;
+    ctx->host->window_close = editor_host_window_close_impl;
     ctx->host->show_location = editor_host_show_location_impl;
     ctx->host->save_modified_files = editor_host_save_modified_files_impl;
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
+    // the plugins reach it from open(): call_later() for one
+    edit_dlg->data.p = ctx;
 
     for (; plugins != NULL; plugins = g_slist_next (plugins))
     {
@@ -1212,6 +1299,8 @@ editor_plugin_ctx_destroy (WDialog *edit_dlg)
         return;
 
     g_ptr_array_free (ctx->instances, TRUE);
+    if (ctx->later != NULL)
+        g_array_free (ctx->later, TRUE);
     g_free (ctx->host);
     g_free (ctx);
     edit_dlg->data.p = NULL;
@@ -2449,6 +2538,9 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
 
     case MSG_IDLE:
         widget_idle (w, FALSE);
+        edit_plugins_run_later (h);
+        if (!widget_get_state (w, WST_ACTIVE) || g->current == NULL)
+            return MSG_HANDLED;
         return send_message (g->current->data, NULL, MSG_IDLE, 0, NULL);
 
     default:

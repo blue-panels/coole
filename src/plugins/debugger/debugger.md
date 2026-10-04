@@ -32,6 +32,14 @@ The arguments and the environment are split as a shell would split them,
 but no shell runs them: an entry of the environment with spaces is
 *GREETING="hello world"*.
 
+**Debug mode**
+
+*coole --debug DIR* (or *-D DIR*) opens the project of that directory to
+debug it: its latest file instead of an empty one, the tree of the project at
+the left and the panel of the debugger at the right, with the focus. F5
+there builds the program and starts it, making its configuration the first
+time.
+
 **The configurations**
 
 A project may have several: **New configuration...** guesses another one,

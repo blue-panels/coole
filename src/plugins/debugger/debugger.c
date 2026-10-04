@@ -3601,6 +3601,13 @@ debug_stop (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+/* coole --debug, the editor up: the panel, with the focus, where F5 starts */
+static void
+debug_startup (void *data)
+{
+    (void) debug_session_show (data, NULL);
+}
+
 /* The build before a start is done: the start goes on, or the errors are shown */
 static void
 debug_build_finished (const char *name, const char *signal, GVariant *args, void *user_data)
@@ -3655,6 +3662,11 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     for (i = 0; i < DEBUG_MARK_COUNT; i++)
         debug->marks[i] =
             host->marker_kind != NULL ? host->marker_kind (host, &debug_mark_kinds[i]) : -1;
+    if (host->startup_option (host, "debug") != NULL)
+    {
+        (void) debug_project_switch (debug, g_strdup (host->startup_option (host, "debug")));
+        host->call_later (host, debug_startup, debug);
+    }
     return debug;
 }
 

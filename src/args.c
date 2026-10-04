@@ -61,6 +61,9 @@ gboolean mc_args__no_lua = FALSE;
 /* keymap file */
 char *mc_args__keymap_file = NULL;
 
+/* --debug: the directory of the project to debug, absolute; NULL without */
+char *mc_args__debug_project = NULL;
+
 GList *mc_args__edit_files = NULL;
 
 /*** file scope macro definitions ****************************************************************/
@@ -139,6 +142,16 @@ static const GOptionEntry argument_main_table[] = {
         &mc_args__no_lua,
         N_ ("Disables Lua support"),
         NULL,
+    },
+
+    {
+        "debug",
+        'D',
+        G_OPTION_FLAG_IN_MAIN,
+        G_OPTION_ARG_FILENAME,
+        &mc_args__debug_project,
+        N_ ("Opens the project of that directory to debug it"),
+        N_ ("<directory>"),
     },
 
     G_OPTION_ENTRY_NULL,
@@ -570,6 +583,20 @@ mc_setup_by_args (int argc, char **argv, GError **mcerror)
         mc_global.tty.disable_colors = FALSE;
 
     mc_args__edit_files = parse_mcedit_arguments (argc - 1, &argv[1]);
+
+    if (mc_args__debug_project != NULL)
+    {
+        char *dir = g_canonicalize_filename (mc_args__debug_project, NULL);
+
+        g_free (mc_args__debug_project);
+        mc_args__debug_project = dir;
+        if (!g_file_test (dir, G_FILE_TEST_IS_DIR))
+        {
+            mc_propagate_error (mcerror, 0, _ ("%s: no such directory to debug\n"), dir);
+            return FALSE;
+        }
+        edit_set_startup_option ("debug", dir);
+    }
 
     return TRUE;
 }

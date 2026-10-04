@@ -65,6 +65,13 @@ files, the user files and the plugins.
 *--no-lua*
 : Start without the Lua runtime: no Lua script is loaded.
 
+*-D, --debug=directory*
+: Open the project of that directory to debug it: the latest file of the
+project, the tree of the project at the left and the panel of the debugger at
+the right, where F5 builds the program and starts it, and makes its
+debug configuration the first time. It needs the project, build and debugger
+plugins.
+
 *-h, -?, --help*
 : Show the options and what they do.
 

@@ -55,6 +55,8 @@ there and develops it as a program of its own.
 - **Debugger**: run a local program under GDB, set line breakpoints, step through
   source, and inspect the call stack and local variables from the Debug menu.
   See [`debugger.md`](src/plugins/debugger/debugger.md).
+  `coole --debug DIR` opens a project ready to debug: its tree, its latest
+  file and the panel of the debugger, where F5 builds and starts it.
 - **Editor plugins**: a plugin framework the project, build, debugger, ctags, etags and spell plugins are
   built on; see [`doc/PLUGINS`](doc/PLUGINS).
 - **Lua scripts** for the editor, run by the Lua runtime plugin and managed

@@ -1092,6 +1092,23 @@ project_handle_action (void *data, long command, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* coole --debug, the editor up: the latest file of the project instead of an empty one, and the
+   tree */
+static void
+project_startup (void *data)
+{
+    project_t *project = (project_t *) data;
+    void *edit = project->host->window_top_file (project->host);
+    char *file = edit != NULL ? project->host->get_current_file (project->host, edit) : NULL;
+
+    if (edit != NULL && file == NULL && !((WEdit *) edit)->modified && project->recent->len > 0
+        && project->host->open_file (project->host, g_ptr_array_index (project->recent, 0)))
+        (void) project->host->window_close (project->host, edit);
+    g_free (file);
+    if (project->tree == NULL)
+        project_tree_toggle (project);
+}
+
 static mc_ep_result_t
 project_handle_event (void *data, void *edit, int event_id, void *payload)
 {
@@ -1242,6 +1259,11 @@ project_open (mc_editor_host_t *host, void *editor_dialog)
     for (i = 0; i < PROJECT_CMD_COUNT; i++)
         project->commands[i] = host->command_id (host, project_commands[i].name);
     project->service = host->service_register (host, PROJECT_SERVICE, project_call, project, NULL);
+    if (host->startup_option (host, "debug") != NULL)
+    {
+        project_set_root (project, host->startup_option (host, "debug"), TRUE);
+        host->call_later (host, project_startup, project);
+    }
     return project;
 }
 

@@ -264,6 +264,13 @@ What the editor provides to the plugin, passed to open():
                              off
   clear_line_notes(host, file)
                              all the notes off a file, or off all files
+  startup_option(host, name)  an option the program was started with:
+                             "debug", the directory of coole --debug
+  call_later(host, fn, data)  fn(data) once the editor is idle: what a
+                             plugin opens when it starts, windows and
+                             files, goes so, not from open() or an event
+  window_close(host, window)  close a window as the user would; from
+                             call_later(), not from an event of it
   show_location(host, file, line)
                              open a source location without pushing
                              each debugger step onto navigation history
