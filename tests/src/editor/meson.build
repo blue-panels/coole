@@ -17,3 +17,7 @@ foreach name : ['edit_buffer_layout', 'edit_clip_codeset', 'edit_complete_word_c
     workdir: meson.current_build_dir(),
     suite: 'src/editor')
 endforeach
+
+test('project_core', executable('project_core', 'project_core.c',
+                                '../../../src/plugins/project/project-core.c',
+                                dependencies: [glib_dep]), suite: 'src/editor')

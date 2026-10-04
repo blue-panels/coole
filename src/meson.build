@@ -48,6 +48,7 @@ libinternal_sources = files(
   'plugins/ctags/ctags-plugin.c',
   'plugins/ctags/ctags-repository.c',
   'plugins/ctags/ctags-ui.c',
+  'plugins/project/project-core.c',
   'plugins/etags/etags.c',
   'plugins/spell/spell.c',
 )

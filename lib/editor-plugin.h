@@ -175,6 +175,9 @@ typedef struct mc_editor_host_t
                                const char *title, const mc_ep_command_t *commands);
     long (*command_id) (struct mc_editor_host_t *host, const char *name);
     long (*command_lookup) (struct mc_editor_host_t *host, const char *section, int key);
+
+    /* The window of a file to the front, or a new one; the cursor stays where it was */
+    gboolean (*open_file) (struct mc_editor_host_t *host, const char *file);
     /* A line of a file in its window, or in a new one, without a step in the navigation
        history */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);

@@ -935,6 +935,35 @@ editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long l
 /* --------------------------------------------------------------------------------------------- */
 
 static gboolean
+editor_host_open_file_impl (mc_editor_host_t *host, const char *file)
+{
+    WDialog *dialog = DIALOG (host->host_data);
+    GList *item;
+    edit_arg_t arg;
+    char *path;
+    gboolean opened;
+
+    if (file == NULL)
+        return FALSE;
+    for (item = GROUP (dialog)->widgets; item != NULL; item = g_list_next (item))
+        if (edit_widget_is_editor (CONST_WIDGET (item->data))
+            && editor_host_same_file (EDIT (item->data)->filename, file))
+        {
+            edit_window_show (EDIT_WINDOW (item->data));
+            widget_draw (WIDGET (dialog));
+            return TRUE;
+        }
+    path = g_strdup (file);
+    // line 0: where the cursor was the last time
+    edit_arg_init (&arg, path, 0);
+    opened = edit_load_file_from_filename (dialog, &arg);
+    g_free (path);
+    return opened;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
 editor_host_save_modified_files_impl (mc_editor_host_t *host, const char *project_root)
 {
     WGroup *group = GROUP (host->host_data);
@@ -1047,6 +1076,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->commands_register = editor_host_commands_register_impl;
     ctx->host->command_id = editor_host_command_id_impl;
     ctx->host->command_lookup = editor_host_command_lookup_impl;
+    ctx->host->open_file = editor_host_open_file_impl;
     ctx->host->show_location = editor_host_show_location_impl;
     ctx->host->save_modified_files = editor_host_save_modified_files_impl;
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
