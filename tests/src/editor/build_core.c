@@ -25,6 +25,10 @@
 
 #include <config.h>
 
+/* -Dassert=false sets G_DISABLE_ASSERT in config.h: g_test_init () would then end the test and
+   g_assert () check nothing, and the checks are the point of a test */
+#undef G_DISABLE_ASSERT
+
 #include <string.h>
 
 #include <glib.h>
