@@ -14,6 +14,7 @@
 #define KEYMAP_SECTION_HELP       "help"
 #define KEYMAP_SECTION_EDITOR     "editor"
 #define KEYMAP_SECTION_EDITOR_EXT "editor:xmap"
+#define KEYMAP_SECTION_DEBUGGER   "debugger"
 #define KEYMAP_SECTION_MCTERM     "mcterm"
 
 #define KEYMAP_SHORTCUT_LENGTH    32  // FIXME: is 32 bytes enough for shortcut?
@@ -221,7 +222,15 @@ enum
     CK_InsertLiteral,
     CK_ExternalCommand,
     CK_Date,
-    CK_UndoHistory
+    CK_UndoHistory,
+    // debugger session window
+    CK_DebugStartContinue,
+    CK_DebugPause,
+    CK_DebugStepInto,
+    CK_DebugStepOver,
+    CK_DebugStepOut,
+    CK_DebugStop,
+    CK_DebugClose
 };
 
 /*** structures declarations (and typedefs of structures)*****************************************/

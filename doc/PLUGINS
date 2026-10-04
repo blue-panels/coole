@@ -43,6 +43,8 @@ src/meson.build, which compiles them into the internal library):
   src/plugins/spell/      activate + configure + query_state +
                                  handle_key
   src/plugins/etags/      handle_action only
+  src/plugins/debugger/   GDB/MI, Debug menu, source markers and
+                         viewer windows for program output and state
 
 src/plugins/builtin-plugins.c (compiled as part of
 src/editor/editcmd.c) holds their descriptors (and that
@@ -83,7 +85,7 @@ program exports; what the program itself does not call it links whole
 (libforplugins in src/meson.build).  The test module_symbols checks
 that the program gives every function a module calls.
 
-The help of a plugin (ctags.md, etags.md, spell.md, terminal.md) is installed into
+The help of a plugin (ctags.md, debugger.md, etags.md, spell.md, terminal.md) is installed into
 $(pkgdatadir)/help next to the help of the program.
 
 
@@ -219,6 +221,15 @@ What the editor provides to the plugin, passed to open():
   service_emit(host, name, signal, args)
                              the services plugins and scripts offer
                              one another; see section 10
+  set_marker(host, file, line, kind, enabled)
+                             show or clear a breakpoint or current
+                             execution line mark in an open source file
+  show_location(host, file, line)
+                             open a source location without pushing
+                             each debugger step onto navigation history
+  save_modified_files(host, project_root)
+                             offer to save all modified editor files
+                             within that root; FALSE cancels the launch
 
 Fields:
 
@@ -261,9 +272,11 @@ All are optional except open and close.
                              MC_EP_EVENT_CURSOR_MOVED, below
   on_file_open(plugin_data, edit)
   on_file_close(plugin_data, edit)
-                             declared in the header; the editor core
-                             does not call these yet (Plugin info lists
-                             them as capabilities)
+                             called when a source file window opens or
+                             closes
+  ok_to_quit(plugin_data)
+                             return FALSE to cancel editor shutdown;
+                             useful for confirming a live debug session
 
 State contract (mc_ep_state_t):
 
@@ -313,7 +326,8 @@ Top-level menu integration:
 
 Each entry sets:
 
-    menu_name        MC_EP_MENU_COMMAND or MC_EP_MENU_NAVIGATE
+    menu_name        MC_EP_MENU_FILE, MC_EP_MENU_COMMAND,
+                     MC_EP_MENU_NAVIGATE or MC_EP_MENU_DEBUG
     label            menu text (with & accelerator, translated with
                      gettext); NULL = separator
     action_index     index into actions[]

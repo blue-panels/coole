@@ -127,6 +127,7 @@ static const char *kbd_current_section = NULL;
 static const keybind_section_t editor_sections[] = {
     { N_ ("&Main"), KEYMAP_SECTION_EDITOR },
     { N_ ("&Ctrl-X + ..."), KEYMAP_SECTION_EDITOR_EXT },
+    { N_ ("&Debugger"), KEYMAP_SECTION_DEBUGGER },
     { N_ ("&Terminal"), KEYMAP_SECTION_MCTERM },
 };
 
@@ -434,6 +435,8 @@ keybind_find_map (const char *section)
         return editor_map;
     if (strcmp (section, KEYMAP_SECTION_EDITOR_EXT) == 0)
         return editor_x_map;
+    if (strcmp (section, KEYMAP_SECTION_DEBUGGER) == 0)
+        return debugger_map;
     if (strcmp (section, KEYMAP_SECTION_MCTERM) == 0)
         return mcterm_map;
     return NULL;

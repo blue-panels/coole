@@ -44,7 +44,10 @@ there and develops it as a program of its own.
   short, with what it holds beside it;
   a type without a renderer is shown as its text.  Scripts and plugins can show any text of theirs in the
   windows of the viewer.
-- **Editor plugins**: a plugin framework the ctags, etags and spell plugins are
+- **Debugger**: run a local program under GDB, set line breakpoints, step through
+  source, and inspect the call stack and local variables from the Debug menu.
+  See [`debugger.md`](src/plugins/debugger/debugger.md).
+- **Editor plugins**: a plugin framework the debugger, ctags, etags and spell plugins are
   built on; see [`doc/PLUGINS`](doc/PLUGINS).
 - **Lua scripts** for the editor, run by the Lua runtime plugin and managed
   from the Options menu; see [`doc/LUA_PLUGINS.md`](doc/LUA_PLUGINS.md).

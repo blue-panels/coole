@@ -263,21 +263,21 @@ void
 buttonbar_set_label (WButtonBar *bb, int idx, const char *text, const global_keymap_t *keymap,
                      Widget *receiver)
 {
-    if ((bb != NULL) && (idx >= 1) && (idx <= BUTTONBAR_LABELS_NUM))
-    {
-        long command = CK_IgnoreKey;
+    long command =
+        keymap != NULL ? keybind_lookup_keymap_command (keymap, KEY_F (idx)) : CK_IgnoreKey;
 
-        if (keymap != NULL)
-            command = keybind_lookup_keymap_command (keymap, KEY_F (idx));
+    buttonbar_set_label_command (bb, idx, text, command, receiver);
+}
 
-        if ((text == NULL) || (text[0] == '\0'))
-            set_label_text (bb, idx, "");
-        else
-            set_label_text (bb, idx, text);
-
-        bb->labels[idx - 1].command = command;
-        bb->labels[idx - 1].receiver = WIDGET (receiver);
-    }
+void
+buttonbar_set_label_command (WButtonBar *bb, int idx, const char *text, long command,
+                             Widget *receiver)
+{
+    if (bb == NULL || idx < 1 || idx > BUTTONBAR_LABELS_NUM)
+        return;
+    set_label_text (bb, idx, text != NULL ? text : "");
+    bb->labels[idx - 1].command = command;
+    bb->labels[idx - 1].receiver = receiver;
 }
 
 /* --------------------------------------------------------------------------------------------- */

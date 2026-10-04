@@ -539,6 +539,8 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
         book_mark = EDITOR_BOOKMARK_COLOR;
     else if (book_mark_query_color (edit, edit->start_line + row, EDITOR_BOOKMARK_FOUND_COLOR))
         book_mark = EDITOR_BOOKMARK_FOUND_COLOR;
+    else if (edit->debug_current_line == edit->start_line + row + 1)
+        book_mark = EDITOR_BOOKMARK_FOUND_COLOR;
 
     if (book_mark != 0)
         abn_style = book_mark << 16;
@@ -587,6 +589,21 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
 
         if (book_mark_query_color (edit, cur_line, EDITOR_BOOKMARK_COLOR))
             g_snprintf (line_stat, 2, "*");
+
+        if (edit->debug_current_line == cur_line + 1)
+            line_stat[0] = '>';
+        if (edit->debug_breakpoint_lines != NULL)
+        {
+            guint marker_index;
+
+            for (marker_index = 0; marker_index < edit->debug_breakpoint_lines->len; marker_index++)
+                if (g_array_index (edit->debug_breakpoint_lines, long, marker_index)
+                    == cur_line + 1)
+                {
+                    line_stat[7] = 'B';
+                    break;
+                }
+        }
 
         if (cur_line <= edit->buffer.lines)
         {

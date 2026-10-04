@@ -74,10 +74,13 @@ static int menu_idx_edit = 1;
 static int menu_idx_search = 2;
 static int menu_idx_command = 3;
 static int menu_idx_navigate = -1;
+static int menu_idx_debug = -1;
 static int menu_idx_window = 4;
 static int menu_idx_plugins = 5;
 static int menu_idx_options = 6;
 static GPtrArray *runtime_menu_actions = NULL;
+
+static GList *create_plugin_menu_entries (const char *menu_name);
 
 typedef struct
 {
@@ -210,8 +213,9 @@ append_runtime_menu_entries (GList *entries, const char *menu_path)
 static gboolean
 edit_runtime_menu_is_builtin (const char *menu_path)
 {
-    static const char *const names[] = { "File",   "Edit",    "Search", "Command", "Navigate",
-                                         "Window", "Plugins", "Lua",    "Options", NULL };
+    static const char *const names[] = { "File",     "Edit",    "Search", "Command",
+                                         "Navigate", "Debug",   "Window", "Plugins",
+                                         "Lua",      "Options", NULL };
     int i;
 
     for (i = 0; names[i] != NULL; i++)
@@ -226,6 +230,7 @@ static GList *
 create_file_menu (void)
 {
     GList *entries = NULL;
+    GList *plugin_entries;
 
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Open file..."), CK_EditFile));
     entries = g_list_prepend (entries, menu_entry_new (_ ("&New"), CK_EditNew));
@@ -240,6 +245,12 @@ create_file_menu (void)
     entries = g_list_prepend (entries, menu_separator_new ());
     entries = g_list_prepend (entries, menu_entry_new (_ ("&User menu..."), CK_UserMenu));
     entries = g_list_prepend (entries, menu_separator_new ());
+    plugin_entries = create_plugin_menu_entries (MC_EP_MENU_FILE);
+    if (plugin_entries != NULL)
+    {
+        entries = g_list_concat (g_list_reverse (plugin_entries), entries);
+        entries = g_list_prepend (entries, menu_separator_new ());
+    }
     entries = g_list_prepend (entries, menu_entry_new (_ ("A&bout..."), CK_About));
     entries = g_list_prepend (entries, menu_separator_new ());
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Quit"), CK_Quit));
@@ -516,15 +527,16 @@ edit_drop_menu_cmd (WDialog *h, int which)
 void
 edit_init_menu (WMenuBar *menubar)
 {
+    GList *file_entries;
     GList *navigate_entries;
     int idx = 0;
     guint i;
 
     edit_runtime_menu_reload ();
 
+    file_entries = create_file_menu ();
     menubar_add_menu (menubar,
-                      menu_new (_ ("&File"),
-                                append_runtime_menu_entries (create_file_menu (), "File"),
+                      menu_new (_ ("&File"), append_runtime_menu_entries (file_entries, "File"),
                                 "[Internal File Editor]"));
     menu_idx_file = idx++;
 
@@ -557,6 +569,20 @@ edit_init_menu (WMenuBar *menubar)
     }
     else
         menu_idx_navigate = -1;
+
+    {
+        GList *debug_entries = create_plugin_menu_entries (MC_EP_MENU_DEBUG);
+
+        debug_entries = append_runtime_menu_entries (debug_entries, "Debug");
+        if (debug_entries != NULL)
+        {
+            menubar_add_menu (menubar,
+                              menu_new (_ ("&Debug"), debug_entries, "[Internal File Editor]"));
+            menu_idx_debug = idx++;
+        }
+        else
+            menu_idx_debug = -1;
+    }
 
     for (i = 0; runtime_menu_actions != NULL && i < runtime_menu_actions->len; i++)
     {
@@ -663,6 +689,9 @@ edit_drop_hotkey_menu (WDialog *h, int key)
         break;
     case ALT ('n'):
         m = menu_idx_navigate;
+        break;
+    case ALT ('d'):
+        m = menu_idx_debug;
         break;
     case ALT ('w'):
         m = menu_idx_window;

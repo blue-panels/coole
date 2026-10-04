@@ -123,6 +123,7 @@ void edit_user_menu (WEdit *edit, const char *menu_file, int selected_entry);
 void edit_init_menu (WMenuBar *menubar);
 gboolean edit_runtime_menu_action (long command);
 gboolean edit_runtime_invoke_action (const char *action_id);
+gboolean edit_plugins_ok_to_quit (WDialog *dialog);
 void edit_save_mode_cmd (void);
 off_t edit_move_forward3 (const WEdit *edit, off_t current, long cols, off_t upto);
 long edit_layout_advance_byte (const WEdit *edit, off_t offset, long column);

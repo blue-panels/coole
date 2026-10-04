@@ -2683,6 +2683,8 @@ edit_clean_internal (WEdit *edit, gboolean invalidate_runtime_handle)
         edit_save_position (edit);
     else if (edit->serialized_bookmarks != NULL)
         g_array_free (edit->serialized_bookmarks, TRUE);
+    if (edit->debug_breakpoint_lines != NULL)
+        g_array_free (edit->debug_breakpoint_lines, TRUE);
 
     // File specified on the mcedit command line and never saved
     if (edit->delete_file != 0)

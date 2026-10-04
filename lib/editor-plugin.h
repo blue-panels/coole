@@ -11,7 +11,7 @@
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
-#define MC_EDITOR_PLUGIN_API_VERSION 6
+#define MC_EDITOR_PLUGIN_API_VERSION 8
 #define MC_EDITOR_PLUGIN_ENTRY       "mc_editor_plugin_register"
 #define MC_EDITOR_PLUGIN_CMD_BASE    30000L /* Plugins-menu: base + plugin_index */
 #define MC_EDITOR_PLUGIN_ACTION_BASE 31000L /* per-action menu commands           */
@@ -22,7 +22,9 @@
 
 /* Well-known target menu names for mc_ep_cmd_menu_entry_t.menu_name */
 #define MC_EP_MENU_COMMAND  "Command"
+#define MC_EP_MENU_FILE     "File"
 #define MC_EP_MENU_NAVIGATE "Navigate"
+#define MC_EP_MENU_DEBUG    "Debug"
 
 /*** enums ***************************************************************************************/
 
@@ -38,6 +40,12 @@ typedef enum
     MC_EPF_NONE = 0,
     MC_EPF_HAS_MENU = 1 << 0
 } mc_ep_flags_t;
+
+typedef enum
+{
+    MC_EP_MARK_BREAKPOINT,
+    MC_EP_MARK_CURRENT
+} mc_ep_marker_t;
 
 typedef struct mc_ep_state_t
 {
@@ -127,6 +135,14 @@ typedef struct mc_editor_host_t
     void (*service_disconnect) (struct mc_editor_host_t *host, guint id);
     void (*service_emit) (struct mc_editor_host_t *host, const char *name, const char *signal,
                           GVariant *args);
+
+    /* v7: marks in the source gutter, addressed by absolute file path and 1-based line. */
+    void (*set_marker) (struct mc_editor_host_t *host, const char *file, long line,
+                        mc_ep_marker_t kind, gboolean enabled);
+    /* Show a debugger location without adding each step to the navigation stack. */
+    gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
+    /* v8: offer to save modified source files within a project root. */
+    gboolean (*save_modified_files) (struct mc_editor_host_t *host, const char *project_root);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.
@@ -181,6 +197,8 @@ typedef struct mc_editor_plugin_t
      * Returns a newly-allocated string (caller frees with g_free) or NULL.
      * NULL falls back to cmd_menu_entries[].shortcut.  May be NULL. */
     char *(*get_menu_shortcut) (int action_index);
+    /* v7: ask before closing the editor while a plugin owns a running process. */
+    gboolean (*ok_to_quit) (void *plugin_data);
 } mc_editor_plugin_t;
 
 typedef const mc_editor_plugin_t *(*mc_editor_plugin_register_fn) (void);
