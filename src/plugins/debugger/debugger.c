@@ -4476,15 +4476,20 @@ static gboolean
 debug_ok_to_quit (void *data)
 {
     debugger_t *debug = (debugger_t *) data;
+    const gboolean live = debug->gdb != NULL && gdb_mi_session_alive (debug->gdb)
+        && (debug->state == DEBUG_RUNNING || debug->state == DEBUG_STOPPED
+            || debug->state == DEBUG_STARTING);
 
-    if (debug->gdb == NULL || !gdb_mi_session_alive (debug->gdb))
-        return TRUE;
-    if (debug->state != DEBUG_RUNNING && debug->state != DEBUG_STOPPED
-        && debug->state != DEBUG_STARTING)
-        return TRUE;
-    return query_dialog (_ ("Debug"), _ ("Stop the debug session and quit?"), D_NORMAL, 2,
-                         _ ("&Stop"), _ ("&Cancel"))
-        == 0;
+    if (live)
+        return query_dialog (_ ("Debug"), _ ("Stop the debug session and quit?"), D_NORMAL, 2,
+                             _ ("&Stop"), _ ("&Cancel"))
+            == 0;
+    // debug mode, coole --debug: the project and its windows are not left by a slip of F10
+    if (debug->debug_mode)
+        return query_dialog (_ ("Debug"), _ ("Quit the editor?"), D_NORMAL, 2, _ ("&Yes"),
+                             _ ("&No"))
+            == 0;
+    return TRUE;
 }
 
 static mc_ep_result_t

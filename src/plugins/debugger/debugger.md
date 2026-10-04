@@ -60,6 +60,9 @@ and F10 stay Save, the menu and Quit, and the text can be edited as ever.
 **Debug → Debug keys in files** turns debug mode on and off without
 *--debug*.
 
+In debug mode the editor asks before it ends, F10 being easy to press by a
+slip; while a program runs under the debugger it asks whether to stop it.
+
 **F3**
 : Index the symbols of the project again, in the background (with the
 plugin ctags); **Navigate** jumps by them.
