@@ -221,9 +221,22 @@ What the editor provides to the plugin, passed to open():
   service_emit(host, name, signal, args)
                              the services plugins and scripts offer
                              one another; see section 10
+  marker_kind(host, kind)    register a kind of gutter mark (a
+                             mc_ep_marker_kind_t: its name, the
+                             [widget-editor] key of its glyph and the
+                             [editor] keys of its colours); the same
+                             name gives the same id
   set_marker(host, file, line, kind, enabled)
-                             show or clear a breakpoint or current
-                             execution line mark in an open source file
+                             put or take a mark of that kind on a line
+                             of every window of the file; the mark is a
+                             bookmark of the plugin and moves with its
+                             line as lines are inserted or deleted
+  clear_markers(host, file, kind)
+                             take the marks of a kind off a file, or
+                             (file NULL) off all files
+  marker_lines(host, file, kind)
+                             the lines the marks of a kind are on now,
+                             NULL when no window has the file
   show_location(host, file, line)
                              open a source location without pushing
                              each debugger step onto navigation history

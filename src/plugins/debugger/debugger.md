@@ -18,9 +18,24 @@ cc -g -O0 -Iinclude src/main.c src/calc.c -o build/calculator
    example, an environment entry with spaces is `GREETING="hello world"`.
    Use **Select configuration** to switch between executable targets.
 3. Open any source file, move to a line, and choose **Toggle breakpoint**. A
-   `B` appears in the gutter. The breakpoint belongs to the project, so it
-   remains after that file window closes. On **Start**, GDB opens the source
-   file where the program stops and `>` marks the current execution line.
+   `●` appears in the gutter. The breakpoint belongs to the project, so it
+   remains after that file window closes, and it moves with its line when
+   lines are inserted or deleted above it. On **Start**, GDB opens the source
+   file where the program stops and `▶` marks the line it stopped on.
+
+   | Mark | Meaning                                              |
+   |------|------------------------------------------------------|
+   | `●`  | a breakpoint                                         |
+   | `◌`  | a breakpoint GDB has not taken yet, or has refused   |
+   | `▶`  | the line the program stopped on                      |
+   | `◉`  | the line the program stopped on, with a breakpoint   |
+
+   GDB stops only on lines with code: a breakpoint on another line moves to
+   the next line GDB stops on. The skin sets the marks and their colors
+   (`breakpoint-char`, `exec-char` and the others in `[widget-editor]`,
+   `breakpoint`, `execmark` and `execline` in `[editor]`); a terminal that is
+   not UTF-8 shows `o`, `?`, `>` and `@`.
+
 4. **Start** opens a **Debug session** window and runs the program to the
    first breakpoint. While the program is stopped, the source windows are in
    **step mode**: they take the debugger keys, and the keys that move around

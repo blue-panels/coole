@@ -11,7 +11,7 @@
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
-#define MC_EDITOR_PLUGIN_API_VERSION 8
+#define MC_EDITOR_PLUGIN_API_VERSION 9
 #define MC_EDITOR_PLUGIN_ENTRY       "mc_editor_plugin_register"
 #define MC_EDITOR_PLUGIN_CMD_BASE    30000L /* Plugins-menu: base + plugin_index */
 #define MC_EDITOR_PLUGIN_ACTION_BASE 31000L /* per-action menu commands           */
@@ -41,12 +41,6 @@ typedef enum
     MC_EPF_HAS_MENU = 1 << 0
 } mc_ep_flags_t;
 
-typedef enum
-{
-    MC_EP_MARK_BREAKPOINT,
-    MC_EP_MARK_CURRENT
-} mc_ep_marker_t;
-
 typedef struct mc_ep_state_t
 {
     gboolean available;
@@ -69,6 +63,21 @@ typedef struct mc_ep_state_t
 #define MC_EP_EVENT_CURSOR_MOVED 6
 
 /*** structures declarations (and typedefs of structures)*****************************************/
+
+/* A kind of mark in the gutter of the file windows, which a plugin registers (marker_kind()).
+ * The mark sits in the column between the line number and the fold mark; the skin gives its
+ * glyph in [widget-editor] and its colours in [editor]. */
+typedef struct
+{
+    const char *name;                /* unique: "debugger.breakpoint" */
+    const char *glyph_key;           /* [widget-editor] key of the glyph */
+    const char *glyph;               /* glyph when the skin has none, UTF-8 terminal */
+    const char *glyph_ascii;         /* the same on any other terminal */
+    const char *color_key;           /* [editor] key of the glyph colour; unset: the gutter's */
+    const char *line_color_key;      /* [editor] key to colour the whole line; NULL: none */
+    const char *line_color_fallback; /* [editor] key when the skin has no line_color_key */
+    int priority;                    /* of two marks on one line the higher one is shown */
+} mc_ep_marker_kind_t;
 
 /* What the editor provides to a plugin */
 typedef struct mc_editor_host_t
@@ -136,9 +145,18 @@ typedef struct mc_editor_host_t
     void (*service_emit) (struct mc_editor_host_t *host, const char *name, const char *signal,
                           GVariant *args);
 
-    /* v7: marks in the source gutter, addressed by absolute file path and 1-based line. */
-    void (*set_marker) (struct mc_editor_host_t *host, const char *file, long line,
-                        mc_ep_marker_t kind, gboolean enabled);
+    /* v9: marks in the gutter, addressed by absolute file path and 1-based line.  A mark moves
+     * with its line when lines are inserted or deleted above it.
+     * marker_kind() registers a kind once and gives its id; the same name gives the same id.
+     * set_marker() puts or takes a mark in every window of the file.
+     * clear_markers() takes all the marks of a kind, of one file or (file NULL) of all.
+     * marker_lines() gives the lines (long, sorted) of the marks of a kind in the first window
+     * of the file, NULL when no window has it; caller frees with g_array_free(). */
+    int (*marker_kind) (struct mc_editor_host_t *host, const mc_ep_marker_kind_t *kind);
+    void (*set_marker) (struct mc_editor_host_t *host, const char *file, long line, int kind,
+                        gboolean enabled);
+    void (*clear_markers) (struct mc_editor_host_t *host, const char *file, int kind);
+    GArray *(*marker_lines) (struct mc_editor_host_t *host, const char *file, int kind);
     /* Show a debugger location without adding each step to the navigation stack. */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
     /* v8: offer to save modified source files within a project root. */

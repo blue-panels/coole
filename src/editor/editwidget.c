@@ -712,47 +712,155 @@ editor_host_service_emit_impl (mc_editor_host_t *host, const char *name, const c
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-editor_host_set_marker_impl (mc_editor_host_t *host, const char *file, long line,
-                             mc_ep_marker_t kind, gboolean enabled)
+/* Whether two absolute names name the same file: a debugger gives the real path, the editor the
+   name the file was opened by */
+static gboolean
+editor_host_same_file (const char *a, const char *b)
 {
-    WGroup *group = GROUP (host->host_data);
+    char *ca, *cb;
+    gboolean same;
+
+    if (a == NULL || b == NULL)
+        return FALSE;
+    if (strcmp (a, b) == 0)
+        return TRUE;
+    ca = realpath (a, NULL);
+    cb = realpath (b, NULL);
+    same = ca != NULL && cb != NULL && strcmp (ca, cb) == 0;
+    free (ca);
+    free (cb);
+    return same;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+editor_host_marker_kind_impl (mc_editor_host_t *host, const mc_ep_marker_kind_t *kind)
+{
+    (void) host;
+    return edit_marker_kind_register (kind);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The gutter shows the marks: it is turned on for them, and off again with the last of them */
+static gboolean editor_marker_gutter_auto = FALSE;
+
+static void
+editor_host_marker_gutter (mc_editor_host_t *host)
+{
     GList *item;
 
-    if (file == NULL || line <= 0)
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        const edit_book_mark_t *p;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data))
+            || EDIT (item->data)->book_mark == NULL)
+            continue;
+        for (p = edit_book_mark_first (EDIT (item->data)); p != NULL; p = p->next)
+            if (edit_marker_is (p->c))
+            {
+                if (!edit_options.line_state)
+                {
+                    edit_options.line_state = TRUE;
+                    edit_options.line_state_width = LINE_STATE_WIDTH;
+                    editor_marker_gutter_auto = TRUE;
+                }
+                return;
+            }
+    }
+    if (editor_marker_gutter_auto && edit_options.line_state)
+    {
+        edit_options.line_state = FALSE;
+        edit_options.line_state_width = 0;
+    }
+    editor_marker_gutter_auto = FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_set_marker_impl (mc_editor_host_t *host, const char *file, long line, int kind,
+                             gboolean enabled)
+{
+    GList *item;
+
+    if (file == NULL || line <= 0 || kind < 0)
         return;
-    for (item = group->widgets; item != NULL; item = g_list_next (item))
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
     {
         WEdit *edit;
-        guint i;
 
         if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
             continue;
         edit = EDIT (item->data);
-        if (g_strcmp0 (edit->filename, file) != 0)
+        if (!editor_host_same_file (edit->filename, file))
             continue;
-        if (kind == MC_EP_MARK_CURRENT)
-            edit->debug_current_line = enabled ? line : 0;
-        else
-        {
-            if (edit->debug_breakpoint_lines == NULL)
-                edit->debug_breakpoint_lines = g_array_new (FALSE, FALSE, sizeof (long));
-            for (i = 0; i < edit->debug_breakpoint_lines->len; i++)
-                if (g_array_index (edit->debug_breakpoint_lines, long, i) == line)
-                    break;
-            if (enabled && i == edit->debug_breakpoint_lines->len)
-                g_array_append_val (edit->debug_breakpoint_lines, line);
-            else if (!enabled && i < edit->debug_breakpoint_lines->len)
-                g_array_remove_index (edit->debug_breakpoint_lines, i);
-        }
+        if (!enabled)
+            (void) book_mark_clear (edit, line - 1, EDIT_MARKER_BASE + kind);
+        else if (!book_mark_query_color (edit, line - 1, EDIT_MARKER_BASE + kind))
+            book_mark_insert (edit, line - 1, EDIT_MARKER_BASE + kind);
         edit->force |= REDRAW_COMPLETELY;
     }
-    if (enabled && !edit_options.line_state)
-    {
-        edit_options.line_state = TRUE;
-        edit_options.line_state_width = LINE_STATE_WIDTH;
-    }
+    editor_host_marker_gutter (host);
     widget_draw (WIDGET (host->host_data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_clear_markers_impl (mc_editor_host_t *host, const char *file, int kind)
+{
+    GList *item;
+
+    if (kind < 0)
+        return;
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (file != NULL && !editor_host_same_file (edit->filename, file))
+            continue;
+        book_mark_flush (edit, EDIT_MARKER_BASE + kind);
+    }
+    editor_host_marker_gutter (host);
+    widget_draw (WIDGET (host->host_data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static GArray *
+editor_host_marker_lines_impl (mc_editor_host_t *host, const char *file, int kind)
+{
+    GList *item;
+
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+        GArray *lines;
+        const edit_book_mark_t *p;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (!editor_host_same_file (edit->filename, file))
+            continue;
+        lines = g_array_new (FALSE, FALSE, sizeof (long));
+        if (edit->book_mark != NULL)
+            for (p = edit_book_mark_first (edit); p != NULL; p = p->next)
+                if (p->c == EDIT_MARKER_BASE + kind && p->line >= 0)
+                {
+                    long line = p->line + 1;
+
+                    g_array_append_val (lines, line);
+                }
+        return lines;
+    }
+    return NULL;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -776,7 +884,7 @@ editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long l
         if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
             continue;
         edit = EDIT (item->data);
-        if (g_strcmp0 (edit->filename, file) != 0)
+        if (!editor_host_same_file (edit->filename, file))
             continue;
         edit_window_show (EDIT_WINDOW (edit));
         edit_move_to_line (edit, line - 1);
@@ -899,7 +1007,10 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->service_connect = editor_host_service_connect_impl;
     ctx->host->service_disconnect = editor_host_service_disconnect_impl;
     ctx->host->service_emit = editor_host_service_emit_impl;
+    ctx->host->marker_kind = editor_host_marker_kind_impl;
     ctx->host->set_marker = editor_host_set_marker_impl;
+    ctx->host->clear_markers = editor_host_clear_markers_impl;
+    ctx->host->marker_lines = editor_host_marker_lines_impl;
     ctx->host->show_location = editor_host_show_location_impl;
     ctx->host->save_modified_files = editor_host_save_modified_files_impl;
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);

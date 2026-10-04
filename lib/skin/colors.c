@@ -414,3 +414,12 @@ mc_skin_color_get (const gchar *group, const gchar *name)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/* Whether the skin gives this color itself, not by the defaults of its group */
+
+gboolean
+mc_skin_color_is_set (const gchar *group, const gchar *name)
+{
+    return mc_skin_color_get_from_hash (NULL, group, name) != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */

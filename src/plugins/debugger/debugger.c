@@ -79,6 +79,30 @@ typedef struct
 
 typedef struct debug_session_window_t debug_session_window_t;
 
+/* the marks of the debugger in the gutter */
+enum
+{
+    DEBUG_MARK_BREAKPOINT,
+    DEBUG_MARK_PENDING,
+    DEBUG_MARK_DISABLED,
+    DEBUG_MARK_EXEC,
+    DEBUG_MARK_EXEC_BREAKPOINT,
+    DEBUG_MARK_COUNT
+};
+
+static const mc_ep_marker_kind_t debug_mark_kinds[DEBUG_MARK_COUNT] = {
+    { "debugger.breakpoint", "breakpoint-char", "\u25cf", "o", "breakpoint", "breakpointline", NULL,
+      10 },
+    // GDB has not taken it yet, or has refused it
+    { "debugger.breakpoint-pending", "breakpoint-pending-char", "\u25cc", "?", "breakpointpending",
+      "breakpointline", NULL, 12 },
+    { "debugger.breakpoint-disabled", "breakpoint-disabled-char", "\u25cb", "-",
+      "breakpointdisabled", NULL, NULL, 11 },
+    { "debugger.exec", "exec-char", "\u25b6", ">", "execmark", "execline", "bookmarkfound", 20 },
+    { "debugger.exec-breakpoint", "exec-breakpoint-char", "\u25c9", "@", "execmark", "execline",
+      "bookmarkfound", 21 },
+};
+
 typedef struct
 {
     mc_editor_host_t *host;
@@ -106,10 +130,13 @@ typedef struct
     unsigned int next_token;
     GQueue *startup_commands;
     unsigned int startup_token;
+    // the breakpoints went to GDB at the start: a new one goes by itself
+    gboolean breakpoints_installed;
     unsigned int eval_token;
     char *eval_expression;
     /* the user went back to editing with the program stopped; the next stop steps again */
     gboolean step_left;
+    int marks[DEBUG_MARK_COUNT];
     debug_session_window_t *session_window;
 } debugger_t;
 
@@ -155,6 +182,8 @@ static mc_ep_result_t debug_toggle_breakpoint (void *data, void *edit);
 static mc_ep_result_t debug_run_to_cursor (debugger_t *debug, void *edit);
 static mc_ep_result_t debug_evaluate (debugger_t *debug, void *edit);
 static mc_ep_result_t debug_watch_add (debugger_t *debug, const char *expression);
+static void debug_breakpoints_sync (debugger_t *debug);
+static void debug_breakpoints_dedup (debugger_t *debug);
 
 static void
 debug_breakpoint_free (gpointer data)
@@ -698,6 +727,7 @@ debug_config_save (debugger_t *debug)
     path = debug_config_path (debug);
     if (path == NULL)
         return;
+    debug_breakpoints_sync (debug);
     keyfile = g_key_file_new ();
     g_key_file_set_string (keyfile, "Debug", "project", debug->project_dir);
     g_key_file_set_integer (keyfile, "Debug", "launch_count", (gint) debug->launches->len);
@@ -994,14 +1024,111 @@ debug_output_append (debugger_t *debug, const char *text_value)
     debug_output_show (debug);
 }
 
+/* Whether two names name the same file: GDB gives the real path, the editor the name the file
+   was opened by */
+static gboolean
+debug_same_file (const char *a, const char *b)
+{
+    char *ra, *rb;
+    gboolean same;
+
+    if (a == NULL || b == NULL)
+        return FALSE;
+    if (strcmp (a, b) == 0)
+        return TRUE;
+    ra = realpath (a, NULL);
+    rb = realpath (b, NULL);
+    same = ra != NULL && rb != NULL && strcmp (ra, rb) == 0;
+    free (ra);
+    free (rb);
+    return same;
+}
+
+static gboolean
+debug_session_live (const debugger_t *debug)
+{
+    return debug->state == DEBUG_STARTING || debug->state == DEBUG_RUNNING
+        || debug->state == DEBUG_STOPPED;
+}
+
+static int
+debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp)
+{
+    if (debug_session_live (debug) && bp->gdb_number == NULL)
+        return DEBUG_MARK_PENDING;
+    return DEBUG_MARK_BREAKPOINT;
+}
+
+static gboolean
+debug_is_breakpoint_mark (int mark)
+{
+    return mark == DEBUG_MARK_BREAKPOINT || mark == DEBUG_MARK_PENDING
+        || mark == DEBUG_MARK_DISABLED;
+}
+
+static debug_breakpoint_t *
+debug_breakpoint_at (const debugger_t *debug, const char *file, long line, guint *index)
+{
+    guint i;
+
+    for (i = 0; i < debug->breakpoints->len; i++)
+    {
+        debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+
+        if (bp->line == line && debug_same_file (bp->file, file))
+        {
+            if (index != NULL)
+                *index = i;
+            return bp;
+        }
+    }
+    return NULL;
+}
+
+/* Put the marks of the breakpoints and of the current line in the gutter: of one file, or of all
+   (file NULL).  The marks are taken off first, so call debug_breakpoints_sync() before, to keep
+   what the editing of the text has moved. */
+static void
+debug_marks_show (debugger_t *debug, const char *file)
+{
+    guint i;
+
+    if (debug->host->set_marker == NULL)
+        return;
+    for (i = 0; i < DEBUG_MARK_COUNT; i++)
+        debug->host->clear_markers (debug->host, file, debug->marks[i]);
+    for (i = 0; i < debug->breakpoints->len; i++)
+    {
+        const debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+
+        if (file == NULL || debug_same_file (bp->file, file))
+            debug->host->set_marker (debug->host, bp->file, bp->line,
+                                     debug->marks[debug_breakpoint_mark (debug, bp)], TRUE);
+    }
+    if (debug->current_file != NULL
+        && (file == NULL || debug_same_file (debug->current_file, file)))
+        debug->host->set_marker (
+            debug->host, debug->current_file, debug->current_line,
+            debug->marks[debug_breakpoint_at (debug, debug->current_file, debug->current_line, NULL)
+                                 != NULL
+                             ? DEBUG_MARK_EXEC_BREAKPOINT
+                             : DEBUG_MARK_EXEC],
+            TRUE);
+}
+
 static void
 debug_clear_current (debugger_t *debug)
 {
-    if (debug->current_file != NULL && debug->host->set_marker != NULL)
-        debug->host->set_marker (debug->host, debug->current_file, debug->current_line,
-                                 MC_EP_MARK_CURRENT, FALSE);
-    g_clear_pointer (&debug->current_file, g_free);
+    char *file = debug->current_file;
+
+    debug->current_file = NULL;
     debug->current_line = 0;
+    if (file != NULL && debug->host->clear_markers != NULL)
+    {
+        debug->host->clear_markers (debug->host, file, debug->marks[DEBUG_MARK_EXEC]);
+        debug->host->clear_markers (debug->host, file, debug->marks[DEBUG_MARK_EXEC_BREAKPOINT]);
+    }
+    g_free (file);
 }
 
 /* Find the end of an MI tuple, ignoring braces inside strings and nested tuples. */
@@ -1183,6 +1310,7 @@ debug_record (const char *record, void *data)
     if (token_end != record && g_str_has_prefix (token_end, "^done,bkpt="))
     {
         char *number = gdb_mi_field (token_end, "number");
+        char *line = gdb_mi_field (token_end, "line");
         guint i;
 
         for (i = 0; i < debug->breakpoints->len; i++)
@@ -1194,9 +1322,19 @@ debug_record (const char *record, void *data)
                 g_free (bp->gdb_number);
                 bp->gdb_number = g_strdup (number);
                 bp->pending_token = 0;
+                // GDB stops on the next line with code: the breakpoint goes there
+                if (line != NULL && atol (line) > 0 && atol (line) != bp->line)
+                {
+                    debug_breakpoints_sync (debug);
+                    bp->line = atol (line);
+                    debug_breakpoints_dedup (debug);
+                    debug_config_save (debug);
+                }
+                debug_marks_show (debug, NULL);
                 break;
             }
         }
+        g_free (line);
         g_free (number);
         return;
     }
@@ -1247,7 +1385,9 @@ debug_record (const char *record, void *data)
         g_queue_clear_full (debug->startup_commands, g_free);
         debug->startup_token = 0;
         debug->state = DEBUG_FINISHED;
+        debug->breakpoints_installed = FALSE;
         debug_clear_current (debug);
+        debug_marks_show (debug, NULL);
         debug_watches_clear_values (debug);
         debug_session_refresh (debug);
         tty_refresh ();
@@ -1257,7 +1397,9 @@ debug_record (const char *record, void *data)
     {
         if (debug->state == DEBUG_RUNNING || debug->state == DEBUG_STOPPED)
             debug->state = DEBUG_FINISHED;
+        debug->breakpoints_installed = FALSE;
         debug_clear_current (debug);
+        debug_marks_show (debug, NULL);
         debug_watches_clear_values (debug);
         debug_session_refresh (debug);
         tty_refresh ();
@@ -1285,7 +1427,11 @@ debug_record (const char *record, void *data)
             debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
 
             if (bp->pending_token == token)
+            {
+                // the mark stays the one of a breakpoint GDB has not taken
                 bp->pending_token = 0;
+                debug_marks_show (debug, NULL);
+            }
         }
 
         debug_error (debug, message_text != NULL ? message_text : record);
@@ -1326,7 +1472,9 @@ debug_record (const char *record, void *data)
                 : g_strdup (_ ("\nProgram exited.\n"));
 
             debug->state = DEBUG_FINISHED;
+            debug->breakpoints_installed = FALSE;
             debug_clear_current (debug);
+            debug_marks_show (debug, NULL);
             debug_watches_clear_values (debug);
             debug_output_append (debug, status);
             g_free (status);
@@ -1350,22 +1498,11 @@ debug_record (const char *record, void *data)
             {
                 debug->current_file = g_strdup (file);
                 debug->current_line = atol (line);
-                if (debug->host->set_marker != NULL)
-                    debug->host->set_marker (debug->host, file, debug->current_line,
-                                             MC_EP_MARK_CURRENT, TRUE);
             }
-            if (file != NULL && debug->host->set_marker != NULL)
+            if (file != NULL)
             {
-                guint marker_index;
-
-                for (marker_index = 0; marker_index < debug->breakpoints->len; marker_index++)
-                {
-                    debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, marker_index);
-
-                    if (g_strcmp0 (bp->file, file) == 0)
-                        debug->host->set_marker (debug->host, file, bp->line, MC_EP_MARK_BREAKPOINT,
-                                                 TRUE);
-                }
+                debug_breakpoints_sync (debug);
+                debug_marks_show (debug, file);
             }
             (void) gdb_mi_session_send (debug->gdb, "-stack-select-frame 0");
             (void) gdb_mi_session_send (debug->gdb, "-stack-list-frames");
@@ -1411,7 +1548,8 @@ debug_breakpoint_install (debugger_t *debug, debug_breakpoint_t *bp)
     gboolean sent;
 
     bp->pending_token = ++debug->next_token;
-    command = g_strdup_printf ("%u-break-insert %s", bp->pending_token, quoted);
+    // -f: a breakpoint in a library not loaded yet waits for it
+    command = g_strdup_printf ("%u-break-insert -f %s", bp->pending_token, quoted);
     sent = debug_send (debug, command);
     if (!sent)
         bp->pending_token = 0;
@@ -1419,6 +1557,141 @@ debug_breakpoint_install (debugger_t *debug, debug_breakpoint_t *bp)
     g_free (quoted);
     g_free (location);
     return sent;
+}
+
+static void
+debug_breakpoint_remove (debugger_t *debug, guint index)
+{
+    debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, index);
+
+    if (bp->gdb_number != NULL && gdb_mi_session_alive (debug->gdb))
+    {
+        char *command = g_strconcat ("-break-delete ", bp->gdb_number, NULL);
+
+        (void) debug_send (debug, command);
+        g_free (command);
+    }
+    g_ptr_array_remove_index (debug->breakpoints, index);
+}
+
+/* Two breakpoints on one line are one: the later goes */
+static void
+debug_breakpoints_dedup (debugger_t *debug)
+{
+    guint i, j;
+
+    for (i = 0; i < debug->breakpoints->len; i++)
+        for (j = i + 1; j < debug->breakpoints->len;)
+        {
+            const debug_breakpoint_t *a = g_ptr_array_index (debug->breakpoints, i);
+            const debug_breakpoint_t *b = g_ptr_array_index (debug->breakpoints, j);
+
+            if (a->line == b->line && debug_same_file (a->file, b->file))
+                debug_breakpoint_remove (debug, j);
+            else
+                j++;
+        }
+}
+
+static gint
+debug_long_compare (gconstpointer a, gconstpointer b)
+{
+    const long x = *(const long *) a, y = *(const long *) b;
+
+    return x < y ? -1 : x > y ? 1 : 0;
+}
+
+static gint
+debug_breakpoint_line_compare (gconstpointer a, gconstpointer b)
+{
+    const debug_breakpoint_t *x = *(debug_breakpoint_t *const *) a;
+    const debug_breakpoint_t *y = *(debug_breakpoint_t *const *) b;
+
+    return x->line < y->line ? -1 : x->line > y->line ? 1 : 0;
+}
+
+/* The marks of the breakpoints move with their lines when the text is edited: the breakpoints of
+   every open file take the lines of their marks */
+static void
+debug_breakpoints_sync (debugger_t *debug)
+{
+    GPtrArray *done = g_ptr_array_new ();
+    gboolean moved = FALSE;
+    guint i, j;
+
+    if (debug->host->marker_lines == NULL)
+    {
+        g_ptr_array_free (done, TRUE);
+        return;
+    }
+    for (i = 0; i < debug->breakpoints->len; i++)
+    {
+        const debug_breakpoint_t *first = g_ptr_array_index (debug->breakpoints, i);
+        GArray *lines = NULL;
+        GPtrArray *mine;
+        int mark;
+
+        for (j = 0; j < done->len && !debug_same_file (g_ptr_array_index (done, j), first->file);
+             j++)
+            ;
+        if (j < done->len)
+            continue;
+        g_ptr_array_add (done, first->file);
+
+        for (mark = 0; mark < DEBUG_MARK_COUNT; mark++)
+        {
+            GArray *some;
+
+            if (!debug_is_breakpoint_mark (mark))
+                continue;
+            some = debug->host->marker_lines (debug->host, first->file, debug->marks[mark]);
+            if (some == NULL)
+                continue;
+            if (lines == NULL)
+                lines = some;
+            else
+            {
+                g_array_append_vals (lines, some->data, some->len);
+                g_array_free (some, TRUE);
+            }
+        }
+        if (lines == NULL)
+            continue;  // no window has the file
+
+        mine = g_ptr_array_new ();
+        for (j = i; j < debug->breakpoints->len; j++)
+        {
+            debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, j);
+
+            if (debug_same_file (bp->file, first->file))
+                g_ptr_array_add (mine, bp);
+        }
+        /* a mark is never lost by editing: other counts mean the marks of the file are not
+           there yet */
+        if (mine->len == lines->len)
+        {
+            g_array_sort (lines, debug_long_compare);
+            g_ptr_array_sort (mine, debug_breakpoint_line_compare);
+            for (j = 0; j < mine->len; j++)
+            {
+                debug_breakpoint_t *bp = g_ptr_array_index (mine, j);
+                const long line = g_array_index (lines, long, j);
+
+                /* the program running was built from the text as it was: GDB keeps the
+                   breakpoint on the old line, the next start puts it on the new one */
+                if (bp->line != line)
+                {
+                    bp->line = line;
+                    moved = TRUE;
+                }
+            }
+        }
+        g_ptr_array_free (mine, TRUE);
+        g_array_free (lines, TRUE);
+    }
+    g_ptr_array_free (done, TRUE);
+    if (moved)
+        debug_breakpoints_dedup (debug);
 }
 
 static void
@@ -1443,6 +1716,7 @@ debug_setup_next (debugger_t *debug)
         return;
     }
 
+    debug_breakpoints_sync (debug);
     for (guint i = 0; i < debug->breakpoints->len; i++)
     {
         debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
@@ -1451,6 +1725,8 @@ debug_setup_next (debugger_t *debug)
         bp->pending_token = 0;
         (void) debug_breakpoint_install (debug, bp);
     }
+    debug->breakpoints_installed = TRUE;
+    debug_marks_show (debug, NULL);
     if (!debug_send (debug, "-exec-run"))
         debug->state = DEBUG_FINISHED;
 }
@@ -1462,7 +1738,6 @@ debug_open_project (void *data, void *edit)
     char *file = edit != NULL ? debug->host->get_current_file (debug->host, edit) : NULL;
     char *default_dir = file != NULL ? g_path_get_dirname (file) : g_get_current_dir ();
     char *chosen, *project;
-    guint i;
 
     chosen = input_dialog (_ ("Open debug project"), _ ("Project directory:"), NULL,
                            debug->project_dir != NULL ? debug->project_dir : default_dir,
@@ -1501,13 +1776,9 @@ debug_open_project (void *data, void *edit)
     debug_pty_close (debug);
     debug_clear_current (debug);
     debug->state = DEBUG_OFF;
-    for (i = 0; i < debug->breakpoints->len; i++)
-    {
-        debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
-
-        debug->host->set_marker (debug->host, bp->file, bp->line, MC_EP_MARK_BREAKPOINT, FALSE);
-    }
+    debug->breakpoints_installed = FALSE;
     g_ptr_array_set_size (debug->breakpoints, 0);
+    debug_marks_show (debug, NULL);
     g_ptr_array_set_size (debug->launches, 0);
     g_ptr_array_set_size (debug->watches, 0);
     debug->active_launch = 0;
@@ -1518,12 +1789,7 @@ debug_open_project (void *data, void *edit)
     g_string_truncate (debug->stack_text, 0);
     g_string_truncate (debug->variables_text, 0);
     debug_config_load (debug);
-    for (i = 0; i < debug->breakpoints->len; i++)
-    {
-        debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
-
-        debug->host->set_marker (debug->host, bp->file, bp->line, MC_EP_MARK_BREAKPOINT, TRUE);
-    }
+    debug_marks_show (debug, NULL);
     if (debug->output_window != 0)
         debug_output_show (debug);
     if (debug->stack_window != 0)
@@ -1903,6 +2169,7 @@ debug_start (void *data, void *edit)
         return MC_EPR_FAILED;
     }
     debug->state = DEBUG_STARTING;
+    debug->breakpoints_installed = FALSE;
     g_queue_clear_full (debug->startup_commands, g_free);
     debug->startup_token = 0;
     debug_watches_clear_values (debug);
@@ -1948,9 +2215,10 @@ static mc_ep_result_t
 debug_toggle_breakpoint (void *data, void *edit)
 {
     debugger_t *debug = (debugger_t *) data;
+    debug_breakpoint_t *bp;
     char *file;
     long line;
-    guint i;
+    guint i = 0;
 
     if (edit == NULL)
         return MC_EPR_FAILED;
@@ -1963,44 +2231,34 @@ debug_toggle_breakpoint (void *data, void *edit)
         g_free (file);
         return MC_EPR_FAILED;
     }
-    for (i = 0; i < debug->breakpoints->len; i++)
+    debug_breakpoints_sync (debug);
+    bp = debug_breakpoint_at (debug, file, line, &i);
+    if (bp != NULL)
     {
-        debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
-
-        if (bp->line == line && g_strcmp0 (bp->file, file) == 0)
+        if (bp->pending_token != 0)
         {
-            if (bp->pending_token != 0)
-            {
-                debug_error (debug, _ ("Wait for GDB to confirm this breakpoint."));
-                g_free (file);
-                return MC_EPR_FAILED;
-            }
-            if (bp->gdb_number != NULL && gdb_mi_session_alive (debug->gdb))
-            {
-                char *command = g_strconcat ("-break-delete ", bp->gdb_number, NULL);
-
-                (void) debug_send (debug, command);
-                g_free (command);
-            }
-            g_ptr_array_remove_index (debug->breakpoints, i);
-            if (debug->host->set_marker != NULL)
-                debug->host->set_marker (debug->host, file, line, MC_EP_MARK_BREAKPOINT, FALSE);
+            debug_error (debug, _ ("Wait for GDB to confirm this breakpoint."));
             g_free (file);
-            debug_config_save (debug);
-            return MC_EPR_OK;
+            return MC_EPR_FAILED;
         }
+        debug_breakpoint_remove (debug, i);
+        g_free (file);
     }
+    else
     {
-        debug_breakpoint_t *bp = g_new0 (debug_breakpoint_t, 1);
+        char *real = realpath (file, NULL);
 
-        bp->file = file;
+        bp = g_new0 (debug_breakpoint_t, 1);
+        bp->file = real != NULL ? g_strdup (real) : g_strdup (file);
         bp->line = line;
+        free (real);
+        g_free (file);
         g_ptr_array_add (debug->breakpoints, bp);
-        if (debug->state == DEBUG_RUNNING || debug->state == DEBUG_STOPPED)
+        // the breakpoints of the start are sent already: this one is sent by itself
+        if (debug_session_live (debug) && debug->breakpoints_installed)
             (void) debug_breakpoint_install (debug, bp);
-        if (debug->host->set_marker != NULL)
-            debug->host->set_marker (debug->host, file, line, MC_EP_MARK_BREAKPOINT, TRUE);
     }
+    debug_marks_show (debug, NULL);
     debug_config_save (debug);
     return MC_EPR_OK;
 }
@@ -2370,8 +2628,8 @@ debug_send_input (void *data, void *edit)
             break;
         sent += (size_t) n;
     }
-    if (sent == len)
-        (void) write (debug->pty_master, "\n", 1);
+    if (sent == len && write (debug->pty_master, "\n", 1) != 1)
+        sent = 0;
     g_free (line);
     return sent == len ? MC_EPR_OK : MC_EPR_FAILED;
 }
@@ -2391,6 +2649,8 @@ debug_stop (void *data, void *edit)
     debug_clear_current (debug);
     debug_watches_clear_values (debug);
     debug->state = DEBUG_OFF;
+    debug->breakpoints_installed = FALSE;
+    debug_marks_show (debug, NULL);
     debug_session_refresh (debug);
     return MC_EPR_OK;
 }
@@ -2399,6 +2659,7 @@ static void *
 debug_open (mc_editor_host_t *host, void *editor_dialog)
 {
     debugger_t *debug = g_new0 (debugger_t, 1);
+    int i;
 
     (void) editor_dialog;
     debug->host = host;
@@ -2413,6 +2674,9 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->watches_text = g_string_new (NULL);
     debug->pty_master = -1;
     debug->pty_slave = -1;
+    for (i = 0; i < DEBUG_MARK_COUNT; i++)
+        debug->marks[i] =
+            host->marker_kind != NULL ? host->marker_kind (host, &debug_mark_kinds[i]) : -1;
     return debug;
 }
 
@@ -2461,19 +2725,11 @@ debug_file_open (void *data, void *edit)
 {
     debugger_t *debug = (debugger_t *) data;
     char *file = debug->host->get_current_file (debug->host, edit);
-    guint i;
 
     if (file == NULL)
         return MC_EPR_NOT_SUPPORTED;
-    for (i = 0; i < debug->breakpoints->len; i++)
-    {
-        debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
-
-        if (g_strcmp0 (file, bp->file) == 0 && debug->host->set_marker != NULL)
-            debug->host->set_marker (debug->host, file, bp->line, MC_EP_MARK_BREAKPOINT, TRUE);
-    }
-    if (g_strcmp0 (file, debug->current_file) == 0 && debug->host->set_marker != NULL)
-        debug->host->set_marker (debug->host, file, debug->current_line, MC_EP_MARK_CURRENT, TRUE);
+    debug_breakpoints_sync (debug);
+    debug_marks_show (debug, file);
     g_free (file);
     return MC_EPR_OK;
 }

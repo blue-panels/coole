@@ -391,7 +391,8 @@ edit_view_width (WEdit *edit, int lines, int cols)
 /* --------------------------------------------------------------------------------------------- */
 static inline void
 print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long end_col,
-                 line_s line[], char *status, int bookmarked)
+                 line_s line[], char *status, int bookmarked, const char *marker_glyph,
+                 int marker_color)
 {
     Widget *w = WIDGET (edit);
     line_s *p;
@@ -458,6 +459,14 @@ print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long 
             if (i == LINE_STATE_WIDTH - 1 && status[i] == '>')
             {
                 tty_print_string (edit_fold_close_char);
+                continue;
+            }
+            // the mark of a plugin, between the line number and the fold mark
+            if (i == LINE_STATE_WIDTH - 2 && marker_glyph != NULL)
+            {
+                tty_setcolor (marker_color);
+                tty_print_string (marker_glyph);
+                tty_setcolor (EDITOR_LINE_STATE_COLOR);
                 continue;
             }
             tty_print_char (status[i]);
@@ -529,6 +538,8 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
     int brace_depth = 0;
     long fold_line_count = 0;
     char line_stat[LINE_STATE_WIDTH + 1] = "\0";
+    const char *marker_glyph = NULL;
+    int marker_color = 0, marker_line_color = 0;
     syntax_line_local_state_t line_syntax_state;
 
     if (row > w->rect.lines - 1 - EDIT_TEXT_VERTICAL_OFFSET
@@ -539,8 +550,11 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
         book_mark = EDITOR_BOOKMARK_COLOR;
     else if (book_mark_query_color (edit, edit->start_line + row, EDITOR_BOOKMARK_FOUND_COLOR))
         book_mark = EDITOR_BOOKMARK_FOUND_COLOR;
-    else if (edit->debug_current_line == edit->start_line + row + 1)
-        book_mark = EDITOR_BOOKMARK_FOUND_COLOR;
+
+    if (edit_marker_find (edit, edit->start_line + row, &marker_glyph, &marker_color,
+                          &marker_line_color)
+        && book_mark == 0)
+        book_mark = marker_line_color;
 
     if (book_mark != 0)
         abn_style = book_mark << 16;
@@ -589,21 +603,6 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
 
         if (book_mark_query_color (edit, cur_line, EDITOR_BOOKMARK_COLOR))
             g_snprintf (line_stat, 2, "*");
-
-        if (edit->debug_current_line == cur_line + 1)
-            line_stat[0] = '>';
-        if (edit->debug_breakpoint_lines != NULL)
-        {
-            guint marker_index;
-
-            for (marker_index = 0; marker_index < edit->debug_breakpoint_lines->len; marker_index++)
-                if (g_array_index (edit->debug_breakpoint_lines, long, marker_index)
-                    == cur_line + 1)
-                {
-                    line_stat[7] = 'B';
-                    break;
-                }
-        }
 
         if (cur_line <= edit->buffer.lines)
         {
@@ -953,7 +952,8 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
     if (brace_depth > 0 && edit_options.line_state && line_stat[LINE_STATE_WIDTH - 1] != '>')
         line_stat[LINE_STATE_WIDTH - 1] = 'v';
 
-    print_to_widget (edit, row, start_col, start_col_real, end_col, line, line_stat, book_mark);
+    print_to_widget (edit, row, start_col, start_col_real, end_col, line, line_stat, book_mark,
+                     marker_glyph, marker_color);
 }
 
 /* --------------------------------------------------------------------------------------------- */
