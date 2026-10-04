@@ -176,6 +176,8 @@ typedef struct
     GQueue *startup_commands;
     // the breakpoints went to GDB at the start: a new one goes by itself
     gboolean breakpoints_installed;
+    // steps out of code with no source in a row: not for ever
+    int steps_out;
     // the replies GDB owes: debug_request_t
     GPtrArray *requests;
     gboolean eval_pending;
@@ -2107,6 +2109,24 @@ debug_finished (debugger_t *debug)
 }
 
 /* The program has stopped: at a breakpoint, after a step, on a signal, or for good */
+/* Whether the source of a frame is on this machine: the debug information of a library may name
+   a file that is not here */
+static gboolean
+debug_source_here (const char *file)
+{
+    return file != NULL && g_file_test (file, G_FILE_TEST_IS_REGULAR);
+}
+
+/* A step out of code with no source that GDB refuses, in the outermost frame for one: said in
+   the console, no dialog */
+static void
+debug_reply_step_out (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
+{
+    (void) data;
+    if (g_strcmp0 (reply->klass, "error") == 0 && gdb_mi_record_string (reply, "msg") != NULL)
+        debug_output_console (debug, gdb_mi_record_string (reply, "msg"), TRUE);
+}
+
 static void
 debug_stopped (debugger_t *debug, const gdb_mi_record_t *record)
 {
@@ -2115,6 +2135,31 @@ debug_stopped (debugger_t *debug, const gdb_mi_record_t *record)
     const char *file = gdb_mi_get_string (frame, "fullname");
     const char *line = gdb_mi_get_string (frame, "line");
     gboolean keep_debug_focus;
+
+    // a source that is not here is no source: nothing to open
+    if (!debug_source_here (file))
+    {
+        file = NULL;
+        line = NULL;
+    }
+    /* a step that ends in code with no source goes on out of it, the way it came: a step out of
+       main ends the program, a step into printf comes back to the call */
+    if (file == NULL && frame != NULL && debug->steps_out < 8
+        && (g_strcmp0 (reason, "end-stepping-range") == 0
+            || g_strcmp0 (reason, "function-finished") == 0))
+    {
+        char *text_value = g_strdup_printf (
+            _ ("No source of %s here: stepping out.\n"),
+            gdb_mi_get_string (frame, "func") != NULL ? gdb_mi_get_string (frame, "func") : "?");
+
+        debug->steps_out++;
+        debug->state = DEBUG_STOPPED;
+        debug_output_console (debug, text_value, FALSE);
+        g_free (text_value);
+        if (debug_request (debug, debug_reply_step_out, NULL, NULL, "-exec-finish") != 0)
+            return;
+    }
+    debug->steps_out = 0;
 
     if (reason != NULL && g_str_has_prefix (reason, "exited"))
     {
@@ -2140,15 +2185,6 @@ debug_stopped (debugger_t *debug, const gdb_mi_record_t *record)
                                                 : "");
 
         debug_output_append (debug, text_value);
-        g_free (text_value);
-    }
-    else if (g_strcmp0 (reason, "function-finished") == 0
-             && gdb_mi_record_string (record, "return-value") != NULL)
-    {
-        char *text_value = g_strdup_printf (_ ("Value returned is %s\n"),
-                                            gdb_mi_record_string (record, "return-value"));
-
-        debug_output_console (debug, text_value, FALSE);
         g_free (text_value);
     }
 
@@ -3473,7 +3509,7 @@ debug_show_stack (void *data, void *edit)
 static void
 debug_select_frame (debugger_t *debug, const debug_frame_t *frame)
 {
-    if (frame->file != NULL && frame->line > 0 && debug->host->show_location != NULL)
+    if (debug_source_here (frame->file) && frame->line > 0 && debug->host->show_location != NULL)
         (void) debug->host->show_location (debug->host, frame->file, frame->line);
     {
         char *command = g_strdup_printf ("-stack-select-frame %ld", frame->level);
@@ -3485,7 +3521,7 @@ debug_select_frame (debugger_t *debug, const debug_frame_t *frame)
         g_free (command);
     }
     // the mark goes with the frame: the steps go on from there
-    if (frame->file != NULL && frame->line > 0)
+    if (debug_source_here (frame->file) && frame->line > 0)
     {
         debug_clear_current (debug);
         debug->current_file = g_strdup (frame->file);

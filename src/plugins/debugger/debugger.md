@@ -138,6 +138,11 @@ to the line it stopped on, show the values of the local variables they name,
 after their text. The values go when the program runs on and when the text
 is edited. The skin gives their color, *editnote* in *[editor]*.
 
+A step that ends in code whose source is not on this machine, a library
+with debug information but without its sources, goes on out of it: a step
+into *printf* comes back to the call, a step out of *main* ends the program.
+A frame without its source is named in the panel and opens nothing.
+
 **The marks**
 
 **●**
