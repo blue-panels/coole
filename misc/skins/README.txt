@@ -254,6 +254,11 @@ applies individually to each of these three properties.
             The line where the debugged program stopped; unset, the
             color of bookmarkfound
 
+        builderror
+        buildwarning
+            Marks of a line the compiler has named an error or a
+            warning of
+
 
     [lines]
         Frame characters used all throughout coole.
@@ -343,6 +348,12 @@ applies individually to each of these three properties.
             Mark of the line where the debugged program stopped, and of
             that line when it has a breakpoint (default: a triangle and a
             circle with a dot; > @ on a terminal that is not UTF-8)
+
+        build-error-char
+        build-warning-char
+            Marks of a line the compiler has named an error or a warning
+            of (default: a cross and !; E and ! on a terminal that is not
+            UTF-8)
 
 
 Aliases section
