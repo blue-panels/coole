@@ -236,7 +236,8 @@ applies individually to each of these three properties.
             Lines as the result of "Find all"
 
         breakpoint
-            Mark of a breakpoint in the gutter; unset, the gutter's color
+            Mark of a breakpoint in the gutter; unset, bright red on the
+            background of the gutter
 
         breakpointpending
             Mark of a breakpoint GDB has not taken yet, or has refused
@@ -248,7 +249,8 @@ applies individually to each of these three properties.
             Lines with a breakpoint; unset, they are not colored
 
         execmark
-            Mark of the line where the debugged program stopped
+            Mark of the line where the debugged program stopped; unset,
+            yellow on the background of the gutter
 
         execline
             The line where the debugged program stopped; unset, the

@@ -35,8 +35,8 @@ static WDialog owner;
 static WEdit *test_edit;
 
 /* no colour keys: the tests run with no skin */
-static const mc_ep_marker_kind_t low = { "test.low", NULL, "L", "l", NULL, NULL, NULL, 1 };
-static const mc_ep_marker_kind_t high = { "test.high", NULL, "H", "h", NULL, NULL, NULL, 2 };
+static const mc_ep_marker_kind_t low = { "test.low", NULL, "L", "l", NULL, NULL, NULL, 1, NULL };
+static const mc_ep_marker_kind_t high = { "test.high", NULL, "H", "h", NULL, NULL, NULL, 2, NULL };
 
 /* --------------------------------------------------------------------------------------------- */
 /* @Mock */

@@ -80,6 +80,8 @@ typedef struct
     const char *line_color_key;      /* [editor] key to colour the whole line; NULL: none */
     const char *line_color_fallback; /* [editor] key when the skin has no line_color_key */
     int priority;                    /* of two marks on one line the higher one is shown */
+    const char *color;               /* when the skin has no color_key: this foreground, "red",
+                                        on the gutter's background; NULL: the gutter's color */
 } mc_ep_marker_kind_t;
 
 /* A command of a plugin with its default keys ("f5; ctrl-r"), for commands_register() */

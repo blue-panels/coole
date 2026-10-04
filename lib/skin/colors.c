@@ -414,6 +414,24 @@ mc_skin_color_get (const gchar *group, const gchar *name)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/* A foreground of its own on the background of a color of the skin: a red mark on the gutter,
+   whatever the gutter is */
+
+int
+mc_skin_color_on (const gchar *group, const gchar *name, const gchar *fg)
+{
+    tty_color_pair_t *base = mc_skin_color_get_with_defaults (group, name);
+    tty_color_pair_t color = { (char *) fg, NULL, NULL, 0 };
+
+    if (base != NULL)
+    {
+        color.bg = base->bg;
+        color.attrs = base->attrs;
+    }
+    return tty_try_alloc_color_pair (&color, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /* Whether the skin gives this color itself, not by the defaults of its group */
 
 gboolean

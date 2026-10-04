@@ -142,15 +142,16 @@ enum
 
 static const mc_ep_marker_kind_t debug_mark_kinds[DEBUG_MARK_COUNT] = {
     { "debugger.breakpoint", "breakpoint-char", "\u25cf", "o", "breakpoint", "breakpointline", NULL,
-      10 },
+      10, "brightred" },
     // GDB has not taken it yet, or has refused it
     { "debugger.breakpoint-pending", "breakpoint-pending-char", "\u25cc", "?", "breakpointpending",
-      "breakpointline", NULL, 12 },
+      "breakpointline", NULL, 12, "red" },
     { "debugger.breakpoint-disabled", "breakpoint-disabled-char", "\u25cb", "-",
-      "breakpointdisabled", NULL, NULL, 11 },
-    { "debugger.exec", "exec-char", "\u25b6", ">", "execmark", "execline", "bookmarkfound", 20 },
+      "breakpointdisabled", NULL, NULL, 11, NULL },
+    { "debugger.exec", "exec-char", "\u25b6", ">", "execmark", "execline", "bookmarkfound", 20,
+      "yellow" },
     { "debugger.exec-breakpoint", "exec-breakpoint-char", "\u25c9", "@", "execmark", "execline",
-      "bookmarkfound", 21 },
+      "bookmarkfound", 21, "brightred" },
 };
 
 typedef struct
@@ -3801,6 +3802,14 @@ debug_file_open (void *data, void *edit)
 
     if (file == NULL)
         return MC_EPR_NOT_SUPPORTED;
+    // the first file of a project: its breakpoints show at once
+    if (debug->project_dir == NULL)
+    {
+        char *root = debug_project_of (debug, edit);
+
+        if (root != NULL)
+            (void) debug_project_switch (debug, root);
+    }
     debug_breakpoints_sync (debug);
     debug_marks_show (debug, file);
     g_free (file);

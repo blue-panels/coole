@@ -64,6 +64,8 @@ typedef struct
     char *line_color_key;
     char *line_color_fallback;
     int priority;
+    char *color;     // the foreground when the skin has none
+    int color_pair;  // of it on the gutter, made the first time
 } edit_marker_kind_t;
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -411,6 +413,8 @@ edit_marker_kind_register (const mc_ep_marker_kind_t *kind)
     k->line_color_key = g_strdup (kind->line_color_key);
     k->line_color_fallback = g_strdup (kind->line_color_fallback);
     k->priority = kind->priority;
+    k->color = g_strdup (kind->color);
+    k->color_pair = -1;
     g_ptr_array_add (marker_kinds, k);
     return (int) marker_kinds->len - 1;
 }
@@ -437,7 +441,7 @@ edit_marker_is (int c)
 gboolean
 edit_marker_find (WEdit *edit, long line, const char **glyph, int *glyph_color, int *line_color)
 {
-    const edit_marker_kind_t *best = NULL;
+    edit_marker_kind_t *best = NULL;
     edit_book_mark_t *p;
 
     if (edit->book_mark == NULL || marker_kinds == NULL)
@@ -446,7 +450,7 @@ edit_marker_find (WEdit *edit, long line, const char **glyph, int *glyph_color, 
     for (p = book_mark_find (edit, line); p != NULL && p->line == line; p = p->prev)
         if (edit_marker_is (p->c))
         {
-            const edit_marker_kind_t *k = g_ptr_array_index (marker_kinds, p->c - EDIT_MARKER_BASE);
+            edit_marker_kind_t *k = g_ptr_array_index (marker_kinds, p->c - EDIT_MARKER_BASE);
 
             if (best == NULL || k->priority > best->priority)
                 best = k;
@@ -455,9 +459,16 @@ edit_marker_find (WEdit *edit, long line, const char **glyph, int *glyph_color, 
         return FALSE;
 
     *glyph = best->glyph;
-    *glyph_color = best->color_key != NULL && mc_skin_color_is_set ("editor", best->color_key)
-        ? mc_skin_color_get ("editor", best->color_key)
-        : EDITOR_LINE_STATE_COLOR;
+    if (best->color_key != NULL && mc_skin_color_is_set ("editor", best->color_key))
+        *glyph_color = mc_skin_color_get ("editor", best->color_key);
+    else if (best->color != NULL)
+    {
+        if (best->color_pair < 0)
+            best->color_pair = mc_skin_color_on ("editor", "editlinestate", best->color);
+        *glyph_color = best->color_pair;
+    }
+    else
+        *glyph_color = EDITOR_LINE_STATE_COLOR;
     *line_color = 0;
     if (best->line_color_key != NULL && mc_skin_color_is_set ("editor", best->line_color_key))
         *line_color = mc_skin_color_get ("editor", best->line_color_key);
