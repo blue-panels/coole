@@ -30,6 +30,19 @@ the program runs to the first breakpoint. When the build fails, the start
 waits: the lines with errors are marked, and **Alt-Shift-J** goes from one
 to the next.
 
+**The program in a terminal**
+
+With **Run in a terminal window** checked in the form, as it is at first,
+the program runs in a terminal of its own, the tab **Program** at the
+bottom: what it writes is there, and what is typed there goes to it, every
+key, F1 and F10 too. A program that takes the whole screen, an editor or
+coole itself, runs there as in any terminal. A click on the tab, or
+**Window → Program**, goes to it; **Alt-Shift-G** leaves it for the panel of
+the debugger. The tab stays when the program ends, to be read, and is
+cleared when it starts again. Without the plugin terminal, or unchecked,
+the output of the program comes in the console, and **Send line...** gives
+it a line to read.
+
 The arguments and the environment are split as a shell would split them,
 but no shell runs them: an entry of the environment with spaces is
 *GREETING="hello world"*.
@@ -220,5 +233,4 @@ it does not stop the program when the value changes. **Send line...** gives
 a line to a program that reads lines. **Stop** ends the session and keeps the
 breakpoints, the configurations and the watches.
 
-The debugger runs one local program at a time. A program that takes the
-whole terminal needs a terminal of its own.
+The debugger runs one local program at a time.

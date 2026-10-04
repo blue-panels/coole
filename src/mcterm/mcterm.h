@@ -41,6 +41,11 @@ void mcterm_load_options (void);
 void mcterm_save_options (void);
 
 WMcTerm *mcterm_new (const WRect *r, const char *start_dir);
+/* A terminal for a program another one starts there, a debugger: no shell, the name of its tty
+   in @tty_name (caller frees).  It stays when the program ends, to be read. */
+WMcTerm *mcterm_new_tty (const WRect *r, char **tty_name);
+/* Its screen and its history cleared, for the next program */
+void mcterm_tty_clear (WMcTerm *t);
 void mcterm_free (WMcTerm *t);
 gboolean mcterm_is_alive (const WMcTerm *t);
 gboolean mcterm_in_alt_screen (const WMcTerm *t);
@@ -122,6 +127,18 @@ mcterm_new (const WRect *r, const char *start_dir)
     (void) r;
     (void) start_dir;
     return NULL;
+}
+static inline WMcTerm *
+mcterm_new_tty (const WRect *r, char **tty_name)
+{
+    (void) r;
+    *tty_name = NULL;
+    return NULL;
+}
+static inline void
+mcterm_tty_clear (WMcTerm *t)
+{
+    (void) t;
 }
 static inline void
 mcterm_free (WMcTerm *t)

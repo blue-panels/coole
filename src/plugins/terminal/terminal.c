@@ -44,6 +44,7 @@
 #include "lib/util.h"  // MC_PTR_FREE
 #include "lib/widget.h"
 #include "lib/editor-plugin.h"
+#include "lib/plugin-service.h"
 
 #include "src/keymap.h"  // mcterm_map
 #include "src/editor/editwindow.h"
@@ -70,13 +71,18 @@ typedef struct
     WEditWindow window;
     WMcTerm *term;
     terminal_plugin_t *plugin;
+    // the terminal of a program the debugger runs there, not of a shell; the name of its tty
+    gboolean program;
+    char *tty;
 } terminal_window_t;
 
 /* The plugin in one editor screen */
 struct terminal_plugin_t
 {
     mc_editor_host_t *host;
-    terminal_window_t *win;  // NULL until Ctrl-O, and after the window is destroyed
+    terminal_window_t *win;      // NULL until Ctrl-O, and after the window is destroyed
+    terminal_window_t *program;  // the terminal of the program the debugger runs, or NULL
+    gboolean service;
 };
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -148,6 +154,9 @@ terminal_window_cwd (const terminal_window_t *tw)
 static gboolean
 terminal_window_busy (const terminal_window_t *tw)
 {
+    // the program is the debugger's to stop
+    if (tw->program)
+        return FALSE;
     return (mcterm_is_alive (tw->term) && mcterm_osc7_capable (tw->term)
             && !mcterm_shell_at_prompt (tw->term));
 }
@@ -308,6 +317,17 @@ terminal_window_set_buttonbar (terminal_window_t *tw)
     if (bb == NULL)
         return;
 
+    // the keys are the program's: no label is the terminal's
+    if (tw->program)
+    {
+        int i;
+
+        for (i = 1; i <= 10; i++)
+            buttonbar_set_label (bb, i, "", NULL, NULL);
+        widget_draw (WIDGET (bb));
+        return;
+    }
+
     buttonbar_set_label (bb, 1, Q_ ("ButtonBar|Help"), keymap, NULL);
     buttonbar_set_label (bb, 2, Q_ ("ButtonBar|Copy"), mcterm_map, term);
     buttonbar_set_label (bb, 3, Q_ ("ButtonBar|Mark"), mcterm_map, term);
@@ -347,7 +367,16 @@ terminal_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm,
             terminal_window_draw_frame (tw);
         return MSG_HANDLED;
 
+    case MSG_HOTKEY:
+        // the terminal of a program takes no hotkey: the key comes to it as a key
+        if (tw->program)
+            return MSG_NOT_HANDLED;
+        return group_default_callback (w, sender, msg, parm, data);
+
     case MSG_KEY:
+        // the terminal of a program: every key is the program's, F1 and F10 too
+        if (tw->program)
+            return mcterm_send_key (tw->term, parm) ? MSG_HANDLED : MSG_NOT_HANDLED;
         /* The key goes to the terminal as a key, the way the screen of mc gives it: its keymap
            first, then the shell. Through the group it would be offered to the terminal as a
            hotkey first, which the terminal types into the shell as it is. */
@@ -355,8 +384,11 @@ terminal_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm,
 
     case MSG_DESTROY:
         // the window goes, and the shell with it
-        if (tw->plugin != NULL)
+        if (tw->plugin != NULL && tw->program)
+            tw->plugin->program = NULL;
+        else if (tw->plugin != NULL)
             tw->plugin->win = NULL;
+        g_clear_pointer (&tw->tty, g_free);
         return group_default_callback (w, sender, msg, parm, data);
 
     default:
@@ -372,6 +404,8 @@ terminal_window_get_title (const WEditWindow *win)
     const terminal_window_t *tw = (const terminal_window_t *) win;
     char *title, *item;
 
+    if (tw->program)
+        return g_strdup (_ ("Program"));
     title = terminal_window_title (tw, COLS);
     item = g_strdup_printf ("%s: %s", _ ("Terminal"), title);
     g_free (title);
@@ -585,6 +619,137 @@ terminal_toggle (terminal_plugin_t *tp, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The window of the terminal of the program the debugger runs, at the bottom; no shell in it */
+static terminal_window_t *
+terminal_program_new (terminal_plugin_t *tp)
+{
+    terminal_window_t *tw;
+    WRect a, r, tr;
+
+    tp->host->window_area (tp->host, &a);
+    r = a;
+    r.lines = MAX (terminal_window_class.min_lines, a.lines * TERMINAL_HEIGHT_DEFAULT / 100);
+    r.y = a.y + a.lines - r.lines;
+    tw = g_new0 (terminal_window_t, 1);
+    edit_window_init (&tw->window, &r, &terminal_window_class);
+    tw->window.fullscreen = 0;
+    tw->plugin = tp;
+    tw->program = TRUE;
+    rect_init (&tr, 1, 1, r.lines - 2, r.cols - 2);
+    tw->term = mcterm_new_tty (&tr, &tw->tty);
+    if (tw->term == NULL)
+    {
+        send_message (tw, NULL, MSG_DESTROY, 0, NULL);
+        g_free (tw);
+        return NULL;
+    }
+    group_add_widget_autopos (GROUP (tw), WIDGET (tw->term), WPOS_KEEP_ALL, NULL);
+    mcterm_set_typing_elsewhere (tw->term, FALSE);
+    mcterm_set_scroll_allowed (tw->term, TRUE);
+    mcterm_set_after_redraw_callback (tw->term, terminal_window_after_redraw, tw);
+    return tw;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The service "terminal":
+   program () -> tty: the terminal of a program another plugin runs, a tab at the bottom, made
+   or cleared for it; the focus stays where it is */
+static GVariant *
+terminal_call (void *data, const char *method, GVariant *args, GError **error)
+{
+    terminal_plugin_t *tp = (terminal_plugin_t *) data;
+    void *prev = tp->host->window_current (tp->host);
+    GVariantDict reply;
+
+    (void) args;
+    if (strcmp (method, "program") != 0)
+    {
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD, "terminal: no method %s",
+                     method);
+        return NULL;
+    }
+    if (tp->program == NULL)
+    {
+        tp->program = terminal_program_new (tp);
+        if (tp->program == NULL)
+        {
+            g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD,
+                         "terminal: no terminal for the program");
+            return NULL;
+        }
+        tp->host->window_add (tp->host, tp->program);
+    }
+    else
+        mcterm_tty_clear (tp->program->term);
+    terminal_place (tp, tp->program);
+    tp->host->window_show (tp->host, tp->program);
+    if (prev != NULL && prev != (void *) tp->program)
+        tp->host->window_show (tp->host, prev);
+    g_variant_dict_init (&reply, NULL);
+    g_variant_dict_insert (&reply, "tty", "s", tp->program->tty);
+    return g_variant_dict_end (&reply);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The terminal of the program in the menu Window */
+static mc_ep_window_state_t
+terminal_program_state (void *data)
+{
+    const terminal_plugin_t *tp = (const terminal_plugin_t *) data;
+
+    if (tp->program == NULL || !widget_get_state (WIDGET (tp->program), WST_VISIBLE))
+        return MC_EP_WINDOW_CLOSED;
+    return widget_get_state (WIDGET (tp->program), WST_FOCUSED) ? MC_EP_WINDOW_FOCUSED
+                                                                : MC_EP_WINDOW_OPEN;
+}
+
+static void
+terminal_program_show (void *data)
+{
+    terminal_plugin_t *tp = (terminal_plugin_t *) data;
+
+    if (tp->program == NULL)
+    {
+        tp->program = terminal_program_new (tp);
+        if (tp->program == NULL)
+            return;
+        tp->host->window_add (tp->host, tp->program);
+    }
+    if (!widget_get_state (WIDGET (tp->program), WST_VISIBLE))
+        terminal_place (tp, tp->program);
+    tp->host->window_show (tp->host, tp->program);
+}
+
+static void
+terminal_program_close (void *data)
+{
+    terminal_plugin_t *tp = (terminal_plugin_t *) data;
+
+    if (tp->program != NULL)
+        (void) tp->host->window_close (tp->host, tp->program);
+}
+
+static void *
+terminal_program_window (void *data)
+{
+    return terminal_program_state (data) != MC_EP_WINDOW_CLOSED
+        ? ((terminal_plugin_t *) data)->program
+        : NULL;
+}
+
+static const mc_ep_window_kind_t terminal_program_kind = {
+    .name = "terminal.program",
+    .window = terminal_program_window,
+    .label = N_ ("Pro&gram"),
+    .state = terminal_program_state,
+    .show = terminal_program_show,
+    .close = terminal_program_close,
+};
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The terminal in the menu Window: Ctrl-O does the same */
 static mc_ep_window_state_t
 terminal_kind_state (void *data)
@@ -644,7 +809,12 @@ terminal_plugin_open (mc_editor_host_t *host, void *editor_dialog)
     tp = g_new0 (terminal_plugin_t, 1);
     tp->host = host;
     if (host->window_kind != NULL)
+    {
         host->window_kind (host, &terminal_kind, tp);
+        host->window_kind (host, &terminal_program_kind, tp);
+    }
+    if (host->service_register != NULL)
+        tp->service = host->service_register (host, "terminal", terminal_call, tp, NULL);
 
     return tp;
 }
@@ -654,7 +824,11 @@ terminal_plugin_open (mc_editor_host_t *host, void *editor_dialog)
 static void
 terminal_plugin_close (void *plugin_data)
 {
+    terminal_plugin_t *tp = (terminal_plugin_t *) plugin_data;
+
     // the editor has destroyed the window before, and the shell with it
+    if (tp->service)
+        tp->host->service_unregister (tp->host, "terminal");
     g_free (plugin_data);
 }
 
@@ -664,6 +838,22 @@ static mc_ep_result_t
 terminal_plugin_activate (void *plugin_data, void *edit)
 {
     return terminal_toggle ((terminal_plugin_t *) plugin_data, edit);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The terminal of the program in front: every key is the program's, before the button bar and
+   the keymaps of the editor take theirs.  The plugins before this one have had theirs: the
+   panel of the debugger, to leave it. */
+static mc_ep_result_t
+terminal_plugin_handle_key (void *plugin_data, int key, void *edit)
+{
+    terminal_plugin_t *tp = (terminal_plugin_t *) plugin_data;
+
+    (void) edit;
+    if (tp->program == NULL || tp->host->window_current (tp->host) != (void *) tp->program)
+        return MC_EPR_NOT_SUPPORTED;
+    return mcterm_send_key (tp->program->term, key) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -688,6 +878,7 @@ static const mc_editor_plugin_t terminal_plugin = {
     .close = terminal_plugin_close,
     .activate = terminal_plugin_activate,
     .handle_action = terminal_plugin_handle_action,
+    .handle_key = terminal_plugin_handle_key,
 };
 
 /* --------------------------------------------------------------------------------------------- */

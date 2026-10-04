@@ -746,7 +746,7 @@ in the ini file.
 
 Under them come the windows of the plugins: the tree of the project, the
 output of the build, the panel and the console of the debugger, the
-terminal, the Preview. An entry opens its window, brings it to the front
+terminal, the terminal of the program the debugger runs, the Preview. An entry opens its window, brings it to the front
 when it is behind another, and closes it when it is in front already; an
 open one is marked with *\**. A plugin that is switched off has no entry.
 

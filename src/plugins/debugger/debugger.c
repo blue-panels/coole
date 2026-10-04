@@ -64,6 +64,9 @@ typedef struct
     char *environment;
     char *gdb_path;
     gboolean build;  // the project is built before the start
+    // the program runs in a terminal window of its own, the screen and the keys its own, and
+    // not in the console
+    gboolean terminal;
 } debug_launch_t;
 
 typedef struct
@@ -1241,6 +1244,7 @@ debug_launches_write (const debugger_t *debug, GKeyFile *keyfile, gboolean relat
         g_key_file_set_string (keyfile, group, "gdb_path",
                                launch->gdb_path != NULL ? launch->gdb_path : "gdb");
         g_key_file_set_boolean (keyfile, group, "build", launch->build);
+        g_key_file_set_boolean (keyfile, group, "terminal", launch->terminal);
         g_free (executable);
         g_free (directory);
         g_free (group);
@@ -1287,6 +1291,9 @@ debug_launches_read (debugger_t *debug, GKeyFile *keyfile)
         launch->environment = g_key_file_get_string (keyfile, group, "environment", NULL);
         launch->gdb_path = g_key_file_get_string (keyfile, group, "gdb_path", NULL);
         launch->build = g_key_file_get_boolean (keyfile, group, "build", NULL);
+        // a configuration from before there was a terminal for the program has one
+        launch->terminal = !g_key_file_has_key (keyfile, group, "terminal", NULL)
+            || g_key_file_get_boolean (keyfile, group, "terminal", NULL);
         if (executable != NULL && *executable != '\0')
             launch->executable = g_canonicalize_filename (executable, debug->project_dir);
         launch->directory = g_canonicalize_filename (
@@ -2061,6 +2068,27 @@ debug_pty_open (debugger_t *debug)
 }
 #endif
 
+#ifdef ENABLE_MCTERM
+/* The terminal window of the program, from the plugin terminal: its tty is the program's; FALSE
+   when the plugin is not there */
+static gboolean
+debug_terminal_open (debugger_t *debug)
+{
+    GVariant *reply;
+    const char *tty = NULL;
+
+    reply =
+        debug->host->service_call (debug->host, "terminal", "program",
+                                   g_variant_new_array (G_VARIANT_TYPE ("{sv}"), NULL, 0), NULL);
+    if (reply == NULL)
+        return FALSE;
+    if (g_variant_lookup (reply, "tty", "&s", &tty))
+        debug->pty_name = g_strdup (tty);
+    g_variant_unref (reply);
+    return debug->pty_name != NULL;
+}
+#endif
+
 /* What GDB answers to a command typed for it: its words come on the console stream */
 static void
 debug_reply_console (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
@@ -2802,6 +2830,7 @@ debug_launch_copy (debug_launch_t *to, const debug_launch_t *from)
     to->environment = g_strdup (from->environment);
     to->gdb_path = g_strdup (from->gdb_path);
     to->build = from->build;
+    to->terminal = from->terminal;
 }
 
 static void
@@ -2882,6 +2911,7 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch)
 
     launch->directory = g_strdup (debug->project_dir);
     launch->gdb_path = g_strdup ("gdb");
+    launch->terminal = TRUE;
     if (reply != NULL)
     {
         (void) g_variant_lookup (reply, "programs", "^a&s", &programs);
@@ -2959,7 +2989,7 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
         char *name = NULL, *executable = NULL, *arguments = NULL, *directory = NULL;
         char *environment = NULL, *gdb_path = NULL, *ctags = NULL;
         char **entries = NULL;
-        gboolean build = launch->build, keep = *in_project;
+        gboolean build = launch->build, keep = *in_project, terminal = launch->terminal;
         const char *problem = NULL;
         guint i;
         int ret;
@@ -2994,6 +3024,8 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
                                      INPUT_COMPLETE_NONE),
                 QUICK_SEPARATOR (TRUE),
                 QUICK_CHECKBOX (_ ("&Build the project before the start"), &build, NULL),
+                QUICK_CHECKBOX (_ ("Run in a &terminal window: its screen and keys"), &terminal,
+                                NULL),
                 QUICK_CHECKBOX (_ ("&Keep in the project, in .coole/debug.ini"), &keep, NULL),
                 QUICK_BUTTONS_OK_CANCEL,
                 QUICK_END,
@@ -3055,6 +3087,7 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
         if (*gdb_path == '\0')
             g_free (gdb_path);
         launch->build = build;
+        launch->terminal = terminal;
         *in_project = keep;
 
         if (*launch->name == '\0')
@@ -3306,7 +3339,8 @@ debug_start (void *data, void *edit)
     if (debug->gdb == NULL)
         debug->gdb = gdb_mi_session_new (debug_record, debug);
 #ifdef ENABLE_MCTERM
-    if (!debug_pty_open (debug))
+    // the terminal window of the program, else a terminal whose output goes to the console
+    if (!(launch->terminal && debug_terminal_open (debug)) && !debug_pty_open (debug))
     {
         debug_error (debug, _ ("Could not create a terminal for the program."));
         g_strfreev (argv);
@@ -3864,9 +3898,13 @@ debug_handle_key (void *data, int key, void *edit)
     debugger_t *debug = (debugger_t *) data;
     int cmd;
 
-    if (edit == NULL)
-        return MC_EPR_NOT_SUPPORTED;
     cmd = debug_command_of_key (debug, key);
+    /* a window that is no file, the terminal of the program for one: the panel of the debugger
+       and back is the key that leaves it, all the others are the window's */
+    if (edit == NULL)
+        return cmd == DEBUG_CMD_PANEL && debug_run_command (debug, cmd, NULL)
+            ? MC_EPR_OK
+            : MC_EPR_NOT_SUPPORTED;
     // debug mode: the commands of the debugger have their keys, the editor's F3 to F8 too
     if (!debug_stepping (debug) && debug->debug_mode && cmd != DEBUG_CMD_NONE
         && cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && cmd != DEBUG_CMD_LEAVE

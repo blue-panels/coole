@@ -110,6 +110,9 @@ struct WMcTerm
     Widget base;
     mcview_vterm_t *vterm;
     int pty_master;
+    // the terminal of a program another one runs there (mcterm_new_tty ()): the slave kept open,
+    // so that the terminal stays when the program ends; -1 for the terminal of a shell
+    int tty_slave;
     pid_t child_pid;
     gboolean child_dead;
     int child_exit_status;
@@ -2776,6 +2779,11 @@ mcterm_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *da
             close (t->pty_master);
             t->pty_master = -1;
         }
+        if (t->tty_slave >= 0)
+        {
+            close (t->tty_slave);
+            t->tty_slave = -1;
+        }
         if (t->child_pid > 0)
         {
             kill (t->child_pid, SIGTERM);
@@ -2857,11 +2865,103 @@ mcterm_save_options (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The widget of a terminal on the pty @master, the shell @pid on its other side or none */
+static WMcTerm *
+mcterm_create (const WRect *r, int master, pid_t pid, char *token, mcterm_shell_rc_t *shell_rc)
+{
+    WMcTerm *t;
+    Widget *w;
+
+    t = g_new0 (WMcTerm, 1);
+    w = WIDGET (t);
+
+    widget_init (w, r, mcterm_callback, mcterm_mouse_callback);
+    w->options |= WOP_SELECTABLE | WOP_WANT_CURSOR | WOP_WANT_HOTKEY;
+
+    t->pty_master = master;
+    t->tty_slave = -1;
+    t->child_pid = pid;
+    t->osc7_token = token;
+    t->shell_rc = shell_rc;
+    t->child_dead = FALSE;
+    t->shell_at_prompt = TRUE;
+    t->last_osc7_gen = 0;
+    t->osc7_capable = FALSE;
+    t->osc133_capable = FALSE;
+    t->last_osc133_gen = 0;
+    t->last_exit_code = -1;
+    t->awaiting_command_done = FALSE;
+    t->busy_tick_fd = -1;
+    t->busy_phase = 0;
+    t->vterm = mcview_vterm_new ();
+    t->scroll_allowed = TRUE;
+    t->typing_elsewhere = TRUE;
+    mcview_vterm_set_keep_history (t->vterm, TRUE);
+    mcview_vterm_set_autowrap (t->vterm, TRUE);
+    mcview_vterm_set_size (t->vterm, r->lines, r->cols);
+    {
+        int cell_width, cell_height;
+
+        tty_cell_size (&cell_width, &cell_height);
+        mcview_vterm_set_cell_size (t->vterm, cell_width, cell_height);
+        mcview_vterm_set_sixel (t->vterm, tty_has_sixel ());
+    }
+    tty_painter_add (mcterm_paint_pictures, t);
+
+    {
+        struct winsize ws;
+
+        mcterm_winsize (r, &ws);
+        ioctl (master, TIOCSWINSZ, &ws);
+    }
+
+    add_select_channel (master, mcterm_pty_ready_cb, t);
+
+    return t;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+WMcTerm *
+mcterm_new_tty (const WRect *r, char **tty_name)
+{
+    WMcTerm *t;
+    int master = -1, slave = -1;
+    char name[256];
+    struct winsize ws;
+
+    mcterm_key_table_init (mc_global.profile_name, mc_global.main_config);
+    mcterm_winsize (r, &ws);
+    if (openpty (&master, &slave, name, NULL, &ws) < 0)
+        return NULL;
+    t = mcterm_create (r, master, -1, NULL, NULL);
+    t->tty_slave = slave;
+    // no key of it is a hotkey of the terminal: F1 and the others are the program's
+    widget_want_hotkey (WIDGET (t), FALSE);
+    // no shell: what is typed goes to the program, which draws all of the screen
+    t->shell_at_prompt = FALSE;
+    *tty_name = g_strdup (name);
+    return t;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+mcterm_tty_clear (WMcTerm *t)
+{
+    static const char clear[] = "\033[0m\033[H\033[2J\033[3J";
+
+    // what the terminal does with it is all there is to it: a write that fails leaves the screen
+    if (t != NULL && t->tty_slave >= 0 && write (t->tty_slave, clear, sizeof (clear) - 1) < 0)
+        return;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 WMcTerm *
 mcterm_new (const WRect *r, const char *start_dir)
 {
     WMcTerm *t;
-    Widget *w;
     int master = -1, slave = -1;
     pid_t pid;
     const shell_type_t shell_type = (mc_global.shell != NULL) ? mc_global.shell->type : SHELL_NONE;
@@ -2905,49 +3005,7 @@ mcterm_new (const WRect *r, const char *start_dir)
     close (slave);
     slave = -1;
 
-    t = g_new0 (WMcTerm, 1);
-    w = WIDGET (t);
-
-    widget_init (w, r, mcterm_callback, mcterm_mouse_callback);
-    w->options |= WOP_SELECTABLE | WOP_WANT_CURSOR | WOP_WANT_HOTKEY;
-
-    t->pty_master = master;
-    t->child_pid = pid;
-    t->osc7_token = token;
-    t->shell_rc = shell_rc;
-    t->child_dead = FALSE;
-    t->shell_at_prompt = TRUE;
-    t->last_osc7_gen = 0;
-    t->osc7_capable = FALSE;
-    t->osc133_capable = FALSE;
-    t->last_osc133_gen = 0;
-    t->last_exit_code = -1;
-    t->awaiting_command_done = FALSE;
-    t->busy_tick_fd = -1;
-    t->busy_phase = 0;
-    t->vterm = mcview_vterm_new ();
-    t->scroll_allowed = TRUE;
-    t->typing_elsewhere = TRUE;
-    mcview_vterm_set_keep_history (t->vterm, TRUE);
-    mcview_vterm_set_autowrap (t->vterm, TRUE);
-    mcview_vterm_set_size (t->vterm, r->lines, r->cols);
-    {
-        int cell_width, cell_height;
-
-        tty_cell_size (&cell_width, &cell_height);
-        mcview_vterm_set_cell_size (t->vterm, cell_width, cell_height);
-        mcview_vterm_set_sixel (t->vterm, tty_has_sixel ());
-    }
-    tty_painter_add (mcterm_paint_pictures, t);
-
-    {
-        struct winsize ws;
-
-        mcterm_winsize (r, &ws);
-        ioctl (master, TIOCSWINSZ, &ws);
-    }
-
-    add_select_channel (master, mcterm_pty_ready_cb, t);
+    t = mcterm_create (r, master, pid, token, shell_rc);
 
     if (shell_rc != NULL)
         mcterm_arm_protocol (t);
