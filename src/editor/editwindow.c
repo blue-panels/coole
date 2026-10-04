@@ -1248,8 +1248,40 @@ edit_window_give_room_back (WEditWindow *win)
     GArray *rooms = win->rooms;
     WRect a;
     guint i;
+    GList *l;
 
     win->rooms = NULL;
+
+    /* a window of a column under this one takes its place, and the rooms with it: the others
+       stay as they are */
+    for (l = w->owner != NULL ? w->owner->widgets : NULL; l != NULL; l = g_list_next (l))
+    {
+        Widget *wl = WIDGET (l->data);
+
+        if (wl != w && edit_window_is_window (wl) && widget_get_state (wl, WST_VISIBLE)
+            && EDIT_WINDOW (wl)->fullscreen == 0 && wl->rect.x == w->rect.x
+            && wl->rect.cols == w->rect.cols && wl->rect.y == w->rect.y + w->rect.lines)
+        {
+            WEditWindow *below = EDIT_WINDOW (wl);
+            WRect r = wl->rect;
+
+            r.lines += r.y - w->rect.y;
+            r.y = w->rect.y;
+            widget_set_size_rect (wl, &r);
+            if (rooms != NULL)
+            {
+                if (below->rooms == NULL)
+                    below->rooms = rooms;
+                else
+                {
+                    g_array_append_vals (below->rooms, rooms->data, rooms->len);
+                    g_array_unref (rooms);
+                }
+            }
+            widget_draw (WIDGET (w->owner));
+            return;
+        }
+    }
 
     if (rooms == NULL || w->owner == NULL)
     {
@@ -1297,6 +1329,58 @@ edit_window_give_room_back (WEditWindow *win)
 
     g_array_unref (rooms);
     widget_draw (WIDGET (w->owner));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/**
+ * Put a window in the column at the right of the screen: the first one of all its height, the
+ * others that went before it making room; a window that comes when there is a column already
+ * takes the lower part of its lowest window.
+ *
+ * @param win window, added already
+ * @param cols the width of the column when it is made
+ */
+
+void
+edit_window_dock_right (WEditWindow *win, int cols)
+{
+    Widget *w = WIDGET (win);
+    Widget *lowest = NULL;
+    WRect a, r;
+    GList *l;
+
+    if (w->owner == NULL)
+        return;
+    edit_window_area (DIALOG (w->owner), &a);
+    for (l = w->owner->widgets; l != NULL; l = g_list_next (l))
+    {
+        Widget *wl = WIDGET (l->data);
+
+        if (wl != w && edit_window_is_window (wl) && widget_get_state (wl, WST_VISIBLE)
+            && EDIT_WINDOW (wl)->fullscreen == 0 && wl->rect.x > a.x
+            && wl->rect.x + wl->rect.cols == a.x + a.cols
+            && (lowest == NULL || wl->rect.y > lowest->rect.y))
+            lowest = wl;
+    }
+
+    win->fullscreen = 0;
+    w->pos_flags = WPOS_KEEP_DEFAULT;
+    if (lowest != NULL && lowest->rect.lines >= 2 * EDIT_WINDOW (lowest)->klass->min_lines)
+    {
+        // the lower part of it: 60 percent
+        r = lowest->rect;
+        r.lines = MAX (win->klass->min_lines, lowest->rect.lines * 60 / 100);
+        r.y = lowest->rect.y + lowest->rect.lines - r.lines;
+    }
+    else
+    {
+        r = a;
+        r.cols = MIN (cols, a.cols);
+        r.x = a.x + a.cols - r.cols;
+    }
+    widget_set_size_rect (w, &r);
+    edit_window_make_room (win);
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -576,6 +576,15 @@ editor_host_window_make_room_impl (mc_editor_host_t *host, void *window)
  */
 
 static void
+editor_host_window_dock_right_impl (mc_editor_host_t *host, void *window, int cols)
+{
+    (void) host;
+    edit_window_dock_right (EDIT_WINDOW (window), cols);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
 editor_host_window_give_room_back_impl (mc_editor_host_t *host, void *window)
 {
     (void) host;
@@ -670,7 +679,6 @@ editor_host_service_register_impl (mc_editor_host_t *host, const char *name,
                                    mc_service_call_fn call, void *data, GError **error)
 {
     (void) host;
-
     return mc_service_register (name, call, data, error);
 }
 
@@ -1222,6 +1230,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_hide = editor_host_window_hide_impl;
     ctx->host->window_make_room = editor_host_window_make_room_impl;
     ctx->host->window_give_room_back = editor_host_window_give_room_back_impl;
+    ctx->host->window_dock_right = editor_host_window_dock_right_impl;
     ctx->host->window_current = editor_host_window_current_impl;
     ctx->host->window_top_file = editor_host_window_top_file_impl;
     ctx->host->get_text = editor_host_get_text_impl;
@@ -3011,6 +3020,9 @@ edit_files (const GList *files)
                                            EDITOR_BACKGROUND_COLOR, ' ', edit_dialog_bg_callback));
     group_add_widget (g, edit_dlg->bg);
 
+    // the plugins first: the menu shows the keys of the commands they register
+    edit_dlg->data.p = editor_plugin_ctx_create (edit_dlg);
+
     menubar = menubar_new (NULL);
     w = WIDGET (menubar);
     group_add_widget_autopos (g, w, w->pos_flags, NULL);
@@ -3018,8 +3030,6 @@ edit_files (const GList *files)
 
     w = WIDGET (buttonbar_new ());
     group_add_widget_autopos (g, w, w->pos_flags, NULL);
-
-    edit_dlg->data.p = editor_plugin_ctx_create (edit_dlg);
 
     for (file = files; file != NULL; file = g_list_next (file))
     {

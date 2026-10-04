@@ -193,6 +193,9 @@ typedef struct mc_editor_host_t
     /* Close a window as the user would, asking first when it has to; TRUE when it is gone.  Not
        from an event of that window: from call_later() */
     gboolean (*window_close) (struct mc_editor_host_t *host, void *window);
+    /* Put a window, added already, in the column at the right of the screen, one above the
+       other; @cols wide when it makes the column.  window_give_room_back() takes it out */
+    void (*window_dock_right) (struct mc_editor_host_t *host, void *window, int cols);
     /* A line of a file in its window, or in a new one, without a step in the navigation
        history */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);

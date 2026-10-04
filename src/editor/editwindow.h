@@ -146,6 +146,7 @@ extern char *edit_window_close_char;
 /*** declarations of public functions ************************************************************/
 
 void edit_window_init (WEditWindow *win, const WRect *r, const edit_window_class_t *klass);
+void edit_window_dock_right (WEditWindow *win, int cols);
 
 /* The range of a scrollbar of the window: the view of visible of total at pos */
 void edit_window_set_scroll (WEditWindow *win, gboolean vertical, long total, long visible,
