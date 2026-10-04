@@ -26,7 +26,6 @@
 #define MC_EP_MENU_COMMAND  "Command"
 #define MC_EP_MENU_FILE     "File"
 #define MC_EP_MENU_NAVIGATE "Navigate"
-#define MC_EP_MENU_DEBUG    "Debug"
 
 /*** enums ***************************************************************************************/
 
@@ -80,6 +79,14 @@ typedef struct
     const char *line_color_fallback; /* [editor] key when the skin has no line_color_key */
     int priority;                    /* of two marks on one line the higher one is shown */
 } mc_ep_marker_kind_t;
+
+/* A command of a plugin with its default keys ("f5; ctrl-r"), for commands_register() */
+typedef struct
+{
+    const char *name;        /* in the keymap files: "DebugStepOver" */
+    const char *description; /* N_() translatable, for Options > Key bindings */
+    const char *keys;        /* NULL: none */
+} mc_ep_command_t;
 
 /* What the editor provides to a plugin */
 typedef struct mc_editor_host_t
@@ -157,6 +164,17 @@ typedef struct mc_editor_host_t
                         gboolean enabled);
     void (*clear_markers) (struct mc_editor_host_t *host, const char *file, int kind);
     GArray *(*marker_lines) (struct mc_editor_host_t *host, const char *file, int kind);
+
+    /* Commands with keys the user can change.  commands_register() gives the plugin a section of
+       the keymap, its name and its title in Options > Key bindings, with the commands ended by a
+       NULL name; "Help" is the program's.  command_id() is the number of a command by its name,
+       command_lookup() the command of a key in a section, CK_IgnoreKey when none.  A command of
+       the plugin that comes to the editor, from the button bar for one, goes to
+       handle_action(). */
+    void (*commands_register) (struct mc_editor_host_t *host, const char *section,
+                               const char *title, const mc_ep_command_t *commands);
+    long (*command_id) (struct mc_editor_host_t *host, const char *name);
+    long (*command_lookup) (struct mc_editor_host_t *host, const char *section, int key);
     /* A line of a file in its window, or in a new one, without a step in the navigation
        history */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);

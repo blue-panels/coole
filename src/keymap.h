@@ -11,6 +11,14 @@
 
 /*** structures declarations (and typedefs of structures)*****************************************/
 
+/* a command of a plugin with its default keys, for keymap_register_section() */
+typedef struct
+{
+    const char *name;
+    const char *description;
+    const char *keys;
+} keymap_command_t;
+
 /*** global variables defined in .c file *********************************************************/
 
 extern GArray *dialog_keymap;
@@ -21,13 +29,11 @@ extern GArray *radio_keymap;
 extern GArray *help_keymap;
 extern GArray *editor_keymap;
 extern GArray *editor_x_keymap;
-extern GArray *debugger_keymap;
 extern GArray *mcterm_keymap;
 
 extern const global_keymap_t *help_map;
 extern const global_keymap_t *editor_map;
 extern const global_keymap_t *editor_x_map;
-extern const global_keymap_t *debugger_map;
 extern const global_keymap_t *mcterm_map;
 
 /*** declarations of public functions ************************************************************/
@@ -36,6 +42,10 @@ void keymap_load (gboolean load_from_file);
 void keymap_free (void);
 void keymap_save_old_maps (void);
 void keymap_refresh_widgets (void);
+void keymap_register_section (const char *section, const char *title,
+                              const keymap_command_t *commands);
+const global_keymap_t *keymap_section_map (const char *section);
+gboolean keymap_plugin_section (guint index, const char **section, const char **title);
 
 /*** inline functions ****************************************************************************/
 
