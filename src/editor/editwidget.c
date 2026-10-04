@@ -898,6 +898,31 @@ editor_host_marker_lines_impl (mc_editor_host_t *host, const char *file, int kin
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A file opened for a plugin goes where the file window in front is, when that one has given
+   room to other windows (the panel and the console of the debugger): it does not cover them */
+static gboolean
+editor_host_load_in_place (mc_editor_host_t *host, edit_arg_t *arg)
+{
+    WDialog *dialog = DIALOG (host->host_data);
+    Widget *before = WIDGET (editor_host_window_top_file_impl (host));
+    Widget *after;
+    gboolean opened;
+
+    opened = edit_load_file_from_filename (dialog, arg);
+    after = WIDGET (editor_host_window_top_file_impl (host));
+    if (opened && before != NULL && after != NULL && after != before
+        && EDIT_WINDOW (before)->fullscreen == 0 && EDIT_WINDOW (after)->fullscreen != 0)
+    {
+        EDIT_WINDOW (after)->fullscreen = 0;
+        after->pos_flags = WPOS_KEEP_DEFAULT;
+        widget_set_size_rect (after, &before->rect);
+        widget_draw (WIDGET (dialog));
+    }
+    return opened;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static gboolean
 editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long line)
 {
@@ -927,7 +952,7 @@ editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long l
     }
     path = g_strdup (file);
     edit_arg_init (&arg, path, line);
-    opened = edit_load_file_from_filename (dialog, &arg);
+    opened = editor_host_load_in_place (host, &arg);
     g_free (path);
     return opened;
 }
@@ -1012,7 +1037,7 @@ editor_host_open_file_impl (mc_editor_host_t *host, const char *file)
     path = g_strdup (file);
     // line 0: where the cursor was the last time
     edit_arg_init (&arg, path, 0);
-    opened = edit_load_file_from_filename (dialog, &arg);
+    opened = editor_host_load_in_place (host, &arg);
     g_free (path);
     return opened;
 }
