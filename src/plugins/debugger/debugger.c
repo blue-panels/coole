@@ -188,6 +188,8 @@ typedef struct
     /* the user went back to editing with the program stopped; the next stop steps again */
     gboolean step_left;
     int marks[DEBUG_MARK_COUNT];
+    // the glyphs of the marks, from the skin: the panel shows them as the gutter does
+    char *glyphs[DEBUG_MARK_COUNT];
     long commands[DEBUG_CMD_COUNT];
     // the configurations are kept in the project, .coole/debug.ini, for all who work on it
     gboolean launches_in_project;
@@ -259,6 +261,7 @@ static void debug_config_save (debugger_t *debug);
 static void debug_output_console (debugger_t *debug, const char *text_value, gboolean line);
 static void debug_notes_show (debugger_t *debug);
 static mc_ep_result_t debug_session_show (void *data, void *edit);
+static int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
 static void debug_session_refresh (debugger_t *debug);
 
 static void
@@ -691,7 +694,8 @@ debug_panel_rows (const debugger_t *debug)
         const debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
 
         debug_panel_add (rows, PANEL_BREAKPOINT, i,
-                         g_strdup_printf ("%s %s:%ld", bp->disabled ? "[ ]" : "[x]",
+                         g_strdup_printf ("%s %s:%ld",
+                                          debug->glyphs[debug_breakpoint_mark (debug, bp)],
                                           x_basename (bp->file), bp->line));
     }
     if (debug->breakpoints->len == 0)
@@ -3743,8 +3747,13 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     for (i = 0; i < DEBUG_CMD_COUNT; i++)
         debug->commands[i] = host->command_id (host, debug_commands[i].name);
     for (i = 0; i < DEBUG_MARK_COUNT; i++)
+    {
         debug->marks[i] =
             host->marker_kind != NULL ? host->marker_kind (host, &debug_mark_kinds[i]) : -1;
+        debug->glyphs[i] = mc_skin_get ("widget-editor", debug_mark_kinds[i].glyph_key,
+                                        mc_global.utf8_display ? debug_mark_kinds[i].glyph
+                                                               : debug_mark_kinds[i].glyph_ascii);
+    }
     if (host->startup_option (host, "debug") != NULL)
     {
         (void) debug_project_switch (debug, g_strdup (host->startup_option (host, "debug")));
@@ -3772,6 +3781,8 @@ debug_close (void *data)
     g_free (debug->current_file);
     if (debug->build_signal != 0)
         debug->host->service_disconnect (debug->host, debug->build_signal);
+    for (int i = 0; i < DEBUG_MARK_COUNT; i++)
+        g_free (debug->glyphs[i]);
     g_free (debug->current_func);
     g_ptr_array_free (debug->requests, TRUE);
     g_ptr_array_free (debug->locals, TRUE);
