@@ -4,11 +4,14 @@
 
    Copyright (C) 2009-2025
    Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
 
    Written by:
    Slava Zanko <slavazanko@gmail.com>, 2009
    Egmont Koblinger <egmont@gmail.com>, 2010
    Andrew Borodin <aborodin@vmail.ru>, 2012
+   Ilia Maslakov <il.smind@gmail.com>, 2026
 
    This file is part of the Midnight Commander.
 

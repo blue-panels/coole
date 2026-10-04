@@ -4,6 +4,9 @@
    Copyright (C) 2026
    Free Software Foundation, Inc.
 
+   Written by:
+   Ilia Maslakov <il.smind@gmail.com>, 2026
+
    This file is part of the Midnight Commander.
 
    The Midnight Commander is free software: you can redistribute it

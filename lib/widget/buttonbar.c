@@ -3,6 +3,8 @@
 
    Copyright (C) 1994-2025
    Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
 
    Authors:
    Radek Doulik, 1994, 1995
@@ -11,6 +13,7 @@
    Andrej Borsenkow, 1996
    Norbert Warmuth, 1997
    Andrew Borodin <aborodin@vmail.ru>, 2009-2022
+   Ilia Maslakov <il.smind@gmail.com>, 2026
 
    This file is part of the Midnight Commander.
 
