@@ -228,8 +228,11 @@ function takes a name typed as it is, and a breakpoint goes on a line.
 **The rest of the Debug menu**
 
 **Call stack...** chooses a frame in a list, as Enter in the panel does.
-**Add watch...** keeps an expression for the project; a watch shows a value,
-it does not stop the program when the value changes. **Send line...** gives
+**Evaluate expression...** is Enter of a source window: the value of an
+expression, in the dialog that can add it to the watches. **Add watch...**
+keeps an expression for the project; a watch shows a value, it does not
+stop the program when the value changes. Both offer the selection, or the
+word under the cursor, to be taken as it is or changed. **Send line...** gives
 a line to a program that reads lines. **Stop** ends the session and keeps the
 breakpoints, the configurations and the watches.
 

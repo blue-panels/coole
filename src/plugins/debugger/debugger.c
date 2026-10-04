@@ -245,7 +245,8 @@ enum
     DEBUG_ACT_GDB_COMMAND,
     DEBUG_ACT_MODE,
     DEBUG_ACT_FUNCTION_BREAKPOINT,
-    DEBUG_ACT_RUN_TO_FUNCTION
+    DEBUG_ACT_RUN_TO_FUNCTION,
+    DEBUG_ACT_EVALUATE
 };
 
 static mc_ep_result_t debug_start (void *data, void *edit);
@@ -4067,6 +4068,39 @@ debug_watch_add (debugger_t *debug, const char *expression)
     return MC_EPR_OK;
 }
 
+/* An expression asked for, the selection or the word under the cursor of the file there to be
+   taken as it is or changed; NULL when none is given */
+static char *
+debug_ask_expression (debugger_t *debug, void *edit, const char *title)
+{
+    void *file = edit != NULL ? edit : debug->host->window_top_file (debug->host);
+    char *guess = file != NULL ? debug_expression_at_cursor (debug, file) : NULL;
+    char *expression;
+
+    expression = input_dialog (title, _ ("Expression:"), "debug-expression",
+                               guess != NULL ? guess : "", INPUT_COMPLETE_NONE);
+    g_free (guess);
+    if (expression != NULL && *g_strstrip (expression) == '\0')
+        g_clear_pointer (&expression, g_free);
+    return expression;
+}
+
+/* Debug > Evaluate expression: its value, in the dialog that can add it to the watches */
+static mc_ep_result_t
+debug_act_evaluate (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+    char *expression;
+
+    if (debug->state != DEBUG_STOPPED)
+    {
+        debug_error (debug, _ ("An expression has a value while the program is stopped."));
+        return MC_EPR_FAILED;
+    }
+    expression = debug_ask_expression (debug, edit, _ ("Evaluate"));
+    return expression != NULL ? debug_evaluate_text (debug, expression) : MC_EPR_FAILED;
+}
+
 static mc_ep_result_t
 debug_add_watch (void *data, void *edit)
 {
@@ -4076,7 +4110,7 @@ debug_add_watch (void *data, void *edit)
 
     if (!debug_require_project (debug, edit))
         return MC_EPR_FAILED;
-    expression = input_dialog (_ ("Add watch"), _ ("Expression:"), NULL, "", INPUT_COMPLETE_NONE);
+    expression = debug_ask_expression (debug, edit, _ ("Add watch"));
     if (expression == NULL)
         return MC_EPR_FAILED;
     g_strstrip (expression);
@@ -4516,6 +4550,7 @@ static const mc_ep_action_t debug_actions[] = {
     { "Debug keys", debug_act_mode },
     { "Breakpoint on function", debug_act_function_breakpoint },
     { "Run to function", debug_act_run_to_function },
+    { "Evaluate", debug_act_evaluate },
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
@@ -4536,6 +4571,7 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, NULL, 0, NULL },
     { DEBUG_MENU, N_ ("Co&nsole"), DEBUG_ACT_OUTPUT, NULL },
     { DEBUG_MENU, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
+    { DEBUG_MENU, N_ ("Evaluate e&xpression..."), DEBUG_ACT_EVALUATE, NULL },
     { DEBUG_MENU, N_ ("&Add watch..."), DEBUG_ACT_ADD_WATCH, NULL },
     { DEBUG_MENU, N_ ("&Remove watch..."), DEBUG_ACT_REMOVE_WATCH, NULL },
     { DEBUG_MENU, N_ ("Send &line..."), DEBUG_ACT_INPUT, NULL },
@@ -4565,6 +4601,7 @@ debug_menu_shortcut (int action_index)
         { DEBUG_ACT_CONTINUE, DEBUG_CMD_START_CONTINUE },
         { DEBUG_ACT_TOGGLE_BREAKPOINT, DEBUG_CMD_TOGGLE_BREAKPOINT },
         { DEBUG_ACT_SESSION, DEBUG_CMD_PANEL },
+        { DEBUG_ACT_EVALUATE, DEBUG_CMD_EVALUATE },
         { DEBUG_ACT_NEXT, DEBUG_CMD_STEP_OVER },
         { DEBUG_ACT_STEP, DEBUG_CMD_STEP_INTO },
         { DEBUG_ACT_FINISH, DEBUG_CMD_STEP_OUT },
