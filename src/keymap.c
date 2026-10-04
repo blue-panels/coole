@@ -327,9 +327,19 @@ static const global_keymap_ini_t default_editor_x_keymap[] = {
 };
 
 static const global_keymap_ini_t default_debugger_keymap[] = {
-    { "Help", "f1" },          { "DebugStartContinue", "f5" }, { "DebugPause", "f6" },
-    { "DebugStepInto", "f7" }, { "DebugStepOver", "f8" },      { "DebugStepOut", "f9" },
-    { "DebugStop", "f15" },    { "DebugClose", "f10" },        { NULL, NULL },
+    { "Help", "f1" },
+    { "DebugStartContinue", "f5" },
+    { "DebugPause", "f6" },
+    { "DebugStepInto", "f7" },
+    { "DebugStepOver", "f8" },
+    { "DebugStepOut", "f9" },
+    { "DebugStop", "f15" },
+    { "DebugToggleBreakpoint", "f2" },
+    { "DebugRunToCursor", "f4" },
+    { "DebugEvaluate", "enter" },
+    { "DebugLeave", "esc" },
+    { "DebugClose", "f10" },
+    { NULL, NULL },
 };
 
 /* the terminal: what is bound here is taken from the shell. The cursor keys are not: the line

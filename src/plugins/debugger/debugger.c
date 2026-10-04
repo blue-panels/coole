@@ -28,6 +28,8 @@
 #include "lib/tty/tty.h"
 
 #include "src/keymap.h"
+#include "src/editor/edit-impl.h"
+#include "src/editor/editwidget.h"
 #include "src/editor/editwindow.h"
 
 #include "debugger.h"
@@ -104,6 +106,10 @@ typedef struct
     unsigned int next_token;
     GQueue *startup_commands;
     unsigned int startup_token;
+    unsigned int eval_token;
+    char *eval_expression;
+    /* the user went back to editing with the program stopped; the next stop steps again */
+    gboolean step_left;
     debug_session_window_t *session_window;
 } debugger_t;
 
@@ -145,6 +151,10 @@ static mc_ep_result_t debug_step (void *data, void *edit);
 static mc_ep_result_t debug_next (void *data, void *edit);
 static mc_ep_result_t debug_finish (void *data, void *edit);
 static mc_ep_result_t debug_stop (void *data, void *edit);
+static mc_ep_result_t debug_toggle_breakpoint (void *data, void *edit);
+static mc_ep_result_t debug_run_to_cursor (debugger_t *debug, void *edit);
+static mc_ep_result_t debug_evaluate (debugger_t *debug, void *edit);
+static mc_ep_result_t debug_watch_add (debugger_t *debug, const char *expression);
 
 static void
 debug_breakpoint_free (gpointer data)
@@ -240,6 +250,10 @@ debug_session_button_label (long action, debug_state_t state)
         return state == DEBUG_STARTING || state == DEBUG_RUNNING || state == DEBUG_STOPPED
             ? _ ("Stop")
             : NULL;
+    case CK_DebugToggleBreakpoint:
+        return _ ("Break");
+    case CK_DebugRunToCursor:
+        return state == DEBUG_STOPPED ? _ ("ToCurs") : NULL;
     case CK_DebugClose:
         return _ ("Close");
     default:
@@ -267,6 +281,153 @@ debug_session_buttonbar (debug_session_window_t *session)
         else
             buttonbar_set_label_command (bb, i, label, action, action == CK_Help ? NULL : w);
     }
+    widget_draw (WIDGET (bb));
+}
+
+/* Step mode: while the program is stopped, or running after a step, a file window takes the
+   debugger keys; what moves around the text is the editor's, what would change it is held back.
+   Esc goes back to editing until the next stop. */
+static gboolean
+debug_stepping (const debugger_t *debug)
+{
+    return !debug->step_left && (debug->state == DEBUG_STOPPED || debug->state == DEBUG_RUNNING);
+}
+
+/* The editor commands step mode leaves to the editor: they move, look, select or switch
+   windows, and none of them changes the text. */
+static gboolean
+debug_step_passes (long command)
+{
+    switch (command)
+    {
+    case CK_Up:
+    case CK_Down:
+    case CK_Left:
+    case CK_Right:
+    case CK_Home:
+    case CK_End:
+    case CK_PageUp:
+    case CK_PageDown:
+    case CK_HalfPageUp:
+    case CK_HalfPageDown:
+    case CK_Top:
+    case CK_Bottom:
+    case CK_TopOnScreen:
+    case CK_BottomOnScreen:
+    case CK_WordLeft:
+    case CK_WordRight:
+    case CK_ScrollUp:
+    case CK_ScrollDown:
+    case CK_ParagraphUp:
+    case CK_ParagraphDown:
+    case CK_Search:
+    case CK_SearchContinue:
+    case CK_Goto:
+    case CK_Find:
+    case CK_MatchBracket:
+    case CK_Bookmark:
+    case CK_BookmarkNext:
+    case CK_BookmarkPrev:
+    case CK_FoldToggle:
+    case CK_UnfoldAll:
+    case CK_FilterToggle:
+    case CK_FilterWord:
+    case CK_QuickFilter:
+    case CK_Mark:
+    case CK_MarkLeft:
+    case CK_MarkRight:
+    case CK_MarkUp:
+    case CK_MarkDown:
+    case CK_MarkToWordBegin:
+    case CK_MarkToWordEnd:
+    case CK_MarkToHome:
+    case CK_MarkToEnd:
+    case CK_MarkColumn:
+    case CK_MarkWord:
+    case CK_MarkLine:
+    case CK_MarkAll:
+    case CK_Unmark:
+    case CK_MarkPageUp:
+    case CK_MarkPageDown:
+    case CK_MarkToFileBegin:
+    case CK_MarkToFileEnd:
+    case CK_MarkToPageBegin:
+    case CK_MarkToPageEnd:
+    case CK_MarkScrollUp:
+    case CK_MarkScrollDown:
+    case CK_MarkParagraphUp:
+    case CK_MarkParagraphDown:
+    case CK_MarkColumnPageUp:
+    case CK_MarkColumnPageDown:
+    case CK_MarkColumnLeft:
+    case CK_MarkColumnRight:
+    case CK_MarkColumnUp:
+    case CK_MarkColumnDown:
+    case CK_MarkColumnScrollUp:
+    case CK_MarkColumnScrollDown:
+    case CK_MarkColumnParagraphUp:
+    case CK_MarkColumnParagraphDown:
+    case CK_Store:
+    case CK_Save:
+    case CK_FilePrev:
+    case CK_FileNext:
+    case CK_EditFile:
+    case CK_EditNew:
+    case CK_Close:
+    case CK_History:
+    case CK_Help:
+    case CK_Menu:
+    case CK_Quit:
+    case CK_Refresh:
+    case CK_Shell:
+    case CK_Options:
+    case CK_OptionsAppearance:
+    case CK_KeyBindings:
+    case CK_ManagePlugins:
+    case CK_ShowNumbers:
+    case CK_ShowMargin:
+    case CK_ShowTabTws:
+    case CK_ShowControlChars:
+    case CK_SyntaxOnOff:
+    case CK_WindowMove:
+    case CK_WindowResize:
+    case CK_WindowFullscreen:
+    case CK_WindowList:
+    case CK_WindowSticky:
+    case CK_WindowNext:
+    case CK_WindowPrev:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+/* The button bar of a file window: the editor's own, with the debugger's buttons over it in step
+   mode */
+static void
+debug_editor_buttonbar (debugger_t *debug, Widget *edit)
+{
+    WButtonBar *bb = buttonbar_find (DIALOG (edit->owner));
+    Widget *receiver = debug->session_window != NULL ? WIDGET (debug->session_window) : NULL;
+    int i;
+
+    if (bb == NULL)
+        return;
+    edit_set_buttonbar (EDIT (edit), bb);
+    if (debug_stepping (debug))
+        for (i = 1; i <= 10; i++)
+        {
+            long action = keybind_lookup_keymap_command (debugger_map, KEY_F (i));
+            const char *label =
+                action == CK_DebugClose ? NULL : debug_session_button_label (action, debug->state);
+
+            if (label != NULL && action != CK_Help)
+                buttonbar_set_label_command (bb, i, label, action, receiver);
+            else if (action != CK_IgnoreKey && action != CK_Help && action != CK_DebugClose)
+                buttonbar_clear_label (bb, i, NULL);
+            else if (!debug_step_passes (keybind_lookup_keymap_command (edit->keymap, KEY_F (i))))
+                buttonbar_clear_label (bb, i, NULL);
+        }
     widget_draw (WIDGET (bb));
 }
 
@@ -307,6 +468,10 @@ debug_session_draw (debug_session_window_t *session)
         g_string_append_printf (body, _ ("At: %s:%ld\n"), debug->current_file, debug->current_line);
     else
         g_string_append_c (body, '\n');
+    if (debug_stepping (debug))
+        g_string_append (body,
+                         _ ("Step mode: the source window takes the debugger keys; "
+                            "Esc goes back to editing.\n"));
     if (debug->watches->len > 0)
     {
         g_string_append (body, _ ("Watches:\n"));
@@ -379,6 +544,15 @@ debug_session_action (debug_session_window_t *session, long action)
         break;
     case CK_DebugStop:
         (void) debug_stop (debug, NULL);
+        break;
+    case CK_DebugToggleBreakpoint:
+        (void) debug_toggle_breakpoint (debug, debug->host->window_top_file (debug->host));
+        break;
+    case CK_DebugRunToCursor:
+        (void) debug_run_to_cursor (debug, debug->host->window_top_file (debug->host));
+        break;
+    case CK_DebugEvaluate:
+        (void) debug_evaluate (debug, NULL);
         break;
     case CK_DebugClose:
         (void) debug_session_close_window (&session->window);
@@ -455,11 +629,16 @@ static const edit_window_class_t debug_session_class = {
 static void
 debug_session_refresh (debugger_t *debug)
 {
-    if (debug->session_window == NULL)
+    Widget *current = WIDGET (debug->host->window_current (debug->host));
+
+    if (debug->session_window != NULL)
+        widget_draw (WIDGET (debug->session_window));
+    if (current == NULL)
         return;
-    widget_draw (WIDGET (debug->session_window));
-    if (debug->host->window_current (debug->host) == debug->session_window)
+    if (current == WIDGET (debug->session_window))
         debug_session_buttonbar (debug->session_window);
+    else if (edit_widget_is_editor (current))
+        debug_editor_buttonbar (debug, current);
 }
 
 static mc_ep_result_t
@@ -979,6 +1158,28 @@ debug_record (const char *record, void *data)
     char *token_end;
     unsigned long token = strtoul (record, &token_end, 10);
 
+    if (token_end != record && token == debug->eval_token && *token_end == '^')
+    {
+        gboolean failed = g_str_has_prefix (token_end, "^error");
+        char *value = gdb_mi_field (token_end, failed ? "msg" : "value");
+        char *expression = debug->eval_expression;
+        char *text_value;
+
+        debug->eval_token = 0;
+        debug->eval_expression = NULL;
+        text_value =
+            g_strdup_printf ("%s = %s", expression, value != NULL ? value : _ ("<unavailable>"));
+        if (failed)
+            debug_error (debug, text_value);
+        else if (query_dialog (_ ("Evaluate"), text_value, D_NORMAL, 2, _ ("&OK"), _ ("Add &watch"))
+                 == 1)
+            (void) debug_watch_add (debug, expression);
+        g_free (text_value);
+        g_free (value);
+        g_free (expression);
+        tty_refresh ();
+        return;
+    }
     if (token_end != record && g_str_has_prefix (token_end, "^done,bkpt="))
     {
         char *number = gdb_mi_field (token_end, "number");
@@ -1139,6 +1340,7 @@ debug_record (const char *record, void *data)
                 && debug->host->window_current (debug->host) == debug->session_window;
 
             debug->state = DEBUG_STOPPED;
+            debug->step_left = FALSE;
             debug_clear_current (debug);
             if (file != NULL && line != NULL && debug->host->show_location != NULL)
                 (void) debug->host->show_location (debug->host, file, atol (line));
@@ -1841,6 +2043,170 @@ debug_finish (void *data, void *edit)
 }
 
 static mc_ep_result_t
+debug_run_to_cursor (debugger_t *debug, void *edit)
+{
+    char *file, *location, *quoted, *command;
+    long line;
+    gboolean sent;
+
+    if (edit == NULL || debug->state != DEBUG_STOPPED)
+        return MC_EPR_FAILED;
+    file = debug->host->get_current_file (debug->host, edit);
+    line = debug->host->get_cursor_line (debug->host, edit);
+    if (file == NULL || line <= 0)
+    {
+        g_free (file);
+        return MC_EPR_FAILED;
+    }
+    location = g_strdup_printf ("%s:%ld", file, line);
+    quoted = gdb_mi_quote (location);
+    command = g_strconcat ("-exec-until ", quoted, NULL);
+    sent = debug_send (debug, command);
+    g_free (command);
+    g_free (quoted);
+    g_free (location);
+    g_free (file);
+    return sent ? MC_EPR_OK : MC_EPR_FAILED;
+}
+
+/* The selection when it is on one line, else the word under the cursor */
+static char *
+debug_expression_at_cursor (debugger_t *debug, void *edit)
+{
+    WEdit *e = (WEdit *) edit;
+    off_t start, end;
+
+    if (e == NULL)
+        return NULL;
+    if (eval_marks (e, &start, &end) && end > start && end - start <= 256)
+    {
+        GString *text = g_string_sized_new ((gsize) (end - start));
+        off_t i;
+
+        for (i = start; i < end; i++)
+        {
+            const int c = edit_buffer_get_byte (&e->buffer, i);
+
+            if (c == '\n')
+                break;
+            g_string_append_c (text, (char) c);
+        }
+        if (i == end)
+        {
+            g_strstrip (text->str);
+            if (text->str[0] != '\0')
+                return g_string_free (text, FALSE);
+        }
+        g_string_free (text, TRUE);
+    }
+    return debug->host->get_cursor_word (debug->host, edit);
+}
+
+static mc_ep_result_t
+debug_evaluate (debugger_t *debug, void *edit)
+{
+    char *expression, *quoted, *command;
+    gboolean sent;
+
+    if (debug->state != DEBUG_STOPPED || debug->eval_token != 0)
+        return MC_EPR_FAILED;
+    expression = debug_expression_at_cursor (debug, edit);
+    if (expression == NULL)
+    {
+        expression =
+            input_dialog (_ ("Evaluate"), _ ("Expression:"), NULL, "", INPUT_COMPLETE_NONE);
+        if (expression == NULL)
+            return MC_EPR_FAILED;
+        g_strstrip (expression);
+        if (*expression == '\0')
+        {
+            g_free (expression);
+            return MC_EPR_FAILED;
+        }
+    }
+    debug->eval_token = ++debug->next_token;
+    quoted = gdb_mi_quote (expression);
+    command = g_strdup_printf ("%u-data-evaluate-expression %s", debug->eval_token, quoted);
+    sent = debug_send (debug, command);
+    g_free (command);
+    g_free (quoted);
+    if (!sent)
+    {
+        debug->eval_token = 0;
+        g_free (expression);
+        return MC_EPR_FAILED;
+    }
+    debug->eval_expression = expression;
+    return MC_EPR_OK;
+}
+
+static mc_ep_result_t
+debug_handle_key (void *data, int key, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+    long action;
+
+    if (edit == NULL || !debug_stepping (debug))
+        return MC_EPR_NOT_SUPPORTED;
+
+    action = keybind_lookup_keymap_command (debugger_map, key);
+    switch (action)
+    {
+    case CK_DebugStartContinue:
+        (void) debug_continue (debug, edit);
+        return MC_EPR_OK;
+    case CK_DebugPause:
+        (void) debug_pause (debug, edit);
+        return MC_EPR_OK;
+    case CK_DebugStepInto:
+        (void) debug_step (debug, edit);
+        return MC_EPR_OK;
+    case CK_DebugStepOver:
+        (void) debug_next (debug, edit);
+        return MC_EPR_OK;
+    case CK_DebugStepOut:
+        (void) debug_finish (debug, edit);
+        return MC_EPR_OK;
+    case CK_DebugStop:
+        (void) debug_stop (debug, edit);
+        return MC_EPR_OK;
+    case CK_DebugToggleBreakpoint:
+        (void) debug_toggle_breakpoint (debug, edit);
+        return MC_EPR_OK;
+    case CK_DebugRunToCursor:
+        (void) debug_run_to_cursor (debug, edit);
+        return MC_EPR_OK;
+    case CK_DebugEvaluate:
+        (void) debug_evaluate (debug, edit);
+        return MC_EPR_OK;
+    case CK_DebugLeave:
+        debug->step_left = TRUE;
+        debug_session_refresh (debug);
+        return MC_EPR_OK;
+    default:
+        break;
+    }
+
+    if (debug_step_passes (keybind_lookup_keymap_command (WIDGET (edit)->keymap, key)))
+        return MC_EPR_NOT_SUPPORTED;
+    // a key that would change the text
+    tty_beep ();
+    return MC_EPR_OK;
+}
+
+static mc_ep_result_t
+debug_handle_event (void *data, void *edit, int event_id, void *payload)
+{
+    debugger_t *debug = (debugger_t *) data;
+
+    (void) payload;
+    if (event_id != MC_EP_EVENT_FOCUS_IN || edit == NULL || !debug_stepping (debug))
+        return MC_EPR_NOT_SUPPORTED;
+    debug_editor_buttonbar (debug, WIDGET (edit));
+    return MC_EPR_OK;
+}
+
+static mc_ep_result_t
 debug_show_output (void *data, void *edit)
 {
     debugger_t *debug = (debugger_t *) data;
@@ -1888,24 +2254,11 @@ debug_show_stack (void *data, void *edit)
 }
 
 static mc_ep_result_t
-debug_add_watch (void *data, void *edit)
+debug_watch_add (debugger_t *debug, const char *expression)
 {
-    debugger_t *debug = (debugger_t *) data;
     debug_watch_t *watch;
-    char *expression;
     guint i;
 
-    if (!debug_require_project (debug, edit))
-        return MC_EPR_FAILED;
-    expression = input_dialog (_ ("Add watch"), _ ("Expression:"), NULL, "", INPUT_COMPLETE_NONE);
-    if (expression == NULL)
-        return MC_EPR_FAILED;
-    g_strstrip (expression);
-    if (*expression == '\0')
-    {
-        g_free (expression);
-        return MC_EPR_FAILED;
-    }
     for (i = 0; i < debug->watches->len; i++)
     {
         const debug_watch_t *existing = g_ptr_array_index (debug->watches, i);
@@ -1913,12 +2266,11 @@ debug_add_watch (void *data, void *edit)
         if (g_strcmp0 (existing->expression, expression) == 0)
         {
             debug_error (debug, _ ("This expression is already watched."));
-            g_free (expression);
             return MC_EPR_FAILED;
         }
     }
     watch = g_new0 (debug_watch_t, 1);
-    watch->expression = expression;
+    watch->expression = g_strdup (expression);
     g_ptr_array_add (debug->watches, watch);
     debug_config_save (debug);
     if (debug->state == DEBUG_STOPPED)
@@ -1927,6 +2279,25 @@ debug_add_watch (void *data, void *edit)
         debug_watches_show (debug);
     debug_session_refresh (debug);
     return MC_EPR_OK;
+}
+
+static mc_ep_result_t
+debug_add_watch (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+    char *expression;
+    mc_ep_result_t result = MC_EPR_FAILED;
+
+    if (!debug_require_project (debug, edit))
+        return MC_EPR_FAILED;
+    expression = input_dialog (_ ("Add watch"), _ ("Expression:"), NULL, "", INPUT_COMPLETE_NONE);
+    if (expression == NULL)
+        return MC_EPR_FAILED;
+    g_strstrip (expression);
+    if (*expression != '\0')
+        result = debug_watch_add (debug, expression);
+    g_free (expression);
+    return result;
 }
 
 static mc_ep_result_t
@@ -2014,6 +2385,8 @@ debug_stop (void *data, void *edit)
     gdb_mi_session_stop (debug->gdb);
     g_queue_clear_full (debug->startup_commands, g_free);
     debug->startup_token = 0;
+    debug->eval_token = 0;
+    g_clear_pointer (&debug->eval_expression, g_free);
     debug_pty_close (debug);
     debug_clear_current (debug);
     debug_watches_clear_values (debug);
@@ -2064,6 +2437,7 @@ debug_close (void *data)
     g_string_free (debug->watches_text, TRUE);
     g_free (debug->project_dir);
     g_free (debug->current_file);
+    g_free (debug->eval_expression);
     g_free (debug);
 }
 
@@ -2164,6 +2538,8 @@ static const mc_editor_plugin_t debug_plugin = {
     .close = debug_close,
     .on_file_open = debug_file_open,
     .ok_to_quit = debug_ok_to_quit,
+    .handle_key = debug_handle_key,
+    .handle_event = debug_handle_event,
     .actions = debug_actions,
     .action_count = G_N_ELEMENTS (debug_actions),
     .cmd_menu_entries = debug_menu,

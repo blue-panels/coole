@@ -21,13 +21,30 @@ cc -g -O0 -Iinclude src/main.c src/calc.c -o build/calculator
    `B` appears in the gutter. The breakpoint belongs to the project, so it
    remains after that file window closes. On **Start**, GDB opens the source
    file where the program stops and `>` marks the current execution line.
-4. **Start** opens a **Debug session** window. While this window has focus, its
-   function keys control the running program: F5 starts or continues, F6 pauses,
-   F7 steps into, F8 steps over, and F9 steps out. Shift-F5 stops the program;
-   F10 closes only the Debug session window. Reopen it with **Debug → Debug
-   session...**. The source editor keeps its normal function keys when it has
-   focus. After a step, coole shows the source location while keeping focus in
-   Debug session, so repeated F8 presses keep stepping.
+4. **Start** opens a **Debug session** window and runs the program to the
+   first breakpoint. While the program is stopped, the source windows are in
+   **step mode**: they take the debugger keys, and the keys that move around
+   the text, search, select or switch windows work as usual.
+
+   | Key      | In step mode                                  |
+   |----------|-----------------------------------------------|
+   | F5       | continue                                      |
+   | F6       | pause the running program                     |
+   | F7       | step into                                     |
+   | F8       | step over                                     |
+   | F9       | step out                                      |
+   | F4       | run to the line of the cursor                 |
+   | F2       | toggle a breakpoint on the line of the cursor |
+   | Enter    | evaluate the selection or the word under the cursor |
+   | Shift-F5 | stop the program                              |
+   | Esc      | go back to editing until the next stop        |
+
+   A key that would change the text only beeps. The value of an evaluated
+   expression comes in a dialog that can add it to the Watches.
+
+   The Debug session window takes the same keys when it has the focus, where
+   F2 and F4 work on the cursor of the topmost file window and F10 closes the
+   window. Reopen it with **Debug → Debug session...**.
    These bindings can be changed in **Options → Key bindings → Editor →
    Debugger**, independently of the source editor. The same actions can be
    set in the `[debugger]` section of the user keymap, for example

@@ -258,8 +258,9 @@ All are optional except open and close.
                              activate() from the Plugins menu
   handle_key(plugin_data, key, edit)
                              raw key interception.  Called for every
-                             key after the macro hotkeys and before the
-                             keymap is consulted;
+                             key before the macro hotkeys and the
+                             keymaps of the editor and of its windows,
+                             so a plugin may take F9 and F10 too;
                              return MC_EPR_OK to consume the key.
                              With a window that is no file in front,
                              the terminal for one, it is called with
@@ -290,8 +291,10 @@ Event ids reserved for handle_event():
 
   MC_EP_EVENT_FILE_SAVED      file written; payload = const char *path
   MC_EP_EVENT_FILE_RENAMED    Save As completed; payload = new path
-  MC_EP_EVENT_FOCUS_IN        editor window got focus
-  MC_EP_EVENT_FOCUS_OUT       editor window lost focus
+  MC_EP_EVENT_FOCUS_IN        a file window got the focus; the editor
+                              has put its button bar labels, and a
+                              plugin may put its own over them
+  MC_EP_EVENT_FOCUS_OUT       a file window lost the focus
   MC_EP_EVENT_TEXT_CHANGED    the text of edit changed; payload = NULL
   MC_EP_EVENT_CURSOR_MOVED    the cursor of edit is on another line;
                               payload = NULL

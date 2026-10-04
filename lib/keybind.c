@@ -249,6 +249,10 @@ static name_keymap_t command_names[] = {
     ADD_KEYMAP_NAME_DESC (DebugStepOver, N_ ("Step over")),
     ADD_KEYMAP_NAME_DESC (DebugStepOut, N_ ("Step out")),
     ADD_KEYMAP_NAME_DESC (DebugStop, N_ ("Stop debugging")),
+    ADD_KEYMAP_NAME_DESC (DebugToggleBreakpoint, N_ ("Toggle breakpoint")),
+    ADD_KEYMAP_NAME_DESC (DebugRunToCursor, N_ ("Run to cursor")),
+    ADD_KEYMAP_NAME_DESC (DebugEvaluate, N_ ("Evaluate expression")),
+    ADD_KEYMAP_NAME_DESC (DebugLeave, N_ ("Leave step mode")),
     ADD_KEYMAP_NAME_DESC (DebugClose, N_ ("Close debug session window")),
 
     { NULL, CK_IgnoreKey, NULL }
