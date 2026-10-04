@@ -3296,6 +3296,16 @@ debug_step (void *data, void *edit)
 static mc_ep_result_t
 debug_finish (void *data, void *edit)
 {
+    debugger_t *debug = (debugger_t *) data;
+
+    /* out of the outermost frame, main, there is nowhere to step to: the program goes on, to
+       its end or to the next breakpoint, as GDB would refuse "finish" */
+    if (debug->state == DEBUG_STOPPED && debug->frames->len == 1)
+    {
+        debug_output_console (debug, _ ("Step out of the outermost frame: the program goes on.\n"),
+                              FALSE);
+        return debug_control (data, edit, "-exec-continue", DEBUG_STOPPED);
+    }
     return debug_control (data, edit, "-exec-finish", DEBUG_STOPPED);
 }
 
