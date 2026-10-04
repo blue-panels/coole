@@ -1000,6 +1000,11 @@ on again.
 so. On the row of the Lua engine it opens the
 [Lua scripts](#lua-scripts).
 
+**IDE: project, build, debugger**
+: Switch the three plugins that make an IDE of the editor on together, or off
+together when all of them are on: the project and its files, the build, and
+the debugger. Each of them works without the others too.
+
 ### Plugin info <a id="plugin-info"></a>
 
 The plugins the editor has loaded: the name, whether it is on, what it

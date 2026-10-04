@@ -29,6 +29,7 @@
 #include <string.h>
 
 #include "lib/global.h"
+#include "lib/strutil.h"
 #include "lib/tty/tty.h"
 #include "lib/keybind.h"  // CK_Enter
 #include "lib/mcconfig.h"
@@ -839,6 +840,30 @@ mp_invoke_settings (const mp_ctx_t *ctx)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The plugins that make an IDE of the editor: on together, off together */
+static const char *const mp_ide_plugins[] = { "project", "build", "debugger", NULL };
+
+static int
+mp_ide_toggle (WButton *button, int action)
+{
+    const mp_ctx_t *ctx = (const mp_ctx_t *) DIALOG (WIDGET (button)->owner)->data.p;
+    gboolean all_on = TRUE;
+    int i;
+
+    (void) action;
+    for (i = 0; mp_ide_plugins[i] != NULL; i++)
+        if (mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, mp_ide_plugins[i]))
+            all_on = FALSE;
+    // some are off: all go on; all are on: all go off
+    for (i = 0; mp_ide_plugins[i] != NULL; i++)
+        mc_plugin_prefs_set_disabled (MC_PLUGIN_KIND_EDITOR, mp_ide_plugins[i], all_on);
+    if (ctx != NULL)
+        widget_draw (WIDGET (ctx->tbl));
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 mp_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
@@ -950,9 +975,18 @@ manage_plugins_dialog (void)
 
     group_add_widget (GROUP (dlg), tbl);
     group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
-    group_add_widget (
-        GROUP (dlg),
-        button_new (dlg_h - 2, (dlg_w - 10) / 2, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL));
+    {
+        const char *ide_label = _ ("&IDE: project, build, debugger");
+        const int ide_w = str_term_width1 (ide_label) + 3;
+        const int left = (dlg_w - ide_w - 10 - 1) / 2;
+
+        group_add_widget (
+            GROUP (dlg),
+            button_new (dlg_h - 2, left, B_USER, NORMAL_BUTTON, ide_label, mp_ide_toggle));
+        group_add_widget (
+            GROUP (dlg),
+            button_new (dlg_h - 2, left + ide_w + 1, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL));
+    }
 
     /* without this the button takes the focus and the table ignores the keys */
     widget_select (WIDGET (tbl));

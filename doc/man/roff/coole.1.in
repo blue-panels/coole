@@ -1212,6 +1212,12 @@ Open the settings of the plugin the cursor is on. A plugin that has none says
 so. On the row of the Lua engine it opens the
 Lua scripts\&.
 
+.TP
+\fBIDE: project, build, debugger\fP
+Switch the three plugins that make an IDE of the editor on together, or off
+together when all of them are on: the project and its files, the build, and
+the debugger. Each of them works without the others too.
+
 .SS Plugin info
 .PP
 The plugins the editor has loaded: the name, whether it is on, what it
