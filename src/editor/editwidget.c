@@ -2367,11 +2367,11 @@ edit_quit (WDialog *h)
     GSList *m = NULL;
     GSList *me;
 
+    // don't stop the dialog before final decision: a plugin may say no, the debugger for one
+    widget_set_state (WIDGET (h), WST_ACTIVE, TRUE);
+
     if (!edit_plugins_ok_to_quit (h))
         return;
-
-    // don't stop the dialog before final decision
-    widget_set_state (WIDGET (h), WST_ACTIVE, TRUE);
 
     // check window state and get modified files
     for (l = GROUP (h)->widgets; l != NULL; l = g_list_next (l))
