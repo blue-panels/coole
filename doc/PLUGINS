@@ -291,7 +291,21 @@ What the editor provides to the plugin, passed to open():
                              window, brings one behind to the front,
                              and closes the one in front.  An open one
                              is marked with '*'.  The menu is made again
-                             whenever it drops.
+                             whenever it drops.  Its name ("project.tree")
+                             and window() (the window when it is open)
+                             let the layouts of the editor open, close
+                             and place it.
+  window_dock_bottom(host, window, lines)
+                             a window added in the row at the bottom,
+                             under the windows of the files: a tab, the
+                             one seen.  window_dock_right() puts one in
+                             the column at the right; window_hide() and
+                             window_give_room_back() take it out
+  layout_push(host, name)    the windows as the layout name has them,
+                             those of the moment kept; FALSE when the
+                             user has it off ("Debug") or one is kept
+  layout_pop(host)           the windows kept put back, the tabs of the
+                             bottom staying
 
 Fields:
 

@@ -118,6 +118,9 @@ struct WEditWindow
     int drag_own_dy;
     // fullscreen till it gave room to another: it is again when it takes the whole screen again
     unsigned int room_fullscreen : 1;
+    // fullscreen till the docks took part of the screen: it fills the rest, and is fullscreen again
+    // when the docks are empty
+    unsigned int dock_fill : 1;
     WRect room_loc_prev;  // where it goes back to then, when it is not fullscreen
     WRect drag_rect;      // where it was when the move or resize of a window began
     // where it was before the screen was resized, and where that put it: while the windows stay as
@@ -146,7 +149,6 @@ extern char *edit_window_close_char;
 /*** declarations of public functions ************************************************************/
 
 void edit_window_init (WEditWindow *win, const WRect *r, const edit_window_class_t *klass);
-void edit_window_dock_right (WEditWindow *win, int cols);
 
 /* The range of a scrollbar of the window: the view of visible of total at pos */
 void edit_window_set_scroll (WEditWindow *win, gboolean vertical, long total, long visible,

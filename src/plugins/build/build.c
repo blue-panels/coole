@@ -870,7 +870,30 @@ build_output_close (void *data)
     build->window = 0;
 }
 
+static void *
+build_output_window (void *data)
+{
+    build_t *build = (build_t *) data;
+    GVariantDict dict;
+    GVariant *reply;
+    guint64 window = 0;
+
+    if (build_output_state (data) == MC_EP_WINDOW_CLOSED)
+        return NULL;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", build->window);
+    reply = build_viewer (build, "info", &dict);
+    if (reply != NULL)
+    {
+        (void) g_variant_lookup (reply, "window", "t", &window);
+        g_variant_unref (reply);
+    }
+    return (void *) (gsize) window;
+}
+
 static const mc_ep_window_kind_t build_output_kind = {
+    .name = "build.output",
+    .window = build_output_window,
     .label = N_ ("&Build output"),
     .state = build_output_state,
     .show = build_output_raise,

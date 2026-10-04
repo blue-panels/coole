@@ -72,6 +72,8 @@
 
 #include "edit-impl.h"
 #include "editwidget.h"
+#include "editdock.h"
+#include "editlayout.h"
 #include "editmacros.h"  // edit_execute_macro()
 
 /*** file scope macro definitions ****************************************************************/
@@ -567,7 +569,11 @@ editor_host_window_show_impl (mc_editor_host_t *host, void *window)
 {
     (void) host;
 
-    edit_window_show (EDIT_WINDOW (window));
+    // a tab of the bottom is shown as the tab seen
+    if (edit_dock_side (EDIT_WINDOW (window)) == EDIT_DOCK_BOTTOM)
+        edit_dock_tab_select (EDIT_WINDOW (window));
+    else
+        edit_window_show (EDIT_WINDOW (window));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -580,6 +586,8 @@ editor_host_window_hide_impl (mc_editor_host_t *host, void *window)
 {
     (void) host;
 
+    // hidden, it leaves its dock: shown again, it is put in one again
+    (void) edit_dock_remove (EDIT_WINDOW (window));
     edit_window_hide (EDIT_WINDOW (window));
 }
 
@@ -593,7 +601,9 @@ editor_host_window_make_room_impl (mc_editor_host_t *host, void *window)
 {
     (void) host;
 
-    edit_window_make_room (EDIT_WINDOW (window));
+    // the docks make the room of their windows
+    if (edit_dock_side (EDIT_WINDOW (window)) == EDIT_DOCK_NONE)
+        edit_window_make_room (EDIT_WINDOW (window));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -605,7 +615,16 @@ static void
 editor_host_window_dock_right_impl (mc_editor_host_t *host, void *window, int cols)
 {
     (void) host;
-    edit_window_dock_right (EDIT_WINDOW (window), cols);
+    edit_dock_add (EDIT_WINDOW (window), EDIT_DOCK_RIGHT, cols);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_window_dock_bottom_impl (mc_editor_host_t *host, void *window, int lines)
+{
+    (void) host;
+    edit_dock_add (EDIT_WINDOW (window), EDIT_DOCK_BOTTOM, lines);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -615,7 +634,8 @@ editor_host_window_give_room_back_impl (mc_editor_host_t *host, void *window)
 {
     (void) host;
 
-    edit_window_give_room_back (EDIT_WINDOW (window));
+    if (!edit_dock_remove (EDIT_WINDOW (window)))
+        edit_window_give_room_back (EDIT_WINDOW (window));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1011,7 +1031,23 @@ static const char *
 editor_host_startup_option_impl (mc_editor_host_t *host, const char *name)
 {
     (void) host;
-    return startup_options != NULL ? g_hash_table_lookup (startup_options, name) : NULL;
+    return edit_startup_option (name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_layout_push_impl (mc_editor_host_t *host, const char *name)
+{
+    return edit_layout_push (DIALOG (host->host_data), name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_layout_pop_impl (mc_editor_host_t *host)
+{
+    edit_layout_pop (DIALOG (host->host_data));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1221,6 +1257,7 @@ editor_window_kind_free (gpointer p)
     g_free ((char *) k->kind.section);
     g_free ((char *) k->kind.command);
     g_free ((char *) k->kind.shortcut);
+    g_free ((char *) k->kind.name);
     g_free (k);
 }
 
@@ -1241,6 +1278,7 @@ editor_host_window_kind_impl (mc_editor_host_t *host, const mc_ep_window_kind_t 
     k->kind.section = g_strdup (kind->section);
     k->kind.command = g_strdup (kind->command);
     k->kind.shortcut = g_strdup (kind->shortcut);
+    k->kind.name = g_strdup (kind->name);
     k->data = data;
     g_ptr_array_add (ctx->window_kinds, k);
 }
@@ -1348,6 +1386,9 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->show_location = editor_host_show_location_impl;
     ctx->host->save_modified_files = editor_host_save_modified_files_impl;
     ctx->host->window_kind = editor_host_window_kind_impl;
+    ctx->host->window_dock_bottom = editor_host_window_dock_bottom_impl;
+    ctx->host->layout_push = editor_host_layout_push_impl;
+    ctx->host->layout_pop = editor_host_layout_pop_impl;
     ctx->window_kinds = g_ptr_array_new_with_free_func (editor_window_kind_free);
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
     // the plugins reach it from open(): call_later() for one
@@ -1377,12 +1418,15 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
 
     if (ctx->instances->len == 0)
     {
+        g_ptr_array_free (ctx->window_kinds, TRUE);
         g_ptr_array_free (ctx->instances, TRUE);
         g_free (ctx->host);
         g_free (ctx);
         return NULL;
     }
 
+    // once the files are open: the windows of their project as they were the last time
+    editor_host_call_later_impl (ctx->host, edit_layout_startup, edit_dlg);
     return ctx;
 }
 
@@ -2167,6 +2211,15 @@ edit_dialog_command_execute (WDialog *h, long command)
     case CK_WindowNext:
         group_select_next_widget (g);
         break;
+    case CK_WindowTabNext:
+        edit_dock_tab_step (h, 1);
+        break;
+    case CK_WindowTabPrev:
+        edit_dock_tab_step (h, -1);
+        break;
+    case CK_WindowLayout:
+        edit_layout_dialog (h);
+        break;
     case CK_WindowPrev:
         group_select_prev_widget (g);
         break;
@@ -2647,6 +2700,8 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         return edit_drop_hotkey_menu (h, parm) ? MSG_HANDLED : MSG_NOT_HANDLED;
 
     case MSG_VALIDATE:
+        // the windows of the project for the next time
+        edit_layout_quit (h);
         edit_quit (h);
         return MSG_HANDLED;
 
@@ -3285,4 +3340,29 @@ edit_window_kinds_menu (WDialog *h)
         g_free (label);
     }
     return entries;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The windows the plugins open, for the layouts: the @index one, NULL past the last */
+const mc_ep_window_kind_t *
+edit_window_kind_at (WDialog *h, guint index, void **data)
+{
+    editor_plugin_ctx_t *ctx = h != NULL ? (editor_plugin_ctx_t *) h->data.p : NULL;
+    const editor_window_kind_t *k;
+
+    if (ctx == NULL || index >= ctx->window_kinds->len)
+        return NULL;
+    k = g_ptr_array_index (ctx->window_kinds, index);
+    *data = k->data;
+    return &k->kind;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* An option the program was started with: "debug" for coole --debug; NULL when it was not */
+const char *
+edit_startup_option (const char *name)
+{
+    return startup_options != NULL ? g_hash_table_lookup (startup_options, name) : NULL;
 }

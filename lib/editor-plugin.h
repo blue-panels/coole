@@ -110,8 +110,10 @@ typedef struct
     const char *command;  /* "ProjectTree" */
     const char *shortcut; /* the key as text when there is no command: "Ctrl-Alt-P" */
     mc_ep_window_state_t (*state) (void *data);
-    void (*show) (void *data);  /* open it, or bring it to the front, focused */
-    void (*close) (void *data); /* close it, or hide it */
+    void (*show) (void *data);    /* open it, or bring it to the front, focused */
+    void (*close) (void *data);   /* close it, or hide it */
+    const char *name;             /* in the layouts: "project.tree" */
+    void *(*window) (void *data); /* the window when it is open, else NULL */
 } mc_ep_window_kind_t;
 
 /* What the editor provides to a plugin */
@@ -236,6 +238,16 @@ typedef struct mc_editor_host_t
        functions.  From open(). */
     void (*window_kind) (struct mc_editor_host_t *host, const mc_ep_window_kind_t *kind,
                          void *data);
+    /* v10: a window added in the row at the bottom of the screen, under the windows of the
+       files: a tab, the one seen; @lines high when it makes the row.  Its room goes back as with
+       window_give_room_back() */
+    void (*window_dock_bottom) (struct mc_editor_host_t *host, void *window, int lines);
+    /* v10: the windows as the layout @name has them, the way they are kept to be put back by
+       layout_pop(); FALSE when the user has the layouts of @name off, or there is one kept */
+    gboolean (*layout_push) (struct mc_editor_host_t *host, const char *name);
+    /* the windows as they were at layout_push(), but those of the row at the bottom, kept to be
+       read */
+    void (*layout_pop) (struct mc_editor_host_t *host);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.

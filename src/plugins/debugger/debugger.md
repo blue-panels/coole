@@ -120,6 +120,15 @@ The keys can be changed in **Options → Key bindings → Editor → Debugger**,
 in the *[debugger]* section of the keymap, *DebugStepOver = alt-o* for one;
 *f15* is the name of Shift-F5, *f18* that of Shift-F8.
 
+**The layout of debugging**
+
+When the debugger starts, the windows are put as the layout *Debug* has
+them: the tree of the project at the right, the panel of the debugger under
+it, the console coming at the bottom when there is something in it. When
+it stops, they are put back as they were, the console staying to be read.
+**Window → Layout...** says which windows *Debug* has (save another as
+*Debug*), and turns this off.
+
 **The panel and the console**
 
 The start puts the panel of the debugger at the right of the source, all its

@@ -204,6 +204,7 @@ typedef struct
     // debug mode: the file windows take the keys of the debugger, F3 to F8, whether the program
     // runs or not (coole --debug, or Debug > Debug keys in files)
     gboolean debug_mode;
+    gboolean layout_pushed;  // the editor keeps the windows of before debugging
     debug_session_window_t *session_window;
 } debugger_t;
 
@@ -3220,6 +3221,10 @@ debug_start (void *data, void *edit)
     if (debug->state == DEBUG_RUNNING || debug->state == DEBUG_STOPPED
         || debug->state == DEBUG_STARTING)
         return MC_EPR_FAILED;
+    // the windows of debugging, those of before kept for the end of it: before the panel, the
+    // build or the console come
+    if (!debug->layout_pushed && debug->host->layout_push != NULL)
+        debug->layout_pushed = debug->host->layout_push (debug->host, "Debug");
     if (debug->gdb != NULL && gdb_mi_session_alive (debug->gdb))
         gdb_mi_session_stop (debug->gdb);
     debug_pty_close (debug);
@@ -4130,16 +4135,16 @@ debug_stop (void *data, void *edit)
     g_ptr_array_set_size (debug->locals, 0);
     g_ptr_array_set_size (debug->frames, 0);
     debug_session_refresh (debug);
+    // the windows as they were before, the output kept
+    if (debug->layout_pushed)
+    {
+        debug->layout_pushed = FALSE;
+        debug->host->layout_pop (debug->host);
+    }
     return MC_EPR_OK;
 }
 
 /* coole --debug, the editor up: the panel, with the focus, where F5 starts */
-static void
-debug_startup (void *data)
-{
-    (void) debug_session_show (data, NULL);
-}
-
 /* The build before a start is done: the start goes on, or the errors are shown */
 static void
 debug_build_finished (const char *name, const char *signal, GVariant *args, void *user_data)
@@ -4257,8 +4262,37 @@ debug_console_close (void *data)
     debug->console_window = 0;
 }
 
+static void *
+debug_panel_window (void *data)
+{
+    return ((debugger_t *) data)->session_window;
+}
+
+static void *
+debug_console_window (void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+    GVariantDict dict;
+    GVariant *reply;
+    guint64 window = 0;
+
+    if (debug_console_state (data) == MC_EP_WINDOW_CLOSED)
+        return NULL;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", debug->console_window);
+    reply = debug_viewer_call (debug, "info", g_variant_dict_end (&dict));
+    if (reply != NULL)
+    {
+        (void) g_variant_lookup (reply, "window", "t", &window);
+        g_variant_unref (reply);
+    }
+    return (void *) (gsize) window;
+}
+
 static const mc_ep_window_kind_t debug_window_kinds[] = {
     {
+        .name = "debugger.panel",
+        .window = debug_panel_window,
         .label = N_ ("&Debugger panel"),
         .section = DEBUG_KEYMAP_SECTION,
         .command = "DebugPanel",
@@ -4267,6 +4301,8 @@ static const mc_ep_window_kind_t debug_window_kinds[] = {
         .close = debug_panel_close,
     },
     {
+        .name = "debugger.console",
+        .window = debug_console_window,
         .label = N_ ("Debug c&onsole"),
         .state = debug_console_state,
         .show = debug_console_show,
@@ -4310,8 +4346,8 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     if (host->startup_option (host, "debug") != NULL)
     {
         (void) debug_project_switch (debug, g_strdup (host->startup_option (host, "debug")));
+        // the panel comes with the layout Debug the editor puts the windows in
         debug->debug_mode = TRUE;
-        host->call_later (host, debug_startup, debug);
     }
     return debug;
 }

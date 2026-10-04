@@ -206,6 +206,8 @@ void edit_push_markers (WEdit *edit);
 gboolean edit_plugin_handle_action (WDialog *h, long command, WEdit *edit);
 /* the entries of the menu Window for the windows of the plugins (EDIT_WINDOW_KIND_BASE) */
 GList *edit_window_kinds_menu (WDialog *h);
+const mc_ep_window_kind_t *edit_window_kind_at (WDialog *h, guint index, void **data);
+const char *edit_startup_option (const char *name);
 gboolean edit_plugin_configure (WDialog *h, long command, WEdit *edit);
 gboolean edit_plugin_handle_key (WDialog *h, int key, WEdit *edit);
 

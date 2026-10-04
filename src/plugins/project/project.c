@@ -1694,7 +1694,15 @@ project_tree_hide (void *data)
         (void) project_tree_close (&project->tree->window);
 }
 
+static void *
+project_tree_window (void *data)
+{
+    return ((project_t *) data)->tree;
+}
+
 static const mc_ep_window_kind_t project_tree_kind = {
+    .name = "project.tree",
+    .window = project_tree_window,
     .label = N_ ("Project tr&ee"),
     .section = PROJECT_KEYMAP_SECTION,
     .command = "ProjectTree",

@@ -45,6 +45,7 @@
 #include "edit.h"       // MCEDIT_HELP_FILE
 #include "edit-impl.h"  // edit_widget_is_editor()
 #include "editwindow.h"
+#include "editdock.h"
 
 /*** global variables ****************************************************************************/
 
@@ -564,6 +565,7 @@ drag_end (WEditWindow *win, gboolean keep)
 {
     Widget *w = WIDGET (win);
     WGroup *g = w->owner;
+    const gboolean moved = win->drag_state == EDIT_WINDOW_DRAG_MOVE;
     GList *l;
 
     win->drag_state = EDIT_WINDOW_DRAG_NONE;
@@ -619,6 +621,11 @@ drag_end (WEditWindow *win, gboolean keep)
     win->pin_right = win->pin_bottom = 0;
     win->drag_own = 0;
     win->drag_own_dx = win->drag_own_dy = 0;
+
+    // a window of a dock moved leaves it; resized, the dock takes its size
+    if (keep && !rects_are_equal (&w->rect, &win->drag_rect)
+        && edit_dock_side (win) != EDIT_DOCK_NONE)
+        edit_dock_dragged (win, moved);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -845,6 +852,8 @@ edit_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
                 ;  // do nothing (see MSG_MOUSE_CLICK)
             else if (event->x >= toggle_fullscreen_x - 1 && event->x <= toggle_fullscreen_x + 1)
                 ;  // do nothing (see MSG_MOUSE_CLICK)
+            else if (edit_dock_tab_click (win, event->x))
+                ;  // a tab of the bottom: seen
             else
             {
                 // start window move
@@ -1029,6 +1038,8 @@ edit_window_destroy (WEditWindow *win)
 
     // a window stops moving or resizing when it goes, its neighbors left where they are
     drag_end (win, TRUE);
+    // the others of its dock take its room
+    (void) edit_dock_remove (win);
     group_remove_widget (w);
     widget_destroy (w);
 
@@ -1250,6 +1261,10 @@ edit_window_give_room_back (WEditWindow *win)
     guint i;
     GList *l;
 
+    // a window of a dock: the others of the dock take its room
+    if (edit_dock_remove (win))
+        return;
+
     win->rooms = NULL;
 
     /* a window of a column under this one takes its place, and the rooms with it: the others
@@ -1329,58 +1344,6 @@ edit_window_give_room_back (WEditWindow *win)
 
     g_array_unref (rooms);
     widget_draw (WIDGET (w->owner));
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/**
- * Put a window in the column at the right of the screen: the first one of all its height, the
- * others that went before it making room; a window that comes when there is a column already
- * takes the lower part of its lowest window.
- *
- * @param win window, added already
- * @param cols the width of the column when it is made
- */
-
-void
-edit_window_dock_right (WEditWindow *win, int cols)
-{
-    Widget *w = WIDGET (win);
-    Widget *lowest = NULL;
-    WRect a, r;
-    GList *l;
-
-    if (w->owner == NULL)
-        return;
-    edit_window_area (DIALOG (w->owner), &a);
-    for (l = w->owner->widgets; l != NULL; l = g_list_next (l))
-    {
-        Widget *wl = WIDGET (l->data);
-
-        if (wl != w && edit_window_is_window (wl) && widget_get_state (wl, WST_VISIBLE)
-            && EDIT_WINDOW (wl)->fullscreen == 0 && wl->rect.x > a.x
-            && wl->rect.x + wl->rect.cols == a.x + a.cols
-            && (lowest == NULL || wl->rect.y > lowest->rect.y))
-            lowest = wl;
-    }
-
-    win->fullscreen = 0;
-    w->pos_flags = WPOS_KEEP_DEFAULT;
-    if (lowest != NULL && lowest->rect.lines >= 2 * EDIT_WINDOW (lowest)->klass->min_lines)
-    {
-        // the lower part of it: 60 percent
-        r = lowest->rect;
-        r.lines = MAX (win->klass->min_lines, lowest->rect.lines * 60 / 100);
-        r.y = lowest->rect.y + lowest->rect.lines - r.lines;
-    }
-    else
-    {
-        r = a;
-        r.cols = MIN (cols, a.cols);
-        r.x = a.x + a.cols - r.cols;
-    }
-    widget_set_size_rect (w, &r);
-    edit_window_make_room (win);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1623,6 +1586,9 @@ edit_window_fit_area (WDialog *h, const WRect *old)
     g_array_free (vy, TRUE);
     g_array_free (vx, TRUE);
     g_array_free (wins, TRUE);
+
+    // the docks keep their share of the screen
+    edit_dock_arrange (h);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1795,6 +1761,13 @@ edit_window_toggle_fullscreen (WEditWindow *win)
 
     // a move or resize ends where it is: the window has gone elsewhere
     drag_end (win, TRUE);
+    // out of its dock, or out of the room the docks leave
+    (void) edit_dock_remove (win);
+    if (win->dock_fill != 0)
+    {
+        win->dock_fill = 0;
+        win->fullscreen = 0;
+    }
     win->fullscreen = win->fullscreen != 0 ? 0 : 1;
     // the user has decided: no room gives it the screen back any more
     win->room_fullscreen = 0;
@@ -1886,6 +1859,9 @@ edit_window_draw_icons (const WEditWindow *win, int color)
         widget_gotoyx (w, 0, w->rect.cols - 8);
     g_snprintf (tmp, sizeof (tmp), "[%s][%s]", edit_window_state_char, edit_window_close_char);
     tty_print_string (tmp);
+    // a window of the bottom with others there: their tabs over its title
+    if (win->fullscreen == 0)
+        edit_dock_draw_tabs (win, color);
 }
 
 /* --------------------------------------------------------------------------------------------- */

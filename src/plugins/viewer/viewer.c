@@ -40,7 +40,7 @@
  *    show       id, focus
  *    hide       id
  *    close      id
- *    info       id -> cols, lines, top, total, visible, focused
+ *    info       id -> cols, lines, top, total, visible, focused, window
  *    add_type   type, suffixes (strings), starts (strings)
  *
  *  Signal "closed", id: the user closed the window.
@@ -84,6 +84,11 @@
 #define VIEWER_SIZE_BOTTOM 25
 
 #define PREVIEW_TITLE      "Preview"
+
+// where a window stands, to stand there again when it is shown
+#define VIEWER_DOCK_NONE   0
+#define VIEWER_DOCK_RIGHT  1
+#define VIEWER_DOCK_BOTTOM 2
 /* The key of the preview: [Preview] key= in viewer.ini */
 #define PREVIEW_CONFIG "viewer.ini"
 #define PREVIEW_KEY    "ctrl-alt-p"
@@ -94,6 +99,7 @@ typedef struct
 {
     mc_editor_host_t *host;
     GHashTable *windows;  // id -> WEditWindow
+    GHashTable *docks;    // WEditWindow -> its dock, VIEWER_DOCK_*
     gint64 last_id;
 
     // the preview
@@ -298,6 +304,7 @@ viewer_window_destroyed (void *data)
     viewer_window_t *vw = (viewer_window_t *) data;
     GVariantDict dict;
 
+    g_hash_table_remove (vw->viewer->docks, g_hash_table_lookup (vw->viewer->windows, &vw->id));
     g_hash_table_remove (vw->viewer->windows, &vw->id);
     if (vw->id == vw->viewer->preview_id)
     {
@@ -315,15 +322,33 @@ viewer_window_destroyed (void *data)
 /* --------------------------------------------------------------------------------------------- */
 
 /* Show @win, and give the focus back to @prev unless @focus */
+/* A window, added already, where it stands: in a dock, or with room made for it */
+static void
+viewer_place (viewer_t *v, WEditWindow *win, int dock)
+{
+    const WRect *r = &CONST_WIDGET (win)->rect;
+
+    if (dock == VIEWER_DOCK_RIGHT && v->host->window_dock_right != NULL)
+        v->host->window_dock_right (v->host, win, r->cols);
+    else if (dock == VIEWER_DOCK_BOTTOM && v->host->window_dock_bottom != NULL)
+        v->host->window_dock_bottom (v->host, win, r->lines);
+    else if (win->fullscreen == 0)
+        v->host->window_make_room (v->host, win);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 viewer_show (viewer_t *v, WEditWindow *win, gboolean focus, void *prev)
 {
-    // a window on the screen has its room already
+    // a window on the screen has its room already; a hidden one goes back to its dock
     const gboolean hidden = !widget_get_state (CONST_WIDGET (win), WST_VISIBLE);
+    const gpointer stands = g_hash_table_lookup (v->docks, win);
+    const int dock = GPOINTER_TO_INT (stands);
 
-    v->host->window_show (v->host, win);
     if (hidden)
-        v->host->window_make_room (v->host, win);
+        viewer_place (v, win, dock);
+    v->host->window_show (v->host, win);
     if (!focus && prev != NULL && prev != win)
         v->host->window_show (v->host, prev);
 }
@@ -333,8 +358,8 @@ viewer_show (viewer_t *v, WEditWindow *win, gboolean focus, void *prev)
 /* A window at @r, or fullscreen, put on the screen; the fullscreen window makes room for it, and
    the window with the focus keeps it unless @focus */
 static WEditWindow *
-viewer_window_new (viewer_t *v, const WRect *r, gboolean full, const char *title, const char *text,
-                   gsize len, gboolean focus, gint64 *id)
+viewer_window_new (viewer_t *v, const WRect *r, int dock, gboolean full, const char *title,
+                   const char *text, gsize len, gboolean focus, gint64 *id)
 {
     WEditWindow *win;
     viewer_window_t *vw;
@@ -356,8 +381,8 @@ viewer_window_new (viewer_t *v, const WRect *r, gboolean full, const char *title
 
     prev = v->host->window_current (v->host);
     v->host->window_add (v->host, win);
-    if (!full)
-        v->host->window_make_room (v->host, win);
+    g_hash_table_insert (v->docks, win, GINT_TO_POINTER (dock));
+    viewer_place (v, win, dock);
     if (!focus && prev != NULL)
         v->host->window_show (v->host, prev);
 
@@ -378,6 +403,7 @@ viewer_open (viewer_t *v, GVariant *args, GError **error)
     gint64 size = 0;
     gboolean focus;
     gboolean full = FALSE;
+    int dock = VIEWER_DOCK_NONE;
     gint64 id;
 
     place = NULL;
@@ -393,6 +419,7 @@ viewer_open (viewer_t *v, GVariant *args, GError **error)
             size = VIEWER_SIZE_RIGHT;
         r.cols = (int) CLAMP (a.cols * size / 100, 10, a.cols);
         r.x = a.x + a.cols - r.cols;
+        dock = VIEWER_DOCK_RIGHT;
     }
     else if (strcmp (place, "bottom") == 0)
     {
@@ -400,6 +427,7 @@ viewer_open (viewer_t *v, GVariant *args, GError **error)
             size = VIEWER_SIZE_BOTTOM;
         r.lines = (int) CLAMP (a.lines * size / 100, 3, a.lines);
         r.y = a.y + a.lines - r.lines;
+        dock = VIEWER_DOCK_BOTTOM;
     }
     else if (strcmp (place, "full") == 0)
         full = TRUE;
@@ -413,7 +441,7 @@ viewer_open (viewer_t *v, GVariant *args, GError **error)
 
     title = viewer_arg_text (args, "title", &len);
     text = viewer_arg_text (args, "text", &len);
-    win = viewer_window_new (v, &r, full, title, text, len, focus, &id);
+    win = viewer_window_new (v, &r, dock, full, title, text, len, focus, &id);
     g_free (title);
     g_free (text);
     (void) win;
@@ -504,6 +532,8 @@ viewer_call (void *data, const char *method, GVariant *args, GError **error)
                                widget_get_state (CONST_WIDGET (win), WST_VISIBLE));
         g_variant_dict_insert (&dict, "focused", "b",
                                v->host->window_current (v->host) == (void *) win);
+        // the window itself, for the layouts of the editor in the same program
+        g_variant_dict_insert (&dict, "window", "t", (guint64) (gsize) win);
         return g_variant_dict_end (&dict);
     }
     else
@@ -795,7 +825,8 @@ preview_toggle (viewer_t *v, void *edit)
         r = a;
         r.cols = (int) CLAMP (a.cols * VIEWER_SIZE_RIGHT / 100, 10, a.cols);
         r.x = a.x + a.cols - r.cols;
-        (void) viewer_window_new (v, &r, FALSE, PREVIEW_TITLE, NULL, 0, FALSE, &v->preview_id);
+        (void) viewer_window_new (v, &r, VIEWER_DOCK_RIGHT, FALSE, PREVIEW_TITLE, NULL, 0, FALSE,
+                                  &v->preview_id);
     }
     else
         viewer_show (v, win, FALSE, v->host->window_current (v->host));
@@ -903,7 +934,17 @@ preview_kind_close (void *data)
         (void) preview_toggle (v, NULL);
 }
 
+static void *
+preview_kind_window (void *data)
+{
+    viewer_t *v = (viewer_t *) data;
+
+    return preview_shown (v) ? preview_window (v) : NULL;
+}
+
 static const mc_ep_window_kind_t preview_window_kind = {
+    .name = "viewer.preview",
+    .window = preview_kind_window,
     .label = N_ ("Pre&view"),
     .state = preview_kind_state,
     .show = preview_kind_show,
@@ -929,6 +970,7 @@ viewer_plugin_open (mc_editor_host_t *host, void *editor_dialog)
     v->key =
         mc_plugin_prefs_load_hotkey (PREVIEW_CONFIG, "Preview", "key", PREVIEW_KEY, 0, &key_label);
     v->windows = g_hash_table_new_full (g_int64_hash, g_int64_equal, g_free, NULL);
+    v->docks = g_hash_table_new (g_direct_hash, g_direct_equal);
     v->suffixes = g_ptr_array_new_with_free_func (preview_kind_free);
     v->starts = g_ptr_array_new_with_free_func (preview_kind_free);
 
@@ -939,6 +981,7 @@ viewer_plugin_open (mc_editor_host_t *host, void *editor_dialog)
         g_ptr_array_free (v->starts, TRUE);
         g_ptr_array_free (v->suffixes, TRUE);
         g_hash_table_destroy (v->windows);
+        g_hash_table_destroy (v->docks);
         g_free (v);
         g_free (key_label);
         return NULL;
@@ -967,6 +1010,7 @@ viewer_plugin_close (void *plugin_data)
     g_ptr_array_free (v->starts, TRUE);
     g_ptr_array_free (v->suffixes, TRUE);
     g_hash_table_destroy (v->windows);
+    g_hash_table_destroy (v->docks);
     g_free (v->type);
     g_free (v->path);
     g_free (v);

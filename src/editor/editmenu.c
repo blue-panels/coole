@@ -425,6 +425,8 @@ edit_window_menu_remake (void *data)
 
     if (menubar->owner != NULL)
         entries = g_list_concat (entries, edit_window_kinds_menu (DIALOG (menubar->owner)));
+    entries = g_list_append (entries, menu_separator_new ());
+    entries = g_list_append (entries, menu_entry_new (_ ("La&yout..."), CK_WindowLayout));
     return entries;
 }
 

@@ -506,6 +506,18 @@ terminal_start_dir (terminal_plugin_t *tp, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The window of the terminal at the bottom: a tab of the row there, or with room made for it */
+static void
+terminal_place (terminal_plugin_t *tp, terminal_window_t *tw)
+{
+    if (tp->host->window_dock_bottom != NULL)
+        tp->host->window_dock_bottom (tp->host, tw, WIDGET (tw)->rect.lines);
+    else
+        tp->host->window_make_room (tp->host, tw);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* Ctrl-O: the window of the terminal shown as it was, or hidden as it is */
 static mc_ep_result_t
 terminal_toggle (terminal_plugin_t *tp, void *edit)
@@ -531,7 +543,7 @@ terminal_toggle (terminal_plugin_t *tp, void *edit)
         edit_window_destroy (&tw->window);
         tp->win = fresh;
         tp->host->window_add (tp->host, fresh);
-        tp->host->window_make_room (tp->host, fresh);
+        terminal_place (tp, fresh);
         return MC_EPR_OK;
     }
 
@@ -551,12 +563,12 @@ terminal_toggle (terminal_plugin_t *tp, void *edit)
         tp->win = tw;
         tp->host->window_add (tp->host, tw);
         // the fullscreen file window goes above the terminal
-        tp->host->window_make_room (tp->host, tw);
+        terminal_place (tp, tw);
     }
     else if (!widget_get_state (WIDGET (tw), WST_VISIBLE))
     {
         tp->host->window_show (tp->host, tw);
-        tp->host->window_make_room (tp->host, tw);
+        terminal_place (tp, tw);
     }
     else if (!widget_get_state (WIDGET (tw), WST_FOCUSED))
         // on the screen, under another window: brought up
@@ -593,7 +605,17 @@ terminal_kind_toggle (void *data)
     (void) terminal_toggle (tp, tp->host->window_top_file (tp->host));
 }
 
+static void *
+terminal_kind_window (void *data)
+{
+    const terminal_plugin_t *tp = (const terminal_plugin_t *) data;
+
+    return tp->win != NULL && widget_get_state (WIDGET (tp->win), WST_VISIBLE) ? tp->win : NULL;
+}
+
 static const mc_ep_window_kind_t terminal_kind = {
+    .name = "terminal",
+    .window = terminal_kind_window,
     .label = N_ ("Termin&al"),
     .section = "editor",
     .command = "Shell",
