@@ -510,7 +510,7 @@ ctags_ui_manage_repos (GSList **repos)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static const char *
+const char *
 ctags_kind_label (char kind)
 {
     switch (kind)

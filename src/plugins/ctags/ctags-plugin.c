@@ -2111,7 +2111,146 @@ ctags_show_menu (ctags_data_t *d, WEdit *edit)
 /* Plugin callbacks */
 /* --------------------------------------------------------------------------------------------- */
 
+/* The repo of the index of a project: loaded when it is there, built in the background when it
+   is not (NULL meanwhile) */
+static ctags_repo_t *
+ctags_repo_of_root (ctags_data_t *d, const char *root)
+{
+    GSList *l;
+    gboolean own;
+    char *tags;
+
+    for (l = d->repos; l != NULL; l = g_slist_next (l))
+    {
+        ctags_repo_t *repo = (ctags_repo_t *) l->data;
+
+        if (repo->root_dir != NULL && strcmp (repo->root_dir, root) == 0)
+            return repo;
+    }
+    tags = ctags_index_path (root, &own);
+    if (g_file_test (tags, G_FILE_TEST_IS_REGULAR))
+        ctags_index_loaded (d, root, tags);
+    else if (!ctags_root_too_wide (root) && project_is_project (root))
+    {
+        d->quiet = TRUE;
+        ctags_index_start (d, root, tags);
+        d->quiet = FALSE;
+    }
+    g_free (tags);
+    for (l = d->repos; l != NULL; l = g_slist_next (l))
+    {
+        ctags_repo_t *repo = (ctags_repo_t *) l->data;
+
+        if (repo->root_dir != NULL && strcmp (repo->root_dir, root) == 0)
+            return repo;
+    }
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+typedef struct
+{
+    const ctags_entry_t *e;
+    int score;
+} ctags_scored_t;
+
+static gint
+ctags_scored_compare (gconstpointer a, gconstpointer b)
+{
+    const ctags_scored_t *x = (const ctags_scored_t *) a;
+    const ctags_scored_t *y = (const ctags_scored_t *) b;
+
+    if (x->score != y->score)
+        return y->score - x->score;
+    return strcmp (x->e->name, y->e->name);
+}
+
+static gint
+ctags_line_compare (gconstpointer a, gconstpointer b)
+{
+    const ctags_scored_t *x = (const ctags_scored_t *) a;
+    const ctags_scored_t *y = (const ctags_scored_t *) b;
+
+    return (x->e->line > y->e->line) - (x->e->line < y->e->line);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The symbols of a project (@root) or of one file of it (@file) that @query matches, best first,
+   those of a file in their order when nothing is typed: an array of (name, kind, file, line) */
+static GVariant *
+ctags_symbols (ctags_data_t *d, const char *root, const char *file, const char *query, int max)
+{
+    GVariantBuilder list;
+    GArray *found = g_array_new (FALSE, FALSE, sizeof (ctags_scored_t));
+    const GPtrArray *entries = NULL;
+    ctags_repo_t *repo = NULL;
+    guint i;
+
+    if (file != NULL)
+    {
+        char *project = root != NULL ? g_strdup (root) : ctags_project_root (d, file);
+
+        if (project != NULL)
+            repo = ctags_repo_of_root (d, project);
+        g_free (project);
+        if (repo == NULL)
+        {
+            d->quiet = TRUE;
+            ctags_ensure_repo (d, file);
+            d->quiet = FALSE;
+            repo = ctags_repos_find_for_file (d->repos, file);
+        }
+        if (repo != NULL && repo->index != NULL)
+        {
+            entries = ctags_index_find_file (repo->index, file);
+            if (entries == NULL && ctags_path_is_under (file, repo->root_dir))
+                entries = ctags_index_find_file (repo->index, file + strlen (repo->root_dir) + 1);
+        }
+    }
+    else if (root != NULL)
+    {
+        repo = ctags_repo_of_root (d, root);
+        if (repo != NULL && repo->index != NULL)
+            entries = repo->index->all;
+    }
+
+    for (i = 0; entries != NULL && i < entries->len; i++)
+    {
+        ctags_scored_t m;
+
+        m.e = (const ctags_entry_t *) g_ptr_array_index (entries, i);
+        m.score = query == NULL || *query == '\0' ? 1 : ctags_fuzzy_score (m.e->name, query);
+        // a project with nothing typed has too many to list
+        if (m.score > 0 && (file != NULL || (query != NULL && *query != '\0')))
+            g_array_append_val (found, m);
+    }
+    g_array_sort (found,
+                  file != NULL && (query == NULL || *query == '\0') ? ctags_line_compare
+                                                                    : ctags_scored_compare);
+
+    g_variant_builder_init (&list, G_VARIANT_TYPE ("a(sssi)"));
+    for (i = 0; i < found->len && (max <= 0 || (int) i < max); i++)
+    {
+        const ctags_entry_t *e = g_array_index (found, ctags_scored_t, i).e;
+        char *path = ctags_resolve_entry_path (d, e);
+
+        if (path == NULL)
+            continue;
+        g_variant_builder_add (&list, "(sssi)", e->name, ctags_kind_label (e->kind), path,
+                               (gint32) ctags_entry_resolve_line (e, path));
+        g_free (path);
+    }
+    g_array_free (found, TRUE);
+    return g_variant_builder_end (&list);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The service "ctags": the index of a project asked for by the other plugins.
+   symbols (root | file, query, max) -> symbols a(sssi): name, kind, file, line; indexing b
+
    reindex (file): build the index of the project of the file, in the background -> started
    options (root) -> options: the options of ctags for the project
    set_options (root, options): keep them, and build the index again when they change */
@@ -2129,7 +2268,17 @@ ctags_call (void *data, const char *method, GVariant *args, GError **error)
         (void) g_variant_lookup (args, "options", "&s", &options);
     }
     g_variant_dict_init (&reply, NULL);
-    if (strcmp (method, "reindex") == 0 && (file != NULL || root != NULL))
+    if (strcmp (method, "symbols") == 0 && (file != NULL || root != NULL))
+    {
+        const char *query = "";
+        gint32 max = 0;
+
+        (void) g_variant_lookup (args, "query", "&s", &query);
+        (void) g_variant_lookup (args, "max", "i", &max);
+        g_variant_dict_insert_value (&reply, "symbols", ctags_symbols (d, root, file, query, max));
+        g_variant_dict_insert (&reply, "indexing", "b", d->job.pid != 0);
+    }
+    else if (strcmp (method, "reindex") == 0 && (file != NULL || root != NULL))
     {
         char *project = root != NULL ? g_strdup (root) : ctags_project_root (d, file);
         gboolean started = FALSE;

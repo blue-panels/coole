@@ -69,6 +69,9 @@ ctags_entry_t *ctags_ui_select_members (const char *scope, GPtrArray *rows);
  * duration of the dialog. */
 void ctags_ui_set_root_dir (const char *root_dir);
 
+/* A word for the kind letter of an entry: "func", "struct"...; "" when unknown */
+const char *ctags_kind_label (char kind);
+
 /*** inline functions ****************************************************************************/
 
 #endif /* MC__CTAGS_UI_H */

@@ -27,6 +27,20 @@ bindings → Editor → Project**, or in the *[project]* section of the keymap.
 : Open a file of the project. Type some letters of its name: they are looked
 for in order, in the last part of the name first, so *edwi* finds
 *src/editor/editwidget.c*. With nothing typed the recent files are listed.
+The same line goes further:
+
+*main:42*
+: The file at that line.
+
+*@divi*
+: The functions, structures and the other symbols of the project whose names
+have these letters: *divide* in *calc.c*.
+
+*calc@*
+: The symbols of a file, in their order; *calc@tw* those of them that match.
+
+The symbols come from the index of the plugin ctags: without it the line
+says so.
 
 **Ctrl-E**
 : The recent files of the project, the latest first.

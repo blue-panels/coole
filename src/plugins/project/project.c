@@ -91,6 +91,9 @@ typedef struct
     // the marks of a closed and an open directory in the tree, from the skin
     char *glyph_closed;
     char *glyph_open;
+    // what the list chose, opened once its dialog is gone
+    char *open_file;
+    long open_line;
 } project_t;
 
 /* a row of the tree */
@@ -111,6 +114,13 @@ struct project_tree_t
     int selected;
     int top;
 };
+
+/* where an item of the list goes: a file, at a line or where it was */
+typedef struct
+{
+    char *path;  // relative to the root, or absolute
+    long line;   // 0: where the cursor was
+} project_target_t;
 
 /* an item of the list of the files to open */
 typedef struct
@@ -141,6 +151,8 @@ static const GPtrArray *pick_files = NULL;
 static const GPtrArray *pick_recent = NULL;
 static const char *pick_root = NULL;
 static char *pick_last = NULL;
+static mc_editor_host_t *pick_host = NULL;
+static GPtrArray *pick_targets = NULL;  // project_target_t, what the items of the list go to
 
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -340,9 +352,136 @@ project_match_compare (gconstpointer a, gconstpointer b)
 /* --------------------------------------------------------------------------------------------- */
 
 static void
-project_pick_add (const char *label, const char *path)
+project_target_free (gpointer p)
 {
-    listbox_add_item (pick_list, LISTBOX_APPEND_AT_END, 0, label, (void *) path, FALSE);
+    project_target_t *t = (project_target_t *) p;
+
+    g_free (t->path);
+    g_free (t);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* An item of the list; @path NULL: a line to read, which opens nothing */
+static void
+project_pick_add (const char *label, const char *path, long line)
+{
+    project_target_t *t = NULL;
+
+    if (path != NULL)
+    {
+        t = g_new (project_target_t, 1);
+        t->path = g_strdup (path);
+        t->line = line;
+        g_ptr_array_add (pick_targets, t);
+    }
+    listbox_add_item (pick_list, LISTBOX_APPEND_AT_END, 0, label, t, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The name of a file of the project that fits @query best; NULL when none does */
+static const char *
+project_pick_best_file (const char *query)
+{
+    const char *best = NULL;
+    int best_score = 0;
+    guint i;
+
+    for (i = 0; pick_files != NULL && i < pick_files->len; i++)
+    {
+        const char *rel = g_ptr_array_index (pick_files, i);
+        const int score = project_match_score (rel, query);
+
+        if (score > best_score
+            || (score == best_score && best != NULL && strlen (rel) < strlen (best)))
+        {
+            best = rel;
+            best_score = score;
+        }
+    }
+    return best;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* "@name": the symbols of the project; "file@name": those of a file, from the plugin ctags */
+static void
+project_pick_symbols (const char *text, const char *at)
+{
+    char *file_query = g_strndup (text, (gsize) (at - text));
+    const char *query = at + 1;
+    const char *rel = NULL;
+    char *file = NULL;
+    GVariantDict args;
+    GVariant *reply, *symbols;
+    gboolean indexing = FALSE;
+    const char *name, *kind, *path;
+    gint32 line;
+    GVariantIter iter;
+    int count = 0;
+
+    if (*file_query != '\0')
+    {
+        rel = project_pick_best_file (file_query);
+        if (rel == NULL)
+        {
+            project_pick_add (_ ("No file of the project matches."), NULL, 0);
+            g_free (file_query);
+            return;
+        }
+        file = g_build_filename (pick_root, rel, (char *) NULL);
+    }
+    else if (*query == '\0')
+    {
+        project_pick_add (_ ("A name after @: the symbols of the project; file@: of a file."), NULL,
+                          0);
+        g_free (file_query);
+        return;
+    }
+
+    g_variant_dict_init (&args, NULL);
+    g_variant_dict_insert (&args, "root", "s", pick_root);
+    if (file != NULL)
+        g_variant_dict_insert (&args, "file", "s", file);
+    g_variant_dict_insert (&args, "query", "s", query);
+    g_variant_dict_insert (&args, "max", "i", (gint32) PROJECT_LIST_MAX);
+    reply = pick_host->service_call != NULL
+        ? pick_host->service_call (pick_host, "ctags", "symbols", g_variant_dict_end (&args), NULL)
+        : (g_variant_dict_clear (&args), NULL);
+    if (reply == NULL)
+        project_pick_add (_ ("The symbols come from the plugin ctags, which is off."), NULL, 0);
+    else
+    {
+        (void) g_variant_lookup (reply, "indexing", "b", &indexing);
+        symbols = g_variant_lookup_value (reply, "symbols", G_VARIANT_TYPE ("a(sssi)"));
+        if (symbols != NULL)
+        {
+            g_variant_iter_init (&iter, symbols);
+            while (g_variant_iter_next (&iter, "(&s&s&si)", &name, &kind, &path, &line))
+            {
+                const char *shown = path;
+                char *label;
+
+                if (g_str_has_prefix (path, pick_root) && path[strlen (pick_root)] == '/')
+                    shown = path + strlen (pick_root) + 1;
+                label = file != NULL
+                    ? g_strdup_printf ("%-40s %-8s %d", name, kind, (int) line)
+                    : g_strdup_printf ("%-40s %-8s %s:%d", name, kind, shown, (int) line);
+                project_pick_add (label, path, line);
+                g_free (label);
+                count++;
+            }
+            g_variant_unref (symbols);
+        }
+        if (count == 0)
+            project_pick_add (indexing ? _ ("The project is being indexed...")
+                                       : _ ("No symbol matches."),
+                              NULL, 0);
+        g_variant_unref (reply);
+    }
+    g_free (file);
+    g_free (file_query);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -351,6 +490,8 @@ static void
 project_pick_refilter (void)
 {
     const char *text = input_get_ctext (pick_input);
+    char *file_query = NULL;
+    long line = 0;
     GArray *matches;
     guint i;
 
@@ -359,6 +500,27 @@ project_pick_refilter (void)
     g_free (pick_last);
     pick_last = g_strdup (text);
     listbox_remove_list (pick_list);
+    g_ptr_array_set_size (pick_targets, 0);
+
+    if (strchr (text, '@') != NULL)
+    {
+        project_pick_symbols (text, strchr (text, '@'));
+        listbox_select_first (pick_list);
+        widget_draw (WIDGET (pick_list));
+        return;
+    }
+
+    // "name:42": the file at that line
+    {
+        const char *colon = strrchr (text, ':');
+
+        if (colon != NULL && colon != text && colon[strspn (colon + 1, "0123456789") + 1] == '\0')
+        {
+            line = atol (colon + 1);
+            file_query = g_strndup (text, (gsize) (colon - text));
+            text = file_query;
+        }
+    }
 
     // nothing typed: the recent files first, then all
     if (*text == '\0' && pick_recent != NULL)
@@ -369,7 +531,7 @@ project_pick_refilter (void)
                 ? file + strlen (pick_root) + (pick_root[strlen (pick_root) - 1] == '/' ? 0 : 1)
                 : file;
 
-            project_pick_add (rel, file);
+            project_pick_add (rel, file, 0);
         }
 
     matches = g_array_new (FALSE, FALSE, sizeof (project_match_t));
@@ -390,9 +552,18 @@ project_pick_refilter (void)
 
         if (*text == '\0' && pick_recent != NULL && pick_recent->len > 0)
             break;  // the recent ones say it: the whole list comes with the first letter
-        project_pick_add (m->rel, m->rel);
+        if (line > 0)
+        {
+            char *label = g_strdup_printf ("%s:%ld", m->rel, line);
+
+            project_pick_add (label, m->rel, line);
+            g_free (label);
+        }
+        else
+            project_pick_add (m->rel, m->rel, 0);
     }
     g_array_free (matches, TRUE);
+    g_free (file_query);
     listbox_select_first (pick_list);
     widget_draw (WIDGET (pick_list));
 }
@@ -438,9 +609,10 @@ project_pick_activate (WListbox *l)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Choose a file of the project; NULL when none is.  @recent_only lists the recent ones alone. */
+/* Choose a file of the project, and maybe a line of it (@line, 0 when none); NULL when none is.
+   @recent_only lists the recent ones alone. */
 static char *
-project_pick (project_t *project, const char *title, gboolean recent_only)
+project_pick (project_t *project, const char *title, gboolean recent_only, long *line)
 {
     WDialog *dlg;
     char *chosen = NULL;
@@ -469,19 +641,25 @@ project_pick (project_t *project, const char *title, gboolean recent_only)
     pick_files = recent_only ? NULL : project_files (project);
     pick_recent = project->recent;
     pick_root = project->root;
+    pick_host = project->host;
+    pick_targets = g_ptr_array_new_with_free_func (project_target_free);
     g_clear_pointer (&pick_last, g_free);
     project_pick_refilter ();
 
+    *line = 0;
     if (dlg_run (dlg) == B_ENTER)
     {
         char *text = NULL;
-        const char *path = NULL;
+        const project_target_t *t = NULL;
 
-        listbox_get_current (pick_list, &text, (void **) &path);
-        if (path != NULL)
-            chosen = g_path_is_absolute (path)
-                ? g_strdup (path)
-                : g_build_filename (project->root, path, (char *) NULL);
+        listbox_get_current (pick_list, &text, (void **) &t);
+        if (t != NULL)
+        {
+            chosen = g_path_is_absolute (t->path)
+                ? g_strdup (t->path)
+                : g_build_filename (project->root, t->path, (char *) NULL);
+            *line = t->line;
+        }
     }
 
     pick_input = NULL;
@@ -489,8 +667,10 @@ project_pick (project_t *project, const char *title, gboolean recent_only)
     pick_files = NULL;
     pick_recent = NULL;
     pick_root = NULL;
+    pick_host = NULL;
     g_clear_pointer (&pick_last, g_free);
     widget_destroy (WIDGET (dlg));
+    g_clear_pointer (&pick_targets, g_ptr_array_unref);
     return chosen;
 }
 
@@ -994,10 +1174,29 @@ project_tree_toggle (project_t *project)
 /* Commands */
 /* --------------------------------------------------------------------------------------------- */
 
+/* The file the list chose: from the idle of the editor, the list gone, so that the window it
+   opens is drawn */
+static void
+project_open_later (void *data)
+{
+    project_t *project = (project_t *) data;
+    char *file = project->open_file;
+
+    project->open_file = NULL;
+    if (file != NULL && project->open_line > 0)
+        (void) project->host->show_location (project->host, file, project->open_line);
+    else if (file != NULL)
+        (void) project->host->open_file (project->host, file);
+    g_free (file);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 project_open_chosen (project_t *project, const char *title, gboolean recent_only)
 {
     char *file;
+    long line;
 
     if (project->root == NULL)
     {
@@ -1005,10 +1204,16 @@ project_open_chosen (project_t *project, const char *title, gboolean recent_only
                                 _ ("Open a file of the project first."));
         return;
     }
-    file = project_pick (project, title, recent_only);
-    if (file != NULL)
-        (void) project->host->open_file (project->host, file);
-    g_free (file);
+    file = project_pick (project, title, recent_only, &line);
+    if (file == NULL)
+        return;
+    g_free (project->open_file);
+    project->open_file = file;
+    project->open_line = line;
+    if (project->host->call_later != NULL)
+        project->host->call_later (project->host, project_open_later, project);
+    else
+        project_open_later (project);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1293,6 +1498,7 @@ project_close (void *data)
     g_free (project->root);
     g_free (project->glyph_closed);
     g_free (project->glyph_open);
+    g_free (project->open_file);
     g_free (project);
 }
 
