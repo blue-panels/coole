@@ -69,7 +69,7 @@ files, the user files and the plugins.
 : Open the project of that directory to debug it: the latest file of the
 project, the tree of the project and the panel of the debugger at
 the right: Ctrl-B puts a breakpoint, Alt-Shift-R builds the program and
-runs it, making its debug configuration the first time, and Alt-Shift-D goes
+runs it, making its debug configuration the first time, and Alt-Shift-G goes
 to the panel and back. It needs the project, build and debugger
 plugins.
 

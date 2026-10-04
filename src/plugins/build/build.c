@@ -68,7 +68,8 @@ enum
     BUILD_ACT_RUN,
     BUILD_ACT_NEXT,
     BUILD_ACT_PREV,
-    BUILD_ACT_CONFIGURE
+    BUILD_ACT_CONFIGURE,
+    BUILD_ACT_OUTPUT
 };
 
 enum
@@ -790,11 +791,24 @@ build_ok_to_quit (void *data)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The window of the output of the build, again */
+static mc_ep_result_t
+build_act_output (void *data, void *edit)
+{
+    build_t *build = (build_t *) data;
+
+    (void) edit;
+    if (build->output->len == 0)
+        g_string_assign (build->output, _ ("No build yet: Alt-Shift-B builds the project.\n"));
+    build->quiet = FALSE;
+    build_output_show (build);
+    return MC_EPR_OK;
+}
+
 static const mc_ep_action_t build_actions[] = {
-    { "Build", build_act_run },
-    { "Next error", build_act_next },
-    { "Previous error", build_act_prev },
-    { "Configure", build_act_configure },
+    { "Build", build_act_run },           { "Next error", build_act_next },
+    { "Previous error", build_act_prev }, { "Configure", build_act_configure },
+    { "Output", build_act_output },
 };
 
 static const mc_ep_cmd_menu_entry_t build_menu[] = {
@@ -803,6 +817,7 @@ static const mc_ep_cmd_menu_entry_t build_menu[] = {
     { MC_EP_MENU_COMMAND, N_ ("Next build error"), BUILD_ACT_NEXT, NULL },
     { MC_EP_MENU_COMMAND, N_ ("Previous build error"), BUILD_ACT_PREV, NULL },
     { MC_EP_MENU_COMMAND, N_ ("Build command..."), BUILD_ACT_CONFIGURE, NULL },
+    { MC_EP_MENU_PLUGINS, N_ ("&Build output"), BUILD_ACT_OUTPUT, NULL },
 };
 
 static const mc_editor_plugin_t build_plugin = {

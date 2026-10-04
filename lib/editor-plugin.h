@@ -26,6 +26,8 @@
 #define MC_EP_MENU_COMMAND  "Command"
 #define MC_EP_MENU_FILE     "File"
 #define MC_EP_MENU_NAVIGATE "Navigate"
+/* the Plugins menu: the windows a plugin shows, "Project tree" for one */
+#define MC_EP_MENU_PLUGINS "Plugins"
 
 /*** enums ***************************************************************************************/
 

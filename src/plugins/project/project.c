@@ -1297,9 +1297,9 @@ static const mc_ep_action_t project_actions[] = {
 static const mc_ep_cmd_menu_entry_t project_menu[] = {
     { MC_EP_MENU_FILE, N_ ("Open file of pro&ject..."), PROJECT_ACT_OPEN_FILE, NULL },
     { MC_EP_MENU_FILE, N_ ("Recent files of project..."), PROJECT_ACT_RECENT, NULL },
-    { MC_EP_MENU_FILE, N_ ("Project tree"), PROJECT_ACT_TREE, NULL },
     { MC_EP_MENU_FILE, N_ ("Open project..."), PROJECT_ACT_OPEN_PROJECT, NULL },
     { MC_EP_MENU_NAVIGATE, N_ ("Header or source"), PROJECT_ACT_ALTERNATE, NULL },
+    { MC_EP_MENU_PLUGINS, N_ ("Project &tree"), PROJECT_ACT_TREE, "Alt-Shift-T" },
 };
 
 static const mc_editor_plugin_t project_plugin = {

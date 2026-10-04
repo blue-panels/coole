@@ -376,8 +376,10 @@ Top-level menu integration:
 
 Each entry sets:
 
-    menu_name        MC_EP_MENU_FILE, MC_EP_MENU_COMMAND or
-                     MC_EP_MENU_NAVIGATE; any other name is a menu of
+    menu_name        MC_EP_MENU_FILE, MC_EP_MENU_COMMAND,
+                     MC_EP_MENU_NAVIGATE, or MC_EP_MENU_PLUGINS for the
+                     windows of the plugin, which come after the
+                     plugins of the Plugins menu; any other name is a menu of
                      the plugins' own, made before Window, with that
                      name as its title: N_("&Debug"), whose & letter
                      with Alt drops it.  The scripts add to it by the

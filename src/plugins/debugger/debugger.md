@@ -43,7 +43,7 @@ to do next while nothing runs.
 
 These work in a file window too, since the editor has nothing on them:
 
-**Alt-Shift-D**
+**Alt-Shift-G**
 : Go to the panel of the debugger, and back to the file.
 
 **Ctrl-B**
@@ -103,8 +103,8 @@ The start puts the panel of the debugger at the right of the source, all its
 height, and the console under the source. The panel has the state of the
 program, the local variables of the frame, the watches, the call stack and
 the breakpoints; the console has the output of the program and what GDB
-says. **Debug → Panel of the debugger** and **Debug → Console** open them
-again.
+says. **Plugins → Debugger panel** and **Plugins → Debug console** open them
+again, beside the windows of the other plugins.
 
 In the panel the debugger keys work as in step mode (there F2 and F4 work on
 the cursor of the topmost file window, F10 closes the panel), and:

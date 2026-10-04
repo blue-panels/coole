@@ -125,7 +125,7 @@ static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
     { "DebugLeave", N_ ("Leave step mode"), "esc" },
     { "DebugClose", N_ ("Close debug session window"), "f10" },
     // from any window: to the panel of the debugger, and back to the file
-    { "DebugPanel", N_ ("Go to the panel of the debugger and back"), "alt-shift-d" },
+    { "DebugPanel", N_ ("Go to the panel of the debugger and back"), "alt-shift-g" },
     { NULL, NULL, NULL },
 };
 
@@ -634,7 +634,7 @@ debug_panel_rows (const debugger_t *debug)
             debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Ctrl-B on a line: breakpoint")));
         debug_panel_add (rows, PANEL_TEXT, 0,
                          g_strdup (_ ("  F5 here, Alt-Shift-R anywhere: run")));
-        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Alt-Shift-D: here and back")));
+        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Alt-Shift-G: here and back")));
         if (debug_active_launch (debug) == NULL)
             debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  the first F5 asks what to run")));
     }
@@ -3424,7 +3424,7 @@ debug_handle_key (void *data, int key, void *edit)
         return MC_EPR_NOT_SUPPORTED;
     cmd = debug_command_of_key (debug, key);
     /* out of step mode, a key of the debugger the editor has nothing on is the debugger's:
-       Alt-Shift-D, Ctrl-B, Alt-Shift-R; F2 and F5 stay Save and Copy */
+       Alt-Shift-G, Ctrl-B, Alt-Shift-R; F2 and F5 stay Save and Copy */
     if (!debug_stepping (debug))
     {
         if (cmd == DEBUG_CMD_NONE || cmd == DEBUG_CMD_HELP || cmd == DEBUG_CMD_CLOSE
@@ -3878,6 +3878,9 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("&Delete configuration..."), DEBUG_ACT_DELETE_CONFIGURATION, NULL },
     { DEBUG_MENU, N_ ("Open proj&ect..."), DEBUG_ACT_OPEN_PROJECT, NULL },
     { DEBUG_MENU, N_ ("Project status..."), DEBUG_ACT_PROJECT_STATUS, NULL },
+    // the windows of the debugger, with those of the other plugins
+    { MC_EP_MENU_PLUGINS, N_ ("Debugger &panel"), DEBUG_ACT_SESSION, NULL },
+    { MC_EP_MENU_PLUGINS, N_ ("Debug c&onsole"), DEBUG_ACT_OUTPUT, NULL },
 };
 
 /* The key of a menu entry: of its command, the one the editor has nothing on first, since that
@@ -3902,6 +3905,7 @@ debug_menu_shortcut (int action_index)
     };
     const global_keymap_t *map = keymap_section_map (DEBUG_KEYMAP_SECTION);
     const char *first = NULL;
+    const char *found = NULL;
     long command;
     size_t i, k;
 
@@ -3913,12 +3917,20 @@ debug_menu_shortcut (int action_index)
     for (i = 0; map[i].key != 0; i++)
         if (map[i].command == command && map[i].caption[0] != '\0')
         {
-            if (keybind_lookup_keymap_command (editor_map, map[i].key) == CK_IgnoreKey)
-                return g_strdup (map[i].caption);
+            if (found == NULL
+                && keybind_lookup_keymap_command (editor_map, map[i].key) == CK_IgnoreKey)
+                found = map[i].caption;
             if (first == NULL)
                 first = map[i].caption;
         }
-    return first != NULL ? g_strdup (first) : NULL;
+    if (found == NULL)
+        found = first;
+    if (found == NULL)
+        return NULL;
+    // "Alt-G" of the keymap is Alt with Shift and g: said so
+    if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
+        return g_strdup_printf ("Alt-Shift-%c", found[4]);
+    return g_strdup (found);
 }
 
 static const mc_editor_plugin_t debug_plugin = {
