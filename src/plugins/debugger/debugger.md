@@ -109,7 +109,10 @@ editor's, and a key that would change the text beeps.
 : Step into, step over, step out.
 
 **F4**
-: Run to the line of the cursor.
+: Run to the line of the cursor, **Debug → Run to cursor** too: from where
+the program stopped, it stops at that line, at a breakpoint before it, or
+when the function it is in returns. A line of another function is reached
+with a breakpoint, or with **Debug → Run to function...**.
 
 **F6**
 : Toggle a breakpoint on the line of the cursor.

@@ -246,7 +246,8 @@ enum
     DEBUG_ACT_MODE,
     DEBUG_ACT_FUNCTION_BREAKPOINT,
     DEBUG_ACT_RUN_TO_FUNCTION,
-    DEBUG_ACT_EVALUATE
+    DEBUG_ACT_EVALUATE,
+    DEBUG_ACT_RUN_TO_CURSOR
 };
 
 static mc_ep_result_t debug_start (void *data, void *edit);
@@ -4085,6 +4086,21 @@ debug_ask_expression (debugger_t *debug, void *edit, const char *title)
     return expression;
 }
 
+/* Debug > Run to cursor: the line of the cursor of the file in front */
+static mc_ep_result_t
+debug_act_run_to_cursor (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+
+    if (debug->state != DEBUG_STOPPED)
+    {
+        debug_error (debug, _ ("The program runs to the cursor from where it is stopped."));
+        return MC_EPR_FAILED;
+    }
+    return debug_run_to_cursor (debug,
+                                edit != NULL ? edit : debug->host->window_top_file (debug->host));
+}
+
 /* Debug > Evaluate expression: its value, in the dialog that can add it to the watches */
 static mc_ep_result_t
 debug_act_evaluate (void *data, void *edit)
@@ -4551,6 +4567,7 @@ static const mc_ep_action_t debug_actions[] = {
     { "Breakpoint on function", debug_act_function_breakpoint },
     { "Run to function", debug_act_run_to_function },
     { "Evaluate", debug_act_evaluate },
+    { "Run to cursor", debug_act_run_to_cursor },
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
@@ -4565,6 +4582,7 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
     { DEBUG_MENU, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
     { DEBUG_MENU, N_ ("Step o&ut"), DEBUG_ACT_FINISH, NULL },
+    { DEBUG_MENU, N_ ("Run to cursor"), DEBUG_ACT_RUN_TO_CURSOR, NULL },
     { DEBUG_MENU, N_ ("Run t&o function..."), DEBUG_ACT_RUN_TO_FUNCTION, NULL },
     { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
     { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
@@ -4602,6 +4620,7 @@ debug_menu_shortcut (int action_index)
         { DEBUG_ACT_TOGGLE_BREAKPOINT, DEBUG_CMD_TOGGLE_BREAKPOINT },
         { DEBUG_ACT_SESSION, DEBUG_CMD_PANEL },
         { DEBUG_ACT_EVALUATE, DEBUG_CMD_EVALUATE },
+        { DEBUG_ACT_RUN_TO_CURSOR, DEBUG_CMD_RUN_TO_CURSOR },
         { DEBUG_ACT_NEXT, DEBUG_CMD_STEP_OVER },
         { DEBUG_ACT_STEP, DEBUG_CMD_STEP_INTO },
         { DEBUG_ACT_FINISH, DEBUG_CMD_STEP_OUT },
