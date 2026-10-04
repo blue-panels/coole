@@ -2946,6 +2946,15 @@ mcterm_new_tty (const WRect *r, char **tty_name)
 
 /* --------------------------------------------------------------------------------------------- */
 
+gboolean
+mcterm_tty_has_program (const WMcTerm *t)
+{
+    // the program another one started there has the terminal: it is the one in front of it
+    return t != NULL && t->pty_master >= 0 && tcgetpgrp (t->pty_master) > 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 void
 mcterm_tty_clear (WMcTerm *t)
 {

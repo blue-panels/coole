@@ -46,6 +46,8 @@ WMcTerm *mcterm_new (const WRect *r, const char *start_dir);
 WMcTerm *mcterm_new_tty (const WRect *r, char **tty_name);
 /* Its screen and its history cleared, for the next program */
 void mcterm_tty_clear (WMcTerm *t);
+/* Whether a program runs on the terminal of mcterm_new_tty () */
+gboolean mcterm_tty_has_program (const WMcTerm *t);
 void mcterm_free (WMcTerm *t);
 gboolean mcterm_is_alive (const WMcTerm *t);
 gboolean mcterm_in_alt_screen (const WMcTerm *t);
@@ -139,6 +141,12 @@ static inline void
 mcterm_tty_clear (WMcTerm *t)
 {
     (void) t;
+}
+static inline gboolean
+mcterm_tty_has_program (const WMcTerm *t)
+{
+    (void) t;
+    return FALSE;
 }
 static inline void
 mcterm_free (WMcTerm *t)

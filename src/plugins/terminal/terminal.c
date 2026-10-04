@@ -170,6 +170,9 @@ terminal_window_title (const terminal_window_t *tw, int width)
 {
     char *cwd, *command = NULL, *title;
 
+    // no shell there: the program another plugin runs
+    if (tw->program)
+        return g_strdup (_ ("Program"));
     if (!mcterm_is_alive (tw->term))
         return g_strdup (_ ("Shell (exited)"));
 
@@ -317,13 +320,16 @@ terminal_window_set_buttonbar (terminal_window_t *tw)
     if (bb == NULL)
         return;
 
-    // the keys are the program's: no label is the terminal's
+    /* the keys are the program's while it runs, the plugin giving them to it first: no label is
+       the terminal's, and the menu and Close are there for when no program runs */
     if (tw->program)
     {
         int i;
 
-        for (i = 1; i <= 10; i++)
+        for (i = 1; i <= 8; i++)
             buttonbar_set_label (bb, i, "", NULL, NULL);
+        buttonbar_set_label (bb, 9, Q_ ("ButtonBar|PullDn"), keymap, NULL);
+        buttonbar_set_label_command (bb, 10, Q_ ("ButtonBar|Close"), CK_Close, NULL);
         widget_draw (WIDGET (bb));
         return;
     }
@@ -374,9 +380,12 @@ terminal_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm,
         return group_default_callback (w, sender, msg, parm, data);
 
     case MSG_KEY:
-        // the terminal of a program: every key is the program's, F1 and F10 too
+        // the terminal of a program: every key is the program's, F1 and F10 too; with none on
+        // it, the editor's
         if (tw->program)
-            return mcterm_send_key (tw->term, parm) ? MSG_HANDLED : MSG_NOT_HANDLED;
+            return mcterm_tty_has_program (tw->term) && mcterm_send_key (tw->term, parm)
+                ? MSG_HANDLED
+                : MSG_NOT_HANDLED;
         /* The key goes to the terminal as a key, the way the screen of mc gives it: its keymap
            first, then the shell. Through the group it would be offered to the terminal as a
            hotkey first, which the terminal types into the shell as it is. */
@@ -863,7 +872,9 @@ terminal_plugin_handle_key (void *plugin_data, int key, void *edit)
     terminal_plugin_t *tp = (terminal_plugin_t *) plugin_data;
 
     (void) edit;
-    if (tp->program == NULL || tp->host->window_current (tp->host) != (void *) tp->program)
+    // with no program on it, the keys are the editor's: Esc, F9, F10 leave the window
+    if (tp->program == NULL || tp->host->window_current (tp->host) != (void *) tp->program
+        || !mcterm_tty_has_program (tp->program->term))
         return MC_EPR_NOT_SUPPORTED;
     return mcterm_send_key (tp->program->term, key) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
 }
