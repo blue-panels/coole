@@ -242,6 +242,8 @@ typedef struct mc_editor_host_t
        ones back, the tabs of the bottom staying to be read. */
     gboolean (*layout_push) (struct mc_editor_host_t *host, const char *name);
     void (*layout_pop) (struct mc_editor_host_t *host);
+    /* Whether a window is in a dock: open, a tab of the bottom not seen too */
+    gboolean (*window_docked) (struct mc_editor_host_t *host, void *window);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.

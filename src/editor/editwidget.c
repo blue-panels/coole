@@ -874,6 +874,15 @@ editor_host_marker_gutter (mc_editor_host_t *host)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The user has turned the gutter on or off: it is the user's from now on, the marks leave it */
+void
+edit_marker_gutter_forget (void)
+{
+    editor_marker_gutter_auto = FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 editor_host_set_marker_impl (mc_editor_host_t *host, const char *file, long line, int kind,
                              gboolean enabled)
@@ -1037,6 +1046,16 @@ editor_host_startup_option_impl (mc_editor_host_t *host, const char *name)
 /* --------------------------------------------------------------------------------------------- */
 
 static gboolean
+editor_host_window_docked_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+    return window != NULL && edit_window_is_window (CONST_WIDGET (window))
+        && edit_dock_side (EDIT_WINDOW (window)) != EDIT_DOCK_NONE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
 editor_host_layout_push_impl (mc_editor_host_t *host, const char *name)
 {
     return edit_layout_push (DIALOG (host->host_data), name);
@@ -1066,6 +1085,8 @@ editor_host_load_in_place (mc_editor_host_t *host, edit_arg_t *arg)
         && EDIT_WINDOW (before)->fullscreen == 0 && EDIT_WINDOW (after)->fullscreen != 0)
     {
         EDIT_WINDOW (after)->fullscreen = 0;
+        // in place of the one that fills what the docks leave: as that one
+        EDIT_WINDOW (after)->dock_fill = EDIT_WINDOW (before)->dock_fill;
         after->pos_flags = WPOS_KEEP_DEFAULT;
         widget_set_size_rect (after, &before->rect);
         widget_draw (WIDGET (dialog));
@@ -1224,7 +1245,7 @@ editor_host_save_modified_files_impl (mc_editor_host_t *host, const char *projec
             continue;
         file = editor_host_get_current_file_impl (host, edit);
         if (file != NULL && g_str_has_prefix (file, project_root)
-            && (project_root[root_len - 1] == '/' || file[root_len] == '\0'
+            && ((root_len > 0 && project_root[root_len - 1] == '/') || file[root_len] == '\0'
                 || file[root_len] == '/'))
             g_ptr_array_add (modified, edit);
         g_free (file);
@@ -1389,6 +1410,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_dock_bottom = editor_host_window_dock_bottom_impl;
     ctx->host->layout_push = editor_host_layout_push_impl;
     ctx->host->layout_pop = editor_host_layout_pop_impl;
+    ctx->host->window_docked = editor_host_window_docked_impl;
     ctx->window_kinds = g_ptr_array_new_with_free_func (editor_window_kind_free);
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
     // the plugins reach it from open(): call_later() for one
@@ -1418,6 +1440,10 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
 
     if (ctx->instances->len == 0)
     {
+        // what a plugin that failed asked for from open () goes with it
+        if (ctx->later != NULL)
+            g_array_free (ctx->later, TRUE);
+        edit_dlg->data.p = NULL;
         g_ptr_array_free (ctx->window_kinds, TRUE);
         g_ptr_array_free (ctx->instances, TRUE);
         g_free (ctx->host);
@@ -1444,6 +1470,13 @@ editor_plugin_ctx_destroy (WDialog *edit_dlg)
     if (ctx == NULL)
         return;
 
+    // the gutter the marks turned on is not the user's: the settings saved after keep it off
+    if (editor_marker_gutter_auto)
+    {
+        edit_options.line_state = FALSE;
+        edit_options.line_state_width = 0;
+        editor_marker_gutter_auto = FALSE;
+    }
     g_ptr_array_free (ctx->window_kinds, TRUE);
     g_ptr_array_free (ctx->instances, TRUE);
     if (ctx->later != NULL)
@@ -3301,6 +3334,8 @@ edit_add_window (WDialog *h, const WRect *r, const edit_arg_t *arg)
         return FALSE;
 
     edit_window_add (h, EDIT_WINDOW (edit));
+    // fullscreen, it fills what the docks leave
+    edit_dock_arrange (h);
     edit_set_buttonbar (edit, buttonbar_find (h));
     edit_plugins_file_event (edit, TRUE);
     edit_publish_runtime_open (edit);
