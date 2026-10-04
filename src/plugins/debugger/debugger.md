@@ -1,99 +1,116 @@
-# Debugger
+# Debugger <!-- help:notitle -->
 
-The **Debug** menu runs a local executable under GDB. Build the program with
-debug symbols first, for example:
+**Debugger plugin of the editor**
 
-```sh
-cc -g -O0 -Iinclude src/main.c src/calc.c -o build/calculator
-```
+Runs a program of the project under GDB: breakpoints in the gutter of the
+source, steps through it from the source window, and the call stack, the
+local variables and the watches beside it.
 
-1. Open any source file in coole, then choose **File → Open debug project** and
-   enter the root directory containing the sources. The root is explicit: the
-   first file's parent directory is only the suggested value in the dialog.
-2. Choose **Debug → New configuration**. Give it a name and specify the
-   executable, program arguments, working directory, optional environment
-   entries and GDB executable. An executable path relative to the project root
-   is converted to an absolute path. Arguments and environment entries use
-   shell-style quoting only to group words; a shell does not run them. For
-   example, an environment entry with spaces is `GREETING="hello world"`.
-   Use **Select configuration** to switch between executable targets.
-3. Open any source file, move to a line, and choose **Toggle breakpoint**. A
-   `●` appears in the gutter. The breakpoint belongs to the project, so it
-   remains after that file window closes, and it moves with its line when
-   lines are inserted or deleted above it. On **Start**, GDB opens the source
-   file where the program stops and `▶` marks the line it stopped on.
+**The start**
 
-   The marks:
+Put a breakpoint on a line with **Debug → Toggle breakpoint** and choose
+**Debug → Start**. The first time, the debugger makes a configuration of its
+own:
 
-   **●**
-   : a breakpoint
+1. The project is the one the project plugin finds for the file: no
+directory has to be named. **Debug → Open project...** names another.
+2. The program is the one the build has made, found by the build plugin
+among the programs of the project with debug information; of several, the
+newest come first in a list to choose from.
+3. A program without debug information, or built with optimization, is
+told of, with the command that builds it fit for debugging.
+4. The form **Debug configuration** shows it all at once: the name, the
+program, its arguments, the directory it runs in, its environment, GDB, and
+whether the project is built before every start. Enter takes it.
 
-   **◌**
-   : a breakpoint GDB has not taken yet, or has refused
+Then the project is built (its modified files saved first), GDB starts, and
+the program runs to the first breakpoint. When the build fails, the start
+waits: the lines with errors are marked, and **Alt-Shift-J** goes from one
+to the next.
 
-   **▶**
-   : the line the program stopped on
+The arguments and the environment are split as a shell would split them,
+but no shell runs them: an entry of the environment with spaces is
+*GREETING="hello world"*.
 
-   **◉**
-   : the line the program stopped on, with a breakpoint
+**The configurations**
 
-   GDB stops only on lines with code: a breakpoint on another line moves to
-   the next line GDB stops on. The skin sets the marks and their colors
-   (`breakpoint-char`, `exec-char` and the others in `[widget-editor]`,
-   `breakpoint`, `execmark` and `execline` in `[editor]`); a terminal that is
-   not UTF-8 shows `o`, `?`, `>` and `@`.
+A project may have several: **New configuration...** guesses another one,
+**Select configuration...** chooses the one **Start** runs, **Configure
+selected...** changes it. They are kept with the settings of the user, or,
+when **Keep in the project** is checked, in *.coole/debug.ini* in the project,
+with the names relative to it, for everyone who works on it. The breakpoints
+and the watches are one's own: they stay with the settings of the user.
 
-4. **Start** opens a **Debug session** window and runs the program to the
-   first breakpoint. While the program is stopped, the source windows are in
-   **step mode**: they take the debugger keys, and the keys that move around
-   the text, search, select or switch windows work as usual.
+**Step mode**
 
-   **F5**
-   : continue
+While the program is stopped the source windows take the debugger keys; the
+keys that move around the text, search, select or switch windows stay the
+editor's, and a key that would change the text beeps.
 
-   **F6**
-   : pause the running program
+**F5**
+: Continue.
 
-   **F7**, **F8**, **F9**
-   : step into, step over, step out
+**F6**
+: Pause the running program.
 
-   **F4**
-   : run to the line of the cursor
+**F7**, **F8**, **F9**
+: Step into, step over, step out.
 
-   **F2**
-   : toggle a breakpoint on the line of the cursor
+**F4**
+: Run to the line of the cursor.
 
-   **Enter**
-   : evaluate the selection or the word under the cursor
+**F2**
+: Toggle a breakpoint on the line of the cursor.
 
-   **Shift-F5**
-   : stop the program
+**Enter**
+: Evaluate the selection or the word under the cursor; the value comes in a
+dialog that can add it to the watches.
 
-   **Esc**
-   : go back to editing until the next stop
+**Shift-F5**
+: Stop the program.
 
-   A key that would change the text only beeps. The value of an evaluated
-   expression comes in a dialog that can add it to the Watches.
+**Esc**
+: Go back to editing until the next stop.
 
-   The Debug session window takes the same keys when it has the focus, where
-   F2 and F4 work on the cursor of the topmost file window and F10 closes the
-   window. Reopen it with **Debug → Debug session...**.
-   These bindings can be changed in **Options → Key bindings → Editor →
-   Debugger**, independently of the source editor. The same actions can be
-   set in the `[debugger]` section of the user keymap, for example
-   `DebugStepOver = alt-o`. The bar labels reflect bindings to F1–F10;
-   `f15` is the keymap name for Shift-F5.
-5. Use **Call stack** to choose a frame. Its variables appear in **Local
-   variables**.
-   **Add watch** saves an expression for the project; **Watches** shows its
-   value in the selected frame. An expression outside that frame's scope shows
-   GDB's error message. A Watch displays a value; it does not stop execution
-   when memory changes.
-6. Program output appears in **Debug output**. **Send line** provides input to
-   line-oriented programs. **Stop** ends the session without removing the
-   project's breakpoints, configurations or Watches.
+The Debug session window takes the same keys when it has the focus; there F2
+and F4 work on the cursor of the topmost file window, and F10 closes the
+window. **Debug → Debug session...** opens it again. The keys can be changed
+in **Options → Key bindings → Editor → Debugger**, or in the *[debugger]*
+section of the keymap, *DebugStepOver = alt-o* for one; *f15* is the name of
+Shift-F5.
 
-coole asks to save modified project files before starting GDB. Rebuild the
-executable after source changes; this version does not build it for you. The
-debugger handles one local program at a time. Full-screen terminal programs
-still need a terminal emulator and are outside this version's input window.
+**The marks**
+
+**●**
+: a breakpoint
+
+**◌**
+: a breakpoint GDB has not taken yet, or has refused
+
+**▶**
+: the line the program stopped on
+
+**◉**
+: the line the program stopped on, with a breakpoint
+
+A breakpoint moves with its line as lines are inserted or deleted above it;
+GDB keeps the old line till the next start, since the program running was
+built from the text as it was. GDB stops only on lines with code: a
+breakpoint on another line moves to the next line GDB stops on. The skin
+gives the marks in *[widget-editor]* (*breakpoint-char*, *exec-char* and the
+others) and their colors in *[editor]* (*breakpoint*, *execmark*,
+*execline*); a terminal that is not UTF-8 shows *o*, *?*, *>* and *@*.
+
+**What the program is at**
+
+**Call stack...** chooses a frame: the mark of the current line goes to it,
+and its variables come in **Local variables**. **Add watch...** keeps an
+expression for the project; **Watches** shows its value in the frame. A
+watch shows a value: it does not stop the program when the value changes.
+
+The output of the program comes in **Debug output**; **Send line...** gives
+a line to a program that reads lines. **Stop** ends the session and keeps the
+breakpoints, the configurations and the watches.
+
+The debugger runs one local program at a time. A program that takes the
+whole terminal needs a terminal of its own.

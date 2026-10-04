@@ -60,6 +60,7 @@ typedef struct
     char *directory;
     char *environment;
     char *gdb_path;
+    gboolean build;  // the project is built before the start
 } debug_launch_t;
 
 typedef struct
@@ -188,6 +189,12 @@ typedef struct
     gboolean step_left;
     int marks[DEBUG_MARK_COUNT];
     long commands[DEBUG_CMD_COUNT];
+    // the configurations are kept in the project, .coole/debug.ini, for all who work on it
+    gboolean launches_in_project;
+    // a start waits for the build; the build is done for this start
+    gboolean start_after_build;
+    gboolean built_for_start;
+    guint build_signal;
     debug_session_window_t *session_window;
 } debugger_t;
 
@@ -572,7 +579,9 @@ debug_session_draw (debug_session_window_t *session)
                             debug->project_dir != NULL ? debug->project_dir : _ ("<none>"));
     g_string_append_printf (body, _ ("Configuration: %s\n"),
                             launch != NULL ? launch->name : _ ("<none>"));
-    g_string_append_printf (body, _ ("State: %s\n"), debug_state_name (debug->state));
+    g_string_append_printf (body, _ ("State: %s\n"),
+                            debug->start_after_build ? _ ("Building")
+                                                     : debug_state_name (debug->state));
     if (debug->current_file != NULL)
         g_string_append_printf (body, _ ("At: %s:%ld\n"), debug->current_file, debug->current_line);
     else if (debug->state == DEBUG_STOPPED && debug->current_func != NULL)
@@ -791,15 +800,145 @@ debug_config_path (const debugger_t *debug)
     return path;
 }
 
+/* The configurations kept in the project, which go with it */
+static char *
+debug_project_config_path (const debugger_t *debug)
+{
+    return debug->project_dir != NULL
+        ? g_build_filename (debug->project_dir, ".coole", "debug.ini", (char *) NULL)
+        : NULL;
+}
+
+/* A name in the project as it is kept there: from the root of the project */
+static char *
+debug_path_from_root (const debugger_t *debug, const char *path, gboolean relative)
+{
+    const gsize len = strlen (debug->project_dir);
+
+    if (relative && path != NULL && strncmp (path, debug->project_dir, len) == 0
+        && (path[len] == '/' || path[len] == '\0'))
+        return g_strdup (path[len] == '\0' ? "." : path + len + 1);
+    return g_strdup (path != NULL ? path : "");
+}
+
+static void
+debug_launches_write (const debugger_t *debug, GKeyFile *keyfile, gboolean relative)
+{
+    guint i;
+
+    g_key_file_set_integer (keyfile, "Debug", "launch_count", (gint) debug->launches->len);
+    g_key_file_set_integer (keyfile, "Debug", "active_launch", (gint) debug->active_launch);
+    for (i = 0; i < debug->launches->len; i++)
+    {
+        const debug_launch_t *launch = g_ptr_array_index (debug->launches, i);
+        char *group = g_strdup_printf ("Launch %u", i);
+        char *executable = debug_path_from_root (debug, launch->executable, relative);
+        char *directory = debug_path_from_root (debug, launch->directory, relative);
+
+        g_key_file_set_string (keyfile, group, "name", launch->name);
+        g_key_file_set_string (keyfile, group, "executable", executable);
+        g_key_file_set_string (keyfile, group, "arguments",
+                               launch->arguments != NULL ? launch->arguments : "");
+        g_key_file_set_string (keyfile, group, "directory", directory);
+        g_key_file_set_string (keyfile, group, "environment",
+                               launch->environment != NULL ? launch->environment : "");
+        g_key_file_set_string (keyfile, group, "gdb_path",
+                               launch->gdb_path != NULL ? launch->gdb_path : "gdb");
+        g_key_file_set_boolean (keyfile, group, "build", launch->build);
+        g_free (executable);
+        g_free (directory);
+        g_free (group);
+    }
+}
+
+/* The configurations of a keyfile; names from the root of the project are made whole */
+static void
+debug_launches_read (debugger_t *debug, GKeyFile *keyfile)
+{
+    gint launch_count;
+    gsize i;
+
+    launch_count = g_key_file_has_key (keyfile, "Debug", "launch_count", NULL)
+        ? g_key_file_get_integer (keyfile, "Debug", "launch_count", NULL)
+        : -1;
+    if (launch_count < 0 || launch_count > 1000)
+    {
+        // the first version kept one, in the Debug group
+        debug_launch_t *legacy = g_new0 (debug_launch_t, 1);
+
+        legacy->name = g_strdup (_ ("Default"));
+        legacy->executable = g_key_file_get_string (keyfile, "Debug", "executable", NULL);
+        legacy->arguments = g_key_file_get_string (keyfile, "Debug", "arguments", NULL);
+        legacy->directory = g_key_file_get_string (keyfile, "Debug", "directory", NULL);
+        if (legacy->directory == NULL)
+            legacy->directory = g_strdup (debug->project_dir);
+        if (legacy->executable != NULL)
+            g_ptr_array_add (debug->launches, legacy);
+        else
+            debug_launch_free (legacy);
+        return;
+    }
+    for (i = 0; i < (gsize) launch_count; i++)
+    {
+        debug_launch_t *launch = g_new0 (debug_launch_t, 1);
+        char *group = g_strdup_printf ("Launch %u", (guint) i);
+        char *executable, *directory;
+
+        launch->name = g_key_file_get_string (keyfile, group, "name", NULL);
+        executable = g_key_file_get_string (keyfile, group, "executable", NULL);
+        launch->arguments = g_key_file_get_string (keyfile, group, "arguments", NULL);
+        directory = g_key_file_get_string (keyfile, group, "directory", NULL);
+        launch->environment = g_key_file_get_string (keyfile, group, "environment", NULL);
+        launch->gdb_path = g_key_file_get_string (keyfile, group, "gdb_path", NULL);
+        launch->build = g_key_file_get_boolean (keyfile, group, "build", NULL);
+        if (executable != NULL && *executable != '\0')
+            launch->executable = g_canonicalize_filename (executable, debug->project_dir);
+        launch->directory = g_canonicalize_filename (
+            directory != NULL && *directory != '\0' ? directory : ".", debug->project_dir);
+        g_free (executable);
+        g_free (directory);
+        if (launch->name == NULL || launch->executable == NULL)
+            debug_launch_free (launch);
+        else
+            g_ptr_array_add (debug->launches, launch);
+        g_free (group);
+    }
+    launch_count = g_key_file_get_integer (keyfile, "Debug", "active_launch", NULL);
+    if (launch_count >= 0 && launch_count < (gint) debug->launches->len)
+        debug->active_launch = (guint) launch_count;
+}
+
+static gboolean
+debug_keyfile_save (debugger_t *debug, GKeyFile *keyfile, const char *path, int mode)
+{
+    char *contents, *directory;
+    gsize length;
+    GError *error = NULL;
+    gboolean saved;
+
+    contents = g_key_file_to_data (keyfile, &length, NULL);
+    directory = g_path_get_dirname (path);
+    saved = g_mkdir_with_parents (directory, 0700) == 0
+        && g_file_set_contents (path, contents, length, &error) && g_chmod (path, mode) == 0;
+    if (!saved)
+        debug->host->message (debug->host, D_ERROR, _ ("Debug"),
+                              error != NULL ? error->message
+                                            : _ ("Could not save the debug project settings."));
+    g_clear_error (&error);
+    g_free (directory);
+    g_free (contents);
+    return saved;
+}
+
+/* The configurations go to the project or to the settings of the user; the breakpoints and the
+   watches, which are one's own, to the user's always */
 static void
 debug_config_save (debugger_t *debug)
 {
     GKeyFile *keyfile;
-    char *path, *directory, *contents;
-    gsize length;
+    char *path;
     char **locations, **expressions;
     guint i;
-    GError *error = NULL;
 
     path = debug_config_path (debug);
     if (path == NULL)
@@ -807,25 +946,18 @@ debug_config_save (debugger_t *debug)
     debug_breakpoints_sync (debug);
     keyfile = g_key_file_new ();
     g_key_file_set_string (keyfile, "Debug", "project", debug->project_dir);
-    g_key_file_set_integer (keyfile, "Debug", "launch_count", (gint) debug->launches->len);
-    g_key_file_set_integer (keyfile, "Debug", "active_launch", (gint) debug->active_launch);
-    for (i = 0; i < debug->launches->len; i++)
+    if (debug->launches_in_project)
     {
-        const debug_launch_t *launch = g_ptr_array_index (debug->launches, i);
-        char *group = g_strdup_printf ("Launch %u", i);
+        GKeyFile *shared = g_key_file_new ();
+        char *shared_path = debug_project_config_path (debug);
 
-        g_key_file_set_string (keyfile, group, "name", launch->name);
-        g_key_file_set_string (keyfile, group, "executable", launch->executable);
-        g_key_file_set_string (keyfile, group, "arguments",
-                               launch->arguments != NULL ? launch->arguments : "");
-        g_key_file_set_string (keyfile, group, "directory",
-                               launch->directory != NULL ? launch->directory : "");
-        g_key_file_set_string (keyfile, group, "environment",
-                               launch->environment != NULL ? launch->environment : "");
-        g_key_file_set_string (keyfile, group, "gdb_path",
-                               launch->gdb_path != NULL ? launch->gdb_path : "gdb");
-        g_free (group);
+        debug_launches_write (debug, shared, TRUE);
+        (void) debug_keyfile_save (debug, shared, shared_path, 0644);
+        g_free (shared_path);
+        g_key_file_free (shared);
     }
+    else
+        debug_launches_write (debug, keyfile, FALSE);
     locations = g_new0 (char *, debug->breakpoints->len + 1);
     for (i = 0; i < debug->breakpoints->len; i++)
     {
@@ -844,18 +976,9 @@ debug_config_save (debugger_t *debug)
     }
     g_key_file_set_string_list (keyfile, "Debug", "watches", (const gchar *const *) expressions,
                                 debug->watches->len);
-    contents = g_key_file_to_data (keyfile, &length, NULL);
-    directory = g_path_get_dirname (path);
-    if (g_mkdir_with_parents (directory, 0700) != 0
-        || !g_file_set_contents (path, contents, length, &error) || g_chmod (path, 0600) != 0)
-        debug->host->message (debug->host, D_ERROR, _ ("Debug"),
-                              error != NULL ? error->message
-                                            : _ ("Could not save the debug project settings."));
-    g_clear_error (&error);
+    (void) debug_keyfile_save (debug, keyfile, path, 0600);
     g_strfreev (locations);
     g_strfreev (expressions);
-    g_free (directory);
-    g_free (contents);
     g_key_file_free (keyfile);
     g_free (path);
 }
@@ -863,98 +986,66 @@ debug_config_save (debugger_t *debug)
 static void
 debug_config_load (debugger_t *debug)
 {
-    GKeyFile *keyfile;
-    char *path;
+    GKeyFile *keyfile, *shared;
+    char *path, *shared_path;
     char **locations, **expressions;
     gsize count, i;
-    gint launch_count;
 
     path = debug_config_path (debug);
     if (path == NULL)
         return;
     keyfile = g_key_file_new ();
-    if (!g_key_file_load_from_file (keyfile, path, G_KEY_FILE_NONE, NULL))
-        goto out;
-    launch_count = g_key_file_has_key (keyfile, "Debug", "launch_count", NULL)
-        ? g_key_file_get_integer (keyfile, "Debug", "launch_count", NULL)
-        : -1;
-    if (launch_count >= 0 && launch_count <= 1000)
+    if (g_key_file_load_from_file (keyfile, path, G_KEY_FILE_NONE, NULL))
     {
-        for (i = 0; i < (gsize) launch_count; i++)
+        debug_launches_read (debug, keyfile);
+        expressions = g_key_file_get_string_list (keyfile, "Debug", "watches", &count, NULL);
+        for (i = 0; expressions != NULL && i < count; i++)
         {
-            debug_launch_t *launch = g_new0 (debug_launch_t, 1);
-            char *group = g_strdup_printf ("Launch %u", (guint) i);
+            debug_watch_t *watch;
 
-            launch->name = g_key_file_get_string (keyfile, group, "name", NULL);
-            launch->executable = g_key_file_get_string (keyfile, group, "executable", NULL);
-            launch->arguments = g_key_file_get_string (keyfile, group, "arguments", NULL);
-            launch->directory = g_key_file_get_string (keyfile, group, "directory", NULL);
-            launch->environment = g_key_file_get_string (keyfile, group, "environment", NULL);
-            launch->gdb_path = g_key_file_get_string (keyfile, group, "gdb_path", NULL);
-            if (launch->directory == NULL || *launch->directory == '\0')
-            {
-                g_free (launch->directory);
-                launch->directory = g_strdup (debug->project_dir);
-            }
-            if (launch->name == NULL || launch->executable == NULL)
-                debug_launch_free (launch);
-            else
-                g_ptr_array_add (debug->launches, launch);
-            g_free (group);
+            if (expressions[i][0] == '\0')
+                continue;
+            watch = g_new0 (debug_watch_t, 1);
+            watch->expression = g_strdup (expressions[i]);
+            g_ptr_array_add (debug->watches, watch);
         }
-        launch_count = g_key_file_get_integer (keyfile, "Debug", "active_launch", NULL);
-        if (launch_count >= 0 && launch_count < (gint) debug->launches->len)
-            debug->active_launch = (guint) launch_count;
-    }
-    else
-    {
-        debug_launch_t *legacy = g_new0 (debug_launch_t, 1);
-
-        legacy->name = g_strdup (_ ("Default"));
-        legacy->executable = g_key_file_get_string (keyfile, "Debug", "executable", NULL);
-        legacy->arguments = g_key_file_get_string (keyfile, "Debug", "arguments", NULL);
-        legacy->directory = g_key_file_get_string (keyfile, "Debug", "directory", NULL);
-        if (legacy->executable != NULL)
-            g_ptr_array_add (debug->launches, legacy);
-        else
-            debug_launch_free (legacy);
-    }
-    expressions = g_key_file_get_string_list (keyfile, "Debug", "watches", &count, NULL);
-    for (i = 0; expressions != NULL && i < count; i++)
-    {
-        debug_watch_t *watch;
-
-        if (expressions[i][0] == '\0')
-            continue;
-        watch = g_new0 (debug_watch_t, 1);
-        watch->expression = g_strdup (expressions[i]);
-        g_ptr_array_add (debug->watches, watch);
-    }
-    g_strfreev (expressions);
-    locations = g_key_file_get_string_list (keyfile, "Debug", "breakpoints", &count, NULL);
-    for (i = 0; locations != NULL && i < count; i++)
-    {
-        char *separator = strrchr (locations[i], ':');
-        char *end = NULL;
-        gint64 line;
-
-        if (separator == NULL)
-            continue;
-        line = g_ascii_strtoll (separator + 1, &end, 10);
-        if (end == separator + 1 || *end != '\0' || line <= 0 || line > G_MAXLONG)
-            continue;
+        g_strfreev (expressions);
+        locations = g_key_file_get_string_list (keyfile, "Debug", "breakpoints", &count, NULL);
+        for (i = 0; locations != NULL && i < count; i++)
         {
-            debug_breakpoint_t *bp = g_new0 (debug_breakpoint_t, 1);
+            char *separator = strrchr (locations[i], ':');
+            char *end = NULL;
+            gint64 line;
+            debug_breakpoint_t *bp;
 
+            if (separator == NULL)
+                continue;
+            line = g_ascii_strtoll (separator + 1, &end, 10);
+            if (end == separator + 1 || *end != '\0' || line <= 0 || line > G_MAXLONG)
+                continue;
+            bp = g_new0 (debug_breakpoint_t, 1);
             bp->file = g_strndup (locations[i], separator - locations[i]);
             bp->line = (long) line;
             g_ptr_array_add (debug->breakpoints, bp);
         }
+        g_strfreev (locations);
     }
-    g_strfreev (locations);
-out:
     g_key_file_free (keyfile);
     g_free (path);
+
+    // the configurations of the project go before the user's own
+    shared_path = debug_project_config_path (debug);
+    shared = g_key_file_new ();
+    debug->launches_in_project = FALSE;
+    if (g_key_file_load_from_file (shared, shared_path, G_KEY_FILE_NONE, NULL))
+    {
+        g_ptr_array_set_size (debug->launches, 0);
+        debug->active_launch = 0;
+        debug_launches_read (debug, shared);
+        debug->launches_in_project = TRUE;
+    }
+    g_key_file_free (shared);
+    g_free (shared_path);
 }
 
 static void
@@ -2102,146 +2193,287 @@ debug_parse_environment (debugger_t *debug, const char *value, char ***entries)
     return FALSE;
 }
 
+static void
+debug_launch_copy (debug_launch_t *to, const debug_launch_t *from)
+{
+    to->name = g_strdup (from->name);
+    to->executable = g_strdup (from->executable);
+    to->arguments = g_strdup (from->arguments);
+    to->directory = g_strdup (from->directory);
+    to->environment = g_strdup (from->environment);
+    to->gdb_path = g_strdup (from->gdb_path);
+    to->build = from->build;
+}
+
+static void
+debug_launch_clear (debug_launch_t *launch)
+{
+    g_free (launch->name);
+    g_free (launch->executable);
+    g_free (launch->arguments);
+    g_free (launch->directory);
+    g_free (launch->environment);
+    g_free (launch->gdb_path);
+    memset (launch, 0, sizeof (*launch));
+}
+
+/* Ask the build plugin something about the project, NULL without that plugin */
+static GVariant *
+debug_build_call (debugger_t *debug, const char *method, const char *key, const char *value)
+{
+    GVariantDict args;
+
+    if (debug->host->service_call == NULL)
+        return NULL;
+    g_variant_dict_init (&args, NULL);
+    g_variant_dict_insert (&args, key, "s", value);
+    return debug->host->service_call (debug->host, "build", method, g_variant_dict_end (&args),
+                                      NULL);
+}
+
+/* What the build plugin knows of a program: whether it has debug information, and whether the
+   compiler optimized it; a word of advice when it is not fit for debugging */
+static void
+debug_check_program (debugger_t *debug, const char *program, const char *system,
+                     const char *build_dir)
+{
+    GVariant *reply = debug_build_call (debug, "elf", "path", program);
+    gboolean debug_info = TRUE, optimized = FALSE;
+    const char *how;
+    char *text_value;
+
+    if (reply == NULL)
+        return;
+    (void) g_variant_lookup (reply, "debug_info", "b", &debug_info);
+    (void) g_variant_lookup (reply, "optimized", "b", &optimized);
+    g_variant_unref (reply);
+    if (debug_info && !optimized)
+        return;
+
+    how = g_strcmp0 (system, "meson") == 0 ? "meson configure -Dbuildtype=debug %s"
+        : g_strcmp0 (system, "cmake") == 0 ? "cmake -DCMAKE_BUILD_TYPE=Debug %s"
+                                           : "CFLAGS='-g -O0'%s";
+    {
+        char *command = g_strdup_printf (
+            how,
+            g_strcmp0 (system, "meson") == 0 || g_strcmp0 (system, "cmake") == 0 ? build_dir : "");
+
+        text_value = g_strdup_printf (
+            debug_info
+                ? _ ("%s\nwas built with optimization: the steps jump about and some variables\n"
+                     "are gone.  For debugging it is built without, for example\n\n%s")
+                : _ ("%s\nhas no debug information: the debugger cannot show its source.\n"
+                     "It is built with it, for example\n\n%s"),
+            program, command);
+        g_free (command);
+    }
+    debug->host->message (debug->host, D_NORMAL, _ ("Debug"), text_value);
+    g_free (text_value);
+}
+
+/* A new configuration as the project suggests it: the program the build has made, the root of
+   the project to run it in, and a build before the start when the project can be built */
+static void
+debug_launch_guess (debugger_t *debug, debug_launch_t *launch)
+{
+    GVariant *reply = debug_build_call (debug, "info", "root", debug->project_dir);
+    const char **programs = NULL;
+    const char *system = NULL, *command = NULL, *dir = NULL;
+    char *program = NULL;
+
+    launch->directory = g_strdup (debug->project_dir);
+    launch->gdb_path = g_strdup ("gdb");
+    if (reply != NULL)
+    {
+        (void) g_variant_lookup (reply, "programs", "^a&s", &programs);
+        (void) g_variant_lookup (reply, "system", "&s", &system);
+        (void) g_variant_lookup (reply, "command", "&s", &command);
+        (void) g_variant_lookup (reply, "dir", "&s", &dir);
+        launch->build = command != NULL;
+    }
+
+    if (programs != NULL && programs[0] != NULL && programs[1] == NULL)
+        program = g_strdup (programs[0]);
+    else if (programs != NULL && programs[0] != NULL)
+    {
+        // several: the newest first, to choose from
+        const guint count = g_strv_length ((char **) programs);
+        Listbox *selector;
+        const char *chosen;
+        guint i;
+
+        selector = listbox_window_new (MIN ((int) count, 16), MIN (COLS - 8, 76),
+                                       _ ("The program to debug"), NULL);
+        for (i = 0; i < count; i++)
+        {
+            const char *p = programs[i];
+            const gsize len = strlen (debug->project_dir);
+            const char *shown =
+                strncmp (p, debug->project_dir, len) == 0 && p[len] == '/' ? p + len + 1 : p;
+
+            LISTBOX_APPEND_TEXT (selector, 0, shown, (void *) p, FALSE);
+        }
+        chosen = listbox_run_with_data (selector, NULL);
+        program = g_strdup (chosen != NULL ? chosen : programs[0]);
+    }
+
+    if (program != NULL)
+    {
+        launch->executable = program;
+        launch->name = g_path_get_basename (program);
+        debug_check_program (debug, program, system, dir);
+    }
+    else
+        launch->name = g_strdup (_ ("Debug"));
+    g_free (programs);
+    if (reply != NULL)
+        g_variant_unref (reply);
+}
+
+/* All of a configuration in one form; FALSE when it is cancelled */
+static gboolean
+debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch_t *self,
+                   gboolean *in_project)
+{
+    while (TRUE)
+    {
+        char *name = NULL, *executable = NULL, *arguments = NULL, *directory = NULL;
+        char *environment = NULL, *gdb_path = NULL;
+        char **entries = NULL;
+        gboolean build = launch->build, keep = *in_project;
+        const char *problem = NULL;
+        guint i;
+        int ret;
+
+        {
+            quick_widget_t widgets[] = {
+                QUICK_LABELED_INPUT (_ ("Name:"), input_label_above, launch->name, "debug-name",
+                                     &name, NULL, FALSE, FALSE, INPUT_COMPLETE_NONE),
+                QUICK_LABELED_INPUT (_ ("Program:"), input_label_above,
+                                     launch->executable != NULL ? launch->executable : "",
+                                     "debug-program", &executable, NULL, FALSE, FALSE,
+                                     INPUT_COMPLETE_FILENAMES),
+                QUICK_LABELED_INPUT (_ ("Arguments:"), input_label_above,
+                                     launch->arguments != NULL ? launch->arguments : "",
+                                     "debug-arguments", &arguments, NULL, FALSE, FALSE,
+                                     INPUT_COMPLETE_FILENAMES),
+                QUICK_LABELED_INPUT (_ ("Working directory:"), input_label_above,
+                                     launch->directory != NULL ? launch->directory : "",
+                                     "debug-directory", &directory, NULL, FALSE, FALSE,
+                                     INPUT_COMPLETE_FILENAMES | INPUT_COMPLETE_CD),
+                QUICK_LABELED_INPUT (_ ("Environment (NAME=VALUE, quoted):"), input_label_above,
+                                     launch->environment != NULL ? launch->environment : "",
+                                     "debug-environment", &environment, NULL, FALSE, FALSE,
+                                     INPUT_COMPLETE_NONE),
+                QUICK_LABELED_INPUT (_ ("GDB:"), input_label_above,
+                                     launch->gdb_path != NULL ? launch->gdb_path : "gdb",
+                                     "debug-gdb", &gdb_path, NULL, FALSE, FALSE,
+                                     INPUT_COMPLETE_FILENAMES | INPUT_COMPLETE_COMMANDS),
+                QUICK_SEPARATOR (TRUE),
+                QUICK_CHECKBOX (_ ("&Build the project before the start"), &build, NULL),
+                QUICK_CHECKBOX (_ ("&Keep in the project, in .coole/debug.ini"), &keep, NULL),
+                QUICK_BUTTONS_OK_CANCEL,
+                QUICK_END,
+            };
+            WRect r = { -1, -1, 0, MIN (76, COLS - 4) };
+            quick_dialog_t qdlg = {
+                .rect = r,
+                .title = _ ("Debug configuration"),
+                .help = "[Debugger]",
+                .help_file = "debugger.md",
+                .widgets = widgets,
+                .callback = NULL,
+                .mouse_callback = NULL,
+            };
+
+            ret = quick_dialog (&qdlg);
+        }
+        if (ret == B_CANCEL)
+        {
+            g_free (name);
+            g_free (executable);
+            g_free (arguments);
+            g_free (directory);
+            g_free (environment);
+            g_free (gdb_path);
+            return FALSE;
+        }
+
+        // what was typed stays for the next round
+        debug_launch_clear (launch);
+        launch->name = g_strstrip (name);
+        launch->executable = *g_strstrip (executable) != '\0'
+            ? g_canonicalize_filename (executable, debug->project_dir)
+            : g_strdup ("");
+        g_free (executable);
+        launch->arguments = arguments;
+        launch->directory = g_canonicalize_filename (
+            *g_strstrip (directory) != '\0' ? directory : debug->project_dir, debug->project_dir);
+        g_free (directory);
+        launch->environment = environment;
+        launch->gdb_path = *g_strstrip (gdb_path) != '\0' ? gdb_path : g_strdup ("gdb");
+        if (*gdb_path == '\0')
+            g_free (gdb_path);
+        launch->build = build;
+        *in_project = keep;
+
+        if (*launch->name == '\0')
+            problem = _ ("Enter a configuration name.");
+        for (i = 0; problem == NULL && i < debug->launches->len; i++)
+        {
+            const debug_launch_t *other = g_ptr_array_index (debug->launches, i);
+
+            if (other != self && g_strcmp0 (other->name, launch->name) == 0)
+                problem = _ ("A configuration with this name already exists.");
+        }
+        if (problem == NULL && *launch->executable == '\0')
+            problem = _ ("Enter the program to debug.");
+        if (problem == NULL && !g_file_test (launch->directory, G_FILE_TEST_IS_DIR))
+            problem = _ ("The working directory does not exist.");
+        if (problem != NULL)
+            debug_error (debug, problem);
+        else if (!debug_parse_environment (debug, launch->environment, &entries))
+            problem = "";
+        g_strfreev (entries);
+        if (problem == NULL)
+            return TRUE;
+    }
+}
+
+/* A configuration made or changed: a new one is guessed from the project first */
 static mc_ep_result_t
 debug_configure_impl (debugger_t *debug, void *edit, gboolean create_new)
 {
-    debug_launch_t *launch;
-    char *name, *executable, *arguments, *directory, *environment, *gdb_path;
-    char *absolute_executable, *absolute_dir;
-    char **environment_entries = NULL;
-    guint i;
+    debug_launch_t *existing, form = { 0 };
+    gboolean in_project;
 
     if (!debug_require_project (debug, edit))
         return MC_EPR_FAILED;
-    launch = create_new ? NULL : debug_active_launch (debug);
-    name = input_dialog (_ ("Debug configuration"), _ ("Configuration name:"), NULL,
-                         launch != NULL ? launch->name : _ ("Debug"), INPUT_COMPLETE_NONE);
-    if (name == NULL)
-        return MC_EPR_FAILED;
-    if (*name == '\0')
-    {
-        debug_error (debug, _ ("Enter a configuration name."));
-        g_free (name);
-        return MC_EPR_FAILED;
-    }
-    for (i = 0; i < debug->launches->len; i++)
-    {
-        debug_launch_t *other = g_ptr_array_index (debug->launches, i);
+    existing = create_new ? NULL : debug_active_launch (debug);
+    if (existing != NULL)
+        debug_launch_copy (&form, existing);
+    else
+        debug_launch_guess (debug, &form);
+    in_project = debug->launches_in_project;
 
-        if (other != launch && g_strcmp0 (other->name, name) == 0)
-        {
-            debug_error (debug, _ ("A configuration with this name already exists."));
-            g_free (name);
-            return MC_EPR_FAILED;
-        }
-    }
-    executable = input_dialog (_ ("Debug configuration"), _ ("Executable file:"), NULL,
-                               launch != NULL ? launch->executable : "", INPUT_COMPLETE_FILENAMES);
-    if (executable == NULL)
-        goto cancelled_name;
-    if (*executable == '\0')
+    if (!debug_launch_form (debug, &form, existing, &in_project))
     {
-        debug_error (debug, _ ("Enter an executable file."));
-        g_free (executable);
-        goto cancelled_name;
+        debug_launch_clear (&form);
+        return MC_EPR_FAILED;
     }
-    arguments = input_dialog (_ ("Debug configuration"), _ ("Program arguments:"), NULL,
-                              launch != NULL && launch->arguments != NULL ? launch->arguments : "",
-                              INPUT_COMPLETE_NONE);
-    if (arguments == NULL)
+    if (existing == NULL)
     {
-        g_free (executable);
-        goto cancelled_name;
-    }
-    directory = input_dialog (_ ("Debug configuration"), _ ("Working directory:"), NULL,
-                              launch != NULL && launch->directory != NULL ? launch->directory
-                                                                          : debug->project_dir,
-                              INPUT_COMPLETE_FILENAMES);
-    if (directory == NULL)
-    {
-        g_free (arguments);
-        g_free (executable);
-        goto cancelled_name;
-    }
-    environment = input_dialog (
-        _ ("Debug configuration"), _ ("Environment (quoted NAME=VALUE entries):"), NULL,
-        launch != NULL && launch->environment != NULL ? launch->environment : "",
-        INPUT_COMPLETE_NONE);
-    if (environment == NULL)
-    {
-        g_free (directory);
-        g_free (arguments);
-        g_free (executable);
-        goto cancelled_name;
-    }
-    if (!debug_parse_environment (debug, environment, &environment_entries))
-    {
-        g_free (environment);
-        g_free (directory);
-        g_free (arguments);
-        g_free (executable);
-        goto cancelled_name;
-    }
-    g_strfreev (environment_entries);
-    gdb_path = input_dialog (_ ("Debug configuration"), _ ("GDB executable:"), NULL,
-                             launch != NULL && launch->gdb_path != NULL ? launch->gdb_path : "gdb",
-                             INPUT_COMPLETE_FILENAMES);
-    if (gdb_path == NULL)
-    {
-        g_free (environment);
-        g_free (directory);
-        g_free (arguments);
-        g_free (executable);
-        goto cancelled_name;
-    }
-    if (*gdb_path == '\0')
-    {
-        g_free (gdb_path);
-        gdb_path = g_strdup ("gdb");
-    }
-    absolute_executable = g_canonicalize_filename (executable, debug->project_dir);
-    absolute_dir = g_canonicalize_filename (*directory != '\0' ? directory : debug->project_dir,
-                                            debug->project_dir);
-    g_free (executable);
-    g_free (directory);
-    if (!g_file_test (absolute_dir, G_FILE_TEST_IS_DIR))
-    {
-        debug_error (debug, _ ("The working directory does not exist."));
-        g_free (absolute_executable);
-        g_free (absolute_dir);
-        g_free (arguments);
-        g_free (environment);
-        g_free (gdb_path);
-        goto cancelled_name;
-    }
-    if (launch == NULL)
-    {
-        launch = g_new0 (debug_launch_t, 1);
-        g_ptr_array_add (debug->launches, launch);
+        existing = g_new0 (debug_launch_t, 1);
+        g_ptr_array_add (debug->launches, existing);
         debug->active_launch = debug->launches->len - 1;
     }
     else
-    {
-        g_free (launch->name);
-        g_free (launch->executable);
-        g_free (launch->arguments);
-        g_free (launch->directory);
-        g_free (launch->environment);
-        g_free (launch->gdb_path);
-    }
-    launch->name = name;
-    launch->executable = absolute_executable;
-    launch->arguments = arguments;
-    launch->directory = absolute_dir;
-    launch->environment = environment;
-    launch->gdb_path = gdb_path;
+        debug_launch_clear (existing);
+    *existing = form;
+    debug->launches_in_project = in_project;
     debug_config_save (debug);
     debug_session_refresh (debug);
     return MC_EPR_OK;
-
-cancelled_name:
-    g_free (name);
-    return MC_EPR_FAILED;
 }
 
 static mc_ep_result_t
@@ -2336,10 +2568,34 @@ debug_start (void *data, void *edit)
     launch = debug_active_launch (debug);
     if (launch == NULL)
     {
-        if (debug_configure (data, edit) != MC_EPR_OK)
+        // no configuration yet: the project suggests one
+        if (debug_configure_impl (debug, edit, TRUE) != MC_EPR_OK)
             return MC_EPR_FAILED;
         launch = debug_active_launch (debug);
     }
+    if (debug->start_after_build)
+        return MC_EPR_OK;  // the build is going on: the start comes after it
+    if (launch->build && !debug->built_for_start)
+    {
+        GVariant *reply = debug_build_call (debug, "run", "root", debug->project_dir);
+        gboolean started = FALSE;
+
+        if (reply != NULL)
+        {
+            (void) g_variant_lookup (reply, "started", "b", &started);
+            g_variant_unref (reply);
+        }
+        if (started)
+        {
+            debug->start_after_build = TRUE;
+            (void) debug_session_show (debug, NULL);
+            debug_session_refresh (debug);
+            return MC_EPR_OK;
+        }
+        if (reply != NULL)
+            return MC_EPR_FAILED;  // the build plugin is there, but did not build
+    }
+    debug->built_for_start = FALSE;
     if (debug->host->save_modified_files != NULL
         && !debug->host->save_modified_files (debug->host, debug->project_dir))
         return MC_EPR_FAILED;
@@ -2875,6 +3131,35 @@ debug_stop (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+/* The build before a start is done: the start goes on, or the errors are shown */
+static void
+debug_build_finished (const char *name, const char *signal, GVariant *args, void *user_data)
+{
+    debugger_t *debug = (debugger_t *) user_data;
+    gboolean ok = FALSE;
+    const char *root = NULL;
+
+    (void) name;
+    if (strcmp (signal, "finished") != 0 || !debug->start_after_build)
+        return;
+    (void) g_variant_lookup (args, "ok", "b", &ok);
+    (void) g_variant_lookup (args, "root", "&s", &root);
+    if (g_strcmp0 (root, debug->project_dir) != 0)
+        return;
+    debug->start_after_build = FALSE;
+    debug_session_refresh (debug);
+    if (!ok)
+    {
+        debug_error (debug,
+                     _ ("The build failed: the lines with errors are marked, and\n"
+                        "Alt-Shift-J goes from one to the next."));
+        return;
+    }
+    debug->built_for_start = TRUE;
+    (void) debug_start (debug, NULL);
+    debug->built_for_start = FALSE;
+}
+
 static void *
 debug_open (mc_editor_host_t *host, void *editor_dialog)
 {
@@ -2898,6 +3183,7 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->pty_master = -1;
     debug->pty_slave = -1;
     host->commands_register (host, DEBUG_KEYMAP_SECTION, N_ ("&Debugger"), debug_commands);
+    debug->build_signal = host->service_connect (host, "build", debug_build_finished, debug);
     for (i = 0; i < DEBUG_CMD_COUNT; i++)
         debug->commands[i] = host->command_id (host, debug_commands[i].name);
     for (i = 0; i < DEBUG_MARK_COUNT; i++)
@@ -2927,6 +3213,8 @@ debug_close (void *data)
     g_string_free (debug->watches_text, TRUE);
     g_free (debug->project_dir);
     g_free (debug->current_file);
+    if (debug->build_signal != 0)
+        debug->host->service_disconnect (debug->host, debug->build_signal);
     g_free (debug->current_func);
     g_ptr_array_free (debug->requests, TRUE);
     g_ptr_array_free (debug->locals, TRUE);
