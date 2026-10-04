@@ -25,6 +25,9 @@
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
+/* the commands of the menu Window that go to the windows of the plugins */
+#define EDIT_WINDOW_KIND_BASE       900000L
+
 #define REDRAW_LINE                 (1 << 0)
 #define REDRAW_LINE_ABOVE           (1 << 1)
 #define REDRAW_LINE_BELOW           (1 << 2)
@@ -201,6 +204,8 @@ void edit_mark_current_line_cmd (WEdit *edit);
 void edit_set_markers (WEdit *edit, off_t m1, off_t m2, long c1, long c2);
 void edit_push_markers (WEdit *edit);
 gboolean edit_plugin_handle_action (WDialog *h, long command, WEdit *edit);
+/* the entries of the menu Window for the windows of the plugins (EDIT_WINDOW_KIND_BASE) */
+GList *edit_window_kinds_menu (WDialog *h);
 gboolean edit_plugin_configure (WDialog *h, long command, WEdit *edit);
 gboolean edit_plugin_handle_key (WDialog *h, int key, WEdit *edit);
 

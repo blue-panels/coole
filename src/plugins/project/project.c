@@ -1662,6 +1662,49 @@ project_call (void *data, const char *method, GVariant *args, GError **error)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The tree in the menu Window */
+static mc_ep_window_state_t
+project_tree_state (void *data)
+{
+    project_t *project = (project_t *) data;
+
+    if (project->tree == NULL)
+        return MC_EP_WINDOW_CLOSED;
+    return project->host->window_current (project->host) == project->tree ? MC_EP_WINDOW_FOCUSED
+                                                                          : MC_EP_WINDOW_OPEN;
+}
+
+static void
+project_tree_show (void *data)
+{
+    project_t *project = (project_t *) data;
+
+    if (project->tree != NULL)
+        project->host->window_show (project->host, project->tree);
+    else
+        project_tree_toggle (project);
+}
+
+static void
+project_tree_hide (void *data)
+{
+    project_t *project = (project_t *) data;
+
+    if (project->tree != NULL)
+        (void) project_tree_close (&project->tree->window);
+}
+
+static const mc_ep_window_kind_t project_tree_kind = {
+    .label = N_ ("Project tr&ee"),
+    .section = PROJECT_KEYMAP_SECTION,
+    .command = "ProjectTree",
+    .state = project_tree_state,
+    .show = project_tree_show,
+    .close = project_tree_hide,
+};
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void *
 project_open (mc_editor_host_t *host, void *editor_dialog)
 {
@@ -1676,6 +1719,8 @@ project_open (mc_editor_host_t *host, void *editor_dialog)
     project->glyph_open =
         mc_skin_get ("widget-editor", "tree-open-char", mc_global.utf8_display ? "\u25bc" : "-");
     host->commands_register (host, PROJECT_KEYMAP_SECTION, N_ ("&Project"), project_commands);
+    if (host->window_kind != NULL)
+        host->window_kind (host, &project_tree_kind, project);
     for (i = 0; i < PROJECT_CMD_COUNT; i++)
         project->commands[i] = host->command_id (host, project_commands[i].name);
     project->service = host->service_register (host, PROJECT_SERVICE, project_call, project, NULL);
@@ -1725,7 +1770,6 @@ static const mc_ep_cmd_menu_entry_t project_menu[] = {
     { MC_EP_MENU_FILE, N_ ("Recent files of project..."), PROJECT_ACT_RECENT, NULL },
     { MC_EP_MENU_FILE, N_ ("Open project..."), PROJECT_ACT_OPEN_PROJECT, NULL },
     { MC_EP_MENU_NAVIGATE, N_ ("Header or source"), PROJECT_ACT_ALTERNATE, NULL },
-    { MC_EP_MENU_PLUGINS, N_ ("Project &tree"), PROJECT_ACT_TREE, "Alt-Shift-T" },
 };
 
 static const mc_editor_plugin_t project_plugin = {

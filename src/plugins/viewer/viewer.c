@@ -40,12 +40,12 @@
  *    show       id, focus
  *    hide       id
  *    close      id
- *    info       id -> cols, lines, top, total, visible
+ *    info       id -> cols, lines, top, total, visible, focused
  *    add_type   type, suffixes (strings), starts (strings)
  *
  *  Signal "closed", id: the user closed the window.
  *
- *  Preview: Ctrl-Alt-P, or Plugins > Preview, shows a window "Preview" at the right of the file,
+ *  Preview: Ctrl-Alt-P, or Window > Preview, shows a window "Preview" at the right of the file,
  *  whatever the file is, and follows it: its text as it changes, its cursor, the file window that
  *  comes to the front.  The renderers name the types they know when the viewer asks with the
  *  signal "types": add_type, the type, the ends of the names of its files (".xml") and the
@@ -318,8 +318,12 @@ viewer_window_destroyed (void *data)
 static void
 viewer_show (viewer_t *v, WEditWindow *win, gboolean focus, void *prev)
 {
+    // a window on the screen has its room already
+    const gboolean hidden = !widget_get_state (CONST_WIDGET (win), WST_VISIBLE);
+
     v->host->window_show (v->host, win);
-    v->host->window_make_room (v->host, win);
+    if (hidden)
+        v->host->window_make_room (v->host, win);
     if (!focus && prev != NULL && prev != win)
         v->host->window_show (v->host, prev);
 }
@@ -498,6 +502,8 @@ viewer_call (void *data, const char *method, GVariant *args, GError **error)
         g_variant_dict_insert (&dict, "total", "x", (gint64) edit_text_window_lines (win));
         g_variant_dict_insert (&dict, "visible", "b",
                                widget_get_state (CONST_WIDGET (win), WST_VISIBLE));
+        g_variant_dict_insert (&dict, "focused", "b",
+                               v->host->window_current (v->host) == (void *) win);
         return g_variant_dict_end (&dict);
     }
     else
@@ -865,11 +871,53 @@ viewer_plugin_handle_event (void *plugin_data, void *edit, int event_id, void *p
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The Preview in the menu Window */
+static mc_ep_window_state_t
+preview_kind_state (void *data)
+{
+    viewer_t *v = (viewer_t *) data;
+
+    if (!preview_shown (v))
+        return MC_EP_WINDOW_CLOSED;
+    return v->host->window_current (v->host) == (void *) preview_window (v) ? MC_EP_WINDOW_FOCUSED
+                                                                            : MC_EP_WINDOW_OPEN;
+}
+
+static void
+preview_kind_show (void *data)
+{
+    viewer_t *v = (viewer_t *) data;
+
+    if (!preview_shown (v))
+        (void) preview_toggle (v, NULL);
+    else
+        v->host->window_show (v->host, preview_window (v));
+}
+
+static void
+preview_kind_close (void *data)
+{
+    viewer_t *v = (viewer_t *) data;
+
+    if (preview_shown (v))
+        (void) preview_toggle (v, NULL);
+}
+
+static const mc_ep_window_kind_t preview_window_kind = {
+    .label = N_ ("Pre&view"),
+    .state = preview_kind_state,
+    .show = preview_kind_show,
+    .close = preview_kind_close,
+};
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void *
 viewer_plugin_open (mc_editor_host_t *host, void *editor_dialog)
 {
     viewer_t *v;
     GError *error = NULL;
+    char *key_label = NULL;
 
     (void) editor_dialog;
 
@@ -878,7 +926,8 @@ viewer_plugin_open (mc_editor_host_t *host, void *editor_dialog)
 
     v = g_new0 (viewer_t, 1);
     v->host = host;
-    v->key = mc_plugin_prefs_load_hotkey (PREVIEW_CONFIG, "Preview", "key", PREVIEW_KEY, 0, NULL);
+    v->key =
+        mc_plugin_prefs_load_hotkey (PREVIEW_CONFIG, "Preview", "key", PREVIEW_KEY, 0, &key_label);
     v->windows = g_hash_table_new_full (g_int64_hash, g_int64_equal, g_free, NULL);
     v->suffixes = g_ptr_array_new_with_free_func (preview_kind_free);
     v->starts = g_ptr_array_new_with_free_func (preview_kind_free);
@@ -891,8 +940,17 @@ viewer_plugin_open (mc_editor_host_t *host, void *editor_dialog)
         g_ptr_array_free (v->suffixes, TRUE);
         g_hash_table_destroy (v->windows);
         g_free (v);
+        g_free (key_label);
         return NULL;
     }
+    if (host->window_kind != NULL)
+    {
+        mc_ep_window_kind_t kind = preview_window_kind;
+
+        kind.shortcut = key_label;
+        host->window_kind (host, &kind, v);
+    }
+    g_free (key_label);
 
     return v;
 }

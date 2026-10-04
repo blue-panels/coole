@@ -279,6 +279,19 @@ What the editor provides to the plugin, passed to open():
   save_modified_files(host, project_root)
                              offer to save all modified editor files
                              within that root; FALSE cancels the launch
+  window_kind(host, kind, data)
+                             a window the plugin opens, in the Window
+                             menu, from open(): mc_ep_window_kind_t
+                             with its label, the keymap section and
+                             command whose key the menu shows (else a
+                             shortcut text), and state(), show() and
+                             close() called with data.  state() says
+                             MC_EP_WINDOW_CLOSED, _OPEN (behind another)
+                             or _FOCUSED; the entry shows a closed
+                             window, brings one behind to the front,
+                             and closes the one in front.  An open one
+                             is marked with '*'.  The menu is made again
+                             whenever it drops.
 
 Fields:
 
@@ -379,9 +392,10 @@ Top-level menu integration:
 Each entry sets:
 
     menu_name        MC_EP_MENU_FILE, MC_EP_MENU_COMMAND,
-                     MC_EP_MENU_NAVIGATE, or MC_EP_MENU_PLUGINS for the
-                     windows of the plugin, which come after the
-                     plugins of the Plugins menu; any other name is a menu of
+                     MC_EP_MENU_NAVIGATE, or MC_EP_MENU_PLUGINS for
+                     entries after the plugins of the Plugins menu (a
+                     window goes to the Window menu with window_kind()
+                     instead); any other name is a menu of
                      the plugins' own, made before Window, with that
                      name as its title: N_("&Debug"), whose & letter
                      with Alt drops it.  The scripts add to it by the

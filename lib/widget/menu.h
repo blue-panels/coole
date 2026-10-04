@@ -34,6 +34,7 @@ typedef struct WMenuBar
     GList *menu;                    // The actual menus
     guint current;                  // Current menu on the top bar
     unsigned long previous_widget;  // Selected widget ID before activating menu
+    int remade;                     // the menu made again for this drop, -1 for none
 } WMenuBar;
 
 /*** global variables defined in .c file *********************************************************/
@@ -48,6 +49,8 @@ void menu_entry_free (menu_entry_t *me);
 
 menu_t *menu_new (const char *name, GList *entries, const char *help_node);
 void menu_set_name (menu_t *menu, const char *name);
+/* The entries of a menu made again whenever it drops: the menu of the windows, for one */
+void menu_set_remake (menu_t *menu, GList *(*remake) (void *data), void *data);
 void menu_free (menu_t *menu);
 
 WMenuBar *menubar_new (GList *menu);

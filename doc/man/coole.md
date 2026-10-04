@@ -744,10 +744,16 @@ in the ini file.
 : The windows that are open, to go to one of them. See
 [Open files](#open-files).
 
+Under them come the windows of the plugins: the tree of the project, the
+output of the build, the panel and the console of the debugger, the
+terminal, the Preview. An entry opens its window, brings it to the front
+when it is behind another, and closes it when it is in front already; an
+open one is marked with *\**. A plugin that is switched off has no entry.
+
 ## Plugins menu
 
 The editor plugins that carry an entry of their own, the spell checker for
-one. A plugin that is switched off in
+one; their windows are in the [Window menu](#window-menu). A plugin that is switched off in
 [Manage plugins](#manage-plugins)
 is not in the menu.
 
@@ -1380,7 +1386,7 @@ output. See [Terminal](terminal.md#terminal).
 The viewer plugin shows the file the way it is meant to read, whatever the
 file is, in a window named Preview at the right of it.
 **Ctrl-Alt-p**,
-or Preview in the Plugins menu, shows and hides it. The file keeps the
+or Preview in the Window menu, shows and hides it. The file keeps the
 focus; the Preview is drawn again as the text changes, follows the cursor,
 and shows the file window that comes to the front. The window is moved,
 resized and closed like the window of a file. Once it has the focus, it has

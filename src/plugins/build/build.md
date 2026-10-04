@@ -32,7 +32,7 @@ bindings → Editor → Build**, or in the *[build]* section of the keymap.
 **Alt-Shift-B**
 : Build the project: the modified files of it are saved first, and the
 output comes in the window **Build** at the bottom of the screen;
-**Plugins → Build output** shows it again.
+**Window → Build output** shows it again.
 
 **Alt-Shift-J**
 : Go to the next error, or to the next warning when there is no error.

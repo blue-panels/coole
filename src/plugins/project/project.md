@@ -47,7 +47,7 @@ says so.
 
 **Alt-Shift-T**
 : Show the tree of the project, give it the focus, and hide it; it is
-**Plugins → Project tree** too.
+**Window → Project tree** too.
 
 **Alt-Shift-A**
 : Switch between a source and its header: *calc.c* and *calc.h*, next to it

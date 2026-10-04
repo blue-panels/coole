@@ -92,7 +92,14 @@ typedef struct
     mc_editor_host_t *host;
     GPtrArray *instances; /* editor_plugin_instance_t* */
     GArray *later;        /* editor_later_t: the calls of the plugins for when the editor is idle */
+    GPtrArray *window_kinds; /* editor_window_kind_t: the windows of the plugins, menu Window */
 } editor_plugin_ctx_t;
+
+typedef struct
+{
+    mc_ep_window_kind_t kind; /* its strings are copies */
+    void *data;
+} editor_window_kind_t;
 
 typedef struct
 {
@@ -1206,6 +1213,71 @@ editor_host_save_modified_files_impl (mc_editor_host_t *host, const char *projec
 /* --------------------------------------------------------------------------------------------- */
 
 static void
+editor_window_kind_free (gpointer p)
+{
+    editor_window_kind_t *k = (editor_window_kind_t *) p;
+
+    g_free ((char *) k->kind.label);
+    g_free ((char *) k->kind.section);
+    g_free ((char *) k->kind.command);
+    g_free ((char *) k->kind.shortcut);
+    g_free (k);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_window_kind_impl (mc_editor_host_t *host, const mc_ep_window_kind_t *kind, void *data)
+{
+    editor_plugin_ctx_t *ctx = (editor_plugin_ctx_t *) DIALOG (host->host_data)->data.p;
+    editor_window_kind_t *k;
+
+    if (ctx == NULL || kind == NULL || kind->label == NULL || kind->state == NULL
+        || kind->show == NULL)
+        return;
+    k = g_new0 (editor_window_kind_t, 1);
+    k->kind = *kind;
+    k->kind.label = g_strdup (kind->label);
+    k->kind.section = g_strdup (kind->section);
+    k->kind.command = g_strdup (kind->command);
+    k->kind.shortcut = g_strdup (kind->shortcut);
+    k->data = data;
+    g_ptr_array_add (ctx->window_kinds, k);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The key of a command of a keymap section as the menus say it: Alt-Shift-G for the Alt-G of the
+   keymap, Shift-F8 for F18 */
+static char *
+editor_command_caption (const char *section, const char *command)
+{
+    const global_keymap_t *map;
+    const char *found = NULL;
+    long id;
+    size_t i;
+
+    if (section == NULL || command == NULL)
+        return NULL;
+    map = strcmp (section, "editor") == 0 ? editor_map : keymap_section_map (section);
+    id = keybind_lookup_action (command);
+    if (map == NULL || id == CK_IgnoreKey)
+        return NULL;
+    for (i = 0; map[i].key != 0 && found == NULL; i++)
+        if (map[i].command == id && map[i].caption[0] != '\0')
+            found = map[i].caption;
+    if (found == NULL)
+        return NULL;
+    if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
+        return g_strdup_printf ("Alt-Shift-%c", found[4]);
+    if ((found[0] == 'F' || found[0] == 'f') && atoi (found + 1) > 10 && atoi (found + 1) <= 20)
+        return g_strdup_printf ("Shift-F%d", atoi (found + 1) - 10);
+    return g_strdup (found);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
 editor_plugin_instance_free (gpointer data)
 {
     editor_plugin_instance_t *inst = (editor_plugin_instance_t *) data;
@@ -1275,6 +1347,8 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_close = editor_host_window_close_impl;
     ctx->host->show_location = editor_host_show_location_impl;
     ctx->host->save_modified_files = editor_host_save_modified_files_impl;
+    ctx->host->window_kind = editor_host_window_kind_impl;
+    ctx->window_kinds = g_ptr_array_new_with_free_func (editor_window_kind_free);
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
     // the plugins reach it from open(): call_later() for one
     edit_dlg->data.p = ctx;
@@ -1326,6 +1400,7 @@ editor_plugin_ctx_destroy (WDialog *edit_dlg)
     if (ctx == NULL)
         return;
 
+    g_ptr_array_free (ctx->window_kinds, TRUE);
     g_ptr_array_free (ctx->instances, TRUE);
     if (ctx->later != NULL)
         g_array_free (ctx->later, TRUE);
@@ -1389,6 +1464,22 @@ edit_plugin_handle_action (WDialog *edit_dlg, long command, WEdit *edit)
     if (edit == NULL && GROUP (edit_dlg)->current != NULL
         && edit_widget_is_editor (CONST_WIDGET (GROUP (edit_dlg)->current->data)))
         edit = EDIT (GROUP (edit_dlg)->current->data);
+
+    // a window of a plugin, from the menu Window: open it, to the front, or close it
+    if (command >= EDIT_WINDOW_KIND_BASE && command < EDIT_WINDOW_KIND_BASE + 1000)
+    {
+        const guint k_idx = (guint) (command - EDIT_WINDOW_KIND_BASE);
+        const editor_window_kind_t *k;
+
+        if (k_idx >= ctx->window_kinds->len)
+            return FALSE;
+        k = g_ptr_array_index (ctx->window_kinds, k_idx);
+        if (k->kind.state (k->data) == MC_EP_WINDOW_FOCUSED && k->kind.close != NULL)
+            k->kind.close (k->data);
+        else
+            k->kind.show (k->data);
+        return TRUE;
+    }
 
     /* Per-action command from a named menu (Navigate, Command, etc.) */
     if (command >= MC_EDITOR_PLUGIN_ACTION_BASE)
@@ -3164,3 +3255,34 @@ edit_add_window (WDialog *h, const WRect *r, const edit_arg_t *arg)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The entries of the menu Window for the windows of the plugins, '*' before an open one, with a
+   separator before them; NULL when there are none */
+GList *
+edit_window_kinds_menu (WDialog *h)
+{
+    editor_plugin_ctx_t *ctx = h != NULL ? (editor_plugin_ctx_t *) h->data.p : NULL;
+    GList *entries = NULL;
+    guint i;
+
+    if (ctx == NULL || ctx->window_kinds->len == 0)
+        return NULL;
+    entries = g_list_append (entries, menu_separator_new ());
+    for (i = 0; i < ctx->window_kinds->len; i++)
+    {
+        const editor_window_kind_t *k = g_ptr_array_index (ctx->window_kinds, i);
+        const gboolean open = k->kind.state (k->data) != MC_EP_WINDOW_CLOSED;
+        char *label = g_strconcat (open ? "* " : "  ", _ (k->kind.label), (char *) NULL);
+        char *key = editor_command_caption (k->kind.section, k->kind.command);
+        menu_entry_t *me = menu_entry_new (label, EDIT_WINDOW_KIND_BASE + (long) i);
+
+        if (key != NULL || k->kind.shortcut != NULL)
+            menu_entry_set_shortcut (me, key != NULL ? key : k->kind.shortcut);
+        entries = g_list_append (entries, me);
+        g_free (key);
+        g_free (label);
+    }
+    return entries;
+}

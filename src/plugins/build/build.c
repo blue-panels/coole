@@ -725,6 +725,8 @@ build_call (void *data, const char *method, GVariant *args, GError **error)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static const mc_ep_window_kind_t build_output_kind;
+
 static void *
 build_open (mc_editor_host_t *host, void *editor_dialog)
 {
@@ -739,6 +741,8 @@ build_open (mc_editor_host_t *host, void *editor_dialog)
     build->diagnostics = g_ptr_array_new_with_free_func (build_diagnostic_free_cb);
     build->current = -1;
     host->commands_register (host, BUILD_KEYMAP_SECTION, N_ ("&Build"), build_commands);
+    if (host->window_kind != NULL)
+        host->window_kind (host, &build_output_kind, build);
     for (i = 0; i < BUILD_CMD_COUNT; i++)
         build->commands[i] = host->command_id (host, build_commands[i].name);
     for (i = 0; i < BUILD_MARK_COUNT; i++)
@@ -805,6 +809,74 @@ build_act_output (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+/* The output in the menu Window */
+static mc_ep_window_state_t
+build_output_state (void *data)
+{
+    build_t *build = (build_t *) data;
+    GVariantDict dict;
+    GVariant *reply;
+    gboolean visible = FALSE, focused = FALSE;
+
+    if (build->window == 0)
+        return MC_EP_WINDOW_CLOSED;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", build->window);
+    reply = build_viewer (build, "info", &dict);
+    if (reply == NULL)
+    {
+        // closed by the user
+        build->window = 0;
+        return MC_EP_WINDOW_CLOSED;
+    }
+    (void) g_variant_lookup (reply, "visible", "b", &visible);
+    (void) g_variant_lookup (reply, "focused", "b", &focused);
+    g_variant_unref (reply);
+    return !visible ? MC_EP_WINDOW_CLOSED : focused ? MC_EP_WINDOW_FOCUSED : MC_EP_WINDOW_OPEN;
+}
+
+static void
+build_output_raise (void *data)
+{
+    build_t *build = (build_t *) data;
+    GVariantDict dict;
+    GVariant *reply;
+
+    (void) build_act_output (data, NULL);
+    if (build->window == 0)
+        return;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", build->window);
+    g_variant_dict_insert (&dict, "focus", "b", TRUE);
+    reply = build_viewer (build, "show", &dict);
+    if (reply != NULL)
+        g_variant_unref (reply);
+}
+
+static void
+build_output_close (void *data)
+{
+    build_t *build = (build_t *) data;
+    GVariantDict dict;
+    GVariant *reply;
+
+    if (build->window == 0)
+        return;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", build->window);
+    reply = build_viewer (build, "close", &dict);
+    if (reply != NULL)
+        g_variant_unref (reply);
+    build->window = 0;
+}
+
+static const mc_ep_window_kind_t build_output_kind = {
+    .label = N_ ("&Build output"),
+    .state = build_output_state,
+    .show = build_output_raise,
+    .close = build_output_close,
+};
+
 static const mc_ep_action_t build_actions[] = {
     { "Build", build_act_run },           { "Next error", build_act_next },
     { "Previous error", build_act_prev }, { "Configure", build_act_configure },
@@ -817,7 +889,6 @@ static const mc_ep_cmd_menu_entry_t build_menu[] = {
     { MC_EP_MENU_COMMAND, N_ ("Next build error"), BUILD_ACT_NEXT, NULL },
     { MC_EP_MENU_COMMAND, N_ ("Previous build error"), BUILD_ACT_PREV, NULL },
     { MC_EP_MENU_COMMAND, N_ ("Build command..."), BUILD_ACT_CONFIGURE, NULL },
-    { MC_EP_MENU_PLUGINS, N_ ("&Build output"), BUILD_ACT_OUTPUT, NULL },
 };
 
 static const mc_editor_plugin_t build_plugin = {

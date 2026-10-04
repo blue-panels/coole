@@ -4169,6 +4169,111 @@ debug_build_finished (const char *name, const char *signal, GVariant *args, void
     debug->built_for_start = FALSE;
 }
 
+/* The panel and the console in the menu Window */
+static mc_ep_window_state_t
+debug_panel_state (void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+
+    if (debug->session_window == NULL)
+        return MC_EP_WINDOW_CLOSED;
+    return debug->host->window_current (debug->host) == (void *) debug->session_window
+        ? MC_EP_WINDOW_FOCUSED
+        : MC_EP_WINDOW_OPEN;
+}
+
+static void
+debug_panel_show (void *data)
+{
+    (void) debug_session_show (data, NULL);
+}
+
+static void
+debug_panel_close (void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+
+    if (debug->session_window != NULL)
+        (void) debug->host->window_close (debug->host, debug->session_window);
+}
+
+static mc_ep_window_state_t
+debug_console_state (void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+    GVariantDict dict;
+    GVariant *reply;
+    gboolean visible = FALSE, focused = FALSE;
+
+    if (debug->console_window == 0)
+        return MC_EP_WINDOW_CLOSED;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", debug->console_window);
+    reply = debug_viewer_call (debug, "info", g_variant_dict_end (&dict));
+    if (reply == NULL)
+    {
+        // closed by the user
+        debug->console_window = 0;
+        return MC_EP_WINDOW_CLOSED;
+    }
+    (void) g_variant_lookup (reply, "visible", "b", &visible);
+    (void) g_variant_lookup (reply, "focused", "b", &focused);
+    g_variant_unref (reply);
+    return !visible ? MC_EP_WINDOW_CLOSED : focused ? MC_EP_WINDOW_FOCUSED : MC_EP_WINDOW_OPEN;
+}
+
+static void
+debug_console_show (void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+    GVariantDict dict;
+    GVariant *reply;
+
+    (void) debug_show_output (data, NULL);
+    if (debug->console_window == 0)
+        return;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", debug->console_window);
+    g_variant_dict_insert (&dict, "focus", "b", TRUE);
+    reply = debug_viewer_call (debug, "show", g_variant_dict_end (&dict));
+    if (reply != NULL)
+        g_variant_unref (reply);
+}
+
+static void
+debug_console_close (void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+    GVariantDict dict;
+    GVariant *reply;
+
+    if (debug->console_window == 0)
+        return;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", debug->console_window);
+    reply = debug_viewer_call (debug, "close", g_variant_dict_end (&dict));
+    if (reply != NULL)
+        g_variant_unref (reply);
+    debug->console_window = 0;
+}
+
+static const mc_ep_window_kind_t debug_window_kinds[] = {
+    {
+        .label = N_ ("&Debugger panel"),
+        .section = DEBUG_KEYMAP_SECTION,
+        .command = "DebugPanel",
+        .state = debug_panel_state,
+        .show = debug_panel_show,
+        .close = debug_panel_close,
+    },
+    {
+        .label = N_ ("Debug c&onsole"),
+        .state = debug_console_state,
+        .show = debug_console_show,
+        .close = debug_console_close,
+    },
+};
+
 static void *
 debug_open (mc_editor_host_t *host, void *editor_dialog)
 {
@@ -4188,6 +4293,9 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->pty_master = -1;
     debug->pty_slave = -1;
     host->commands_register (host, DEBUG_KEYMAP_SECTION, N_ ("&Debugger"), debug_commands);
+    if (host->window_kind != NULL)
+        for (i = 0; i < (int) G_N_ELEMENTS (debug_window_kinds); i++)
+            host->window_kind (host, &debug_window_kinds[i], debug);
     debug->build_signal = host->service_connect (host, "build", debug_build_finished, debug);
     for (i = 0; i < DEBUG_CMD_COUNT; i++)
         debug->commands[i] = host->command_id (host, debug_commands[i].name);
@@ -4363,8 +4471,6 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("Open proj&ect..."), DEBUG_ACT_OPEN_PROJECT, NULL },
     { DEBUG_MENU, N_ ("Project status..."), DEBUG_ACT_PROJECT_STATUS, NULL },
     // the windows of the debugger, with those of the other plugins
-    { MC_EP_MENU_PLUGINS, N_ ("Debugger &panel"), DEBUG_ACT_SESSION, NULL },
-    { MC_EP_MENU_PLUGINS, N_ ("Debug c&onsole"), DEBUG_ACT_OUTPUT, NULL },
 };
 
 /* The key of a menu entry: of its command, the one the editor has nothing on first, since that

@@ -573,6 +573,37 @@ terminal_toggle (terminal_plugin_t *tp, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The terminal in the menu Window: Ctrl-O does the same */
+static mc_ep_window_state_t
+terminal_kind_state (void *data)
+{
+    const terminal_plugin_t *tp = (const terminal_plugin_t *) data;
+
+    if (tp->win == NULL || !widget_get_state (WIDGET (tp->win), WST_VISIBLE))
+        return MC_EP_WINDOW_CLOSED;
+    return widget_get_state (WIDGET (tp->win), WST_FOCUSED) ? MC_EP_WINDOW_FOCUSED
+                                                            : MC_EP_WINDOW_OPEN;
+}
+
+static void
+terminal_kind_toggle (void *data)
+{
+    terminal_plugin_t *tp = (terminal_plugin_t *) data;
+
+    (void) terminal_toggle (tp, tp->host->window_top_file (tp->host));
+}
+
+static const mc_ep_window_kind_t terminal_kind = {
+    .label = N_ ("Termin&al"),
+    .section = "editor",
+    .command = "Shell",
+    .state = terminal_kind_state,
+    .show = terminal_kind_toggle,
+    .close = terminal_kind_toggle,
+};
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void *
 terminal_plugin_open (mc_editor_host_t *host, void *editor_dialog)
 {
@@ -590,6 +621,8 @@ terminal_plugin_open (mc_editor_host_t *host, void *editor_dialog)
 
     tp = g_new0 (terminal_plugin_t, 1);
     tp->host = host;
+    if (host->window_kind != NULL)
+        host->window_kind (host, &terminal_kind, tp);
 
     return tp;
 }

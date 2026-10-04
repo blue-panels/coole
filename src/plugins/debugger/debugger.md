@@ -126,7 +126,7 @@ The start puts the panel of the debugger at the right of the source, all its
 height, and the console under the source. The panel has the state of the
 program, the local variables of the frame, the watches, the call stack and
 the breakpoints; the console has the output of the program and what GDB
-says. **Plugins → Debugger panel** and **Plugins → Debug console** open them
+says. **Window → Debugger panel** and **Window → Debug console** open them
 again, beside the windows of the other plugins.
 
 In the panel the debugger keys work as in step mode (there F6 and F4 work on
