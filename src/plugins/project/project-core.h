@@ -25,6 +25,10 @@
    Makefile...) up to the home directory, else the directory of the file itself. */
 char *project_find_root (const char *path);
 
+/* Whether a directory is the root of a project by a mark of its own: .coole, .git or a build
+   file, not only the directory of a file found by nothing else */
+gboolean project_is_project (const char *root);
+
 /* The files of a project, names relative to its root, sorted: what git knows and does not ignore
    in a repository, else what is under the root but hidden directories and build trees.  A
    GPtrArray of char *, NULL when the root is no directory. */

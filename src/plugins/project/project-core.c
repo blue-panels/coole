@@ -316,6 +316,16 @@ project_find_root (const char *path)
 
 /* --------------------------------------------------------------------------------------------- */
 
+gboolean
+project_is_project (const char *root)
+{
+    return root != NULL
+        && (project_dir_has (root, ".coole") || project_dir_has (root, ".git")
+            || project_dir_has_build_file (root));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 GPtrArray *
 project_list_files (const char *root)
 {

@@ -40,6 +40,7 @@ test_find_root (void)
     root = project_find_root (file);
     expected = at ("meson");
     g_assert_cmpstr (root, ==, expected);
+    g_assert_true (project_is_project (root));
     g_free (root);
     g_free (expected);
     g_free (file);
@@ -52,6 +53,7 @@ test_find_root (void)
     root = project_find_root (file);
     expected = at ("repo/lib");
     g_assert_cmpstr (root, ==, expected);
+    g_assert_true (project_is_project (root));
     g_free (root);
     g_free (expected);
     g_free (file);
@@ -62,6 +64,8 @@ test_find_root (void)
     root = project_find_root (file);
     expected = at ("loose");
     g_assert_cmpstr (root, ==, expected);
+    // the directory of a file is no project: nothing is made in it
+    g_assert_false (project_is_project (root));
     g_free (root);
     g_free (expected);
     g_free (file);

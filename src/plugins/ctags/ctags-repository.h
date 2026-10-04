@@ -38,6 +38,7 @@ long ctags_entry_resolve_line (const ctags_entry_t *e, const char *file_path);
 
 /* Load a tags file and build indexes.  Returns NULL on failure. */
 ctags_repo_t *ctags_repo_load (const char *tags_path);
+ctags_repo_t *ctags_repo_load_root (const char *tags_path, const char *root_dir);
 
 void ctags_repo_free (ctags_repo_t *repo);
 

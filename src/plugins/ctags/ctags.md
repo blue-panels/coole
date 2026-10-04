@@ -5,20 +5,29 @@
 Jumps to the definition of the name under the cursor, and finds where a name
 is used, from a tags file that ctags built.
 
-**The tags file**
+**The index**
 
-The plugin looks for
-*tags*
-in the directory of the file and in the directories above it, so a tags file
-at the top of a project serves the whole tree. It is built by ctags, for
-example
+The index of a project is kept by the plugin itself: when a file of a
+project is opened (a directory with *.coole*, *.git* or a build file, the
+project the project plugin finds), the plugin indexes it in the background
+with ctags, into *.coole/tags* of the project, and does so again when the
+index is older than the files and whenever a file of the project is saved.
+The files indexed are those of the project: what git knows and does not
+ignore, else what is under it but hidden directories and build trees.
+
+A *tags* file at the root of the project is the user's: it is used as it is
+and not built again by itself; Reindex builds it again. Without a project,
+a *tags* file is looked for in the directory of the file and the directories
+above it. The home directory and the root of the disk are not indexed by
+themselves.
+
+The plugin needs the program ctags, Universal Ctags best:
 
 ```
-ctags -R .
+sudo apt install universal-ctags
 ```
 
-or by the plugin itself: the Reindex repository command runs ctags over the
-project. Without a tags file the commands say so and do nothing.
+When it is not there, a command of the plugin says so, once.
 
 **The keys**
 

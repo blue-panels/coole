@@ -31,6 +31,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+#include <signal.h>
 
 #include "lib/global.h"
 #include "lib/mcconfig.h"
@@ -40,6 +42,7 @@
 #include "lib/util.h"
 #include "lib/widget.h"
 #include "lib/editor-plugin.h"
+#include "lib/plugin-service.h"
 
 #include "src/editor/editwidget.h"
 #include "src/editor/edit-impl.h"
@@ -52,6 +55,8 @@
 #include "ctags-fuzzy.h"
 #include "ctags-ui.h"
 #include "ctags-plugin.h"
+
+#include "src/plugins/project/project-core.h"  // project_find_root (), project_list_files ()
 
 /*** file scope macro definitions ****************************************************************/
 
@@ -85,12 +90,27 @@ typedef struct
     int key;
 } ctags_keybind_t;
 
+/* the index of a project built in the background */
+typedef struct
+{
+    GPid pid;
+    int err_fd;
+    char *root;
+    char *tags_path;
+    char *tmp_path;
+    char *list_path;
+    gboolean again;  // a file was saved meanwhile: build once more
+} ctags_job_t;
+
 typedef struct
 {
     mc_editor_host_t *host;
     GSList *repos; /* GSList<ctags_repo_t*> owned */
     ctags_config_t cfg;
     GArray *keymap;
+    ctags_job_t job;
+    gboolean told_no_ctags;  // that the program is not there, once
+    gboolean quiet;          // what the plugin does by itself, a file opened: it says nothing
 } ctags_data_t;
 
 /*** file scope variables ************************************************************************/
@@ -448,13 +468,304 @@ ctags_resolve_entry_path (ctags_data_t *d, const ctags_entry_t *e)
 /* Repository helpers */
 /* --------------------------------------------------------------------------------------------- */
 
+/* The project of a file: the project plugin's, else the same rules of project-core */
+static char *
+ctags_project_root (ctags_data_t *d, const char *file_path)
+{
+    GVariantDict args;
+    GVariant *reply;
+    char *root = NULL;
+
+    if (file_path == NULL)
+        return NULL;
+    if (d->host->service_call != NULL)
+    {
+        g_variant_dict_init (&args, NULL);
+        g_variant_dict_insert (&args, "file", "s", file_path);
+        reply =
+            d->host->service_call (d->host, "project", "root", g_variant_dict_end (&args), NULL);
+        if (reply != NULL)
+        {
+            (void) g_variant_lookup (reply, "root", "s", &root);
+            g_variant_unref (reply);
+        }
+    }
+    return root != NULL ? root : project_find_root (file_path);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The index of a project: the tags file of its root when it has one, the user's; else
+   .coole/tags, the plugin's own */
+static char *
+ctags_index_path (const char *root, gboolean *own)
+{
+    char *tags = g_build_filename (root, "tags", (char *) NULL);
+
+    *own = !g_file_test (tags, G_FILE_TEST_IS_REGULAR);
+    if (*own)
+    {
+        g_free (tags);
+        tags = g_build_filename (root, ".coole", "tags", (char *) NULL);
+    }
+    return tags;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether a file of the project is newer than its index */
+static gboolean
+ctags_index_stale (const char *root, const char *tags_path)
+{
+    GPtrArray *files;
+    struct stat st;
+    time_t built;
+    gboolean stale = FALSE;
+    guint i;
+
+    if (stat (tags_path, &st) != 0)
+        return TRUE;
+    built = st.st_mtime;
+    files = project_list_files (root);
+    for (i = 0; files != NULL && i < files->len && !stale; i++)
+    {
+        char *path = g_build_filename (root, (char *) g_ptr_array_index (files, i), (char *) NULL);
+
+        stale = stat (path, &st) == 0 && st.st_mtime > built;
+        g_free (path);
+    }
+    if (files != NULL)
+        g_ptr_array_free (files, TRUE);
+    return stale;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A project the plugin does not index by itself: the home directory or the whole disk */
+static gboolean
+ctags_root_too_wide (const char *root)
+{
+    return strcmp (root, "/") == 0 || strcmp (root, g_get_home_dir ()) == 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The index of @tags_path is there, new or built again: the repo takes it */
+static void
+ctags_index_loaded (ctags_data_t *d, const char *root, const char *tags_path)
+{
+    ctags_repo_t *new_repo = ctags_repo_load_root (tags_path, root);
+    GSList *l;
+
+    if (new_repo == NULL)
+        return;
+    for (l = d->repos; l != NULL; l = g_slist_next (l))
+    {
+        ctags_repo_t *repo = (ctags_repo_t *) l->data;
+
+        if (repo->tags_path != NULL && strcmp (repo->tags_path, tags_path) == 0)
+        {
+            // the entries and the index change, the history of the jumps stays
+            g_ptr_array_free (repo->entries, TRUE);
+            ctags_index_free (repo->index);
+            repo->entries = new_repo->entries;
+            repo->index = new_repo->index;
+            new_repo->entries = NULL;
+            new_repo->index = NULL;
+            ctags_repo_free (new_repo);
+            return;
+        }
+    }
+    d->repos = g_slist_prepend (d->repos, new_repo);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void ctags_index_start (ctags_data_t *d, const char *root, const char *tags_path);
+
+static void
+ctags_job_clear (ctags_job_t *job)
+{
+    if (job->list_path != NULL)
+        (void) unlink (job->list_path);
+    g_clear_pointer (&job->root, g_free);
+    g_clear_pointer (&job->tags_path, g_free);
+    g_clear_pointer (&job->tmp_path, g_free);
+    g_clear_pointer (&job->list_path, g_free);
+    job->pid = 0;
+    job->err_fd = -1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What ctags says goes nowhere; its end is the end of the build */
+static int
+ctags_job_ready (int fd, void *data)
+{
+    ctags_data_t *d = (ctags_data_t *) data;
+    ctags_job_t *job = &d->job;
+    char buf[1024];
+    ssize_t n = read (fd, buf, sizeof (buf));
+    int status = 0;
+    gboolean again;
+    char *root, *tags_path;
+
+    if (n > 0 || (n < 0 && (errno == EAGAIN || errno == EINTR)))
+        return 0;
+
+    delete_select_channel (fd);
+    close (fd);
+    (void) waitpid (job->pid, &status, 0);
+    g_spawn_close_pid (job->pid);
+    if (WIFEXITED (status) && WEXITSTATUS (status) == 0
+        && rename (job->tmp_path, job->tags_path) == 0)
+    {
+        ctags_index_loaded (d, job->root, job->tags_path);
+        if (d->host->redraw != NULL)
+            d->host->redraw (d->host);
+    }
+    else
+        (void) unlink (job->tmp_path);
+
+    again = job->again;
+    root = g_strdup (job->root);
+    tags_path = g_strdup (job->tags_path);
+    ctags_job_clear (job);
+    job->again = FALSE;
+    if (again)
+        ctags_index_start (d, root, tags_path);
+    g_free (root);
+    g_free (tags_path);
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Build the index of a project in the background, from the files of the project: what git
+   knows, else what is under the root but hidden directories and build trees */
+static void
+ctags_index_start (ctags_data_t *d, const char *root, const char *tags_path)
+{
+    ctags_job_t *job = &d->job;
+    const char *cmd =
+        d->cfg.ctags_cmd != NULL && *d->cfg.ctags_cmd != '\0' ? d->cfg.ctags_cmd : "ctags";
+    char *program, *list = NULL, *dir;
+    char **args = NULL;
+    GPtrArray *argv, *files;
+    GString *names;
+    GError *error = NULL;
+    int fd, err, i;
+
+    if (job->pid != 0)
+    {
+        // one at a time: the one going on is followed by another
+        if (strcmp (job->root, root) == 0)
+            job->again = TRUE;
+        return;
+    }
+    program = g_find_program_in_path (cmd);
+    if (program == NULL)
+    {
+        // told when a command of the plugin wants the index, not on every start
+        if (!d->told_no_ctags && !d->quiet)
+            message (D_NORMAL, _ ("Ctags"),
+                     _ ("The program %s is not there: the symbols of the project are not indexed.\n"
+                        "Universal Ctags is in the packages of most systems, for example\n\n"
+                        "sudo apt install universal-ctags"),
+                     cmd);
+        if (!d->quiet)
+            d->told_no_ctags = TRUE;
+        return;
+    }
+
+    files = project_list_files (root);
+    if (files == NULL || files->len == 0)
+    {
+        if (files != NULL)
+            g_ptr_array_free (files, TRUE);
+        g_free (program);
+        return;
+    }
+    names = g_string_new (NULL);
+    for (i = 0; i < (int) files->len; i++)
+    {
+        g_string_append (names, g_ptr_array_index (files, i));
+        g_string_append_c (names, '\n');
+    }
+    g_ptr_array_free (files, TRUE);
+    fd = g_file_open_tmp ("coole-ctags-XXXXXX", &list, NULL);
+    if (fd < 0 || write (fd, names->str, names->len) != (ssize_t) names->len)
+    {
+        if (fd >= 0)
+            close (fd);
+        if (list != NULL)
+            (void) unlink (list);
+        g_free (list);
+        g_string_free (names, TRUE);
+        g_free (program);
+        return;
+    }
+    close (fd);
+    g_string_free (names, TRUE);
+
+    dir = g_path_get_dirname (tags_path);
+    (void) g_mkdir_with_parents (dir, 0700);
+    g_free (dir);
+    job->tmp_path = g_strdup_printf ("%s.tmp.XXXXXX", tags_path);
+    fd = mkstemp (job->tmp_path);
+    if (fd >= 0)
+        close (fd);
+
+    argv = g_ptr_array_new ();
+    g_ptr_array_add (argv, program);
+    if (d->cfg.ctags_args != NULL && *d->cfg.ctags_args != '\0'
+        && g_shell_parse_argv (d->cfg.ctags_args, NULL, &args, NULL))
+        for (i = 0; args[i] != NULL; i++)
+            g_ptr_array_add (argv, args[i]);
+    g_ptr_array_add (argv, (char *) "-f");
+    g_ptr_array_add (argv, job->tmp_path);
+    g_ptr_array_add (argv, (char *) "-L");
+    g_ptr_array_add (argv, list);
+    g_ptr_array_add (argv, NULL);
+
+    if (fd < 0
+        || !g_spawn_async_with_pipes (root, (char **) argv->pdata, NULL,
+                                      G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_STDOUT_TO_DEV_NULL, NULL,
+                                      NULL, &job->pid, NULL, NULL, &err, &error))
+    {
+        g_clear_error (&error);
+        if (job->tmp_path != NULL)
+            (void) unlink (job->tmp_path);
+        (void) unlink (list);
+        g_free (list);
+        g_clear_pointer (&job->tmp_path, g_free);
+        job->pid = 0;
+    }
+    else
+    {
+        job->root = g_strdup (root);
+        job->tags_path = g_strdup (tags_path);
+        job->list_path = list;
+        job->err_fd = err;
+        (void) fcntl (err, F_SETFL, fcntl (err, F_GETFL) | O_NONBLOCK);
+        add_select_channel (err, ctags_job_ready, d);
+    }
+    g_ptr_array_free (argv, TRUE);
+    g_strfreev (args);
+    g_free (program);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* Ensure at least one repo is loaded for @file_path.
- * If auto_discover is on, tries to find and load a tags file. */
+ * If auto_discover is on: the index of the project of the file, built in the background when it
+ * is not there or older than the files; else a tags file of a directory above. */
 static void
 ctags_ensure_repo (ctags_data_t *d, const char *file_path)
 {
-    char *tags;
+    char *tags, *root;
     ctags_repo_t *repo;
+    gboolean own;
 
     if (!d->cfg.auto_discover)
         return;
@@ -462,6 +773,33 @@ ctags_ensure_repo (ctags_data_t *d, const char *file_path)
     /* Already have a repo owning this file? */
     if (file_path != NULL && ctags_repos_find_for_file (d->repos, file_path) != NULL)
         return;
+
+    /* The index of the project */
+    root = ctags_project_root (d, file_path);
+    if (root != NULL)
+    {
+        tags = ctags_index_path (root, &own);
+        if (g_file_test (tags, G_FILE_TEST_IS_REGULAR))
+        {
+            ctags_index_loaded (d, root, tags);
+            // the plugin's own index follows the files; the user's tags is the user's
+            if (own && ctags_index_stale (root, tags))
+                ctags_index_start (d, root, tags);
+            g_free (tags);
+            g_free (root);
+            return;
+        }
+        // a directory that is no project gets no .coole of the plugin's
+        if (!ctags_root_too_wide (root) && project_is_project (root))
+        {
+            ctags_index_start (d, root, tags);
+            g_free (tags);
+            g_free (root);
+            return;
+        }
+        g_free (tags);
+        g_free (root);
+    }
 
     /* Search parent directories */
     tags = ctags_repo_discover (file_path != NULL ? file_path : ".");
@@ -1419,6 +1757,30 @@ ctags_reindex (ctags_data_t *d, WEdit *edit)
         d->host->get_current_file != NULL ? d->host->get_current_file (d->host, edit) : NULL;
 
     ctags_ensure_repo (d, file);
+
+    /* the project's own index: built again in the background */
+    {
+        char *root = file != NULL ? ctags_project_root (d, file) : NULL;
+
+        if (root != NULL && !ctags_root_too_wide (root))
+        {
+            gboolean own;
+            char *tags = ctags_index_path (root, &own);
+
+            if (own)
+            {
+                ctags_index_start (d, root, tags);
+                if (d->job.pid != 0)
+                    message (D_NORMAL, _ ("Ctags"), _ ("Indexing %s in the background."), root);
+                g_free (tags);
+                g_free (root);
+                g_free (file);
+                return;
+            }
+            g_free (tags);
+        }
+        g_free (root);
+    }
     g_free (file);
 
     if (d->repos == NULL)
@@ -1698,6 +2060,7 @@ ctags_plugin_open (mc_editor_host_t *host, void *editor_dialog)
     d = g_new0 (ctags_data_t, 1);
     d->host = host;
     d->repos = NULL;
+    d->job.err_fd = -1;
     ctags_config_load (&d->cfg);
     d->keymap = ctags_keymap_load ();
     return d;
@@ -1713,6 +2076,17 @@ ctags_plugin_close (void *plugin_data)
     if (d == NULL)
         return;
 
+    if (d->job.pid != 0)
+    {
+        delete_select_channel (d->job.err_fd);
+        close (d->job.err_fd);
+        (void) kill (d->job.pid, SIGTERM);
+        (void) waitpid (d->job.pid, NULL, 0);
+        g_spawn_close_pid (d->job.pid);
+        if (d->job.tmp_path != NULL)
+            (void) unlink (d->job.tmp_path);
+        ctags_job_clear (&d->job);
+    }
     g_slist_free_full (d->repos, (GDestroyNotify) ctags_repo_free);
     ctags_config_free (&d->cfg);
     if (d->keymap != NULL)
@@ -1762,6 +2136,36 @@ ctags_plugin_handle_key (void *plugin_data, int key, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A file of a project saved: the plugin's own index of it is built again, in the background */
+static mc_ep_result_t
+ctags_plugin_handle_event (void *plugin_data, void *edit, int event_id, void *payload)
+{
+    ctags_data_t *d = (ctags_data_t *) plugin_data;
+    const char *path = (const char *) payload;
+    ctags_repo_t *repo;
+    char *own;
+
+    (void) edit;
+    if (d == NULL || !d->cfg.auto_discover
+        || (event_id != MC_EP_EVENT_FILE_SAVED && event_id != MC_EP_EVENT_FILE_RENAMED)
+        || path == NULL)
+        return MC_EPR_NOT_SUPPORTED;
+    repo = ctags_repos_find_for_file (d->repos, path);
+    if (repo == NULL || repo->root_dir == NULL)
+        return MC_EPR_NOT_SUPPORTED;
+    own = g_build_filename (repo->root_dir, ".coole", "tags", (char *) NULL);
+    if (repo->tags_path != NULL && strcmp (repo->tags_path, own) == 0)
+    {
+        d->quiet = TRUE;
+        ctags_index_start (d, repo->root_dir, repo->tags_path);
+        d->quiet = FALSE;
+    }
+    g_free (own);
+    return MC_EPR_NOT_SUPPORTED;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static mc_ep_result_t
 ctags_plugin_on_file_open (void *plugin_data, void *edit)
 {
@@ -1778,7 +2182,9 @@ ctags_plugin_on_file_open (void *plugin_data, void *edit)
     file = d->host->get_current_file != NULL ? d->host->get_current_file (d->host, e) : NULL;
     if (file != NULL)
     {
+        d->quiet = TRUE;
         ctags_ensure_repo (d, file);
+        d->quiet = FALSE;
         g_free (file);
     }
 
@@ -1970,7 +2376,7 @@ static const mc_editor_plugin_t ctags_plugin_descriptor = {
     .handle_action = NULL,
     .query_state = NULL,
     .handle_key = ctags_plugin_handle_key,
-    .handle_event = NULL,
+    .handle_event = ctags_plugin_handle_event,
     .on_file_open = ctags_plugin_on_file_open,
     .on_file_close = NULL,
     .actions = ctags_actions,
