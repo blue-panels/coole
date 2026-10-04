@@ -237,6 +237,18 @@ What the editor provides to the plugin, passed to open():
   marker_lines(host, file, kind)
                              the lines the marks of a kind are on now,
                              NULL when no window has the file
+  commands_register(host, section, title, commands)
+                             the commands of the plugin (mc_ep_command_t:
+                             name, N_() description, default keys "f5;
+                             ctrl-r"; a NULL name ends them) in a section
+                             of the keymap of its own, which the keymap
+                             files may set and Options > Key bindings
+                             shows under that title
+  command_id(host, name)     the number of a command; a command of the
+                             plugin that comes to the editor, from the
+                             button bar for one, goes to handle_action()
+  command_lookup(host, section, key)
+                             the command a key is bound to in a section
   show_location(host, file, line)
                              open a source location without pushing
                              each debugger step onto navigation history
@@ -342,8 +354,12 @@ Top-level menu integration:
 
 Each entry sets:
 
-    menu_name        MC_EP_MENU_FILE, MC_EP_MENU_COMMAND,
-                     MC_EP_MENU_NAVIGATE or MC_EP_MENU_DEBUG
+    menu_name        MC_EP_MENU_FILE, MC_EP_MENU_COMMAND or
+                     MC_EP_MENU_NAVIGATE; any other name is a menu of
+                     the plugins' own, made before Window, with that
+                     name as its title: N_("&Debug"), whose & letter
+                     with Alt drops it.  The scripts add to it by the
+                     name without the &
     label            menu text (with & accelerator, translated with
                      gettext); NULL = separator
     action_index     index into actions[]

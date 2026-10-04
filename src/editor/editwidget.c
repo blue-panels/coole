@@ -734,6 +734,39 @@ editor_host_same_file (const char *a, const char *b)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+editor_host_commands_register_impl (mc_editor_host_t *host, const char *section, const char *title,
+                                    const mc_ep_command_t *commands)
+{
+    // mc_ep_command_t is keymap_command_t, which the keymap may not see from lib/
+    G_STATIC_ASSERT (sizeof (mc_ep_command_t) == sizeof (keymap_command_t));
+    G_STATIC_ASSERT (G_STRUCT_OFFSET (mc_ep_command_t, keys)
+                     == G_STRUCT_OFFSET (keymap_command_t, keys));
+
+    (void) host;
+    keymap_register_section (section, title, (const keymap_command_t *) commands);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static long
+editor_host_command_id_impl (mc_editor_host_t *host, const char *name)
+{
+    (void) host;
+    return keybind_lookup_action (name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static long
+editor_host_command_lookup_impl (mc_editor_host_t *host, const char *section, int key)
+{
+    (void) host;
+    return keybind_lookup_keymap_command (keymap_section_map (section), key);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static int
 editor_host_marker_kind_impl (mc_editor_host_t *host, const mc_ep_marker_kind_t *kind)
 {
@@ -1011,6 +1044,9 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->set_marker = editor_host_set_marker_impl;
     ctx->host->clear_markers = editor_host_clear_markers_impl;
     ctx->host->marker_lines = editor_host_marker_lines_impl;
+    ctx->host->commands_register = editor_host_commands_register_impl;
+    ctx->host->command_id = editor_host_command_id_impl;
+    ctx->host->command_lookup = editor_host_command_lookup_impl;
     ctx->host->show_location = editor_host_show_location_impl;
     ctx->host->save_modified_files = editor_host_save_modified_files_impl;
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);

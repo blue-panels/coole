@@ -79,6 +79,44 @@ typedef struct
 
 typedef struct debug_session_window_t debug_session_window_t;
 
+/* the commands of the debugger, in the [debugger] section of the keymap */
+enum
+{
+    DEBUG_CMD_NONE = -1,
+    DEBUG_CMD_HELP,
+    DEBUG_CMD_START_CONTINUE,
+    DEBUG_CMD_PAUSE,
+    DEBUG_CMD_STEP_INTO,
+    DEBUG_CMD_STEP_OVER,
+    DEBUG_CMD_STEP_OUT,
+    DEBUG_CMD_STOP,
+    DEBUG_CMD_TOGGLE_BREAKPOINT,
+    DEBUG_CMD_RUN_TO_CURSOR,
+    DEBUG_CMD_EVALUATE,
+    DEBUG_CMD_LEAVE,
+    DEBUG_CMD_CLOSE,
+    DEBUG_CMD_COUNT
+};
+
+#define DEBUG_KEYMAP_SECTION "debugger"
+#define DEBUG_MENU           N_ ("&Debug")
+
+static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
+    { "Help", NULL, "f1" },
+    { "DebugStartContinue", N_ ("Start or continue debugging"), "f5" },
+    { "DebugPause", N_ ("Pause debugging"), "f6" },
+    { "DebugStepInto", N_ ("Step into"), "f7" },
+    { "DebugStepOver", N_ ("Step over"), "f8" },
+    { "DebugStepOut", N_ ("Step out"), "f9" },
+    { "DebugStop", N_ ("Stop debugging"), "f15" },
+    { "DebugToggleBreakpoint", N_ ("Toggle breakpoint"), "f2" },
+    { "DebugRunToCursor", N_ ("Run to cursor"), "f4" },
+    { "DebugEvaluate", N_ ("Evaluate expression"), "enter" },
+    { "DebugLeave", N_ ("Leave step mode"), "esc" },
+    { "DebugClose", N_ ("Close debug session window"), "f10" },
+    { NULL, NULL, NULL },
+};
+
 /* the marks of the debugger in the gutter */
 enum
 {
@@ -137,6 +175,7 @@ typedef struct
     /* the user went back to editing with the program stopped; the next stop steps again */
     gboolean step_left;
     int marks[DEBUG_MARK_COUNT];
+    long commands[DEBUG_CMD_COUNT];
     debug_session_window_t *session_window;
 } debugger_t;
 
@@ -184,6 +223,8 @@ static mc_ep_result_t debug_evaluate (debugger_t *debug, void *edit);
 static mc_ep_result_t debug_watch_add (debugger_t *debug, const char *expression);
 static void debug_breakpoints_sync (debugger_t *debug);
 static void debug_breakpoints_dedup (debugger_t *debug);
+static gboolean debug_session_live (const debugger_t *debug);
+static void debug_session_refresh (debugger_t *debug);
 
 static void
 debug_breakpoint_free (gpointer data)
@@ -256,34 +297,56 @@ debug_state_name (debug_state_t state)
     }
 }
 
-static const char *
-debug_session_button_label (long action, debug_state_t state)
+/* The command of the debugger of that number, DEBUG_CMD_NONE for any other */
+static int
+debug_command (const debugger_t *debug, long command)
 {
-    switch (action)
+    int i;
+
+    if (command == CK_IgnoreKey)
+        return DEBUG_CMD_NONE;
+    for (i = 0; i < DEBUG_CMD_COUNT; i++)
+        if (debug->commands[i] == command)
+            return i;
+    return DEBUG_CMD_NONE;
+}
+
+/* The command of the debugger a key is bound to */
+static int
+debug_command_of_key (const debugger_t *debug, int key)
+{
+    return debug_command (debug,
+                          debug->host->command_lookup (debug->host, DEBUG_KEYMAP_SECTION, key));
+}
+
+static const char *
+debug_session_button_label (int cmd, debug_state_t state)
+{
+    switch (cmd)
     {
-    case CK_Help:
+    case DEBUG_CMD_HELP:
         return _ ("Help");
-    case CK_DebugStartContinue:
+    case DEBUG_CMD_START_CONTINUE:
         return state == DEBUG_STOPPED                       ? _ ("Continue")
             : state == DEBUG_OFF || state == DEBUG_FINISHED ? _ ("Start")
                                                             : NULL;
-    case CK_DebugPause:
+    case DEBUG_CMD_PAUSE:
         return state == DEBUG_RUNNING ? _ ("Pause") : NULL;
-    case CK_DebugStepInto:
+    case DEBUG_CMD_STEP_INTO:
         return state == DEBUG_STOPPED ? _ ("Into") : NULL;
-    case CK_DebugStepOver:
+    case DEBUG_CMD_STEP_OVER:
         return state == DEBUG_STOPPED ? _ ("Over") : NULL;
-    case CK_DebugStepOut:
+    case DEBUG_CMD_STEP_OUT:
         return state == DEBUG_STOPPED ? _ ("Out") : NULL;
-    case CK_DebugStop:
+    case DEBUG_CMD_STOP:
         return state == DEBUG_STARTING || state == DEBUG_RUNNING || state == DEBUG_STOPPED
             ? _ ("Stop")
             : NULL;
-    case CK_DebugToggleBreakpoint:
+    case DEBUG_CMD_TOGGLE_BREAKPOINT:
         return _ ("Break");
-    case CK_DebugRunToCursor:
+    case DEBUG_CMD_RUN_TO_CURSOR:
         return state == DEBUG_STOPPED ? _ ("ToCurs") : NULL;
-    case CK_DebugClose:
+    case DEBUG_CMD_CLOSE:
         return _ ("Close");
     default:
         return NULL;
@@ -294,21 +357,22 @@ static void
 debug_session_buttonbar (debug_session_window_t *session)
 {
     WButtonBar *bb = buttonbar_find (DIALOG (WIDGET (session)->owner));
-    const debug_state_t state = session->debug != NULL ? session->debug->state : DEBUG_OFF;
+    const debugger_t *debug = session->debug;
     Widget *w = WIDGET (session);
     int i;
 
-    if (bb == NULL)
+    if (bb == NULL || debug == NULL)
         return;
     for (i = 1; i <= 10; i++)
     {
-        long action = keybind_lookup_keymap_command (w->keymap, KEY_F (i));
-        const char *label = debug_session_button_label (action, state);
+        const int cmd = debug_command_of_key (debug, KEY_F (i));
+        const char *label = debug_session_button_label (cmd, debug->state);
 
         if (label == NULL)
             buttonbar_clear_label (bb, i, NULL);
         else
-            buttonbar_set_label_command (bb, i, label, action, action == CK_Help ? NULL : w);
+            buttonbar_set_label_command (bb, i, label, debug->commands[cmd],
+                                         cmd == DEBUG_CMD_HELP ? NULL : w);
     }
     widget_draw (WIDGET (bb));
 }
@@ -437,7 +501,6 @@ static void
 debug_editor_buttonbar (debugger_t *debug, Widget *edit)
 {
     WButtonBar *bb = buttonbar_find (DIALOG (edit->owner));
-    Widget *receiver = debug->session_window != NULL ? WIDGET (debug->session_window) : NULL;
     int i;
 
     if (bb == NULL)
@@ -446,15 +509,17 @@ debug_editor_buttonbar (debugger_t *debug, Widget *edit)
     if (debug_stepping (debug))
         for (i = 1; i <= 10; i++)
         {
-            long action = keybind_lookup_keymap_command (debugger_map, KEY_F (i));
-            const char *label =
-                action == CK_DebugClose ? NULL : debug_session_button_label (action, debug->state);
+            const int cmd = debug_command_of_key (debug, KEY_F (i));
+            const gboolean editors =
+                cmd == DEBUG_CMD_NONE || cmd == DEBUG_CMD_HELP || cmd == DEBUG_CMD_CLOSE;
 
-            if (label != NULL && action != CK_Help)
-                buttonbar_set_label_command (bb, i, label, action, receiver);
-            else if (action != CK_IgnoreKey && action != CK_Help && action != CK_DebugClose)
-                buttonbar_clear_label (bb, i, NULL);
-            else if (!debug_step_passes (keybind_lookup_keymap_command (edit->keymap, KEY_F (i))))
+            // the bar sends the command to the editor, which gives it to handle_action()
+            if (!editors && debug_session_button_label (cmd, debug->state) != NULL)
+                buttonbar_set_label_command (bb, i, debug_session_button_label (cmd, debug->state),
+                                             debug->commands[cmd], NULL);
+            else if (!editors
+                     || !debug_step_passes (
+                         keybind_lookup_keymap_command (edit->keymap, KEY_F (i))))
                 buttonbar_clear_label (bb, i, NULL);
         }
     widget_draw (WIDGET (bb));
@@ -539,55 +604,56 @@ debug_session_close_window (WEditWindow *win)
     return TRUE;
 }
 
-static void
-debug_session_action (debug_session_window_t *session, long action)
+/* Run a command of the debugger; one that works on a line takes that of @edit, or of the topmost
+   file window when @edit is NULL */
+static gboolean
+debug_run_command (debugger_t *debug, int cmd, void *edit)
 {
-    debugger_t *debug = session->debug;
+    void *file_window = edit != NULL ? edit : debug->host->window_top_file (debug->host);
 
-    if (debug == NULL && action != CK_DebugClose)
-        return;
-
-    switch (action)
+    switch (cmd)
     {
-    case CK_DebugStartContinue:
+    case DEBUG_CMD_START_CONTINUE:
         if (debug->state == DEBUG_STOPPED)
-            (void) debug_continue (debug, NULL);
+            (void) debug_continue (debug, edit);
         else if (debug->state == DEBUG_OFF || debug->state == DEBUG_FINISHED)
-            (void) debug_start (debug, NULL);
-        break;
-    case CK_DebugPause:
-        if (debug->state == DEBUG_RUNNING)
-            (void) debug_pause (debug, NULL);
-        break;
-    case CK_DebugStepInto:
-        if (debug->state == DEBUG_STOPPED)
-            (void) debug_step (debug, NULL);
-        break;
-    case CK_DebugStepOver:
-        if (debug->state == DEBUG_STOPPED)
-            (void) debug_next (debug, NULL);
-        break;
-    case CK_DebugStepOut:
-        if (debug->state == DEBUG_STOPPED)
-            (void) debug_finish (debug, NULL);
-        break;
-    case CK_DebugStop:
-        (void) debug_stop (debug, NULL);
-        break;
-    case CK_DebugToggleBreakpoint:
-        (void) debug_toggle_breakpoint (debug, debug->host->window_top_file (debug->host));
-        break;
-    case CK_DebugRunToCursor:
-        (void) debug_run_to_cursor (debug, debug->host->window_top_file (debug->host));
-        break;
-    case CK_DebugEvaluate:
-        (void) debug_evaluate (debug, NULL);
-        break;
-    case CK_DebugClose:
-        (void) debug_session_close_window (&session->window);
-        break;
+            (void) debug_start (debug, edit);
+        return TRUE;
+    case DEBUG_CMD_PAUSE:
+        (void) debug_pause (debug, edit);
+        return TRUE;
+    case DEBUG_CMD_STEP_INTO:
+        (void) debug_step (debug, edit);
+        return TRUE;
+    case DEBUG_CMD_STEP_OVER:
+        (void) debug_next (debug, edit);
+        return TRUE;
+    case DEBUG_CMD_STEP_OUT:
+        (void) debug_finish (debug, edit);
+        return TRUE;
+    case DEBUG_CMD_STOP:
+        if (debug_session_live (debug))
+            (void) debug_stop (debug, edit);
+        return TRUE;
+    case DEBUG_CMD_TOGGLE_BREAKPOINT:
+        (void) debug_toggle_breakpoint (debug, file_window);
+        return TRUE;
+    case DEBUG_CMD_RUN_TO_CURSOR:
+        (void) debug_run_to_cursor (debug, file_window);
+        return TRUE;
+    case DEBUG_CMD_EVALUATE:
+        (void) debug_evaluate (debug, edit);
+        return TRUE;
+    case DEBUG_CMD_LEAVE:
+        debug->step_left = TRUE;
+        debug_session_refresh (debug);
+        return TRUE;
+    case DEBUG_CMD_CLOSE:
+        if (debug->session_window != NULL)
+            (void) debug_session_close_window (&debug->session_window->window);
+        return TRUE;
     default:
-        break;
+        return FALSE;
     }
 }
 
@@ -609,24 +675,19 @@ debug_session_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, v
         debug_session_draw (session);
         return MSG_HANDLED;
     case MSG_KEY:
-    {
-        long action = widget_lookup_key (w, parm);
-
-        if (action >= CK_DebugStartContinue && action <= CK_DebugClose)
-        {
-            debug_session_action (session, action);
+        if (session->debug == NULL)
+            return MSG_NOT_HANDLED;
+        if (debug_run_command (session->debug, debug_command_of_key (session->debug, parm), NULL))
             return MSG_HANDLED;
-        }
-        if (action == CK_IgnoreKey && parm >= KEY_F (1) && parm <= KEY_F (10))
+        // the F keys of the editor mean nothing here
+        if (debug_command_of_key (session->debug, parm) == DEBUG_CMD_NONE && parm >= KEY_F (1)
+            && parm <= KEY_F (10))
             return MSG_HANDLED;
-    }
         return MSG_NOT_HANDLED;
     case MSG_ACTION:
-        if (parm >= CK_DebugStartContinue && parm <= CK_DebugClose)
-        {
-            debug_session_action (session, parm);
+        if (session->debug != NULL
+            && debug_run_command (session->debug, debug_command (session->debug, parm), NULL))
             return MSG_HANDLED;
-        }
         return MSG_NOT_HANDLED;
     case MSG_CURSOR:
         widget_gotoyx (w, 1, 1);
@@ -689,7 +750,6 @@ debug_session_show (void *data, void *edit)
     rect.y = area.y + area.lines - rect.lines;
     session = g_new0 (debug_session_window_t, 1);
     edit_window_init (&session->window, &rect, &debug_session_class);
-    WIDGET (session)->keymap = debugger_map;
     session->window.fullscreen = 0;
     session->debug = debug;
     debug->session_window = session;
@@ -2402,53 +2462,32 @@ static mc_ep_result_t
 debug_handle_key (void *data, int key, void *edit)
 {
     debugger_t *debug = (debugger_t *) data;
-    long action;
+    int cmd;
 
     if (edit == NULL || !debug_stepping (debug))
         return MC_EPR_NOT_SUPPORTED;
 
-    action = keybind_lookup_keymap_command (debugger_map, key);
-    switch (action)
-    {
-    case CK_DebugStartContinue:
-        (void) debug_continue (debug, edit);
+    cmd = debug_command_of_key (debug, key);
+    // Help and Quit stay the editor's
+    if (cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && debug_run_command (debug, cmd, edit))
         return MC_EPR_OK;
-    case CK_DebugPause:
-        (void) debug_pause (debug, edit);
-        return MC_EPR_OK;
-    case CK_DebugStepInto:
-        (void) debug_step (debug, edit);
-        return MC_EPR_OK;
-    case CK_DebugStepOver:
-        (void) debug_next (debug, edit);
-        return MC_EPR_OK;
-    case CK_DebugStepOut:
-        (void) debug_finish (debug, edit);
-        return MC_EPR_OK;
-    case CK_DebugStop:
-        (void) debug_stop (debug, edit);
-        return MC_EPR_OK;
-    case CK_DebugToggleBreakpoint:
-        (void) debug_toggle_breakpoint (debug, edit);
-        return MC_EPR_OK;
-    case CK_DebugRunToCursor:
-        (void) debug_run_to_cursor (debug, edit);
-        return MC_EPR_OK;
-    case CK_DebugEvaluate:
-        (void) debug_evaluate (debug, edit);
-        return MC_EPR_OK;
-    case CK_DebugLeave:
-        debug->step_left = TRUE;
-        debug_session_refresh (debug);
-        return MC_EPR_OK;
-    default:
-        break;
-    }
 
     if (debug_step_passes (keybind_lookup_keymap_command (WIDGET (edit)->keymap, key)))
         return MC_EPR_NOT_SUPPORTED;
     // a key that would change the text
     tty_beep ();
+    return MC_EPR_OK;
+}
+
+/* A command of the debugger from the button bar of a file window */
+static mc_ep_result_t
+debug_handle_action (void *data, long command, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+    const int cmd = debug_command (debug, command);
+
+    if (cmd == DEBUG_CMD_HELP || !debug_run_command (debug, cmd, edit))
+        return MC_EPR_NOT_SUPPORTED;
     return MC_EPR_OK;
 }
 
@@ -2674,6 +2713,9 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->watches_text = g_string_new (NULL);
     debug->pty_master = -1;
     debug->pty_slave = -1;
+    host->commands_register (host, DEBUG_KEYMAP_SECTION, N_ ("&Debugger"), debug_commands);
+    for (i = 0; i < DEBUG_CMD_COUNT; i++)
+        debug->commands[i] = host->command_id (host, debug_commands[i].name);
     for (i = 0; i < DEBUG_MARK_COUNT; i++)
         debug->marks[i] =
             host->marker_kind != NULL ? host->marker_kind (host, &debug_mark_kinds[i]) : -1;
@@ -2760,29 +2802,29 @@ static const mc_ep_action_t debug_actions[] = {
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { MC_EP_MENU_FILE, N_ ("Open debug &project..."), DEBUG_ACT_OPEN_PROJECT, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Open proj&ect..."), DEBUG_ACT_OPEN_PROJECT, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Project status..."), DEBUG_ACT_PROJECT_STATUS, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Ne&w configuration..."), DEBUG_ACT_NEW_CONFIGURATION, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Select con&figuration..."), DEBUG_ACT_SELECT_CONFIGURATION, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Confi&gure selected..."), DEBUG_ACT_CONFIGURE, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("&Delete configuration..."), DEBUG_ACT_DELETE_CONFIGURATION, NULL },
-    { MC_EP_MENU_DEBUG, NULL, 0, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("&Start"), DEBUG_ACT_START, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
-    { MC_EP_MENU_DEBUG, NULL, 0, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("&Continue"), DEBUG_ACT_CONTINUE, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Step o&ut"), DEBUG_ACT_FINISH, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("&Output"), DEBUG_ACT_OUTPUT, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("&Add watch..."), DEBUG_ACT_ADD_WATCH, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("&Remove watch..."), DEBUG_ACT_REMOVE_WATCH, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Show watc&hes"), DEBUG_ACT_WATCHES, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Send li&ne..."), DEBUG_ACT_INPUT, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("Debug session..."), DEBUG_ACT_SESSION, NULL },
-    { MC_EP_MENU_DEBUG, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
+    { DEBUG_MENU, N_ ("Open proj&ect..."), DEBUG_ACT_OPEN_PROJECT, NULL },
+    { DEBUG_MENU, N_ ("Project status..."), DEBUG_ACT_PROJECT_STATUS, NULL },
+    { DEBUG_MENU, N_ ("Ne&w configuration..."), DEBUG_ACT_NEW_CONFIGURATION, NULL },
+    { DEBUG_MENU, N_ ("Select con&figuration..."), DEBUG_ACT_SELECT_CONFIGURATION, NULL },
+    { DEBUG_MENU, N_ ("Confi&gure selected..."), DEBUG_ACT_CONFIGURE, NULL },
+    { DEBUG_MENU, N_ ("&Delete configuration..."), DEBUG_ACT_DELETE_CONFIGURATION, NULL },
+    { DEBUG_MENU, NULL, 0, NULL },
+    { DEBUG_MENU, N_ ("&Start"), DEBUG_ACT_START, NULL },
+    { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
+    { DEBUG_MENU, NULL, 0, NULL },
+    { DEBUG_MENU, N_ ("&Continue"), DEBUG_ACT_CONTINUE, NULL },
+    { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
+    { DEBUG_MENU, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
+    { DEBUG_MENU, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
+    { DEBUG_MENU, N_ ("Step o&ut"), DEBUG_ACT_FINISH, NULL },
+    { DEBUG_MENU, N_ ("&Output"), DEBUG_ACT_OUTPUT, NULL },
+    { DEBUG_MENU, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
+    { DEBUG_MENU, N_ ("&Add watch..."), DEBUG_ACT_ADD_WATCH, NULL },
+    { DEBUG_MENU, N_ ("&Remove watch..."), DEBUG_ACT_REMOVE_WATCH, NULL },
+    { DEBUG_MENU, N_ ("Show watc&hes"), DEBUG_ACT_WATCHES, NULL },
+    { DEBUG_MENU, N_ ("Send li&ne..."), DEBUG_ACT_INPUT, NULL },
+    { DEBUG_MENU, N_ ("Debug session..."), DEBUG_ACT_SESSION, NULL },
+    { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
 };
 
 static const mc_editor_plugin_t debug_plugin = {
@@ -2795,6 +2837,7 @@ static const mc_editor_plugin_t debug_plugin = {
     .on_file_open = debug_file_open,
     .ok_to_quit = debug_ok_to_quit,
     .handle_key = debug_handle_key,
+    .handle_action = debug_handle_action,
     .handle_event = debug_handle_event,
     .actions = debug_actions,
     .action_count = G_N_ELEMENTS (debug_actions),

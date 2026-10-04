@@ -243,22 +243,14 @@ static name_keymap_t command_names[] = {
     ADD_KEYMAP_NAME_DESC (WindowSticky, N_ ("Toggle sticky windows")),
     ADD_KEYMAP_NAME_DESC (WindowNext, N_ ("Next window")),
     ADD_KEYMAP_NAME_DESC (WindowPrev, N_ ("Previous window")),
-    ADD_KEYMAP_NAME_DESC (DebugStartContinue, N_ ("Start or continue debugging")),
-    ADD_KEYMAP_NAME_DESC (DebugPause, N_ ("Pause debugging")),
-    ADD_KEYMAP_NAME_DESC (DebugStepInto, N_ ("Step into")),
-    ADD_KEYMAP_NAME_DESC (DebugStepOver, N_ ("Step over")),
-    ADD_KEYMAP_NAME_DESC (DebugStepOut, N_ ("Step out")),
-    ADD_KEYMAP_NAME_DESC (DebugStop, N_ ("Stop debugging")),
-    ADD_KEYMAP_NAME_DESC (DebugToggleBreakpoint, N_ ("Toggle breakpoint")),
-    ADD_KEYMAP_NAME_DESC (DebugRunToCursor, N_ ("Run to cursor")),
-    ADD_KEYMAP_NAME_DESC (DebugEvaluate, N_ ("Evaluate expression")),
-    ADD_KEYMAP_NAME_DESC (DebugLeave, N_ ("Leave step mode")),
-    ADD_KEYMAP_NAME_DESC (DebugClose, N_ ("Close debug session window")),
 
     { NULL, CK_IgnoreKey, NULL }
 };
 
 static const size_t num_command_names = G_N_ELEMENTS (command_names) - 1;
+
+/* the commands of the plugins: name_keymap_t of their own strings, CK_PluginFirst and up */
+static GArray *plugin_command_names = NULL;
 
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
@@ -331,8 +323,63 @@ keybind_lookup_action (const char *name)
 
     res = bsearch (&key, command_names, num_command_names, sizeof (command_names[0]),
                    name_keymap_comparator);
+    if (res != NULL)
+        return res->val;
 
-    return (res != NULL) ? res->val : CK_IgnoreKey;
+    if (plugin_command_names != NULL)
+    {
+        guint i;
+
+        for (i = 0; i < plugin_command_names->len; i++)
+        {
+            const name_keymap_t *p = &g_array_index (plugin_command_names, name_keymap_t, i);
+
+            if (g_ascii_strcasecmp (p->name, name) == 0)
+                return p->val;
+        }
+    }
+
+    return CK_IgnoreKey;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Give a command of a plugin its number.  A name the program has already, or a plugin has
+ * registered before, keeps its number.
+ *
+ * @param description N_() translatable, NULL = the name
+ */
+
+long
+keybind_register_action (const char *name, const char *description)
+{
+    name_keymap_t entry;
+    long action;
+
+    if (name == NULL || *name == '\0')
+        return CK_IgnoreKey;
+    action = keybind_lookup_action (name);
+    if (action != CK_IgnoreKey)
+        return action;
+
+    if (plugin_command_names == NULL)
+        plugin_command_names = g_array_new (FALSE, FALSE, sizeof (name_keymap_t));
+    entry.name = g_strdup (name);
+    entry.val = CK_PluginFirst + (long) plugin_command_names->len;
+    entry.description = g_strdup (description);
+    g_array_append_val (plugin_command_names, entry);
+    return entry.val;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static const name_keymap_t *
+keybind_plugin_command (long action)
+{
+    if (plugin_command_names == NULL || action < CK_PluginFirst
+        || action >= CK_PluginFirst + (long) plugin_command_names->len)
+        return NULL;
+    return &g_array_index (plugin_command_names, name_keymap_t, action - CK_PluginFirst);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -340,8 +387,11 @@ keybind_lookup_action (const char *name)
 const char *
 keybind_lookup_actionname (long action)
 {
+    const name_keymap_t *plugin_command = keybind_plugin_command (action);
     size_t i;
 
+    if (plugin_command != NULL)
+        return plugin_command->name;
     for (i = 0; command_names[i].name != NULL; i++)
         if (command_names[i].val == action)
             return command_names[i].name;
@@ -354,8 +404,11 @@ keybind_lookup_actionname (long action)
 const char *
 keybind_lookup_actiondesc (long action)
 {
+    const name_keymap_t *plugin_command = keybind_plugin_command (action);
     size_t i;
 
+    if (plugin_command != NULL)
+        return plugin_command->description;
     for (i = 0; command_names[i].name != NULL; i++)
         if (command_names[i].val == action)
             return command_names[i].description;

@@ -20,11 +20,12 @@
 #define MC_PLUGINS_DIR "/usr/lib/coole/plugins"
 #endif
 
-/* Well-known target menu names for mc_ep_cmd_menu_entry_t.menu_name */
+/* Well-known target menu names for mc_ep_cmd_menu_entry_t.menu_name.  Any other name is a menu of
+ * the plugins' own, made in the menubar before Window: "&Debug" (N_() translatable, & marks the
+ * letter that drops it with Alt). */
 #define MC_EP_MENU_COMMAND  "Command"
 #define MC_EP_MENU_FILE     "File"
 #define MC_EP_MENU_NAVIGATE "Navigate"
-#define MC_EP_MENU_DEBUG    "Debug"
 
 /*** enums ***************************************************************************************/
 
@@ -78,6 +79,14 @@ typedef struct
     const char *line_color_fallback; /* [editor] key when the skin has no line_color_key */
     int priority;                    /* of two marks on one line the higher one is shown */
 } mc_ep_marker_kind_t;
+
+/* A command of a plugin with its default keys ("f5; ctrl-r"), for commands_register() */
+typedef struct
+{
+    const char *name;        /* in the keymap files: "DebugStepOver" */
+    const char *description; /* N_() translatable, for Options > Key bindings */
+    const char *keys;        /* NULL: none */
+} mc_ep_command_t;
 
 /* What the editor provides to a plugin */
 typedef struct mc_editor_host_t
@@ -157,6 +166,18 @@ typedef struct mc_editor_host_t
                         gboolean enabled);
     void (*clear_markers) (struct mc_editor_host_t *host, const char *file, int kind);
     GArray *(*marker_lines) (struct mc_editor_host_t *host, const char *file, int kind);
+
+    /* v9: commands with keys the user can change.  commands_register() gives the plugin a section
+     * of the keymap (its name, then the title it has in Options > Key bindings) with the
+     * commands, the last one with a NULL name; a command the program has already, "Help", is
+     * that one.  command_id() gives the number of a command by its name, the same as long as the
+     * program runs; command_lookup() the command a key is bound to in the section, CK_IgnoreKey
+     * when none.  A command of the plugin that comes to the editor (from the button bar, for
+     * one) goes to handle_action(). */
+    void (*commands_register) (struct mc_editor_host_t *host, const char *section,
+                               const char *title, const mc_ep_command_t *commands);
+    long (*command_id) (struct mc_editor_host_t *host, const char *name);
+    long (*command_lookup) (struct mc_editor_host_t *host, const char *section, int key);
     /* Show a debugger location without adding each step to the navigation stack. */
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
     /* v8: offer to save modified source files within a project root. */
