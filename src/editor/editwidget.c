@@ -1892,7 +1892,7 @@ edit_quit (WDialog *h)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static inline void
+void
 edit_set_buttonbar (WEdit *edit, WButtonBar *bb)
 {
     Widget *w = WIDGET (edit);
@@ -2130,6 +2130,14 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
             gboolean ext_mode;
             long command;
 
+            /* The plugins see the key before the keymap of the editor and of its windows: a
+               plugin may take over keys of the window too, F9 and F10 among them */
+            if (edit_plugin_handle_key (h, parm, EDIT (we)))
+            {
+                edit_update_screen (EDIT (we));
+                return MSG_HANDLED;
+            }
+
             if (edit_publish_runtime_key (EDIT (we), parm))
                 return MSG_HANDLED;
 
@@ -2285,6 +2293,12 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
     {
     case MSG_FOCUS:
         edit_set_buttonbar (e, buttonbar_find (DIALOG (w->owner)));
+        // the editor's labels first: a plugin may put its own over them
+        edit_plugins_tell (e, MC_EP_EVENT_FOCUS_IN);
+        return MSG_HANDLED;
+
+    case MSG_UNFOCUS:
+        edit_plugins_tell (e, MC_EP_EVENT_FOCUS_OUT);
         return MSG_HANDLED;
 
     case MSG_DRAW:
@@ -2299,11 +2313,6 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
 
         // The user may override the access-keys for the menu bar.
         if (macro_index == -1 && !bracketed_pasting_in_progress && edit_execute_macro (e, parm))
-        {
-            edit_update_screen (e);
-            ret = MSG_HANDLED;
-        }
-        else if (edit_plugin_handle_key (DIALOG (w->owner), parm, e))
         {
             edit_update_screen (e);
             ret = MSG_HANDLED;

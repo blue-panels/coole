@@ -230,6 +230,10 @@ enum
     CK_DebugStepOver,
     CK_DebugStepOut,
     CK_DebugStop,
+    CK_DebugToggleBreakpoint,
+    CK_DebugRunToCursor,
+    CK_DebugEvaluate,
+    CK_DebugLeave,
     CK_DebugClose
 };
 
