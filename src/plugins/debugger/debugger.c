@@ -148,7 +148,7 @@ static const mc_ep_marker_kind_t debug_mark_kinds[DEBUG_MARK_COUNT] = {
       "breakpointline", NULL, 12, "red" },
     { "debugger.breakpoint-disabled", "breakpoint-disabled-char", "\u25cb", "-",
       "breakpointdisabled", NULL, NULL, 11, NULL },
-    { "debugger.exec", "exec-char", "\u25ba", ">", "execmark", "execline", "bookmarkfound", 20,
+    { "debugger.exec", "exec-char", ">", ">", "execmark", "execline", "bookmarkfound", 20,
       "yellow" },
     { "debugger.exec-breakpoint", "exec-breakpoint-char", "\u2666", "@", "execmark", "execline",
       "bookmarkfound", 21, "brightred" },

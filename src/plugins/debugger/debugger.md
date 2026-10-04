@@ -154,7 +154,7 @@ A frame without its source is named in the panel and opens nothing.
 **◊**
 : a breakpoint GDB has not taken yet, or has refused
 
-**►**
+**>**
 : the line the program stopped on
 
 **♦**

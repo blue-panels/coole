@@ -1262,7 +1262,7 @@ project_open (mc_editor_host_t *host, void *editor_dialog)
     project->host = host;
     project->recent = g_ptr_array_new_with_free_func (g_free);
     project->glyph_closed =
-        mc_skin_get ("widget-editor", "tree-closed-char", mc_global.utf8_display ? "\u25ba" : "+");
+        mc_skin_get ("widget-editor", "tree-closed-char", mc_global.utf8_display ? ">" : "+");
     project->glyph_open =
         mc_skin_get ("widget-editor", "tree-open-char", mc_global.utf8_display ? "\u25bc" : "-");
     host->commands_register (host, PROJECT_KEYMAP_SECTION, N_ ("&Project"), project_commands);
