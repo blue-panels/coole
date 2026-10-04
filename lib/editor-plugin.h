@@ -11,7 +11,7 @@
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
-#define MC_EDITOR_PLUGIN_API_VERSION 6
+#define MC_EDITOR_PLUGIN_API_VERSION 10
 #define MC_EDITOR_PLUGIN_ENTRY       "mc_editor_plugin_register"
 #define MC_EDITOR_PLUGIN_CMD_BASE    30000L /* Plugins-menu: base + plugin_index */
 #define MC_EDITOR_PLUGIN_ACTION_BASE 31000L /* per-action menu commands           */
@@ -20,9 +20,13 @@
 #define MC_PLUGINS_DIR "/usr/lib/coole/plugins"
 #endif
 
-/* Well-known target menu names for mc_ep_cmd_menu_entry_t.menu_name */
+/* Well-known target menu names for mc_ep_cmd_menu_entry_t.menu_name.  Any other name is a menu of
+ * the plugins' own, made in the menubar before Window: "&Debug" (N_() translatable, & marks the
+ * letter that drops it with Alt). */
 #define MC_EP_MENU_COMMAND  "Command"
+#define MC_EP_MENU_FILE     "File"
 #define MC_EP_MENU_NAVIGATE "Navigate"
+#define MC_EP_MENU_DEBUG    "Debug"
 
 /*** enums ***************************************************************************************/
 
@@ -38,6 +42,12 @@ typedef enum
     MC_EPF_NONE = 0,
     MC_EPF_HAS_MENU = 1 << 0
 } mc_ep_flags_t;
+
+typedef enum
+{
+    MC_EP_MARK_BREAKPOINT,
+    MC_EP_MARK_CURRENT
+} mc_ep_marker_t;
 
 typedef struct mc_ep_state_t
 {
@@ -127,6 +137,15 @@ typedef struct mc_editor_host_t
     void (*service_disconnect) (struct mc_editor_host_t *host, guint id);
     void (*service_emit) (struct mc_editor_host_t *host, const char *name, const char *signal,
                           GVariant *args);
+
+    /* Marks in the source gutter, addressed by absolute file path and 1-based line. */
+    void (*set_marker) (struct mc_editor_host_t *host, const char *file, long line,
+                        mc_ep_marker_t kind, gboolean enabled);
+    /* A line of a file in its window, or in a new one, without a step in the navigation
+       history */
+    gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
+    /* Offer to save the modified files under @project_root; FALSE when the user cancels */
+    gboolean (*save_modified_files) (struct mc_editor_host_t *host, const char *project_root);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.
@@ -181,6 +200,8 @@ typedef struct mc_editor_plugin_t
      * Returns a newly-allocated string (caller frees with g_free) or NULL.
      * NULL falls back to cmd_menu_entries[].shortcut.  May be NULL. */
     char *(*get_menu_shortcut) (int action_index);
+    /* FALSE keeps the editor from ending: a plugin with a process running asks first */
+    gboolean (*ok_to_quit) (void *plugin_data);
 } mc_editor_plugin_t;
 
 typedef const mc_editor_plugin_t *(*mc_editor_plugin_register_fn) (void);

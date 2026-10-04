@@ -120,6 +120,8 @@ struct WEdit
 
     edit_book_mark_t *book_mark;
     GArray *serialized_bookmarks;
+    GArray *debug_breakpoint_lines; /* long, 1-based; source debugger marks */
+    long debug_current_line;        /* 1-based, or 0 */
 
     // code folding
     edit_fold_t *folds;

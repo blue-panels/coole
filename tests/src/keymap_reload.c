@@ -57,10 +57,19 @@ START_TEST (test_keymap_load_defaults)
         ck_assert_int_eq (cmd, CK_Move);
     }
 
+    /* Debugger commands have their own map and do not replace editor bindings. */
+    map = debugger_map;
+    ck_assert_ptr_ne (map, NULL);
+    ck_assert_int_eq (keybind_lookup_keymap_command (map, KEY_F (5)), CK_DebugStartContinue);
+    ck_assert_int_eq (keybind_lookup_keymap_command (map, KEY_F (8)), CK_DebugStepOver);
+    ck_assert_int_eq (keybind_lookup_keymap_command (map, KEY_F (15)), CK_DebugStop);
+    ck_assert_int_eq (keybind_lookup_keymap_command (map, KEY_F (10)), CK_DebugClose);
+
     /* Ctrl-S switches the syntax highlighting, Alt-S the filter */
     {
         long cmd;
 
+        map = editor_map;
         cmd = keybind_lookup_keymap_command (map, XCTRL ('s'));
         ck_assert_int_eq (cmd, CK_SyntaxOnOff);
 
@@ -94,6 +103,8 @@ START_TEST (test_keymap_reload_pointer_changes)
 
         cmd = keybind_lookup_keymap_command (editor_map, KEY_F (5));
         ck_assert_int_eq (cmd, CK_Copy);
+        cmd = keybind_lookup_keymap_command (debugger_map, KEY_F (5));
+        ck_assert_int_eq (cmd, CK_DebugStartContinue);
     }
 
     keymap_free ();

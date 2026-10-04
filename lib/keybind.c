@@ -243,6 +243,13 @@ static name_keymap_t command_names[] = {
     ADD_KEYMAP_NAME_DESC (WindowSticky, N_ ("Toggle sticky windows")),
     ADD_KEYMAP_NAME_DESC (WindowNext, N_ ("Next window")),
     ADD_KEYMAP_NAME_DESC (WindowPrev, N_ ("Previous window")),
+    ADD_KEYMAP_NAME_DESC (DebugStartContinue, N_ ("Start or continue debugging")),
+    ADD_KEYMAP_NAME_DESC (DebugPause, N_ ("Pause debugging")),
+    ADD_KEYMAP_NAME_DESC (DebugStepInto, N_ ("Step into")),
+    ADD_KEYMAP_NAME_DESC (DebugStepOver, N_ ("Step over")),
+    ADD_KEYMAP_NAME_DESC (DebugStepOut, N_ ("Step out")),
+    ADD_KEYMAP_NAME_DESC (DebugStop, N_ ("Stop debugging")),
+    ADD_KEYMAP_NAME_DESC (DebugClose, N_ ("Close debug session window")),
 
     { NULL, CK_IgnoreKey, NULL }
 };

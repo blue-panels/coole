@@ -53,11 +53,13 @@ GArray *radio_keymap = NULL;
 GArray *help_keymap = NULL;
 GArray *editor_keymap = NULL;
 GArray *editor_x_keymap = NULL;
+GArray *debugger_keymap = NULL;
 GArray *mcterm_keymap = NULL;
 
 const global_keymap_t *help_map = NULL;
 const global_keymap_t *editor_map = NULL;
 const global_keymap_t *editor_x_map = NULL;
+const global_keymap_t *debugger_map = NULL;
 const global_keymap_t *mcterm_map = NULL;
 
 /*** file scope macro definitions ****************************************************************/
@@ -324,6 +326,12 @@ static const global_keymap_ini_t default_editor_x_keymap[] = {
     { NULL, NULL },
 };
 
+static const global_keymap_ini_t default_debugger_keymap[] = {
+    { "Help", "f1" },          { "DebugStartContinue", "f5" }, { "DebugPause", "f6" },
+    { "DebugStepInto", "f7" }, { "DebugStepOver", "f8" },      { "DebugStepOut", "f9" },
+    { "DebugStop", "f15" },    { "DebugClose", "f10" },        { NULL, NULL },
+};
+
 /* the terminal: what is bound here is taken from the shell. The cursor keys are not: the line
    editor of the shell has them, with its history. */
 static const global_keymap_ini_t default_mcterm_keymap[] = {
@@ -388,6 +396,7 @@ create_default_keymap (void)
     create_default_keymap_section (keymap, KEYMAP_SECTION_HELP, default_help_keymap);
     create_default_keymap_section (keymap, KEYMAP_SECTION_EDITOR, default_editor_keymap);
     create_default_keymap_section (keymap, KEYMAP_SECTION_EDITOR_EXT, default_editor_x_keymap);
+    create_default_keymap_section (keymap, KEYMAP_SECTION_DEBUGGER, default_debugger_keymap);
     create_default_keymap_section (keymap, KEYMAP_SECTION_MCTERM, default_mcterm_keymap);
 
     return keymap;
@@ -622,6 +631,7 @@ keymap_load (gboolean load_from_file)
         LOAD_KEYMAP (HELP, help);
         LOAD_KEYMAP (EDITOR, editor);
         LOAD_KEYMAP (EDITOR_EXT, editor_x);
+        LOAD_KEYMAP (DEBUGGER, debugger);
         LOAD_KEYMAP (MCTERM, mcterm);
 
 #undef LOAD_KEYMAP
@@ -638,6 +648,7 @@ keymap_load (gboolean load_from_file)
     SET_MAP (help);
     SET_MAP (editor);
     SET_MAP (editor_x);
+    SET_MAP (debugger);
     SET_MAP (mcterm);
 
 #undef SET_MAP
@@ -661,6 +672,7 @@ keymap_free (void)
     FREE_KEYMAP (help);
     FREE_KEYMAP (editor);
     FREE_KEYMAP (editor_x);
+    FREE_KEYMAP (debugger);
     FREE_KEYMAP (mcterm);
 
 #undef FREE_KEYMAP
@@ -703,6 +715,7 @@ keymap_save_old_maps (void)
     SAVE_MAP (help);
     SAVE_MAP (editor);
     SAVE_MAP (editor_x);
+    SAVE_MAP (debugger);
     SAVE_MAP (mcterm);
 #undef SAVE_MAP
 }
