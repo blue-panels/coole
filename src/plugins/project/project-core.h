@@ -30,8 +30,9 @@ char *project_find_root (const char *path);
 gboolean project_is_project (const char *root);
 
 /* The files of a project, names relative to its root, sorted: what git knows and does not ignore
-   in a repository, else what is under the root but hidden directories and build trees.  A
-   GPtrArray of char *, NULL when the root is no directory. */
+   in a repository, else what is under the root but hidden directories and build trees; for a
+   directory that is no project (project_is_project ()), its own files.  A GPtrArray of char *,
+   NULL when the root is no directory. */
 GPtrArray *project_list_files (const char *root);
 
 /* How well a name matches what is typed: 0 when it does not, every character of @query in

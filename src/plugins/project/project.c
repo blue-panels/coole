@@ -84,6 +84,7 @@ typedef struct
     char *root;            // NULL till a file is opened
     gboolean root_chosen;  // by the user: the files opened do not change it
     GPtrArray *files;      // relative to the root, NULL till listed
+    gint64 files_time;     // when they were listed
     GPtrArray *recent;     // absolute names, the latest first
     long commands[PROJECT_CMD_COUNT];
     project_tree_t *tree;
@@ -99,6 +100,8 @@ typedef struct
     GPtrArray *outline;   // project_symbol_t, in the order of the lines
     int outline_current;  // the one the cursor is in, -1 for none
     gboolean outline_closed;
+    // ctags took long over the outline of the file: made again when it is saved, not at each edit
+    gboolean outline_slow;
 } project_t;
 
 /* a symbol of the outline */
@@ -283,13 +286,34 @@ project_files_drop (project_t *project)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The files of the project, listed again: one may have come since */
+/* The files of the project: listed again when they were some seconds ago, one may have come
+   since; listing them takes long in a big tree */
 static const GPtrArray *
 project_files (project_t *project)
 {
+    const gint64 now = g_get_monotonic_time ();
+
+    if (project->files != NULL && now - project->files_time < 10 * G_USEC_PER_SEC)
+        return project->files;
     project_files_drop (project);
     project->files = project_list_files (project->root);
+    project->files_time = now;
     return project->files;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the list of the files has @file, of the project */
+static gboolean
+project_files_have (const project_t *project, const char *file)
+{
+    const char *rel = project_relative ((project_t *) project, file);
+    guint i;
+
+    for (i = 0; rel != NULL && project->files != NULL && i < project->files->len; i++)
+        if (strcmp (g_ptr_array_index (project->files, i), rel) == 0)
+            return TRUE;
+    return FALSE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -745,7 +769,7 @@ project_row_compare (gconstpointer a, gconstpointer b)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void project_outline_update (project_t *project, void *edit);
+static void project_outline_update (project_t *project, void *edit, gboolean edited);
 
 /* Whether a row of the tree is the file of the outline, which has symbols */
 static gboolean
@@ -1285,7 +1309,7 @@ project_tree_toggle (project_t *project)
         char *file = project->host->get_current_file (project->host, top_file);
 
         project_tree_reveal (tree, file);
-        project_outline_update (project, top_file);
+        project_outline_update (project, top_file, FALSE);
         g_free (file);
     }
 }
@@ -1482,23 +1506,27 @@ project_symbol_label (const char *name, const char *kind)
 /* The outline of the file of @edit, from its text as it is now: what the plugin ctags finds in
    it but the members of the structures and the values of the enums */
 static void
-project_outline_update (project_t *project, void *edit)
+project_outline_update (project_t *project, void *edit, gboolean edited)
 {
     char *file = edit != NULL ? project->host->get_current_file (project->host, edit) : NULL;
     GPtrArray *outline = NULL;
     char *text = NULL;
     gsize len = 0;
+    gint64 started;
 
-    if (project->tree == NULL)
+    // ctags slow over this file: an edit waits for the save
+    if (project->tree == NULL
+        || (edited && project->outline_slow && g_strcmp0 (file, project->outline_file) == 0))
     {
         g_free (file);
         return;
     }
+    started = g_get_monotonic_time ();
     if (file != NULL && project_relative (project, file) != NULL && g_utf8_validate (file, -1, NULL)
         && project->host->service_call != NULL && project->host->get_text != NULL)
         text = project->host->get_text (project->host, edit, &len);
     // a file of some megabytes is no source to outline
-    if (text != NULL && len <= 4 * 1024 * 1024)
+    if (text != NULL && len <= 1024 * 1024)
     {
         GVariantDict args;
         GVariant *reply, *symbols;
@@ -1545,6 +1573,8 @@ project_outline_update (project_t *project, void *edit)
         g_ptr_array_unref (project->outline);
     project->outline = outline;
     project->outline_current = -2;  // drawn again
+    // more than a twentieth of a second: too long for every rest of the typing
+    project->outline_slow = g_get_monotonic_time () - started > G_USEC_PER_SEC / 20;
     project_tree_rebuild (project->tree);
     project_outline_cursor (project, edit);
 }
@@ -1556,19 +1586,24 @@ project_handle_event (void *data, void *edit, int event_id, void *payload)
 {
     project_t *project = (project_t *) data;
 
-    (void) payload;
     if (event_id == MC_EP_EVENT_FOCUS_IN && edit != NULL)
         project_file_seen (project, edit);
     else if (event_id == MC_EP_EVENT_TEXT_CHANGED && edit != NULL)
-        project_outline_update (project, edit);
+        project_outline_update (project, edit, TRUE);
     else if (event_id == MC_EP_EVENT_CURSOR_MOVED && edit != NULL)
         project_outline_cursor (project, edit);
     else if (event_id == MC_EP_EVENT_FILE_SAVED || event_id == MC_EP_EVENT_FILE_RENAMED)
     {
-        // a file new to the project
-        project_files_drop (project);
-        if (project->tree != NULL)
-            project_tree_rebuild (project->tree);
+        // a file new to the project: listed again
+        if (payload != NULL && !project_files_have (project, (const char *) payload))
+        {
+            project_files_drop (project);
+            if (project->tree != NULL)
+                project_tree_rebuild (project->tree);
+        }
+        // the outline made too slow for the edits is made with the save
+        if (edit != NULL && project->outline_slow)
+            project_outline_update (project, edit, FALSE);
     }
     return MC_EPR_NOT_SUPPORTED;
 }

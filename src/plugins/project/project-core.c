@@ -108,7 +108,7 @@ project_dir_skipped (const char *name)
 /* --------------------------------------------------------------------------------------------- */
 
 static void
-project_walk (const char *root, const char *rel, GPtrArray *files)
+project_walk (const char *root, const char *rel, GPtrArray *files, gboolean deep)
 {
     char *dir_path = rel != NULL ? g_build_filename (root, rel, (char *) NULL) : g_strdup (root);
     GDir *dir = g_dir_open (dir_path, 0, NULL);
@@ -125,16 +125,18 @@ project_walk (const char *root, const char *rel, GPtrArray *files)
             rel != NULL ? g_build_filename (rel, name, (char *) NULL) : g_strdup (name);
         char *child = g_build_filename (root, child_rel, (char *) NULL);
 
-        if (g_file_test (child, G_FILE_TEST_IS_SYMLINK))
-            g_free (child_rel);  // no loops
+        // a link to a directory is not walked, for no loops; a link to a file is a file
+        if (g_file_test (child, G_FILE_TEST_IS_SYMLINK) && g_file_test (child, G_FILE_TEST_IS_DIR))
+            g_free (child_rel);
         else if (g_file_test (child, G_FILE_TEST_IS_DIR))
         {
             char *meson_private = g_build_filename (child, "meson-private", (char *) NULL);
             char *cmake_cache = g_build_filename (child, "CMakeCache.txt", (char *) NULL);
 
-            if (!project_dir_skipped (name) && !g_file_test (meson_private, G_FILE_TEST_EXISTS)
+            if (deep && !project_dir_skipped (name)
+                && !g_file_test (meson_private, G_FILE_TEST_EXISTS)
                 && !g_file_test (cmake_cache, G_FILE_TEST_EXISTS))
-                project_walk (root, child_rel, files);
+                project_walk (root, child_rel, files, deep);
             g_free (meson_private);
             g_free (cmake_cache);
             g_free (child_rel);
@@ -154,20 +156,13 @@ project_walk (const char *root, const char *rel, GPtrArray *files)
 static GPtrArray *
 project_git_files (const char *root)
 {
-    const char *argv[] = { "git",
-                           "-C",
-                           root,
-                           "-c",
-                           "core.quotepath=off",
-                           "ls-files",
-                           "--cached",
-                           "--others",
-                           "--exclude-standard",
+    const char *argv[] = { "git",      "-C", root,       "-c",       "core.quotepath=off",
+                           "ls-files", "-z", "--cached", "--others", "--exclude-standard",
                            NULL };
     char *out = NULL;
     gint status = 0;
     GPtrArray *files;
-    char **lines, **line;
+    const char *name;
 
     if (!g_spawn_sync (NULL, (char **) argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_STDERR_TO_DEV_NULL,
                        NULL, NULL, &out, NULL, &status, NULL)
@@ -176,12 +171,11 @@ project_git_files (const char *root)
         g_free (out);
         return NULL;
     }
+    /* -z: the names as they are, ended by a NUL, quotes and new lines in them too; the last one
+       is followed by the NUL that ends the output */
     files = g_ptr_array_new_with_free_func (g_free);
-    lines = g_strsplit (out, "\n", -1);
-    for (line = lines; *line != NULL && files->len < PROJECT_FILES_MAX; line++)
-        if (**line != '\0')
-            g_ptr_array_add (files, g_strdup (*line));
-    g_strfreev (lines);
+    for (name = out; *name != '\0' && files->len < PROJECT_FILES_MAX; name += strlen (name) + 1)
+        g_ptr_array_add (files, g_strdup (name));
     g_free (out);
     return files;
 }
@@ -338,7 +332,8 @@ project_list_files (const char *root)
     if (files == NULL)
     {
         files = g_ptr_array_new_with_free_func (g_free);
-        project_walk (root, NULL, files);
+        // the directory of a file that is in no project, the home one for one: its files alone
+        project_walk (root, NULL, files, project_is_project (root));
     }
     g_ptr_array_sort (files, project_path_compare);
     return files;

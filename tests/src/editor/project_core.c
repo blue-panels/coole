@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include <unistd.h>
+
 #include <glib.h>
 #include <glib/gstdio.h>
 
@@ -77,17 +79,41 @@ test_list_files (void)
     char *root = at ("walk");
     GPtrArray *files;
 
+    char *target, *link;
+
+    // a project by its build file
+    touch ("walk/Makefile");
     touch ("walk/b.c");
     touch ("walk/a/x.h");
     touch ("walk/.hidden/y.c");
     touch ("walk/node_modules/z.js");
     touch ("walk/out/meson-private/coredata.dat");
     touch ("walk/out/obj.o");
+    // a link to a file is a file of it
+    target = at ("walk/b.c");
+    link = at ("walk/c.c");
+    g_assert_cmpint (symlink (target, link), ==, 0);
     files = project_list_files (root);
     g_assert_nonnull (files);
-    g_assert_cmpuint (files->len, ==, 2);
-    g_assert_cmpstr (g_ptr_array_index (files, 0), ==, "a/x.h");
-    g_assert_cmpstr (g_ptr_array_index (files, 1), ==, "b.c");
+    g_assert_cmpuint (files->len, ==, 4);
+    g_assert_cmpstr (g_ptr_array_index (files, 0), ==, "Makefile");
+    g_assert_cmpstr (g_ptr_array_index (files, 1), ==, "a/x.h");
+    g_assert_cmpstr (g_ptr_array_index (files, 2), ==, "b.c");
+    g_assert_cmpstr (g_ptr_array_index (files, 3), ==, "c.c");
+    g_ptr_array_free (files, TRUE);
+    g_free (link);
+    g_free (target);
+    g_free (root);
+
+    // a directory that is no project, the home one of a loose file: its own files, not those
+    // under it
+    root = at ("plain");
+    touch ("plain/notes.txt");
+    touch ("plain/deep/far.txt");
+    files = project_list_files (root);
+    g_assert_nonnull (files);
+    g_assert_cmpuint (files->len, ==, 1);
+    g_assert_cmpstr (g_ptr_array_index (files, 0), ==, "notes.txt");
     g_ptr_array_free (files, TRUE);
     g_free (root);
 }
@@ -124,6 +150,8 @@ test_alternate (void)
     char *source, *other, *expected;
     GPtrArray *files;
 
+    // a project, by its build file: its files are those under it
+    touch ("alt/meson.build");
     touch ("alt/src/calc.c");
     touch ("alt/include/calc.h");
     touch ("alt/src/near.c");
