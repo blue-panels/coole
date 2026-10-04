@@ -191,6 +191,18 @@ gives the marks in *[widget-editor]* (*breakpoint-char*, *exec-char* and the
 others) and their colors in *[editor]* (*breakpoint*, *execmark*,
 *execline*); a terminal that is not UTF-8 shows *o*, *?*, *>* and *@*.
 
+**Functions by name**
+
+**Debug → Breakpoint on function...** lists the functions of the project
+whose names have the letters typed, with their files, and puts a breakpoint
+on the one chosen, on its line, as Ctrl-B would there. **Debug → Run to
+function...** runs the stopped program on to the function chosen, with a
+breakpoint GDB takes off when it stops there. The panel names the function
+of every breakpoint, *● calc.c:13  twice*.
+
+The functions come from the index of the plugin ctags. Without it Run to
+function takes a name typed as it is, and a breakpoint goes on a line.
+
 **The rest of the Debug menu**
 
 **Call stack...** chooses a frame in a list, as Enter in the panel does.

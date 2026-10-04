@@ -239,7 +239,9 @@ enum
     DEBUG_ACT_SESSION,
     DEBUG_ACT_STOP,
     DEBUG_ACT_GDB_COMMAND,
-    DEBUG_ACT_MODE
+    DEBUG_ACT_MODE,
+    DEBUG_ACT_FUNCTION_BREAKPOINT,
+    DEBUG_ACT_RUN_TO_FUNCTION
 };
 
 static mc_ep_result_t debug_start (void *data, void *edit);
@@ -271,6 +273,17 @@ static void debug_notes_show (debugger_t *debug);
 static mc_ep_result_t debug_session_show (void *data, void *edit);
 static int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
 static void debug_error (debugger_t *debug, const char *message_text);
+
+/* a function of the project, from the index of the plugin ctags */
+typedef struct
+{
+    char *name;
+    char *file;
+    long line;
+} debug_function_t;
+
+static GPtrArray *debug_functions (const debugger_t *debug, const char *root, const char *file,
+                                   const char *query);
 static void debug_session_refresh (debugger_t *debug);
 
 static void
@@ -704,14 +717,38 @@ debug_panel_rows (const debugger_t *debug)
     }
 
     debug_panel_add (rows, PANEL_TITLE, 0, g_strdup (_ ("Breakpoints")));
-    for (i = 0; i < debug->breakpoints->len; i++)
     {
-        const debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+        // the functions of the files, in their order: the one a breakpoint is in is named
+        GHashTable *functions = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+                                                       (GDestroyNotify) g_ptr_array_unref);
 
-        debug_panel_add (rows, PANEL_BREAKPOINT, i,
-                         g_strdup_printf ("%s %s:%ld",
-                                          debug->glyphs[debug_breakpoint_mark (debug, bp)],
-                                          x_basename (bp->file), bp->line));
+        for (i = 0; i < debug->breakpoints->len; i++)
+        {
+            const debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+            GPtrArray *in_file;
+            const char *function = NULL;
+            guint j;
+
+            if (!g_hash_table_lookup_extended (functions, bp->file, NULL, (gpointer *) &in_file))
+            {
+                in_file = debug_functions (debug, debug->project_dir, bp->file, "");
+                g_hash_table_insert (functions, g_strdup (bp->file), in_file);
+            }
+            for (j = 0; in_file != NULL && j < in_file->len; j++)
+            {
+                const debug_function_t *f = g_ptr_array_index (in_file, j);
+
+                if (f->line > bp->line)
+                    break;
+                function = f->name;
+            }
+            debug_panel_add (
+                rows, PANEL_BREAKPOINT, i,
+                g_strdup_printf ("%s %s:%ld%s%s", debug->glyphs[debug_breakpoint_mark (debug, bp)],
+                                 x_basename (bp->file), bp->line, function != NULL ? "  " : "",
+                                 function != NULL ? function : ""));
+        }
+        g_hash_table_destroy (functions);
     }
     if (debug->breakpoints->len == 0)
         debug_panel_add (rows, PANEL_TEXT, 0,
@@ -3327,6 +3364,300 @@ debug_start (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+/* A breakpoint on a line of a file, sent to GDB when it runs */
+static void
+debug_breakpoint_add (debugger_t *debug, const char *file, long line)
+{
+    char *real = realpath (file, NULL);
+    debug_breakpoint_t *bp = g_new0 (debug_breakpoint_t, 1);
+
+    bp->file = real != NULL ? g_strdup (real) : g_strdup (file);
+    bp->line = line;
+    free (real);
+    g_ptr_array_add (debug->breakpoints, bp);
+    // the breakpoints of the start are sent already: this one is sent by itself
+    if (debug_session_live (debug) && debug->breakpoints_installed)
+        (void) debug_breakpoint_install (debug, bp);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* The functions of the project, from the plugin ctags */
+/* --------------------------------------------------------------------------------------------- */
+
+static WInput *fn_input = NULL;
+static WListbox *fn_list = NULL;
+static debugger_t *fn_debug = NULL;
+static GPtrArray *fn_found = NULL;  // debug_function_t
+static char *fn_last = NULL;
+
+static void
+debug_function_free (gpointer p)
+{
+    debug_function_t *f = (debug_function_t *) p;
+
+    g_free (f->name);
+    g_free (f->file);
+    g_free (f);
+}
+
+/* The functions of the project whose names have the letters of @query, best first: NULL when
+   the plugin ctags is not there */
+static GPtrArray *
+debug_functions (const debugger_t *debug, const char *root, const char *file, const char *query)
+{
+    GVariantDict args;
+    GVariant *reply, *symbols;
+    GVariantIter iter;
+    const char *name, *kind, *path;
+    gint32 line;
+    GPtrArray *found;
+
+    g_variant_dict_init (&args, NULL);
+    if (root != NULL)
+        g_variant_dict_insert (&args, "root", "s", root);
+    if (file != NULL)
+        g_variant_dict_insert (&args, "file", "s", file);
+    g_variant_dict_insert (&args, "query", "s", query);
+    g_variant_dict_insert (&args, "max", "i", (gint32) (file != NULL ? 0 : 500));
+    reply = debug->host->service_call (debug->host, "ctags", "symbols", g_variant_dict_end (&args),
+                                       NULL);
+    if (reply == NULL)
+        return NULL;
+    found = g_ptr_array_new_with_free_func (debug_function_free);
+    symbols = g_variant_lookup_value (reply, "symbols", G_VARIANT_TYPE ("a(sssi)"));
+    if (symbols != NULL)
+    {
+        g_variant_iter_init (&iter, symbols);
+        while (g_variant_iter_next (&iter, "(&s&s&si)", &name, &kind, &path, &line))
+            if (strcmp (kind, "func") == 0)
+            {
+                debug_function_t *f = g_new (debug_function_t, 1);
+
+                f->name = g_strdup (name);
+                f->file = g_strdup (path);
+                f->line = line;
+                g_ptr_array_add (found, f);
+            }
+        g_variant_unref (symbols);
+    }
+    g_variant_unref (reply);
+    return found;
+}
+
+static void
+debug_function_refilter (void)
+{
+    const char *text = input_get_ctext (fn_input);
+    guint i;
+
+    if (fn_last != NULL && strcmp (fn_last, text) == 0)
+        return;
+    g_free (fn_last);
+    fn_last = g_strdup (text);
+    listbox_remove_list (fn_list);
+    if (fn_found != NULL)
+        g_ptr_array_unref (fn_found);
+    fn_found = *text != '\0' ? debug_functions (fn_debug, fn_debug->project_dir, NULL, text) : NULL;
+    for (i = 0; fn_found != NULL && i < fn_found->len; i++)
+    {
+        const debug_function_t *f = g_ptr_array_index (fn_found, i);
+        const char *shown = f->file;
+        char *label;
+
+        if (g_str_has_prefix (shown, fn_debug->project_dir)
+            && shown[strlen (fn_debug->project_dir)] == '/')
+            shown += strlen (fn_debug->project_dir) + 1;
+        label = g_strdup_printf ("%-40s %s:%ld", f->name, shown, f->line);
+        listbox_add_item (fn_list, LISTBOX_APPEND_AT_END, 0, label, (void *) f, FALSE);
+        g_free (label);
+    }
+    listbox_select_first (fn_list);
+    widget_draw (WIDGET (fn_list));
+}
+
+static cb_ret_t
+debug_function_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    switch (msg)
+    {
+    case MSG_INIT:
+    {
+        cb_ret_t ret = dlg_default_callback (w, sender, msg, parm, data);
+
+        widget_select (WIDGET (fn_input));
+        return ret;
+    }
+    case MSG_KEY:
+        if (parm == KEY_UP || parm == KEY_DOWN || parm == KEY_PPAGE || parm == KEY_NPAGE)
+        {
+            send_message (WIDGET (fn_list), w, MSG_KEY, parm, data);
+            return MSG_HANDLED;
+        }
+        return dlg_default_callback (w, sender, msg, parm, data);
+    case MSG_POST_KEY:
+        debug_function_refilter ();
+        return MSG_HANDLED;
+    default:
+        return dlg_default_callback (w, sender, msg, parm, data);
+    }
+}
+
+static lcback_ret_t
+debug_function_activate (WListbox *l)
+{
+    (void) l;
+    return LISTBOX_DONE;
+}
+
+/* Choose a function of the project by the letters of its name; NULL when none is chosen, and
+ *@name with what was typed when the plugin ctags is not there to list them */
+static debug_function_t *
+debug_function_pick (debugger_t *debug, const char *title, char **name)
+{
+    WDialog *dlg;
+    debug_function_t *chosen = NULL;
+    int dlg_h, dlg_w, list_h;
+    GPtrArray *probe;
+
+    *name = NULL;
+    if (debug->project_dir == NULL)
+        return NULL;
+    // without ctags: a name to type
+    probe = debug_functions (debug, debug->project_dir, NULL, "");
+    if (probe == NULL)
+    {
+        *name = input_dialog (title, _ ("Function:"), "debug-function", "", INPUT_COMPLETE_NONE);
+        return NULL;
+    }
+    g_ptr_array_unref (probe);
+
+    dlg_w = MIN (COLS - 4, 90);
+    list_h = MAX (5, MIN (LINES - 10, 16));
+    dlg_h = list_h + 6;
+    dlg =
+        dlg_create (TRUE, (LINES - dlg_h) / 2, (COLS - dlg_w) / 2, dlg_h, dlg_w, WPOS_KEEP_DEFAULT,
+                    TRUE, dialog_colors, debug_function_callback, NULL, "[Debugger]", title);
+    dlg->help_file = "debugger.md";
+    fn_input = input_new (1, 1, input_colors, dlg_w - 2, "", "debug-function", INPUT_COMPLETE_NONE);
+    group_add_widget (GROUP (dlg), fn_input);
+    fn_list = listbox_new (3, 1, list_h, dlg_w - 2, FALSE, debug_function_activate);
+    group_add_widget (GROUP (dlg), fn_list);
+    group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+    group_add_widget (
+        GROUP (dlg),
+        button_new (dlg_h - 2, dlg_w / 2 - 10, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL));
+    group_add_widget (
+        GROUP (dlg),
+        button_new (dlg_h - 2, dlg_w / 2 + 1, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL));
+    fn_debug = debug;
+    g_clear_pointer (&fn_last, g_free);
+    debug_function_refilter ();
+
+    if (dlg_run (dlg) == B_ENTER)
+    {
+        char *text = NULL;
+        const debug_function_t *f = NULL;
+
+        listbox_get_current (fn_list, &text, (void **) &f);
+        if (f != NULL)
+        {
+            chosen = g_new (debug_function_t, 1);
+            chosen->name = g_strdup (f->name);
+            chosen->file = g_strdup (f->file);
+            chosen->line = f->line;
+        }
+        else if (*input_get_ctext (fn_input) != '\0')
+            *name = g_strdup (input_get_ctext (fn_input));
+    }
+    widget_destroy (WIDGET (dlg));
+    fn_input = NULL;
+    fn_list = NULL;
+    fn_debug = NULL;
+    g_clear_pointer (&fn_last, g_free);
+    g_clear_pointer (&fn_found, g_ptr_array_unref);
+    return chosen;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Debug > Breakpoint on function: on the line of the function the index has */
+static mc_ep_result_t
+debug_act_function_breakpoint (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+    debug_function_t *f;
+    char *name;
+    guint i;
+
+    if (!debug_require_project (debug, edit))
+        return MC_EPR_FAILED;
+    f = debug_function_pick (debug, _ ("Breakpoint on function"), &name);
+    if (f == NULL)
+    {
+        if (name != NULL)
+            debug_error (debug,
+                         _ ("The functions of the project come from the index of the "
+                            "plugin ctags: put the breakpoint on a line of the function."));
+        g_free (name);
+        return MC_EPR_FAILED;
+    }
+    debug_breakpoints_sync (debug);
+    if (debug_breakpoint_at (debug, f->file, f->line, &i) == NULL)
+    {
+        debug_breakpoint_add (debug, f->file, f->line);
+        debug_config_save (debug);
+    }
+    (void) debug->host->show_location (debug->host, f->file, f->line);
+    debug_marks_show (debug, NULL);
+    debug_session_refresh (debug);
+    debug_function_free (f);
+    return MC_EPR_OK;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Debug > Run to function: a breakpoint GDB takes off when it stops there */
+static mc_ep_result_t
+debug_act_run_to_function (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+    debug_function_t *f;
+    char *name, *quoted, *command;
+    gboolean sent;
+
+    (void) edit;
+    if (debug->state != DEBUG_STOPPED)
+    {
+        debug_error (debug, _ ("The program runs to a function from where it is stopped."));
+        return MC_EPR_FAILED;
+    }
+    f = debug_function_pick (debug, _ ("Run to function"), &name);
+    if (f != NULL)
+    {
+        // the function by its file, as two of them may have the name (static ones)
+        char *base = g_path_get_basename (f->file);
+
+        g_free (name);
+        name = g_strdup_printf ("%s:%s", base, f->name);
+        g_free (base);
+        debug_function_free (f);
+    }
+    if (name == NULL || *name == '\0')
+    {
+        g_free (name);
+        return MC_EPR_FAILED;
+    }
+    quoted = gdb_mi_quote (name);
+    command = g_strconcat ("-break-insert -t ", quoted, NULL);
+    sent = debug_send (debug, command) && debug_send (debug, "-exec-continue");
+    g_free (command);
+    g_free (quoted);
+    g_free (name);
+    return sent ? MC_EPR_OK : MC_EPR_FAILED;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static mc_ep_result_t
 debug_toggle_breakpoint (void *data, void *edit)
 {
@@ -3362,17 +3693,8 @@ debug_toggle_breakpoint (void *data, void *edit)
     }
     else
     {
-        char *real = realpath (file, NULL);
-
-        bp = g_new0 (debug_breakpoint_t, 1);
-        bp->file = real != NULL ? g_strdup (real) : g_strdup (file);
-        bp->line = line;
-        free (real);
+        debug_breakpoint_add (debug, file, line);
         g_free (file);
-        g_ptr_array_add (debug->breakpoints, bp);
-        // the breakpoints of the start are sent already: this one is sent by itself
-        if (debug_session_live (debug) && debug->breakpoints_installed)
-            (void) debug_breakpoint_install (debug, bp);
     }
     debug_marks_show (debug, NULL);
     debug_config_save (debug);
@@ -4006,6 +4328,8 @@ static const mc_ep_action_t debug_actions[] = {
     { "Stop", debug_stop },
     { "GDB command", debug_act_gdb_command },
     { "Debug keys", debug_act_mode },
+    { "Breakpoint on function", debug_act_function_breakpoint },
+    { "Run to function", debug_act_run_to_function },
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
@@ -4013,12 +4337,14 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     // what one does, first
     { DEBUG_MENU, N_ ("&Start or continue"), DEBUG_ACT_START, NULL },
     { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
+    { DEBUG_MENU, N_ ("Breakpoint on fun&ction..."), DEBUG_ACT_FUNCTION_BREAKPOINT, NULL },
     { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
     { DEBUG_MENU, N_ ("Debug ke&ys in files"), DEBUG_ACT_MODE, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
     { DEBUG_MENU, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
     { DEBUG_MENU, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
     { DEBUG_MENU, N_ ("Step o&ut"), DEBUG_ACT_FINISH, NULL },
+    { DEBUG_MENU, N_ ("Run t&o function..."), DEBUG_ACT_RUN_TO_FUNCTION, NULL },
     { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
     { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
