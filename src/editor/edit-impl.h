@@ -121,6 +121,7 @@ gboolean edit_add_window (WDialog *h, const WRect *r, const edit_arg_t *arg);
 WEdit *edit_find_editor (const WDialog *h);
 gboolean edit_widget_is_editor (const Widget *w);
 void edit_set_buttonbar (WEdit *edit, WButtonBar *bb);
+void edit_plugins_tell_saved (WEdit *edit, gboolean save_as);
 gboolean edit_drop_hotkey_menu (WDialog *h, int key);
 void edit_menu_cmd (WDialog *h);
 void edit_user_menu (WEdit *edit, const char *menu_file, int selected_entry);

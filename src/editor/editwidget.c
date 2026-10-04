@@ -210,9 +210,9 @@ edit_publish_runtime_key (WEdit *edit, int keycode)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Tell the plugins of the screen of @edit about an event of it */
+/* Tell the plugins of the screen of @edit about an event of it, with @payload */
 static void
-edit_plugins_tell (WEdit *edit, int event_id)
+edit_plugins_tell_with (WEdit *edit, int event_id, void *payload)
 {
     const Widget *owner = CONST_WIDGET (CONST_WIDGET (edit)->owner);
     const editor_plugin_ctx_t *ctx;
@@ -231,8 +231,27 @@ edit_plugins_tell (WEdit *edit, int event_id)
             (const editor_plugin_instance_t *) g_ptr_array_index (ctx->instances, i);
 
         if (inst->plugin->handle_event != NULL)
-            (void) inst->plugin->handle_event (inst->plugin_data, edit, event_id, NULL);
+            (void) inst->plugin->handle_event (inst->plugin_data, edit, event_id, payload);
     }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+edit_plugins_tell (WEdit *edit, int event_id)
+{
+    edit_plugins_tell_with (edit, event_id, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The file of @edit is written: MC_EP_EVENT_FILE_SAVED, or MC_EP_EVENT_FILE_RENAMED for Save as,
+   with its name */
+void
+edit_plugins_tell_saved (WEdit *edit, gboolean save_as)
+{
+    edit_plugins_tell_with (edit, save_as ? MC_EP_EVENT_FILE_RENAMED : MC_EP_EVENT_FILE_SAVED,
+                            edit->filename);
 }
 
 /* --------------------------------------------------------------------------------------------- */
