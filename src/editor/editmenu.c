@@ -416,6 +416,20 @@ create_window_menu (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The menu Window: the windows of the editor, then those of the plugins */
+static GList *
+edit_window_menu_remake (void *data)
+{
+    Widget *menubar = WIDGET (data);
+    GList *entries = append_runtime_menu_entries (create_window_menu (), "Window");
+
+    if (menubar->owner != NULL)
+        entries = g_list_concat (entries, edit_window_kinds_menu (DIALOG (menubar->owner)));
+    return entries;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static GList *
 create_options_menu (void)
 {
@@ -697,10 +711,14 @@ edit_init_menu (WMenuBar *menubar)
         idx++;
     }
 
-    menubar_add_menu (menubar,
-                      menu_new (_ ("&Window"),
-                                append_runtime_menu_entries (create_window_menu (), "Window"),
-                                "[Internal File Editor]"));
+    {
+        menu_t *window_menu =
+            menu_new (_ ("&Window"), edit_window_menu_remake (menubar), "[Internal File Editor]");
+
+        // the windows of the plugins in it are open or not: made again whenever it drops
+        menu_set_remake (window_menu, edit_window_menu_remake, menubar);
+        menubar_add_menu (menubar, window_menu);
+    }
     menu_idx_window = idx++;
 
     menubar_add_menu (menubar,

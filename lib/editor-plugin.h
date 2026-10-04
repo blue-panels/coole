@@ -93,6 +93,28 @@ typedef struct
     const char *keys;        /* NULL: none */
 } mc_ep_command_t;
 
+/* Where a window of a plugin is, for the menu Window */
+typedef enum
+{
+    MC_EP_WINDOW_CLOSED = 0, /* not open, or hidden */
+    MC_EP_WINDOW_OPEN,       /* open, behind another one */
+    MC_EP_WINDOW_FOCUSED     /* open, the window the keys go to */
+} mc_ep_window_state_t;
+
+/* A window a plugin opens, for the menu Window (window_kind()): its entry there opens it, brings
+ * it to the front, or closes it when it is in front already; an open one is marked with '*'.
+ * The key shown is that of @command in the keymap section @section, else @shortcut. */
+typedef struct
+{
+    const char *label;    /* N_() translatable, with its hotkey: "Project tr&ee" */
+    const char *section;  /* keymap section of @command: "project", "editor"; NULL: none */
+    const char *command;  /* "ProjectTree" */
+    const char *shortcut; /* the key as text when there is no command: "Ctrl-Alt-P" */
+    mc_ep_window_state_t (*state) (void *data);
+    void (*show) (void *data);  /* open it, or bring it to the front, focused */
+    void (*close) (void *data); /* close it, or hide it */
+} mc_ep_window_kind_t;
+
 /* What the editor provides to a plugin */
 typedef struct mc_editor_host_t
 {
@@ -206,6 +228,10 @@ typedef struct mc_editor_host_t
     gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
     /* Offer to save the modified files under @project_root; FALSE when the user cancels */
     gboolean (*save_modified_files) (struct mc_editor_host_t *host, const char *project_root);
+    /* A window the plugin opens, for the menu Window and the layouts; @kind is copied, @data
+       goes to its functions.  From open(). */
+    void (*window_kind) (struct mc_editor_host_t *host, const mc_ep_window_kind_t *kind,
+                         void *data);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.
