@@ -51,6 +51,7 @@ typedef struct
     char *file;
     long line;
     char *gdb_number;
+    long gdb_line;  // the line GDB put it on, of the text the program was built from
     unsigned int pending_token;
     gboolean disabled;  // kept, but GDB does not stop on it
 } debug_breakpoint_t;
@@ -200,6 +201,8 @@ typedef struct
     long commands[DEBUG_CMD_COUNT];
     // the configurations are kept in the project, .coole/debug.ini, for all who work on it
     gboolean launches_in_project;
+    // the tokens of breakpoints removed before GDB said their numbers: deleted when it does
+    GArray *dropped_tokens;
     // a start waits for the build; the build is done for this start
     gboolean start_after_build;
     gboolean built_for_start;
@@ -279,6 +282,8 @@ static void debug_notes_show (debugger_t *debug);
 static mc_ep_result_t debug_session_show (void *data, void *edit);
 static int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
 static void debug_error (debugger_t *debug, const char *message_text);
+static void debug_breakpoint_move (debugger_t *debug, const char *number, long line);
+static gboolean debug_send (debugger_t *debug, const char *command);
 
 /* a function of the project, from the index of the plugin ctags */
 typedef struct
@@ -287,6 +292,14 @@ typedef struct
     char *file;
     long line;
 } debug_function_t;
+
+/* The functions of a file, NULL when the plugin ctags is not there to give them */
+static void
+debug_functions_free (gpointer p)
+{
+    if (p != NULL)
+        g_ptr_array_unref ((GPtrArray *) p);
+}
 
 static GPtrArray *debug_functions (const debugger_t *debug, const char *root, const char *file,
                                    const char *query);
@@ -725,8 +738,8 @@ debug_panel_rows (const debugger_t *debug)
     debug_panel_add (rows, PANEL_TITLE, 0, g_strdup (_ ("Breakpoints")));
     {
         // the functions of the files, in their order: the one a breakpoint is in is named
-        GHashTable *functions = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
-                                                       (GDestroyNotify) g_ptr_array_unref);
+        GHashTable *functions =
+            g_hash_table_new_full (g_str_hash, g_str_equal, g_free, debug_functions_free);
 
         for (i = 0; i < debug->breakpoints->len; i++)
         {
@@ -1355,6 +1368,7 @@ debug_config_save (debugger_t *debug)
     debug_breakpoints_sync (debug);
     keyfile = g_key_file_new ();
     g_key_file_set_string (keyfile, "Debug", "project", debug->project_dir);
+    g_key_file_set_boolean (keyfile, "Debug", "in_project", debug->launches_in_project);
     if (debug->launches_in_project)
     {
         GKeyFile *shared = g_key_file_new ();
@@ -1409,6 +1423,7 @@ debug_config_load (debugger_t *debug)
     char *path, *shared_path;
     char **locations, **expressions;
     gsize count, i;
+    gboolean own_launches = FALSE;
 
     path = debug_config_path (debug);
     if (path == NULL)
@@ -1416,6 +1431,9 @@ debug_config_load (debugger_t *debug)
     keyfile = g_key_file_new ();
     if (g_key_file_load_from_file (keyfile, path, G_KEY_FILE_NONE, NULL))
     {
+        // Keep in the project turned off: the user's configurations, the project's aside
+        own_launches = g_key_file_has_key (keyfile, "Debug", "in_project", NULL)
+            && !g_key_file_get_boolean (keyfile, "Debug", "in_project", NULL);
         debug_launches_read (debug, keyfile);
         expressions = g_key_file_get_string_list (keyfile, "Debug", "watches", &count, NULL);
         for (i = 0; expressions != NULL && i < count; i++)
@@ -1473,7 +1491,7 @@ debug_config_load (debugger_t *debug)
     shared_path = debug_project_config_path (debug);
     shared = g_key_file_new ();
     debug->launches_in_project = FALSE;
-    if (g_key_file_load_from_file (shared, shared_path, G_KEY_FILE_NONE, NULL))
+    if (!own_launches && g_key_file_load_from_file (shared, shared_path, G_KEY_FILE_NONE, NULL))
     {
         g_ptr_array_set_size (debug->launches, 0);
         debug->active_launch = 0;
@@ -1553,6 +1571,8 @@ debug_request (debugger_t *debug, debug_reply_fn reply, gpointer data, GDestroyN
 static void
 debug_requests_clear (debugger_t *debug)
 {
+    // the tokens of a GDB gone answer nothing any more
+    g_array_set_size (debug->dropped_tokens, 0);
     g_ptr_array_set_size (debug->requests, 0);
     debug->eval_pending = FALSE;
 }
@@ -2161,6 +2181,22 @@ debug_reply_breakpoint (debugger_t *debug, const gdb_mi_record_t *reply, gpointe
     guint i;
 
     (void) data;
+    // a breakpoint removed while GDB was putting it: it goes from GDB too
+    for (i = 0; i < debug->dropped_tokens->len; i++)
+        if (g_array_index (debug->dropped_tokens, unsigned int, i) == reply->token)
+        {
+            const char *number = bkpt != NULL ? gdb_mi_get_string (bkpt, "number") : NULL;
+
+            g_array_remove_index_fast (debug->dropped_tokens, i);
+            if (g_strcmp0 (reply->klass, "done") == 0 && number != NULL)
+            {
+                char *command = g_strconcat ("-break-delete ", number, NULL);
+
+                (void) debug_send (debug, command);
+                g_free (command);
+            }
+            return;
+        }
     for (i = 0; i < debug->breakpoints->len; i++)
     {
         debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
@@ -2183,12 +2219,11 @@ debug_reply_breakpoint (debugger_t *debug, const gdb_mi_record_t *reply, gpointe
         bp->gdb_number = g_strdup (gdb_mi_get_string (bkpt, "number"));
         // GDB stops on the next line with code: the breakpoint goes there
         line = gdb_mi_get_string (bkpt, "line");
-        if (line != NULL && atol (line) > 0 && atol (line) != bp->line)
+        if (line != NULL && atol (line) > 0)
         {
-            debug_breakpoints_sync (debug);
-            bp->line = atol (line);
-            debug_breakpoints_dedup (debug);
-            debug_config_save (debug);
+            bp->gdb_line = atol (line);
+            if (bp->gdb_line != bp->line)
+                debug_breakpoint_move (debug, bp->gdb_number, bp->gdb_line);
         }
         debug_marks_show (debug, NULL);
         return;
@@ -2229,6 +2264,20 @@ debug_finished (debugger_t *debug)
     g_ptr_array_set_size (debug->frames, 0);
     debug_watches_clear_values (debug);
     debug_session_refresh (debug);
+}
+
+/* GDB could not run the program: the start is over, Start comes back */
+static void
+debug_reply_run (debugger_t *debug, const gdb_mi_record_t *reply, gpointer data)
+{
+    (void) data;
+    if (g_strcmp0 (reply->klass, "error") != 0)
+        return;
+    debug_error (debug,
+                 gdb_mi_record_string (reply, "msg") != NULL
+                     ? gdb_mi_record_string (reply, "msg")
+                     : _ ("GDB could not run the program."));
+    debug_finished (debug);
 }
 
 /* The program has stopped: at a breakpoint, after a step, on a signal, or for good */
@@ -2340,6 +2389,28 @@ debug_stopped (debugger_t *debug, const gdb_mi_record_t *record)
 }
 
 /* GDB has moved a breakpoint: one waiting for a library is now in it */
+/* The breakpoint of GDB @number to @line, the marks of the text taken first: the sync may merge
+   two breakpoints of one line, so the breakpoint is looked for after it */
+static void
+debug_breakpoint_move (debugger_t *debug, const char *number, long line)
+{
+    guint i;
+
+    debug_breakpoints_sync (debug);
+    for (i = 0; i < debug->breakpoints->len; i++)
+    {
+        debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+
+        if (g_strcmp0 (bp->gdb_number, number) == 0)
+        {
+            bp->line = line;
+            debug_breakpoints_dedup (debug);
+            debug_config_save (debug);
+            return;
+        }
+    }
+}
+
 static void
 debug_breakpoint_modified (debugger_t *debug, const gdb_mi_record_t *record)
 {
@@ -2350,15 +2421,17 @@ debug_breakpoint_modified (debugger_t *debug, const gdb_mi_record_t *record)
 
     if (number == NULL || line == NULL || atol (line) <= 0)
         return;
+    /* GDB says so at every hit, the count of them changed, with the line of the text the program
+       was built from: only a line GDB has changed moves the breakpoint, not the one the edits
+       of the text have moved it to since */
     for (i = 0; i < debug->breakpoints->len; i++)
     {
         debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
 
-        if (g_strcmp0 (bp->gdb_number, number) == 0 && bp->line != atol (line))
+        if (g_strcmp0 (bp->gdb_number, number) == 0 && bp->gdb_line != atol (line))
         {
-            debug_breakpoints_sync (debug);
-            bp->line = atol (line);
-            debug_breakpoints_dedup (debug);
+            bp->gdb_line = atol (line);
+            debug_breakpoint_move (debug, number, bp->gdb_line);
             debug_marks_show (debug, NULL);
             return;
         }
@@ -2475,6 +2548,8 @@ debug_breakpoint_remove (debugger_t *debug, guint index)
         (void) debug_send (debug, command);
         g_free (command);
     }
+    else if (bp->pending_token != 0)
+        g_array_append_val (debug->dropped_tokens, bp->pending_token);
     g_ptr_array_remove_index (debug->breakpoints, index);
 }
 
@@ -2646,7 +2721,7 @@ debug_setup_next (debugger_t *debug)
     }
     debug->breakpoints_installed = TRUE;
     debug_marks_show (debug, NULL);
-    if (!debug_send (debug, "-exec-run"))
+    if (debug_request (debug, debug_reply_run, NULL, NULL, "-exec-run") == 0)
         debug->state = DEBUG_FINISHED;
 }
 
@@ -2715,6 +2790,8 @@ debug_project_switch (debugger_t *debug, char *project)
     debug_pty_close (debug);
     debug_clear_current (debug);
     debug->state = DEBUG_OFF;
+    // the build of the project before is no start of this one
+    debug->start_after_build = FALSE;
     debug->breakpoints_installed = FALSE;
     g_ptr_array_set_size (debug->breakpoints, 0);
     debug_marks_show (debug, NULL);
@@ -4220,6 +4297,8 @@ debug_stop (void *data, void *edit)
     debugger_t *debug = (debugger_t *) data;
 
     (void) edit;
+    // a start waiting for the build is called off too
+    debug->start_after_build = FALSE;
     gdb_mi_session_stop (debug->gdb);
     g_queue_clear_full (debug->startup_commands, g_free);
     debug_requests_clear (debug);
@@ -4422,6 +4501,7 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->startup_commands = g_queue_new ();
     debug->console = g_string_new (NULL);
     debug->requests = g_ptr_array_new_with_free_func (debug_request_free);
+    debug->dropped_tokens = g_array_new (FALSE, FALSE, sizeof (unsigned int));
     debug->locals = g_ptr_array_new_with_free_func (debug_local_free);
     debug->frames = g_ptr_array_new_with_free_func (debug_frame_free);
     debug->pty_master = -1;
@@ -4473,6 +4553,7 @@ debug_close (void *data)
         g_free (debug->glyphs[i]);
     g_free (debug->current_func);
     g_ptr_array_free (debug->requests, TRUE);
+    g_array_free (debug->dropped_tokens, TRUE);
     g_ptr_array_free (debug->locals, TRUE);
     g_string_free (debug->console, TRUE);
     g_free (debug);
