@@ -34,6 +34,7 @@
 #include "src/editor/editwindow.h"
 
 #include "debugger.h"
+#include "src/plugins/project/project-core.h"  // project_find_root (), without the project plugin
 #include "gdb-mi.h"
 
 typedef enum
@@ -2586,20 +2587,25 @@ debug_project_of (debugger_t *debug, void *edit)
     GVariant *reply;
     char *root = NULL;
 
-    if (debug->host->service_call == NULL)
+    if (debug->host->service_call != NULL)
     {
-        g_free (file);
-        return NULL;
+        g_variant_dict_init (&args, NULL);
+        if (file != NULL)
+            g_variant_dict_insert (&args, "file", "s", file);
+        reply = debug->host->service_call (debug->host, "project", "root",
+                                           g_variant_dict_end (&args), NULL);
+        if (reply != NULL)
+        {
+            (void) g_variant_lookup (reply, "root", "s", &root);
+            g_variant_unref (reply);
+        }
     }
-    g_variant_dict_init (&args, NULL);
-    if (file != NULL)
-        g_variant_dict_insert (&args, "file", "s", file);
-    reply = debug->host->service_call (debug->host, "project", "root", g_variant_dict_end (&args),
-                                       NULL);
-    if (reply != NULL)
+    // without the project plugin, by the same rules, when the file is in a project
+    if (root == NULL && file != NULL)
     {
-        (void) g_variant_lookup (reply, "root", "s", &root);
-        g_variant_unref (reply);
+        root = project_find_root (file);
+        if (!project_is_project (root))
+            g_clear_pointer (&root, g_free);
     }
     g_free (file);
     return root;
