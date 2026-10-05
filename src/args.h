@@ -17,6 +17,7 @@ extern gboolean mc_args__force_colors;
 extern gboolean mc_args__nokeymap;
 extern gboolean mc_args__no_lua;
 extern char *mc_args__keymap_file;
+extern char *mc_args__debug_project;
 
 /* The files to edit: a list of edit_arg_t */
 extern GList *mc_args__edit_files;
