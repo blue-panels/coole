@@ -54,6 +54,8 @@ libinternal_sources = files(
   'plugins/build/build.c',
   'plugins/build/build-core.c',
   'plugins/project/project-core.c',
+  'plugins/debugger/debugger.c',
+  'plugins/debugger/gdb-mi.c',
   'plugins/etags/etags.c',
   'plugins/spell/spell.c',
 )
@@ -84,7 +86,7 @@ endif
 libinternal = static_library('internal',
   libinternal_sources,
   c_args: src_c_args,
-  dependencies: [libmc_dep, intl],
+  dependencies: [libmc_dep, intl, terminal_dep],
   implicit_include_directories: false,
 )
 
@@ -100,7 +102,7 @@ libforplugins = static_library('forplugins',
 )
 
 libinternal_dep = declare_dependency(link_with: [libinternal, libforplugins],
-                                     dependencies: [libmc_dep, intl])
+                                     dependencies: [libmc_dep, intl, terminal_dep])
 
 coole = executable('coole',
   'main.c',
@@ -117,6 +119,7 @@ coole = executable('coole',
 # that a dialog of a plugin can name its own file
 install_data(
   'plugins/ctags/ctags.md',
+  'plugins/debugger/debugger.md',
   'plugins/project/project.md',
   'plugins/build/build.md',
   'plugins/etags/etags.md',

@@ -3,20 +3,23 @@
 
    Copyright (C) 2009-2025
    Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
 
    Written by:
    Slava Zanko <slavazanko@gmail.com>, 2009.
    Andrew Borodin <aborodin@vmail.ru>, 2011, 2012.
    Ilia Maslakov <il.smind@gmail.com>, 2026.
 
-   This file is part of the Midnight Commander.
+   This file is part of coole,
+   a text editor based on GNU Midnight Commander.
 
-   The Midnight Commander is free software: you can redistribute it
+   coole is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   The Midnight Commander is distributed in the hope that it will be useful,
+   coole is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -60,6 +63,9 @@ gboolean mc_args__no_lua = FALSE;
 
 /* keymap file */
 char *mc_args__keymap_file = NULL;
+
+/* --debug: the directory of the project to debug, absolute; NULL without */
+char *mc_args__debug_project = NULL;
 
 GList *mc_args__edit_files = NULL;
 
@@ -139,6 +145,16 @@ static const GOptionEntry argument_main_table[] = {
         &mc_args__no_lua,
         N_ ("Disables Lua support"),
         NULL,
+    },
+
+    {
+        "debug",
+        'D',
+        G_OPTION_FLAG_IN_MAIN,
+        G_OPTION_ARG_FILENAME,
+        &mc_args__debug_project,
+        N_ ("Opens the project of that directory to debug it"),
+        N_ ("<directory>"),
     },
 
     G_OPTION_ENTRY_NULL,
@@ -570,6 +586,20 @@ mc_setup_by_args (int argc, char **argv, GError **mcerror)
         mc_global.tty.disable_colors = FALSE;
 
     mc_args__edit_files = parse_mcedit_arguments (argc - 1, &argv[1]);
+
+    if (mc_args__debug_project != NULL)
+    {
+        char *dir = g_canonicalize_filename (mc_args__debug_project, NULL);
+
+        g_free (mc_args__debug_project);
+        mc_args__debug_project = dir;
+        if (!g_file_test (dir, G_FILE_TEST_IS_DIR))
+        {
+            mc_propagate_error (mcerror, 0, _ ("%s: no such directory to debug\n"), dir);
+            return FALSE;
+        }
+        edit_set_startup_option ("debug", dir);
+    }
 
     return TRUE;
 }
