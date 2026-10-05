@@ -50,6 +50,7 @@ libinternal_sources = files(
   'plugins/ctags/ctags-plugin.c',
   'plugins/ctags/ctags-repository.c',
   'plugins/ctags/ctags-ui.c',
+  'plugins/project/project.c',
   'plugins/project/project-core.c',
   'plugins/etags/etags.c',
   'plugins/spell/spell.c',
@@ -114,6 +115,7 @@ coole = executable('coole',
 # that a dialog of a plugin can name its own file
 install_data(
   'plugins/ctags/ctags.md',
+  'plugins/project/project.md',
   'plugins/etags/etags.md',
   'plugins/spell/spell.md',
   install_dir: pkgdatadir / 'help',
