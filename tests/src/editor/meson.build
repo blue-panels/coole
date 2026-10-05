@@ -21,3 +21,6 @@ endforeach
 test('project_core', executable('project_core', 'project_core.c',
                                 '../../../src/plugins/project/project-core.c',
                                 dependencies: [glib_dep]), suite: 'src/editor')
+test('build_core', executable('build_core', 'build_core.c',
+                              '../../../src/plugins/build/build-core.c',
+                              dependencies: [glib_dep]), suite: 'src/editor')
