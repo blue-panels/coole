@@ -65,6 +65,16 @@ files, the user files and the plugins.
 *--no-lua*
 : Start without the Lua runtime: no Lua script is loaded.
 
+*-D, --debug=directory*
+: Open the project of that directory to debug it: the latest file of the
+project, the tree of the project and the panel of the debugger at
+the right. The file windows take the keys of the debugger: F6 puts a
+breakpoint, F5 builds the program and runs it, making its debug
+configuration the first time, F7 and F8 step, F3 indexes the symbols of the
+project; F2, F9 and F10 stay Save, the menu and Quit, and Alt-Shift-G goes
+to the panel and back. It needs the project, build and debugger plugins,
+and ctags for F3.
+
 *-h, -?, --help*
 : Show the options and what they do.
 
@@ -734,15 +744,17 @@ in the ini file.
 : The windows that are open, to go to one of them. See
 [Open files](#open-files).
 
-Under them come the windows the plugins open. An entry opens its window,
-brings it to the front when it is behind another, and closes it when it is
-in front already; an open one is marked with *\**. A plugin that is
-switched off has no entry.
+Under them come the windows of the plugins: the tree of the project, the
+output of the build, the panel and the console of the debugger, the
+terminal, the terminal of the program the debugger runs, the Preview. An entry opens its window, brings it to the front
+when it is behind another, and closes it when it is in front already; an
+open one is marked with *\**. A plugin that is switched off has no entry.
 
-The windows of the plugins stand in docks: in the column at the right, one
-above the other, all the height of the screen, or in the row at the bottom,
-under the windows of the files, where they are tabs, one of them seen, their
-names on its title. A click on a name, or
+The windows of the plugins stand in docks. The tree, the panel of the
+debugger and the Preview go in the column at the right, one above the other,
+all the height of the screen. The console, the output of the build and the
+terminal go in the row at the bottom, under the windows of the files: they
+are tabs, one of them seen, their names on its title. A click on a name, or
 **Ctrl-Alt-PgDn** and **Ctrl-Alt-PgUp** (*WindowTabNext* and *WindowTabPrev*
 in the keymap), shows another. A file window that was fullscreen takes the
 rest of the screen, and the screen again when the docks are empty. A window
@@ -761,7 +773,7 @@ read.
 
 The windows of a project are kept when the editor ends, and come back when
 it starts with a file of the project.
-The layouts are kept in
+*coole --debug* starts with the layout *Debug*. The layouts are kept in
 *layouts.ini* of the settings.
 
 ## Plugins menu
@@ -1029,6 +1041,11 @@ on again.
 : Open the settings of the plugin the cursor is on. A plugin that has none says
 so. On the row of the Lua engine it opens the
 [Lua scripts](#lua-scripts).
+
+**IDE: project, build, debugger**
+: Switch the three plugins that make an IDE of the editor on together, or off
+together when all of them are on: the project and its files, the build, and
+the debugger. Each of them works without the others too.
 
 ### Plugin info <a id="plugin-info"></a>
 
@@ -1395,7 +1412,7 @@ output. See [Terminal](terminal.md#terminal).
 The viewer plugin shows the file the way it is meant to read, whatever the
 file is, in a window named Preview at the right of it.
 **Ctrl-Alt-p**,
-or Preview in the Plugins menu, shows and hides it. The file keeps the
+or Preview in the Window menu, shows and hides it. The file keeps the
 focus; the Preview is drawn again as the text changes, follows the cursor,
 and shows the file window that comes to the front. The window is moved,
 resized and closed like the window of a file. Once it has the focus, it has

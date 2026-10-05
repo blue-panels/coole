@@ -235,10 +235,36 @@ applies individually to each of these three properties.
         bookmarkfound
             Lines as the result of "Find all"
 
+        breakpoint
+            Mark of a breakpoint in the gutter; unset, bright red on the
+            background of the gutter
+
+        breakpointpending
+            Mark of a breakpoint GDB has not taken yet, or has refused
+
+        breakpointdisabled
+            Mark of a disabled breakpoint
+
+        breakpointline
+            Lines with a breakpoint; unset, they are not colored
+
+        execmark
+            Mark of the line where the debugged program stopped; unset,
+            yellow on the background of the gutter
+
+        execline
+            The line where the debugged program stopped; unset, the
+            color of bookmarkfound
+
         editnote
             Notes of a plugin after the text of a line: the values of the
             variables of the debugger; unset, the color of
             editwhitespace
+
+        builderror
+        buildwarning
+            Marks of a line the compiler has named an error or a
+            warning of
 
 
     [lines]
@@ -316,6 +342,31 @@ applies individually to each of these three properties.
 
         fold-close-char
             Indicator for a closed (collapsed) fold in the editor
+
+        breakpoint-char
+        breakpoint-pending-char
+        breakpoint-disabled-char
+            Marks of a breakpoint in the gutter: taken by GDB, not taken
+            yet or refused, disabled (default: a filled circle, a lozenge
+            and an empty circle; o ? - on a terminal that is not UTF-8)
+
+        exec-char
+        exec-breakpoint-char
+            Mark of the line where the debugged program stopped, and of
+            that line when it has a breakpoint (default: > and a diamond;
+            > @ on a terminal that is not UTF-8)
+
+        tree-closed-char
+        tree-open-char
+            Marks of a closed and an open directory in the tree of the
+            project (default: > and a triangle; + and - on a terminal that
+            is not UTF-8)
+
+        build-error-char
+        build-warning-char
+            Marks of a line the compiler has named an error or a warning
+            of (default: a multiplication sign and !; E and ! on a
+            terminal that is not UTF-8)
 
 
 Aliases section

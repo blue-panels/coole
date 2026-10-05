@@ -44,7 +44,21 @@ there and develops it as a program of its own.
   short, with what it holds beside it;
   a type without a renderer is shown as its text.  Scripts and plugins can show any text of theirs in the
   windows of the viewer.
-- **Editor plugins**: a plugin framework the ctags, etags and spell plugins are
+- **Project**: the project of a file, found from its git repository or its
+  build files: any file of it a few letters away (`Alt+Shift+P`), the recent
+  ones (`Ctrl+E`), its tree at the left (`Alt+Shift+T`), and the header of a
+  source (`Alt+Shift+A`). See [`project.md`](src/plugins/project/project.md).
+- **Build**: the project built with meson, cmake or make, found by itself
+  (`Alt+Shift+B`), the output at the bottom, the lines with errors marked in
+  the gutter and gone to one after another (`Alt+Shift+J`). See
+  [`build.md`](src/plugins/build/build.md).
+- **Debugger**: run a local program under GDB, set line breakpoints, step through
+  source, and inspect the call stack and local variables from the Debug menu.
+  See [`debugger.md`](src/plugins/debugger/debugger.md).
+  `coole --debug DIR` opens a project ready to debug: its latest file, its
+  tree and the panel of the debugger; `Ctrl+B` puts a breakpoint and
+  `Alt+Shift+R` builds and runs.
+- **Editor plugins**: a plugin framework the project, build, debugger, ctags, etags and spell plugins are
   built on; see [`doc/PLUGINS`](doc/PLUGINS).
 - **Lua scripts** for the editor, run by the Lua runtime plugin and managed
   from the Options menu; see [`doc/LUA_PLUGINS.md`](doc/LUA_PLUGINS.md).
