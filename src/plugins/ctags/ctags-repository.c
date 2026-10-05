@@ -242,14 +242,32 @@ ctags_entry_resolve_line (const ctags_entry_t *e, const char *file_path)
 ctags_repo_t *
 ctags_repo_load (const char *tags_path)
 {
+    char *root;
     ctags_repo_t *repo;
 
-    if (tags_path == NULL || !exist_file (tags_path))
+    if (tags_path == NULL)
+        return NULL;
+    root = g_path_get_dirname (tags_path);
+    repo = ctags_repo_load_root (tags_path, root);
+    g_free (root);
+    return repo;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A tags file whose names are from @root_dir, which need not be its directory: .coole/tags of a
+   project names the files from the project */
+ctags_repo_t *
+ctags_repo_load_root (const char *tags_path, const char *root_dir)
+{
+    ctags_repo_t *repo;
+
+    if (tags_path == NULL || root_dir == NULL || !exist_file (tags_path))
         return NULL;
 
     repo = g_new0 (ctags_repo_t, 1);
     repo->tags_path = g_strdup (tags_path);
-    repo->root_dir = g_path_get_dirname (tags_path);
+    repo->root_dir = g_strdup (root_dir);
     repo->entries = g_ptr_array_new_with_free_func (ctags_entry_free_ptr);
     repo->nav_history = g_ptr_array_new_with_free_func (ctags_entry_free_ptr);
 

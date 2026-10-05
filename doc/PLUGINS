@@ -39,7 +39,9 @@ The plugins that come with coole are built into the program (see
 src/meson.build, which compiles them into the internal library):
 
   src/plugins/ctags/      self-registered menu entries, named
-                                 actions, dynamic shortcut resolver
+                                 actions, dynamic shortcut resolver;
+                         the index of the project in the
+                         background; the "ctags" service
   src/plugins/spell/      activate + configure + query_state +
                                  handle_key
   src/plugins/etags/      handle_action only
