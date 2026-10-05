@@ -3,6 +3,9 @@
 
    Copyright (C) 2026
    Free Software Foundation, Inc.
+
+   Written by:
+   Ilia Maslakov <il.smind@gmail.com>, 2026
 */
 
 #define TEST_SUITE_NAME "/src/editor"
@@ -12,6 +15,7 @@
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
 #include "src/editor/editwindow.h"
+#include "src/editor/editdock.h"
 
 /* A window that is not a file: the windows of the screen are not the editor's alone */
 typedef struct
@@ -602,6 +606,45 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A tree on the left edge: the file moves to the right of it, the Preview on the right keeps its
+   place, and both go back when the tree goes */
+START_TEST (test_window_make_room_on_the_right)
+{
+    WEditWindow *win = &test_win->window;
+    test_window_t *right = sticky_window_new (1, 50, 22, 30);
+    test_window_t *tree;
+
+    edit_window_toggle_fullscreen (win);
+    edit_window_toggle_fullscreen (win);
+    edit_window_make_room (&right->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 50);
+
+    tree = sticky_window_new (1, 0, 22, 20);
+    edit_window_make_room (&tree->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 20, 22, 30);
+    test_assert_rect (&WIDGET (right)->rect, 1, 50, 22, 30);
+
+    edit_window_give_room_back (&tree->window);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 50);
+
+    edit_window_give_room_back (&right->window);
+    ck_assert_int_eq (win->fullscreen, 1);
+
+    // alone with the file: the file takes all the rest
+    edit_window_make_room (&tree->window);
+    ck_assert_int_eq (win->fullscreen, 0);
+    test_assert_rect (&WIDGET (win)->rect, 1, 20, 22, 60);
+    edit_window_give_room_back (&tree->window);
+    ck_assert_int_eq (win->fullscreen, 1);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 80);
+
+    sticky_window_free (tree);
+    sticky_window_free (right);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* Esc puts the neighbors back too, and draws them as before */
 START_TEST (test_window_sticky_cancel)
 {
@@ -1086,6 +1129,61 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The docks: the column at the right, the tabs at the bottom, the window of the file that was
+   fullscreen in the rest, and fullscreen again when they are empty */
+START_TEST (test_window_docks)
+{
+    WEditWindow *win = &test_win->window;
+    test_window_t *right, *b1, *b2;
+
+    edit_window_toggle_fullscreen (win);
+    edit_window_toggle_fullscreen (win);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 80);
+
+    // a column of 24 of the 80 columns
+    right = sticky_window_new (1, 60, 22, 20);
+    edit_dock_add (&right->window, EDIT_DOCK_RIGHT, 24);
+    test_assert_rect (&WIDGET (right)->rect, 1, 56, 22, 24);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 56);
+    ck_assert_int_eq (win->fullscreen, 0);
+    ck_assert_int_eq (win->dock_fill, 1);
+
+    // two tabs at the bottom, under the file: the last one seen
+    b1 = sticky_window_new (17, 0, 6, 80);
+    edit_dock_add (&b1->window, EDIT_DOCK_BOTTOM, 6);
+    b2 = sticky_window_new (17, 0, 6, 80);
+    edit_dock_add (&b2->window, EDIT_DOCK_BOTTOM, 6);
+    test_assert_rect (&WIDGET (b1)->rect, 18, 0, 5, 56);
+    test_assert_rect (&WIDGET (b2)->rect, 18, 0, 5, 56);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 17, 56);
+    ck_assert (widget_get_state (WIDGET (b2), WST_VISIBLE));
+    ck_assert (!widget_get_state (WIDGET (b1), WST_VISIBLE));
+
+    // the next tab, round
+    edit_dock_tab_step (&owner, 1);
+    ck_assert (widget_get_state (WIDGET (b1), WST_VISIBLE));
+    ck_assert (!widget_get_state (WIDGET (b2), WST_VISIBLE));
+    ck_assert (edit_dock_tab () == &b1->window);
+
+    // the tabs go one by one, then the column: the file has the screen again
+    ck_assert (edit_dock_remove (&b1->window));
+    ck_assert (widget_get_state (WIDGET (b2), WST_VISIBLE));
+    ck_assert (edit_dock_remove (&b2->window));
+    ck_assert (!edit_dock_remove (&b2->window));
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 56);
+    ck_assert (edit_dock_remove (&right->window));
+    ck_assert_int_eq (win->fullscreen, 1);
+    ck_assert_int_eq (win->dock_fill, 0);
+    test_assert_rect (&WIDGET (win)->rect, 1, 0, 22, 80);
+
+    sticky_window_free (b2);
+    sticky_window_free (b1);
+    sticky_window_free (right);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (void)
 {
@@ -1109,6 +1207,7 @@ main (void)
     tcase_add_test (tc_core, test_window_sticky_two_over_one);
     tcase_add_test (tc_core, test_window_sticky_keeps_the_room);
     tcase_add_test (tc_core, test_window_make_room_from_two);
+    tcase_add_test (tc_core, test_window_make_room_on_the_right);
     tcase_add_test (tc_core, test_window_sticky_cancel);
     tcase_add_test (tc_core, test_window_sticky_screen_edge);
     tcase_add_test (tc_core, test_window_sticky_in_the_way);
@@ -1125,6 +1224,7 @@ main (void)
     tcase_add_test (tc_core, test_window_drag_buttonbar);
     tcase_add_test (tc_core, test_window_destroy_selects_top);
     tcase_add_test (tc_core, test_editor_is_window);
+    tcase_add_test (tc_core, test_window_docks);
 
     return mctest_run_all (tc_core);
 }

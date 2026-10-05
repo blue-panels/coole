@@ -4,7 +4,7 @@ configure_file(input: 'edit_complete_word_cmd_test_data.txt.in',
   copy: true)
 
 foreach name : ['edit_buffer_layout', 'edit_clip_codeset', 'edit_complete_word_cmd',
-                'edit_control_chars', 'edit_fold', 'edit_insert_column_of_text',
+                'edit_control_chars', 'edit_fold', 'edit_marker', 'edit_insert_column_of_text',
                 'edit_plugin_etags', 'edit_undo_history', 'edit_undo_modified', 'edit_save_sudo',
                 'edit_replace_cmd', 'edit_window', 'nav_probe', 'ctags_parser_tests', 'ctags_index_tests',
                 'ctags_fuzzy_tests']
@@ -17,3 +17,7 @@ foreach name : ['edit_buffer_layout', 'edit_clip_codeset', 'edit_complete_word_c
     workdir: meson.current_build_dir(),
     suite: 'src/editor')
 endforeach
+
+test('project_core', executable('project_core', 'project_core.c',
+                                '../../../src/plugins/project/project-core.c',
+                                dependencies: [glib_dep]), suite: 'src/editor')

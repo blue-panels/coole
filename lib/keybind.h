@@ -202,6 +202,9 @@ enum
     CK_WindowSticky,
     CK_WindowNext,
     CK_WindowPrev,
+    CK_WindowTabNext,
+    CK_WindowTabPrev,
+    CK_WindowLayout,
     // misc commands
     CK_SpellCheck,
     CK_SpellCheckCurrentWord,
@@ -221,7 +224,10 @@ enum
     CK_InsertLiteral,
     CK_ExternalCommand,
     CK_Date,
-    CK_UndoHistory
+    CK_UndoHistory,
+
+    // the commands the plugins register, up to the commands of the plugin menus
+    CK_PluginFirst = 20000L
 };
 
 /*** structures declarations (and typedefs of structures)*****************************************/
@@ -240,6 +246,7 @@ typedef struct global_keymap_t
 
 void keybind_cmd_bind (GArray *keymap, const char *keybind, long action);
 long keybind_lookup_action (const char *name);
+long keybind_register_action (const char *name, const char *description);
 const char *keybind_lookup_actionname (long action);
 const char *keybind_lookup_actiondesc (long action);
 const char *keybind_lookup_keymap_shortcut (const global_keymap_t *keymap, long action);

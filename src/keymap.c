@@ -71,9 +71,23 @@ typedef struct global_keymap_ini_t
     const char *value;
 } global_keymap_ini_t;
 
+/* a section of the keymap a plugin has registered */
+typedef struct
+{
+    char *section;
+    char *title;
+    GArray *defaults;  // keymap_command_t, of strings of its own
+    GArray *keymap;
+    const global_keymap_t *map;
+} keymap_plugin_section_t;
+
 /*** forward declarations (file scope functions) *************************************************/
 
 /*** file scope variables ************************************************************************/
+
+static GPtrArray *plugin_sections = NULL;
+static gboolean keymap_loaded = FALSE;
+static gboolean keymap_from_file = FALSE;
 
 /* dialog */
 static const global_keymap_ini_t default_dialog_keymap[] = {
@@ -594,7 +608,132 @@ done:
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* The keys of a section of a plugin: those the keymap files give, the plugin's own for the rest */
+static void
+keymap_plugin_section_load (keymap_plugin_section_t *ps, mc_config_t *cfg)
+{
+    guint i;
+
+    if (ps->keymap != NULL)
+        g_array_free (ps->keymap, TRUE);
+    ps->keymap = g_array_new (TRUE, FALSE, sizeof (global_keymap_t));
+
+    for (i = 0; i < ps->defaults->len; i++)
+    {
+        const keymap_command_t *c = &g_array_index (ps->defaults, keymap_command_t, i);
+        long action;
+        gchar **keys, **k;
+
+        if (c->keys == NULL || (cfg != NULL && mc_config_has_param (cfg, ps->section, c->name)))
+            continue;
+        action = keybind_lookup_action (c->name);
+        if (action == CK_IgnoreKey)
+            continue;
+        keys = g_strsplit (c->keys, ";", -1);
+        for (k = keys; *k != NULL; k++)
+        {
+            g_strstrip (*k);
+            if (**k != '\0')
+                keybind_cmd_bind (ps->keymap, *k, action);
+        }
+        g_strfreev (keys);
+    }
+    if (cfg != NULL)
+        load_keymap_from_section (ps->section, ps->keymap, cfg);
+    ps->map = (const global_keymap_t *) ps->keymap->data;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static keymap_plugin_section_t *
+keymap_plugin_section_find (const char *section)
+{
+    guint i;
+
+    for (i = 0; plugin_sections != NULL && i < plugin_sections->len; i++)
+    {
+        keymap_plugin_section_t *ps = g_ptr_array_index (plugin_sections, i);
+
+        if (strcmp (ps->section, section) == 0)
+            return ps;
+    }
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+/**
+ * A plugin gives a section of the keymap of its own: its commands get their numbers, the keymap
+ * files may bind them, and the Key bindings dialog shows them.  A section registered again keeps
+ * what it has.
+ *
+ * @param commands their names, N_() descriptions and default keys ("f5; ctrl-r"), NULL name ends
+ */
+
+void
+keymap_register_section (const char *section, const char *title, const keymap_command_t *commands)
+{
+    keymap_plugin_section_t *ps;
+    mc_config_t *cfg;
+
+    if (section == NULL || commands == NULL || keymap_plugin_section_find (section) != NULL)
+        return;
+
+    ps = g_new0 (keymap_plugin_section_t, 1);
+    ps->section = g_strdup (section);
+    ps->title = g_strdup (title != NULL ? title : section);
+    ps->defaults = g_array_new (FALSE, FALSE, sizeof (keymap_command_t));
+    for (; commands->name != NULL; commands++)
+    {
+        keymap_command_t c;
+
+        (void) keybind_register_action (commands->name, commands->description);
+        c.name = g_strdup (commands->name);
+        c.description = g_strdup (commands->description);
+        c.keys = g_strdup (commands->keys);
+        g_array_append_val (ps->defaults, c);
+    }
+    if (plugin_sections == NULL)
+        plugin_sections = g_ptr_array_new ();
+    g_ptr_array_add (plugin_sections, ps);
+
+    // the keymap is loaded already: this section is read now
+    cfg = keymap_loaded ? load_setup_get_keymap_profile_config (keymap_from_file) : NULL;
+    keymap_plugin_section_load (ps, cfg);
+    if (cfg != NULL)
+        mc_config_deinit (cfg);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+const global_keymap_t *
+keymap_section_map (const char *section)
+{
+    const keymap_plugin_section_t *ps =
+        section != NULL ? keymap_plugin_section_find (section) : NULL;
+
+    return ps != NULL ? ps->map : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The sections of the plugins, in the order they came: their names and their titles */
+gboolean
+keymap_plugin_section (guint index, const char **section, const char **title)
+{
+    const keymap_plugin_section_t *ps;
+
+    if (plugin_sections == NULL || index >= plugin_sections->len)
+        return FALSE;
+    ps = g_ptr_array_index (plugin_sections, index);
+    *section = ps->section;
+    *title = ps->title;
+    return TRUE;
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 void
@@ -625,8 +764,18 @@ keymap_load (gboolean load_from_file)
         LOAD_KEYMAP (MCTERM, mcterm);
 
 #undef LOAD_KEYMAP
+        if (plugin_sections != NULL)
+        {
+            guint i;
+
+            for (i = 0; i < plugin_sections->len; i++)
+                keymap_plugin_section_load (g_ptr_array_index (plugin_sections, i),
+                                            mc_global_keymap);
+        }
         mc_config_deinit (mc_global_keymap);
     }
+    keymap_loaded = TRUE;
+    keymap_from_file = load_from_file;
 
 #define SET_MAP(m) m##_map = (global_keymap_t *) m##_keymap->data
 
@@ -664,6 +813,21 @@ keymap_free (void)
     FREE_KEYMAP (mcterm);
 
 #undef FREE_KEYMAP
+
+    if (plugin_sections != NULL)
+    {
+        guint i;
+
+        for (i = 0; i < plugin_sections->len; i++)
+        {
+            keymap_plugin_section_t *ps = g_ptr_array_index (plugin_sections, i);
+
+            if (ps->keymap != NULL)
+                g_array_free (ps->keymap, TRUE);
+            ps->keymap = NULL;
+            ps->map = NULL;
+        }
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -675,7 +839,7 @@ typedef struct
     const global_keymap_t **new_map;
 } keymap_pair_t;
 
-static keymap_pair_t keymap_old_maps[10];
+static keymap_pair_t keymap_old_maps[64];
 static int keymap_old_count = 0;
 
 void
@@ -705,6 +869,25 @@ keymap_save_old_maps (void)
     SAVE_MAP (editor_x);
     SAVE_MAP (mcterm);
 #undef SAVE_MAP
+
+    if (plugin_sections != NULL)
+    {
+        guint i;
+
+        for (i = 0;
+             i < plugin_sections->len && keymap_old_count < (int) G_N_ELEMENTS (keymap_old_maps);
+             i++)
+        {
+            keymap_plugin_section_t *ps = g_ptr_array_index (plugin_sections, i);
+
+            if (ps->map != NULL)
+            {
+                keymap_old_maps[keymap_old_count].old_map = ps->map;
+                keymap_old_maps[keymap_old_count].new_map = &ps->map;
+                keymap_old_count++;
+            }
+        }
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -235,6 +235,11 @@ applies individually to each of these three properties.
         bookmarkfound
             Lines as the result of "Find all"
 
+        editnote
+            Notes of a plugin after the text of a line: the values of the
+            variables of the debugger; unset, the color of
+            editwhitespace
+
 
     [lines]
         Frame characters used all throughout coole.

@@ -11,7 +11,7 @@
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
-#define MC_EDITOR_PLUGIN_API_VERSION 6
+#define MC_EDITOR_PLUGIN_API_VERSION 10
 #define MC_EDITOR_PLUGIN_ENTRY       "mc_editor_plugin_register"
 #define MC_EDITOR_PLUGIN_CMD_BASE    30000L /* Plugins-menu: base + plugin_index */
 #define MC_EDITOR_PLUGIN_ACTION_BASE 31000L /* per-action menu commands           */
@@ -20,9 +20,15 @@
 #define MC_PLUGINS_DIR "/usr/lib/coole/plugins"
 #endif
 
-/* Well-known target menu names for mc_ep_cmd_menu_entry_t.menu_name */
+/* Well-known target menu names for mc_ep_cmd_menu_entry_t.menu_name.  Any other name is a menu of
+ * the plugins' own, made in the menubar before Window: "&Debug" (N_() translatable, & marks the
+ * letter that drops it with Alt). */
 #define MC_EP_MENU_COMMAND  "Command"
+#define MC_EP_MENU_FILE     "File"
 #define MC_EP_MENU_NAVIGATE "Navigate"
+/* the Plugins menu: entries after the list of the plugins (a window goes to the Window menu with
+   window_kind()) */
+#define MC_EP_MENU_PLUGINS "Plugins"
 
 /*** enums ***************************************************************************************/
 
@@ -61,6 +67,55 @@ typedef struct mc_ep_state_t
 #define MC_EP_EVENT_CURSOR_MOVED 6
 
 /*** structures declarations (and typedefs of structures)*****************************************/
+
+/* A kind of mark in the gutter of the file windows, which a plugin registers (marker_kind()).
+ * The mark sits in the first column of the gutter, before the line number; the skin gives its
+ * glyph in [widget-editor] and its colours in [editor]. */
+typedef struct
+{
+    const char *name;                /* unique: "debugger.breakpoint" */
+    const char *glyph_key;           /* [widget-editor] key of the glyph */
+    const char *glyph;               /* glyph when the skin has none, UTF-8 terminal */
+    const char *glyph_ascii;         /* the same on any other terminal */
+    const char *color_key;           /* [editor] key of the glyph colour; unset: the gutter's */
+    const char *line_color_key;      /* [editor] key to colour the whole line; NULL: none */
+    const char *line_color_fallback; /* [editor] key when the skin has no line_color_key */
+    int priority;                    /* of two marks on one line the higher one is shown */
+    const char *color;               /* when the skin has no color_key: this foreground, "red",
+                                        on the gutter's background; NULL: the gutter's color */
+} mc_ep_marker_kind_t;
+
+/* A command of a plugin with its default keys ("f5; ctrl-r"), for commands_register() */
+typedef struct
+{
+    const char *name;        /* in the keymap files: "DebugStepOver" */
+    const char *description; /* N_() translatable, for Options > Key bindings */
+    const char *keys;        /* NULL: none */
+} mc_ep_command_t;
+
+/* Where a window of a plugin is, for the menu Window */
+typedef enum
+{
+    MC_EP_WINDOW_CLOSED = 0, /* not open, or hidden */
+    MC_EP_WINDOW_OPEN,       /* open, behind another one */
+    MC_EP_WINDOW_FOCUSED     /* open, the window the keys go to */
+} mc_ep_window_state_t;
+
+/* A window a plugin opens, for the menu Window (window_kind()): its entry there opens it, brings
+ * it to the front, or closes it when it is in front already; an open one is marked with '*'.
+ * The key shown is that of @command in the keymap section @section, else @shortcut. */
+typedef struct
+{
+    const char *label;    /* N_() translatable, with its hotkey: "Project tr&ee" */
+    const char *section;  /* keymap section of @command: "project", "editor"; NULL: none */
+    const char *command;  /* "ProjectTree" */
+    const char *shortcut; /* the key as text when there is no command: "Ctrl-Alt-P" */
+    mc_ep_window_state_t (*state) (void *data);
+    void (*show) (void *data);    /* open it, or bring it to the front, focused */
+    void (*close) (void *data);   /* close it, or hide it */
+    const char *name;             /* in the layouts: "project.tree" */
+    void *(*window) (void *data); /* the window when it is open, else NULL */
+} mc_ep_window_kind_t;
 
 /* What the editor provides to a plugin */
 typedef struct mc_editor_host_t
@@ -127,6 +182,68 @@ typedef struct mc_editor_host_t
     void (*service_disconnect) (struct mc_editor_host_t *host, guint id);
     void (*service_emit) (struct mc_editor_host_t *host, const char *name, const char *signal,
                           GVariant *args);
+
+    /* Marks in the gutter, by absolute path and 1-based line; a mark moves with its line.
+       marker_kind() registers a kind, the same name giving the same id.  set_marker() puts or
+       takes a mark in every window of the file; clear_markers() takes the marks of a kind off a
+       file, or (NULL) off all files.  marker_lines() gives their lines, sorted, in the first
+       window of the file, NULL when none has it; free with g_array_free(). */
+    int (*marker_kind) (struct mc_editor_host_t *host, const mc_ep_marker_kind_t *kind);
+    void (*set_marker) (struct mc_editor_host_t *host, const char *file, long line, int kind,
+                        gboolean enabled);
+    void (*clear_markers) (struct mc_editor_host_t *host, const char *file, int kind);
+    GArray *(*marker_lines) (struct mc_editor_host_t *host, const char *file, int kind);
+
+    /* Commands with keys the user can change.  commands_register() gives the plugin a section of
+       the keymap, its name and its title in Options > Key bindings, with the commands ended by a
+       NULL name; "Help" is the program's.  command_id() is the number of a command by its name,
+       command_lookup() the command of a key in a section, CK_IgnoreKey when none.  A command of
+       the plugin that comes to the editor, from the button bar for one, goes to
+       handle_action(). */
+    void (*commands_register) (struct mc_editor_host_t *host, const char *section,
+                               const char *title, const mc_ep_command_t *commands);
+    long (*command_id) (struct mc_editor_host_t *host, const char *name);
+    long (*command_lookup) (struct mc_editor_host_t *host, const char *section, int key);
+
+    /* The window of a file to the front, or a new one; the cursor stays where it was */
+    gboolean (*open_file) (struct mc_editor_host_t *host, const char *file);
+
+    /* A note after the text of a 1-based line of every window of a file, NULL takes it off;
+       clear_line_notes() takes all of them off a file, or (NULL) off all files */
+    void (*set_line_note) (struct mc_editor_host_t *host, const char *file, long line,
+                           const char *text);
+    void (*clear_line_notes) (struct mc_editor_host_t *host, const char *file);
+
+    /* An option the program was started with, NULL when it was not: "debug" for one */
+    const char *(*startup_option) (struct mc_editor_host_t *host, const char *name);
+    /* @fn(@data) once the editor is idle: what opens windows or files when a plugin starts goes
+       so, not from open() or from an event */
+    void (*call_later) (struct mc_editor_host_t *host, void (*fn) (void *data), void *data);
+    /* Close a window as the user would, asking first when it has to; TRUE when it is gone.  Not
+       from an event of that window: from call_later() */
+    gboolean (*window_close) (struct mc_editor_host_t *host, void *window);
+    /* Put a window, added already, in the column at the right of the screen, one above the
+       other; @cols wide when it makes the column.  window_give_room_back() takes it out */
+    void (*window_dock_right) (struct mc_editor_host_t *host, void *window, int cols);
+    /* A line of a file in its window, or in a new one, without a step in the navigation
+       history */
+    gboolean (*show_location) (struct mc_editor_host_t *host, const char *file, long line);
+    /* Offer to save the modified files under @project_root; FALSE when the user cancels */
+    gboolean (*save_modified_files) (struct mc_editor_host_t *host, const char *project_root);
+    /* A window the plugin opens, for the menu Window and the layouts; @kind is copied, @data
+       goes to its functions.  From open(). */
+    void (*window_kind) (struct mc_editor_host_t *host, const mc_ep_window_kind_t *kind,
+                         void *data);
+    /* Put a window, added already, in the row at the bottom, under the windows of the files: a
+       tab, the one seen; @lines high when it makes the row */
+    void (*window_dock_bottom) (struct mc_editor_host_t *host, void *window, int lines);
+    /* The windows as the layout @name has them, those of the moment kept; FALSE when the user
+       has the switch to @name off, or windows are kept already.  layout_pop() puts the kept
+       ones back, the tabs of the bottom staying to be read. */
+    gboolean (*layout_push) (struct mc_editor_host_t *host, const char *name);
+    void (*layout_pop) (struct mc_editor_host_t *host);
+    /* Whether a window is in a dock: open, a tab of the bottom not seen too */
+    gboolean (*window_docked) (struct mc_editor_host_t *host, void *window);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.
@@ -181,6 +298,8 @@ typedef struct mc_editor_plugin_t
      * Returns a newly-allocated string (caller frees with g_free) or NULL.
      * NULL falls back to cmd_menu_entries[].shortcut.  May be NULL. */
     char *(*get_menu_shortcut) (int action_index);
+    /* FALSE keeps the editor from ending: a plugin with a process running asks first */
+    gboolean (*ok_to_quit) (void *plugin_data);
 } mc_editor_plugin_t;
 
 typedef const mc_editor_plugin_t *(*mc_editor_plugin_register_fn) (void);

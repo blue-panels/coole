@@ -3,9 +3,12 @@
 
    Copyright (C) 1994-2025
    Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
 
    Written by:
    Andrew Borodin <aborodin@vmail.ru>, 2012-2022
+   Ilia Maslakov <il.smind@gmail.com>, 2026
 
    This file is part of the Midnight Commander.
 
@@ -71,6 +74,8 @@ struct menu_t
     size_t max_hotkey_len;  // cached max length of shortcuts
     unsigned int current;   // pointer to current menu entry
     char *help_node;
+    GList *(*remake) (void *data);  // the entries made again when the menu drops, or NULL
+    void *remake_data;
 };
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -180,6 +185,27 @@ menubar_paint_idx (const WMenuBar *menubar, unsigned int idx, int color)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The entries of the menu that drops, made again if it says so: once a drop */
+static void
+menubar_remake_current (WMenuBar *menubar)
+{
+    menu_t *menu = MENU (g_list_nth_data (menubar->menu, menubar->current));
+    GList *entries;
+
+    if (menu == NULL || menu->remake == NULL || menubar->remade == (int) menubar->current)
+        return;
+    menubar->remade = (int) menubar->current;
+    entries = menu->remake (menu->remake_data);
+    if (entries == NULL)
+        return;
+    g_list_free_full (menu->entries, (GDestroyNotify) menu_entry_free);
+    menu->entries = entries;
+    menu->current = MIN (menu->current, g_list_length (entries) - 1);
+    menu_arrange (menu, DIALOG (WIDGET (menubar)->owner)->get_shortcut);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 menubar_draw_drop (const WMenuBar *menubar)
 {
@@ -223,6 +249,9 @@ menubar_draw (const WMenuBar *menubar)
 {
     const WRect *w = &CONST_WIDGET (menubar)->rect;
     GList *i;
+
+    if (menubar->is_dropped)
+        menubar_remake_current ((WMenuBar *) menubar);
 
     // First draw the complete menubar
     tty_setcolor (widget_get_state (WIDGET (menubar), WST_FOCUSED) ? MENU_ENTRY_COLOR
@@ -317,6 +346,7 @@ menubar_finish (WMenuBar *menubar)
     Widget *w = WIDGET (menubar);
 
     menubar->is_dropped = FALSE;
+    menubar->remade = -1;
     w->rect.lines = 1;
     widget_want_hotkey (w, FALSE);
     widget_set_options (w, WOP_SELECTABLE, FALSE);
@@ -966,8 +996,19 @@ menu_new (const char *name, GList *entries, const char *help_node)
     menu->max_hotkey_len = 0;
     menu->current = 0;
     menu->help_node = g_strdup (help_node);
+    menu->remake = NULL;
+    menu->remake_data = NULL;
 
     return menu;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+menu_set_remake (menu_t *menu, GList *(*remake) (void *data), void *data)
+{
+    menu->remake = remake;
+    menu->remake_data = data;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1005,6 +1046,7 @@ menubar_new (GList *menu)
     w->pos_flags = WPOS_KEEP_HORZ | WPOS_KEEP_TOP;
     w->options |= WOP_TOP_SELECT;
     w->keymap = menu_map;
+    menubar->remade = -1;
     menubar_set_menu (menubar, menu);
 
     return menubar;
@@ -1121,6 +1163,7 @@ menubar_activate (WMenuBar *menubar, gboolean dropped, int which)
         widget_set_options (w, WOP_SELECTABLE, TRUE);
 
         menubar->is_dropped = dropped;
+        menubar->remade = -1;
         if (which >= 0)
             menubar->current = (guint) which;
 

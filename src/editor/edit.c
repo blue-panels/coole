@@ -2690,6 +2690,8 @@ edit_clean_internal (WEdit *edit, gboolean invalidate_runtime_handle)
 
     edit_free_syntax_rules (edit);
     book_mark_flush (edit, -1);
+    if (edit->line_notes != NULL)
+        g_clear_pointer (&edit->line_notes, g_hash_table_destroy);
     edit_fold_flush (edit);
 
     edit_buffer_clean (&edit->buffer);
@@ -5388,6 +5390,9 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
             edit_book_mark_t *p;
 
             p = book_mark_find (edit, edit->buffer.curs_line);
+            // the marks of the plugins are no bookmarks of the user
+            while (p->next != NULL && edit_marker_is (p->next->c))
+                p = p->next;
             if (p->next != NULL)
             {
                 p = p->next;
@@ -5406,6 +5411,8 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
             while (p->line == edit->buffer.curs_line)
                 if (p->prev != NULL)
                     p = p->prev;
+            while (p->line >= 0 && edit_marker_is (p->c))
+                p = p->prev;
             if (p->line >= 0)
             {
                 if (p->line >= edit->start_line + w->lines || p->line < edit->start_line)

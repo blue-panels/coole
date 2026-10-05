@@ -13,8 +13,9 @@
 
 #include <stdio.h>
 
-#include "lib/search.h"  // mc_search_type_t
-#include "lib/widget.h"  // cb_ret_t
+#include "lib/editor-plugin.h"  // mc_ep_marker_kind_t
+#include "lib/search.h"         // mc_search_type_t
+#include "lib/widget.h"         // cb_ret_t
 
 #include "src/setup.h"  // option_tab_spacing
 
@@ -23,6 +24,9 @@
 #include "src/syntax/syntax.h"
 
 /*** typedefs(not structures) and defined constants **********************************************/
+
+/* the commands of the menu Window that go to the windows of the plugins */
+#define EDIT_WINDOW_KIND_BASE       900000L
 
 #define REDRAW_LINE                 (1 << 0)
 #define REDRAW_LINE_ABOVE           (1 << 1)
@@ -67,8 +71,10 @@
 #define HALF_TAB_SIZE ((int) option_tab_spacing / 2)
 
 /* max count stack files */
-#define MAX_HISTORY_MOVETO                50
-#define LINE_STATE_WIDTH                  9
+#define MAX_HISTORY_MOVETO 50
+#define LINE_STATE_WIDTH   9
+/* bookmarks of this color and up are the gutter marks of the plugins */
+#define EDIT_MARKER_BASE                  0x40000000
 
 #define LB_NAMES                          (LB_MAC + 1)
 
@@ -117,12 +123,15 @@ extern char *edit_fold_close_char;
 gboolean edit_add_window (WDialog *h, const WRect *r, const edit_arg_t *arg);
 WEdit *edit_find_editor (const WDialog *h);
 gboolean edit_widget_is_editor (const Widget *w);
+void edit_set_buttonbar (WEdit *edit, WButtonBar *bb);
+void edit_plugins_tell_saved (WEdit *edit, gboolean save_as);
 gboolean edit_drop_hotkey_menu (WDialog *h, int key);
 void edit_menu_cmd (WDialog *h);
 void edit_user_menu (WEdit *edit, const char *menu_file, int selected_entry);
 void edit_init_menu (WMenuBar *menubar);
 gboolean edit_runtime_menu_action (long command);
 gboolean edit_runtime_invoke_action (const char *action_id);
+gboolean edit_plugins_ok_to_quit (WDialog *dialog);
 void edit_save_mode_cmd (void);
 off_t edit_move_forward3 (const WEdit *edit, off_t current, long cols, off_t upto);
 long edit_layout_advance_byte (const WEdit *edit, off_t offset, long column);
@@ -195,6 +204,11 @@ void edit_mark_current_line_cmd (WEdit *edit);
 void edit_set_markers (WEdit *edit, off_t m1, off_t m2, long c1, long c2);
 void edit_push_markers (WEdit *edit);
 gboolean edit_plugin_handle_action (WDialog *h, long command, WEdit *edit);
+/* the entries of the menu Window for the windows of the plugins (EDIT_WINDOW_KIND_BASE) */
+GList *edit_window_kinds_menu (WDialog *h);
+const mc_ep_window_kind_t *edit_window_kind_at (WDialog *h, guint index, void **data);
+const char *edit_startup_option (const char *name);
+void edit_marker_gutter_forget (void);
 gboolean edit_plugin_configure (WDialog *h, long command, WEdit *edit);
 gboolean edit_plugin_handle_key (WDialog *h, int key, WEdit *edit);
 
@@ -246,6 +260,11 @@ void edit_syntax_dialog (WEdit *edit);
 void book_mark_insert (WEdit *edit, long line, int c);
 gboolean book_mark_query_color (WEdit *edit, long line, int c);
 struct edit_book_mark_t *book_mark_find (WEdit *edit, long line);
+struct edit_book_mark_t *edit_book_mark_first (WEdit *edit);
+int edit_marker_kind_register (const mc_ep_marker_kind_t *kind);
+gboolean edit_marker_is (int c);
+gboolean edit_marker_find (WEdit *edit, long line, const char **glyph, int *glyph_color,
+                           int *line_color);
 gboolean book_mark_clear (WEdit *edit, long line, int c);
 void book_mark_flush (WEdit *edit, int c);
 void book_mark_inc (WEdit *edit, long line);

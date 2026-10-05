@@ -63,6 +63,15 @@
 
 /*** file scope type declarations ****************************************************************/
 
+/* a menu of the menubar that the plugins bring */
+typedef struct
+{
+    char *name;   // the menu_name of the plugins' entries, "&Debug"
+    char *plain;  // without the hotkey mark, as the scripts name it: "Debug"
+    int idx;      // in the menubar
+    int hotkey;   // Alt and this letter drops it
+} edit_plugin_menu_t;
+
 /*** forward declarations (file scope functions) *************************************************/
 
 /*** file scope variables ************************************************************************/
@@ -74,10 +83,13 @@ static int menu_idx_edit = 1;
 static int menu_idx_search = 2;
 static int menu_idx_command = 3;
 static int menu_idx_navigate = -1;
+static GPtrArray *plugin_menus = NULL;
 static int menu_idx_window = 4;
 static int menu_idx_plugins = 5;
 static int menu_idx_options = 6;
 static GPtrArray *runtime_menu_actions = NULL;
+
+static GList *create_plugin_menu_entries (const char *menu_name);
 
 typedef struct
 {
@@ -212,10 +224,46 @@ edit_runtime_menu_is_builtin (const char *menu_path)
 {
     static const char *const names[] = { "File",   "Edit",    "Search", "Command", "Navigate",
                                          "Window", "Plugins", "Lua",    "Options", NULL };
-    int i;
+    guint i;
 
     for (i = 0; names[i] != NULL; i++)
         if (g_strcmp0 (menu_path, names[i]) == 0)
+            return TRUE;
+    // a menu of the plugins takes the entries of the scripts too
+    for (i = 0; plugin_menus != NULL && i < plugin_menus->len; i++)
+        if (g_strcmp0 (menu_path,
+                       ((edit_plugin_menu_t *) g_ptr_array_index (plugin_menus, i))->plain)
+            == 0)
+            return TRUE;
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+edit_plugin_menu_free (gpointer data)
+{
+    edit_plugin_menu_t *m = (edit_plugin_menu_t *) data;
+
+    g_free (m->name);
+    g_free (m->plain);
+    g_free (m);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The menus the menubar has of its own, which the plugins add entries to */
+static gboolean
+edit_menu_is_builtin (const char *menu_name)
+{
+    static const char *const names[] = {
+        MC_EP_MENU_FILE,    "Edit",    "Search", MC_EP_MENU_COMMAND, MC_EP_MENU_NAVIGATE, "Window",
+        MC_EP_MENU_PLUGINS, "Options", NULL
+    };
+    int i;
+
+    for (i = 0; names[i] != NULL; i++)
+        if (g_strcmp0 (menu_name, names[i]) == 0)
             return TRUE;
     return FALSE;
 }
@@ -226,6 +274,7 @@ static GList *
 create_file_menu (void)
 {
     GList *entries = NULL;
+    GList *plugin_entries;
 
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Open file..."), CK_EditFile));
     entries = g_list_prepend (entries, menu_entry_new (_ ("&New"), CK_EditNew));
@@ -240,6 +289,12 @@ create_file_menu (void)
     entries = g_list_prepend (entries, menu_separator_new ());
     entries = g_list_prepend (entries, menu_entry_new (_ ("&User menu..."), CK_UserMenu));
     entries = g_list_prepend (entries, menu_separator_new ());
+    plugin_entries = create_plugin_menu_entries (MC_EP_MENU_FILE);
+    if (plugin_entries != NULL)
+    {
+        entries = g_list_concat (g_list_reverse (plugin_entries), entries);
+        entries = g_list_prepend (entries, menu_separator_new ());
+    }
     entries = g_list_prepend (entries, menu_entry_new (_ ("A&bout..."), CK_About));
     entries = g_list_prepend (entries, menu_separator_new ());
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Quit"), CK_Quit));
@@ -361,6 +416,22 @@ create_window_menu (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The menu Window: the windows of the editor, then those of the plugins */
+static GList *
+edit_window_menu_remake (void *data)
+{
+    Widget *menubar = WIDGET (data);
+    GList *entries = append_runtime_menu_entries (create_window_menu (), "Window");
+
+    if (menubar->owner != NULL)
+        entries = g_list_concat (entries, edit_window_kinds_menu (DIALOG (menubar->owner)));
+    entries = g_list_append (entries, menu_separator_new ());
+    entries = g_list_append (entries, menu_entry_new (_ ("La&yout..."), CK_WindowLayout));
+    return entries;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static GList *
 create_options_menu (void)
 {
@@ -419,11 +490,21 @@ create_plugins_menu (void)
         command_id++;
     }
 
+    entries = g_list_reverse (entries);
+    {
+        // the windows of the plugins: the tree of the project, the panel of the debugger...
+        GList *windows = create_plugin_menu_entries (MC_EP_MENU_PLUGINS);
+
+        if (windows != NULL && entries != NULL)
+            entries = g_list_append (entries, menu_separator_new ());
+        entries = g_list_concat (entries, windows);
+    }
+
     if (entries == NULL)
         entries =
             g_list_prepend (entries, menu_entry_new (_ ("(no plugins loaded)"), CK_IgnoreKey));
 
-    return g_list_reverse (entries);
+    return entries;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -516,15 +597,17 @@ edit_drop_menu_cmd (WDialog *h, int which)
 void
 edit_init_menu (WMenuBar *menubar)
 {
+    GList *file_entries;
     GList *navigate_entries;
+    const GSList *plugins;
     int idx = 0;
     guint i;
 
     edit_runtime_menu_reload ();
 
+    file_entries = create_file_menu ();
     menubar_add_menu (menubar,
-                      menu_new (_ ("&File"),
-                                append_runtime_menu_entries (create_file_menu (), "File"),
+                      menu_new (_ ("&File"), append_runtime_menu_entries (file_entries, "File"),
                                 "[Internal File Editor]"));
     menu_idx_file = idx++;
 
@@ -558,6 +641,58 @@ edit_init_menu (WMenuBar *menubar)
     else
         menu_idx_navigate = -1;
 
+    // the menus of the plugins' own, in the order the plugins name them
+    if (plugin_menus == NULL)
+        plugin_menus = g_ptr_array_new_with_free_func (edit_plugin_menu_free);
+    g_ptr_array_set_size (plugin_menus, 0);
+    for (plugins = mc_editor_plugin_list (); plugins != NULL; plugins = g_slist_next (plugins))
+    {
+        const mc_editor_plugin_t *plugin = (const mc_editor_plugin_t *) plugins->data;
+        int e;
+
+        if (plugin->name != NULL
+            && mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name))
+            continue;
+        for (e = 0; e < plugin->cmd_menu_entry_count; e++)
+        {
+            const char *name = plugin->cmd_menu_entries[e].menu_name;
+            edit_plugin_menu_t *m;
+            const char *label, *amp;
+            GList *entries;
+            guint k;
+
+            if (name == NULL || edit_menu_is_builtin (name))
+                continue;
+            for (k = 0; k < plugin_menus->len; k++)
+                if (strcmp (((edit_plugin_menu_t *) g_ptr_array_index (plugin_menus, k))->name,
+                            name)
+                    == 0)
+                    break;
+            if (k < plugin_menus->len)
+                continue;
+
+            m = g_new0 (edit_plugin_menu_t, 1);
+            m->name = g_strdup (name);
+            {
+                // the name without its hotkey mark
+                GString *plain = g_string_new (NULL);
+                const char *c;
+
+                for (c = name; *c != '\0'; c++)
+                    if (*c != '&')
+                        g_string_append_c (plain, *c);
+                m->plain = g_string_free (plain, FALSE);
+            }
+            label = _ (name);
+            amp = strchr (label, '&');
+            m->hotkey = amp != NULL && amp[1] != '\0' ? g_ascii_tolower (amp[1]) : 0;
+            entries = append_runtime_menu_entries (create_plugin_menu_entries (name), m->plain);
+            menubar_add_menu (menubar, menu_new (label, entries, "[Internal File Editor]"));
+            m->idx = idx++;
+            g_ptr_array_add (plugin_menus, m);
+        }
+    }
+
     for (i = 0; runtime_menu_actions != NULL && i < runtime_menu_actions->len; i++)
     {
         const edit_runtime_menu_action_t *action =
@@ -578,10 +713,14 @@ edit_init_menu (WMenuBar *menubar)
         idx++;
     }
 
-    menubar_add_menu (menubar,
-                      menu_new (_ ("&Window"),
-                                append_runtime_menu_entries (create_window_menu (), "Window"),
-                                "[Internal File Editor]"));
+    {
+        menu_t *window_menu =
+            menu_new (_ ("&Window"), edit_window_menu_remake (menubar), "[Internal File Editor]");
+
+        // the windows of the plugins in it are open or not: made again whenever it drops
+        menu_set_remake (window_menu, edit_window_menu_remake, menubar);
+        menubar_add_menu (menubar, window_menu);
+    }
     menu_idx_window = idx++;
 
     menubar_add_menu (menubar,
@@ -674,7 +813,20 @@ edit_drop_hotkey_menu (WDialog *h, int key)
         m = menu_idx_options;
         break;
     default:
-        return FALSE;
+    {
+        guint i;
+
+        for (i = 0; plugin_menus != NULL && i < plugin_menus->len; i++)
+        {
+            const edit_plugin_menu_t *pm = g_ptr_array_index (plugin_menus, i);
+
+            if (pm->hotkey != 0 && key == (int) ALT (pm->hotkey))
+                m = pm->idx;
+        }
+        if (m < 0)
+            return FALSE;
+        break;
+    }
     }
 
     if (m < 0)

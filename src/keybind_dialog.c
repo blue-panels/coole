@@ -130,13 +130,16 @@ static const keybind_section_t editor_sections[] = {
     { N_ ("&Terminal"), KEYMAP_SECTION_MCTERM },
 };
 
+/* the sections of the editor and, after them, those of the plugins */
+static GArray *editor_and_plugin_sections = NULL;
+
 static const keybind_section_t widget_sections[] = {
     { N_ ("&Dialog"), KEYMAP_SECTION_DIALOG }, { N_ ("&Menu"), KEYMAP_SECTION_MENU },
     { N_ ("&Input"), KEYMAP_SECTION_INPUT },   { N_ ("&Listbox"), KEYMAP_SECTION_LISTBOX },
     { N_ ("&Radio"), KEYMAP_SECTION_RADIO },   { N_ ("&Help"), KEYMAP_SECTION_HELP },
 };
 
-static const keybind_group_t keybind_groups[] = {
+static keybind_group_t keybind_groups[] = {
     { N_ ("&Editor"), G_N_ELEMENTS (editor_sections), editor_sections },
     { N_ ("&Widgets"), G_N_ELEMENTS (widget_sections), widget_sections },
 };
@@ -417,6 +420,8 @@ keybind_find_map (const char *section)
 {
     if (section == NULL)
         return NULL;
+    if (keymap_section_map (section) != NULL)
+        return keymap_section_map (section);
 
     if (strcmp (section, KEYMAP_SECTION_DIALOG) == 0)
         return (const global_keymap_t *) dialog_keymap->data;
@@ -1182,6 +1187,23 @@ keybind_show_page (void)
 void
 keybind_dialog (void)
 {
+    const char *section, *title;
+    guint i;
+
+    if (editor_and_plugin_sections == NULL)
+        editor_and_plugin_sections = g_array_new (FALSE, FALSE, sizeof (keybind_section_t));
+    g_array_set_size (editor_and_plugin_sections, 0);
+    g_array_append_vals (editor_and_plugin_sections, editor_sections,
+                         G_N_ELEMENTS (editor_sections));
+    for (i = 0; keymap_plugin_section (i, &section, &title); i++)
+    {
+        const keybind_section_t ps = { title, section };
+
+        g_array_append_val (editor_and_plugin_sections, ps);
+    }
+    keybind_groups[0].nsections = (int) editor_and_plugin_sections->len;
+    keybind_groups[0].sections = (const keybind_section_t *) editor_and_plugin_sections->data;
+
     kbd_changes = g_ptr_array_new_with_free_func (keybind_change_free);
     kbd_group_idx = 0;
     kbd_section_idx = -1;

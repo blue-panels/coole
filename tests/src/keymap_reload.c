@@ -4,6 +4,9 @@
    Copyright (C) 2026
    Free Software Foundation, Inc.
 
+   Written by:
+   Ilia Maslakov <il.smind@gmail.com>, 2026
+
    This file is part of the Midnight Commander.
 
    The Midnight Commander is free software: you can redistribute it
@@ -61,6 +64,7 @@ START_TEST (test_keymap_load_defaults)
     {
         long cmd;
 
+        map = editor_map;
         cmd = keybind_lookup_keymap_command (map, XCTRL ('s'));
         ck_assert_int_eq (cmd, CK_SyntaxOnOff);
 
@@ -95,6 +99,56 @@ START_TEST (test_keymap_reload_pointer_changes)
         cmd = keybind_lookup_keymap_command (editor_map, KEY_F (5));
         ck_assert_int_eq (cmd, CK_Copy);
     }
+
+    keymap_free ();
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* a plugin's commands, Help among them, which the program has already */
+static const keymap_command_t plugin_commands[] = {
+    { "Help", NULL, "f1" },
+    { "TestPluginGo", "Go", "f5" },
+    { "TestPluginStop", "Stop", "f15; ctrl-t" },
+    { "TestPluginUnbound", "Unbound", NULL },
+    { NULL, NULL, NULL },
+};
+
+START_TEST (test_keymap_plugin_section)
+{
+    const global_keymap_t *map;
+    long go, stop;
+
+    keymap_load (FALSE);
+    keymap_register_section ("testplugin", "&Test", plugin_commands);
+
+    go = keybind_lookup_action ("TestPluginGo");
+    stop = keybind_lookup_action ("TestPluginStop");
+    ck_assert_int_ge (go, CK_PluginFirst);
+    ck_assert_int_ne (go, stop);
+    ck_assert_int_ge (keybind_lookup_action ("TestPluginUnbound"), CK_PluginFirst);
+    ck_assert_str_eq (keybind_lookup_actionname (go), "TestPluginGo");
+    ck_assert_str_eq (keybind_lookup_actiondesc (go), "Go");
+
+    /* the section has its own keys: they do not replace the editor's */
+    map = keymap_section_map ("testplugin");
+    ck_assert_ptr_ne (map, NULL);
+    ck_assert_int_eq (keybind_lookup_keymap_command (map, KEY_F (1)), CK_Help);
+    ck_assert_int_eq (keybind_lookup_keymap_command (map, KEY_F (5)), go);
+    ck_assert_int_eq (keybind_lookup_keymap_command (map, KEY_F (15)), stop);
+    ck_assert_int_eq (keybind_lookup_keymap_command (map, XCTRL ('t')), stop);
+    ck_assert_int_eq (keybind_lookup_keymap_command (editor_map, KEY_F (5)), CK_Copy);
+
+    /* reloaded with the others, the same commands on the same keys */
+    keymap_free ();
+    ck_assert_ptr_eq (keymap_section_map ("testplugin"), NULL);
+    keymap_load (FALSE);
+    keymap_register_section ("testplugin", "&Test", plugin_commands);
+    map = keymap_section_map ("testplugin");
+    ck_assert_ptr_ne (map, NULL);
+    ck_assert_int_eq (keybind_lookup_keymap_command (map, KEY_F (5)), go);
+    ck_assert_int_eq (keybind_lookup_action ("TestPluginGo"), go);
 
     keymap_free ();
 }
@@ -157,6 +211,7 @@ main (void)
     tcase_add_test (tc_core, test_keymap_load_defaults);
     tcase_add_test (tc_core, test_keymap_reload_pointer_changes);
     tcase_add_test (tc_core, test_keymap_data_pointer_stability);
+    tcase_add_test (tc_core, test_keymap_plugin_section);
     /* test_keymap_user_override requires mc_global init -- run manually */
     /* tcase_add_test (tc_core, test_keymap_user_override); */
     tcase_add_test (tc_core, test_widget_keymap_dangling);

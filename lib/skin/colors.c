@@ -4,11 +4,14 @@
 
    Copyright (C) 2009-2025
    Free Software Foundation, Inc.
+   Copyright (C) 2026
+   Ilia Maslakov <il.smind@gmail.com>
 
    Written by:
    Slava Zanko <slavazanko@gmail.com>, 2009
    Egmont Koblinger <egmont@gmail.com>, 2010
    Andrew Borodin <aborodin@vmail.ru>, 2012
+   Ilia Maslakov <il.smind@gmail.com>, 2026
 
    This file is part of the Midnight Commander.
 
@@ -411,6 +414,33 @@ mc_skin_color_get (const gchar *group, const gchar *name)
     mc_skin_color = mc_skin_color_get_with_defaults (group, name);
 
     return (mc_skin_color != NULL) ? mc_skin_color->pair_index : 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* A foreground of its own on the background of a color of the skin: a red mark on the gutter,
+   whatever the gutter is */
+
+int
+mc_skin_color_on (const gchar *group, const gchar *name, const gchar *fg)
+{
+    tty_color_pair_t *base = mc_skin_color_get_with_defaults (group, name);
+    tty_color_pair_t color = { (char *) fg, NULL, NULL, 0 };
+
+    if (base != NULL)
+    {
+        color.bg = base->bg;
+        color.attrs = base->attrs;
+    }
+    return tty_try_alloc_color_pair (&color, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* Whether the skin gives this color itself, not by the defaults of its group */
+
+gboolean
+mc_skin_color_is_set (const gchar *group, const gchar *name)
+{
+    return mc_skin_color_get_from_hash (NULL, group, name) != NULL;
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -110,6 +110,10 @@ edit_publish_runtime_save (WEdit *edit, const char *previous_path, gboolean save
 {
     mc_runtime_event_snapshot_t *snapshot;
 
+    // the plugins first: they need no runtime
+    if (edit->filename != NULL)
+        edit_plugins_tell_saved (edit, save_as);
+
     runtime_host_set_current_editor (edit);
     if (!events_runtime_is_started () || !mc_runtime_events_is_initialized ())
         return;
@@ -1100,6 +1104,7 @@ edit_show_control_chars_cmd (WDialog *h)
 void
 edit_show_numbers_cmd (WDialog *h)
 {
+    edit_marker_gutter_forget ();
     edit_options.line_state = !edit_options.line_state;
     edit_options.line_state_width = edit_options.line_state ? LINE_STATE_WIDTH : 0;
     widget_draw (WIDGET (h));

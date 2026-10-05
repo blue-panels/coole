@@ -72,6 +72,8 @@
 
 #include "edit-impl.h"
 #include "editwidget.h"
+#include "editdock.h"
+#include "editlayout.h"
 #include "editmacros.h"  // edit_execute_macro()
 
 /*** file scope macro definitions ****************************************************************/
@@ -91,7 +93,21 @@ typedef struct
 {
     mc_editor_host_t *host;
     GPtrArray *instances; /* editor_plugin_instance_t* */
+    GArray *later;        /* editor_later_t: the calls of the plugins for when the editor is idle */
+    GPtrArray *window_kinds; /* editor_window_kind_t: the windows of the plugins, menu Window */
 } editor_plugin_ctx_t;
+
+typedef struct
+{
+    mc_ep_window_kind_t kind; /* its strings are copies */
+    void *data;
+} editor_window_kind_t;
+
+typedef struct
+{
+    void (*fn) (void *data);
+    void *data;
+} editor_later_t;
 
 /*** forward declarations (file scope functions) *************************************************/
 
@@ -203,9 +219,9 @@ edit_publish_runtime_key (WEdit *edit, int keycode)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Tell the plugins of the screen of @edit about an event of it */
+/* Tell the plugins of the screen of @edit about an event of it, with @payload */
 static void
-edit_plugins_tell (WEdit *edit, int event_id)
+edit_plugins_tell_with (WEdit *edit, int event_id, void *payload)
 {
     const Widget *owner = CONST_WIDGET (CONST_WIDGET (edit)->owner);
     const editor_plugin_ctx_t *ctx;
@@ -224,7 +240,51 @@ edit_plugins_tell (WEdit *edit, int event_id)
             (const editor_plugin_instance_t *) g_ptr_array_index (ctx->instances, i);
 
         if (inst->plugin->handle_event != NULL)
-            (void) inst->plugin->handle_event (inst->plugin_data, edit, event_id, NULL);
+            (void) inst->plugin->handle_event (inst->plugin_data, edit, event_id, payload);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+edit_plugins_tell (WEdit *edit, int event_id)
+{
+    edit_plugins_tell_with (edit, event_id, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The file of @edit is written: MC_EP_EVENT_FILE_SAVED, or MC_EP_EVENT_FILE_RENAMED for Save as,
+   with its name */
+void
+edit_plugins_tell_saved (WEdit *edit, gboolean save_as)
+{
+    edit_plugins_tell_with (edit, save_as ? MC_EP_EVENT_FILE_RENAMED : MC_EP_EVENT_FILE_SAVED,
+                            edit->filename);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+edit_plugins_file_event (WEdit *edit, gboolean opened)
+{
+    const Widget *owner = CONST_WIDGET (CONST_WIDGET (edit)->owner);
+    const editor_plugin_ctx_t *ctx;
+    guint i;
+
+    if (owner == NULL)
+        return;
+    ctx = (const editor_plugin_ctx_t *) CONST_DIALOG (owner)->data.p;
+    if (ctx == NULL)
+        return;
+    for (i = 0; i < ctx->instances->len; i++)
+    {
+        const editor_plugin_instance_t *instance = g_ptr_array_index (ctx->instances, i);
+
+        if (opened && instance->plugin->on_file_open != NULL)
+            (void) instance->plugin->on_file_open (instance->plugin_data, edit);
+        else if (!opened && instance->plugin->on_file_close != NULL)
+            (void) instance->plugin->on_file_close (instance->plugin_data, edit);
     }
 }
 
@@ -509,7 +569,11 @@ editor_host_window_show_impl (mc_editor_host_t *host, void *window)
 {
     (void) host;
 
-    edit_window_show (EDIT_WINDOW (window));
+    // a tab of the bottom is shown as the tab seen
+    if (edit_dock_side (EDIT_WINDOW (window)) == EDIT_DOCK_BOTTOM)
+        edit_dock_tab_select (EDIT_WINDOW (window));
+    else
+        edit_window_show (EDIT_WINDOW (window));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -522,6 +586,8 @@ editor_host_window_hide_impl (mc_editor_host_t *host, void *window)
 {
     (void) host;
 
+    // hidden, it leaves its dock: shown again, it is put in one again
+    (void) edit_dock_remove (EDIT_WINDOW (window));
     edit_window_hide (EDIT_WINDOW (window));
 }
 
@@ -535,7 +601,9 @@ editor_host_window_make_room_impl (mc_editor_host_t *host, void *window)
 {
     (void) host;
 
-    edit_window_make_room (EDIT_WINDOW (window));
+    // the docks make the room of their windows
+    if (edit_dock_side (EDIT_WINDOW (window)) == EDIT_DOCK_NONE)
+        edit_window_make_room (EDIT_WINDOW (window));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -544,11 +612,30 @@ editor_host_window_make_room_impl (mc_editor_host_t *host, void *window)
  */
 
 static void
+editor_host_window_dock_right_impl (mc_editor_host_t *host, void *window, int cols)
+{
+    (void) host;
+    edit_dock_add (EDIT_WINDOW (window), EDIT_DOCK_RIGHT, cols);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_window_dock_bottom_impl (mc_editor_host_t *host, void *window, int lines)
+{
+    (void) host;
+    edit_dock_add (EDIT_WINDOW (window), EDIT_DOCK_BOTTOM, lines);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
 editor_host_window_give_room_back_impl (mc_editor_host_t *host, void *window)
 {
     (void) host;
 
-    edit_window_give_room_back (EDIT_WINDOW (window));
+    if (!edit_dock_remove (EDIT_WINDOW (window)))
+        edit_window_give_room_back (EDIT_WINDOW (window));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -638,7 +725,6 @@ editor_host_service_register_impl (mc_editor_host_t *host, const char *name,
                                    mc_service_call_fn call, void *data, GError **error)
 {
     (void) host;
-
     return mc_service_register (name, call, data, error);
 }
 
@@ -687,6 +773,569 @@ editor_host_service_emit_impl (mc_editor_host_t *host, const char *name, const c
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether two absolute names name the same file: a debugger gives the real path, the editor the
+   name the file was opened by */
+static gboolean
+editor_host_same_file (const char *a, const char *b)
+{
+    char *ca, *cb;
+    gboolean same;
+
+    if (a == NULL || b == NULL)
+        return FALSE;
+    if (strcmp (a, b) == 0)
+        return TRUE;
+    ca = realpath (a, NULL);
+    cb = realpath (b, NULL);
+    same = ca != NULL && cb != NULL && strcmp (ca, cb) == 0;
+    free (ca);
+    free (cb);
+    return same;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_commands_register_impl (mc_editor_host_t *host, const char *section, const char *title,
+                                    const mc_ep_command_t *commands)
+{
+    // mc_ep_command_t is keymap_command_t, which the keymap may not see from lib/
+    G_STATIC_ASSERT (sizeof (mc_ep_command_t) == sizeof (keymap_command_t));
+    G_STATIC_ASSERT (G_STRUCT_OFFSET (mc_ep_command_t, keys)
+                     == G_STRUCT_OFFSET (keymap_command_t, keys));
+
+    (void) host;
+    keymap_register_section (section, title, (const keymap_command_t *) commands);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static long
+editor_host_command_id_impl (mc_editor_host_t *host, const char *name)
+{
+    (void) host;
+    return keybind_lookup_action (name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static long
+editor_host_command_lookup_impl (mc_editor_host_t *host, const char *section, int key)
+{
+    (void) host;
+    return keybind_lookup_keymap_command (keymap_section_map (section), key);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+editor_host_marker_kind_impl (mc_editor_host_t *host, const mc_ep_marker_kind_t *kind)
+{
+    (void) host;
+    return edit_marker_kind_register (kind);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The gutter shows the marks: it is turned on for them, and off again with the last of them */
+static gboolean editor_marker_gutter_auto = FALSE;
+
+static void
+editor_host_marker_gutter (mc_editor_host_t *host)
+{
+    GList *item;
+
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        const edit_book_mark_t *p;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data))
+            || EDIT (item->data)->book_mark == NULL)
+            continue;
+        for (p = edit_book_mark_first (EDIT (item->data)); p != NULL; p = p->next)
+            if (edit_marker_is (p->c))
+            {
+                if (!edit_options.line_state)
+                {
+                    edit_options.line_state = TRUE;
+                    edit_options.line_state_width = LINE_STATE_WIDTH;
+                    editor_marker_gutter_auto = TRUE;
+                }
+                return;
+            }
+    }
+    if (editor_marker_gutter_auto && edit_options.line_state)
+    {
+        edit_options.line_state = FALSE;
+        edit_options.line_state_width = 0;
+    }
+    editor_marker_gutter_auto = FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The user has turned the gutter on or off: it is the user's from now on, the marks leave it */
+void
+edit_marker_gutter_forget (void)
+{
+    editor_marker_gutter_auto = FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_set_marker_impl (mc_editor_host_t *host, const char *file, long line, int kind,
+                             gboolean enabled)
+{
+    GList *item;
+
+    if (file == NULL || line <= 0 || kind < 0)
+        return;
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (!editor_host_same_file (edit->filename, file))
+            continue;
+        if (!enabled)
+            (void) book_mark_clear (edit, line - 1, EDIT_MARKER_BASE + kind);
+        else if (!book_mark_query_color (edit, line - 1, EDIT_MARKER_BASE + kind))
+            book_mark_insert (edit, line - 1, EDIT_MARKER_BASE + kind);
+        edit->force |= REDRAW_COMPLETELY;
+    }
+    editor_host_marker_gutter (host);
+    widget_draw (WIDGET (host->host_data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_clear_markers_impl (mc_editor_host_t *host, const char *file, int kind)
+{
+    GList *item;
+
+    if (kind < 0)
+        return;
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (file != NULL && !editor_host_same_file (edit->filename, file))
+            continue;
+        book_mark_flush (edit, EDIT_MARKER_BASE + kind);
+    }
+    editor_host_marker_gutter (host);
+    widget_draw (WIDGET (host->host_data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static GArray *
+editor_host_marker_lines_impl (mc_editor_host_t *host, const char *file, int kind)
+{
+    GList *item;
+
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+        GArray *lines;
+        const edit_book_mark_t *p;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (!editor_host_same_file (edit->filename, file))
+            continue;
+        lines = g_array_new (FALSE, FALSE, sizeof (long));
+        if (edit->book_mark != NULL)
+            for (p = edit_book_mark_first (edit); p != NULL; p = p->next)
+                if (p->c == EDIT_MARKER_BASE + kind && p->line >= 0)
+                {
+                    long line = p->line + 1;
+
+                    g_array_append_val (lines, line);
+                }
+        return lines;
+    }
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A file opened for a plugin goes where the file window in front is, when that one has given
+   room to other windows (the panel and the console of the debugger): it does not cover them */
+/* the options the program was started with, for the plugins */
+static GHashTable *startup_options = NULL;
+
+void
+edit_set_startup_option (const char *name, const char *value)
+{
+    if (startup_options == NULL)
+        startup_options = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    g_hash_table_insert (startup_options, g_strdup (name), g_strdup (value));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_call_later_impl (mc_editor_host_t *host, void (*fn) (void *data), void *data)
+{
+    WDialog *dialog = DIALOG (host->host_data);
+    editor_plugin_ctx_t *ctx = (editor_plugin_ctx_t *) dialog->data.p;
+    const editor_later_t call = { fn, data };
+
+    if (ctx == NULL || fn == NULL)
+        return;
+    if (ctx->later == NULL)
+        ctx->later = g_array_new (FALSE, FALSE, sizeof (editor_later_t));
+    g_array_append_val (ctx->later, call);
+    widget_idle (WIDGET (dialog), TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The calls the plugins asked for, the editor being idle; those they ask for meanwhile wait for
+   the next time */
+static void
+edit_plugins_run_later (WDialog *dialog)
+{
+    editor_plugin_ctx_t *ctx = (editor_plugin_ctx_t *) dialog->data.p;
+    GArray *calls;
+    guint i;
+
+    if (ctx == NULL || ctx->later == NULL || ctx->later->len == 0)
+        return;
+    calls = ctx->later;
+    ctx->later = NULL;
+    for (i = 0; i < calls->len; i++)
+    {
+        const editor_later_t *call = &g_array_index (calls, editor_later_t, i);
+
+        call->fn (call->data);
+    }
+    g_array_free (calls, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_window_close_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+    if (window == NULL || !edit_window_is_window (CONST_WIDGET (window))
+        || EDIT_WINDOW (window)->klass->close == NULL)
+        return FALSE;
+    return EDIT_WINDOW (window)->klass->close (EDIT_WINDOW (window));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static const char *
+editor_host_startup_option_impl (mc_editor_host_t *host, const char *name)
+{
+    (void) host;
+    return edit_startup_option (name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_window_docked_impl (mc_editor_host_t *host, void *window)
+{
+    (void) host;
+    return window != NULL && edit_window_is_window (CONST_WIDGET (window))
+        && edit_dock_side (EDIT_WINDOW (window)) != EDIT_DOCK_NONE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_layout_push_impl (mc_editor_host_t *host, const char *name)
+{
+    return edit_layout_push (DIALOG (host->host_data), name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_layout_pop_impl (mc_editor_host_t *host)
+{
+    edit_layout_pop (DIALOG (host->host_data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_load_in_place (mc_editor_host_t *host, edit_arg_t *arg)
+{
+    WDialog *dialog = DIALOG (host->host_data);
+    Widget *before = WIDGET (editor_host_window_top_file_impl (host));
+    Widget *after;
+    gboolean opened;
+
+    opened = edit_load_file_from_filename (dialog, arg);
+    after = WIDGET (editor_host_window_top_file_impl (host));
+    if (opened && before != NULL && after != NULL && after != before
+        && EDIT_WINDOW (before)->fullscreen == 0 && EDIT_WINDOW (after)->fullscreen != 0)
+    {
+        EDIT_WINDOW (after)->fullscreen = 0;
+        // in place of the one that fills what the docks leave: as that one
+        EDIT_WINDOW (after)->dock_fill = EDIT_WINDOW (before)->dock_fill;
+        after->pos_flags = WPOS_KEEP_DEFAULT;
+        widget_set_size_rect (after, &before->rect);
+        widget_draw (WIDGET (dialog));
+    }
+    return opened;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long line)
+{
+    WDialog *dialog = DIALOG (host->host_data);
+    WGroup *group = GROUP (dialog);
+    GList *item;
+    edit_arg_t arg;
+    char *path;
+    gboolean opened;
+
+    if (file == NULL || line <= 0)
+        return FALSE;
+    for (item = group->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (!editor_host_same_file (edit->filename, file))
+            continue;
+        edit_window_show (EDIT_WINDOW (edit));
+        edit_move_to_line (edit, line - 1);
+        edit->force |= REDRAW_COMPLETELY;
+        widget_draw (WIDGET (dialog));
+        return TRUE;
+    }
+    path = g_strdup (file);
+    edit_arg_init (&arg, path, line);
+    opened = editor_host_load_in_place (host, &arg);
+    g_free (path);
+    return opened;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_set_line_note_impl (mc_editor_host_t *host, const char *file, long line,
+                                const char *text)
+{
+    GList *item;
+
+    if (file == NULL || line <= 0)
+        return;
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (!editor_host_same_file (edit->filename, file))
+            continue;
+        if (edit->line_notes == NULL)
+        {
+            if (text == NULL)
+                continue;
+            edit->line_notes = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, g_free);
+        }
+        if (text != NULL)
+            g_hash_table_insert (edit->line_notes, GINT_TO_POINTER ((gint) (line - 1)),
+                                 g_strdup (text));
+        else
+            g_hash_table_remove (edit->line_notes, GINT_TO_POINTER ((gint) (line - 1)));
+        edit->force |= REDRAW_COMPLETELY;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_clear_line_notes_impl (mc_editor_host_t *host, const char *file)
+{
+    GList *item;
+
+    for (item = GROUP (host->host_data)->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (edit->line_notes == NULL
+            || (file != NULL && !editor_host_same_file (edit->filename, file)))
+            continue;
+        g_hash_table_remove_all (edit->line_notes);
+        edit->force |= REDRAW_COMPLETELY;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_open_file_impl (mc_editor_host_t *host, const char *file)
+{
+    WDialog *dialog = DIALOG (host->host_data);
+    GList *item;
+    edit_arg_t arg;
+    char *path;
+    gboolean opened;
+
+    if (file == NULL)
+        return FALSE;
+    for (item = GROUP (dialog)->widgets; item != NULL; item = g_list_next (item))
+        if (edit_widget_is_editor (CONST_WIDGET (item->data))
+            && editor_host_same_file (EDIT (item->data)->filename, file))
+        {
+            edit_window_show (EDIT_WINDOW (item->data));
+            widget_draw (WIDGET (dialog));
+            return TRUE;
+        }
+    path = g_strdup (file);
+    // line 0: where the cursor was the last time
+    edit_arg_init (&arg, path, 0);
+    opened = editor_host_load_in_place (host, &arg);
+    g_free (path);
+    return opened;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_save_modified_files_impl (mc_editor_host_t *host, const char *project_root)
+{
+    WGroup *group = GROUP (host->host_data);
+    GPtrArray *modified = g_ptr_array_new ();
+    GList *item;
+    gsize root_len;
+    guint i;
+    gboolean saved = TRUE;
+
+    if (project_root == NULL)
+    {
+        g_ptr_array_free (modified, TRUE);
+        return FALSE;
+    }
+    root_len = strlen (project_root);
+    for (item = group->widgets; item != NULL; item = g_list_next (item))
+    {
+        WEdit *edit;
+        char *file;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = EDIT (item->data);
+        if (!edit->modified)
+            continue;
+        file = editor_host_get_current_file_impl (host, edit);
+        if (file != NULL && g_str_has_prefix (file, project_root)
+            && ((root_len > 0 && project_root[root_len - 1] == '/') || file[root_len] == '\0'
+                || file[root_len] == '/'))
+            g_ptr_array_add (modified, edit);
+        g_free (file);
+    }
+    for (i = 0; i < modified->len; i++)
+    {
+        WEdit *edit = g_ptr_array_index (modified, i);
+        char *question = g_strdup_printf (_ ("Save %s before debugging?"), edit->filename);
+
+        edit_window_show (EDIT_WINDOW (edit));
+        if (query_dialog (_ ("Debug"), question, D_NORMAL, 2, _ ("&Save"), _ ("&Cancel")) != 0
+            || !edit_runtime_save (edit) || edit->modified)
+            saved = FALSE;
+        g_free (question);
+        if (!saved)
+            break;
+    }
+    g_ptr_array_free (modified, TRUE);
+    return saved;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_window_kind_free (gpointer p)
+{
+    editor_window_kind_t *k = (editor_window_kind_t *) p;
+
+    g_free ((char *) k->kind.label);
+    g_free ((char *) k->kind.section);
+    g_free ((char *) k->kind.command);
+    g_free ((char *) k->kind.shortcut);
+    g_free ((char *) k->kind.name);
+    g_free (k);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+editor_host_window_kind_impl (mc_editor_host_t *host, const mc_ep_window_kind_t *kind, void *data)
+{
+    editor_plugin_ctx_t *ctx = (editor_plugin_ctx_t *) DIALOG (host->host_data)->data.p;
+    editor_window_kind_t *k;
+
+    if (ctx == NULL || kind == NULL || kind->label == NULL || kind->state == NULL
+        || kind->show == NULL)
+        return;
+    k = g_new0 (editor_window_kind_t, 1);
+    k->kind = *kind;
+    k->kind.label = g_strdup (kind->label);
+    k->kind.section = g_strdup (kind->section);
+    k->kind.command = g_strdup (kind->command);
+    k->kind.shortcut = g_strdup (kind->shortcut);
+    k->kind.name = g_strdup (kind->name);
+    k->data = data;
+    g_ptr_array_add (ctx->window_kinds, k);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The key of a command of a keymap section as the menus say it: Alt-Shift-G for the Alt-G of the
+   keymap, Shift-F8 for F18 */
+static char *
+editor_command_caption (const char *section, const char *command)
+{
+    const global_keymap_t *map;
+    const char *found = NULL;
+    long id;
+    size_t i;
+
+    if (section == NULL || command == NULL)
+        return NULL;
+    map = strcmp (section, "editor") == 0 ? editor_map : keymap_section_map (section);
+    id = keybind_lookup_action (command);
+    if (map == NULL || id == CK_IgnoreKey)
+        return NULL;
+    for (i = 0; map[i].key != 0 && found == NULL; i++)
+        if (map[i].command == id && map[i].caption[0] != '\0')
+            found = map[i].caption;
+    if (found == NULL)
+        return NULL;
+    if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
+        return g_strdup_printf ("Alt-Shift-%c", found[4]);
+    if ((found[0] == 'F' || found[0] == 'f') && atoi (found + 1) > 10 && atoi (found + 1) <= 20)
+        return g_strdup_printf ("Shift-F%d", atoi (found + 1) - 10);
+    return g_strdup (found);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 editor_plugin_instance_free (gpointer data)
 {
@@ -731,6 +1380,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_hide = editor_host_window_hide_impl;
     ctx->host->window_make_room = editor_host_window_make_room_impl;
     ctx->host->window_give_room_back = editor_host_window_give_room_back_impl;
+    ctx->host->window_dock_right = editor_host_window_dock_right_impl;
     ctx->host->window_current = editor_host_window_current_impl;
     ctx->host->window_top_file = editor_host_window_top_file_impl;
     ctx->host->get_text = editor_host_get_text_impl;
@@ -741,7 +1391,30 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->service_connect = editor_host_service_connect_impl;
     ctx->host->service_disconnect = editor_host_service_disconnect_impl;
     ctx->host->service_emit = editor_host_service_emit_impl;
+    ctx->host->marker_kind = editor_host_marker_kind_impl;
+    ctx->host->set_marker = editor_host_set_marker_impl;
+    ctx->host->clear_markers = editor_host_clear_markers_impl;
+    ctx->host->marker_lines = editor_host_marker_lines_impl;
+    ctx->host->commands_register = editor_host_commands_register_impl;
+    ctx->host->command_id = editor_host_command_id_impl;
+    ctx->host->command_lookup = editor_host_command_lookup_impl;
+    ctx->host->open_file = editor_host_open_file_impl;
+    ctx->host->set_line_note = editor_host_set_line_note_impl;
+    ctx->host->clear_line_notes = editor_host_clear_line_notes_impl;
+    ctx->host->startup_option = editor_host_startup_option_impl;
+    ctx->host->call_later = editor_host_call_later_impl;
+    ctx->host->window_close = editor_host_window_close_impl;
+    ctx->host->show_location = editor_host_show_location_impl;
+    ctx->host->save_modified_files = editor_host_save_modified_files_impl;
+    ctx->host->window_kind = editor_host_window_kind_impl;
+    ctx->host->window_dock_bottom = editor_host_window_dock_bottom_impl;
+    ctx->host->layout_push = editor_host_layout_push_impl;
+    ctx->host->layout_pop = editor_host_layout_pop_impl;
+    ctx->host->window_docked = editor_host_window_docked_impl;
+    ctx->window_kinds = g_ptr_array_new_with_free_func (editor_window_kind_free);
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
+    // the plugins reach it from open(): call_later() for one
+    edit_dlg->data.p = ctx;
 
     for (; plugins != NULL; plugins = g_slist_next (plugins))
     {
@@ -767,12 +1440,19 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
 
     if (ctx->instances->len == 0)
     {
+        // what a plugin that failed asked for from open () goes with it
+        if (ctx->later != NULL)
+            g_array_free (ctx->later, TRUE);
+        edit_dlg->data.p = NULL;
+        g_ptr_array_free (ctx->window_kinds, TRUE);
         g_ptr_array_free (ctx->instances, TRUE);
         g_free (ctx->host);
         g_free (ctx);
         return NULL;
     }
 
+    // once the files are open: the windows of their project as they were the last time
+    editor_host_call_later_impl (ctx->host, edit_layout_startup, edit_dlg);
     return ctx;
 }
 
@@ -790,10 +1470,42 @@ editor_plugin_ctx_destroy (WDialog *edit_dlg)
     if (ctx == NULL)
         return;
 
+    // the gutter the marks turned on is not the user's: the settings saved after keep it off
+    if (editor_marker_gutter_auto)
+    {
+        edit_options.line_state = FALSE;
+        edit_options.line_state_width = 0;
+        editor_marker_gutter_auto = FALSE;
+    }
+    g_ptr_array_free (ctx->window_kinds, TRUE);
     g_ptr_array_free (ctx->instances, TRUE);
+    if (ctx->later != NULL)
+        g_array_free (ctx->later, TRUE);
     g_free (ctx->host);
     g_free (ctx);
     edit_dlg->data.p = NULL;
+}
+
+gboolean
+edit_plugins_ok_to_quit (WDialog *dialog)
+{
+    editor_plugin_ctx_t *ctx;
+    guint i;
+
+    if (dialog == NULL)
+        return TRUE;
+    ctx = (editor_plugin_ctx_t *) dialog->data.p;
+    if (ctx == NULL)
+        return TRUE;
+    for (i = 0; i < ctx->instances->len; i++)
+    {
+        editor_plugin_instance_t *instance = g_ptr_array_index (ctx->instances, i);
+
+        if (instance->plugin->ok_to_quit != NULL
+            && !instance->plugin->ok_to_quit (instance->plugin_data))
+            return FALSE;
+    }
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -829,6 +1541,22 @@ edit_plugin_handle_action (WDialog *edit_dlg, long command, WEdit *edit)
     if (edit == NULL && GROUP (edit_dlg)->current != NULL
         && edit_widget_is_editor (CONST_WIDGET (GROUP (edit_dlg)->current->data)))
         edit = EDIT (GROUP (edit_dlg)->current->data);
+
+    // a window of a plugin, from the menu Window: open it, to the front, or close it
+    if (command >= EDIT_WINDOW_KIND_BASE && command < EDIT_WINDOW_KIND_BASE + 1000)
+    {
+        const guint k_idx = (guint) (command - EDIT_WINDOW_KIND_BASE);
+        const editor_window_kind_t *k;
+
+        if (k_idx >= ctx->window_kinds->len)
+            return FALSE;
+        k = g_ptr_array_index (ctx->window_kinds, k_idx);
+        if (k->kind.state (k->data) == MC_EP_WINDOW_FOCUSED && k->kind.close != NULL)
+            k->kind.close (k->data);
+        else
+            k->kind.show (k->data);
+        return TRUE;
+    }
 
     /* Per-action command from a named menu (Navigate, Command, etc.) */
     if (command >= MC_EDITOR_PLUGIN_ACTION_BASE)
@@ -1516,6 +2244,15 @@ edit_dialog_command_execute (WDialog *h, long command)
     case CK_WindowNext:
         group_select_next_widget (g);
         break;
+    case CK_WindowTabNext:
+        edit_dock_tab_step (h, 1);
+        break;
+    case CK_WindowTabPrev:
+        edit_dock_tab_step (h, -1);
+        break;
+    case CK_WindowLayout:
+        edit_layout_dialog (h);
+        break;
     case CK_WindowPrev:
         group_select_prev_widget (g);
         break;
@@ -1663,8 +2400,11 @@ edit_quit (WDialog *h)
     GSList *m = NULL;
     GSList *me;
 
-    // don't stop the dialog before final decision
+    // don't stop the dialog before final decision: a plugin may say no, the debugger for one
     widget_set_state (WIDGET (h), WST_ACTIVE, TRUE);
+
+    if (!edit_plugins_ok_to_quit (h))
+        return;
 
     // check window state and get modified files
     for (l = GROUP (h)->widgets; l != NULL; l = g_list_next (l))
@@ -1706,7 +2446,7 @@ edit_quit (WDialog *h)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static inline void
+void
 edit_set_buttonbar (WEdit *edit, WButtonBar *bb)
 {
     Widget *w = WIDGET (edit);
@@ -1944,6 +2684,14 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
             gboolean ext_mode;
             long command;
 
+            /* The plugins see the key before the keymap of the editor and of its windows: a
+               plugin may take over keys of the window too, F9 and F10 among them */
+            if (edit_plugin_handle_key (h, parm, EDIT (we)))
+            {
+                edit_update_screen (EDIT (we));
+                return MSG_HANDLED;
+            }
+
             if (edit_publish_runtime_key (EDIT (we), parm))
                 return MSG_HANDLED;
 
@@ -1985,6 +2733,8 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         return edit_drop_hotkey_menu (h, parm) ? MSG_HANDLED : MSG_NOT_HANDLED;
 
     case MSG_VALIDATE:
+        // the windows of the project for the next time
+        edit_layout_quit (h);
         edit_quit (h);
         return MSG_HANDLED;
 
@@ -1995,6 +2745,9 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
 
     case MSG_IDLE:
         widget_idle (w, FALSE);
+        edit_plugins_run_later (h);
+        if (!widget_get_state (w, WST_ACTIVE) || g->current == NULL)
+            return MSG_HANDLED;
         return send_message (g->current->data, NULL, MSG_IDLE, 0, NULL);
 
     default:
@@ -2099,6 +2852,12 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
     {
     case MSG_FOCUS:
         edit_set_buttonbar (e, buttonbar_find (DIALOG (w->owner)));
+        // the editor's labels first: a plugin may put its own over them
+        edit_plugins_tell (e, MC_EP_EVENT_FOCUS_IN);
+        return MSG_HANDLED;
+
+    case MSG_UNFOCUS:
+        edit_plugins_tell (e, MC_EP_EVENT_FOCUS_OUT);
         return MSG_HANDLED;
 
     case MSG_DRAW:
@@ -2113,11 +2872,6 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
 
         // The user may override the access-keys for the menu bar.
         if (macro_index == -1 && !bracketed_pasting_in_progress && edit_execute_macro (e, parm))
-        {
-            edit_update_screen (e);
-            ret = MSG_HANDLED;
-        }
-        else if (edit_plugin_handle_key (DIALOG (w->owner), parm, e))
         {
             edit_update_screen (e);
             ret = MSG_HANDLED;
@@ -2165,6 +2919,7 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
     case MSG_DESTROY:
         if (runtime_told_editor == e)
             runtime_told_editor = NULL;
+        edit_plugins_file_event (e, FALSE);
         edit_clean (e);
         return MSG_HANDLED;
 
@@ -2463,6 +3218,9 @@ edit_files (const GList *files)
                                            EDITOR_BACKGROUND_COLOR, ' ', edit_dialog_bg_callback));
     group_add_widget (g, edit_dlg->bg);
 
+    // the plugins first: the menu shows the keys of the commands they register
+    edit_dlg->data.p = editor_plugin_ctx_create (edit_dlg);
+
     menubar = menubar_new (NULL);
     w = WIDGET (menubar);
     group_add_widget_autopos (g, w, w->pos_flags, NULL);
@@ -2470,8 +3228,6 @@ edit_files (const GList *files)
 
     w = WIDGET (buttonbar_new ());
     group_add_widget_autopos (g, w, w->pos_flags, NULL);
-
-    edit_dlg->data.p = editor_plugin_ctx_create (edit_dlg);
 
     for (file = files; file != NULL; file = g_list_next (file))
     {
@@ -2578,7 +3334,10 @@ edit_add_window (WDialog *h, const WRect *r, const edit_arg_t *arg)
         return FALSE;
 
     edit_window_add (h, EDIT_WINDOW (edit));
+    // fullscreen, it fills what the docks leave
+    edit_dock_arrange (h);
     edit_set_buttonbar (edit, buttonbar_find (h));
+    edit_plugins_file_event (edit, TRUE);
     edit_publish_runtime_open (edit);
     widget_draw (WIDGET (h));
 
@@ -2586,3 +3345,59 @@ edit_add_window (WDialog *h, const WRect *r, const edit_arg_t *arg)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The entries of the menu Window for the windows of the plugins, '*' before an open one, with a
+   separator before them; NULL when there are none */
+GList *
+edit_window_kinds_menu (WDialog *h)
+{
+    editor_plugin_ctx_t *ctx = h != NULL ? (editor_plugin_ctx_t *) h->data.p : NULL;
+    GList *entries = NULL;
+    guint i;
+
+    if (ctx == NULL || ctx->window_kinds->len == 0)
+        return NULL;
+    entries = g_list_append (entries, menu_separator_new ());
+    for (i = 0; i < ctx->window_kinds->len; i++)
+    {
+        const editor_window_kind_t *k = g_ptr_array_index (ctx->window_kinds, i);
+        const gboolean open = k->kind.state (k->data) != MC_EP_WINDOW_CLOSED;
+        char *label = g_strconcat (open ? "* " : "  ", _ (k->kind.label), (char *) NULL);
+        char *key = editor_command_caption (k->kind.section, k->kind.command);
+        menu_entry_t *me = menu_entry_new (label, EDIT_WINDOW_KIND_BASE + (long) i);
+
+        if (key != NULL || k->kind.shortcut != NULL)
+            menu_entry_set_shortcut (me, key != NULL ? key : k->kind.shortcut);
+        entries = g_list_append (entries, me);
+        g_free (key);
+        g_free (label);
+    }
+    return entries;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The windows the plugins open, for the layouts: the @index one, NULL past the last */
+const mc_ep_window_kind_t *
+edit_window_kind_at (WDialog *h, guint index, void **data)
+{
+    editor_plugin_ctx_t *ctx = h != NULL ? (editor_plugin_ctx_t *) h->data.p : NULL;
+    const editor_window_kind_t *k;
+
+    if (ctx == NULL || index >= ctx->window_kinds->len)
+        return NULL;
+    k = g_ptr_array_index (ctx->window_kinds, index);
+    *data = k->data;
+    return &k->kind;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* An option the program was started with: "debug" for coole --debug; NULL when it was not */
+const char *
+edit_startup_option (const char *name)
+{
+    return startup_options != NULL ? g_hash_table_lookup (startup_options, name) : NULL;
+}

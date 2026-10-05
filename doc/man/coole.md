@@ -734,10 +734,40 @@ in the ini file.
 : The windows that are open, to go to one of them. See
 [Open files](#open-files).
 
+Under them come the windows the plugins open. An entry opens its window,
+brings it to the front when it is behind another, and closes it when it is
+in front already; an open one is marked with *\**. A plugin that is
+switched off has no entry.
+
+The windows of the plugins stand in docks: in the column at the right, one
+above the other, all the height of the screen, or in the row at the bottom,
+under the windows of the files, where they are tabs, one of them seen, their
+names on its title. A click on a name, or
+**Ctrl-Alt-PgDn** and **Ctrl-Alt-PgUp** (*WindowTabNext* and *WindowTabPrev*
+in the keymap), shows another. A file window that was fullscreen takes the
+rest of the screen, and the screen again when the docks are empty. A window
+of a dock resized gives the dock its size; moved, it leaves the dock.
+
+**Layout...**
+: The layouts of the windows: which windows of the plugins are open, in
+which dock, and how big the docks are. *Edit* has the files alone,
+*Project* the tree of the project, *Debug* the tree and the panel of the
+debugger. **Use** puts the windows so; **Save as...** keeps them as they are
+under a name, the name of one of these too; **Delete** forgets a layout
+kept, the one of the editor of that name coming back. With **Debug layout
+while debugging** the start of the debugger puts the windows as *Debug* has
+them, and its stop puts them back, the tabs of the bottom staying to be
+read.
+
+The windows of a project are kept when the editor ends, and come back when
+it starts with a file of the project.
+The layouts are kept in
+*layouts.ini* of the settings.
+
 ## Plugins menu
 
 The editor plugins that carry an entry of their own, the spell checker for
-one. A plugin that is switched off in
+one; their windows are in the [Window menu](#window-menu). A plugin that is switched off in
 [Manage plugins](#manage-plugins)
 is not in the menu.
 

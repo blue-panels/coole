@@ -36,6 +36,8 @@ libinternal_sources = files(
   'editor/editsearch.c',
   'editor/editwidget.c',
   'editor/editwindow.c',
+  'editor/editdock.c',
+  'editor/editlayout.c',
   'editor/fold.c',
   'editor/format.c',
   'editor/syntax.c',
@@ -48,6 +50,7 @@ libinternal_sources = files(
   'plugins/ctags/ctags-plugin.c',
   'plugins/ctags/ctags-repository.c',
   'plugins/ctags/ctags-ui.c',
+  'plugins/project/project-core.c',
   'plugins/etags/etags.c',
   'plugins/spell/spell.c',
 )
