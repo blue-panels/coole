@@ -7,11 +7,13 @@ is used, from a tags file that ctags built.
 
 **The index**
 
-The index of a project is kept by the plugin itself: when a file of a
-project is opened (a directory with *.coole*, *.git* or a build file, the
-project the project plugin finds), the plugin indexes it in the background
-with ctags, into *.coole/tags* of the project, and does so again when the
-index is older than the files and whenever a file of the project is saved.
+The index of a project is kept by the plugin itself: when a command of the
+plugin is first used in a file of a project (a directory with *.coole*,
+*.git* or a build file, the project the project plugin finds), or the file
+is opened by *coole --debug*, the plugin indexes the project in the
+background with ctags, into *.coole/tags* of the project, and does so again
+when the index is older than the files and whenever a file of the project is
+saved. A file opened without *--debug* does not wait for the index.
 The files indexed are those of the project: what git knows and does not
 ignore, else what is under it but hidden directories and build trees.
 
