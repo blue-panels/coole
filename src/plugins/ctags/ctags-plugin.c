@@ -2651,7 +2651,10 @@ ctags_plugin_on_file_open (void *plugin_data, void *edit)
     if (d == NULL || e == NULL)
         return MC_EPR_OK;
 
-    if (!d->cfg.auto_discover)
+    /* the index of the project is loaded with the file in coole --debug alone; else with the
+       first command that needs it, a file opened is not slowed by a big project */
+    if (!d->cfg.auto_discover || d->host->startup_option == NULL
+        || d->host->startup_option (d->host, "debug") == NULL)
         return MC_EPR_OK;
 
     file = d->host->get_current_file != NULL ? d->host->get_current_file (d->host, e) : NULL;
