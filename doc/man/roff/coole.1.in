@@ -86,6 +86,33 @@ to the panel and back. It needs the project, build and debugger plugins,
 and ctags for F3.
 
 .TP
+\fI\-G, \-\-git=directory\fP
+Open the window Git of the git plugin on the work tree of that
+directory; closing it ends the editor. The windows the project had last
+time are not shown, and the plugins of a project (project, build, debugger,
+ctags, etags, terminal) are not started. For a panel of git in a file
+manager, with one of these after it, or alone for the current directory:
+
+.TP
+\fI\-\-git\-log\fP
+The window Git on the log.
+
+.TP
+\fI\-\-git\-show=commit\fP
+The window Git on that commit: its files and their diffs.
+
+.TP
+\fI\-\-git\-commit\fP, \fI\-\-git\-amend\fP
+The window Git with the message of a commit of what is staged, or of the
+last commit amended with it; the editor ends once it is saved and
+committed, or its window closed.
+
+.TP
+\fI\-\-git\-reword=commit\fP
+Another message for that commit, the same way, the files of the commit
+under it.
+
+.TP
 \fI\-h, \-?, \-\-help\fP
 Show the options and what they do.
 

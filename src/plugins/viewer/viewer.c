@@ -989,7 +989,11 @@ viewer_plugin_open (mc_editor_host_t *host, void *editor_dialog)
         g_free (key_label);
         return NULL;
     }
-    if (host->window_kind != NULL)
+    // coole -G is there for git: the windows of the viewer are for what it shows, no Preview of
+    // the files, nor its key
+    if (host->startup_option != NULL && host->startup_option (host, "git") != NULL)
+        v->key = 0;
+    else if (host->window_kind != NULL)
     {
         mc_ep_window_kind_t kind = preview_window_kind;
 

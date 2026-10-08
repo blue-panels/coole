@@ -75,6 +75,28 @@ project; F2, F9 and F10 stay Save, the menu and Quit, and Alt-Shift-G goes
 to the panel and back. It needs the project, build and debugger plugins,
 and ctags for F3.
 
+*-G, --git=directory*
+: Open the window Git of the git plugin on the work tree of that
+directory; closing it ends the editor. The windows the project had last
+time are not shown, and the plugins of a project (project, build, debugger,
+ctags, etags, terminal) are not started. For a panel of git in a file
+manager, with one of these after it, or alone for the current directory:
+
+*--git-log*
+: The window Git on the log.
+
+*--git-show=commit*
+: The window Git on that commit: its files and their diffs.
+
+*--git-commit*, *--git-amend*
+: The window Git with the message of a commit of what is staged, or of the
+last commit amended with it; the editor ends once it is saved and
+committed, or its window closed.
+
+*--git-reword=commit*
+: Another message for that commit, the same way, the files of the commit
+under it.
+
 *-h, -?, --help*
 : Show the options and what they do.
 

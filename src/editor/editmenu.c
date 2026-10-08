@@ -479,7 +479,8 @@ create_plugins_menu (void)
            list position, so we increment it even when skipping a plugin. */
         if (plugin->activate == NULL || (plugin->flags & MC_EPF_HAS_MENU) == 0
             || (plugin->name != NULL
-                && mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name)))
+                && (mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name)
+                    || edit_plugin_off_for_session (plugin->name))))
         {
             command_id++;
             continue;
@@ -528,7 +529,8 @@ create_plugin_menu_entries (const char *menu_name)
             continue;
 
         if (plugin->name != NULL
-            && mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name))
+            && (mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name)
+                || edit_plugin_off_for_session (plugin->name)))
             continue;
 
         for (i = 0; i < plugin->cmd_menu_entry_count; i++)
@@ -651,7 +653,8 @@ edit_init_menu (WMenuBar *menubar)
         int e;
 
         if (plugin->name != NULL
-            && mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name))
+            && (mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name)
+                || edit_plugin_off_for_session (plugin->name)))
             continue;
         for (e = 0; e < plugin->cmd_menu_entry_count; e++)
         {

@@ -1435,7 +1435,8 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
 
         /* Honour user disable from Manage Plugins for this editor session. */
         if (plugin->name != NULL
-            && mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name))
+            && (mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name)
+                || edit_plugin_off_for_session (plugin->name)))
             continue;
 
         inst = g_new0 (editor_plugin_instance_t, 1);
@@ -3412,4 +3413,18 @@ const char *
 edit_startup_option (const char *name)
 {
     return startup_options != NULL ? g_hash_table_lookup (startup_options, name) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* coole -G is there for git: the plugins of a project are not started, their menus and windows
+   not shown; Manage plugins is not touched */
+gboolean
+edit_plugin_off_for_session (const char *name)
+{
+    static const char *const project_plugins[] = { "project", "build",    "debugger", "ctags",
+                                                   "etags",   "terminal", NULL };
+
+    return name != NULL && edit_startup_option ("git") != NULL
+        && g_strv_contains (project_plugins, name);
 }
