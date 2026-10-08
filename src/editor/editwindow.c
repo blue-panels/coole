@@ -854,6 +854,8 @@ edit_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
                 ;  // do nothing (see MSG_MOUSE_CLICK)
             else if (edit_dock_tab_click (win, event->x))
                 ;  // a tab of the bottom: seen
+            else if (win->klass->title_click != NULL && win->klass->title_click (win, event->x))
+                ;  // something of the class in the title: a tab of its own
             else
             {
                 // start window move
