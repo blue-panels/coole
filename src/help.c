@@ -502,9 +502,18 @@ help_next_line (const char *start)
             if (word == 0 && mark_start == NULL)
                 mark_start = p;
             break;
-        case CHAR_ALTERNATE:
-        case CHAR_NORMAL:
         case CHAR_FONT_NORMAL:
+            break;
+        case CHAR_LINE:
+            // one column of a word
+            if (p[1] != '\0')
+                n = p + 2;
+            if (painting)
+            {
+                if (word == 0)
+                    word_start = p;
+                word++;
+            }
             break;
         default:
             if (!painting)
@@ -836,63 +845,6 @@ help_print_word (WDialog *h, GString *word, int *col, int *line, gboolean add_sp
 
 /* --------------------------------------------------------------------------------------------- */
 
-static mc_tty_char_t
-mc_acs_map (int c)
-{
-    switch (c)
-    {
-    case 'q':
-        return mc_global.tty.ugly_line_drawing ? '-'
-            : mc_global.utf8_display           ? 0x2500
-                                               : MC_ACS_HLINE;
-    case 'x':
-        return mc_global.tty.ugly_line_drawing ? '|'
-            : mc_global.utf8_display           ? 0x2502
-                                               : MC_ACS_VLINE;
-    case 'l':
-        return mc_global.tty.ugly_line_drawing ? '+'
-            : mc_global.utf8_display           ? 0x250C
-                                               : MC_ACS_ULCORNER;
-    case 'k':
-        return mc_global.tty.ugly_line_drawing ? '+'
-            : mc_global.utf8_display           ? 0x2510
-                                               : MC_ACS_URCORNER;
-    case 'm':
-        return mc_global.tty.ugly_line_drawing ? '+'
-            : mc_global.utf8_display           ? 0x2514
-                                               : MC_ACS_LLCORNER;
-    case 'j':
-        return mc_global.tty.ugly_line_drawing ? '+'
-            : mc_global.utf8_display           ? 0x2518
-                                               : MC_ACS_LRCORNER;
-    case 't':
-        return mc_global.tty.ugly_line_drawing ? '|'
-            : mc_global.utf8_display           ? 0x251C
-                                               : MC_ACS_LTEE;
-    case 'u':
-        return mc_global.tty.ugly_line_drawing ? '|'
-            : mc_global.utf8_display           ? 0x2524
-                                               : MC_ACS_RTEE;
-    case 'w':
-        return mc_global.tty.ugly_line_drawing ? '-'
-            : mc_global.utf8_display           ? 0x252C
-                                               : MC_ACS_TTEE;
-    case 'v':
-        return mc_global.tty.ugly_line_drawing ? '-'
-            : mc_global.utf8_display           ? 0x2534
-                                               : MC_ACS_BTEE;
-    case 'n':
-        return mc_global.tty.ugly_line_drawing ? '+'
-            : mc_global.utf8_display           ? 0x253C
-                                               : MC_ACS_PLUS;
-
-    default:
-        return c;
-    }
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 static void
 help_show (WDialog *h, const char *paint_start)
 {
@@ -909,7 +861,6 @@ help_show (WDialog *h, const char *paint_start)
     {
         int line = 0;
         int col = 0;
-        gboolean acs = FALSE;  // Flag: Is alternate character set active?
         const char *p, *n;
 
         active_col = 0;
@@ -966,12 +917,6 @@ help_show (WDialog *h, const char *paint_start)
                 if (n[0] == CHAR_ANCHOR)
                     n++;
                 break;
-            case CHAR_ALTERNATE:
-                acs = TRUE;
-                break;
-            case CHAR_NORMAL:
-                acs = FALSE;
-                break;
             case CHAR_VERSION:
             {
                 // the field says how many columns it takes, so a version
@@ -992,6 +937,23 @@ help_show (WDialog *h, const char *paint_start)
                 col += width;
                 break;
             }
+            case CHAR_LINE:
+                if (n[0] == '\0')
+                    break;
+                if (painting && line < help_lines)
+                {
+                    // printed where it stands, the word before it first
+                    help_print_word (h, word, &col, &line, FALSE);
+                    // a role of md_lines () alone: a stray ^E in a file prints nothing
+                    if (col < HELP_WINDOW_WIDTH && n[0] >= 'A' && n[0] - 'A' < MC_TTY_FRM_MAX)
+                    {
+                        widget_gotoyx (h, line + 2, col + 2);
+                        tty_print_char (mc_tty_frm[n[0] - 'A']);
+                        col++;
+                    }
+                }
+                n++;
+                break;
             case CHAR_FONT_BOLD:
                 tty_setcolor (HELP_BOLD_COLOR);
                 break;
@@ -1026,18 +988,9 @@ help_show (WDialog *h, const char *paint_start)
                 }
                 break;
             default:
+                // accumulate symbols in a word
                 if (painting && (line < help_lines))
-                {
-                    if (!acs)
-                        // accumulate symbols in a word
-                        g_string_append (word, buff);
-                    else if (col < HELP_WINDOW_WIDTH)
-                    {
-                        widget_gotoyx (h, line + 2, col + 2);
-                        tty_print_char (mc_acs_map (c));
-                        col++;
-                    }
-                }
+                    g_string_append (word, buff);
             }
         }
 
