@@ -125,6 +125,8 @@ WEdit *edit_find_editor (const WDialog *h);
 gboolean edit_widget_is_editor (const Widget *w);
 void edit_set_buttonbar (WEdit *edit, WButtonBar *bb);
 void edit_plugins_tell_saved (WEdit *edit, gboolean save_as);
+/* The window of @edit goes: the plugins are told, once, while it is still on the screen */
+void edit_plugins_tell_closed (WEdit *edit);
 gboolean edit_drop_hotkey_menu (WDialog *h, int key);
 void edit_menu_cmd (WDialog *h);
 void edit_user_menu (WEdit *edit, const char *menu_file, int selected_entry);

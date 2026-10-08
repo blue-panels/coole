@@ -1036,6 +1036,9 @@ edit_window_destroy (WEditWindow *win)
     Widget *top = NULL;
     GList *l;
 
+    // a file window: its plugins are told while it is on the screen, where they find it
+    if (edit_widget_is_editor (w))
+        edit_plugins_tell_closed (EDIT (w));
     // a window stops moving or resizing when it goes, its neighbors left where they are
     drag_end (win, TRUE);
     // the others of its dock take its room

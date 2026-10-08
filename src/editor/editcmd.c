@@ -1565,6 +1565,8 @@ edit_close_cmd (WEdit *edit)
 
         // a move or resize of it ends: its neighbors are drawn as before
         edit_window_drag_end (EDIT_WINDOW (edit));
+        // the plugins are told while it is on the screen, where they find it
+        edit_plugins_tell_closed (edit);
         group_remove_widget (w);
         widget_destroy (w);
 

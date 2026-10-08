@@ -290,6 +290,18 @@ edit_plugins_file_event (WEdit *edit, gboolean opened)
 
 /* --------------------------------------------------------------------------------------------- */
 
+void
+edit_plugins_tell_closed (WEdit *edit)
+{
+    // a window taken off the screen has no editor to find its plugins by any more
+    if (edit->closed_told || CONST_WIDGET (edit)->owner == NULL)
+        return;
+    edit->closed_told = 1;
+    edit_plugins_file_event (edit, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The editor is idle: tell the runtime and the plugins that the text changed and that the cursor
    is on another line, once for all the changes and moves since they were told last.  A file
    window that comes to the front is told of as changed and moved. */
@@ -2919,7 +2931,7 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
     case MSG_DESTROY:
         if (runtime_told_editor == e)
             runtime_told_editor = NULL;
-        edit_plugins_file_event (e, FALSE);
+        edit_plugins_tell_closed (e);
         edit_clean (e);
         return MSG_HANDLED;
 

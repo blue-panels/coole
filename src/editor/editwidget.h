@@ -93,6 +93,7 @@ struct WEdit
     int force;                      // how much of the screen do we redraw?
     unsigned int overwrite : 1;     // Overwrite on type mode (as opposed to insert)
     unsigned int modified : 1;      // File has been modified and needs saving
+    unsigned int closed_told : 1;   // the plugins know the window goes
     unsigned int loading_done : 1;  // File has been loaded into the editor
     unsigned int locked : 1;        // We hold lock on current file
     unsigned int delete_file : 1;   // New file, needs to be deleted unless modified

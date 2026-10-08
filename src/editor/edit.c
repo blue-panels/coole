@@ -5570,7 +5570,9 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
         edit_goto_matching_bracket (edit);
         break;
     case CK_UserMenu:
-        edit_user_menu (edit, NULL, -1);
+        // a plugin may have a menu of its own for the file: the git plugin for a commit message
+        if (!edit_plugin_handle_action (DIALOG (WIDGET (edit)->owner), command, edit))
+            edit_user_menu (edit, NULL, -1);
         break;
     case CK_SelectCodepage:
         edit_select_codepage_cmd (edit);
@@ -5588,7 +5590,9 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
         break;
     }
 
-    (void) edit_plugin_handle_action (DIALOG (WIDGET (edit)->owner), command, edit);
+    // the user menu has asked the plugins already
+    if (command != CK_UserMenu)
+        (void) edit_plugin_handle_action (DIALOG (WIDGET (edit)->owner), command, edit);
 
     /* a command that landed on a hidden line (Ctrl-Home, search, goto) is corrected at once */
     edit_fold_snap_cursor (edit);
