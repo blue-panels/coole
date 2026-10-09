@@ -137,6 +137,23 @@ dock_dialog (const WEditWindow *win)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* The columns of the column at the right and the lines of the row at the bottom in the area @a,
+   0 for one with no window */
+static void
+dock_sizes (const WRect *a, int *cols, int *lines)
+{
+    *cols = 0;
+    *lines = 0;
+    if (right != NULL && right->len != 0)
+        *cols = CLAMP (a->cols * right_pct / 100, DOCK_RIGHT_MIN,
+                       MAX (DOCK_RIGHT_MIN, a->cols - DOCK_CENTER_COLS));
+    if (bottom != NULL && bottom->len != 0)
+        *lines = CLAMP (a->lines * bottom_pct / 100, DOCK_BOTTOM_MIN,
+                        MAX (DOCK_BOTTOM_MIN, a->lines - DOCK_CENTER_LINES));
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -217,10 +234,23 @@ edit_dock_side (const WEditWindow *win)
 /* --------------------------------------------------------------------------------------------- */
 
 void
+edit_dock_free_area (const WDialog *h, WRect *r)
+{
+    int cols, lines;
+
+    edit_window_area (h, r);
+    dock_sizes (r, &cols, &lines);
+    r->cols -= cols;
+    r->lines -= lines;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
 edit_dock_arrange (WDialog *h)
 {
     WRect a, r, c;
-    int cols = 0, lines = 0;
+    int cols, lines;
     guint i;
     GList *l;
 
@@ -228,13 +258,7 @@ edit_dock_arrange (WDialog *h)
         return;
     arranging = TRUE;
     edit_window_area (h, &a);
-
-    if (right != NULL && right->len != 0)
-        cols = CLAMP (a.cols * right_pct / 100, DOCK_RIGHT_MIN,
-                      MAX (DOCK_RIGHT_MIN, a.cols - DOCK_CENTER_COLS));
-    if (bottom != NULL && bottom->len != 0)
-        lines = CLAMP (a.lines * bottom_pct / 100, DOCK_BOTTOM_MIN,
-                       MAX (DOCK_BOTTOM_MIN, a.lines - DOCK_CENTER_LINES));
+    dock_sizes (&a, &cols, &lines);
 
     // the column at the right: the height by the shares
     if (cols != 0)
