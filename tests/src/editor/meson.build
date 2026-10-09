@@ -29,3 +29,9 @@ test('gdb_mi', executable('gdb_mi', 'gdb_mi.c',
 test('build_core', executable('build_core', 'build_core.c',
                               '../../../src/plugins/build/build-core.c',
                               dependencies: [glib_dep]), suite: 'src/editor')
+
+test('git_core', executable('git_core', 'git_core.c',
+                            '../../../src/plugins/git/git-core.c',
+                            c_args: ['-DGIT_MENU_INI="@0@"'.format(
+                              meson.project_source_root() / 'misc' / 'git-menu.ini')],
+                            dependencies: [glib_dep]), suite: 'src/editor')
