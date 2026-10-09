@@ -972,6 +972,531 @@ git_commit_free (gpointer commit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A branch of the graph: the commits of its first parents from its tip, those not taken by a
+   branch before it */
+typedef struct
+{
+    int kind;        /* GIT_GRAPH_COLOR_* of its name, GIT_GRAPH_COLOR_OTHER for the rest */
+    int order;       /* among those of its kind: local, remote, merged and gone */
+    int tip;         /* the row of its first commit */
+    int top, bottom; /* the rows its line takes */
+    gboolean open;   /* its line goes on past the log: the parent is too old for it */
+    int col;
+    int color;
+} git_graph_branch_t;
+
+/* The kind of a branch by its name, that of a remote without the remote */
+static int
+git_graph_kind (const char *name)
+{
+    if (strcmp (name, "main") == 0 || strcmp (name, "master") == 0 || strcmp (name, "trunk") == 0)
+        return GIT_GRAPH_COLOR_MAIN;
+    if (strcmp (name, "develop") == 0 || strcmp (name, "dev") == 0
+        || strcmp (name, "development") == 0)
+        return GIT_GRAPH_COLOR_DEVELOP;
+    if (g_str_has_prefix (name, "release"))
+        return GIT_GRAPH_COLOR_RELEASE;
+    if (g_str_has_prefix (name, "hotfix"))
+        return GIT_GRAPH_COLOR_HOTFIX;
+    return GIT_GRAPH_COLOR_OTHER;
+}
+
+/* The name of a branch without its remote; NULL for a name that is no branch: a tag, HEAD */
+static const char *
+git_graph_ref_name (const char *ref, const char *const *remotes, gboolean *remote)
+{
+    *remote = FALSE;
+    if (g_str_has_prefix (ref, "HEAD -> "))
+        ref += strlen ("HEAD -> ");
+    if (g_str_has_prefix (ref, "tag: ") || strcmp (ref, "HEAD") == 0)
+        return NULL;
+    for (; remotes != NULL && *remotes != NULL; remotes++)
+    {
+        const size_t len = strlen (*remotes);
+
+        if (strncmp (ref, *remotes, len) == 0 && ref[len] == '/')
+        {
+            *remote = TRUE;
+            // origin/HEAD is where another branch is
+            return strcmp (ref + len + 1, "HEAD") == 0 ? NULL : ref + len + 1;
+        }
+    }
+    return ref;
+}
+
+/* The branch a merge commit took in, by its subject: "Merge branch 'x'", "Merge pull request #1
+   from y/x", "Merge remote-tracking branch 'origin/x'"; "" when it does not say */
+static char *
+git_graph_merged_name (const char *subject)
+{
+    const char *p;
+
+    if ((p = strstr (subject, "branch '")) != NULL)
+    {
+        const char *start = p + strlen ("branch '");
+        const char *end = strchr (start, '\'');
+        const char *slash;
+
+        if (end != NULL)
+        {
+            char *name = g_strndup (start, (gsize) (end - start));
+
+            // a remote-tracking one: its name without the remote
+            if (strstr (subject, "remote-tracking") != NULL && (slash = strchr (name, '/')) != NULL)
+            {
+                char *rest = g_strdup (slash + 1);
+
+                g_free (name);
+                name = rest;
+            }
+            return name;
+        }
+    }
+    if (g_str_has_prefix (subject, "Merge pull request ")
+        && (p = strstr (subject, " from ")) != NULL)
+    {
+        const char *start = strchr (p + strlen (" from "), '/');
+        const char *end;
+
+        if (start != NULL)
+        {
+            start++;
+            end = start + strcspn (start, " \n");
+            return g_strndup (start, (gsize) (end - start));
+        }
+    }
+    return g_strdup ("");
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The commits of the first parents from @tip on, not taken yet, to branch @b; the row of the
+   commit its line ends at: the one it went off from, or the last of the log */
+static void
+git_graph_walk (const GPtrArray *commits, GHashTable *rows, int *owner, GArray *branches, int b,
+                int tip)
+{
+    git_graph_branch_t *br = &g_array_index (branches, git_graph_branch_t, b);
+    int i = tip;
+
+    br->tip = tip;
+    br->top = tip;
+    br->bottom = tip;
+    while (TRUE)
+    {
+        const git_commit_t *c = g_ptr_array_index (commits, i);
+        gpointer next;
+
+        owner[i] = b;
+        br->bottom = i;
+        if (c->parents == 0)
+            break;
+        // a parent too old for the log: the line goes on to the end
+        if (!g_hash_table_lookup_extended (rows, c->parent_shas[0], NULL, &next))
+        {
+            br->bottom = (int) commits->len - 1;
+            br->open = TRUE;
+            break;
+        }
+        i = GPOINTER_TO_INT (next);
+        // the commit it went off from: the line ends at its row
+        if (owner[i] >= 0)
+        {
+            br->bottom = i;
+            break;
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+git_graph_branch_cmp (gconstpointer a, gconstpointer b)
+{
+    const git_graph_branch_t *x = *(const git_graph_branch_t *const *) a;
+    const git_graph_branch_t *y = *(const git_graph_branch_t *const *) b;
+
+    if (x->kind != y->kind)
+        return x->kind - y->kind;
+    if (x->order != y->order)
+        return x->order - y->order;
+    return x->tip - y->tip;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A line in @row from column @from to column @to, of color @color, the end at @to joining what
+   is there; @arrow, the link next to @from points at it */
+static void
+git_graph_hline (git_graph_row_t *row, int from, int to, int color, gboolean arrow)
+{
+    const int lo = MIN (from, to);
+    const int hi = MAX (from, to);
+    int k;
+
+    if (from == to)
+        return;
+    row->line[from] |= to > from ? GIT_GRAPH_RIGHT : GIT_GRAPH_LEFT;
+    row->line[to] |= to > from ? GIT_GRAPH_LEFT : GIT_GRAPH_RIGHT;
+    if ((row->line[to] & (GIT_GRAPH_UP | GIT_GRAPH_DOWN)) == 0)
+        row->color[to] = (guint8) color;
+    for (k = lo; k < hi; k++)
+    {
+        if (k > lo)
+        {
+            // a line crossed keeps its color
+            if ((row->line[k] & (GIT_GRAPH_UP | GIT_GRAPH_DOWN)) == 0)
+                row->color[k] = (guint8) color;
+            row->line[k] |= GIT_GRAPH_LEFT | GIT_GRAPH_RIGHT;
+        }
+        if (row->link[k] == GIT_GRAPH_LINK_NONE)
+        {
+            row->link[k] = GIT_GRAPH_LINK_LINE;
+            row->link_color[k] = (guint8) color;
+        }
+    }
+    if (arrow)
+    {
+        k = to > from ? from : from - 1;
+        row->link[k] = to > from ? GIT_GRAPH_LINK_TO_LEFT : GIT_GRAPH_LINK_TO_RIGHT;
+        row->link_color[k] = (guint8) color;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A branch gone off from commit @row: its line from column @from to its column @to */
+typedef struct
+{
+    int row;
+    int from, to;
+    int color;
+} git_graph_fork_t;
+
+/* An empty row of @cols columns, of commit @commit */
+static git_graph_row_t *
+git_graph_row_new (int commit, int cols)
+{
+    git_graph_row_t *row = g_malloc0 (sizeof (git_graph_row_t) + 4 * (gsize) cols);
+
+    row->commit = commit;
+    row->cols = cols;
+    row->line = (guint8 *) (row + 1);
+    row->color = row->line + cols;
+    row->link = row->color + cols;
+    row->link_color = row->link + cols;
+    return row;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether @row has a line across it already */
+static gboolean
+git_graph_has_hline (const git_graph_row_t *row)
+{
+    int k;
+
+    for (k = 0; k < row->cols - 1; k++)
+        if (row->link[k] != GIT_GRAPH_LINK_NONE)
+            return TRUE;
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+GPtrArray *
+git_graph_build (const GPtrArray *commits, const char *const *remotes)
+{
+    const int n = (int) commits->len;
+    GPtrArray *result = g_ptr_array_new_with_free_func (g_free);
+    GHashTable *rows = g_hash_table_new (g_str_hash, g_str_equal);
+    GArray *branches = g_array_new (FALSE, TRUE, sizeof (git_graph_branch_t));
+    GPtrArray *sorted, *columns, *commit_rows;
+    GArray *forks;
+    int *owner = g_new (int, MAX (n, 1));
+    int i, others = 0, cols = 0, kind, b;
+    guint k;
+
+    for (i = 0; i < n; i++)
+    {
+        const git_commit_t *c = g_ptr_array_index (commits, i);
+
+        g_hash_table_insert (rows, c->sha, GINT_TO_POINTER (i));
+        owner[i] = -1;
+    }
+
+    // the branches the refs name: those of git flow first, the local ones before the remote ones
+    {
+        GArray *tips = g_array_new (FALSE, TRUE, sizeof (git_graph_branch_t));
+
+        for (i = 0; i < n; i++)
+        {
+            const git_commit_t *c = g_ptr_array_index (commits, i);
+            char **refs = g_strsplit (c->refs, ", ", -1);
+            char **r;
+
+            for (r = refs; *r != NULL; r++)
+            {
+                gboolean remote;
+                const char *name = git_graph_ref_name (*r, remotes, &remote);
+                git_graph_branch_t t = { 0 };
+
+                t.tip = i;
+                // a detached HEAD: a branch of its own, the last
+                if (strcmp (*r, "HEAD") == 0)
+                {
+                    t.kind = GIT_GRAPH_COLOR_OTHER;
+                    t.order = 3;
+                    g_array_append_val (tips, t);
+                }
+                if (name == NULL || *name == '\0')
+                    continue;
+                t.kind = git_graph_kind (name);
+                t.order = remote ? 1 : 0;
+                g_array_append_val (tips, t);
+            }
+            g_strfreev (refs);
+        }
+        sorted = g_ptr_array_new ();
+        for (k = 0; k < tips->len; k++)
+            g_ptr_array_add (sorted, &g_array_index (tips, git_graph_branch_t, k));
+        g_ptr_array_sort (sorted, git_graph_branch_cmp);
+        for (k = 0; k < sorted->len; k++)
+        {
+            const git_graph_branch_t *t = g_ptr_array_index (sorted, k);
+
+            // a ref at a commit some branch has already: nothing of its own
+            if (owner[t->tip] >= 0)
+                continue;
+            g_array_append_val (branches, *t);
+            git_graph_walk (commits, rows, owner, branches, (int) branches->len - 1, t->tip);
+        }
+        g_ptr_array_free (sorted, TRUE);
+        g_array_free (tips, TRUE);
+    }
+
+    // the branches merged and gone: from the commits merges took in, named by their subjects
+    for (i = 0; i < n; i++)
+    {
+        const git_commit_t *c = g_ptr_array_index (commits, i);
+        int p;
+
+        for (p = 1; p < c->parents; p++)
+        {
+            gpointer row;
+
+            if (g_hash_table_lookup_extended (rows, c->parent_shas[p], NULL, &row)
+                && owner[GPOINTER_TO_INT (row)] < 0)
+            {
+                char *name = git_graph_merged_name (c->subject);
+                git_graph_branch_t t = { 0 };
+
+                t.kind = *name != '\0' ? git_graph_kind (name) : GIT_GRAPH_COLOR_OTHER;
+                t.order = 2;
+                g_free (name);
+                g_array_append_val (branches, t);
+                git_graph_walk (commits, rows, owner, branches, (int) branches->len - 1,
+                                GPOINTER_TO_INT (row));
+            }
+        }
+    }
+    // whatever is left: a line of its own
+    for (i = 0; i < n; i++)
+        if (owner[i] < 0)
+        {
+            git_graph_branch_t t = { .kind = GIT_GRAPH_COLOR_OTHER, .order = 3 };
+
+            g_array_append_val (branches, t);
+            git_graph_walk (commits, rows, owner, branches, (int) branches->len - 1, i);
+        }
+
+    // a branch merged into another: its line goes up to the merge
+    for (i = 0; i < n; i++)
+    {
+        const git_commit_t *c = g_ptr_array_index (commits, i);
+        int p;
+
+        for (p = 1; p < c->parents; p++)
+        {
+            gpointer row;
+
+            if (g_hash_table_lookup_extended (rows, c->parent_shas[p], NULL, &row)
+                && owner[GPOINTER_TO_INT (row)] != owner[i])
+            {
+                git_graph_branch_t *br =
+                    &g_array_index (branches, git_graph_branch_t, owner[GPOINTER_TO_INT (row)]);
+
+                br->top = MIN (br->top, i);
+            }
+        }
+    }
+
+    // the columns: those of a kind at the right of those of the kinds before it, a column taken
+    // again by a branch whose line is clear of those there
+    sorted = g_ptr_array_new ();
+    for (k = 0; k < branches->len; k++)
+        g_ptr_array_add (sorted, &g_array_index (branches, git_graph_branch_t, k));
+    g_ptr_array_sort (sorted, git_graph_branch_cmp);
+    columns = g_ptr_array_new_with_free_func ((GDestroyNotify) g_ptr_array_unref);
+    for (kind = -1, b = 0, k = 0; k < sorted->len; k++)
+    {
+        git_graph_branch_t *br = g_ptr_array_index (sorted, k);
+        int col;
+
+        if (MIN (br->kind, GIT_GRAPH_COLOR_OTHER) != kind)
+        {
+            kind = MIN (br->kind, GIT_GRAPH_COLOR_OTHER);
+            b = (int) columns->len;
+        }
+        for (col = b;; col++)
+        {
+            GPtrArray *there;
+            guint m;
+            gboolean clear = TRUE;
+
+            if (col == (int) columns->len)
+                g_ptr_array_add (columns, g_ptr_array_new ());
+            there = g_ptr_array_index (columns, col);
+            for (m = 0; m < there->len && clear; m++)
+            {
+                const git_graph_branch_t *o = g_ptr_array_index (there, m);
+
+                clear = br->bottom < o->top || o->bottom < br->top;
+            }
+            if (clear)
+            {
+                g_ptr_array_add (there, br);
+                br->col = col;
+                break;
+            }
+        }
+        br->color = br->kind < GIT_GRAPH_COLOR_OTHER
+            ? br->kind
+            : GIT_GRAPH_COLOR_OTHER + (others++ % (256 - GIT_GRAPH_COLOR_OTHER));
+    }
+    cols = MAX (1, (int) columns->len);
+    g_ptr_array_unref (columns);
+    g_ptr_array_free (sorted, TRUE);
+
+    // the rows: the lines of the branches, their commits, and what joins them
+    commit_rows = g_ptr_array_new ();
+    for (i = 0; i < n; i++)
+        g_ptr_array_add (commit_rows, git_graph_row_new (i, cols));
+    for (k = 0; k < branches->len; k++)
+    {
+        const git_graph_branch_t *br = &g_array_index (branches, git_graph_branch_t, k);
+
+        for (i = br->top; i <= br->bottom && i < n; i++)
+        {
+            git_graph_row_t *row = g_ptr_array_index (commit_rows, i);
+
+            if (i > br->top)
+                row->line[br->col] |= GIT_GRAPH_UP;
+            if (i < br->bottom || br->open)
+                row->line[br->col] |= GIT_GRAPH_DOWN;
+            row->color[br->col] = (guint8) br->color;
+        }
+    }
+    forks = g_array_new (FALSE, FALSE, sizeof (git_graph_fork_t));
+    for (i = 0; i < n; i++)
+    {
+        const git_commit_t *c = g_ptr_array_index (commits, i);
+        const git_graph_branch_t *br = &g_array_index (branches, git_graph_branch_t, owner[i]);
+        git_graph_row_t *row = g_ptr_array_index (commit_rows, i);
+        int p;
+
+        row->node = br->col;
+        row->line[br->col] |= GIT_GRAPH_NODE | (c->parents > 1 ? GIT_GRAPH_MERGE : 0);
+        row->color[br->col] = (guint8) br->color;
+        for (p = 0; p < c->parents; p++)
+        {
+            gpointer at;
+            int j;
+            const git_graph_branch_t *other;
+
+            if (!g_hash_table_lookup_extended (rows, c->parent_shas[p], NULL, &at))
+                continue;
+            j = GPOINTER_TO_INT (at);
+            if (owner[j] == owner[i])
+                continue;
+            other = &g_array_index (branches, git_graph_branch_t, owner[j]);
+            if (p == 0)
+            {
+                // the branch went off from that commit: its line ends at the row of it
+                const git_graph_fork_t f = { j, other->col, br->col, br->color };
+
+                g_array_append_val (forks, f);
+            }
+            else
+                // a merge: the line of the branch taken in, into the commit
+                git_graph_hline (row, br->col, other->col, other->color, TRUE);
+        }
+    }
+
+    // the lines of the branches that went off from a commit: in its row, or in a row of their own
+    // before it when the line of a merge is there
+    {
+        GPtrArray *joins = g_ptr_array_new ();
+        gboolean *merged = g_new (gboolean, MAX (n, 1));
+
+        g_ptr_array_set_size (joins, n);
+        // decided before any of them is drawn, so that they all go together
+        for (i = 0; i < n; i++)
+            merged[i] = git_graph_has_hline (g_ptr_array_index (commit_rows, i));
+        for (k = 0; k < forks->len; k++)
+        {
+            const git_graph_fork_t *f = &g_array_index (forks, git_graph_fork_t, k);
+            git_graph_row_t *row = g_ptr_array_index (commit_rows, f->row);
+            git_graph_row_t *join = g_ptr_array_index (joins, f->row);
+            int col;
+
+            if (!merged[f->row])
+            {
+                git_graph_hline (row, f->from, f->to, f->color, FALSE);
+                continue;
+            }
+            if (join == NULL)
+            {
+                // the lines going on through it, those from above into the row of the commit
+                join = git_graph_row_new (-1, cols);
+                join->node = -1;
+                for (col = 0; col < cols; col++)
+                    if ((row->line[col] & GIT_GRAPH_UP) != 0)
+                    {
+                        join->line[col] = GIT_GRAPH_UP | GIT_GRAPH_DOWN;
+                        join->color[col] = row->color[col];
+                    }
+                g_ptr_array_index (joins, f->row) = join;
+            }
+            // the line of the branch ends in the row that joins, down to the commit from it
+            join->line[f->to] &= (guint8) ~GIT_GRAPH_DOWN;
+            row->line[f->to] &= (guint8) ~GIT_GRAPH_UP;
+            join->line[f->from] |= GIT_GRAPH_DOWN;
+            if ((join->line[f->from] & GIT_GRAPH_UP) == 0)
+                join->color[f->from] = row->color[f->from];
+            row->line[f->from] |= GIT_GRAPH_UP;
+            git_graph_hline (join, f->from, f->to, f->color, FALSE);
+        }
+        for (i = 0; i < n; i++)
+        {
+            if (g_ptr_array_index (joins, i) != NULL)
+                g_ptr_array_add (result, g_ptr_array_index (joins, i));
+            g_ptr_array_add (result, g_ptr_array_index (commit_rows, i));
+        }
+        g_ptr_array_free (joins, TRUE);
+        g_free (merged);
+    }
+    g_array_free (forks, TRUE);
+    g_ptr_array_free (commit_rows, TRUE);
+
+    g_free (owner);
+    g_array_free (branches, TRUE);
+    g_hash_table_destroy (rows);
+    return result;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 GPtrArray *
 git_parse_name_status (const char *text, gsize len)
 {

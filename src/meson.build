@@ -55,6 +55,7 @@ libinternal_sources = files(
   'plugins/build/build-core.c',
   'plugins/git/git.c',
   'plugins/git/git-window.c',
+  'plugins/git/git-graph.c',
   'plugins/git/git-remote.c',
   'plugins/git/git-message.c',
   'plugins/git/git-menu.c',

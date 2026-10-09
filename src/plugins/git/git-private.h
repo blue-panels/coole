@@ -20,7 +20,9 @@
 #define GIT_MESSAGE_FILE "COOLE_EDITMSG"
 #define GIT_AMEND_FILE   "COOLE_AMEND_EDITMSG"
 #define GIT_REWORD_FILE  "COOLE_REWORD_EDITMSG"
+#define GIT_LOG_STEP     2000 /* the commits read at a time, more as the cursor gets to the last */
 #define GIT_CONFIG_GROUP "Git"
+#define GIT_CONFIG_GRAPH "graph_refs"
 
 /*** enums ***************************************************************************************/
 
@@ -45,7 +47,8 @@ enum
 enum
 {
     GIT_TAB_STATUS,
-    GIT_TAB_LOG
+    GIT_TAB_LOG,
+    GIT_TAB_GRAPH
 };
 
 /* the lists of the window */
@@ -54,6 +57,7 @@ enum
     GIT_LIST_UNSTAGED,
     GIT_LIST_STAGED,
     GIT_LIST_COMMITS,
+    GIT_LIST_GRAPH,
     GIT_LIST_FILES,
     GIT_LIST_COUNT
 };
@@ -66,6 +70,39 @@ typedef enum
     GIT_MSG_AMEND,
     GIT_MSG_REWORD
 } git_msg_mode_t;
+
+/* the characters of the graph, [git-graph] of the skin, else its [Lines] */
+enum
+{
+    GIT_GLYPH_VERT,
+    GIT_GLYPH_HORIZ,
+    GIT_GLYPH_LEFTTOP,
+    GIT_GLYPH_RIGHTTOP,
+    GIT_GLYPH_LEFTBOTTOM,
+    GIT_GLYPH_RIGHTBOTTOM,
+    GIT_GLYPH_LEFTMIDDLE,
+    GIT_GLYPH_RIGHTMIDDLE,
+    GIT_GLYPH_TOPMIDDLE,
+    GIT_GLYPH_BOTTOMMIDDLE,
+    GIT_GLYPH_CROSS,
+    GIT_GLYPH_COMMIT,
+    GIT_GLYPH_MERGE,
+    GIT_GLYPH_ARROW_LEFT,
+    GIT_GLYPH_ARROW_RIGHT,
+    GIT_GLYPH_MORE,
+    GIT_GLYPH_RAIL,
+    GIT_GLYPH_COUNT
+};
+
+/* What the graph reads the commits of */
+typedef enum
+{
+    GIT_GRAPH_REFS_CURRENT,  // HEAD alone
+    GIT_GRAPH_REFS_LOCAL,    // the branches, the tags and HEAD
+    GIT_GRAPH_REFS_REMOTE,   // those and the branches of the remotes
+    GIT_GRAPH_REFS_ALL,      // every ref: refs/pr/ and the stash too
+    GIT_GRAPH_REFS_COUNT
+} git_graph_refs_t;
 
 typedef struct git_window_t git_window_t;
 
@@ -82,7 +119,13 @@ typedef struct
     GPtrArray *commits;        // git_commit_t, NULL till the log is read
     char *log_head;            // the HEAD the log was read at
     char *log_branch;          // its branch name, for HEAD decorations
-    gboolean log_more;         // the log has more commits than those read
+    GPtrArray *graph_commits;  // git_commit_t of the refs of graph_refs, --topo-order
+    git_graph_refs_t graph_refs;
+    GPtrArray *graph_rows;  // git_graph_row_t
+    int graph_cols;         // the columns of the graph, a branch in each
+    int graph_limit;        // the commits it is read with, 0 till it is
+    gboolean log_more;      // the log has more commits than those read
+    gboolean graph_more;
     GPtrArray *files;          // git_change_t of the commit opened, NULL when none is
     git_commit_t *commit;      // that commit, one of commits or own_commit
     git_commit_t *own_commit;  // a commit opened that is too old for the log, NULL when none
@@ -130,6 +173,13 @@ typedef struct
     // how far a branch is from another, the characters of the skin
     char *ahead;
     char *behind;
+    int color_head;
+    // the graph: the colors of its branches, the kinds of git flow then the others in turn, and
+    // its characters, those of the skin
+    int color_kind[GIT_GRAPH_COLOR_OTHER];
+    int *color_other;
+    int n_other;
+    mc_tty_char_t glyph[GIT_GLYPH_COUNT];
 } git_t;
 
 typedef struct
@@ -171,10 +221,14 @@ struct git_window_t
     char *diff_title;
     int diff_top;
     int diff_left;
-    int diff_width;  // of its widest line, for the scrollbar along it
+    int refs_x, refs_cols;  // the choice of the refs of the graph on its list, 0 wide if not
+    int diff_width;         // of its widest line, for the scrollbar along it
 };
 
 /*** global variables defined in .c file *********************************************************/
+
+extern const char *const git_graph_refs_key[GIT_GRAPH_REFS_COUNT];
+extern const char *const git_graph_refs_label[GIT_GRAPH_REFS_COUNT];
 
 /*** declarations of public functions ************************************************************/
 
@@ -193,6 +247,7 @@ git_commit_t *git_find_commit (git_t *git, const char *name, gboolean *own);
 
 /* git-window.c */
 gboolean git_do_args (git_t *git, const char *title, const char *const *args);
+git_commit_t *git_list_commit (const git_window_t *win);
 void git_cursor_show (git_window_t *win, int list);
 void git_group_draw (git_window_t *win);
 void git_diff_update (git_window_t *win);
@@ -203,6 +258,17 @@ void git_group_arrange (git_window_t *win);
 void git_group_show (git_window_t *win);
 void git_window_open (git_t *git, void *edit, int tab);
 void git_group_show_later (void *data);
+
+/* git-graph.c */
+void git_read_graph (git_t *git);
+int git_graph_commit_of_row (const git_t *git, int row);
+void git_graph_cursor_skip (git_window_t *win, int dir);
+void git_graph_colors (git_t *git);
+void git_graph_glyphs (git_t *git);
+void git_draw_graph_row (git_window_t *win, Widget *w, int y, int x, int cols, int index,
+                         int highlight);
+void git_graph_reread (git_window_t *win, int limit);
+void git_graph_choose_refs (git_window_t *win);
 
 /* git-remote.c */
 char *git_config_value (const char *root, const char *name);

@@ -373,14 +373,44 @@ Git graph section
 =================
 
     [git-graph]
-        Characters of the git plugin: one character a key
+        Characters and colors of the git plugin, of its tab Graph above
+        all: one character a key; in the graph, on a terminal that is not
+        UTF-8, one that is not ASCII is not taken
+
+        vert, horiz, lefttop, righttop, leftbottom, rightbottom,
+        leftmiddle, rightmiddle, topmiddle, bottommiddle, cross
+            Lines of the branches (default: those of the [lines] section;
+            rounded corners for instance give the graph its own)
+
+        commit
+        merge
+            A commit and a merge on the line of their branch (default: *
+            and o; the skins of coole have a filled and an empty circle)
+
+        rail
+            Puts a commit beside the line of its branch, after this
+            character, rather than on it, ( or | for instance; a merge stays
+            on its line (default: none)
 
         ahead
         behind
-            How far the branch is from its upstream, in the title of the
-            window Git: the commits it has that the upstream has not, and
-            the other way (default: + and -; the skins of coole have arrows
-            up and down)
+            How far a branch is from another, in the title of the window
+            Git and in the list of the branches: the commits it has that the
+            other has not, and the other way (default: + and -; the skins
+            of coole have arrows up and down)
+
+        arrow-left
+        arrow-right
+            Arrow of a branch coming into a merge (default: < and >)
+
+        more
+            Mark of the branches that do not fit (default: >)
+
+        main, develop, release, hotfix
+        others
+            Colors of the branches; others is a list separated by ;
+            (default: blue, brightyellow, green, red, and eight colors, sixteen on
+            a terminal of 256 colors)
 
 
 Aliases section

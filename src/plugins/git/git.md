@@ -24,7 +24,7 @@ the keys. It is windows frame to frame where the windows of the files are:
  │ the message of                     ││ the diff of the file  │
  │ the next commit                    ││ or of the commit      │
  └────────────────────────────────────┘│                       │
- ╔═[ 1 Status ] [ 2 Log ]═══════════╗│                       │
+ ╔═[ 1 Status ] [ 2 Log ] [ 3 Graph ]═╗│                       │
  ║ changes not staged                 ║│                       │
  ╚════════════════════════════════════╝│                       │
  ┌─[Staged changes]───────────────────┐│                       │
@@ -43,8 +43,8 @@ Close**, takes it off the screen, the others taking its room; its entry in
 the menu **Window** brings it back. Closing the last one, or **Esc** and **F10** in any of them, closes
 the window Git, the message kept for the next time.
 
-**1**, **2**
-: The tabs Status and Log; a click on a tab in the title does the same.
+**1**, **2**, **3**
+: The tabs Status, Log and Graph; a click on a tab in the title does the same.
 
 **Tab**
 : The keys go to the next window: the changes, the staged ones, the diff.
@@ -134,6 +134,75 @@ or Esc goes back to the commits.
 **F4**, **r**
 : Give the commit another message: it takes the place of the message of the
 next commit, the files of the commit under it, till it is done.
+
+**The tab Graph**
+
+The commits of the branches, read as on Log, as *git-graph* draws them: each branch in a column of its own,
+down from its last commit to the commit it went off from. The columns go
+from the left: *main* or *master*, *develop*, *release*, *hotfix*, then the
+other branches, those of the remotes after the local ones, then the branches
+merged and gone, named by the subjects of their merges ("Merge branch 'x'").
+A column is taken again by a branch further down. A merge is a hollow node,
+the line of the branch it took in coming into it with an arrow; a branch
+that went off from a commit has its line end at the row of that commit, or
+at a row of its own above it when the line of a merge is there. The list is
+half the width of the screen; the branches that do not fit are cut, a mark
+at the right of the graph, and the button of the frame gives the list the
+whole screen.
+
+The branches have colors: *main* blue, *develop* yellow, *release* green,
+*hotfix* red, the others in turn, sixteen colors on a terminal of 256, eight
+on one of 16. The refs of a commit are in the color of its branch, the tags
+in that of the commits. The cursor row is in the color of the selection.
+
+What the graph reads is at the right of the line *Commits*; a click on it
+or *v* chooses from a list, kept in the config for the next time:
+
+- *Current*: the commits of HEAD alone, those of Log;
+- *Local*: the local branches, the tags and HEAD;
+- *Local+remote*, the first time: the branches of the remotes too;
+- *All*: every ref, those a fetch of pull requests made (*refs/pr/...*) and
+  the stash too, commits of no branch in a line with no name.
+
+Enter opens the files of a commit as on Log, Esc or Left goes back to the
+graph. F4 or *r* gives a commit another message only when it is on the
+current branch.
+
+The lines are those of the frames of the skin. The section *[git-graph]* of
+the skin can give the graph its own, rounded corners for instance, and its
+colors:
+
+```
+[git-graph]
+    lefttop = <the corner at the left top>
+    righttop = <the corner at the right top>
+    leftbottom = <the corner at the left bottom>
+    rightbottom = <the corner at the right bottom>
+    commit = *
+    merge = o
+    rail = (
+    others = magenta;cyan;brightmagenta;brightcyan
+```
+
+The keys of the lines are those of *[Lines]*: *vert*, *horiz*, *lefttop*,
+*righttop*, *leftbottom*, *rightbottom*, *leftmiddle*, *rightmiddle*,
+*topmiddle*, *bottommiddle*, *cross*; the others are *commit*, *merge*,
+*arrow-left*, *arrow-right* and *more*, the mark of the branches cut.
+*rail* puts a commit beside the line of its branch, after that character,
+rather than on it; a merge stays on its line. With *rail = (* a branch of
+three commits merged reads
+
+```
+o<+       Merge branch 'x'
+| (*      the third
+| (*      the second
+| (*      the first
++-+
+```
+
+The colors are *main*, *develop*, *release*, *hotfix*, and *others*, separated by
+*;*. A character is one; on a terminal of 8 bits one that is not ASCII is not
+taken, the frames of the skin being used.
 
 **The message of a commit**
 

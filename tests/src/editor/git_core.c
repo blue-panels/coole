@@ -79,6 +79,64 @@ test_strip (void)
 /* --------------------------------------------------------------------------------------------- */
 
 static void
+test_graph (void)
+{
+    // main: m, a, c; side: b, taken in by the merge m and gone off from c
+    const char log_text[] = "m\037A\0371\037HEAD -> main\037a b\037merge\036"
+                            "a\037A\0371\037\037c\037first\036"
+                            "b\037A\0371\037side\037c\037second\036"
+                            "c\037A\0371\037\037\037base\036";
+    // develop merged and gone, named by the merge; main known by its remote
+    const char gone_text[] = "m\037A\0371\037origin/main\037a b\037Merge branch 'develop'\036"
+                             "b\037A\0371\037\037a\037on develop\036"
+                             "a\037A\0371\037\037\037base\036";
+    const char *const remotes[] = { "origin", NULL };
+    GPtrArray *commits = git_parse_log (log_text, sizeof (log_text) - 1);
+    GPtrArray *rows = git_graph_build (commits, NULL);
+    const git_commit_t *merge = g_ptr_array_index (commits, 0);
+    const git_graph_row_t *r;
+
+    g_assert_cmpuint (commits->len, ==, 4);
+    g_assert_cmpint (merge->parents, ==, 2);
+    g_assert_cmpstr (merge->parent_shas[0], ==, "a");
+    g_assert_cmpstr (merge->parent_shas[1], ==, "b");
+
+    r = g_ptr_array_index (rows, 0);
+    g_assert_cmpint (r->cols, ==, 2);
+    g_assert_cmpint (r->node, ==, 0);
+    g_assert_cmpint (r->line[0], ==,
+                     GIT_GRAPH_NODE | GIT_GRAPH_MERGE | GIT_GRAPH_DOWN | GIT_GRAPH_RIGHT);
+    g_assert_cmpint (r->line[1], ==, GIT_GRAPH_DOWN | GIT_GRAPH_LEFT);
+    g_assert_cmpint (r->link[0], ==, GIT_GRAPH_LINK_TO_LEFT);
+    g_assert_cmpint (r->color[0], ==, GIT_GRAPH_COLOR_MAIN);
+    g_assert_cmpint (r->color[1], ==, GIT_GRAPH_COLOR_OTHER);
+    r = g_ptr_array_index (rows, 1);
+    g_assert_cmpint (r->node, ==, 0);
+    g_assert_cmpint (r->line[1], ==, GIT_GRAPH_UP | GIT_GRAPH_DOWN);
+    r = g_ptr_array_index (rows, 2);
+    g_assert_cmpint (r->node, ==, 1);
+    g_assert_cmpint (r->line[0], ==, GIT_GRAPH_UP | GIT_GRAPH_DOWN);
+    r = g_ptr_array_index (rows, 3);
+    g_assert_cmpint (r->line[0], ==, GIT_GRAPH_NODE | GIT_GRAPH_UP | GIT_GRAPH_RIGHT);
+    g_assert_cmpint (r->line[1], ==, GIT_GRAPH_UP | GIT_GRAPH_LEFT);
+    g_assert_cmpint (r->link[0], ==, GIT_GRAPH_LINK_LINE);
+    g_ptr_array_unref (rows);
+    g_ptr_array_unref (commits);
+
+    commits = git_parse_log (gone_text, sizeof (gone_text) - 1);
+    rows = git_graph_build (commits, remotes);
+    r = g_ptr_array_index (rows, 0);
+    g_assert_cmpint (r->color[0], ==, GIT_GRAPH_COLOR_MAIN);
+    r = g_ptr_array_index (rows, 1);
+    g_assert_cmpint (r->node, ==, 1);
+    g_assert_cmpint (r->color[1], ==, GIT_GRAPH_COLOR_DEVELOP);
+    g_ptr_array_unref (rows);
+    g_ptr_array_unref (commits);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
 test_trailer (void)
 {
     char *s;
@@ -435,6 +493,7 @@ main (int argc, char **argv)
     g_setenv ("GIT_COMMITTER_EMAIL", "tester@example.org", TRUE);
 
     g_test_add_func ("/git/strip", test_strip);
+    g_test_add_func ("/git/graph", test_graph);
     g_test_add_func ("/git/trailer", test_trailer);
     g_test_add_func ("/git/replace", test_replace);
     g_test_add_func ("/git/check", test_check);

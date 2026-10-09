@@ -43,6 +43,49 @@ typedef struct
     char **parent_shas; /* NULL-terminated, in the order git gave them */
 } git_commit_t;
 
+/* What a column of a row of the graph has: lines to its sides, the commit of the row */
+enum
+{
+    GIT_GRAPH_UP = 1,
+    GIT_GRAPH_DOWN = 2,
+    GIT_GRAPH_LEFT = 4,
+    GIT_GRAPH_RIGHT = 8,
+    GIT_GRAPH_NODE = 16,
+    GIT_GRAPH_MERGE = 32 /* the commit is a merge */
+};
+
+/* What joins two columns of a row */
+enum
+{
+    GIT_GRAPH_LINK_NONE,
+    GIT_GRAPH_LINK_LINE,
+    GIT_GRAPH_LINK_TO_LEFT, /* the line of a merge, its arrow into the commit at the left */
+    GIT_GRAPH_LINK_TO_RIGHT
+};
+
+/* The colors of the branches: those of the kinds of git flow, then the others in turn */
+enum
+{
+    GIT_GRAPH_COLOR_MAIN,
+    GIT_GRAPH_COLOR_DEVELOP,
+    GIT_GRAPH_COLOR_RELEASE,
+    GIT_GRAPH_COLOR_HOTFIX,
+    GIT_GRAPH_COLOR_OTHER /* the first of the others */
+};
+
+/* A row of the graph, that of a commit or one between two commits that joins lines: each branch
+   in a column of its own, as git-graph has them.  One block, freed with g_free() */
+typedef struct
+{
+    int commit;         /* its index in the log, -1 for a row that only joins lines */
+    int cols;           /* the columns of the graph, the same in all its rows */
+    int node;           /* that of the commit */
+    guint8 *line;       /* @cols: GIT_GRAPH_* */
+    guint8 *link;       /* @cols - 1: what joins column k and k + 1, GIT_GRAPH_LINK_* */
+    guint8 *color;      /* @cols: GIT_GRAPH_COLOR_* and those after it */
+    guint8 *link_color; /* @cols - 1 */
+} git_graph_row_t;
+
 /* The branch of the work tree */
 typedef struct
 {
@@ -97,6 +140,10 @@ void git_change_free (gpointer change);
 #define GIT_LOG_FORMAT "--format=%H%x1f%an%x1f%at%x1f%D%x1f%P%x1f%s%x1e"
 GPtrArray *git_parse_log (const char *text, gsize len);
 void git_commit_free (gpointer commit);
+/* The graph of @commits, git log --topo-order of all the refs: a git_graph_row_t for each, and
+   one before a commit whose row has the line of a merge and those of branches that went off from
+   it.  @remotes, the names of the remotes, tell their branches from the local ones */
+GPtrArray *git_graph_build (const GPtrArray *commits, const char *const *remotes);
 
 /* The answer of git diff --name-status -z: git_change_t */
 GPtrArray *git_parse_name_status (const char *text, gsize len);

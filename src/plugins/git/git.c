@@ -26,8 +26,9 @@
 /** \file git.c
  *  \brief Source: the git plugin
  *
- *  A window "Git" with two tabs, the way gitui has them: Status, the changes of the work tree
- *  and those of the index, which a key moves from one to the other, and Log, the commits and
+ *  A window "Git" with three tabs: Status, the changes of the work tree
+ *  and those of the index, which a key moves from one to the other, Log, the commits and
+ *  Graph, the history of all refs; Log and Graph show
  *  the files each one changes.  The diff of what the cursor is on is beside the list.  The
  *  message of a commit, a new one or one of the log, is written in a window of the editor:
  *  saved, it is the message.
@@ -40,6 +41,7 @@
 
 #include "lib/global.h"
 #include "lib/event.h"
+#include "lib/mcconfig.h"
 
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
@@ -56,7 +58,6 @@
 #define GIT_KEYMAP_SECTION "git"
 #define GIT_HELP_FILE      "git.md"
 #define GIT_HELP_NODE      "[Git]"
-#define GIT_LOG_STEP       2000 /* the commits read at a time, more as the cursor gets to the last */
 
 /*** file scope type declarations ****************************************************************/
 
@@ -564,6 +565,17 @@ git_open (mc_editor_host_t *host, void *editor_dialog)
 
     (void) editor_dialog;
     git->host = host;
+    {
+        char *refs =
+            mc_config_get_string (mc_global.main_config, GIT_CONFIG_GROUP, GIT_CONFIG_GRAPH,
+                                  git_graph_refs_key[GIT_GRAPH_REFS_REMOTE]);
+
+        git->graph_refs = GIT_GRAPH_REFS_REMOTE;
+        for (i = 0; i < GIT_GRAPH_REFS_COUNT; i++)
+            if (strcmp (refs, git_graph_refs_key[i]) == 0)
+                git->graph_refs = (git_graph_refs_t) i;
+        g_free (refs);
+    }
     git->staged = g_ptr_array_new_with_free_func (git_change_free);
     git->unstaged = g_ptr_array_new_with_free_func (git_change_free);
     host->commands_register (host, GIT_KEYMAP_SECTION, N_ ("&Git"), git_commands);
@@ -607,6 +619,7 @@ git_close (void *data)
     g_free (git->rewrote);
     g_free (git->ahead);
     g_free (git->behind);
+    g_free (git->color_other);
     g_free (git);
 }
 
@@ -732,6 +745,9 @@ git_forget_log (git_t *git)
 {
     git_close_commit (git);
     g_clear_pointer (&git->commits, g_ptr_array_unref);
+    g_clear_pointer (&git->graph_rows, g_ptr_array_unref);
+    g_clear_pointer (&git->graph_commits, g_ptr_array_unref);
+    git->graph_cols = 0;
     g_clear_pointer (&git->log_head, g_free);
     g_clear_pointer (&git->log_branch, g_free);
 }
@@ -753,7 +769,7 @@ git_read_status (git_t *git)
     if (git_run (git->root, args, NULL, &o) && o.status == 0)
         git_parse_status (o.out->str, o.out->len, git->staged, git->unstaged, &git->branch);
     git_output_clear (&o);
-    if (git->commits != NULL
+    if ((git->commits != NULL || git->graph_commits != NULL)
         && (g_strcmp0 (git->log_head, git->branch.sha) != 0
             || g_strcmp0 (git->log_branch, git->branch.head) != 0))
         git_forget_log (git);

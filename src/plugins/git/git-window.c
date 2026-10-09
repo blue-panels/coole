@@ -51,6 +51,7 @@
 /* the tabs in the title of the window of the list, from its column 2, a space between them */
 #define GIT_TAB_STATUS_TITLE "[ 1 Status ]"
 #define GIT_TAB_LOG_TITLE    "[ 2 Log ]"
+#define GIT_TAB_GRAPH_TITLE  "[ 3 Graph ]"
 #define GIT_DIFF_MAX         20000
 
 /*** file scope type declarations ****************************************************************/
@@ -77,6 +78,9 @@ git_list_len (const git_window_t *win, int list)
         return (int) git->staged->len;
     case GIT_LIST_COMMITS:
         return git->commits != NULL ? (int) git->commits->len : 0;
+    case GIT_LIST_GRAPH:
+        // its rows: those of the commits, and those between that join lines
+        return git->graph_rows != NULL ? (int) git->graph_rows->len : 0;
     case GIT_LIST_FILES:
         // the message of the commit first, then its files
         return git->files != NULL ? (int) git->files->len + 1 : 0;
@@ -97,19 +101,6 @@ git_list_change (const git_window_t *win, int list)
         : list == GIT_LIST_FILES                   ? win->git->files
                                                    : NULL;
     const int index = list == GIT_LIST_FILES ? c->selected - 1 : c->selected;
-
-    if (a == NULL || index < 0 || index >= (int) a->len)
-        return NULL;
-    return g_ptr_array_index (a, index);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static git_commit_t *
-git_list_commit (const git_window_t *win)
-{
-    const GPtrArray *a = win->git->commits;
-    const int index = win->cursor[GIT_LIST_COMMITS].selected;
 
     if (a == NULL || index < 0 || index >= (int) a->len)
         return NULL;
@@ -168,6 +159,14 @@ git_list_label (const git_window_t *win, int list, int index, GString *s)
     case GIT_LIST_COMMITS:
         git_commit_label (s, g_ptr_array_index (git->commits, index));
         break;
+    case GIT_LIST_GRAPH:
+    {
+        const int commit = git_graph_commit_of_row (git, index);
+
+        if (commit >= 0)
+            git_commit_label (s, g_ptr_array_index (git->graph_commits, commit));
+    }
+    break;
     case GIT_LIST_FILES:
         if (index == 0)
             g_string_append_printf (s, _ ("Commit %.7s: %s"), git->commit->sha,
@@ -187,7 +186,9 @@ static int
 git_list_of_tab (const git_window_t *win)
 {
     if (win->tab != GIT_TAB_STATUS)
-        return win->git->files != NULL ? GIT_LIST_FILES : GIT_LIST_COMMITS;
+        return win->git->files != NULL  ? GIT_LIST_FILES
+            : win->tab == GIT_TAB_GRAPH ? GIT_LIST_GRAPH
+                                        : GIT_LIST_COMMITS;
     return win->list == GIT_LIST_STAGED ? GIT_LIST_STAGED : GIT_LIST_UNSTAGED;
 }
 
@@ -296,6 +297,9 @@ git_colors (git_t *git)
     git->color_sha = mc_skin_color_on ("editor", "_default_", "yellow");
     git->ahead = mc_skin_get ("git-graph", "ahead", "+");
     git->behind = mc_skin_get ("git-graph", "behind", "-");
+    git->color_head = mc_skin_color_on ("editor", "_default_", "brightcyan");
+    git_graph_colors (git);
+    git_graph_glyphs (git);
     git->colors = TRUE;
 }
 
@@ -344,6 +348,13 @@ git_draw_list (git_window_t *win, Widget *w, int list, int y, int x, int cols, i
         g_string_truncate (s, 0);
         if (index < len)
         {
+            if (list == GIT_LIST_GRAPH)
+            {
+                git_draw_graph_row (
+                    win, w, y + row, x, cols, index,
+                    index == c->selected ? (active ? EDITOR_MARKED_COLOR : EDITOR_BOLD_COLOR) : 0);
+                continue;
+            }
             git_list_label (win, list, index, s);
             if (index == c->selected && active)
                 color = EDITOR_MARKED_COLOR;
@@ -353,8 +364,9 @@ git_draw_list (git_window_t *win, Widget *w, int list, int y, int x, int cols, i
         tty_setcolor (color);
         widget_gotoyx (w, y + row, x);
         // a commit is cut at its end, a name loses its middle
-        tty_print_string (
-            str_fit_to_term (s->str, cols, list == GIT_LIST_COMMITS ? J_LEFT : J_LEFT_FIT));
+        tty_print_string (str_fit_to_term (
+            s->str, cols,
+            list == GIT_LIST_COMMITS || list == GIT_LIST_GRAPH ? J_LEFT : J_LEFT_FIT));
     }
     g_string_free (s, TRUE);
 }
@@ -467,6 +479,9 @@ git_pane_draw (git_pane_t *pane)
         git_pane_title (w, &x, " ", frame);
         git_pane_title (w, &x, GIT_TAB_LOG_TITLE,
                         win->tab == GIT_TAB_LOG ? EDITOR_MARKED_COLOR : frame);
+        git_pane_title (w, &x, " ", frame);
+        git_pane_title (w, &x, GIT_TAB_GRAPH_TITLE,
+                        win->tab == GIT_TAB_GRAPH ? EDITOR_MARKED_COLOR : frame);
         {
             char *label = git_branch_label (git);
 
@@ -488,11 +503,33 @@ git_pane_draw (git_pane_t *pane)
             caption = g_strdup_printf (_ ("Files of %.7s (%u)"), git->commit->sha, git->files->len);
         else
         {
+            const gboolean graph = win->tab == GIT_TAB_GRAPH;
+            const GPtrArray *a = graph ? git->graph_commits : git->commits;
+
             // "+": there are more than those read
-            caption = g_strdup_printf (git->log_more ? _ ("Commits (%u+)") : _ ("Commits (%u)"),
-                                       git->commits != NULL ? git->commits->len : 0);
+            caption =
+                g_strdup_printf ((graph ? git->graph_more : git->log_more) ? _ ("Commits (%u+)")
+                                                                           : _ ("Commits (%u)"),
+                                 a != NULL ? a->len : 0);
         }
-        git_draw_title (w, 1, 1, cols, caption, focused);
+        win->refs_cols = 0;
+        // the refs the graph reads, at the right: a click or v chooses others
+        if (win->tab == GIT_TAB_GRAPH && git->files == NULL)
+        {
+            char *refs = g_strdup_printf ("[ %s ]", _ (git_graph_refs_label[git->graph_refs]));
+            const int rw = str_term_width1 (refs);
+
+            if (rw + str_term_width1 (caption) + 1 <= cols)
+            {
+                win->refs_x = 1 + cols - rw;
+                win->refs_cols = rw;
+                git_draw_title (w, 1, 1, cols - rw, caption, focused);
+                git_draw_title (w, 1, win->refs_x, rw, refs, focused);
+            }
+            g_free (refs);
+        }
+        if (win->refs_cols == 0)
+            git_draw_title (w, 1, 1, cols, caption, focused);
         g_free (caption);
         git_draw_list (win, w, list, 2, 1, cols, rows - 1, focused);
     }
@@ -653,7 +690,11 @@ git_window_tab (git_window_t *win, int tab)
     win->in_diff = FALSE;
     if (tab == GIT_TAB_LOG)
         git_read_log (win->git);
+    else if (tab == GIT_TAB_GRAPH)
+        git_read_graph (win->git);
     git_cursor_clamp (win, git_list_of_tab (win));
+    if (git_list_of_tab (win) == GIT_LIST_GRAPH)
+        git_graph_cursor_skip (win, 1);
     git_group_arrange (win);
     git_diff_update (win);
     git_window_buttonbar (win);
@@ -832,11 +873,20 @@ git_edit_file (git_window_t *win)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The next commits of the log read; FALSE when there are none */
+/* The next commits of the log or of the graph read, the cursor on the commit it was on; FALSE
+   when there are none */
 static gboolean
 git_list_more (git_window_t *win, int list)
 {
-    return list == GIT_LIST_COMMITS && git_read_log_more (win->git);
+    git_t *git = win->git;
+
+    if (list == GIT_LIST_COMMITS)
+        return git_read_log_more (git);
+    if (list != GIT_LIST_GRAPH || !git->graph_more)
+        return FALSE;
+    // the graph of all of them again: where a branch goes depends on the whole history
+    git_graph_reread (win, git->graph_limit * 2);
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -863,6 +913,14 @@ git_window_key (git_window_t *win, int key)
         return TRUE;
     case '2':
         git_window_tab (win, GIT_TAB_LOG);
+        return TRUE;
+    case '3':
+        git_window_tab (win, GIT_TAB_GRAPH);
+        return TRUE;
+    case 'v':
+        if (win->tab != GIT_TAB_GRAPH)
+            return FALSE;
+        git_graph_choose_refs (win);
         return TRUE;
     case KEY_F (5):
     case XCTRL ('r'):
@@ -963,7 +1021,7 @@ git_window_key (git_window_t *win, int key)
     }
 
     // at the last commit read, the next ones: on the way down to it, and End at it again
-    if (list == GIT_LIST_COMMITS
+    if ((list == GIT_LIST_COMMITS || list == GIT_LIST_GRAPH)
         && ((key == KEY_DOWN && c->selected >= last)
             || (key == KEY_NPAGE && c->selected + git_list_rows (win, list) > last)
             || (key == KEY_END && c->selected >= last))
@@ -1011,7 +1069,7 @@ git_window_key (git_window_t *win, int key)
             git_stage (win, FALSE);
             return TRUE;
         }
-        if (list == GIT_LIST_COMMITS && git_list_commit (win) != NULL)
+        if ((list == GIT_LIST_COMMITS || list == GIT_LIST_GRAPH) && git_list_commit (win) != NULL)
         {
             git_open_commit (git, git_list_commit (win));
             win->cursor[GIT_LIST_FILES].selected = 0;
@@ -1054,6 +1112,14 @@ git_window_key (git_window_t *win, int key)
 
             if (commit != NULL)
             {
+                if (win->tab == GIT_TAB_GRAPH
+                    && !git_succeeds (git->root, "merge-base", "--is-ancestor", commit->sha, "HEAD",
+                                      (char *) NULL))
+                {
+                    git->host->message (git->host, D_NORMAL, _ ("Reword"),
+                                        _ ("This commit is not on the current branch."));
+                    return TRUE;
+                }
                 git_message_start (git, GIT_MSG_REWORD, commit);
             }
         }
@@ -1061,6 +1127,8 @@ git_window_key (git_window_t *win, int key)
     default:
         return FALSE;
     }
+    if (list == GIT_LIST_GRAPH)
+        git_graph_cursor_skip (win, key == KEY_UP || key == KEY_PPAGE ? -1 : 1);
     git_cursor_show (win, git_list_of_tab (win));
     git_diff_update (win);
     git_group_draw (win);
@@ -1210,8 +1278,16 @@ git_pane_mouse (Widget *w, mouse_msg_t msg, mouse_event_t *event)
     {
     case MSG_MOUSE_DOWN:
         widget_select (w);
+        if (pane->role == GIT_PANE_LIST && event->y == 1 && win->refs_cols != 0
+            && event->x >= win->refs_x && event->x < win->refs_x + win->refs_cols)
+        {
+            git_graph_choose_refs (win);
+            break;
+        }
         if (index >= 0 && index < git_list_len (win, list))
             win->cursor[list].selected = index;
+        if (list == GIT_LIST_GRAPH)
+            git_graph_cursor_skip (win, 1);
         git_diff_update (win);
         git_group_draw (win);
         break;
@@ -1278,6 +1354,8 @@ git_pane_title_click (WEditWindow *ew, int x)
     const int status_end = 2 + str_term_width1 (GIT_TAB_STATUS_TITLE);
     const int log_start = status_end + 1;
     const int log_end = log_start + str_term_width1 (GIT_TAB_LOG_TITLE);
+    const int graph_start = log_end + 1;
+    const int graph_end = graph_start + str_term_width1 (GIT_TAB_GRAPH_TITLE);
 
     if (win == NULL || win->git == NULL || pane->role != GIT_PANE_LIST)
         return FALSE;
@@ -1285,6 +1363,8 @@ git_pane_title_click (WEditWindow *ew, int x)
         git_window_tab (win, GIT_TAB_STATUS);
     else if (x >= log_start && x < log_end)
         git_window_tab (win, GIT_TAB_LOG);
+    else if (x >= graph_start && x < graph_end)
+        git_window_tab (win, GIT_TAB_GRAPH);
     else
         return FALSE;
     // the list has the keys, of the tab chosen
@@ -1414,6 +1494,23 @@ git_do_args (git_t *git, const char *title, const char *const *args)
 
 /* --------------------------------------------------------------------------------------------- */
 
+git_commit_t *
+git_list_commit (const git_window_t *win)
+{
+    const int list = win->tab == GIT_TAB_GRAPH ? GIT_LIST_GRAPH : GIT_LIST_COMMITS;
+    const GPtrArray *a = list == GIT_LIST_GRAPH ? win->git->graph_commits : win->git->commits;
+    int index = win->cursor[list].selected;
+
+    if (list == GIT_LIST_GRAPH)
+        index = git_graph_commit_of_row (win->git, index);
+
+    if (a == NULL || index < 0 || index >= (int) a->len)
+        return NULL;
+    return g_ptr_array_index (a, index);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 void
 git_cursor_show (git_window_t *win, int list)
 {
@@ -1454,7 +1551,7 @@ git_diff_update (git_window_t *win)
     char *text;
     gsize len = 0;
 
-    if (list == GIT_LIST_COMMITS)
+    if (list == GIT_LIST_COMMITS || list == GIT_LIST_GRAPH)
     {
         commit = git_list_commit (win);
         if (commit != NULL)
@@ -1544,7 +1641,8 @@ git_diff_update (git_window_t *win)
         git_diff_set (win, text, len);
         g_free (text);
         g_free (win->diff_title);
-        win->diff_title = commit != NULL && (list == GIT_LIST_COMMITS || c == NULL)
+        win->diff_title =
+            commit != NULL && (list == GIT_LIST_COMMITS || list == GIT_LIST_GRAPH || c == NULL)
             ? g_strdup_printf (_ ("Commit %.7s"), commit->sha)
             : c != NULL ? g_strdup (c->path)
                         : NULL;
@@ -1571,6 +1669,8 @@ git_window_reload (git_window_t *win)
     git_read_status (git);
     if (win->tab == GIT_TAB_LOG)
         git_read_log (git);
+    else if (win->tab == GIT_TAB_GRAPH)
+        git_read_graph (git);
     for (i = 0; i < GIT_LIST_COUNT; i++)
         git_cursor_clamp (win, i);
     // the same name may have another diff now
@@ -1662,7 +1762,9 @@ git_group_arrange (git_window_t *win)
     rest = a->lines;
     // the column at the left all the width without the diff; the diff all of it without the column
     left = !diff ? a->cols
-        : column ? CLAMP (a->cols * 2 / 5, MIN (44, MAX (10, a->cols - 20)), MAX (10, a->cols - 20))
+        : column ? CLAMP (a->cols * (win->tab == GIT_TAB_GRAPH ? 1 : 2)
+                              / (win->tab == GIT_TAB_GRAPH ? 2 : 5),
+                          MIN (44, MAX (10, a->cols - 20)), MAX (10, a->cols - 20))
                  : 0;
     r.x = a->x;
     r.cols = left;
@@ -1792,6 +1894,8 @@ git_window_open (git_t *git, void *edit, int tab)
     git_read_status (git);
     if (tab == GIT_TAB_LOG)
         git_read_log (git);
+    else if (tab == GIT_TAB_GRAPH)
+        git_read_graph (git);
 
     // frame to frame, so that the sticky windows keep them together
     r = area;
