@@ -589,6 +589,16 @@ layout_project_root (WDialog *h)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* coole --git and its --git-*: the editor is there for git alone; the layout of the project is
+   neither shown nor overwritten */
+static gboolean
+layout_set_aside (void)
+{
+    return edit_startup_option ("git") != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The file the editor starts with has the focus, whatever window came after it */
 static void
 layout_focus_file (WDialog *h)
@@ -614,7 +624,7 @@ edit_layout_startup (void *dialog)
     void *data;
 
     // no window of a plugin: nothing to put anywhere
-    if (edit_window_kind_at (h, 0, &data) == NULL)
+    if (edit_window_kind_at (h, 0, &data) == NULL || layout_set_aside ())
         return;
     if (edit_startup_option ("debug") != NULL)
     {
@@ -654,6 +664,11 @@ edit_layout_quit (WDialog *h)
 
     if (root == NULL)
         return;
+    if (layout_set_aside ())
+    {
+        g_free (root);
+        return;
+    }
     // no window of a plugin, the plugins off: the layout kept is not overwritten by an empty one
     if (edit_window_kind_at (h, 0, &data) == NULL)
     {

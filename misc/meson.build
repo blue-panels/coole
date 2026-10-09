@@ -37,3 +37,5 @@ install_data(
 install_symlink('keymap.ini', pointing_to: 'keymap.default.ini', install_dir: pkgsysconfdir)
 
 install_data('edit.indent.rc', install_dir: pkgsysconfdir, install_mode: 'rwxr-xr-x')
+# the menu of a message of the git plugin and what it asks the AI
+install_data('git-menu.ini', 'ai.ini', install_dir: pkgsysconfdir)

@@ -47,6 +47,7 @@ install_data(
   'erlang.syntax',
   'f90.syntax',
   'fortran.syntax',
+  'gitcommit.syntax',
   'glsl.syntax',
   'go.syntax',
   'haskell.syntax',

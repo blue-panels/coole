@@ -83,6 +83,8 @@ struct terminal_plugin_t
     terminal_window_t *win;      // NULL until Ctrl-O, and after the window is destroyed
     terminal_window_t *program;  // the terminal of the program the debugger runs, or NULL
     gboolean service;
+    // a command of run () in the shell, its end to be told with the signal "finished"
+    gboolean running;
 };
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -288,6 +290,21 @@ terminal_window_place_term (terminal_window_t *tw)
     widget_set_size_rect (WIDGET (tw->term), &tr);
 }
 
+/* The command of run () gone without its shell back at the prompt, the window closed or the
+   shell ended: those who wait for it learn that, by status -1 */
+static void
+terminal_run_over (terminal_plugin_t *tp)
+{
+    GVariantDict dict;
+
+    if (tp == NULL || !tp->running)
+        return;
+    tp->running = FALSE;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "status", "i", (gint32) -1);
+    tp->host->service_emit (tp->host, "terminal", "finished", g_variant_dict_end (&dict));
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 /* After the terminal has drawn itself: its title may have changed with it, and the cursor is
@@ -298,6 +315,9 @@ terminal_window_after_redraw (void *data)
     terminal_window_t *tw = (terminal_window_t *) data;
     Widget *w = WIDGET (tw);
 
+    // the shell ended in the middle of the command of run ()
+    if (tw->plugin != NULL && tw->plugin->win == tw && !mcterm_is_alive (tw->term))
+        terminal_run_over (tw->plugin);
     if (!widget_get_state (w, WST_VISIBLE))
         return;
 
@@ -395,8 +415,11 @@ terminal_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm,
         // the window goes, and the shell with it
         if (tw->plugin != NULL && tw->program)
             tw->plugin->program = NULL;
-        else if (tw->plugin != NULL)
+        else if (tw->plugin != NULL && tw->plugin->win == tw)
+        {
+            terminal_run_over (tw->plugin);
             tw->plugin->win = NULL;
+        }
         g_clear_pointer (&tw->tty, g_free);
         return group_default_callback (w, sender, msg, parm, data);
 
@@ -673,9 +696,123 @@ terminal_program_new (terminal_plugin_t *tp)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The shell of the window of the terminal back at its prompt: the command of run () is over */
+static void
+terminal_prompt_ready (void *data)
+{
+    terminal_window_t *tw = (terminal_window_t *) data;
+    terminal_plugin_t *tp = tw->plugin;
+    GVariantDict dict;
+
+    if (tp == NULL || !tp->running || tp->win != tw)
+        return;
+    tp->running = FALSE;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "status", "i", (gint32) mcterm_last_exit_code (tw->term));
+    tp->host->service_emit (tp->host, "terminal", "finished", g_variant_dict_end (&dict));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The window of the shell on the screen with the keys, made, or made again when its shell is
+   gone, in @dir; NULL when no shell starts */
+static terminal_window_t *
+terminal_shell_show (terminal_plugin_t *tp, const char *dir, gboolean *made)
+{
+    terminal_window_t *tw = tp->win;
+
+    *made = FALSE;
+    if (tw == NULL || !mcterm_is_alive (tw->term))
+    {
+        terminal_window_t *fresh = terminal_window_new (tp, tw, dir);
+
+        if (fresh == NULL)
+            return NULL;
+        if (tw != NULL)
+        {
+            tp->host->window_give_room_back (tp->host, tw);
+            edit_window_destroy (&tw->window);
+        }
+        tp->win = fresh;
+        tp->host->window_add (tp->host, fresh);
+        terminal_place (tp, fresh);
+        *made = TRUE;
+        return fresh;
+    }
+    if (!widget_get_state (WIDGET (tw), WST_VISIBLE))
+        terminal_place (tp, tw);
+    tp->host->window_show (tp->host, tw);
+    return tw;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* run (command, cwd) -> signal: @command typed into the shell of the window of the terminal as
+   the user would type it, the window made in @cwd or brought up, with the keys; "signal" says
+   whether the signal "finished" (status) will tell when the shell is back at its prompt, which a
+   shell that does not tell where its prompt is cannot */
+static GVariant *
+terminal_run (terminal_plugin_t *tp, GVariant *args, GError **error)
+{
+    const char *command = NULL;
+    const char *cwd = NULL;
+    terminal_window_t *tw;
+    GVariantDict reply;
+    gboolean made;
+
+    if (args == NULL || !g_variant_lookup (args, "command", "&s", &command) || *command == '\0')
+    {
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_ARGS, "terminal: no command");
+        return NULL;
+    }
+    (void) g_variant_lookup (args, "cwd", "&s", &cwd);
+    tw = terminal_shell_show (tp, cwd, &made);
+    if (tw == NULL)
+    {
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_FAILED, "%s",
+                     _ ("Cannot start the shell"));
+        return NULL;
+    }
+    // a fresh shell draws its prompt first; one there already is at it or runs something
+    if (made && !mcterm_wait_for_prompt (tw->term, 3000) && mcterm_is_alive (tw->term)
+        && mcterm_osc7_capable (tw->term))
+    {
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_FAILED, "%s",
+                     _ ("The shell of the terminal is starting: try again when its prompt is "
+                        "there."));
+        return NULL;
+    }
+    if (tp->running || terminal_window_busy (tw))
+    {
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_FAILED, "%s",
+                     _ ("The shell of the terminal runs a command."));
+        return NULL;
+    }
+    if (!mcterm_shell_line_is_empty (tw->term))
+    {
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_FAILED, "%s",
+                     _ ("Something is typed on the line of the shell of the terminal."));
+        return NULL;
+    }
+    mcterm_set_prompt_callback (tw->term, terminal_prompt_ready, tw);
+    if (!mcterm_send_line (tw->term, command))
+    {
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_FAILED, "%s",
+                     _ ("The shell of the terminal is gone."));
+        return NULL;
+    }
+    tp->running = mcterm_osc7_capable (tw->term);
+    g_variant_dict_init (&reply, NULL);
+    g_variant_dict_insert (&reply, "signal", "b", tp->running);
+    return g_variant_dict_end (&reply);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The service "terminal":
    program () -> tty: the terminal of a program another plugin runs, a tab at the bottom, made
-   or cleared for it; the focus stays where it is */
+   or cleared for it; the focus stays where it is
+   run (command, cwd) -> signal: a command in the shell, terminal_run () */
 static GVariant *
 terminal_call (void *data, const char *method, GVariant *args, GError **error)
 {
@@ -683,7 +820,8 @@ terminal_call (void *data, const char *method, GVariant *args, GError **error)
     void *prev = tp->host->window_current (tp->host);
     GVariantDict reply;
 
-    (void) args;
+    if (strcmp (method, "run") == 0)
+        return terminal_run (tp, args, error);
     if (strcmp (method, "program") != 0)
     {
         g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD, "terminal: no method %s",

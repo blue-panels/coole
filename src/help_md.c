@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include "lib/global.h"
+#include "lib/tty/tty.h"  // mc_tty_frm_t
 
 #include "help.h"
 #include "help_md.h"
@@ -614,81 +615,57 @@ md_parse (md_ctx_t *ctx, const char *text)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-/** A picture is drawn with the alternate character set of the terminal, which has one whatever
- * it can show, so it stands on a terminal that knows no UTF-8.  A line holding a line drawing
- * character goes into the set whole: the window prints such a character where it stands, while
- * it holds an ordinary word back until the word ends, and a picture would fall apart.
+/** A picture of lines on a terminal that knows no UTF-8: its line drawing characters become those
+ * of the frames of the skin, which the locale has, KOI8-R double lines too, or else the terminal
+ * draws.  The charset of the terminal would have no room for most of them.
  */
 
 static void
-md_alternate (GString *text)
+md_lines (GString *text)
 {
     static const struct
     {
         gunichar c;
-        char acs;
+        mc_tty_frm_t frm;
     } line_char[] = {
-        { 0x2500, 'q' }, { 0x2502, 'x' }, { 0x250C, 'l' }, { 0x2510, 'k' },
-        { 0x2514, 'm' }, { 0x2518, 'j' }, { 0x251C, 't' }, { 0x2524, 'u' },
-        { 0x252C, 'w' }, { 0x2534, 'v' }, { 0x253C, 'n' },
+        { 0x2500, MC_TTY_FRM_HORIZ },         { 0x2502, MC_TTY_FRM_VERT },
+        { 0x250C, MC_TTY_FRM_LEFTTOP },       { 0x2510, MC_TTY_FRM_RIGHTTOP },
+        { 0x2514, MC_TTY_FRM_LEFTBOTTOM },    { 0x2518, MC_TTY_FRM_RIGHTBOTTOM },
+        { 0x252C, MC_TTY_FRM_TOPMIDDLE },     { 0x2534, MC_TTY_FRM_BOTTOMMIDDLE },
+        { 0x251C, MC_TTY_FRM_LEFTMIDDLE },    { 0x2524, MC_TTY_FRM_RIGHTMIDDLE },
+        { 0x253C, MC_TTY_FRM_CROSS },         { 0x2550, MC_TTY_FRM_DHORIZ },
+        { 0x2551, MC_TTY_FRM_DVERT },         { 0x2554, MC_TTY_FRM_DLEFTTOP },
+        { 0x2557, MC_TTY_FRM_DRIGHTTOP },     { 0x255A, MC_TTY_FRM_DLEFTBOTTOM },
+        { 0x255D, MC_TTY_FRM_DRIGHTBOTTOM },  { 0x2564, MC_TTY_FRM_DTOPMIDDLE },
+        { 0x2567, MC_TTY_FRM_DBOTTOMMIDDLE }, { 0x255F, MC_TTY_FRM_DLEFTMIDDLE },
+        { 0x2562, MC_TTY_FRM_DRIGHTMIDDLE },
     };
 
     GString *out;
-    char **lines;
-    int i;
+    const char *p;
 
-    if (g_utf8_strchr (text->str, text->len, 0x2500) == NULL
-        && g_utf8_strchr (text->str, text->len, 0x2502) == NULL)
+    if (mc_global.utf8_display)
         return;
 
-    out = g_string_sized_new (text->len + 256);
-    lines = g_strsplit (text->str, "\n", -1);
+    out = g_string_sized_new (text->len);
 
-    for (i = 0; lines[i] != NULL; i++)
+    for (p = text->str; *p != '\0'; p = g_utf8_next_char (p))
     {
-        const char *p;
-        gboolean picture = FALSE;
+        const gunichar c = g_utf8_get_char (p);
+        size_t j;
 
-        for (p = lines[i]; *p != '\0' && !picture; p = g_utf8_next_char (p))
+        for (j = 0; j < G_N_ELEMENTS (line_char) && line_char[j].c != c; j++)
+            ;
+
+        if (j < G_N_ELEMENTS (line_char))
         {
-            gunichar c = g_utf8_get_char (p);
-            size_t j;
-
-            for (j = 0; j < G_N_ELEMENTS (line_char) && !picture; j++)
-                picture = line_char[j].c == c;
+            g_string_append_c (out, CHAR_LINE);
+            g_string_append_c (out, (char) ('A' + line_char[j].frm));
         }
-
-        if (i != 0)
-            g_string_append_c (out, '\n');
-
-        if (!picture)
-        {
-            g_string_append (out, lines[i]);
-            continue;
-        }
-
-        g_string_append_c (out, CHAR_ALTERNATE);
-
-        for (p = lines[i]; *p != '\0'; p = g_utf8_next_char (p))
-        {
-            gunichar c = g_utf8_get_char (p);
-            char acs = '\0';
-            size_t j;
-
-            for (j = 0; j < G_N_ELEMENTS (line_char) && acs == '\0'; j++)
-                if (line_char[j].c == c)
-                    acs = line_char[j].acs;
-
-            if (acs != '\0')
-                g_string_append_c (out, acs);
-            else
-                g_string_append_len (out, p, g_utf8_next_char (p) - p);
-        }
-
-        g_string_append_c (out, CHAR_NORMAL);
+        else
+            g_string_append_len (out, p, g_utf8_next_char (p) - p);
     }
 
-    g_strfreev (lines);
     g_string_assign (text, out->str);
     g_string_free (out, TRUE);
 }
@@ -800,7 +777,7 @@ help_md_convert (const char *page, const char *tmpl)
     g_string_append_c (out, CHAR_NODE_END);
 
     md_substitute (out);
-    md_alternate (out);
+    md_lines (out);
 
     g_string_free (ctx.body, TRUE);
     g_string_free (ctx.para, TRUE);

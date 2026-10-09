@@ -40,6 +40,8 @@ edit_dock_side_t edit_dock_side (const WEditWindow *win);
 /* The windows of the docks where they go, and those of the files in the rest of the screen:
    after a dock changes, and after the screen is resized */
 void edit_dock_arrange (WDialog *h);
+/* The area of the windows of the files: the screen but the docks */
+void edit_dock_free_area (const WDialog *h, WRect *r);
 
 /* The tab seen at the bottom: @win, or the next (@step 1) or the previous one (-1) */
 void edit_dock_tab_select (WEditWindow *win);

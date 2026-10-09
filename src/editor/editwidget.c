@@ -290,6 +290,18 @@ edit_plugins_file_event (WEdit *edit, gboolean opened)
 
 /* --------------------------------------------------------------------------------------------- */
 
+void
+edit_plugins_tell_closed (WEdit *edit)
+{
+    // a window taken off the screen has no editor to find its plugins by any more
+    if (edit->closed_told || CONST_WIDGET (edit)->owner == NULL)
+        return;
+    edit->closed_told = 1;
+    edit_plugins_file_event (edit, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The editor is idle: tell the runtime and the plugins that the text changed and that the cursor
    is on another line, once for all the changes and moves since they were told last.  A file
    window that comes to the front is told of as changed and moved. */
@@ -1423,7 +1435,8 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
 
         /* Honour user disable from Manage Plugins for this editor session. */
         if (plugin->name != NULL
-            && mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name))
+            && (mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, plugin->name)
+                || edit_plugin_off_for_session (plugin->name)))
             continue;
 
         inst = g_new0 (editor_plugin_instance_t, 1);
@@ -2919,7 +2932,7 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
     case MSG_DESTROY:
         if (runtime_told_editor == e)
             runtime_told_editor = NULL;
-        edit_plugins_file_event (e, FALSE);
+        edit_plugins_tell_closed (e);
         edit_clean (e);
         return MSG_HANDLED;
 
@@ -3400,4 +3413,19 @@ const char *
 edit_startup_option (const char *name)
 {
     return startup_options != NULL ? g_hash_table_lookup (startup_options, name) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* coole -G is there for git: the plugins of a project are not started, their menus and windows
+   not shown; Manage plugins is not touched */
+gboolean
+edit_plugin_off_for_session (const char *name)
+{
+    // the terminal stays: the git plugin pushes and pulls in its shell
+    static const char *const project_plugins[] = { "project", "build", "debugger",
+                                                   "ctags",   "etags", NULL };
+
+    return name != NULL && edit_startup_option ("git") != NULL
+        && g_strv_contains (project_plugins, name);
 }

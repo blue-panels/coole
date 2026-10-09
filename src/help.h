@@ -16,16 +16,17 @@
 /*** typedefs(not structures) and defined constants **********************************************/
 
 /* Markers of the text the help window paints, put there by help_md.c */
-#define CHAR_LINK_START   '\01'   // Ctrl-A
-#define CHAR_LINK_POINTER '\02'   // Ctrl-B
-#define CHAR_LINK_END     '\03'   // Ctrl-C
-#define CHAR_NODE_END     '\04'   // Ctrl-D
-#define CHAR_ALTERNATE    '\05'   // Ctrl-E
-#define CHAR_NORMAL       '\06'   // Ctrl-F
-#define CHAR_VERSION      '\07'   // Ctrl-G
-#define CHAR_FONT_BOLD    '\010'  // Ctrl-H
-#define CHAR_FONT_NORMAL  '\013'  // Ctrl-K
-#define CHAR_FONT_ITALIC  '\024'  // Ctrl-T
+#define CHAR_LINK_START   '\01'  // Ctrl-A
+#define CHAR_LINK_POINTER '\02'  // Ctrl-B
+#define CHAR_LINK_END     '\03'  // Ctrl-C
+#define CHAR_NODE_END     '\04'  // Ctrl-D
+/* A line of a picture on a terminal that knows no UTF-8: 'A' plus the mc_tty_frm_t of the frame
+   character of the skin follows, the line drawing character of the locale */
+#define CHAR_LINE        '\05'   // Ctrl-E
+#define CHAR_VERSION     '\07'   // Ctrl-G
+#define CHAR_FONT_BOLD   '\010'  // Ctrl-H
+#define CHAR_FONT_NORMAL '\013'  // Ctrl-K
+#define CHAR_FONT_ITALIC '\024'  // Ctrl-T
 /* A place inside a node that a link can lead to; the name of it follows and
    another one closes it */
 #define CHAR_ANCHOR '\016'  // Ctrl-N

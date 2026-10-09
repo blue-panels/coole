@@ -88,6 +88,10 @@ typedef struct
     /* A scrollbar has moved: the view goes to pos, as near as it can, and the class gives the
        bars the range again (edit_window_set_scroll ()).  NULL for a window without bars */
     void (*scrolled) (WEditWindow *win, gboolean vertical, long pos);
+    /* A click at column x of the title, the top line of the frame, where the frame has nothing of
+       its own: TRUE when the class takes it (a tab of its own); else the window is moved.  NULL
+       for a window whose title is the frame's alone */
+    gboolean (*title_click) (WEditWindow *win, int x);
 } edit_window_class_t;
 
 struct WEditWindow

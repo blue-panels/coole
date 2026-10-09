@@ -53,6 +53,9 @@ src/meson.build, which compiles them into the internal library):
                          "build" service
   src/plugins/debugger/   GDB/MI, Debug menu, source markers and
                          viewer windows for program output and state
+  src/plugins/git/        the window Git: the status of the work
+                         tree, the log, the diffs; the messages of
+                         the commits written in a file window
 
 src/plugins/builtin-plugins.c (compiled as part of
 src/editor/editcmd.c) holds their descriptors (and that
@@ -65,7 +68,12 @@ module is (section 3), and are examples of one:
   src/plugins/terminal/   terminal.so: a window of its own
                                  (section 9), the shell in the
                                  terminal of mc, shown and hidden by
-                                 Ctrl-o through handle_action.  Built
+                                 Ctrl-o through handle_action; the
+                                 service "terminal": the terminal of
+                                 the program of the debugger, and a
+                                 command typed into the shell, its end
+                                 told by the signal "finished" (the
+                                 git plugin pushes there).  Built
                                  when openpty() and GModule are
                                  found, installed into the system
                                  directory of the plugins.
@@ -93,7 +101,7 @@ program exports; what the program itself does not call it links whole
 (libforplugins in src/meson.build).  The test module_symbols checks
 that the program gives every function a module calls.
 
-The help of a plugin (build.md, ctags.md, debugger.md, etags.md, project.md,
+The help of a plugin (build.md, ctags.md, debugger.md, etags.md, git.md, project.md,
 spell.md, terminal.md) is installed into $(pkgdatadir)/help next to the help of the
 program.
 

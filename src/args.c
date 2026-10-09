@@ -88,6 +88,14 @@ static gboolean mc_args__show_datadirs_extended = FALSE;
 static gboolean mc_args__show_configure_opts = FALSE;
 #endif
 
+/* --git and what it opens first: the work tree, and the commit of --git-show or --git-reword */
+static char *mc_args__git_dir = NULL;
+static gboolean mc_args__git_log = FALSE;
+static gboolean mc_args__git_commit = FALSE;
+static gboolean mc_args__git_amend = FALSE;
+static char *mc_args__git_show = NULL;
+static char *mc_args__git_reword = NULL;
+
 static GOptionGroup *main_group;
 
 static const GOptionEntry argument_main_table[] = {
@@ -155,6 +163,67 @@ static const GOptionEntry argument_main_table[] = {
         &mc_args__debug_project,
         N_ ("Opens the project of that directory to debug it"),
         N_ ("<directory>"),
+    },
+
+    // the git plugin, for a panel of git in mc: the window Git and the editor gone with it
+    {
+        "git",
+        'G',
+        G_OPTION_FLAG_IN_MAIN,
+        G_OPTION_ARG_FILENAME,
+        &mc_args__git_dir,
+        N_ ("Opens the window Git on the work tree of that directory, the editor ending with it"),
+        N_ ("<directory>"),
+    },
+
+    {
+        "git-log",
+        '\0',
+        G_OPTION_FLAG_IN_MAIN,
+        G_OPTION_ARG_NONE,
+        &mc_args__git_log,
+        N_ ("Opens the window Git on its log"),
+        NULL,
+    },
+
+    {
+        "git-show",
+        '\0',
+        G_OPTION_FLAG_IN_MAIN,
+        G_OPTION_ARG_STRING,
+        &mc_args__git_show,
+        N_ ("Opens the window Git on that commit: its files and their diffs"),
+        N_ ("<commit>"),
+    },
+
+    {
+        "git-commit",
+        '\0',
+        G_OPTION_FLAG_IN_MAIN,
+        G_OPTION_ARG_NONE,
+        &mc_args__git_commit,
+        N_ ("Writes the message of a commit of the staged changes, then ends"),
+        NULL,
+    },
+
+    {
+        "git-amend",
+        '\0',
+        G_OPTION_FLAG_IN_MAIN,
+        G_OPTION_ARG_NONE,
+        &mc_args__git_amend,
+        N_ ("Amends the last commit with the staged changes and its message, then ends"),
+        NULL,
+    },
+
+    {
+        "git-reword",
+        '\0',
+        G_OPTION_FLAG_IN_MAIN,
+        G_OPTION_ARG_STRING,
+        &mc_args__git_reword,
+        N_ ("Gives that commit another message, then ends"),
+        N_ ("<commit>"),
     },
 
     G_OPTION_ENTRY_NULL,
@@ -458,6 +527,72 @@ parse_mcedit_arguments (int argc, char **argv)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/* --------------------------------------------------------------------------------------------- */
+
+/* The options of git for the plugin: "git" the work tree, "git-open" what to open first
+   (status, log, show, commit, amend, reword), "git-commit" the commit of show and reword */
+static gboolean
+mc_setup_git_by_args (GError **mcerror)
+{
+    const char *open = NULL;
+    const char *commit = NULL;
+    int actions = 0;
+    char *dir;
+
+    if (mc_args__git_log)
+    {
+        open = "log";
+        actions++;
+    }
+    if (mc_args__git_show != NULL)
+    {
+        open = "show";
+        commit = mc_args__git_show;
+        actions++;
+    }
+    if (mc_args__git_commit)
+    {
+        open = "commit";
+        actions++;
+    }
+    if (mc_args__git_amend)
+    {
+        open = "amend";
+        actions++;
+    }
+    if (mc_args__git_reword != NULL)
+    {
+        open = "reword";
+        commit = mc_args__git_reword;
+        actions++;
+    }
+    if (actions > 1)
+    {
+        mc_propagate_error (mcerror, 0, "%s",
+                            _ ("Only one of --git-log, --git-show, --git-commit, --git-amend and "
+                               "--git-reword at a time\n"));
+        return FALSE;
+    }
+    if (mc_args__git_dir == NULL && actions == 0)
+        return TRUE;
+
+    // an action alone is for the current directory
+    dir = mc_args__git_dir != NULL ? g_canonicalize_filename (mc_args__git_dir, NULL)
+                                   : g_get_current_dir ();
+    g_free (mc_args__git_dir);
+    mc_args__git_dir = dir;
+    if (!g_file_test (dir, G_FILE_TEST_IS_DIR))
+    {
+        mc_propagate_error (mcerror, 0, _ ("%s: no such directory\n"), dir);
+        return FALSE;
+    }
+    edit_set_startup_option ("git", dir);
+    edit_set_startup_option ("git-open", open != NULL ? open : "status");
+    if (commit != NULL)
+        edit_set_startup_option ("git-commit", commit);
+    return TRUE;
+}
+
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -600,6 +735,9 @@ mc_setup_by_args (int argc, char **argv, GError **mcerror)
         }
         edit_set_startup_option ("debug", dir);
     }
+
+    if (!mc_setup_git_by_args (mcerror))
+        return FALSE;
 
     return TRUE;
 }

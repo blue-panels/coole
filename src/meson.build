@@ -53,6 +53,14 @@ libinternal_sources = files(
   'plugins/project/project.c',
   'plugins/build/build.c',
   'plugins/build/build-core.c',
+  'plugins/git/git.c',
+  'plugins/git/git-window.c',
+  'plugins/git/git-graph.c',
+  'plugins/git/git-remote.c',
+  'plugins/git/git-message.c',
+  'plugins/git/git-menu.c',
+  'plugins/git/git-branches.c',
+  'plugins/git/git-core.c',
   'plugins/project/project-core.c',
   'plugins/debugger/debugger.c',
   'plugins/debugger/gdb-mi.c',
@@ -122,12 +130,17 @@ install_data(
   'plugins/debugger/debugger.md',
   'plugins/project/project.md',
   'plugins/build/build.md',
+  'plugins/git/git.md',
   'plugins/etags/etags.md',
   'plugins/spell/spell.md',
   install_dir: pkgdatadir / 'help',
 )
 if have_terminal
   install_data('plugins/terminal/terminal.md', install_dir: pkgdatadir / 'help')
+endif
+# their translations, found by the help as name.lang.md
+if have_nls
+  install_data('plugins/git/git.ru.md', install_dir: pkgdatadir / 'help')
 endif
 
 # The headers of the screen library, S-Lang or ncurses, which lib/tty/tty.h includes; not the
