@@ -286,25 +286,6 @@ git_list_rows (const git_window_t *win, int list)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-git_colors (git_t *git)
-{
-    if (git->colors)
-        return;
-    git->color_add = mc_skin_color_on ("editor", "_default_", "green");
-    git->color_del = mc_skin_color_on ("editor", "_default_", "red");
-    git->color_hunk = mc_skin_color_on ("editor", "_default_", "cyan");
-    git->color_sha = mc_skin_color_on ("editor", "_default_", "yellow");
-    git->ahead = mc_skin_get ("git-graph", "ahead", "+");
-    git->behind = mc_skin_get ("git-graph", "behind", "-");
-    git->color_head = mc_skin_color_on ("editor", "_default_", "brightcyan");
-    git_graph_colors (git);
-    git_graph_glyphs (git);
-    git->colors = TRUE;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 static int
 git_diff_line_color (const git_t *git, const char *line)
 {
@@ -917,6 +898,10 @@ git_window_key (git_window_t *win, int key)
     case '3':
         git_window_tab (win, GIT_TAB_GRAPH);
         return TRUE;
+    case 'b':
+    case KEY_F (17):
+        git_branches (win);
+        return TRUE;
     case 'v':
         if (win->tab != GIT_TAB_GRAPH)
             return FALSE;
@@ -1521,6 +1506,25 @@ git_cursor_show (git_window_t *win, int list)
         c->top = c->selected;
     else if (c->selected >= c->top + rows)
         c->top = c->selected - rows + 1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+git_colors (git_t *git)
+{
+    if (git->colors)
+        return;
+    git->color_add = mc_skin_color_on ("editor", "_default_", "green");
+    git->color_del = mc_skin_color_on ("editor", "_default_", "red");
+    git->color_hunk = mc_skin_color_on ("editor", "_default_", "cyan");
+    git->color_sha = mc_skin_color_on ("editor", "_default_", "yellow");
+    git->ahead = mc_skin_get ("git-graph", "ahead", "+");
+    git->behind = mc_skin_get ("git-graph", "behind", "-");
+    git->color_head = mc_skin_color_on ("editor", "_default_", "brightcyan");
+    git_graph_colors (git);
+    git_graph_glyphs (git);
+    git->colors = TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */

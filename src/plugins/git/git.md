@@ -82,6 +82,31 @@ While a push, a pull or a fetch runs in the terminal another one is not
 started; closing the window of the terminal, or its shell ending, ends the
 wait.
 
+**Shift-F7**, **b**
+: The branches: the local ones, those of the remotes and, when checked, the
+tags, the current one first, then those of the newest last commits. A row has the name, how many commits the
+branch has that the current one has not and the other way (on git 2.41 and
+later), how long ago its last commit was, its author and its subject.
+
+What is typed goes to the filter: a branch stays when each word is found,
+in any case, in its name or in the author or the subject of its last
+commit; the branches found by their names come first, then the newer ones.
+With *Extended* checked a word is looked for too in the author and the
+whole message of the own commits of a branch, those that *main* or
+*master* has not, and the subject is that of the commit it was found in;
+*main* and *master* are found by their names alone. Those commits are read
+the first time it is used: in a repository of many branches far from *main*
+they are many. **Up**, **Down**, **PgUp**, **PgDn** move in the list; a box
+checked with its key leaves the keys to the filter.
+
+**Enter** switches to the branch (*git switch*): one of a remote through the
+local branch of its name, made tracking it when there is none, a tag with
+the HEAD detached; when git says no, as for changes a switch would lose,
+nothing changes. **F7** makes a new branch from the one under the cursor,
+**F8** deletes a local branch after a question, again when it is not merged,
+**F3** lists the commits it has that the current one has not and the other
+way, and the files it changes since they went apart. **Esc** closes it.
+
 **F1**
 : This help.
 

@@ -1831,3 +1831,295 @@ out:
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+const char *
+git_refs_format (gboolean ahead_behind)
+{
+    return ahead_behind
+        ? "--format=%(refname)%1f%(objectname)%1f%(*objectname)%1f%(creatordate:unix)%1f"
+          "%(if)%(authorname)%(then)%(authorname)%(else)%(taggername)%(end)%1f"
+          "%(contents:subject)%1f%(HEAD)%1f%(ahead-behind:HEAD)%1e"
+        : "--format=%(refname)%1f%(objectname)%1f%(*objectname)%1f%(creatordate:unix)%1f"
+          "%(if)%(authorname)%(then)%(authorname)%(else)%(taggername)%(end)%1f"
+          "%(contents:subject)%1f%(HEAD)%1f%1e";
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static char *
+git_fold (const char *text)
+{
+    return g_utf8_validate (text, -1, NULL) ? g_utf8_casefold (text, -1)
+                                            : g_ascii_strdown (text, -1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+GPtrArray *
+git_parse_refs (const char *text, gsize len)
+{
+    GPtrArray *refs = g_ptr_array_new_with_free_func (git_ref_free);
+    char *copy = g_strndup (text, len);
+    char **records = g_strsplit (copy, "\x1e", -1);
+    char **r;
+
+    for (r = records; *r != NULL; r++)
+    {
+        char **f = g_strsplit (g_strchug (*r), "\x1f", 8);
+        git_ref_t *ref;
+        const char *name;
+        git_ref_kind_t kind;
+
+        if (g_strv_length (f) != 8)
+        {
+            g_strfreev (f);
+            continue;
+        }
+        if (g_str_has_prefix (f[0], "refs/heads/"))
+        {
+            kind = GIT_REF_LOCAL;
+            name = f[0] + strlen ("refs/heads/");
+        }
+        else if (g_str_has_prefix (f[0], "refs/remotes/"))
+        {
+            kind = GIT_REF_REMOTE;
+            name = f[0] + strlen ("refs/remotes/");
+        }
+        else if (g_str_has_prefix (f[0], "refs/tags/"))
+        {
+            kind = GIT_REF_TAG;
+            name = f[0] + strlen ("refs/tags/");
+        }
+        else
+        {
+            g_strfreev (f);
+            continue;
+        }
+        // origin/HEAD is where origin/main is
+        if (kind == GIT_REF_REMOTE && g_str_has_suffix (name, "/HEAD"))
+        {
+            g_strfreev (f);
+            continue;
+        }
+        ref = g_new0 (git_ref_t, 1);
+        ref->kind = kind;
+        ref->ref = g_strdup (f[0]);
+        ref->name = g_strdup (name);
+        ref->sha = g_strdup (*f[2] != '\0' ? f[2] : f[1]);
+        ref->time = g_ascii_strtoll (f[3], NULL, 10);
+        ref->author = g_strdup (f[4]);
+        ref->subject = g_strdup (f[5]);
+        ref->current = kind == GIT_REF_LOCAL && strcmp (f[6], "*") == 0;
+        {
+            const char *slash = kind == GIT_REF_REMOTE ? strchr (name, '/') : NULL;
+
+            ref->main = kind != GIT_REF_TAG
+                && git_graph_kind (slash != NULL ? slash + 1 : name) == GIT_GRAPH_COLOR_MAIN;
+        }
+        ref->ahead = ref->behind = -1;
+        if (sscanf (f[7], "%d %d", &ref->ahead, &ref->behind) != 2)
+            ref->ahead = ref->behind = -1;
+        {
+            char *head = g_strconcat (ref->author, "\n", ref->subject, (char *) NULL);
+
+            ref->fold_name = git_fold (ref->name);
+            ref->fold_head = git_fold (head);
+            g_free (head);
+        }
+        ref->own = g_ptr_array_new ();
+        g_ptr_array_add (refs, ref);
+        g_strfreev (f);
+    }
+    g_strfreev (records);
+    g_free (copy);
+    return refs;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+git_ref_free (gpointer ref)
+{
+    git_ref_t *r = (git_ref_t *) ref;
+
+    g_free (r->ref);
+    g_free (r->name);
+    g_free (r->sha);
+    g_free (r->author);
+    g_free (r->subject);
+    g_free (r->fold_name);
+    g_free (r->fold_head);
+    g_ptr_array_unref (r->own);
+    g_free (r);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A commit of git log GIT_OWN_FORMAT */
+typedef struct
+{
+    char **parents;
+    git_own_commit_t own;
+} git_own_entry_t;
+
+static void
+git_own_entry_free (gpointer entry)
+{
+    git_own_entry_t *e = (git_own_entry_t *) entry;
+
+    g_strfreev (e->parents);
+    g_free (e->own.subject);
+    g_free (e->own.fold);
+    g_free (e);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+GPtrArray *
+git_refs_own (GPtrArray *refs, const char *log, gsize len)
+{
+    GPtrArray *store = g_ptr_array_new_with_free_func (git_own_entry_free);
+    GHashTable *commits = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    char *copy = g_strndup (log, len);
+    char **records = g_strsplit (copy, "\x1e", -1);
+    char **r;
+    guint i;
+
+    for (r = records; *r != NULL; r++)
+    {
+        char **f = g_strsplit (g_strchug (*r), "\x1f", 4);
+
+        if (g_strv_length (f) == 4)
+        {
+            git_own_entry_t *e = g_new0 (git_own_entry_t, 1);
+            const char *nl = strchr (f[3], '\n');
+            char *text = g_strconcat (f[2], "\n", f[3], (char *) NULL);
+
+            e->parents = g_strsplit (f[1], " ", -1);
+            e->own.subject = nl != NULL ? g_strndup (f[3], (gsize) (nl - f[3])) : g_strdup (f[3]);
+            e->own.fold = git_fold (text);
+            g_free (text);
+            g_ptr_array_add (store, e);
+            g_hash_table_replace (commits, g_strdup (f[0]), e);
+        }
+        g_strfreev (f);
+    }
+    g_strfreev (records);
+    g_free (copy);
+
+    // from the tip of each the commits of the log, those main has not, newest first
+    for (i = 0; i < refs->len; i++)
+    {
+        git_ref_t *ref = g_ptr_array_index (refs, i);
+        GHashTable *seen;
+        GQueue queue = G_QUEUE_INIT;
+
+        if (ref->main)
+            continue;
+        seen = g_hash_table_new (g_str_hash, g_str_equal);
+        g_queue_push_tail (&queue, ref->sha);
+        while (!g_queue_is_empty (&queue))
+        {
+            const char *sha = g_queue_pop_head (&queue);
+            git_own_entry_t *e = g_hash_table_lookup (commits, sha);
+            char **p;
+
+            if (e == NULL || g_hash_table_contains (seen, sha))
+                continue;
+            g_hash_table_add (seen, (gpointer) sha);
+            g_ptr_array_add (ref->own, &e->own);
+            for (p = e->parents; *p != NULL; p++)
+                if (**p != '\0')
+                    g_queue_push_tail (&queue, *p);
+        }
+        g_hash_table_destroy (seen);
+    }
+    g_hash_table_destroy (commits);
+    return store;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+git_ref_match (const git_ref_t *ref, char *const *words, gboolean own, int *score,
+               const char **subject)
+{
+    *score = 0;
+    *subject = NULL;
+    for (; words != NULL && *words != NULL; words++)
+    {
+        const git_own_commit_t *found = NULL;
+        guint i;
+
+        if (strstr (ref->fold_name, *words) != NULL)
+            *score += 4;
+        else if (strstr (ref->fold_head, *words) != NULL)
+            *score += 2;
+        else
+        {
+            for (i = 0; own && found == NULL && i < ref->own->len; i++)
+            {
+                const git_own_commit_t *c = g_ptr_array_index (ref->own, i);
+
+                if (strstr (c->fold, *words) != NULL)
+                    found = c;
+            }
+            if (found == NULL)
+                return FALSE;
+            *score += 1;
+            if (*subject == NULL)
+                *subject = found->subject;
+        }
+    }
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char **
+git_filter_words (const char *filter)
+{
+    char *fold = git_fold (filter);
+    char **words = g_strsplit_set (g_strstrip (fold), " \t", -1);
+    char **in, **out;
+
+    for (in = out = words; *in != NULL; in++)
+        if (**in != '\0')
+            *out++ = *in;
+        else
+            g_free (*in);
+    *out = NULL;
+    g_free (fold);
+    return words;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+git_age (gint64 now, gint64 time)
+{
+    const gint64 s = MAX (0, now - time);
+    gint64 n;
+
+    if (s < 60)
+        return g_strdup (_ ("just now"));
+    if (s < 3600)
+        return (n = s / 60,
+                g_strdup_printf (ngettext ("%d minute ago", "%d minutes ago", n), (int) n));
+    if (s < 86400)
+        return (n = s / 3600,
+                g_strdup_printf (ngettext ("%d hour ago", "%d hours ago", n), (int) n));
+    if (s < 14 * 86400)
+        return (n = s / 86400,
+                g_strdup_printf (ngettext ("%d day ago", "%d days ago", n), (int) n));
+    if (s < 60 * 86400)
+        return (n = s / (7 * 86400),
+                g_strdup_printf (ngettext ("%d week ago", "%d weeks ago", n), (int) n));
+    if (s < 365 * 86400)
+        return (n = s / (30 * 86400),
+                g_strdup_printf (ngettext ("%d month ago", "%d months ago", n), (int) n));
+    n = s / (365 * 86400);
+    return g_strdup_printf (ngettext ("%d year ago", "%d years ago", n), (int) n);
+}
+
+/* --------------------------------------------------------------------------------------------- */

@@ -59,6 +59,7 @@ libinternal_sources = files(
   'plugins/git/git-remote.c',
   'plugins/git/git-message.c',
   'plugins/git/git-menu.c',
+  'plugins/git/git-branches.c',
   'plugins/git/git-core.c',
   'plugins/project/project-core.c',
   'plugins/debugger/debugger.c',

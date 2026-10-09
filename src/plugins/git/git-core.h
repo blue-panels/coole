@@ -187,6 +187,58 @@ gboolean git_menu_item_in_mode (const git_menu_item_t *item, const char *mode);
 gboolean git_reword (const char *root, const char *sha, const char *message, char **new_head,
                      GError **error);
 
+/* A ref of the list of the branches */
+typedef enum
+{
+    GIT_REF_LOCAL,
+    GIT_REF_REMOTE,
+    GIT_REF_TAG
+} git_ref_kind_t;
+
+typedef struct
+{
+    git_ref_kind_t kind;
+    char *ref;     /* refs/heads/x, refs/remotes/origin/x, refs/tags/x */
+    char *name;    /* x, origin/x, x */
+    char *sha;     /* of the commit, a tag peeled */
+    gint64 time;   /* of the last commit, of a tag that has one its own */
+    char *author;  /* of the last commit, the tagger of a tag */
+    char *subject; /* of the last commit, of the message of a tag */
+    gboolean current;
+    gboolean main;     /* main, master or trunk, of a remote or not */
+    int ahead, behind; /* commits it has that HEAD has not, and the other way; -1 unknown */
+    /* what the filter looks in, folded: the name; the author and the subject */
+    char *fold_name, *fold_head;
+    GPtrArray *own; /* git_own_commit_t of its own commits, those main has not, the last first */
+} git_ref_t;
+
+typedef struct
+{
+    char *subject;
+    char *fold; /* the author and the message, folded */
+} git_own_commit_t;
+
+/* The format of for-each-ref git_parse_refs reads, @ahead_behind with the commits apart from
+   HEAD, which needs git 2.41 */
+const char *git_refs_format (gboolean ahead_behind);
+/* The refs of for-each-ref with that format, those of HEAD of the remotes left out */
+GPtrArray *git_parse_refs (const char *text, gsize len);
+void git_ref_free (gpointer ref);
+/* The format of git log git_refs_own reads */
+#define GIT_OWN_FORMAT "--format=%H%x1f%P%x1f%an%x1f%B%x1e"
+/* The commits of each ref that main has not, from git log GIT_OWN_FORMAT of all of them but
+   main; a main has none.  The array returned has them, to be freed after the refs */
+GPtrArray *git_refs_own (GPtrArray *refs, const char *log, gsize len);
+/* Whether @ref has every word of @words, folded, in its name, its last commit or, with @own, its
+   own commits; @score the more the more of them are in its name, @subject that of the commit of
+   own commits they are found in, NULL when they are not */
+gboolean git_ref_match (const git_ref_t *ref, char *const *words, gboolean own, int *score,
+                        const char **subject);
+/* The words of a filter, folded */
+char **git_filter_words (const char *filter);
+/* How long ago @time was at @now, "3 days ago" */
+char *git_age (gint64 now, gint64 time);
+
 /*** inline functions ****************************************************************************/
 
 #endif /* MC__GIT_CORE_H */

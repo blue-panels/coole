@@ -472,6 +472,102 @@ remove_tree (const char *dir)
     (void) g_rmdir (dir);
 }
 
+/* The refs of the branches, their own commits and the filter over them */
+static void
+test_refs (void)
+{
+    const char *list = "refs/heads/feat\x1f"
+                       "aaa\x1f\x1f"
+                       "100\x1f"
+                       "Anna Ivanova\x1f"
+                       "token: refreshed\x1f*\x1f"
+                       "2 3\x1e\n"
+                       "refs/heads/master\x1f"
+                       "mmm\x1f\x1f"
+                       "50\x1f"
+                       "Boss\x1fMerge\x1f \x1f"
+                       "0 0\x1e\n"
+                       "refs/remotes/origin/HEAD\x1f"
+                       "mmm\x1f\x1f"
+                       "50\x1f"
+                       "Boss\x1fMerge\x1f \x1f\x1e\n"
+                       "refs/remotes/origin/master\x1f"
+                       "mmm\x1f\x1f"
+                       "50\x1f"
+                       "Boss\x1fMerge\x1f \x1f\x1e\n"
+                       "refs/tags/v1\x1f"
+                       "ttt\x1f"
+                       "mmm\x1f"
+                       "40\x1f"
+                       "Boss\x1fv1\x1f \x1f\x1e\n";
+    const char *log = "aaa\x1f"
+                      "bbb\x1f"
+                      "Anna Ivanova\x1ftoken: refreshed\n\nThe expired one "
+                      "is asked for again.\n\x1e\n"
+                      "bbb\x1f"
+                      "mmm\x1fIvan Popov\x1f"
+                      "auth: a login\n\x1e\n";
+    GPtrArray *refs = git_parse_refs (list, strlen (list));
+    GPtrArray *own;
+    const git_ref_t *feat, *master;
+    const char *subject;
+    char **words;
+    int score;
+    char *age;
+
+    g_assert_cmpuint (refs->len, ==, 4);
+    feat = g_ptr_array_index (refs, 0);
+    master = g_ptr_array_index (refs, 1);
+    g_assert_cmpstr (feat->name, ==, "feat");
+    g_assert_true (feat->current);
+    g_assert_false (feat->main);
+    g_assert_cmpint (feat->ahead, ==, 2);
+    g_assert_cmpint (feat->behind, ==, 3);
+    g_assert_true (master->main);
+    g_assert_true (((const git_ref_t *) g_ptr_array_index (refs, 2))->main);
+    // an annotated tag is its commit
+    g_assert_cmpstr (((const git_ref_t *) g_ptr_array_index (refs, 3))->sha, ==, "mmm");
+    g_assert_cmpint (((const git_ref_t *) g_ptr_array_index (refs, 3))->ahead, ==, -1);
+
+    own = git_refs_own (refs, log, strlen (log));
+    g_assert_cmpuint (feat->own->len, ==, 2);
+    g_assert_cmpuint (master->own->len, ==, 0);
+
+    // every word somewhere: in the name, the author, the body of an own commit
+    words = git_filter_words ("  FEAT anna  Expired ");
+    g_assert_cmpstr (words[0], ==, "feat");
+    g_assert_cmpstr (words[2], ==, "expired");
+    g_assert_null (words[3]);
+    g_assert_true (git_ref_match (feat, words, TRUE, &score, &subject));
+    g_assert_cmpint (score, ==, 4 + 2 + 1);
+    g_assert_cmpstr (subject, ==, "token: refreshed");
+    g_assert_false (git_ref_match (master, words, TRUE, &score, &subject));
+    g_strfreev (words);
+    words = git_filter_words ("popov");
+    g_assert_true (git_ref_match (feat, words, TRUE, &score, &subject));
+    g_assert_cmpstr (subject, ==, "auth: a login");
+    // the own commits are looked in only when asked to
+    g_assert_false (git_ref_match (feat, words, FALSE, &score, &subject));
+    g_strfreev (words);
+    // main is found by its name alone
+    words = git_filter_words ("login");
+    g_assert_false (git_ref_match (master, words, TRUE, &score, &subject));
+    g_strfreev (words);
+
+    age = git_age (1000, 1000);
+    g_assert_cmpstr (age, ==, "just now");
+    g_free (age);
+    age = git_age (3 * 86400 + 5, 5);
+    g_assert_cmpstr (age, ==, "3 days ago");
+    g_free (age);
+    age = git_age (3600, 0);
+    g_assert_cmpstr (age, ==, "1 hour ago");
+    g_free (age);
+
+    g_ptr_array_unref (refs);
+    g_ptr_array_unref (own);
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 int
@@ -494,6 +590,7 @@ main (int argc, char **argv)
 
     g_test_add_func ("/git/strip", test_strip);
     g_test_add_func ("/git/graph", test_graph);
+    g_test_add_func ("/git/refs", test_refs);
     g_test_add_func ("/git/trailer", test_trailer);
     g_test_add_func ("/git/replace", test_replace);
     g_test_add_func ("/git/check", test_check);

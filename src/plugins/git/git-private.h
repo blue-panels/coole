@@ -249,6 +249,7 @@ git_commit_t *git_find_commit (git_t *git, const char *name, gboolean *own);
 gboolean git_do_args (git_t *git, const char *title, const char *const *args);
 git_commit_t *git_list_commit (const git_window_t *win);
 void git_cursor_show (git_window_t *win, int list);
+void git_colors (git_t *git);
 void git_group_draw (git_window_t *win);
 void git_diff_update (git_window_t *win);
 void git_window_reload (git_window_t *win);
@@ -290,6 +291,9 @@ gboolean git_is_message_file (const git_t *git, void *edit);
 /* git-menu.c */
 gboolean git_is_any_message_file (const git_t *git, void *edit);
 void git_message_menu (git_t *git, WEdit *edit);
+
+/* git-branches.c */
+void git_branches (git_window_t *win);
 
 /*** inline functions ****************************************************************************/
 
