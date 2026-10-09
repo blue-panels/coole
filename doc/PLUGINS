@@ -53,6 +53,9 @@ src/meson.build, which compiles them into the internal library):
                          "build" service
   src/plugins/debugger/   GDB/MI, Debug menu, source markers and
                          viewer windows for program output and state
+  src/plugins/git/        the window Git: the status of the work
+                         tree, the log, the diffs; the messages of
+                         the commits written in a file window
 
 src/plugins/builtin-plugins.c (compiled as part of
 src/editor/editcmd.c) holds their descriptors (and that
@@ -98,7 +101,7 @@ program exports; what the program itself does not call it links whole
 (libforplugins in src/meson.build).  The test module_symbols checks
 that the program gives every function a module calls.
 
-The help of a plugin (build.md, ctags.md, debugger.md, etags.md, project.md,
+The help of a plugin (build.md, ctags.md, debugger.md, etags.md, git.md, project.md,
 spell.md, terminal.md) is installed into $(pkgdatadir)/help next to the help of the
 program.
 

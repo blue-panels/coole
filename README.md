@@ -52,13 +52,21 @@ there and develops it as a program of its own.
   (`Alt+Shift+B`), the output at the bottom, the lines with errors marked in
   the gutter and gone to one after another (`Alt+Shift+J`). See
   [`build.md`](src/plugins/build/build.md).
+- **Git**: windows side by side, as in gitui: the message of the next commit,
+  the changes not staged and the staged ones at the left, the diff at the
+  right (`Alt+Shift+C`); the log with the files and the diff of each commit
+  (`Alt+Shift+L`). The message is written in an editor window: a new commit,
+  an amend, or another message for any commit of the branch, with a menu of
+  trailers, checks and a message written by AI (`F11`). `coole -G DIR` opens
+  it alone, for the panel of git of mc. See
+  [`git.md`](src/plugins/git/git.md).
 - **Debugger**: run a local program under GDB, set line breakpoints, step through
   source, and inspect the call stack and local variables from the Debug menu.
   See [`debugger.md`](src/plugins/debugger/debugger.md).
   `coole --debug DIR` opens a project ready to debug: its latest file, its
   tree and the panel of the debugger; `Ctrl+B` puts a breakpoint and
   `Alt+Shift+R` builds and runs.
-- **Editor plugins**: a plugin framework the project, build, debugger, ctags, etags and spell plugins are
+- **Editor plugins**: a plugin framework the project, build, debugger, git, ctags, etags and spell plugins are
   built on; see [`doc/PLUGINS`](doc/PLUGINS).
 - **Lua scripts** for the editor, run by the Lua runtime plugin and managed
   from the Options menu; see [`doc/LUA_PLUGINS.md`](doc/LUA_PLUGINS.md).

@@ -369,6 +369,20 @@ applies individually to each of these three properties.
             terminal that is not UTF-8)
 
 
+Git graph section
+=================
+
+    [git-graph]
+        Characters of the git plugin: one character a key
+
+        ahead
+        behind
+            How far the branch is from its upstream, in the title of the
+            window Git: the commits it has that the upstream has not, and
+            the other way (default: + and -; the skins of coole have arrows
+            up and down)
+
+
 Aliases section
 ===============
 

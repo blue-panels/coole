@@ -3422,8 +3422,9 @@ edit_startup_option (const char *name)
 gboolean
 edit_plugin_off_for_session (const char *name)
 {
-    static const char *const project_plugins[] = { "project", "build",    "debugger", "ctags",
-                                                   "etags",   "terminal", NULL };
+    // the terminal stays: the git plugin pushes and pulls in its shell
+    static const char *const project_plugins[] = { "project", "build", "debugger",
+                                                   "ctags",   "etags", NULL };
 
     return name != NULL && edit_startup_option ("git") != NULL
         && g_strv_contains (project_plugins, name);

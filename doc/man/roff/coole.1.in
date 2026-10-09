@@ -90,7 +90,7 @@ and ctags for F3.
 Open the window Git of the git plugin on the work tree of that
 directory; closing it ends the editor. The windows the project had last
 time are not shown, and the plugins of a project (project, build, debugger,
-ctags, etags, terminal) are not started. For a panel of git in a file
+ctags, etags) are not started. For a panel of git in a file
 manager, with one of these after it, or alone for the current directory:
 
 .TP
