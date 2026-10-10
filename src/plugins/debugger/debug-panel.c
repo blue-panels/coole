@@ -1,5 +1,6 @@
 /*
-   The debugger plugin: its panel, the state, the variables, the watches, the call stack and the breakpoints, and its button bars.
+   The debugger plugin: its panel, the state, the variables, the watches, the call stack and the
+   breakpoints, and its button bars.
 
    Copyright (C) 2026
    Ilia Maslakov <il.smind@gmail.com>
