@@ -34,6 +34,9 @@
 #include <glib/gstdio.h>
 #ifdef ENABLE_MCTERM
 #include <sys/ioctl.h>
+#ifdef __linux__
+#include <sys/timerfd.h>
+#endif
 #include <termios.h>
 #ifdef HAVE_PTY_H
 #include <pty.h>
@@ -148,6 +151,7 @@ enum
 };
 
 #define DEBUG_KEYMAP_SECTION "debugger"
+#define DEBUG_SERVICE        "debugger"
 #define DEBUG_MENU           N_ ("&Debug")
 
 static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
@@ -216,6 +220,11 @@ typedef struct
     int pty_master;
     int pty_slave;
     char *pty_name;
+    // the program runs in the terminal of the plugin terminal, the tab Program
+    gboolean program_terminal;
+    gboolean service;  // the service "debugger" is offered
+    // a program that runs on longer than a step: its tab takes the focus, a timerfd tells when
+    int run_timer;
     char *current_file;
     long current_line;
     // the breakpoints went to GDB at the start: a new one goes by itself
@@ -348,6 +357,8 @@ static void debug_notes_show (debugger_t *debug);
 static mc_ep_result_t debug_session_show (void *data, void *edit);
 static mc_ep_result_t debug_act_disassembly (void *data, void *edit);
 static gboolean debug_alive (const debugger_t *debug);
+static void debug_program_show (debugger_t *debug);
+static void debug_run_timer (debugger_t *debug, gboolean arm);
 static gboolean debug_launch_is_dap (const debug_launch_t *launch);
 static const char *debug_adapter_hint (const char *adapter);
 static int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
@@ -758,6 +769,14 @@ debug_panel_rows (const debugger_t *debug)
             rows, PANEL_TEXT, 0,
             g_strdup_printf (_ ("%s %s, with no source"), debug->current_func,
                              debug->current_address != NULL ? debug->current_address : ""));
+
+    /* a program that runs does not stop by itself to read: the user is to type its answer in its
+       terminal, which nothing would tell else */
+    if (debug->state == DEBUG_RUNNING && debug->program_terminal)
+    {
+        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  output and input: tab Program")));
+        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  (a click on it; Alt-Shift-G back)")));
+    }
 
     // what to do next, while nothing runs
     if ((debug->state == DEBUG_OFF || debug->state == DEBUG_FINISHED) && !debug->start_after_build)
@@ -2423,7 +2442,14 @@ debug_output_console (debugger_t *debug, const char *text_value, gboolean line)
     if (debug->console->len > 100000)
         g_string_erase (debug->console, 0, debug->console->len - 100000);
     if (debug->console_window != 0 || debug_session_live (debug))
+    {
+        const gboolean made = debug->console_window == 0;
+
         debug_output_show (debug);
+        // the console made while the program runs does not hide its terminal
+        if (made && debug->state != DEBUG_STOPPED)
+            debug_program_show (debug);
+    }
 }
 
 static void
@@ -2728,6 +2754,99 @@ debug_pty_close (debugger_t *debug)
         debug->pty_slave = -1;
     }
     g_clear_pointer (&debug->pty_name, g_free);
+    debug->program_terminal = FALSE;
+}
+
+/* The tab Program in front, the focus where it is or, with @focus, there: the program runs,
+   writes there and may wait for what is typed there, which the console would hide */
+static void
+debug_program_raise (debugger_t *debug, gboolean focus)
+{
+    GVariantDict args;
+    GVariant *reply;
+
+    if (!debug->program_terminal)
+        return;
+    g_variant_dict_init (&args, NULL);
+    g_variant_dict_insert (&args, "focus", "b", focus);
+    reply = debug->host->service_call (debug->host, "terminal", "show_program",
+                                       g_variant_dict_end (&args), NULL);
+    if (reply != NULL)
+        g_variant_unref (reply);
+}
+
+static void
+debug_program_show (debugger_t *debug)
+{
+    debug_program_raise (debug, FALSE);
+}
+
+#ifdef __linux__
+/* The program still runs a while after a continue or a step: what is typed is for it, its
+   question maybe, and the keys of the tab work as in a file when it stops */
+static int
+debug_run_timer_ready (int fd, void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+    guint64 count;
+
+    if (read (fd, &count, sizeof (count)) < 0 && errno != EAGAIN && errno != EINTR)
+        return 0;
+    if (debug->state == DEBUG_RUNNING)
+        debug_program_raise (debug, TRUE);
+    return 0;
+}
+#endif
+
+/* The timer of a run, @arm at its start, not at its stop; with no timerfd the tab takes the
+   focus at the start */
+static void
+debug_run_timer (debugger_t *debug, gboolean arm)
+{
+#ifdef __linux__
+    struct itimerspec when = { { 0, 0 }, { 0, 0 } };
+
+    if (!debug->program_terminal)
+        return;
+    if (debug->run_timer < 0 && arm)
+    {
+        debug->run_timer = timerfd_create (CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+        if (debug->run_timer < 0)
+        {
+            debug_program_raise (debug, TRUE);
+            return;
+        }
+        add_select_channel (debug->run_timer, debug_run_timer_ready, debug);
+    }
+    if (debug->run_timer < 0)
+        return;
+    if (arm)
+        when.it_value.tv_nsec = 300 * 1000 * 1000;
+    (void) timerfd_settime (debug->run_timer, 0, &when, NULL);
+#else
+    if (arm)
+        debug_program_raise (debug, TRUE);
+#endif
+}
+
+/* Whether the tab Program has the focus */
+static gboolean
+debug_program_current (debugger_t *debug)
+{
+    GVariant *reply;
+    gboolean current = FALSE;
+
+    if (!debug->program_terminal)
+        return FALSE;
+    reply =
+        debug->host->service_call (debug->host, "terminal", "program_current",
+                                   g_variant_new_array (G_VARIANT_TYPE ("{sv}"), NULL, 0), NULL);
+    if (reply != NULL)
+    {
+        (void) g_variant_lookup (reply, "current", "b", &current);
+        g_variant_unref (reply);
+    }
+    return current;
 }
 
 #ifdef ENABLE_MCTERM
@@ -2771,16 +2890,21 @@ static gboolean
 debug_terminal_open (debugger_t *debug)
 {
     GVariant *reply;
+    GVariantDict args;
     const char *tty = NULL;
 
-    reply =
-        debug->host->service_call (debug->host, "terminal", "program",
-                                   g_variant_new_array (G_VARIANT_TYPE ("{sv}"), NULL, 0), NULL);
+    // the keys of the tab go to the debugger first: those to leave it, those to step when stopped
+    g_variant_dict_init (&args, NULL);
+    if (debug->service)
+        g_variant_dict_insert (&args, "keys_to", "s", DEBUG_SERVICE);
+    reply = debug->host->service_call (debug->host, "terminal", "program",
+                                       g_variant_dict_end (&args), NULL);
     if (reply == NULL)
         return FALSE;
     if (g_variant_lookup (reply, "tty", "&s", &tty))
         debug->pty_name = g_strdup (tty);
     g_variant_unref (reply);
+    debug->program_terminal = debug->pty_name != NULL;
     return debug->pty_name != NULL;
 }
 #endif
@@ -3227,6 +3351,7 @@ debug_finished (debugger_t *debug)
 {
     if (debug->state != DEBUG_OFF)
         debug->state = DEBUG_FINISHED;
+    debug_run_timer (debug, FALSE);
     debug->breakpoints_installed = FALSE;
     debug_clear_current (debug);
     debug_marks_show (debug, NULL);
@@ -3460,9 +3585,12 @@ debug_event_running (void *ui)
 {
     debugger_t *debug = (debugger_t *) ui;
 
+    if (debug->state != DEBUG_RUNNING)
+        debug_run_timer (debug, TRUE);
     debug->state = DEBUG_RUNNING;
     debug_notes_clear (debug);
     debug_watches_clear_values (debug);
+    debug_program_show (debug);
     debug_session_refresh (debug);
 }
 
@@ -3470,8 +3598,18 @@ static void
 debug_event_stopped (void *ui, const debug_stop_t *stop)
 {
     debugger_t *debug = (debugger_t *) ui;
+    // the program has had what was typed in its tab: the place it stops at is to be seen
+    const gboolean from_program = debug_program_current (debug);
 
+    debug_run_timer (debug, FALSE);
     debug_stopped (debug, stop);
+    if (from_program)
+    {
+        void *file = debug->host->window_top_file (debug->host);
+
+        if (file != NULL)
+            debug->host->window_show (debug->host, file);
+    }
     debug_session_refresh (debug);
     widget_draw (WIDGET (debug->host->host_data));
 }
@@ -4879,7 +5017,12 @@ debug_start (void *data, void *edit)
     debug_watches_clear_values (debug);
     g_string_truncate (debug->console, 0);
     (void) debug_session_show (debug, NULL);
-    debug_output_show (debug);
+    // the program in a terminal of its own: that is what there is to see, the console when it says
+    // something
+    if (debug->program_terminal)
+        debug_program_show (debug);
+    else
+        debug_output_show (debug);
     g_strfreev (argv);
     g_strfreev (environment_entries);
     g_free (absolute);
@@ -5394,6 +5537,57 @@ debug_evaluate (debugger_t *debug, void *edit)
     return debug_evaluate_text (debug, expression);
 }
 
+/* A key of the tab Program: the one to the panel; and while the program is stopped, when it reads
+   nothing, those that run it on.  The others are the program's */
+static gboolean
+debug_program_key (debugger_t *debug, int key)
+{
+    const int cmd = debug_command_of_key (debug, key);
+
+    if (cmd == DEBUG_CMD_PANEL)
+        return debug_run_command (debug, cmd, NULL);
+    if (debug->state != DEBUG_STOPPED)
+        return FALSE;
+    switch (cmd)
+    {
+    case DEBUG_CMD_START_CONTINUE:
+    case DEBUG_CMD_STEP_INTO:
+    case DEBUG_CMD_STEP_OVER:
+    case DEBUG_CMD_STEP_OUT:
+    case DEBUG_CMD_STEP_INSTRUCTION:
+    case DEBUG_CMD_NEXT_INSTRUCTION:
+    case DEBUG_CMD_STOP:
+        return debug_run_command (debug, cmd, NULL);
+    default:
+        return FALSE;
+    }
+}
+
+/* The service "debugger", for the plugin terminal:
+   program_key (key) -> taken: a key typed in the tab Program, debug_program_key () */
+static GVariant *
+debug_service_call (void *data, const char *method, GVariant *args, GError **error)
+{
+    debugger_t *debug = (debugger_t *) data;
+    GVariantDict reply;
+    int key = 0;
+
+    if (strcmp (method, "program_key") != 0)
+    {
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD, "debugger: no method %s",
+                     method);
+        return NULL;
+    }
+    if (args == NULL || !g_variant_lookup (args, "key", "i", &key))
+    {
+        g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_ARGS, "debugger: no key");
+        return NULL;
+    }
+    g_variant_dict_init (&reply, NULL);
+    g_variant_dict_insert (&reply, "taken", "b", debug_program_key (debug, key));
+    return g_variant_dict_end (&reply);
+}
+
 static mc_ep_result_t
 debug_handle_key (void *data, int key, void *edit)
 {
@@ -5401,8 +5595,8 @@ debug_handle_key (void *data, int key, void *edit)
     int cmd;
 
     cmd = debug_command_of_key (debug, key);
-    /* a window that is no file, the terminal of the program for one: the panel of the debugger
-       and back is the key that leaves it, all the others are the window's */
+    /* a window that is no file: the panel of the debugger and back is the key that leaves it, all
+       the others are the window's; the tab Program has its keys through the service */
     if (edit == NULL)
         return cmd == DEBUG_CMD_PANEL && debug_run_command (debug, cmd, NULL)
             ? MC_EPR_OK
@@ -5961,11 +6155,13 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->address_breakpoints = g_ptr_array_new_with_free_func (debug_address_breakpoint_free);
     debug->pty_master = -1;
     debug->pty_slave = -1;
+    debug->run_timer = -1;
     host->commands_register (host, DEBUG_KEYMAP_SECTION, N_ ("&Debugger"), debug_commands);
     if (host->window_kind != NULL)
         for (i = 0; i < (int) G_N_ELEMENTS (debug_window_kinds); i++)
             host->window_kind (host, &debug_window_kinds[i], debug);
     debug->build_signal = host->service_connect (host, "build", debug_build_finished, debug);
+    debug->service = host->service_register (host, DEBUG_SERVICE, debug_service_call, debug, NULL);
     for (i = 0; i < DEBUG_CMD_COUNT; i++)
         debug->commands[i] = host->command_id (host, debug_commands[i].name);
     for (i = 0; i < DEBUG_MARK_COUNT; i++)
@@ -5998,6 +6194,11 @@ debug_close (void *data)
         debug->backend->ops->free (debug->backend);
     debug_clear_current (debug);
     debug_pty_close (debug);
+    if (debug->run_timer >= 0)
+    {
+        delete_select_channel (debug->run_timer);
+        close (debug->run_timer);
+    }
     g_ptr_array_free (debug->launches, TRUE);
     g_ptr_array_free (debug->breakpoints, TRUE);
     g_ptr_array_free (debug->watches, TRUE);
@@ -6006,6 +6207,8 @@ debug_close (void *data)
     g_free (debug->current_file);
     if (debug->build_signal != 0)
         debug->host->service_disconnect (debug->host, debug->build_signal);
+    if (debug->service)
+        debug->host->service_unregister (debug->host, DEBUG_SERVICE);
     for (int i = 0; i < DEBUG_MARK_COUNT; i++)
         g_free (debug->glyphs[i]);
     g_free (debug->current_func);

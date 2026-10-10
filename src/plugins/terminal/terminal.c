@@ -82,6 +82,8 @@ struct terminal_plugin_t
     mc_editor_host_t *host;
     terminal_window_t *win;      // NULL until Ctrl-O, and after the window is destroyed
     terminal_window_t *program;  // the terminal of the program the debugger runs, or NULL
+    // the service the keys of that terminal are offered to before the program has them, or NULL
+    char *keys_to;
     gboolean service;
     // a command of run () in the shell, its end to be told with the signal "finished"
     gboolean running;
@@ -814,8 +816,13 @@ terminal_run (terminal_plugin_t *tp, GVariant *args, GError **error)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The service "terminal":
-   program () -> tty: the terminal of a program another plugin runs, a tab at the bottom, made
-   or cleared for it; the focus stays where it is
+   program (keys_to) -> tty: the terminal of a program another plugin runs, a tab at the bottom,
+   made or cleared for it; the focus stays where it is.  A key typed there goes first to the
+   method "program_key" (key) -> taken of the service @keys_to, if given: the plugin of the
+   program has its keys there whatever order the plugins are in
+   show_program (focus): that tab in front again, as it is, the focus where it is or, with
+   @focus, there: the program runs and may ask for what is typed there
+   program_current () -> current: whether that tab has the focus
    run (command, cwd) -> signal: a command in the shell, terminal_run () */
 static GVariant *
 terminal_call (void *data, const char *method, GVariant *args, GError **error)
@@ -826,6 +833,39 @@ terminal_call (void *data, const char *method, GVariant *args, GError **error)
 
     if (strcmp (method, "run") == 0)
         return terminal_run (tp, args, error);
+    if (strcmp (method, "show_program") == 0)
+    {
+        gboolean focus = FALSE;
+
+        if (args != NULL)
+            (void) g_variant_lookup (args, "focus", "b", &focus);
+        if (tp->program == NULL)
+        {
+            g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_FAILED,
+                         "terminal: no terminal of a program");
+            return NULL;
+        }
+        if (!widget_get_state (WIDGET (tp->program), WST_VISIBLE))
+            terminal_place (tp, tp->program);
+        tp->host->window_show (tp->host, tp->program);
+        if (!focus && prev != NULL && prev != (void *) tp->program)
+            tp->host->window_show (tp->host, prev);
+        /* the focus comes with no key, at a time of the plugin: the cursor goes where the
+           program types, not left where the editor drew last */
+        if (focus)
+        {
+            (void) send_message (WIDGET (tp->program->term), NULL, MSG_CURSOR, 0, NULL);
+            tty_refresh ();
+        }
+        return g_variant_new_array (G_VARIANT_TYPE ("{sv}"), NULL, 0);
+    }
+    if (strcmp (method, "program_current") == 0)
+    {
+        g_variant_dict_init (&reply, NULL);
+        g_variant_dict_insert (&reply, "current", "b",
+                               tp->program != NULL && prev == (void *) tp->program);
+        return g_variant_dict_end (&reply);
+    }
     if (strcmp (method, "program") != 0)
     {
         g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD, "terminal: no method %s",
@@ -845,6 +885,14 @@ terminal_call (void *data, const char *method, GVariant *args, GError **error)
     }
     else
         mcterm_tty_clear (tp->program->term);
+    g_clear_pointer (&tp->keys_to, g_free);
+    if (args != NULL)
+    {
+        const char *keys_to = NULL;
+
+        if (g_variant_lookup (args, "keys_to", "&s", &keys_to) && *keys_to != '\0')
+            tp->keys_to = g_strdup (keys_to);
+    }
     terminal_place (tp, tp->program);
     tp->host->window_show (tp->host, tp->program);
     if (prev != NULL && prev != (void *) tp->program)
@@ -992,6 +1040,7 @@ terminal_plugin_close (void *plugin_data)
     // the editor has destroyed the window before, and the shell with it
     if (tp->service)
         tp->host->service_unregister (tp->host, "terminal");
+    g_free (tp->keys_to);
     g_free (plugin_data);
 }
 
@@ -1006,17 +1055,37 @@ terminal_plugin_activate (void *plugin_data, void *edit)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The terminal of the program in front: every key is the program's, before the button bar and
-   the keymaps of the editor take theirs.  The plugins before this one have had theirs: the
-   panel of the debugger, to leave it. */
+   the keymaps of the editor take theirs, but for those the service keys_to of program () takes:
+   the plugins are in the order their modules are found, the debugger after this one maybe. */
 static mc_ep_result_t
 terminal_plugin_handle_key (void *plugin_data, int key, void *edit)
 {
     terminal_plugin_t *tp = (terminal_plugin_t *) plugin_data;
 
     (void) edit;
+    if (tp->program == NULL || tp->host->window_current (tp->host) != (void *) tp->program)
+        return MC_EPR_NOT_SUPPORTED;
+    // the plugin that runs the program first: the keys of the debugger while it is stopped
+    if (tp->keys_to != NULL)
+    {
+        GVariantDict args;
+        GVariant *reply;
+        gboolean taken = FALSE;
+
+        g_variant_dict_init (&args, NULL);
+        g_variant_dict_insert (&args, "key", "i", key);
+        reply = tp->host->service_call (tp->host, tp->keys_to, "program_key",
+                                        g_variant_dict_end (&args), NULL);
+        if (reply != NULL)
+        {
+            (void) g_variant_lookup (reply, "taken", "b", &taken);
+            g_variant_unref (reply);
+        }
+        if (taken)
+            return MC_EPR_OK;
+    }
     // with no program on it, the keys are the editor's: Esc, F9, F10 leave the window
-    if (tp->program == NULL || tp->host->window_current (tp->host) != (void *) tp->program
-        || !mcterm_tty_has_program (tp->program->term))
+    if (!mcterm_tty_has_program (tp->program->term))
         return MC_EPR_NOT_SUPPORTED;
     return mcterm_send_key (tp->program->term, key) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
 }

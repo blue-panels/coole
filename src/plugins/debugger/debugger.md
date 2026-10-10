@@ -36,7 +36,15 @@ to the next.
 With **Run in a terminal window** checked in the form, as it is at first,
 the program runs in a terminal of its own, the tab **Program** at the
 bottom: what it writes is there, and what is typed there goes to it, every
-key, F1 and F10 too. A program that takes the whole screen, an editor or
+key, F1 and F10 too. While the program runs the tab is in front, the console
+behind it, and the panel says so: a program that reads, a question of a script
+for one, waits there for its answer, and a step does nothing till it has it.
+A step or a continue the program is longer at than 0.3 s gives the tab the
+focus, for what is typed to go to it; when it stops, the focus goes back to
+the file it stops in. A quick step leaves the focus where it is.
+While it is stopped, the keys that run it on, Continue, the steps and Stop,
+work in the tab too; while it runs, every key there is the program's.
+A program that takes the whole screen, an editor or
 coole itself, runs there as in any terminal. A click on the tab, or
 **Window → Program**, goes to it; **Alt-Shift-G** leaves it for the panel of
 the debugger. The tab stays when the program ends, to be read, and is
