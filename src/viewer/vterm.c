@@ -138,6 +138,7 @@ struct mcview_vterm_struct
     gboolean in_alt_screen;
 
     gboolean app_cursor_keys;
+    gboolean bracketed_paste;  // DECSET 2004: a paste goes in ESC[200~ ... ESC[201~
 
     gboolean insert_mode;  // IRM: a printed character pushes the rest of the line right
 
@@ -270,11 +271,18 @@ vterm_dispatch_csi (mcview_vterm_t *vt, unsigned char final_byte)
         return ev;
     }
 
+    /* CSI ? 1 ; 2004 l sets every mode it names, not only the first one. Other final bytes,
+       such as CSI ? 2004 $ p (a query), leave the modes as they are. */
     if (vt->csi_private)
     {
-        if (vt->param_count > 0)
-        {
-            switch (vt->params[0])
+        vterm_result_t type = VTERM_CONSUMED;
+        int i;
+
+        if (final_byte != 'h' && final_byte != 'l')
+            return vterm_make (vt, type);
+
+        for (i = 0; i < vt->param_count; i++)
+            switch (vt->params[i])
             {
             case 1:
                 vt->app_cursor_keys = (final_byte == 'h');
@@ -282,17 +290,19 @@ vterm_dispatch_csi (mcview_vterm_t *vt, unsigned char final_byte)
             case 7:
                 mcview_vterm_set_autowrap (vt, final_byte == 'h');
                 break;
+            case 2004:
+                vt->bracketed_paste = (final_byte == 'h');
+                break;
             case 1049:
                 if (final_byte == 'h')
-                    return vterm_make (vt, VTERM_ALT_SCREEN_ENTER);
-                if (final_byte == 'l')
-                    return vterm_make (vt, VTERM_ALT_SCREEN_EXIT);
+                    type = VTERM_ALT_SCREEN_ENTER;
+                else if (final_byte == 'l')
+                    type = VTERM_ALT_SCREEN_EXIT;
                 break;
             default:
                 break;
             }
-        }
-        return vterm_make (vt, VTERM_CONSUMED);
+        return vterm_make (vt, type);
     }
 
     p0 = (vt->param_count > 0) ? vt->params[0] : 0;
@@ -1432,6 +1442,7 @@ mcview_vterm_reset (mcview_vterm_t *vt)
     vt->utf8_len = 0;
     vt->utf8_expected = 0;
     vt->app_cursor_keys = FALSE;
+    vt->bracketed_paste = FALSE;
     vt->cursor_row = 0;
     vt->cursor_col = 0;
     vt->scroll_top = 0;
@@ -2167,6 +2178,14 @@ gboolean
 mcview_vterm_app_cursor_keys (const mcview_vterm_t *vt)
 {
     return vt->app_cursor_keys;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+mcview_vterm_bracketed_paste (const mcview_vterm_t *vt)
+{
+    return vt->bracketed_paste;
 }
 
 /* --------------------------------------------------------------------------------------------- */
