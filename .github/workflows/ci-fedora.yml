@@ -24,7 +24,7 @@ jobs:
             git `# Install git inside container` \
             \
             clang-tools-extra gcc gettext-devel groff meson pkgconfig \
-            check-devel gpm-devel libX11-devel lua-devel "pkgconfig(glib-2.0)" "pkgconfig(gmodule-2.0)" "pkgconfig(slang)" \
+            check-devel gpm-devel libX11-devel lua-devel "pkgconfig(glib-2.0)" "pkgconfig(gmodule-2.0)" "pkgconfig(json-glib-1.0)" "pkgconfig(slang)" \
             \
             glibc-gconv-extra util-linux `# For tests` \
             python3-pip \

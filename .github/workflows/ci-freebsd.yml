@@ -25,7 +25,7 @@ jobs:
         with:
           prepare: |
             pkg install -y gettext meson ninja pkgconf
-            pkg install -y check glib libX11
+            pkg install -y check glib json-glib libX11
 
           run: |
             pw useradd test -d "$(pwd)"

@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           apk add build-base meson pkgconf sudo
-          apk add check-dev gettext-dev glib-dev gpm-dev lua5.4-dev slang-dev
+          apk add check-dev gettext-dev glib-dev json-glib-dev gpm-dev lua5.4-dev slang-dev
 
       - name: Build default configuration
         run: |

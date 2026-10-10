@@ -2,9 +2,10 @@
 
 **Debugger plugin of the editor**
 
-Runs a program of the project under GDB: breakpoints in the gutter of the
-source, steps through it from the source window, and the call stack, the
-local variables and the watches beside it.
+Runs a program of the project under GDB, or under the debug adapter of its
+language: breakpoints in the gutter of the source, steps through it from the
+source window, and the call stack, the local variables and the watches
+beside it.
 
 **The start**
 
@@ -187,7 +188,9 @@ on it, and its mark is an empty circle.
 
 **:**
 : A command of GDB itself, for what the panel does not have: *p x*,
-*info registers*, *x/8x buf*. What GDB answers comes in the console.
+*info registers*, *x/8x buf*. What GDB answers comes in the console. Under
+a debug adapter it is an expression or a command of the adapter's console,
+*p 1+2* for GDB, a line of Python for debugpy.
 
 **The registers**
 
@@ -286,5 +289,85 @@ stop the program when the value changes. Both offer the selection, or the
 word under the cursor, to be taken as it is or changed. **Send line...** gives
 a line to a program that reads lines. **Stop** ends the session and keeps the
 breakpoints, the configurations and the watches.
+
+**Debug adapters**
+
+The debuggers of most languages speak the Debug Adapter Protocol: debugpy for
+Python, Delve for Go, bash-dap for the shell, js-debug for
+JavaScript, lldb-dap, and GDB itself from version 14 (*gdb -i dap*). In
+**Debug configuration** the choice **Debug adapter**, instead of **GDB**,
+has one run the program:
+
+**Adapter**
+: The command of the adapter, which speaks on its stdin and stdout, or on a
+socket when **Address** is set.
+
+**Address**
+: *host:port* of an adapter that listens already; with port 0 the
+command is run, and the port is the one it says on its output, *listening
+at: 127.0.0.1:38697*.
+
+**Launch (JSON)**
+: Members added to the request that launches the program, each adapter
+having its own: *{"mode": "debug"}* for Delve, *{"justMyCode": false}* for
+debugpy. The form checks it: an error is told with its line and column.
+
+A program by the name of its file has its adapter set when the form is
+taken, if the configuration has none:
+
+```
+.py              python3 -m debugpy.adapter
+.sh, .bash       bash-dap
+.go              dlv dap --listen=127.0.0.1:0
+.js, .mjs, .ts   js-debug-adapter 0, on 127.0.0.1:0
+a program        gdb -i dap
+```
+
+A new configuration without a program the build has made takes the file in
+front, when it is such a script. An adapter that is not there, or that ends
+before the program starts, is told with how to get it; what it says is in
+the console.
+
+**Python**
+
+debugpy is had once, with *apt install python3-debugpy* or *pip install --user
+debugpy*. Then a script is debugged as a program of C is: F6 on a line, F5,
+and Enter in the form, which has the adapter of Python already.
+
+A project with a virtual environment, *.venv*, *venv*, *.env* or *env* with
+*bin/python* in it, is debugged with its own Python and the packages of the
+project: the adapter becomes *.venv/bin/python -m debugpy.adapter*. debugpy
+has to be in that environment too, *.venv/bin/python -m pip install
+debugpy*: without it the form says so, and the script runs with the Python
+of the system.
+
+A script that reads what is typed, *input()* for one, needs the terminal of
+the program: *{"console": "integratedTerminal"}*. Else what it writes comes
+in the console, and it reads nothing.
+
+**The shell**
+
+bash-dap debugs a script of bash, with Python 3 alone: *pipx install bash-dap*,
+or *pip install --user bash-dap*. Then as for Python: F6 on a line, F5, Enter in
+the form. The script runs in the terminal of the program, and reads what is
+typed there; it stops in the functions of *$(...)* and of pipes too, and the
+variables of a stop are all those it sees, bash having no others. An array
+opens as a tree.
+
+The adapter runs in a session of its own, away from the terminal of the
+editor, and ends with it. The program has the terminal of the program when
+the adapter asks for one (*runInTerminal*: debugpy with *{"console":
+"integratedTerminal"}*, bash-dap); else what it writes comes in the
+console, and it reads nothing. js-debug runs the program in a session it
+starts on its socket: the debugger connects to it there, and the steps are of
+that session.
+
+Under *gdb -i dap* GDB has the breakpoints before it runs the program, which
+it does as soon as it is launched; the program writes in the console. A
+breakpoint the adapter has on no code yet is pending, *◊*, until it says it
+is on some.
+
+The configuration keeps these as *backend*, *adapter*, *address* and
+*launch_extra* in *debug.ini*.
 
 The debugger runs one local program at a time.

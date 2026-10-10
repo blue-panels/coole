@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           brew install gettext check meson pkg-config
-          brew install glib s-lang
+          brew install glib json-glib s-lang
 
       - name: Build default configuration
         run: |

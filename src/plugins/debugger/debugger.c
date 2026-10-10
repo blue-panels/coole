@@ -62,6 +62,9 @@
 #include "debugger.h"
 #include "src/plugins/project/project-core.h"  // project_find_root (), without the project plugin
 #include "debug-backend.h"
+#ifdef ENABLE_DAP
+#include <json-glib/json-glib.h>
+#endif
 
 typedef enum
 {
@@ -79,7 +82,8 @@ typedef struct
     char *gdb_number;
     long gdb_line;  // the line GDB put it on, of the text the program was built from
     unsigned int pending_token;
-    gboolean disabled;  // kept, but GDB does not stop on it
+    gboolean disabled;    // kept, but GDB does not stop on it
+    gboolean unverified;  // the debugger has it, on no code yet
 } debug_breakpoint_t;
 
 typedef struct
@@ -94,6 +98,12 @@ typedef struct
     // the program runs in a terminal window of its own, the screen and the keys its own, and
     // not in the console
     gboolean terminal;
+    // "dap": a debug adapter runs it, @adapter its command; on a socket at @address
+    // ("host:port") when there is one; @launch_extra, JSON, goes into its request "launch"
+    char *backend;
+    char *adapter;
+    char *address;
+    char *launch_extra;
 } debug_launch_t;
 
 typedef struct
@@ -242,6 +252,8 @@ typedef struct
     gboolean debug_mode;
     gboolean layout_pushed;  // the editor keeps the windows of before debugging
     debug_session_window_t *session_window;
+    // the virtual environment of the project with no debugpy has been told of
+    gboolean venv_told;
     // the window of the instructions, those it shows, and the address of the frame among them
     debug_disasm_window_t *disasm_window;
     GPtrArray *instructions;
@@ -333,6 +345,8 @@ static void debug_notes_show (debugger_t *debug);
 static mc_ep_result_t debug_session_show (void *data, void *edit);
 static mc_ep_result_t debug_act_disassembly (void *data, void *edit);
 static gboolean debug_alive (const debugger_t *debug);
+static gboolean debug_launch_is_dap (const debug_launch_t *launch);
+static const char *debug_adapter_hint (const char *adapter);
 static int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
 static void debug_error (debugger_t *debug, const char *message_text);
 static void debug_breakpoint_move (debugger_t *debug, const char *number, long line);
@@ -385,6 +399,10 @@ debug_launch_free (gpointer data)
     g_free (launch->directory);
     g_free (launch->environment);
     g_free (launch->gdb_path);
+    g_free (launch->backend);
+    g_free (launch->adapter);
+    g_free (launch->address);
+    g_free (launch->launch_extra);
     g_free (launch);
 }
 
@@ -764,9 +782,13 @@ debug_panel_rows (const debugger_t *debug)
             debug_panel_add (rows, PANEL_LOCAL, i,
                              g_strdup_printf ("%s = %s", local->name, local->value));
         }
-        debug_panel_add (rows, PANEL_REGISTERS, 0,
-                         g_strdup (debug->registers_shown ? _ ("Registers")
-                                                          : _ ("Registers  (Enter shows them)")));
+        // a program of Python has none
+        if (debug->backend == NULL || debug->backend->ops->has_registers == NULL
+            || debug->backend->ops->has_registers (debug->backend))
+            debug_panel_add (rows, PANEL_REGISTERS, 0,
+                             g_strdup (debug->registers_shown
+                                           ? _ ("Registers")
+                                           : _ ("Registers  (Enter shows them)")));
         for (i = 0; debug->registers_shown && i < debug->registers->len; i++)
         {
             const debug_variable_t *reg = g_ptr_array_index (debug->registers, i);
@@ -1881,6 +1903,14 @@ debug_launches_write (const debugger_t *debug, GKeyFile *keyfile, gboolean relat
                                launch->gdb_path != NULL ? launch->gdb_path : "gdb");
         g_key_file_set_boolean (keyfile, group, "build", launch->build);
         g_key_file_set_boolean (keyfile, group, "terminal", launch->terminal);
+        g_key_file_set_string (keyfile, group, "backend",
+                               launch->backend != NULL ? launch->backend : "gdb-mi");
+        if (launch->adapter != NULL)
+            g_key_file_set_string (keyfile, group, "adapter", launch->adapter);
+        if (launch->address != NULL)
+            g_key_file_set_string (keyfile, group, "address", launch->address);
+        if (launch->launch_extra != NULL)
+            g_key_file_set_string (keyfile, group, "launch_extra", launch->launch_extra);
         g_free (executable);
         g_free (directory);
         g_free (group);
@@ -1930,6 +1960,11 @@ debug_launches_read (debugger_t *debug, GKeyFile *keyfile)
         // a configuration from before there was a terminal for the program has one
         launch->terminal = !g_key_file_has_key (keyfile, group, "terminal", NULL)
             || g_key_file_get_boolean (keyfile, group, "terminal", NULL);
+        // a configuration from before the debug adapters has GDB
+        launch->backend = g_key_file_get_string (keyfile, group, "backend", NULL);
+        launch->adapter = g_key_file_get_string (keyfile, group, "adapter", NULL);
+        launch->address = g_key_file_get_string (keyfile, group, "address", NULL);
+        launch->launch_extra = g_key_file_get_string (keyfile, group, "launch_extra", NULL);
         if (executable != NULL && *executable != '\0')
             launch->executable = g_canonicalize_filename (executable, debug->project_dir);
         launch->directory = g_canonicalize_filename (
@@ -2310,7 +2345,7 @@ debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp)
 {
     if (bp->disabled)
         return DEBUG_MARK_DISABLED;
-    if (debug_session_live (debug) && bp->gdb_number == NULL)
+    if (debug_session_live (debug) && (bp->gdb_number == NULL || bp->unverified))
         return DEBUG_MARK_PENDING;
     return DEBUG_MARK_BREAKPOINT;
 }
@@ -2836,6 +2871,9 @@ debug_reply_breakpoint (void *ui, const debug_reply_t *reply, void *data)
         }
         g_free (bp->gdb_number);
         bp->gdb_number = g_strdup (reply->id);
+        bp->unverified = reply->pending;
+        if (reply->pending && reply->msg != NULL)
+            debug_output_console (debug, reply->msg, TRUE);
         // GDB stops on the next line with code: the breakpoint goes there
         if (reply->line > 0)
         {
@@ -3059,6 +3097,7 @@ debug_event_ready (void *ui)
 
         g_clear_pointer (&bp->gdb_number, g_free);
         bp->pending_token = 0;
+        bp->unverified = FALSE;
         (void) debug_breakpoint_install (debug, bp);
     }
     for (i = 0; i < debug->address_breakpoints->len; i++)
@@ -3106,9 +3145,24 @@ static void
 debug_event_exited (void *ui, gboolean gone)
 {
     debugger_t *debug = (debugger_t *) ui;
+    const debug_launch_t *launch = debug_active_launch (debug);
 
     if (gone)
         debug_requests_clear (debug);
+    // an adapter that ends at once is not there to run, a module of Python missing say
+    if (gone && debug->state == DEBUG_STARTING && launch != NULL && debug_launch_is_dap (launch))
+    {
+        const char *hint = debug_adapter_hint (launch->adapter);
+        char *text_value = g_strdup_printf (
+            _ ("The debug adapter ended before the program started: the Debug console says "
+               "why.%s%s"),
+            hint != NULL ? "\n" : "", hint != NULL ? hint : "");
+
+        debug_finished (debug);
+        debug_error (debug, text_value);
+        g_free (text_value);
+        return;
+    }
     debug_finished (debug);
 }
 
@@ -3132,6 +3186,30 @@ debug_event_breakpoint_moved (void *ui, const char *id, long line)
             debug_marks_show (debug, NULL);
             return;
         }
+    }
+}
+
+static void
+debug_event_breakpoint_verified (void *ui, const char *id, long line)
+{
+    debugger_t *debug = (debugger_t *) ui;
+    guint i;
+
+    for (i = 0; i < debug->breakpoints->len; i++)
+    {
+        debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+
+        if (g_strcmp0 (bp->gdb_number, id) != 0)
+            continue;
+        bp->unverified = FALSE;
+        if (line > 0 && line != bp->gdb_line)
+        {
+            bp->gdb_line = line;
+            debug_breakpoint_move (debug, id, line);
+        }
+        debug_marks_show (debug, NULL);
+        debug_session_refresh (debug);
+        return;
     }
 }
 
@@ -3160,6 +3238,7 @@ static const debug_backend_events_t debug_events = {
     .stopped = debug_event_stopped,
     .exited = debug_event_exited,
     .breakpoint_moved = debug_event_breakpoint_moved,
+    .breakpoint_verified = debug_event_breakpoint_verified,
     .error = debug_event_error,
     .flush = debug_event_flush,
 };
@@ -3480,6 +3559,7 @@ debug_project_switch (debugger_t *debug, char *project)
     debug->active_launch = 0;
     g_free (debug->project_dir);
     debug->project_dir = project;
+    debug->venv_told = FALSE;
     g_ptr_array_set_size (debug->frames, 0);
     debug_config_load (debug);
     debug_marks_show (debug, NULL);
@@ -3594,6 +3674,10 @@ debug_launch_copy (debug_launch_t *to, const debug_launch_t *from)
     to->gdb_path = g_strdup (from->gdb_path);
     to->build = from->build;
     to->terminal = from->terminal;
+    to->backend = g_strdup (from->backend);
+    to->adapter = g_strdup (from->adapter);
+    to->address = g_strdup (from->address);
+    to->launch_extra = g_strdup (from->launch_extra);
 }
 
 static void
@@ -3605,6 +3689,10 @@ debug_launch_clear (debug_launch_t *launch)
     g_free (launch->directory);
     g_free (launch->environment);
     g_free (launch->gdb_path);
+    g_free (launch->backend);
+    g_free (launch->adapter);
+    g_free (launch->address);
+    g_free (launch->launch_extra);
     memset (launch, 0, sizeof (*launch));
 }
 
@@ -3662,10 +3750,176 @@ debug_check_program (debugger_t *debug, const char *program, const char *system,
     g_free (text_value);
 }
 
-/* A new configuration as the project suggests it: the program the build has made, the root of
-   the project to run it in, and a build before the start when the project can be built */
+/* The debug adapter of a program by the name of its file: a program of the machine has none,
+   GDB runs it */
+typedef struct
+{
+    const char *suffix;
+    const char *adapter;
+    const char *address;  // the adapter is on a socket
+    const char *extra;    // what its request launch needs
+} debug_adapter_default_t;
+
+static const debug_adapter_default_t debug_adapter_defaults[] = {
+    { ".py", "python3 -m debugpy.adapter", NULL, NULL },
+    // bash-dap runs the script in the terminal of the program by itself
+    { ".sh", "bash-dap", NULL, NULL },
+    { ".bash", "bash-dap", NULL, NULL },
+    { ".go", "dlv dap --listen=127.0.0.1:0", "127.0.0.1:0", "{\"mode\": \"debug\"}" },
+    { ".js", "js-debug-adapter 0", "127.0.0.1:0", "{\"type\": \"pwa-node\"}" },
+    { ".mjs", "js-debug-adapter 0", "127.0.0.1:0", "{\"type\": \"pwa-node\"}" },
+    { ".ts", "js-debug-adapter 0", "127.0.0.1:0", "{\"type\": \"pwa-node\"}" },
+};
+
+static const debug_adapter_default_t *
+debug_adapter_for (const char *program)
+{
+    guint i;
+
+    for (i = 0; program != NULL && i < G_N_ELEMENTS (debug_adapter_defaults); i++)
+        if (g_str_has_suffix (program, debug_adapter_defaults[i].suffix))
+            return &debug_adapter_defaults[i];
+    return NULL;
+}
+
+/* How to get an adapter that is not there, NULL when it is not known */
+static const char *
+debug_adapter_hint (const char *adapter)
+{
+    static const struct
+    {
+        const char *word;
+        const char *how;
+    } hints[] = {
+        { "debugpy", N_ ("debugpy is had with: pip install debugpy") },
+        { "bash-dap",
+          N_ ("bash-dap, the debugger of bash scripts, needs Python 3 alone: "
+              "pipx install bash-dap, or pip install --user bash-dap") },
+        { "bash-debug-adapter",
+          N_ ("bash-debug-adapter is the adapter of the VS Code extension Bash Debug (the "
+              "package bash-debug-adapter of Mason): node out/bashDebug.js of the extension, "
+              "with Node.js; its bashdb is in its bashdb_dir") },
+        { "bashDebug.js",
+          N_ ("bashDebug.js is the adapter of the VS Code extension Bash Debug: it "
+              "needs Node.js, and its bashdb is in its bashdb_dir") },
+        { "dlv", N_ ("Delve is had with: go install github.com/go-delve/delve/cmd/dlv@latest") },
+        { "lldb",
+          N_ ("lldb-dap comes with LLDB (apt install lldb); before LLVM 18 it is "
+              "lldb-vscode") },
+        { "js-debug",
+          N_ ("js-debug-adapter is the server of vscode-js-debug, with Node.js "
+              "(the package js-debug-adapter of Mason, or npm)") },
+        { "gdb", N_ ("GDB speaks the protocol from version 14: gdb -i dap") },
+    };
+    guint i;
+
+    for (i = 0; adapter != NULL && i < G_N_ELEMENTS (hints); i++)
+        if (strstr (adapter, hints[i].word) != NULL)
+            return _ (hints[i].how);
+    return NULL;
+}
+
+/* The Python of the virtual environment of a project, NULL when it has none */
+static char *
+debug_project_python (const char *project_dir)
+{
+    static const char *const envs[] = { ".venv", "venv", ".env", "env" };
+    guint i;
+
+    for (i = 0; project_dir != NULL && i < G_N_ELEMENTS (envs); i++)
+    {
+        char *python = g_build_filename (project_dir, envs[i], "bin", "python", (char *) NULL);
+
+        if (g_file_test (python, G_FILE_TEST_IS_EXECUTABLE))
+            return python;
+        g_free (python);
+    }
+    return NULL;
+}
+
+/* Whether a Python has debugpy: the program runs under it, and the server of debugpy in it */
+static gboolean
+debug_python_has_debugpy (const char *python)
+{
+    char *argv[] = { (char *) python, (char *) "-c", (char *) "import debugpy", NULL };
+    int status = -1;
+
+    return g_spawn_sync (NULL, argv, NULL, G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL,
+                         NULL, NULL, NULL, NULL, &status, NULL)
+        && status == 0;
+}
+
+/* A script of Python of a project with a virtual environment runs with its Python, with the
+   packages of the project: the adapter is the debugpy of the environment, which runs the
+   script with its own Python (the debugpy of the program and that of the adapter have to be of
+   one version).  Without debugpy there the user is told how to get it. */
 static void
-debug_launch_guess (debugger_t *debug, debug_launch_t *launch)
+debug_launch_python (debugger_t *debug, debug_launch_t *launch)
+{
+    char *python, *quoted;
+
+    if (launch->executable == NULL || !g_str_has_suffix (launch->executable, ".py")
+        || g_strcmp0 (launch->adapter, "python3 -m debugpy.adapter") != 0
+        || (python = debug_project_python (debug->project_dir)) == NULL)
+        return;
+    if (!debug_python_has_debugpy (python))
+    {
+        if (!debug->venv_told)
+        {
+            char *text_value = g_strdup_printf (
+                _ ("The project has a virtual environment, but its Python has no debugpy:\n"
+                   "the script runs with the Python of the system, without the packages of\n"
+                   "the project. With debugpy in it, it runs with them:\n\n"
+                   "%s -m pip install debugpy"),
+                python);
+
+            debug->venv_told = TRUE;
+            debug->host->message (debug->host, D_NORMAL, _ ("Debug"), text_value);
+            g_free (text_value);
+        }
+        g_free (python);
+        return;
+    }
+    // quoted only when the shell would split or change it
+    quoted = strpbrk (python, " \t\n'\"\\$`*?[]{}()<>|&;~#") != NULL ? g_shell_quote (python)
+                                                                     : g_strdup (python);
+    g_free (launch->adapter);
+    launch->adapter = g_strconcat (quoted, " -m debugpy.adapter", (char *) NULL);
+    g_free (quoted);
+    g_free (python);
+}
+
+/* A configuration has the adapter of its program, what the configuration has not set */
+static void
+debug_launch_adapter_defaults (debugger_t *debug, debug_launch_t *launch)
+{
+    const debug_adapter_default_t *d = debug_adapter_for (launch->executable);
+
+    g_free (launch->backend);
+    launch->backend = g_strdup ("dap");
+    if ((launch->adapter == NULL || *launch->adapter == '\0')
+        && (launch->address == NULL || *launch->address == '\0'))
+    {
+        g_free (launch->adapter);
+        g_free (launch->address);
+        // a program of the machine: GDB speaks the protocol too
+        launch->adapter = g_strdup (d != NULL ? d->adapter : "gdb -i dap");
+        launch->address = g_strdup (d != NULL ? d->address : NULL);
+    }
+    if ((launch->launch_extra == NULL || *launch->launch_extra == '\0') && d != NULL
+        && d->extra != NULL)
+    {
+        g_free (launch->launch_extra);
+        launch->launch_extra = g_strdup (d->extra);
+    }
+    debug_launch_python (debug, launch);
+}
+
+/* A new configuration as the project suggests it: the program the build has made, the root of
+   the project to run it in, and a build before the start when the project can be built; else
+   the file in front, when it is a script an adapter runs */
+static void
+debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
 {
     GVariant *reply = debug_build_call (debug, "info", "root", debug->project_dir);
     const char **programs = NULL;
@@ -3709,13 +3963,29 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch)
         program = g_strdup (chosen != NULL ? chosen : programs[0]);
     }
 
+    if (program == NULL)
+    {
+        void *file_window = edit != NULL ? edit : debug->host->window_top_file (debug->host);
+        char *file =
+            file_window != NULL ? debug->host->get_current_file (debug->host, file_window) : NULL;
+
+        if (debug_adapter_for (file) != NULL)
+        {
+            launch->executable = file;
+            launch->name = g_path_get_basename (file);
+            launch->build = FALSE;
+            debug_launch_adapter_defaults (debug, launch);
+            file = NULL;
+        }
+        g_free (file);
+    }
     if (program != NULL)
     {
         launch->executable = program;
         launch->name = g_path_get_basename (program);
         debug_check_program (debug, program, system, dir);
     }
-    else
+    else if (launch->name == NULL)
         launch->name = g_strdup (_ ("Debug"));
     g_free (programs);
     if (reply != NULL)
@@ -3751,8 +4021,11 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
     {
         char *name = NULL, *executable = NULL, *arguments = NULL, *directory = NULL;
         char *environment = NULL, *gdb_path = NULL, *ctags = NULL;
+        char *adapter = NULL, *address = NULL, *extra = NULL, *problem_text = NULL;
         char **entries = NULL;
         gboolean build = launch->build, keep = *in_project, terminal = launch->terminal;
+        const char *backend_items[] = { _ ("&GDB"), _ ("Debug &adapter") };
+        int backend = debug_launch_is_dap (launch) ? 1 : 0;
         const char *problem = NULL;
         guint i;
         int ret;
@@ -3777,10 +4050,23 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
                                      launch->environment != NULL ? launch->environment : "",
                                      "debug-environment", &environment, NULL, FALSE, FALSE,
                                      INPUT_COMPLETE_NONE),
-                QUICK_LABELED_INPUT (_ ("GDB:"), input_label_above,
+                QUICK_RADIO (2, backend_items, &backend, NULL),
+                QUICK_LABELED_INPUT (_ ("GDB:"), input_label_left,
                                      launch->gdb_path != NULL ? launch->gdb_path : "gdb",
                                      "debug-gdb", &gdb_path, NULL, FALSE, FALSE,
                                      INPUT_COMPLETE_FILENAMES | INPUT_COMPLETE_COMMANDS),
+                QUICK_LABELED_INPUT (_ ("Adapter:"), input_label_left,
+                                     launch->adapter != NULL ? launch->adapter : "",
+                                     "debug-adapter", &adapter, NULL, FALSE, FALSE,
+                                     INPUT_COMPLETE_FILENAMES | INPUT_COMPLETE_COMMANDS),
+                QUICK_LABELED_INPUT (_ ("Address (host:port, 0: its own):"), input_label_left,
+                                     launch->address != NULL ? launch->address : "",
+                                     "debug-address", &address, NULL, FALSE, FALSE,
+                                     INPUT_COMPLETE_NONE),
+                QUICK_LABELED_INPUT (_ ("Launch (JSON):"), input_label_left,
+                                     launch->launch_extra != NULL ? launch->launch_extra : "",
+                                     "debug-launch", &extra, NULL, FALSE, FALSE,
+                                     INPUT_COMPLETE_NONE),
                 QUICK_LABELED_INPUT (_ ("Options of ctags, for the index of the symbols:"),
                                      input_label_above, index_options != NULL ? index_options : "",
                                      "debug-ctags", &ctags, NULL, FALSE, FALSE,
@@ -3799,7 +4085,7 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
             // without the plugin ctags its line is not there
             if (index_options == NULL)
             {
-                const size_t at = 6;
+                const size_t at = 10;
 
                 memmove (&widgets[at], &widgets[at + 1],
                          sizeof (widgets) - (at + 1) * sizeof (widgets[0]));
@@ -3825,6 +4111,9 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
             g_free (environment);
             g_free (gdb_path);
             g_free (ctags);
+            g_free (adapter);
+            g_free (address);
+            g_free (extra);
             break;
         }
         if (ctags != NULL)
@@ -3851,6 +4140,16 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
             g_free (gdb_path);
         launch->build = build;
         launch->terminal = terminal;
+        launch->backend = g_strdup (backend == 1 ? "dap" : "gdb-mi");
+        launch->adapter = g_strdup (g_strstrip (adapter));
+        launch->address = g_strdup (g_strstrip (address));
+        launch->launch_extra = g_strdup (g_strstrip (extra));
+        g_free (adapter);
+        g_free (address);
+        g_free (extra);
+        // a script is no program of GDB: its adapter runs it; and an adapter needs a command
+        if (debug_launch_is_dap (launch) || debug_adapter_for (launch->executable) != NULL)
+            debug_launch_adapter_defaults (debug, launch);
         *in_project = keep;
 
         if (*launch->name == '\0')
@@ -3866,11 +4165,28 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
             problem = _ ("Enter the program to debug.");
         if (problem == NULL && !g_file_test (launch->directory, G_FILE_TEST_IS_DIR))
             problem = _ ("The working directory does not exist.");
+#ifdef ENABLE_DAP
+        if (problem == NULL && *launch->launch_extra != '\0')
+        {
+            // checked here, where it can be put right, and not at the start
+            JsonParser *parser = json_parser_new ();
+            GError *error = NULL;
+
+            if (!json_parser_load_from_data (parser, launch->launch_extra, -1, &error))
+                problem = problem_text =
+                    g_strdup_printf (_ ("The launch JSON is wrong: %s"), error->message);
+            else if (!JSON_NODE_HOLDS_OBJECT (json_parser_get_root (parser)))
+                problem = _ ("The launch JSON is an object: {\"name\": value, ...}.");
+            g_clear_error (&error);
+            g_object_unref (parser);
+        }
+#endif
         if (problem != NULL)
             debug_error (debug, problem);
         else if (!debug_parse_environment (debug, launch->environment, &entries))
             problem = "";
         g_strfreev (entries);
+        g_free (problem_text);
         if (problem == NULL)
         {
             result = TRUE;
@@ -3909,7 +4225,7 @@ debug_configure_impl (debugger_t *debug, void *edit, gboolean create_new)
     if (existing != NULL)
         debug_launch_copy (&form, existing);
     else
-        debug_launch_guess (debug, &form);
+        debug_launch_guess (debug, &form, edit);
     in_project = debug->launches_in_project;
 
     if (!debug_launch_form (debug, &form, existing, &in_project))
@@ -4000,6 +4316,65 @@ debug_delete_configuration (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+/* Whether a debug adapter runs the program of a configuration, not GDB/MI */
+static gboolean
+debug_launch_is_dap (const debug_launch_t *launch)
+{
+    return g_strcmp0 (launch->backend, "dap") == 0;
+}
+
+/* The command of the debug adapter of a configuration, NULL when it is not there to run, and
+   the user told */
+static char *
+debug_adapter_check (debugger_t *debug, const debug_launch_t *launch)
+{
+    char **argv = NULL;
+    char *found = NULL;
+    GError *error = NULL;
+
+#ifndef ENABLE_DAP
+    (void) launch;
+    (void) argv;
+    (void) found;
+    (void) error;
+    debug_error (debug, _ ("This coole is built without the debug adapters: they need json-glib."));
+    return NULL;
+#else
+    if (launch->adapter == NULL || *launch->adapter == '\0')
+    {
+        // an adapter that listens already needs no command
+        if (launch->address != NULL && *launch->address != '\0')
+            return g_strdup ("");
+        debug_error (debug, _ ("Enter the command of the debug adapter."));
+        return NULL;
+    }
+    if (!g_shell_parse_argv (launch->adapter, NULL, &argv, &error))
+    {
+        debug_error (debug, error->message);
+        g_error_free (error);
+        return NULL;
+    }
+    found = strchr (argv[0], '/') != NULL
+        ? (g_file_test (argv[0], G_FILE_TEST_IS_EXECUTABLE) ? g_strdup (argv[0]) : NULL)
+        : g_find_program_in_path (argv[0]);
+    if (found == NULL)
+    {
+        const char *hint = debug_adapter_hint (launch->adapter);
+        char *text_value = hint != NULL
+            ? g_strdup_printf (_ ("The debug adapter %s was not found.\n%s"), argv[0], hint)
+            : g_strdup_printf (_ ("The debug adapter %s was not found."), argv[0]);
+
+        debug_error (debug, text_value);
+        g_free (text_value);
+        g_strfreev (argv);
+        return NULL;
+    }
+    g_free (found);
+    g_strfreev (argv);
+    return g_strdup (launch->adapter);
+#endif
+}
+
 static mc_ep_result_t
 debug_start (void *data, void *edit)
 {
@@ -4013,6 +4388,7 @@ debug_start (void *data, void *edit)
     const char *configured_gdb;
     debug_start_t spec = { 0 };
     debug_state_t previous;
+    gboolean dap;
 
     if (!debug_require_project (debug, edit))
         return MC_EPR_FAILED;
@@ -4035,6 +4411,7 @@ debug_start (void *data, void *edit)
             return MC_EPR_FAILED;
         launch = debug_active_launch (debug);
     }
+    dap = debug_launch_is_dap (launch);
     if (debug->start_after_build)
         return MC_EPR_OK;  // the build is going on: the start comes after it
     if (launch->build && !debug->built_for_start)
@@ -4067,23 +4444,39 @@ debug_start (void *data, void *edit)
         return MC_EPR_FAILED;
     }
     absolute = g_canonicalize_filename (launch->executable, debug->project_dir);
-    if (!g_file_test (absolute, G_FILE_TEST_IS_EXECUTABLE))
+    // what an adapter runs may be a script, of Python or of the shell
+    if (!g_file_test (absolute, dap ? G_FILE_TEST_EXISTS : G_FILE_TEST_IS_EXECUTABLE))
     {
-        debug_error (debug, _ ("The configured executable does not exist or is not executable."));
+        debug_error (debug,
+                     dap ? _ ("The configured program does not exist.")
+                         : _ ("The configured executable does not exist or is not "
+                              "executable."));
         g_free (absolute);
         return MC_EPR_FAILED;
     }
-    configured_gdb =
-        launch->gdb_path != NULL && *launch->gdb_path != '\0' ? launch->gdb_path : "gdb";
-    gdb_path = strchr (configured_gdb, '/') != NULL
-        ? g_canonicalize_filename (configured_gdb, debug->project_dir)
-        : g_find_program_in_path (configured_gdb);
-    if (gdb_path == NULL || !g_file_test (gdb_path, G_FILE_TEST_IS_EXECUTABLE))
+    if (dap)
     {
-        debug_error (debug, _ ("The configured GDB executable was not found."));
-        g_free (absolute);
-        g_free (gdb_path);
-        return MC_EPR_FAILED;
+        gdb_path = debug_adapter_check (debug, launch);
+        if (gdb_path == NULL)
+        {
+            g_free (absolute);
+            return MC_EPR_FAILED;
+        }
+    }
+    else
+    {
+        configured_gdb =
+            launch->gdb_path != NULL && *launch->gdb_path != '\0' ? launch->gdb_path : "gdb";
+        gdb_path = strchr (configured_gdb, '/') != NULL
+            ? g_canonicalize_filename (configured_gdb, debug->project_dir)
+            : g_find_program_in_path (configured_gdb);
+        if (gdb_path == NULL || !g_file_test (gdb_path, G_FILE_TEST_IS_EXECUTABLE))
+        {
+            debug_error (debug, _ ("The configured GDB executable was not found."));
+            g_free (absolute);
+            g_free (gdb_path);
+            return MC_EPR_FAILED;
+        }
     }
     if (launch->arguments != NULL && *launch->arguments != '\0'
         && !g_shell_parse_argv (launch->arguments, &argc, &argv, &error))
@@ -4101,8 +4494,16 @@ debug_start (void *data, void *edit)
         g_free (gdb_path);
         return MC_EPR_FAILED;
     }
+    // a backend of the other kind goes
+    if (debug->backend != NULL && strcmp (debug->backend->ops->name, dap ? "dap" : "gdb-mi") != 0)
+        g_clear_pointer (&debug->backend, debug->backend->ops->free);
     if (debug->backend == NULL)
+#ifdef ENABLE_DAP
+        debug->backend =
+            dap ? debug_dap_new (&debug_events, debug) : debug_gdb_mi_new (&debug_events, debug);
+#else
         debug->backend = debug_gdb_mi_new (&debug_events, debug);
+#endif
 #ifdef ENABLE_MCTERM
     // the terminal window of the program, else a terminal whose output goes to the console
     if (!(launch->terminal && debug_terminal_open (debug)) && !debug_pty_open (debug))
@@ -4122,6 +4523,8 @@ debug_start (void *data, void *edit)
     spec.environment = environment_entries;
     spec.tty = debug->pty_name;
     spec.debugger = gdb_path;
+    spec.address = dap ? launch->address : NULL;
+    spec.launch_extra = dap ? launch->launch_extra : NULL;
     // the state of a start, for what the debugger says at once
     previous = debug->state;
     debug->state = DEBUG_STARTING;
@@ -4401,7 +4804,7 @@ debug_act_function_breakpoint (void *data, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Debug > Run to function: a breakpoint GDB takes off when it stops there */
+/* Debug > Run to function: a breakpoint the debugger takes off when it stops there */
 static mc_ep_result_t
 debug_act_run_to_function (void *data, void *edit)
 {
@@ -4419,12 +4822,20 @@ debug_act_run_to_function (void *data, void *edit)
     f = debug_function_pick (debug, _ ("Run to function"), &name);
     if (f != NULL)
     {
-        // the function by its file, as two of them may have the name (static ones)
-        char *base = g_path_get_basename (f->file);
+        const debug_launch_t *launch = debug_active_launch (debug);
 
         g_free (name);
-        name = g_strdup_printf ("%s:%s", base, f->name);
-        g_free (base);
+        // a debug adapter takes the name only, what a function breakpoint of the protocol is
+        if (launch != NULL && debug_launch_is_dap (launch))
+            name = g_strdup (f->name);
+        else
+        {
+            // GDB the function by its file, as two of them may have the name (static ones)
+            char *base = g_path_get_basename (f->file);
+
+            name = g_strdup_printf ("%s:%s", base, f->name);
+            g_free (base);
+        }
         debug_function_free (f);
     }
     if (name == NULL || *name == '\0')

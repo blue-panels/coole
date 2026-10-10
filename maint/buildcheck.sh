@@ -46,7 +46,7 @@ step "install dependencies"
 apt-get update -qq >/dev/null
 apt-get install -y -qq --no-install-recommends \
     git meson ninja-build build-essential gettext pkg-config check xz-utils \
-    liblua5.4-dev libglib2.0-dev libgpm-dev libncurses-dev libslang2-dev libx11-dev >/dev/null 2>&1 || { bad "dependencies"; exit 1; }
+    liblua5.4-dev libglib2.0-dev libjson-glib-dev libgpm-dev libncurses-dev libslang2-dev libx11-dev >/dev/null 2>&1 || { bad "dependencies"; exit 1; }
 
 id -u build >/dev/null 2>&1 || useradd -m build
 git config --global --add safe.directory '*'

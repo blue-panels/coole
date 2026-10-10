@@ -10,6 +10,7 @@ BuildRequires:   check-devel
 BuildRequires:   gcc
 BuildRequires:   gettext
 BuildRequires:   glib2-devel
+BuildRequires:   json-glib-devel
 BuildRequires:   gpm-devel
 BuildRequires:   meson >= 0.61
 BuildRequires:   pkgconf-pkg-config

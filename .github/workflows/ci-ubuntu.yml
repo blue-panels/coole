@@ -21,7 +21,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y meson ninja-build check gettext pkg-config
-          sudo apt-get install -y libglib2.0-dev libgpm-dev libncurses-dev libslang2-dev libx11-dev liblua5.4-dev
+          sudo apt-get install -y libglib2.0-dev libjson-glib-dev libgpm-dev libncurses-dev libslang2-dev libx11-dev liblua5.4-dev
 
       - name: Build full configuration
         run: |

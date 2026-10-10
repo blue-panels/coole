@@ -22,6 +22,10 @@ typedef struct
     char **environment;
     const char *tty;       // the terminal of the program, NULL for none
     const char *debugger;  // the path of GDB, or the command of the adapter
+    // a debug adapter: on a socket at "host:port" rather than its stdin and stdout, port 0 for
+    // one it says on its output; JSON members added to the request that launches the program
+    const char *address;
+    const char *launch_extra;
 } debug_start_t;
 
 /* A frame of the call stack */
@@ -62,6 +66,7 @@ typedef struct
     const char *msg;          // why it failed
     const char *value;        // of an expression
     const char *id;           // of a breakpoint the debugger has taken
+    gboolean pending;         // taken, but on no code yet: a library not loaded, say
     long line;                // where it has put it
     GPtrArray *frames;        // debug_frame_t
     GPtrArray *variables;     // debug_variable_t
@@ -129,6 +134,8 @@ typedef struct
     void (*exited) (void *ui, gboolean gone);
     // the debugger has moved a breakpoint, a pending one into a library loaded for one
     void (*breakpoint_moved) (void *ui, const char *id, long line);
+    // a pending breakpoint is on code now, on @line when it is known (else 0)
+    void (*breakpoint_verified) (void *ui, const char *id, long line);
     // @unasked: an error no request is waiting for
     void (*error) (void *ui, const char *msg, gboolean unasked);
     // all that came in is told: time to draw
@@ -163,10 +170,12 @@ typedef struct
                         GDestroyNotify free_data);
     guint (*evaluate) (debug_backend_t *b, const char *expression, debug_reply_cb cb, void *data,
                        GDestroyNotify free_data);
-    // the registers of the frame: the general ones, the program counter and the flags
     // the instructions of the function around @address, or near it when it has no symbol
     guint (*disassemble) (debug_backend_t *b, const char *address, debug_reply_cb cb, void *data,
                           GDestroyNotify free_data);
+    // whether the frame has registers to show; NULL: it has
+    gboolean (*has_registers) (const debug_backend_t *b);
+    // the registers of the frame: the general ones, the program counter and the flags
     guint (*registers) (debug_backend_t *b, debug_reply_cb cb, void *data,
                         GDestroyNotify free_data);
     // a command of the debugger itself, typed by the user
@@ -188,5 +197,9 @@ void debug_instruction_free (gpointer data);
 
 /* GDB with its machine interface */
 debug_backend_t *debug_gdb_mi_new (const debug_backend_events_t *events, void *ui);
+#ifdef ENABLE_DAP
+/* A debug adapter of the Debug Adapter Protocol */
+debug_backend_t *debug_dap_new (const debug_backend_events_t *events, void *ui);
+#endif
 
 #endif

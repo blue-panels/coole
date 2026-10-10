@@ -69,6 +69,10 @@ libinternal_sources = files(
   'plugins/etags/etags.c',
   'plugins/spell/spell.c',
 )
+# the debugger with the debug adapters of the languages
+if json_glib.found()
+  libinternal_sources += files('plugins/debugger/dap.c', 'plugins/debugger/debug-dap.c')
+endif
 
 src_c_args = [
   '-DSYSCONFDIR="@0@/"'.format(pkgsysconfdir),
@@ -96,7 +100,7 @@ endif
 libinternal = static_library('internal',
   libinternal_sources,
   c_args: src_c_args,
-  dependencies: [libmc_dep, intl, terminal_dep],
+  dependencies: [libmc_dep, intl, terminal_dep, json_glib],
   implicit_include_directories: false,
 )
 
@@ -112,7 +116,7 @@ libforplugins = static_library('forplugins',
 )
 
 libinternal_dep = declare_dependency(link_with: [libinternal, libforplugins],
-                                     dependencies: [libmc_dep, intl, terminal_dep])
+                                     dependencies: [libmc_dep, intl, terminal_dep, json_glib])
 
 coole = executable('coole',
   'main.c',

@@ -26,6 +26,19 @@ test('gdb_mi', executable('gdb_mi', 'gdb_mi.c',
                          '../../../src/plugins/debugger/gdb-mi.c',
                          dependencies: [glib_dep, screen_deps]), suite: 'src/editor')
 
+if json_glib.found()
+  test('dap', executable('dap', 'dap.c',
+                         '../../../src/plugins/debugger/dap.c',
+                         c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py')],
+                         dependencies: [glib_dep, screen_deps, json_glib]), suite: 'src/editor')
+  test('debug_dap', executable('debug_dap', 'debug_dap.c',
+                               '../../../src/plugins/debugger/debug-dap.c',
+                               '../../../src/plugins/debugger/debug-backend.c',
+                               '../../../src/plugins/debugger/dap.c',
+                               c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py')],
+                               dependencies: [glib_dep, screen_deps, json_glib]), suite: 'src/editor')
+endif
+
 test('build_core', executable('build_core', 'build_core.c',
                               '../../../src/plugins/build/build-core.c',
                               dependencies: [glib_dep]), suite: 'src/editor')
