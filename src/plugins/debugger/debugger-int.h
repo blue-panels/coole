@@ -238,7 +238,6 @@ typedef struct
 /*** functions shared by the files of the plugin */
 
 /* debugger.c */
-void debug_functions_free (gpointer p);
 debug_launch_t *debug_active_launch (const debugger_t *debug);
 int debug_command (const debugger_t *debug, long command);
 int debug_command_of_key (const debugger_t *debug, int key);
@@ -249,18 +248,11 @@ void debug_config_save (debugger_t *debug);
 void debug_error (debugger_t *debug, const char *message_text);
 gboolean debug_alive (const debugger_t *debug);
 gboolean debug_session_live (const debugger_t *debug);
-int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
-void debug_marks_show (debugger_t *debug, const char *file);
 void debug_clear_current (debugger_t *debug);
 gboolean debug_source_is_asm (const char *file);
 gboolean debug_source_here (const char *file);
-void debug_breakpoint_remove (debugger_t *debug, guint index);
-void debug_breakpoint_toggle_enabled (debugger_t *debug, guint index);
-void debug_breakpoints_sync (debugger_t *debug);
 gboolean debug_require_project (debugger_t *debug, void *edit);
-GPtrArray *debug_functions (const debugger_t *debug, const char *root, const char *file,
-                            const char *query);
-void debug_breakpoint_condition (debugger_t *debug, debug_breakpoint_t *bp);
+gboolean debug_launch_is_dap (const debug_launch_t *launch);
 
 /* debug-panel.c */
 void debug_window_buttonbar (const debugger_t *debug, Widget *w);
@@ -303,6 +295,25 @@ void debug_disasm_kind_show (void *data);
 void debug_disasm_kind_close (void *data);
 void *debug_disasm_window (void *data);
 mc_ep_result_t debug_act_disassembly (void *data, void *edit);
+
+/* debug-breakpoints.c */
+void debug_functions_free (gpointer p);
+void debug_breakpoint_free (gpointer data);
+int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
+void debug_marks_show (debugger_t *debug, const char *file);
+void debug_breakpoint_move (debugger_t *debug, const char *number, long line);
+gboolean debug_breakpoint_install (debugger_t *debug, debug_breakpoint_t *bp);
+void debug_breakpoint_remove (debugger_t *debug, guint index);
+void debug_breakpoint_toggle_enabled (debugger_t *debug, guint index);
+void debug_breakpoints_sync (debugger_t *debug);
+GPtrArray *debug_functions (const debugger_t *debug, const char *root, const char *file,
+                            const char *query);
+mc_ep_result_t debug_act_function_breakpoint (void *data, void *edit);
+mc_ep_result_t debug_act_run_to_function (void *data, void *edit);
+void debug_breakpoint_condition (debugger_t *debug, debug_breakpoint_t *bp);
+mc_ep_result_t debug_condition_at_cursor (debugger_t *debug, void *edit);
+mc_ep_result_t debug_act_condition (void *data, void *edit);
+mc_ep_result_t debug_toggle_breakpoint (void *data, void *edit);
 
 /* debug-program.c */
 void debug_output_show (debugger_t *debug);
