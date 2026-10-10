@@ -58,6 +58,9 @@ or anywhere in the project.
 
 **The tree**
 
+The title of the tree is the root of the project, the home as *~*:
+*[~/dev/sh-debug]*; when it does not fit, its end is kept.
+
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move in the tree.
 

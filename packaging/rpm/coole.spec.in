@@ -10,6 +10,7 @@ BuildRequires:   check-devel
 BuildRequires:   gcc
 BuildRequires:   gettext
 BuildRequires:   glib2-devel
+BuildRequires:   json-glib-devel
 BuildRequires:   gpm-devel
 BuildRequires:   meson >= 0.61
 BuildRequires:   pkgconf-pkg-config
@@ -82,6 +83,8 @@ rm -rf %{buildroot}%{_docdir}/%{name}
 %{_mandir}/*/man1/coole.1*
 # Owned here so that the directory does not depend on the lua subpackage.
 %dir %{_libdir}/coole/
+# The editor plugins that are modules: the terminal, the viewer, the debugger.
+%{_libdir}/coole/plugins/
 
 %files lua
 %{_libdir}/coole/runtime-plugins/

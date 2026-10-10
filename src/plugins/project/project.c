@@ -949,8 +949,21 @@ project_tree_draw (project_tree_t *tree)
 
     edit_window_draw_frame (win, color, focused);
     tty_setcolor (color);
-    title = g_strdup_printf (
-        "[%s]", tree->project->root != NULL ? x_basename (tree->project->root) : _ ("Project"));
+    // where the project is, its whole root, the home as ~; too long, its end is kept
+    if (tree->project->root != NULL)
+    {
+        const char *home = g_get_home_dir ();
+        const size_t home_len = home != NULL ? strlen (home) : 0;
+        const char *root = tree->project->root;
+
+        if (home_len > 1 && strncmp (root, home, home_len) == 0
+            && (root[home_len] == '/' || root[home_len] == '\0'))
+            title = g_strdup_printf ("[~%s]", root + home_len);
+        else
+            title = g_strdup_printf ("[%s]", root);
+    }
+    else
+        title = g_strdup_printf ("[%s]", _ ("Project"));
     widget_gotoyx (w, 0, 2);
     tty_print_string (str_term_trim (title, MAX (0, w->rect.cols - 10)));
     g_free (title);

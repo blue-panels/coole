@@ -2,13 +2,14 @@
 
 **Debugger plugin of the editor**
 
-Runs a program of the project under GDB: breakpoints in the gutter of the
-source, steps through it from the source window, and the call stack, the
-local variables and the watches beside it.
+Runs a program of the project under GDB, or under the debug adapter of its
+language: breakpoints in the gutter of the source, steps through it from the
+source window, and the call stack, the local variables and the watches
+beside it.
 
 **The start**
 
-Put a breakpoint on a line with **Ctrl-B** and run with **Alt-Shift-R** (or
+Put a breakpoint on a line with **Ctrl-F8** and run with **Shift-F9** (or
 **Debug → Toggle breakpoint** and **Debug → Start or continue**). The first
 time, the debugger makes a configuration of its own:
 
@@ -35,9 +36,17 @@ to the next.
 With **Run in a terminal window** checked in the form, as it is at first,
 the program runs in a terminal of its own, the tab **Program** at the
 bottom: what it writes is there, and what is typed there goes to it, every
-key, F1 and F10 too. A program that takes the whole screen, an editor or
+key, F1 and F10 too. While the program runs the tab is in front, the console
+behind it, and the panel says so: a program that reads, a question of a script
+for one, waits there for its answer, and a step does nothing till it has it.
+A step or a continue the program is longer at than 0.3 s gives the tab the
+focus, for what is typed to go to it; when it stops, the focus goes back to
+the file it stops in. A quick step leaves the focus where it is.
+While it is stopped, the keys that run it on, Continue, the steps and Stop,
+work in the tab too; while it runs, every key there is the program's.
+A program that takes the whole screen, an editor or
 coole itself, runs there as in any terminal. A click on the tab, or
-**Window → Program**, goes to it; **Alt-Shift-G** leaves it for the panel of
+**Window → Program**, goes to it; **Alt-F5** leaves it for the panel of
 the debugger. The tab stays when the program ends, to be read, and is
 cleared when it starts again. Without the plugin terminal, or unchecked,
 the output of the program comes in the console, and **Send line...** gives
@@ -77,15 +86,29 @@ plugin ctags); **Navigate** jumps by them.
 
 These work in a file window too, since the editor has nothing on them:
 
-**Alt-Shift-G**
+**Alt-F5**
 : Go to the panel of the debugger, and back to the file.
 
-**Ctrl-B**
+**Ctrl-F8**, **Ctrl-B**
 : Toggle a breakpoint on the line of the cursor.
 
-**Alt-Shift-R**
+**Alt-F6**
+: The condition of the breakpoint on the line of the cursor, a breakpoint
+put there with it when there is none: the program stops there only when the
+condition is true, *i == 7*, *[[ $f == report.pdf ]]*, *x > 2 and y*, in the
+language of the program. An empty one makes it a breakpoint as any other.
+Its mark is a circle with a dot, and the panel shows the condition after
+it: *loop.c:7 main if i == 7*. It can be changed while the program runs. A
+debug adapter that has no conditions says so, and stops there each time.
+**Debug → Breakpoint condition...** too.
+
+**Shift-F9**
 : Run: build the program and start it, or go on when it is stopped. The
 first time it asks what to run.
+
+**Ctrl-F2**
+: Stop the program, while one is debugged; the rest of the time it is Save
+as.
 
 **The configurations**
 
@@ -102,7 +125,7 @@ While the program is stopped the source windows take the debugger keys; the
 keys that move around the text, search, select or switch windows stay the
 editor's, and a key that would change the text beeps.
 
-**F5**
+**F5**, **Shift-F9**
 : Continue.
 
 **Shift-F6**
@@ -111,7 +134,13 @@ editor's, and a key that would change the text beeps.
 **F7**, **F8**, **Shift-F8**
 : Step into, step over, step out.
 
-**F4**
+**Shift-F7**, **Shift-F4**
+: Step into, step over, by one instruction of the machine (**Ctrl-F7** too
+for the first). These two keys are the
+debugger's only while the program is stopped: the rest of the time they are
+Search again and Replace again, in debug mode too.
+
+**F4**, **Alt-F9**
 : Run to the line of the cursor, **Debug → Run to cursor** too: from where
 the program stopped, it stops at that line, at a breakpoint before it, or
 when the function it is in returns. A line of another function is reached
@@ -125,11 +154,15 @@ with a breakpoint, or with **Debug → Run to function...**.
 
 F2, F9 and F10 stay Save, the menu and Quit.
 
-**Enter**
+**Enter**, **Alt-F8**
 : Evaluate the selection or the word under the cursor; the value comes in a
 dialog that can add it to the watches.
 
-**Shift-F5**
+**Alt-F10**
+: Back to the line the program is stopped at, the cursor having gone
+elsewhere; **Debug → Show the stop line** too.
+
+**Shift-F5**, **Ctrl-F2**
 : Stop the program.
 
 **Esc**
@@ -137,7 +170,14 @@ dialog that can add it to the watches.
 
 The keys can be changed in **Options → Key bindings → Editor → Debugger**, or
 in the *[debugger]* section of the keymap, *DebugStepOver = alt-o* for one;
-*f15* is the name of Shift-F5, *f18* that of Shift-F8.
+*f15* is the name of Shift-F5, *f18* that of Shift-F8, *f17* that of
+Shift-F7.
+
+The keys are those of IntelliJ IDEA, PyCharm and CLion where the editor
+leaves them free: F7, F8 and Shift-F8 step, Ctrl-F8 is a breakpoint, Alt-F8
+evaluates, Alt-F9 runs to the cursor, Alt-F10 shows the stop, Shift-F9 runs
+and Ctrl-F2 stops. F9 and F10 stay the menu and Quit, so F5 continues, as in
+NetBeans, and F4 runs to the cursor too.
 
 **The layout of debugging**
 
@@ -154,7 +194,10 @@ The start puts the panel of the debugger at the right of the source, all its
 height, and the console under the source. The panel has the state of the
 program, the local variables of the frame, the watches, the call stack and
 the breakpoints; the console has the output of the program and what GDB
-says. **Window → Debugger panel** and **Window → Debug console** open them
+says. Under the place of a stop, *ran 0.004 s* is the time from the step or
+the continue to it: a line much slower than the others shows at once. It is no
+measure of the program: the work of the debugger is in it, and the time the
+program waited for what is typed in its tab. **Window → Debugger panel** and **Window → Debug console** open them
 again, beside the windows of the other plugins.
 
 In the panel the debugger keys work as in step mode (there F6 and F4 work on
@@ -164,13 +207,23 @@ the cursor of the topmost file window, F10 closes the panel), and:
 : Move from one row to another.
 
 **Enter**
-: On a variable or a watch, its whole value, a structure for one, in a
-dialog that can add it to the watches; on a frame, go to it; on a
-breakpoint, go to its line.
+: On a variable or a watch, its whole value in a dialog that can add it to
+the watches; on a frame, go to it; on a breakpoint, go to its line.
+
+A value with members, a structure, an array, a pointer to one, an object of
+Python, comes as a tree, its members shown. **Enter** or **Right** opens a
+member, **Left** closes it or goes up to the one it is of; **Add watch**
+watches the member of the cursor, *p->corner[1]* for one, by the expression
+the debugger gives or one made as C has it. The members come from the
+debugger as they are opened. **Evaluate expression...** and **Enter** in a
+source window give the same tree.
 
 **Space**
 : Disable a breakpoint, or enable it again: GDB keeps it but does not stop
 on it, and its mark is an empty circle.
+
+**Alt-F6**
+: The condition of a breakpoint, as in a file.
 
 **Del**
 : Remove a watch or a breakpoint.
@@ -180,19 +233,59 @@ on it, and its mark is an empty circle.
 
 **:**
 : A command of GDB itself, for what the panel does not have: *p x*,
-*info registers*, *x/8x buf*. What GDB answers comes in the console.
+*info registers*, *x/8x buf*. What GDB answers comes in the console. Under
+a debug adapter it is an expression or a command of the adapter's console,
+*p 1+2* for GDB, a line of Python for debugpy.
+
+**The registers**
+
+Under the local variables the panel has the registers of the frame: the
+general ones, the program counter and the flags, in hexadecimal; those the
+last step has changed are in bold. They are asked of the debugger only while
+they are shown: Enter on their title shows and hides them, and a stop in code
+with no source, or in a source of assembler (*.s*, *.S*, *.asm*), shows them.
+Enter on a register gives its value in the dialog
+that adds it to the watches, *$rax* for one. A program of a language with no
+registers, Python say, has no such title.
+
+**The instructions**
+
+**Debug → Disassembly** opens a window under the source, a tab beside the
+console, with the instructions of the function of the frame: each source line
+before its instructions, when the program has its source, and *>* on the
+instruction the program is at. A stop in code with no source opens it by
+itself, and so does the first step by an instruction, which moves in no line of
+the source. It follows the steps and the frame chosen in the call stack.
+
+**Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
+: Move from one instruction to another.
+
+**F6**
+: Put a breakpoint on the instruction of the cursor, or take it off. Such a
+breakpoint is in the panel too, *● \*0x401136*, where Del takes it off; it
+is not kept for the next session.
+
+**Enter**
+: Go to the source line of the instruction.
+
+The other keys of the debugger work there as in the panel.
 
 **The values in the source**
 
 While the program is stopped the lines of the function, from its start down
 to the line it stopped on, show the values of the local variables they name,
-after their text. The values go when the program runs on and when the text
-is edited. The skin gives their color, *editnote* in *[editor]*.
+after their text. In a source of assembler they are the registers, from the
+label above: *add %rcx, %rdi* gets *rcx = 0xa, rdi = 0x0*; a register is
+named by its parts too, *eax* or *al* for *rax*. The values go when the
+program runs on and when the text is edited. The skin gives their color,
+*editnote* in *[editor]*.
 
 A step that ends in code whose source is not on this machine, a library
 with debug information but without its sources, goes on out of it: a step
 into *printf* comes back to the call, a step out of *main* ends the program.
-A frame without its source is named in the panel and opens nothing.
+A step by an instruction stays there: the panel names the function and the
+address, and the instructions and the registers come. A frame without its
+source is named in the panel and opens nothing.
 
 **The marks**
 
@@ -241,5 +334,85 @@ stop the program when the value changes. Both offer the selection, or the
 word under the cursor, to be taken as it is or changed. **Send line...** gives
 a line to a program that reads lines. **Stop** ends the session and keeps the
 breakpoints, the configurations and the watches.
+
+**Debug adapters**
+
+The debuggers of most languages speak the Debug Adapter Protocol: debugpy for
+Python, Delve for Go, bash-dap for the shell, js-debug for
+JavaScript, lldb-dap, and GDB itself from version 14 (*gdb -i dap*). In
+**Debug configuration** the choice **Debug adapter**, instead of **GDB**,
+has one run the program:
+
+**Adapter**
+: The command of the adapter, which speaks on its stdin and stdout, or on a
+socket when **Address** is set.
+
+**Address**
+: *host:port* of an adapter that listens already; with port 0 the
+command is run, and the port is the one it says on its output, *listening
+at: 127.0.0.1:38697*.
+
+**Launch (JSON)**
+: Members added to the request that launches the program, each adapter
+having its own: *{"mode": "debug"}* for Delve, *{"justMyCode": false}* for
+debugpy. The form checks it: an error is told with its line and column.
+
+A program by the name of its file has its adapter set when the form is
+taken, if the configuration has none:
+
+```
+.py              python3 -m debugpy.adapter
+.sh, .bash       bash-dap
+.go              dlv dap --listen=127.0.0.1:0
+.js, .mjs, .ts   js-debug-adapter 0, on 127.0.0.1:0
+a program        gdb -i dap
+```
+
+A new configuration without a program the build has made takes the file in
+front, when it is such a script. An adapter that is not there, or that ends
+before the program starts, is told with how to get it; what it says is in
+the console.
+
+**Python**
+
+debugpy is had once, with *apt install python3-debugpy* or *pip install --user
+debugpy*. Then a script is debugged as a program of C is: F6 on a line, F5,
+and Enter in the form, which has the adapter of Python already.
+
+A project with a virtual environment, *.venv*, *venv*, *.env* or *env* with
+*bin/python* in it, is debugged with its own Python and the packages of the
+project: the adapter becomes *.venv/bin/python -m debugpy.adapter*. debugpy
+has to be in that environment too, *.venv/bin/python -m pip install
+debugpy*: without it the form says so, and the script runs with the Python
+of the system.
+
+A script that reads what is typed, *input()* for one, needs the terminal of
+the program: *{"console": "integratedTerminal"}*. Else what it writes comes
+in the console, and it reads nothing.
+
+**The shell**
+
+bash-dap debugs a script of bash, with Python 3 alone: *pipx install bash-dap*,
+or *pip install --user bash-dap*. Then as for Python: F6 on a line, F5, Enter in
+the form. The script runs in the terminal of the program, and reads what is
+typed there; it stops in the functions of *$(...)* and of pipes too, and the
+variables of a stop are all those it sees, bash having no others. An array
+opens as a tree.
+
+The adapter runs in a session of its own, away from the terminal of the
+editor, and ends with it. The program has the terminal of the program when
+the adapter asks for one (*runInTerminal*: debugpy with *{"console":
+"integratedTerminal"}*, bash-dap); else what it writes comes in the
+console, and it reads nothing. js-debug runs the program in a session it
+starts on its socket: the debugger connects to it there, and the steps are of
+that session.
+
+Under *gdb -i dap* GDB has the breakpoints before it runs the program, which
+it does as soon as it is launched; the program writes in the console. A
+breakpoint the adapter has on no code yet is pending, *◊*, until it says it
+is on some.
+
+The configuration keeps these as *backend*, *adapter*, *address* and
+*launch_extra* in *debug.ini*.
 
 The debugger runs one local program at a time.

@@ -62,8 +62,6 @@ libinternal_sources = files(
   'plugins/git/git-branches.c',
   'plugins/git/git-core.c',
   'plugins/project/project-core.c',
-  'plugins/debugger/debugger.c',
-  'plugins/debugger/gdb-mi.c',
   'plugins/etags/etags.c',
   'plugins/spell/spell.c',
 )
@@ -150,13 +148,23 @@ foreach d : screen_deps
   screen_headers += d.partial_dependency(compile_args: true, includes: true)
 endforeach
 
+# the build directories of the plugins: meson devenv runs the program with them
+plugin_build_dirs = []
+
 if have_terminal
   subdir('plugins/terminal')
 endif
 
 if have_gmodule
   subdir('plugins/viewer')
+  subdir('plugins/debugger')
 endif
+
+# "meson devenv -C BUILDDIR coole": the program of the build with the plugins of the build, not
+# those installed
+devenv = environment()
+devenv.set('COOLE_PLUGINS_DIR', plugin_build_dirs, separator: ':')
+meson.add_devenv(devenv)
 
 if lua.found()
   subdir('plugins/lua')

@@ -1,4 +1,5 @@
 usr/bin/coole
+usr/lib/coole/plugins/
 etc/coole/
 usr/share/doc/coole/LUA_API_REFERENCE.md
 usr/share/doc/coole/LUA_PLUGINS.md

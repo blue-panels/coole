@@ -238,6 +238,12 @@ if get_option('lua').enabled() and not lua.found()
 endif
 conf.set('ENABLE_LUA_PLUGIN', lua.found() ? 1 : false)
 
+# the debugger talks to the debug adapters of the languages (DAP) in JSON
+json_glib = dependency('json-glib-1.0', version: '>= 1.4', required: get_option('dap'))
+conf.set('ENABLE_DAP', json_glib.found() ? 1 : false)
+# an adapter in a session of its own still ends with the editor (Linux)
+conf.set('HAVE_SYS_PRCTL_H', cc.has_header('sys/prctl.h') ? 1 : false)
+
 # unit tests: the test programs run on the build machine
 check = dependency('check', version: '>= 0.9.10',
                    required: get_option('tests').disable_auto_if(meson.is_cross_build()))
@@ -313,6 +319,7 @@ conf.set_quoted('MC_CONFIGURE_ARGS', ' '.join([
   'lua=' + (lua.found() ? 'yes' : 'no'),
   'spell=' + (have_spell ? 'yes' : 'no'),
   'terminal=' + (have_terminal ? 'yes' : 'no'),
+  'dap=' + (json_glib.found() ? 'yes' : 'no'),
   'nls=' + (have_nls ? 'yes' : 'no'),
 ]))
 
@@ -378,6 +385,7 @@ summary({
   'X11 events': x11.found(),
   'Spell checking': have_spell,
   'Terminal': have_terminal,
+  'Debug adapters (DAP)': json_glib.found(),
   'Lua runtime plugin': lua.found() ? lua.version() : false,
   'Translations': have_nls,
   'Unit tests': check.found(),

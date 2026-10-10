@@ -71,7 +71,7 @@ project, the tree of the project and the panel of the debugger at
 the right. The file windows take the keys of the debugger: F6 puts a
 breakpoint, F5 builds the program and runs it, making its debug
 configuration the first time, F7 and F8 step, F3 indexes the symbols of the
-project; F2, F9 and F10 stay Save, the menu and Quit, and Alt-Shift-G goes
+project; F2, F9 and F10 stay Save, the menu and Quit, and Alt-F5 goes
 to the panel and back. It needs the project, build and debugger plugins,
 and ctags for F3.
 

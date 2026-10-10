@@ -10,6 +10,8 @@ option('spell', type: 'feature', value: 'auto',
        description: 'Spell checking through aspell or hunspell, loaded at run time')
 option('terminal', type: 'feature', value: 'auto',
        description: 'The terminal: a shell in a window of the editor (needs openpty)')
+option('dap', type: 'feature', value: 'auto',
+       description: 'The debugger with the debug adapters of the languages (needs json-glib)')
 option('nls', type: 'feature', value: 'auto',
        description: 'Translations of the messages')
 option('tests', type: 'feature', value: 'auto',
