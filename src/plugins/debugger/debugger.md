@@ -92,6 +92,16 @@ These work in a file window too, since the editor has nothing on them:
 **Ctrl-F8**, **Ctrl-B**
 : Toggle a breakpoint on the line of the cursor.
 
+**Alt-F6**
+: The condition of the breakpoint on the line of the cursor, a breakpoint
+put there with it when there is none: the program stops there only when the
+condition is true, *i == 7*, *[[ $f == report.pdf ]]*, *x > 2 and y*, in the
+language of the program. An empty one makes it a breakpoint as any other.
+Its mark is a circle with a dot, and the panel shows the condition after
+it: *loop.c:7 main if i == 7*. It can be changed while the program runs. A
+debug adapter that has no conditions says so, and stops there each time.
+**Debug → Breakpoint condition...** too.
+
 **Shift-F9**
 : Run: build the program and start it, or go on when it is stopped. The
 first time it asks what to run.
@@ -211,6 +221,9 @@ source window give the same tree.
 **Space**
 : Disable a breakpoint, or enable it again: GDB keeps it but does not stop
 on it, and its mark is an empty circle.
+
+**Alt-F6**
+: The condition of a breakpoint, as in a file.
 
 **Del**
 : Remove a watch or a breakpoint.

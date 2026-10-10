@@ -87,6 +87,7 @@ typedef struct
     unsigned int pending_token;
     gboolean disabled;    // kept, but GDB does not stop on it
     gboolean unverified;  // the debugger has it, on no code yet
+    char *condition;      // the program stops there only when it is true; NULL for always
 } debug_breakpoint_t;
 
 typedef struct
@@ -148,6 +149,7 @@ enum
     DEBUG_CMD_STEP_INSTRUCTION,
     DEBUG_CMD_NEXT_INSTRUCTION,
     DEBUG_CMD_SHOW_STOP,
+    DEBUG_CMD_CONDITION,
     DEBUG_CMD_COUNT
 };
 
@@ -180,6 +182,8 @@ static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
     { "DebugStepInstruction", N_ ("Step into by an instruction"), "f17; ctrl-f7" },
     { "DebugNextInstruction", N_ ("Step over by an instruction"), "f14" },
     { "DebugShowStop", N_ ("Show the line the program is stopped at"), "alt-f10" },
+    // F6 puts a breakpoint, Alt-F6 its condition
+    { "DebugBreakpointCondition", N_ ("Condition of the breakpoint"), "alt-f6" },
     { NULL, NULL, NULL },
 };
 
@@ -189,6 +193,7 @@ enum
     DEBUG_MARK_BREAKPOINT,
     DEBUG_MARK_PENDING,
     DEBUG_MARK_DISABLED,
+    DEBUG_MARK_CONDITION,
     DEBUG_MARK_EXEC,
     DEBUG_MARK_EXEC_BREAKPOINT,
     DEBUG_MARK_COUNT
@@ -202,6 +207,9 @@ static const mc_ep_marker_kind_t debug_mark_kinds[DEBUG_MARK_COUNT] = {
       "breakpointline", NULL, 12, "red" },
     { "debugger.breakpoint-disabled", "breakpoint-disabled-char", "\u25cb", "-",
       "breakpointdisabled", NULL, NULL, 11, NULL },
+    // the program stops there only when its condition is true
+    { "debugger.breakpoint-condition", "breakpoint-condition-char", "\u25c9", "c", "breakpoint",
+      "breakpointline", NULL, 10, "brightred" },
     { "debugger.exec", "exec-char", ">", ">", "execmark", "execline", "bookmarkfound", 20,
       "yellow" },
     { "debugger.exec-breakpoint", "exec-breakpoint-char", "\u2666", "@", "execmark", "execline",
@@ -332,7 +340,8 @@ enum
     DEBUG_ACT_STEP_INSTRUCTION,
     DEBUG_ACT_NEXT_INSTRUCTION,
     DEBUG_ACT_DISASSEMBLY,
-    DEBUG_ACT_SHOW_STOP
+    DEBUG_ACT_SHOW_STOP,
+    DEBUG_ACT_CONDITION
 };
 
 // the entry of the module
@@ -370,6 +379,8 @@ static mc_ep_result_t debug_act_disassembly (void *data, void *edit);
 static gboolean debug_alive (const debugger_t *debug);
 static void debug_program_show (debugger_t *debug);
 static void debug_run_timer (debugger_t *debug, gboolean arm);
+static void debug_breakpoint_condition (debugger_t *debug, debug_breakpoint_t *bp);
+static mc_ep_result_t debug_condition_at_cursor (debugger_t *debug, void *edit);
 static gboolean debug_launch_is_dap (const debug_launch_t *launch);
 static const char *debug_adapter_hint (const char *adapter);
 static int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
@@ -410,6 +421,7 @@ debug_breakpoint_free (gpointer data)
 
     g_free (bp->file);
     g_free (bp->gdb_number);
+    g_free (bp->condition);
     g_free (bp);
 }
 
@@ -910,9 +922,11 @@ debug_panel_rows (const debugger_t *debug)
             }
             debug_panel_add (
                 rows, PANEL_BREAKPOINT, i,
-                g_strdup_printf ("%s %s:%ld%s%s", debug->glyphs[debug_breakpoint_mark (debug, bp)],
-                                 x_basename (bp->file), bp->line, function != NULL ? "  " : "",
-                                 function != NULL ? function : ""));
+                g_strdup_printf (
+                    "%s %s:%ld%s%s%s%s", debug->glyphs[debug_breakpoint_mark (debug, bp)],
+                    x_basename (bp->file), bp->line, function != NULL ? "  " : "",
+                    function != NULL ? function : "", bp->condition != NULL ? "  if " : "",
+                    bp->condition != NULL ? bp->condition : ""));
         }
         g_hash_table_destroy (functions);
     }
@@ -1033,6 +1047,20 @@ debug_panel_key (debug_session_window_t *session, int key)
     const debug_panel_row_t *row =
         session->cursor < (int) rows->len ? g_ptr_array_index (rows, session->cursor) : NULL;
     gboolean handled = TRUE;
+
+    /* the condition of the breakpoint of the row, Alt-F6 as in a file; on another row nothing,
+       not that of the line of a file out of sight */
+    if (debug_command_of_key (debug, key) == DEBUG_CMD_CONDITION)
+    {
+        if (row != NULL && row->kind == PANEL_BREAKPOINT)
+            debug_breakpoint_condition (debug, g_ptr_array_index (debug->breakpoints, row->index));
+        else
+            tty_beep ();
+        g_ptr_array_free (rows, TRUE);
+        if (session->debug != NULL)
+            widget_draw (WIDGET (session));
+        return TRUE;
+    }
 
     switch (key)
     {
@@ -1262,6 +1290,9 @@ debug_run_command (debugger_t *debug, int cmd, void *edit)
         g_free (file);
         return TRUE;
     }
+    case DEBUG_CMD_CONDITION:
+        (void) debug_condition_at_cursor (debug, file_window);
+        return TRUE;
     case DEBUG_CMD_SHOW_STOP:
         if (debug->state == DEBUG_STOPPED && debug->current_file != NULL
             && debug->host->show_location != NULL)
@@ -2103,6 +2134,25 @@ debug_config_save (debugger_t *debug)
                                     (const gchar *const *) off->pdata, off->len);
         g_ptr_array_free (off, TRUE);
     }
+    {
+        // a breakpoint and its condition, one after the other
+        GPtrArray *conditions = g_ptr_array_new ();
+
+        for (i = 0; i < debug->breakpoints->len; i++)
+        {
+            const debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, i);
+
+            if (bp->condition != NULL)
+            {
+                g_ptr_array_add (conditions, locations[i]);
+                g_ptr_array_add (conditions, bp->condition);
+            }
+        }
+        if (conditions->len > 0)
+            g_key_file_set_string_list (keyfile, "Debug", "breakpoint_conditions",
+                                        (const gchar *const *) conditions->pdata, conditions->len);
+        g_ptr_array_free (conditions, TRUE);
+    }
     expressions = g_new0 (char *, debug->watches->len + 1);
     for (i = 0; i < debug->watches->len; i++)
     {
@@ -2182,6 +2232,26 @@ debug_config_load (debugger_t *debug)
 
                 if (strcmp (location, locations[i]) == 0)
                     bp->disabled = TRUE;
+                g_free (location);
+            }
+        }
+        g_strfreev (locations);
+        locations =
+            g_key_file_get_string_list (keyfile, "Debug", "breakpoint_conditions", &count, NULL);
+        for (i = 0; locations != NULL && i + 1 < count; i += 2)
+        {
+            guint k;
+
+            for (k = 0; k < debug->breakpoints->len; k++)
+            {
+                debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, k);
+                char *location = g_strdup_printf ("%s:%ld", bp->file, bp->line);
+
+                if (strcmp (location, locations[i]) == 0 && locations[i + 1][0] != '\0')
+                {
+                    g_free (bp->condition);
+                    bp->condition = g_strdup (locations[i + 1]);
+                }
                 g_free (location);
             }
         }
@@ -2398,14 +2468,14 @@ debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp)
         return DEBUG_MARK_DISABLED;
     if (debug_session_live (debug) && (bp->gdb_number == NULL || bp->unverified))
         return DEBUG_MARK_PENDING;
-    return DEBUG_MARK_BREAKPOINT;
+    return bp->condition != NULL ? DEBUG_MARK_CONDITION : DEBUG_MARK_BREAKPOINT;
 }
 
 static gboolean
 debug_is_breakpoint_mark (int mark)
 {
     return mark == DEBUG_MARK_BREAKPOINT || mark == DEBUG_MARK_PENDING
-        || mark == DEBUG_MARK_DISABLED;
+        || mark == DEBUG_MARK_DISABLED || mark == DEBUG_MARK_CONDITION;
 }
 
 static debug_breakpoint_t *
@@ -3754,8 +3824,9 @@ static const debug_backend_events_t debug_events = {
 static gboolean
 debug_breakpoint_install (debugger_t *debug, debug_breakpoint_t *bp)
 {
-    bp->pending_token = debug->backend->ops->break_insert (
-        debug->backend, bp->file, bp->line, bp->disabled, debug_reply_breakpoint, NULL, NULL);
+    bp->pending_token =
+        debug->backend->ops->break_insert (debug->backend, bp->file, bp->line, bp->disabled,
+                                           bp->condition, debug_reply_breakpoint, NULL, NULL);
     return bp->pending_token != 0;
 }
 
@@ -5067,13 +5138,14 @@ debug_start (void *data, void *edit)
 
 /* A breakpoint on a line of a file, sent to GDB when it runs */
 static void
-debug_breakpoint_add (debugger_t *debug, const char *file, long line)
+debug_breakpoint_add (debugger_t *debug, const char *file, long line, const char *condition)
 {
     char *real = realpath (file, NULL);
     debug_breakpoint_t *bp = g_new0 (debug_breakpoint_t, 1);
 
     bp->file = real != NULL ? g_strdup (real) : g_strdup (file);
     bp->line = line;
+    bp->condition = condition != NULL && *condition != '\0' ? g_strdup (condition) : NULL;
     free (real);
     g_ptr_array_add (debug->breakpoints, bp);
     // the breakpoints of the start are sent already: this one is sent by itself
@@ -5305,7 +5377,7 @@ debug_act_function_breakpoint (void *data, void *edit)
     debug_breakpoints_sync (debug);
     if (debug_breakpoint_at (debug, f->file, f->line, &i) == NULL)
     {
-        debug_breakpoint_add (debug, f->file, f->line);
+        debug_breakpoint_add (debug, f->file, f->line, NULL);
         debug_config_save (debug);
     }
     (void) debug->host->show_location (debug->host, f->file, f->line);
@@ -5373,6 +5445,89 @@ debug_act_run_to_function (void *data, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The condition of @bp asked for, the one it has to be changed: an empty one takes it off */
+static void
+debug_breakpoint_condition (debugger_t *debug, debug_breakpoint_t *bp)
+{
+    char *condition;
+
+    if (bp->pending_token != 0)
+    {
+        debug_error (debug, _ ("Wait for the debugger to confirm this breakpoint."));
+        return;
+    }
+    condition = input_dialog (
+        _ ("Breakpoint condition"), _ ("Stop there only when this is true (empty: each time):"),
+        "debug-condition", bp->condition != NULL ? bp->condition : "", INPUT_COMPLETE_NONE);
+    if (condition == NULL)
+        return;
+    if (*g_strstrip (condition) == '\0')
+        g_clear_pointer (&condition, g_free);
+    g_free (bp->condition);
+    bp->condition = condition;
+    // the debugger has it already: changed there too
+    if (debug_session_live (debug) && bp->gdb_number != NULL
+        && debug->backend->ops->break_condition != NULL)
+        (void) debug->backend->ops->break_condition (debug->backend, bp->gdb_number,
+                                                     condition != NULL ? condition : "");
+    debug_marks_show (debug, NULL);
+    debug_config_save (debug);
+    debug_session_refresh (debug);
+}
+
+/* Alt-F6: the condition of the breakpoint of the line of the cursor, a breakpoint put there
+   with it when there is none */
+static mc_ep_result_t
+debug_condition_at_cursor (debugger_t *debug, void *edit)
+{
+    debug_breakpoint_t *bp;
+    char *file, *condition;
+    long line;
+
+    if (edit == NULL || !debug_require_project (debug, edit))
+        return MC_EPR_FAILED;
+    file = debug->host->get_current_file (debug->host, edit);
+    line = debug->host->get_cursor_line (debug->host, edit);
+    if (file == NULL || line <= 0)
+    {
+        g_free (file);
+        return MC_EPR_FAILED;
+    }
+    debug_breakpoints_sync (debug);
+    bp = debug_breakpoint_at (debug, file, line, NULL);
+    if (bp != NULL)
+    {
+        g_free (file);
+        debug_breakpoint_condition (debug, bp);
+        return MC_EPR_OK;
+    }
+    condition = input_dialog (_ ("Breakpoint condition"),
+                              _ ("Stop there only when this is true (empty: each time):"),
+                              "debug-condition", "", INPUT_COMPLETE_NONE);
+    if (condition == NULL)
+    {
+        g_free (file);
+        return MC_EPR_FAILED;
+    }
+    debug_breakpoint_add (debug, file, line, g_strstrip (condition));
+    g_free (condition);
+    g_free (file);
+    debug_marks_show (debug, NULL);
+    debug_config_save (debug);
+    debug_session_refresh (debug);
+    return MC_EPR_OK;
+}
+
+/* Debug > Breakpoint condition */
+static mc_ep_result_t
+debug_act_condition (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+
+    return debug_condition_at_cursor (
+        debug, edit != NULL ? edit : debug->host->window_top_file (debug->host));
+}
+
 static mc_ep_result_t
 debug_toggle_breakpoint (void *data, void *edit)
 {
@@ -5408,7 +5563,7 @@ debug_toggle_breakpoint (void *data, void *edit)
     }
     else
     {
-        debug_breakpoint_add (debug, file, line);
+        debug_breakpoint_add (debug, file, line, NULL);
         g_free (file);
     }
     debug_marks_show (debug, NULL);
@@ -6392,6 +6547,7 @@ static const mc_ep_action_t debug_actions[] = {
     { "Step over instruction", debug_next_instruction },
     { "Disassembly", debug_act_disassembly },
     { "Show stop", debug_act_show_stop },
+    { "Breakpoint condition", debug_act_condition },
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
@@ -6399,6 +6555,7 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     // what one does, first
     { DEBUG_MENU, N_ ("&Start or continue"), DEBUG_ACT_START, NULL },
     { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
+    { DEBUG_MENU, N_ ("Breakpoint condition..."), DEBUG_ACT_CONDITION, NULL },
     { DEBUG_MENU, N_ ("Breakpoint on fun&ction..."), DEBUG_ACT_FUNCTION_BREAKPOINT, NULL },
     { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
     { DEBUG_MENU, N_ ("Debug ke&ys in files"), DEBUG_ACT_MODE, NULL },
@@ -6457,6 +6614,7 @@ debug_menu_shortcut (int action_index)
         { DEBUG_ACT_PAUSE, DEBUG_CMD_PAUSE },
         { DEBUG_ACT_STOP, DEBUG_CMD_STOP },
         { DEBUG_ACT_SHOW_STOP, DEBUG_CMD_SHOW_STOP },
+        { DEBUG_ACT_CONDITION, DEBUG_CMD_CONDITION },
     };
     const global_keymap_t *map = keymap_section_map (DEBUG_KEYMAP_SECTION);
     const char *first = NULL;

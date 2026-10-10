@@ -68,32 +68,54 @@ delete_select_channel (int fd)
         }
 }
 
+/* One round of the descriptors watched: what is ready read */
+static void
+run_once (void)
+{
+    fd_set set;
+    struct timeval timeout = { 0, 100000 };
+    int i, max_fd = -1, ready_count = 0;
+    watched_t ready[8];
+
+    FD_ZERO (&set);
+    for (i = 0; i < watched_count; i++)
+    {
+        FD_SET (watched[i].fd, &set);
+        max_fd = MAX (max_fd, watched[i].fd);
+    }
+    if (max_fd < 0 || select (max_fd + 1, &set, NULL, NULL, &timeout) <= 0)
+        return;
+    for (i = 0; i < watched_count; i++)
+        if (FD_ISSET (watched[i].fd, &set))
+            ready[ready_count++] = watched[i];
+    for (i = 0; i < ready_count; i++)
+        ready[i].callback (ready[i].fd, ready[i].data);
+}
+
 static void
 run_until (const gboolean *done)
 {
     const gint64 deadline = g_get_monotonic_time () + 5 * G_TIME_SPAN_SECOND;
 
     while (!*done && g_get_monotonic_time () < deadline)
-    {
-        fd_set set;
-        struct timeval timeout = { 0, 100000 };
-        int i, max_fd = -1, ready_count = 0;
-        watched_t ready[8];
+        run_once ();
+}
 
-        FD_ZERO (&set);
-        for (i = 0; i < watched_count; i++)
-        {
-            FD_SET (watched[i].fd, &set);
-            max_fd = MAX (max_fd, watched[i].fd);
-        }
-        if (max_fd < 0 || select (max_fd + 1, &set, NULL, NULL, &timeout) <= 0)
-            continue;
-        for (i = 0; i < watched_count; i++)
-            if (FD_ISSET (watched[i].fd, &set))
-                ready[ready_count++] = watched[i];
-        for (i = 0; i < ready_count; i++)
-            ready[i].callback (ready[i].fd, ready[i].data);
-    }
+/* Until @text has @needle after its first @from bytes, or a while */
+static void
+run_until_text_from (const GString *text, gsize from, const char *needle)
+{
+    const gint64 deadline = g_get_monotonic_time () + 5 * G_TIME_SPAN_SECOND;
+
+    while (strstr (text->str + from, needle) == NULL && g_get_monotonic_time () < deadline)
+        run_once ();
+    g_assert_nonnull (strstr (text->str + from, needle));
+}
+
+static void
+run_until_text (const GString *text, const char *needle)
+{
+    run_until_text_from (text, 0, needle);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -319,16 +341,31 @@ test_session (gconstpointer address)
     g_assert_true (seen.ready);
     g_assert_true (seen.backend->ops->alive (seen.backend));
 
-    // a breakpoint, then the run: it stops there
-    g_assert_cmpuint (
-        seen.backend->ops->break_insert (seen.backend, "/src/a.c", 7, FALSE, on_reply, MINE), >, 0);
+    // a breakpoint, then the run: it stops there; its condition goes with it, and again changed
+    g_assert_cmpuint (seen.backend->ops->break_insert (seen.backend, "/src/a.c", 7, FALSE, "x > 1",
+                                                       on_reply, MINE),
+                      >, 0);
     wait_answer ();
+    // taken: the set has no member a strict adapter would refuse
+    g_assert_null (seen.error);
     g_assert_nonnull (seen.bp_id);
     g_assert_cmpint (seen.bp_line, ==, 7);
+    run_until_text (seen.console, "mock: condition 7 x > 1");
+    g_assert_cmpuint (seen.backend->ops->break_condition (seen.backend, seen.bp_id, "x > 2"), >, 0);
+    run_until_text (seen.console, "mock: condition 7 x > 2");
+    // taken off: a breakpoint on a line with nothing but its line, the set taken
+    {
+        const gsize from = seen.console->len;
+
+        g_assert_cmpuint (seen.backend->ops->break_condition (seen.backend, seen.bp_id, NULL), >,
+                          0);
+        run_until_text_from (seen.console, from, "mock: breakpoints /src/a.c [7]");
+        g_assert_null (strstr (seen.console->str, "mock: refused"));
+    }
     // a disabled one is answered after the call has given its number, with that number
     {
-        const guint token =
-            seen.backend->ops->break_insert (seen.backend, "/src/a.c", 9, TRUE, on_reply, MINE);
+        const guint token = seen.backend->ops->break_insert (seen.backend, "/src/a.c", 9, TRUE,
+                                                             NULL, on_reply, MINE);
 
         g_assert_cmpuint (token, >, 0);
         g_assert_false (seen.answered);
@@ -425,6 +462,55 @@ test_session (gconstpointer address)
     g_free (python);
 }
 
+/* An adapter without conditions of breakpoints: the condition is said not to be taken, and the
+   breakpoint goes without it, not refused */
+static void
+test_no_conditions (void)
+{
+    char *python = g_find_program_in_path ("python3");
+    char *command;
+    char *argv[] = { NULL };
+    debug_start_t spec = { 0 };
+    GError *error = NULL;
+
+    if (python == NULL)
+    {
+        g_test_skip ("python3 is unavailable");
+        return;
+    }
+    seen_clear ();
+    command = g_strdup_printf ("%s %s --no-conditions", python, MOCK_DAP);
+    spec.program = "/bin/true";
+    spec.argv = argv;
+    spec.directory = "/";
+    spec.tty = "/dev/null";
+    spec.debugger = command;
+    seen.backend = debug_dap_new (&events, NULL);
+    g_assert_true (seen.backend->ops->start (seen.backend, &spec, &error));
+    g_assert_no_error (error);
+    run_until (&seen.ready);
+    g_assert_true (seen.ready);
+
+    g_assert_cmpuint (seen.backend->ops->break_insert (seen.backend, "/src/a.c", 7, FALSE, "x > 1",
+                                                       on_reply, MINE),
+                      >, 0);
+    wait_answer ();
+    g_assert_null (seen.error);
+    g_assert_nonnull (seen.bp_id);
+    g_assert_nonnull (strstr (seen.console->str, "no conditions of breakpoints"));
+    // changed later, the same
+    g_string_truncate (seen.console, 0);
+    g_assert_cmpuint (seen.backend->ops->break_condition (seen.backend, seen.bp_id, "x > 2"), >, 0);
+    run_until_text (seen.console, "no conditions of breakpoints");
+    g_assert_null (strstr (seen.console->str, "mock: refused"));
+
+    seen.backend->ops->stop (seen.backend);
+    seen.backend->ops->free (seen.backend);
+    seen_clear ();
+    g_free (command);
+    g_free (python);
+}
+
 static void
 test_missing_adapter (void)
 {
@@ -448,6 +534,7 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
     g_test_add_data_func ("/debugger/dap-backend-stdio", NULL, test_session);
     g_test_add_data_func ("/debugger/dap-backend-tcp", "127.0.0.1:0", test_session);
+    g_test_add_func ("/debugger/dap-backend-no-conditions", test_no_conditions);
     g_test_add_func ("/debugger/dap-backend-missing", test_missing_adapter);
     return g_test_run ();
 }

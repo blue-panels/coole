@@ -787,16 +787,25 @@ mi_exec (debug_backend_t *b, debug_exec_t what, debug_reply_cb cb, void *data,
 
 static guint
 mi_break_insert (debug_backend_t *b, const char *file, long line, gboolean disabled,
-                 debug_reply_cb cb, void *data, GDestroyNotify free_data)
+                 const char *condition, debug_reply_cb cb, void *data, GDestroyNotify free_data)
 {
     char *location = g_strdup_printf ("%s:%ld", file, line);
     // -f: a breakpoint in a library not loaded yet waits for it
-    char *command =
-        mi_command_quoted (disabled ? "-break-insert -f -d" : "-break-insert -f", location);
+    GString *command = g_string_new (disabled ? "-break-insert -f -d" : "-break-insert -f");
+    char *quoted;
     guint token;
 
-    token = mi_request (MI (b), MI_REPLY_BREAKPOINT, cb, data, free_data, command);
-    g_free (command);
+    if (condition != NULL && *condition != '\0')
+    {
+        quoted = gdb_mi_quote (condition);
+        g_string_append_printf (command, " -c %s", quoted);
+        g_free (quoted);
+    }
+    quoted = gdb_mi_quote (location);
+    g_string_append_printf (command, " %s", quoted);
+    g_free (quoted);
+    token = mi_request (MI (b), MI_REPLY_BREAKPOINT, cb, data, free_data, command->str);
+    g_string_free (command, TRUE);
     g_free (location);
     return token;
 }
@@ -833,6 +842,22 @@ static guint
 mi_break_enable (debug_backend_t *b, const char *id, gboolean enable)
 {
     char *command = g_strconcat (enable ? "-break-enable " : "-break-disable ", id, NULL);
+    guint token;
+
+    token = mi_send (MI (b), command);
+    g_free (command);
+    return token;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The condition goes as it is: GDB takes the rest of the line for it, none taking it off */
+static guint
+mi_break_condition (debug_backend_t *b, const char *id, const char *condition)
+{
+    char *command =
+        g_strconcat ("-break-condition ", id, condition != NULL && *condition != '\0' ? " " : "",
+                     condition != NULL ? condition : "", NULL);
     guint token;
 
     token = mi_send (MI (b), command);
@@ -1090,6 +1115,7 @@ static const debug_backend_ops_t mi_ops = {
     .break_function = mi_break_function,
     .break_delete = mi_break_delete,
     .break_enable = mi_break_enable,
+    .break_condition = mi_break_condition,
     .run_to = mi_run_to,
     .select_frame = mi_select_frame,
     .stack = mi_stack,

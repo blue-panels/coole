@@ -52,7 +52,8 @@ typedef struct
     char *id;  // the plugin's name of it
     char *file;
     long line;
-    char *name;  // of the function, or the address of the instruction
+    char *name;       // of the function, or the address of the instruction
+    char *condition;  // the program stops only when it is true, NULL for always
     gboolean enabled;
     gboolean temporary;  // taken off at the next stop: run to the cursor, to a function
     gint64 dap_id;       // the adapter's, -1 when it has given none
@@ -123,6 +124,7 @@ dap_bp_free (gpointer p)
     g_free (bp->id);
     g_free (bp->file);
     g_free (bp->name);
+    g_free (bp->condition);
     g_free (bp);
 }
 
@@ -430,6 +432,8 @@ dap_breakpoints_send (dap_backend_t *dap, dap_bp_kind_t kind, const char *file)
             json_object_set_string_member (item, "name", bp->name);
         else
             json_object_set_string_member (item, "instructionReference", bp->name);
+        if (bp->condition != NULL)
+            json_object_set_string_member (item, "condition", bp->condition);
         json_array_add_object_element (list, item);
         g_ptr_array_add (sent->ids, g_strdup (bp->id));
     }
@@ -454,8 +458,8 @@ bp_token_of (const dap_backend_t *dap, const dap_bp_t *bp)
 /* A breakpoint of the plugin, or one of its own: sent with the others of its set */
 static guint
 dap_bp_add (dap_backend_t *dap, dap_bp_kind_t kind, const char *file, long line, const char *name,
-            gboolean enabled, gboolean temporary, debug_reply_cb cb, void *data,
-            GDestroyNotify free_data)
+            const char *condition, gboolean enabled, gboolean temporary, debug_reply_cb cb,
+            void *data, GDestroyNotify free_data)
 {
     dap_bp_t *bp = g_new0 (dap_bp_t, 1);
 
@@ -464,6 +468,7 @@ dap_bp_add (dap_backend_t *dap, dap_bp_kind_t kind, const char *file, long line,
     bp->file = g_strdup (file);
     bp->line = line;
     bp->name = g_strdup (name);
+    bp->condition = condition != NULL && *condition != '\0' ? g_strdup (condition) : NULL;
     bp->enabled = enabled;
     bp->temporary = temporary;
     bp->dap_id = -1;
@@ -1288,18 +1293,37 @@ dap_exec (debug_backend_t *b, debug_exec_t what, debug_reply_cb cb, void *data,
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The condition the adapter is given: none for one that cannot take conditions, which is said,
+   the breakpoint stopping each time; NULL for none */
+static const char *
+dap_condition_check (dap_backend_t *dap, const char *condition)
+{
+    if (condition == NULL || *condition == '\0')
+        return NULL;
+    if (dap_can (dap, "supportsConditionalBreakpoints"))
+        return condition;
+    EVENTS (dap)->output (UI (dap),
+                          _ ("The debug adapter has no conditions of breakpoints: it stops at "
+                             "this one each time."),
+                          DEBUG_OUTPUT_ERROR);
+    return NULL;
+}
+
 static guint
 dap_break_insert (debug_backend_t *b, const char *file, long line, gboolean disabled,
-                  debug_reply_cb cb, void *data, GDestroyNotify free_data)
+                  const char *condition, debug_reply_cb cb, void *data, GDestroyNotify free_data)
 {
-    return dap_bp_add (DAP (b), DAP_BP_LINE, file, line, NULL, !disabled, FALSE, cb, data,
-                       free_data);
+    dap_backend_t *dap = DAP (b);
+
+    return dap_bp_add (dap, DAP_BP_LINE, file, line, NULL, dap_condition_check (dap, condition),
+                       !disabled, FALSE, cb, data, free_data);
 }
 
 static guint
 dap_break_function (debug_backend_t *b, const char *func, gboolean temporary)
 {
-    return dap_bp_add (DAP (b), DAP_BP_FUNCTION, NULL, 0, func, TRUE, temporary, NULL, NULL, NULL);
+    return dap_bp_add (DAP (b), DAP_BP_FUNCTION, NULL, 0, func, NULL, TRUE, temporary, NULL, NULL,
+                       NULL);
 }
 
 static guint
@@ -1317,7 +1341,8 @@ dap_break_address (debug_backend_t *b, const char *address, debug_reply_cb cb, v
             free_data (data);
         return 0;
     }
-    return dap_bp_add (dap, DAP_BP_ADDRESS, NULL, 0, address, TRUE, FALSE, cb, data, free_data);
+    return dap_bp_add (dap, DAP_BP_ADDRESS, NULL, 0, address, NULL, TRUE, FALSE, cb, data,
+                       free_data);
 }
 
 static guint
@@ -1354,13 +1379,28 @@ dap_break_enable (debug_backend_t *b, const char *id, gboolean enable)
     return ++dap->next_token;
 }
 
+static guint
+dap_break_condition (debug_backend_t *b, const char *id, const char *condition)
+{
+    dap_backend_t *dap = DAP (b);
+    dap_bp_t *bp = dap_bp_by_id (dap, id);
+
+    if (bp == NULL)
+        return 0;
+    condition = dap_condition_check (dap, condition);
+    g_free (bp->condition);
+    bp->condition = g_strdup (condition);
+    dap_breakpoints_send (dap, bp->kind, bp->file);
+    return ++dap->next_token;
+}
+
 /* Run to a line: a breakpoint taken off at the stop */
 static guint
 dap_run_to (debug_backend_t *b, const char *file, long line)
 {
     dap_backend_t *dap = DAP (b);
 
-    (void) dap_bp_add (dap, DAP_BP_LINE, file, line, NULL, TRUE, TRUE, NULL, NULL, NULL);
+    (void) dap_bp_add (dap, DAP_BP_LINE, file, line, NULL, NULL, TRUE, TRUE, NULL, NULL, NULL);
     return dap_exec (b, DEBUG_EXEC_CONTINUE, NULL, NULL, NULL);
 }
 
@@ -1960,6 +2000,7 @@ static const debug_backend_ops_t dap_ops = {
     .break_address = dap_break_address,
     .break_delete = dap_break_delete,
     .break_enable = dap_break_enable,
+    .break_condition = dap_break_condition,
     .run_to = dap_run_to,
     .select_frame = dap_select_frame,
     .stack = dap_stack,

@@ -5,6 +5,10 @@
 #
 #   mock_dap.py            on stdin and stdout
 #   mock_dap.py --tcp N    on a socket of port N; 0: a port of its own, said on stdout
+#   --no-conditions        an adapter without conditions of breakpoints: one refuses the set
+#
+# A breakpoint with a member its kind has not, or a null, refuses the set, as a strict adapter
+# does.
 #   mock_dap.py --split    each message written a byte at a time
 
 import json
@@ -18,6 +22,7 @@ class Adapter:
         self.rfile = rfile
         self.wfile = wfile
         self.split = split
+        self.conditions = "--no-conditions" not in sys.argv
         self.seq = 0
         self.breakpoints = {}
         self.functions = []
@@ -78,12 +83,37 @@ class Adapter:
             return path
         return "/nonexistent/mock.c"
 
+    # the members a breakpoint of each set may have
+    MEMBERS = {
+        "setBreakpoints": {"line", "column", "condition", "hitCondition", "logMessage"},
+        "setFunctionBreakpoints": {"name", "condition", "hitCondition"},
+        "setInstructionBreakpoints": {"instructionReference", "offset", "condition",
+                                      "hitCondition"},
+    }
+
+    def refused(self, command, args):
+        """Why a set of breakpoints is refused, or None"""
+        for b in args.get("breakpoints", []):
+            for name, value in b.items():
+                if name not in self.MEMBERS[command] or value is None:
+                    return "no member %s in a breakpoint of %s" % (name, command)
+                if name == "condition" and not self.conditions:
+                    return "no conditions"
+        return None
+
     def handle(self, request):
         command = request["command"]
         args = request.get("arguments", {})
+        if command in self.MEMBERS:
+            why = self.refused(command, args)
+            if why is not None:
+                self.event("output", {"category": "console", "output": "mock: refused, %s\n" % why})
+                self.respond(request, success=False, message=why)
+                return True
         if command == "initialize":
             self.respond(request, {"supportsConfigurationDoneRequest": True,
                                    "supportsFunctionBreakpoints": True,
+                                   "supportsConditionalBreakpoints": self.conditions,
                                    "supportsDisassembleRequest": True,
                                    "supportsSteppingGranularity": True,
                                    "supportsInstructionBreakpoints": True})
@@ -100,6 +130,13 @@ class Adapter:
             path = args["source"].get("path")
             lines = [b["line"] for b in args.get("breakpoints", [])]
             self.breakpoints[path] = lines
+            # the set first: what is said of it after comes after it
+            self.event("output", {"category": "console",
+                                  "output": "mock: breakpoints %s %s\n" % (path, lines)})
+            for b in args.get("breakpoints", []):
+                if "condition" in b:
+                    self.event("output", {"category": "console", "output":
+                                          "mock: condition %d %s\n" % (b["line"], b["condition"])})
             self.respond(request, {"breakpoints": [
                 {"id": 100 + i, "verified": True, "line": line}
                 for i, line in enumerate(lines)]})

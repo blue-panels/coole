@@ -157,8 +157,10 @@ typedef struct
     void (*cancel) (debug_backend_t *b);
     guint (*exec) (debug_backend_t *b, debug_exec_t what, debug_reply_cb cb, void *data,
                    GDestroyNotify free_data);
+    // @condition: the program stops there only when it is true, NULL for always
     guint (*break_insert) (debug_backend_t *b, const char *file, long line, gboolean disabled,
-                           debug_reply_cb cb, void *data, GDestroyNotify free_data);
+                           const char *condition, debug_reply_cb cb, void *data,
+                           GDestroyNotify free_data);
     // a breakpoint on a function, @temporary: taken off when the program stops there
     guint (*break_function) (debug_backend_t *b, const char *func, gboolean temporary);
     // a breakpoint on an instruction
@@ -166,6 +168,8 @@ typedef struct
                             GDestroyNotify free_data);
     guint (*break_delete) (debug_backend_t *b, const char *id);
     guint (*break_enable) (debug_backend_t *b, const char *id, gboolean enable);
+    // the condition of a breakpoint changed, NULL or "" for none
+    guint (*break_condition) (debug_backend_t *b, const char *id, const char *condition);
     guint (*run_to) (debug_backend_t *b, const char *file, long line);
     guint (*select_frame) (debug_backend_t *b, long level);
     guint (*stack) (debug_backend_t *b, debug_reply_cb cb, void *data, GDestroyNotify free_data);
