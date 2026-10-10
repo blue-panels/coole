@@ -664,7 +664,9 @@ edit_layout_quit (WDialog *h)
 
     if (root == NULL)
         return;
-    if (layout_set_aside ())
+    /* coole --debug put the layout Debug up at the start, not over the windows of the project:
+       those of a file opened by itself are not to become the windows of debugging */
+    if (layout_set_aside () || edit_startup_option ("debug") != NULL)
     {
         g_free (root);
         return;

@@ -186,7 +186,9 @@ them: the tree of the project at the right, the panel of the debugger under
 it, the console coming at the bottom when there is something in it. When
 it stops, they are put back as they were, the console staying to be read.
 **Window → Layout...** says which windows *Debug* has (save another as
-*Debug*), and turns this off.
+*Debug*), and turns this off. *coole --debug* starts with the layout *Debug*
+and does not keep it as the windows of the project: a file of the project
+opened by itself has the windows it had before.
 
 **The panel and the console**
 
