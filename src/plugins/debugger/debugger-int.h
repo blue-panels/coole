@@ -24,7 +24,6 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 #ifndef MC__DEBUGGER_INT_H
 #define MC__DEBUGGER_INT_H
 
@@ -237,6 +236,31 @@ typedef struct
 /*** declarations of public functions ************************************************************/
 
 /*** functions shared by the files of the plugin */
+
+/* debugger.c */
+int debug_command (const debugger_t *debug, long command);
+int debug_command_of_key (const debugger_t *debug, int key);
+void debug_window_buttonbar (const debugger_t *debug, Widget *w);
+gboolean debug_session_close_window (WEditWindow *win);
+gboolean debug_run_command (debugger_t *debug, int cmd, void *edit);
+void debug_session_refresh (debugger_t *debug);
+void debug_error (debugger_t *debug, const char *message_text);
+gboolean debug_alive (const debugger_t *debug);
+gboolean debug_session_live (const debugger_t *debug);
+void debug_output_console (debugger_t *debug, const char *text_value, gboolean line);
+gboolean debug_source_here (const char *file);
+
+/* debug-disasm.c */
+void debug_disasm_refresh (debugger_t *debug);
+void debug_disasm_show (debugger_t *debug, gboolean focus);
+void debug_address_breakpoint_free (gpointer p);
+void debug_address_breakpoint_install (debugger_t *debug, debug_address_breakpoint_t *bp);
+void debug_address_breakpoint_toggle (debugger_t *debug, const char *address);
+mc_ep_window_state_t debug_disasm_state (void *data);
+void debug_disasm_kind_show (void *data);
+void debug_disasm_kind_close (void *data);
+void *debug_disasm_window (void *data);
+mc_ep_result_t debug_act_disassembly (void *data, void *edit);
 
 /*** end of shared functions */
 
