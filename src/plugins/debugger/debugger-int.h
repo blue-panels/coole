@@ -247,7 +247,6 @@ void debug_session_refresh (debugger_t *debug);
 void debug_error (debugger_t *debug, const char *message_text);
 gboolean debug_alive (const debugger_t *debug);
 gboolean debug_session_live (const debugger_t *debug);
-void debug_output_console (debugger_t *debug, const char *text_value, gboolean line);
 gboolean debug_source_here (const char *file);
 
 /* debug-disasm.c */
@@ -261,6 +260,26 @@ void debug_disasm_kind_show (void *data);
 void debug_disasm_kind_close (void *data);
 void *debug_disasm_window (void *data);
 mc_ep_result_t debug_act_disassembly (void *data, void *edit);
+
+/* debug-program.c */
+void debug_output_show (debugger_t *debug);
+void debug_output_append (debugger_t *debug, const char *text_value);
+void debug_output_console (debugger_t *debug, const char *text_value, gboolean line);
+void debug_pty_close (debugger_t *debug);
+void debug_program_show (debugger_t *debug);
+void debug_run_timer (debugger_t *debug, gboolean arm);
+gboolean debug_program_current (debugger_t *debug);
+gboolean debug_pty_open (debugger_t *debug);
+gboolean debug_terminal_open (debugger_t *debug);
+void debug_gdb_command (debugger_t *debug);
+gboolean debug_program_key (debugger_t *debug, int key);
+mc_ep_result_t debug_show_output (void *data, void *edit);
+mc_ep_result_t debug_send_input (void *data, void *edit);
+mc_ep_window_state_t debug_console_state (void *data);
+void debug_console_show (void *data);
+void debug_console_close (void *data);
+void *debug_console_window (void *data);
+mc_ep_result_t debug_act_gdb_command (void *data, void *edit);
 
 /*** end of shared functions */
 
