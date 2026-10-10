@@ -238,21 +238,39 @@ typedef struct
 /*** functions shared by the files of the plugin */
 
 /* debugger.c */
-debug_launch_t *debug_active_launch (const debugger_t *debug);
 int debug_command (const debugger_t *debug, long command);
 int debug_command_of_key (const debugger_t *debug, int key);
 gboolean debug_stepping (const debugger_t *debug);
 gboolean debug_step_passes (long command);
 gboolean debug_run_command (debugger_t *debug, int cmd, void *edit);
-void debug_config_save (debugger_t *debug);
 void debug_error (debugger_t *debug, const char *message_text);
+void debug_requests_clear (debugger_t *debug);
 gboolean debug_alive (const debugger_t *debug);
 gboolean debug_session_live (const debugger_t *debug);
 void debug_clear_current (debugger_t *debug);
 gboolean debug_source_is_asm (const char *file);
 gboolean debug_source_here (const char *file);
+GVariant *debug_build_call (debugger_t *debug, const char *method, const char *key,
+                            const char *value);
+
+/* debug-config.c */
+void debug_launch_free (gpointer data);
+debug_launch_t *debug_active_launch (const debugger_t *debug);
+void debug_config_save (debugger_t *debug);
+char *debug_project_of (debugger_t *debug, void *edit);
+mc_ep_result_t debug_project_switch (debugger_t *debug, char *project);
+mc_ep_result_t debug_open_project (void *data, void *edit);
 gboolean debug_require_project (debugger_t *debug, void *edit);
+mc_ep_result_t debug_project_status (void *data, void *edit);
+gboolean debug_parse_environment (debugger_t *debug, const char *value, char ***entries);
+const char *debug_adapter_hint (const char *adapter);
+mc_ep_result_t debug_configure_impl (debugger_t *debug, void *edit, gboolean create_new);
+mc_ep_result_t debug_configure (void *data, void *edit);
+mc_ep_result_t debug_new_configuration (void *data, void *edit);
+mc_ep_result_t debug_select_configuration (void *data, void *edit);
+mc_ep_result_t debug_delete_configuration (void *data, void *edit);
 gboolean debug_launch_is_dap (const debug_launch_t *launch);
+char *debug_adapter_check (debugger_t *debug, const debug_launch_t *launch);
 
 /* debug-panel.c */
 void debug_window_buttonbar (const debugger_t *debug, Widget *w);
