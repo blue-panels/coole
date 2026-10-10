@@ -63,6 +63,8 @@ libinternal_sources = files(
   'plugins/git/git-core.c',
   'plugins/project/project-core.c',
   'plugins/debugger/debugger.c',
+  'plugins/debugger/debug-backend.c',
+  'plugins/debugger/debug-gdb-mi.c',
   'plugins/debugger/gdb-mi.c',
   'plugins/etags/etags.c',
   'plugins/spell/spell.c',
