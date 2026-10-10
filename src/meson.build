@@ -62,17 +62,9 @@ libinternal_sources = files(
   'plugins/git/git-branches.c',
   'plugins/git/git-core.c',
   'plugins/project/project-core.c',
-  'plugins/debugger/debugger.c',
-  'plugins/debugger/debug-backend.c',
-  'plugins/debugger/debug-gdb-mi.c',
-  'plugins/debugger/gdb-mi.c',
   'plugins/etags/etags.c',
   'plugins/spell/spell.c',
 )
-# the debugger with the debug adapters of the languages
-if json_glib.found()
-  libinternal_sources += files('plugins/debugger/dap.c', 'plugins/debugger/debug-dap.c')
-endif
 
 src_c_args = [
   '-DSYSCONFDIR="@0@/"'.format(pkgsysconfdir),
@@ -100,7 +92,7 @@ endif
 libinternal = static_library('internal',
   libinternal_sources,
   c_args: src_c_args,
-  dependencies: [libmc_dep, intl, terminal_dep, json_glib],
+  dependencies: [libmc_dep, intl, terminal_dep],
   implicit_include_directories: false,
 )
 
@@ -116,7 +108,7 @@ libforplugins = static_library('forplugins',
 )
 
 libinternal_dep = declare_dependency(link_with: [libinternal, libforplugins],
-                                     dependencies: [libmc_dep, intl, terminal_dep, json_glib])
+                                     dependencies: [libmc_dep, intl, terminal_dep])
 
 coole = executable('coole',
   'main.c',
@@ -156,13 +148,23 @@ foreach d : screen_deps
   screen_headers += d.partial_dependency(compile_args: true, includes: true)
 endforeach
 
+# the build directories of the plugins: meson devenv runs the program with them
+plugin_build_dirs = []
+
 if have_terminal
   subdir('plugins/terminal')
 endif
 
 if have_gmodule
   subdir('plugins/viewer')
+  subdir('plugins/debugger')
 endif
+
+# "meson devenv -C BUILDDIR coole": the program of the build with the plugins of the build, not
+# those installed
+devenv = environment()
+devenv.set('COOLE_PLUGINS_DIR', plugin_build_dirs, separator: ':')
+meson.add_devenv(devenv)
 
 if lua.found()
   subdir('plugins/lua')

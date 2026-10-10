@@ -10,3 +10,4 @@ viewer_module = shared_module('viewer',
   install: true,
   install_dir: plugins_dir,
 )
+plugin_build_dirs += meson.current_build_dir()

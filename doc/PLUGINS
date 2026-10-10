@@ -51,8 +51,6 @@ src/meson.build, which compiles them into the internal library):
   src/plugins/build/      builds the project, marks the lines the
                          compiler names and goes to them; the
                          "build" service
-  src/plugins/debugger/   GDB/MI, Debug menu, source markers and
-                         viewer windows for program output and state
   src/plugins/git/        the window Git: the status of the work
                          tree, the log, the diffs; the messages of
                          the commits written in a file window
@@ -62,8 +60,16 @@ src/editor/editcmd.c) holds their descriptors (and that
 of the "scripts" entry) and registers them with
 mc_editor_plugin_add() from editor_plugins_register_all().
 
-Two plugins come with coole as modules, loaded the way any other
+Three plugins come with coole as modules, loaded the way any other
 module is (section 3), and are examples of one:
+
+  src/plugins/debugger/   debugger.so: the Debug menu, the marks of
+                                 the breakpoints and of the program in
+                                 the gutter, the panel, the window of
+                                 the instructions; GDB/MI, and the
+                                 debug adapters of the Debug Adapter
+                                 Protocol when json-glib is found.
+                                 Built when GModule is found.
 
   src/plugins/terminal/   terminal.so: a window of its own
                                  (section 9), the shell in the
@@ -110,10 +116,19 @@ program.
 -------------------------
 
 When the editor starts, it first registers the built-in plugins and
-then calls mc_editor_plugins_load(), which scans two directories:
+then calls mc_editor_plugins_load(), which scans the directories of the
+environment variable COOLE_PLUGINS_DIR, separated by ':', then two
+directories:
 
     $(libdir)/coole/plugins          (MC_PLUGINS_DIR)
     ~/.local/lib/coole/plugins
+
+A plugin whose name is registered already is not loaded again, so the
+first directory that has it wins.  The build sets COOLE_PLUGINS_DIR to
+the directories the modules are built in, for the program of the build
+to run with them rather than with those installed:
+
+    meson devenv -C build coole
 
 The system directory is set at build time:
 

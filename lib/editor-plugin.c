@@ -27,9 +27,11 @@
 /** \file editor-plugin.c
  *  \brief Source: editor plugins: the registry and the loader of the dynamic ones
  *
- *  Scans MC_PLUGINS_DIR and ~/.local/lib/coole/plugins for shared
- *  objects exporting MC_EDITOR_PLUGIN_ENTRY, loads them, and registers the
- *  returned mc_editor_plugin_t descriptor via mc_editor_plugin_add().
+ *  Scans the directories of COOLE_PLUGINS_DIR, then MC_PLUGINS_DIR and
+ *  ~/.local/lib/coole/plugins for shared objects exporting
+ *  MC_EDITOR_PLUGIN_ENTRY, loads them, and registers the returned
+ *  mc_editor_plugin_t descriptor via mc_editor_plugin_add(); a plugin of a
+ *  name already registered is not loaded again.
  */
 
 #include <config.h>
@@ -211,6 +213,20 @@ mc_editor_plugins_load (void)
 
     editor_plugins_loaded = TRUE;
     editor_plugin_modules = g_ptr_array_new ();
+
+    /* first the directories of COOLE_PLUGINS_DIR, separated by ':': the program run from its
+       build directory takes the plugins built with it (meson devenv sets it), not those
+       installed */
+    if (g_getenv ("COOLE_PLUGINS_DIR") != NULL)
+    {
+        gchar **dirs = g_strsplit (g_getenv ("COOLE_PLUGINS_DIR"), G_SEARCHPATH_SEPARATOR_S, -1);
+        gchar **d;
+
+        for (d = dirs; *d != NULL; d++)
+            if (**d != '\0')
+                mc_editor_plugins_load_from_dir (*d);
+        g_strfreev (dirs);
+    }
 
     // load from system plugin directory
     mc_editor_plugins_load_from_dir (MC_PLUGINS_DIR);

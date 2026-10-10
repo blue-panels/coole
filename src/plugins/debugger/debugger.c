@@ -59,7 +59,7 @@
 #include "src/editor/editwidget.h"
 #include "src/editor/editwindow.h"
 
-#include "debugger.h"
+#include "lib/editor-plugin.h"
 #include "src/plugins/project/project-core.h"  // project_find_root (), without the project plugin
 #include "debug-backend.h"
 #ifdef ENABLE_DAP
@@ -314,6 +314,9 @@ enum
     DEBUG_ACT_NEXT_INSTRUCTION,
     DEBUG_ACT_DISASSEMBLY
 };
+
+// the entry of the module
+const mc_editor_plugin_t *mc_editor_plugin_register (void);
 
 static mc_ep_result_t debug_start (void *data, void *edit);
 static mc_ep_result_t debug_continue (void *data, void *edit);
@@ -6249,8 +6252,9 @@ static const mc_editor_plugin_t debug_plugin = {
     .get_menu_shortcut = debug_menu_shortcut,
 };
 
+/* The entry of the module, which the editor calls when it loads it */
 const mc_editor_plugin_t *
-debugger_get_plugin (void)
+mc_editor_plugin_register (void)
 {
     return &debug_plugin;
 }

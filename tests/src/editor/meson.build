@@ -48,3 +48,9 @@ test('git_core', executable('git_core', 'git_core.c',
                             c_args: ['-DGIT_MENU_INI="@0@"'.format(
                               meson.project_source_root() / 'misc' / 'git-menu.ini')],
                             dependencies: [glib_dep]), suite: 'src/editor')
+
+# the debugger plugin loads only when the program gives it every function it calls
+if have_gmodule and module_symbols_sh.found()
+  test('debugger_module_symbols', module_symbols_sh, args: [coole, debugger_module],
+       suite: 'src/editor')
+endif
