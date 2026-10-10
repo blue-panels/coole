@@ -111,6 +111,12 @@ editor's, and a key that would change the text beeps.
 **F7**, **F8**, **Shift-F8**
 : Step into, step over, step out.
 
+**Shift-F7**, **Shift-F4**
+: Step into, step over, by one instruction of the machine (**Ctrl-F7** and
+**Ctrl-F8** too, where the terminal sends them). These two keys are the
+debugger's only while the program is stopped: the rest of the time they are
+Search again and Replace again, in debug mode too.
+
 **F4**
 : Run to the line of the cursor, **Debug → Run to cursor** too: from where
 the program stopped, it stops at that line, at a breakpoint before it, or
@@ -137,7 +143,8 @@ dialog that can add it to the watches.
 
 The keys can be changed in **Options → Key bindings → Editor → Debugger**, or
 in the *[debugger]* section of the keymap, *DebugStepOver = alt-o* for one;
-*f15* is the name of Shift-F5, *f18* that of Shift-F8.
+*f15* is the name of Shift-F5, *f18* that of Shift-F8, *f17* that of
+Shift-F7.
 
 **The layout of debugging**
 
@@ -182,17 +189,55 @@ on it, and its mark is an empty circle.
 : A command of GDB itself, for what the panel does not have: *p x*,
 *info registers*, *x/8x buf*. What GDB answers comes in the console.
 
+**The registers**
+
+Under the local variables the panel has the registers of the frame: the
+general ones, the program counter and the flags, in hexadecimal; those the
+last step has changed are in bold. They are asked of the debugger only while
+they are shown: Enter on their title shows and hides them, and a stop in code
+with no source, or in a source of assembler (*.s*, *.S*, *.asm*), shows them.
+Enter on a register gives its value in the dialog
+that adds it to the watches, *$rax* for one. A program of a language with no
+registers, Python say, has no such title.
+
+**The instructions**
+
+**Debug → Disassembly** opens a window under the source, a tab beside the
+console, with the instructions of the function of the frame: each source line
+before its instructions, when the program has its source, and *>* on the
+instruction the program is at. A stop in code with no source opens it by
+itself, and so does the first step by an instruction, which moves in no line of
+the source. It follows the steps and the frame chosen in the call stack.
+
+**Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
+: Move from one instruction to another.
+
+**F6**
+: Put a breakpoint on the instruction of the cursor, or take it off. Such a
+breakpoint is in the panel too, *● \*0x401136*, where Del takes it off; it
+is not kept for the next session.
+
+**Enter**
+: Go to the source line of the instruction.
+
+The other keys of the debugger work there as in the panel.
+
 **The values in the source**
 
 While the program is stopped the lines of the function, from its start down
 to the line it stopped on, show the values of the local variables they name,
-after their text. The values go when the program runs on and when the text
-is edited. The skin gives their color, *editnote* in *[editor]*.
+after their text. In a source of assembler they are the registers, from the
+label above: *add %rcx, %rdi* gets *rcx = 0xa, rdi = 0x0*; a register is
+named by its parts too, *eax* or *al* for *rax*. The values go when the
+program runs on and when the text is edited. The skin gives their color,
+*editnote* in *[editor]*.
 
 A step that ends in code whose source is not on this machine, a library
 with debug information but without its sources, goes on out of it: a step
 into *printf* comes back to the call, a step out of *main* ends the program.
-A frame without its source is named in the panel and opens nothing.
+A step by an instruction stays there: the panel names the function and the
+address, and the instructions and the registers come. A frame without its
+source is named in the panel and opens nothing.
 
 **The marks**
 

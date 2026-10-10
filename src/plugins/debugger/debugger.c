@@ -104,6 +104,15 @@ typedef struct
 } debug_watch_t;
 
 typedef struct debug_session_window_t debug_session_window_t;
+typedef struct debug_disasm_window_t debug_disasm_window_t;
+
+/* A breakpoint on an instruction, from the window of the instructions; not kept */
+typedef struct
+{
+    char *address;
+    char *gdb_number;
+    unsigned int pending_token;
+} debug_address_breakpoint_t;
 
 /* the commands of the debugger, in the [debugger] section of the keymap */
 enum
@@ -123,6 +132,8 @@ enum
     DEBUG_CMD_CLOSE,
     DEBUG_CMD_PANEL,
     DEBUG_CMD_INDEX,
+    DEBUG_CMD_STEP_INSTRUCTION,
+    DEBUG_CMD_NEXT_INSTRUCTION,
     DEBUG_CMD_COUNT
 };
 
@@ -146,6 +157,10 @@ static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
     // from any window: to the panel of the debugger, and back to the file
     { "DebugPanel", N_ ("Go to the panel of the debugger and back"), "alt-shift-g" },
     { "DebugIndex", N_ ("Index the symbols of the project"), "f3" },
+    /* Shift-F8 is Step out; these two are the debugger's only while the program is stopped, the
+       editor's Search and Replace again the rest of the time */
+    { "DebugStepInstruction", N_ ("Step into by an instruction"), "f17; ctrl-f7" },
+    { "DebugNextInstruction", N_ ("Step over by an instruction"), "f14; ctrl-f8" },
     { NULL, NULL, NULL },
 };
 
@@ -200,7 +215,14 @@ typedef struct
     gboolean eval_pending;
     // the local variables of the frame: debug_variable_t
     GPtrArray *locals;
+    // the registers, when the panel shows them, and their values at the stop before
+    GPtrArray *registers;
+    GHashTable *registers_before;
+    gboolean registers_shown;
+    // the last step went by an instruction: code with no source is not stepped out of
+    gboolean instruction_step;
     char *current_func;
+    char *current_address;
     /* the user went back to editing with the program stopped; the next stop steps again */
     gboolean step_left;
     int marks[DEBUG_MARK_COUNT];
@@ -220,7 +242,24 @@ typedef struct
     gboolean debug_mode;
     gboolean layout_pushed;  // the editor keeps the windows of before debugging
     debug_session_window_t *session_window;
+    // the window of the instructions, those it shows, and the address of the frame among them
+    debug_disasm_window_t *disasm_window;
+    GPtrArray *instructions;
+    char *disasm_address;
+    GPtrArray *address_breakpoints;
+    // the lines of the source file the window shows lines of
+    char *source_file;
+    char **source_lines;
 } debugger_t;
+
+struct debug_disasm_window_t
+{
+    WEditWindow window;
+    debugger_t *debug;
+    int cursor;
+    int top;
+    gboolean follow;  // the next drawing brings the program counter in sight
+};
 
 struct debug_session_window_t
 {
@@ -258,7 +297,10 @@ enum
     DEBUG_ACT_FUNCTION_BREAKPOINT,
     DEBUG_ACT_RUN_TO_FUNCTION,
     DEBUG_ACT_EVALUATE,
-    DEBUG_ACT_RUN_TO_CURSOR
+    DEBUG_ACT_RUN_TO_CURSOR,
+    DEBUG_ACT_STEP_INSTRUCTION,
+    DEBUG_ACT_NEXT_INSTRUCTION,
+    DEBUG_ACT_DISASSEMBLY
 };
 
 static mc_ep_result_t debug_start (void *data, void *edit);
@@ -267,6 +309,8 @@ static mc_ep_result_t debug_pause (void *data, void *edit);
 static mc_ep_result_t debug_step (void *data, void *edit);
 static mc_ep_result_t debug_next (void *data, void *edit);
 static mc_ep_result_t debug_finish (void *data, void *edit);
+static mc_ep_result_t debug_step_instruction (void *data, void *edit);
+static mc_ep_result_t debug_next_instruction (void *data, void *edit);
 static mc_ep_result_t debug_stop (void *data, void *edit);
 static mc_ep_result_t debug_toggle_breakpoint (void *data, void *edit);
 static mc_ep_result_t debug_run_to_cursor (debugger_t *debug, void *edit);
@@ -287,6 +331,8 @@ static void debug_config_save (debugger_t *debug);
 static void debug_output_console (debugger_t *debug, const char *text_value, gboolean line);
 static void debug_notes_show (debugger_t *debug);
 static mc_ep_result_t debug_session_show (void *data, void *edit);
+static mc_ep_result_t debug_act_disassembly (void *data, void *edit);
+static gboolean debug_alive (const debugger_t *debug);
 static int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
 static void debug_error (debugger_t *debug, const char *message_text);
 static void debug_breakpoint_move (debugger_t *debug, const char *number, long line);
@@ -311,6 +357,12 @@ debug_functions_free (gpointer p)
 static GPtrArray *debug_functions (const debugger_t *debug, const char *root, const char *file,
                                    const char *query);
 static void debug_session_refresh (debugger_t *debug);
+static void debug_registers_toggle (debugger_t *debug);
+static gboolean debug_source_here (const char *file);
+static gboolean debug_source_is_asm (const char *file);
+static void debug_address_breakpoint_toggle (debugger_t *debug, const char *address);
+static void debug_address_breakpoint_install (debugger_t *debug, debug_address_breakpoint_t *bp);
+static void debug_disasm_show (debugger_t *debug, gboolean focus);
 
 static void
 debug_breakpoint_free (gpointer data)
@@ -432,11 +484,9 @@ debug_session_button_label (int cmd, debug_state_t state)
 }
 
 static void
-debug_session_buttonbar (debug_session_window_t *session)
+debug_window_buttonbar (const debugger_t *debug, Widget *w)
 {
-    WButtonBar *bb = buttonbar_find (DIALOG (WIDGET (session)->owner));
-    const debugger_t *debug = session->debug;
-    Widget *w = WIDGET (session);
+    WButtonBar *bb = buttonbar_find (DIALOG (w->owner));
     int i;
 
     if (bb == NULL || debug == NULL)
@@ -446,6 +496,9 @@ debug_session_buttonbar (debug_session_window_t *session)
         const int cmd = debug_command_of_key (debug, KEY_F (i));
         const char *label = debug_session_button_label (cmd, debug->state);
 
+        // a window of the debugger is no file: its cursor is on no line
+        if (cmd == DEBUG_CMD_RUN_TO_CURSOR && w != WIDGET (debug->session_window))
+            label = NULL;
         if (label == NULL)
             buttonbar_clear_label (bb, i, NULL);
         else
@@ -453,6 +506,13 @@ debug_session_buttonbar (debug_session_window_t *session)
                                          cmd == DEBUG_CMD_HELP ? NULL : w);
     }
     widget_draw (WIDGET (bb));
+}
+
+/* The button bar of the panel: the commands go to the panel */
+static void
+debug_session_buttonbar (debug_session_window_t *session)
+{
+    debug_window_buttonbar (session->debug, WIDGET (session));
 }
 
 /* Step mode: while the program is stopped, or running after a step, a file window takes the
@@ -612,14 +672,18 @@ typedef enum
     PANEL_LOCAL,
     PANEL_WATCH,
     PANEL_FRAME,
-    PANEL_BREAKPOINT
+    PANEL_BREAKPOINT,
+    PANEL_REGISTERS,  // the title of the registers, Enter shows and hides them
+    PANEL_REGISTER,
+    PANEL_ADDRESS_BREAKPOINT
 } debug_panel_kind_t;
 
 typedef struct
 {
     debug_panel_kind_t kind;
-    guint index;  // of the variable, the watch, the frame or the breakpoint
+    guint index;  // of the variable, the watch, the frame, the breakpoint or the register
     char *text;
+    gboolean changed;  // a register the last steps have changed
 } debug_panel_row_t;
 
 static void
@@ -631,15 +695,16 @@ debug_panel_row_free (gpointer p)
     g_free (row);
 }
 
-static void
+static debug_panel_row_t *
 debug_panel_add (GPtrArray *rows, debug_panel_kind_t kind, guint index, char *text)
 {
-    debug_panel_row_t *row = g_new (debug_panel_row_t, 1);
+    debug_panel_row_t *row = g_new0 (debug_panel_row_t, 1);
 
     row->kind = kind;
     row->index = index;
     row->text = text;
     g_ptr_array_add (rows, row);
+    return row;
 }
 
 static gboolean
@@ -668,8 +733,10 @@ debug_panel_rows (const debugger_t *debug)
                                           debug->current_func != NULL ? debug->current_func : "",
                                           x_basename (debug->current_file), debug->current_line));
     else if (debug->state == DEBUG_STOPPED && debug->current_func != NULL)
-        debug_panel_add (rows, PANEL_TEXT, 0,
-                         g_strdup_printf (_ ("%s, with no source"), debug->current_func));
+        debug_panel_add (
+            rows, PANEL_TEXT, 0,
+            g_strdup_printf (_ ("%s %s, with no source"), debug->current_func,
+                             debug->current_address != NULL ? debug->current_address : ""));
 
     // what to do next, while nothing runs
     if ((debug->state == DEBUG_OFF || debug->state == DEBUG_FINISHED) && !debug->start_after_build)
@@ -696,6 +763,20 @@ debug_panel_rows (const debugger_t *debug)
 
             debug_panel_add (rows, PANEL_LOCAL, i,
                              g_strdup_printf ("%s = %s", local->name, local->value));
+        }
+        debug_panel_add (rows, PANEL_REGISTERS, 0,
+                         g_strdup (debug->registers_shown ? _ ("Registers")
+                                                          : _ ("Registers  (Enter shows them)")));
+        for (i = 0; debug->registers_shown && i < debug->registers->len; i++)
+        {
+            const debug_variable_t *reg = g_ptr_array_index (debug->registers, i);
+            const char *before = debug->registers_before != NULL
+                ? g_hash_table_lookup (debug->registers_before, reg->name)
+                : NULL;
+            debug_panel_row_t *row = debug_panel_add (
+                rows, PANEL_REGISTER, i, g_strdup_printf ("%s = %s", reg->name, reg->value));
+
+            row->changed = before != NULL && strcmp (before, reg->value) != 0;
         }
     }
 
@@ -770,7 +851,19 @@ debug_panel_rows (const debugger_t *debug)
         }
         g_hash_table_destroy (functions);
     }
-    if (debug->breakpoints->len == 0)
+    for (i = 0; i < debug->address_breakpoints->len; i++)
+    {
+        const debug_address_breakpoint_t *bp = g_ptr_array_index (debug->address_breakpoints, i);
+
+        debug_panel_add (
+            rows, PANEL_ADDRESS_BREAKPOINT, i,
+            g_strdup_printf ("%s *%s",
+                             debug->glyphs[bp->gdb_number == NULL && debug_session_live (debug)
+                                               ? DEBUG_MARK_PENDING
+                                               : DEBUG_MARK_BREAKPOINT],
+                             bp->address));
+    }
+    if (debug->breakpoints->len == 0 && debug->address_breakpoints->len == 0)
         debug_panel_add (rows, PANEL_TEXT, 0,
                          g_strdup (debug->debug_mode ? _ ("  F6 on a line puts one")
                                                      : _ ("  Ctrl-B on a line puts one")));
@@ -846,12 +939,13 @@ debug_session_draw (debug_session_window_t *session)
         {
             const debug_panel_row_t *r = g_ptr_array_index (rows, index);
 
-            if (r->kind == PANEL_TITLE)
-                c = EDITOR_BOLD_COLOR;
-            else if (index == session->cursor && focused && debug_panel_selectable (r))
+            if (index == session->cursor && focused && debug_panel_selectable (r))
                 c = EDITOR_MARKED_COLOR;
+            else if (r->kind == PANEL_TITLE || r->kind == PANEL_REGISTERS || r->changed)
+                c = EDITOR_BOLD_COLOR;
             text = r->text;
-            if (debug_panel_selectable (r))
+            // the title of the registers is a title, that Enter opens
+            if (debug_panel_selectable (r) && r->kind != PANEL_REGISTERS)
                 text = indented = g_strconcat ("  ", r->text, (char *) NULL);
         }
         tty_setcolor (EDITOR_NORMAL_COLOR);
@@ -917,6 +1011,17 @@ debug_panel_key (debug_session_window_t *session, int key)
                               ->expression));
         else if (row->kind == PANEL_FRAME)
             debug_select_frame (debug, g_ptr_array_index (debug->frames, row->index));
+        else if (row->kind == PANEL_REGISTERS)
+            debug_registers_toggle (debug);
+        else if (row->kind == PANEL_ADDRESS_BREAKPOINT)
+            debug_disasm_show (debug, TRUE);
+        else if (row->kind == PANEL_REGISTER)
+            (void) debug_evaluate_text (
+                debug,
+                g_strconcat (
+                    "$",
+                    ((debug_variable_t *) g_ptr_array_index (debug->registers, row->index))->name,
+                    (char *) NULL));
         else if (row->kind == PANEL_BREAKPOINT)
         {
             const debug_breakpoint_t *bp = g_ptr_array_index (debug->breakpoints, row->index);
@@ -938,6 +1043,11 @@ debug_panel_key (debug_session_window_t *session, int key)
             debug_marks_show (debug, NULL);
             debug_config_save (debug);
         }
+        else if (row != NULL && row->kind == PANEL_ADDRESS_BREAKPOINT)
+            debug_address_breakpoint_toggle (debug,
+                                             ((debug_address_breakpoint_t *) g_ptr_array_index (
+                                                  debug->address_breakpoints, row->index))
+                                                 ->address);
         break;
     case ' ':
         if (row != NULL && row->kind == PANEL_BREAKPOINT)
@@ -1029,6 +1139,12 @@ debug_run_command (debugger_t *debug, int cmd, void *edit)
         return TRUE;
     case DEBUG_CMD_STEP_OUT:
         (void) debug_finish (debug, edit);
+        return TRUE;
+    case DEBUG_CMD_STEP_INSTRUCTION:
+        (void) debug_step_instruction (debug, edit);
+        return TRUE;
+    case DEBUG_CMD_NEXT_INSTRUCTION:
+        (void) debug_next_instruction (debug, edit);
         return TRUE;
     case DEBUG_CMD_STOP:
         if (debug_session_live (debug))
@@ -1171,6 +1287,8 @@ debug_session_refresh (debugger_t *debug)
         return;
     if (current == WIDGET (debug->session_window))
         debug_session_buttonbar (debug->session_window);
+    else if (current == WIDGET (debug->disasm_window))
+        debug_window_buttonbar (debug, current);
     else if (edit_widget_is_editor (current))
         debug_editor_buttonbar (debug, current);
 }
@@ -1200,6 +1318,506 @@ debug_session_show (void *data, void *edit)
     debug->host->window_dock_right (debug->host, session, CLAMP (area.cols * 30 / 100, 30, 60));
     debug_session_refresh (debug);
     return MC_EPR_OK;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* The window of the instructions */
+/* --------------------------------------------------------------------------------------------- */
+
+/* A row of the window: a source line, or an instruction */
+typedef struct
+{
+    gboolean source;
+    guint index;  // of the instruction
+    char *text;
+} debug_disasm_row_t;
+
+static void
+debug_disasm_row_free (gpointer p)
+{
+    debug_disasm_row_t *row = (debug_disasm_row_t *) p;
+
+    g_free (row->text);
+    g_free (row);
+}
+
+/* The number of an address, 0 when it is none */
+static guint64
+debug_address_value (const char *address)
+{
+    return address != NULL ? g_ascii_strtoull (address, NULL, 16) : 0;
+}
+
+static debug_address_breakpoint_t *
+debug_address_breakpoint_at (const debugger_t *debug, const char *address, guint *index)
+{
+    const guint64 value = debug_address_value (address);
+    guint i;
+
+    for (i = 0; value != 0 && i < debug->address_breakpoints->len; i++)
+    {
+        debug_address_breakpoint_t *bp = g_ptr_array_index (debug->address_breakpoints, i);
+
+        if (debug_address_value (bp->address) == value)
+        {
+            if (index != NULL)
+                *index = i;
+            return bp;
+        }
+    }
+    return NULL;
+}
+
+/* A line of a source file, without its indentation; NULL when it cannot be read */
+static const char *
+debug_source_line (debugger_t *debug, const char *file, long line)
+{
+    if (g_strcmp0 (debug->source_file, file) != 0)
+    {
+        char *text = NULL;
+
+        g_clear_pointer (&debug->source_lines, g_strfreev);
+        g_free (debug->source_file);
+        debug->source_file = g_strdup (file);
+        if (file != NULL && g_file_get_contents (file, &text, NULL, NULL))
+            debug->source_lines = g_strsplit (text, "\n", -1);
+        g_free (text);
+    }
+    if (debug->source_lines == NULL || line <= 0
+        || line > (long) g_strv_length (debug->source_lines))
+        return NULL;
+    return debug->source_lines[line - 1] + strspn (debug->source_lines[line - 1], " \t");
+}
+
+/* What the window shows: each source line before its instructions, the instructions with the
+   mark of the program counter and those of the breakpoints */
+static GPtrArray *
+debug_disasm_rows (debugger_t *debug)
+{
+    GPtrArray *rows = g_ptr_array_new_with_free_func (debug_disasm_row_free);
+    const guint64 pc = debug_address_value (debug->disasm_address);
+    const char *file = NULL;
+    long line = 0;
+    guint i;
+
+    for (i = 0; i < debug->instructions->len; i++)
+    {
+        const debug_instruction_t *insn = g_ptr_array_index (debug->instructions, i);
+        const gboolean here = debug_address_value (insn->address) == pc;
+        const gboolean bp = debug_address_breakpoint_at (debug, insn->address, NULL) != NULL;
+        const char *glyph = here && bp ? debug->glyphs[DEBUG_MARK_EXEC_BREAKPOINT]
+            : here                     ? debug->glyphs[DEBUG_MARK_EXEC]
+            : bp                       ? debug->glyphs[DEBUG_MARK_BREAKPOINT]
+                                       : " ";
+        debug_disasm_row_t *row;
+
+        if (insn->file != NULL && (g_strcmp0 (insn->file, file) != 0 || insn->line != line))
+        {
+            const char *text = debug_source_line (debug, insn->file, insn->line);
+
+            file = insn->file;
+            line = insn->line;
+            row = g_new0 (debug_disasm_row_t, 1);
+            row->source = TRUE;
+            row->index = i;
+            row->text =
+                g_strdup_printf ("%s:%ld  %s", x_basename (file), line, text != NULL ? text : "");
+            g_ptr_array_add (rows, row);
+        }
+        row = g_new0 (debug_disasm_row_t, 1);
+        row->index = i;
+        if (insn->func != NULL)
+            row->text = g_strdup_printf ("%s %s <%s+%ld>  %s", glyph, insn->address, insn->func,
+                                         insn->offset, insn->text != NULL ? insn->text : "");
+        else
+            row->text = g_strdup_printf ("%s %s  %s", glyph, insn->address,
+                                         insn->text != NULL ? insn->text : "");
+        g_ptr_array_add (rows, row);
+    }
+    return rows;
+}
+
+/* The cursor on an instruction, the nearest one in that direction */
+static void
+debug_disasm_cursor (debug_disasm_window_t *disasm, const GPtrArray *rows, int to, int step)
+{
+    const int last = (int) rows->len - 1;
+    int i;
+
+    to = CLAMP (to, 0, MAX (last, 0));
+    for (i = to; i >= 0 && i <= last; i += step)
+        if (!((debug_disasm_row_t *) g_ptr_array_index (rows, i))->source)
+        {
+            disasm->cursor = i;
+            return;
+        }
+    for (i = to; i >= 0 && i <= last; i -= step)
+        if (!((debug_disasm_row_t *) g_ptr_array_index (rows, i))->source)
+        {
+            disasm->cursor = i;
+            return;
+        }
+    disasm->cursor = 0;
+}
+
+/* The row of the program counter, -1 when it is not among them */
+static int
+debug_disasm_pc_row (const debugger_t *debug, const GPtrArray *rows)
+{
+    const guint64 pc = debug_address_value (debug->disasm_address);
+    guint i;
+
+    for (i = 0; pc != 0 && i < rows->len; i++)
+    {
+        const debug_disasm_row_t *row = g_ptr_array_index (rows, i);
+        const debug_instruction_t *insn = g_ptr_array_index (debug->instructions, row->index);
+
+        if (!row->source && debug_address_value (insn->address) == pc)
+            return (int) i;
+    }
+    return -1;
+}
+
+static void
+debug_disasm_draw (debug_disasm_window_t *disasm)
+{
+    WEditWindow *win = &disasm->window;
+    Widget *w = WIDGET (disasm);
+    debugger_t *debug = disasm->debug;
+    const gboolean focused = widget_get_state (w, WST_FOCUSED);
+    const int color = edit_window_frame_color (win, focused);
+    const int lines = MAX (1, w->rect.lines - 2);
+    const int width = MAX (0, w->rect.cols - 2);
+    GPtrArray *rows;
+    int row;
+
+    edit_window_draw_frame (win, color, focused);
+    tty_setcolor (color);
+    widget_gotoyx (w, 0, 2);
+    tty_print_string (str_term_trim (_ ("[Disassembly]"), MAX (0, w->rect.cols - 10)));
+    edit_window_draw_icons (win, color);
+    if (debug == NULL)
+        return;
+
+    rows = debug_disasm_rows (debug);
+    if (disasm->follow)
+    {
+        // the program counter in sight, a third of the way down
+        const int pc = debug_disasm_pc_row (debug, rows);
+
+        disasm->follow = FALSE;
+        if (pc >= 0)
+        {
+            disasm->cursor = pc;
+            disasm->top = MAX (0, pc - lines / 3);
+        }
+    }
+    if (disasm->cursor >= (int) rows->len
+        || (rows->len > 0
+            && ((debug_disasm_row_t *) g_ptr_array_index (rows, disasm->cursor))->source))
+        debug_disasm_cursor (disasm, rows, disasm->cursor, 1);
+    if (disasm->cursor < disasm->top)
+        disasm->top = disasm->cursor;
+    else if (disasm->cursor >= disasm->top + lines)
+        disasm->top = disasm->cursor - lines + 1;
+
+    for (row = 0; row < lines; row++)
+    {
+        const int index = disasm->top + row;
+        int c = EDITOR_NORMAL_COLOR;
+        const char *text = "";
+
+        if (rows->len == 0 && row == 0)
+            text = debug->state == DEBUG_STOPPED ? _ ("No instructions here.")
+                                                 : _ ("The program is not stopped.");
+        else if (index < (int) rows->len)
+        {
+            const debug_disasm_row_t *r = g_ptr_array_index (rows, index);
+
+            if (index == disasm->cursor && focused)
+                c = EDITOR_MARKED_COLOR;
+            else if (r->source)
+                c = EDITOR_BOLD_COLOR;
+            text = r->text;
+        }
+        tty_setcolor (EDITOR_NORMAL_COLOR);
+        tty_draw_hline (w->rect.y + row + 1, w->rect.x + 1, ' ', width);
+        tty_setcolor (c);
+        widget_gotoyx (w, row + 1, 1);
+        tty_print_string (str_fit_to_term (text, width, J_LEFT_FIT));
+    }
+    g_ptr_array_free (rows, TRUE);
+}
+
+/* The instruction under the cursor, NULL when there is none */
+static const debug_instruction_t *
+debug_disasm_current (const debug_disasm_window_t *disasm)
+{
+    debugger_t *debug = disasm->debug;
+    GPtrArray *rows = debug_disasm_rows (debug);
+    const debug_instruction_t *insn = NULL;
+
+    if (disasm->cursor >= 0 && disasm->cursor < (int) rows->len)
+    {
+        const debug_disasm_row_t *row = g_ptr_array_index (rows, disasm->cursor);
+
+        insn = g_ptr_array_index (debug->instructions, row->index);
+    }
+    g_ptr_array_free (rows, TRUE);
+    return insn;
+}
+
+/* The moves of the cursor, Enter and F6; FALSE for a key that is none of them */
+static gboolean
+debug_disasm_key (debug_disasm_window_t *disasm, int key)
+{
+    debugger_t *debug = disasm->debug;
+    GPtrArray *rows = debug_disasm_rows (debug);
+    const int lines = MAX (1, WIDGET (disasm)->rect.lines - 2);
+    gboolean handled = TRUE;
+
+    switch (key)
+    {
+    case KEY_UP:
+        debug_disasm_cursor (disasm, rows, disasm->cursor - 1, -1);
+        break;
+    case KEY_DOWN:
+        debug_disasm_cursor (disasm, rows, disasm->cursor + 1, 1);
+        break;
+    case KEY_PPAGE:
+        debug_disasm_cursor (disasm, rows, disasm->cursor - lines, -1);
+        break;
+    case KEY_NPAGE:
+        debug_disasm_cursor (disasm, rows, disasm->cursor + lines, 1);
+        break;
+    case KEY_HOME:
+        debug_disasm_cursor (disasm, rows, 0, 1);
+        break;
+    case KEY_END:
+        debug_disasm_cursor (disasm, rows, (int) rows->len - 1, -1);
+        break;
+    case '\n':
+    case KEY_ENTER:
+    {
+        const debug_instruction_t *insn = debug_disasm_current (disasm);
+
+        // the source line of the instruction
+        if (insn != NULL && debug_source_here (insn->file) && insn->line > 0)
+            (void) debug->host->show_location (debug->host, insn->file, insn->line);
+        else
+            tty_beep ();
+        break;
+    }
+    default:
+        if (debug_command_of_key (debug, key) == DEBUG_CMD_TOGGLE_BREAKPOINT)
+        {
+            const debug_instruction_t *insn = debug_disasm_current (disasm);
+
+            if (insn != NULL)
+                debug_address_breakpoint_toggle (debug, insn->address);
+        }
+        else
+            handled = FALSE;
+        break;
+    }
+    g_ptr_array_free (rows, TRUE);
+    if (handled && disasm->debug != NULL)
+        widget_draw (WIDGET (disasm));
+    return handled;
+}
+
+static void
+debug_disasm_mouse (Widget *w, mouse_msg_t msg, mouse_event_t *event)
+{
+    debug_disasm_window_t *disasm = (debug_disasm_window_t *) w;
+
+    if (disasm->debug == NULL)
+        return;
+    switch (msg)
+    {
+    case MSG_MOUSE_DOWN:
+    {
+        GPtrArray *rows = debug_disasm_rows (disasm->debug);
+        const int index = disasm->top + event->y - 1;
+
+        widget_select (w);
+        if (index >= 0 && index < (int) rows->len
+            && !((debug_disasm_row_t *) g_ptr_array_index (rows, index))->source)
+            disasm->cursor = index;
+        g_ptr_array_free (rows, TRUE);
+        widget_draw (w);
+        break;
+    }
+    case MSG_MOUSE_CLICK:
+        if (event->count == GPM_DOUBLE)
+            (void) debug_disasm_key (disasm, '\n');
+        break;
+    case MSG_MOUSE_SCROLL_UP:
+        disasm->top = MAX (0, disasm->top - 3);
+        widget_draw (w);
+        break;
+    case MSG_MOUSE_SCROLL_DOWN:
+        disasm->top += 3;
+        widget_draw (w);
+        break;
+    default:
+        break;
+    }
+}
+
+static cb_ret_t
+debug_disasm_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    debug_disasm_window_t *disasm = (debug_disasm_window_t *) w;
+
+    switch (msg)
+    {
+    case MSG_DRAW:
+        debug_disasm_draw (disasm);
+        return MSG_HANDLED;
+    case MSG_FOCUS:
+        debug_window_buttonbar (disasm->debug, w);
+        debug_disasm_draw (disasm);
+        return MSG_HANDLED;
+    case MSG_UNFOCUS:
+        debug_disasm_draw (disasm);
+        return MSG_HANDLED;
+    case MSG_KEY:
+        if (disasm->debug == NULL)
+            return MSG_NOT_HANDLED;
+        if (debug_disasm_key (disasm, parm))
+            return MSG_HANDLED;
+        // run to the cursor is of a line of a file
+        if (debug_command_of_key (disasm->debug, parm) != DEBUG_CMD_RUN_TO_CURSOR
+            && debug_run_command (disasm->debug, debug_command_of_key (disasm->debug, parm), NULL))
+            return MSG_HANDLED;
+        if (parm >= KEY_F (1) && parm <= KEY_F (10)
+            && debug_command_of_key (disasm->debug, parm) != DEBUG_CMD_HELP)
+            return MSG_HANDLED;
+        return MSG_NOT_HANDLED;
+    case MSG_ACTION:
+        if (disasm->debug == NULL)
+            return MSG_NOT_HANDLED;
+        // the breakpoint of the button bar is on the instruction of the cursor
+        if (debug_command (disasm->debug, parm) == DEBUG_CMD_TOGGLE_BREAKPOINT)
+        {
+            const debug_instruction_t *insn = debug_disasm_current (disasm);
+
+            if (insn != NULL)
+                debug_address_breakpoint_toggle (disasm->debug, insn->address);
+            return MSG_HANDLED;
+        }
+        if (debug_command (disasm->debug, parm) != DEBUG_CMD_RUN_TO_CURSOR
+            && debug_run_command (disasm->debug, debug_command (disasm->debug, parm), NULL))
+            return MSG_HANDLED;
+        return MSG_NOT_HANDLED;
+    case MSG_CURSOR:
+        widget_gotoyx (w, 1 + disasm->cursor - disasm->top, 1);
+        return MSG_HANDLED;
+    case MSG_DESTROY:
+        if (disasm->debug != NULL)
+            disasm->debug->disasm_window = NULL;
+        return group_default_callback (w, sender, msg, parm, data);
+    default:
+        return group_default_callback (w, sender, msg, parm, data);
+    }
+}
+
+static char *
+debug_disasm_title (const WEditWindow *win)
+{
+    (void) win;
+    return g_strdup (_ ("Disassembly"));
+}
+
+static const edit_window_class_t debug_disasm_class = {
+    .callback = debug_disasm_callback,
+    .mouse_callback = debug_disasm_mouse,
+    .get_title = debug_disasm_title,
+    .close = debug_session_close_window,
+    .min_lines = 4,
+    .min_cols = 24,
+};
+
+/* The instructions the window shows came */
+static void
+debug_reply_disassemble (void *ui, const debug_reply_t *reply, void *data)
+{
+    debugger_t *debug = (debugger_t *) ui;
+
+    (void) data;
+    g_ptr_array_unref (debug->instructions);
+    debug->instructions = reply->instructions != NULL
+        ? g_ptr_array_ref (reply->instructions)
+        : g_ptr_array_new_with_free_func (debug_instruction_free);
+    if (!reply->ok && reply->msg != NULL)
+        debug_output_console (debug, reply->msg, TRUE);
+    if (debug->disasm_window != NULL)
+    {
+        debug->disasm_window->follow = TRUE;
+        widget_draw (WIDGET (debug->disasm_window));
+    }
+}
+
+/* The instructions around the address of the frame, when the window is open: asked for when
+   they are not those it shows already */
+static void
+debug_disasm_refresh (debugger_t *debug)
+{
+    const guint64 pc = debug_address_value (debug->disasm_address);
+    guint i;
+
+    if (debug->disasm_window == NULL)
+        return;
+    debug->disasm_window->follow = TRUE;
+    if (debug->state != DEBUG_STOPPED || pc == 0 || debug->backend == NULL
+        || debug->backend->ops->disassemble == NULL)
+    {
+        widget_draw (WIDGET (debug->disasm_window));
+        return;
+    }
+    for (i = 0; i < debug->instructions->len; i++)
+        if (debug_address_value (
+                ((debug_instruction_t *) g_ptr_array_index (debug->instructions, i))->address)
+            == pc)
+        {
+            widget_draw (WIDGET (debug->disasm_window));
+            return;
+        }
+    (void) debug->backend->ops->disassemble (debug->backend, debug->disasm_address,
+                                             debug_reply_disassemble, NULL, NULL);
+}
+
+/* The window of the instructions, under the source; @focus: it takes the keys */
+static void
+debug_disasm_show (debugger_t *debug, gboolean focus)
+{
+    debug_disasm_window_t *disasm;
+    void *before = debug->host->window_current (debug->host);
+    WRect area;
+
+    if (debug->disasm_window != NULL)
+    {
+        debug->host->window_show (debug->host, debug->disasm_window);
+        if (!focus && before != NULL && before != (void *) debug->disasm_window)
+            debug->host->window_show (debug->host, before);
+        debug_disasm_refresh (debug);
+        return;
+    }
+    debug->host->window_area (debug->host, &area);
+    disasm = g_new0 (debug_disasm_window_t, 1);
+    edit_window_init (&disasm->window, &area, &debug_disasm_class);
+    disasm->window.fullscreen = 0;
+    disasm->debug = debug;
+    debug->disasm_window = disasm;
+    debug->host->window_add (debug->host, disasm);
+    if (debug->host->window_dock_bottom != NULL)
+        debug->host->window_dock_bottom (debug->host, disasm, CLAMP (area.lines * 30 / 100, 8, 20));
+    if (!focus && before != NULL)
+        debug->host->window_show (debug->host, before);
+    // what it shows is of the stop before: asked for again
+    g_ptr_array_set_size (debug->instructions, 0);
+    debug_disasm_refresh (debug);
 }
 
 static char *
@@ -1803,6 +2421,57 @@ debug_line_names (const char *line, const char *name)
     return FALSE;
 }
 
+/* Whether a register stands in a line of assembler, by its name or by that of a part of it:
+   rax as eax, ax, al; r8 as r8d, r8w, r8b.  What a comment says does not count. */
+static gboolean
+debug_line_names_register (const char *line, const char *reg)
+{
+    char *code = g_strndup (line, strcspn (line, "#;"));
+    const gsize len = strlen (reg);
+    gboolean named = debug_line_names (code, reg);
+
+    // the registers of x86-64 that have parts of other names
+    if (!named && len == 3 && reg[0] == 'r' && !g_ascii_isdigit (reg[1]))
+    {
+        const char e[] = { 'e', reg[1], reg[2], '\0' };
+        const char w[] = { reg[1], reg[2], '\0' };
+        const char low[] = { reg[1], reg[2] == 'x' ? 'l' : reg[2], reg[2] == 'x' ? '\0' : 'l',
+                             '\0' };
+        const char high[] = { reg[1], 'h', '\0' };
+
+        named = debug_line_names (code, e) || debug_line_names (code, w)
+            || debug_line_names (code, low) || (reg[2] == 'x' && debug_line_names (code, high));
+    }
+    else if (!named && reg[0] == 'r' && g_ascii_isdigit (reg[1]) && len <= 3)
+    {
+        const char *parts[] = { "d", "w", "b" };
+        guint i;
+
+        for (i = 0; i < G_N_ELEMENTS (parts) && !named; i++)
+        {
+            char *part = g_strconcat (reg, parts[i], (char *) NULL);
+
+            named = debug_line_names (code, part);
+            g_free (part);
+        }
+    }
+    g_free (code);
+    return named;
+}
+
+/* Whether a line of assembler is a label, where a run of instructions starts */
+static gboolean
+debug_line_is_label (const char *line)
+{
+    const char *p = line + strspn (line, " \t");
+
+    if (!(g_ascii_isalpha (*p) || *p == '_' || *p == '.'))
+        return FALSE;
+    while (g_ascii_isalnum (*p) || *p == '_' || *p == '.' || *p == '$')
+        p++;
+    return *p == ':';
+}
+
 static void
 debug_notes_clear (debugger_t *debug)
 {
@@ -1818,13 +2487,16 @@ debug_notes_clear (debugger_t *debug)
 static void
 debug_notes_show (debugger_t *debug)
 {
+    // in assembler the registers stand for the variables
+    const gboolean asm_source = debug_source_is_asm (debug->current_file);
+    const GPtrArray *values = asm_source ? debug->registers : debug->locals;
     char *text = NULL;
     char **lines;
     long line, first;
 
     debug_notes_clear (debug);
     if (debug->host->set_line_note == NULL || debug->state != DEBUG_STOPPED
-        || debug->current_file == NULL || debug->locals->len == 0
+        || debug->current_file == NULL || values->len == 0
         || !g_file_get_contents (debug->current_file, &text, NULL, NULL))
     {
         g_free (text);
@@ -1838,9 +2510,10 @@ debug_notes_show (debugger_t *debug)
         return;
     }
 
-    // up to the start of the function: a line that opens with a brace, 40 lines at most
+    /* up to the start of the function: a line that opens with a brace, a label in assembler,
+       40 lines at most */
     for (first = debug->current_line; first > 1 && first > debug->current_line - 40; first--)
-        if (lines[first - 1][0] == '{')
+        if (asm_source ? debug_line_is_label (lines[first - 1]) : lines[first - 1][0] == '{')
             break;
 
     for (line = first; line <= debug->current_line; line++)
@@ -1848,11 +2521,12 @@ debug_notes_show (debugger_t *debug)
         GString *note = g_string_new (NULL);
         guint i;
 
-        for (i = 0; i < debug->locals->len; i++)
+        for (i = 0; i < values->len; i++)
         {
-            const debug_variable_t *local = g_ptr_array_index (debug->locals, i);
+            const debug_variable_t *local = g_ptr_array_index (values, i);
 
-            if (!debug_line_names (lines[line - 1], local->name))
+            if (asm_source ? !debug_line_names_register (lines[line - 1], local->name)
+                           : !debug_line_names (lines[line - 1], local->name))
                 continue;
             if (note->len > 0)
                 g_string_append (note, ", ");
@@ -1878,6 +2552,19 @@ debug_reply_stack (void *ui, const debug_reply_t *reply, void *data)
     g_ptr_array_unref (debug->frames);
     debug->frames = reply->frames != NULL ? g_ptr_array_ref (reply->frames)
                                           : g_ptr_array_new_with_free_func (debug_frame_free);
+    /* under _start of a program with no libc GDB has no frames to go on to, and makes some up:
+       the stack ends at the first one with neither a function nor a source */
+    for (i = 1; i < debug->frames->len; i++)
+    {
+        const debug_frame_t *frame = g_ptr_array_index (debug->frames, i);
+
+        if (frame->file == NULL && frame->from == NULL
+            && (frame->func == NULL || strcmp (frame->func, "??") == 0))
+        {
+            g_ptr_array_set_size (debug->frames, i);
+            break;
+        }
+    }
     for (i = 0; i < debug->frames->len; i++)
     {
         debug_frame_t *frame = g_ptr_array_index (debug->frames, i);
@@ -1905,6 +2592,61 @@ debug_reply_variables (void *ui, const debug_reply_t *reply, void *data)
                                              : g_ptr_array_new_with_free_func (debug_variable_free);
     debug_notes_show (debug);
     debug_session_refresh (debug);
+}
+
+/* The registers: the values of the stop before are kept, to show which have changed */
+static void
+debug_reply_registers (void *ui, const debug_reply_t *reply, void *data)
+{
+    debugger_t *debug = (debugger_t *) ui;
+    guint i;
+
+    (void) data;
+    if (debug->registers_before != NULL)
+        g_hash_table_destroy (debug->registers_before);
+    debug->registers_before = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    for (i = 0; i < debug->registers->len; i++)
+    {
+        const debug_variable_t *reg = g_ptr_array_index (debug->registers, i);
+
+        g_hash_table_insert (debug->registers_before, g_strdup (reg->name), g_strdup (reg->value));
+    }
+    g_ptr_array_unref (debug->registers);
+    debug->registers = reply->registers != NULL
+        ? g_ptr_array_ref (reply->registers)
+        : g_ptr_array_new_with_free_func (debug_variable_free);
+    if (!reply->ok && reply->msg != NULL)
+        debug_output_console (debug, reply->msg, TRUE);
+    if (debug_source_is_asm (debug->current_file))
+        debug_notes_show (debug);
+    debug_session_refresh (debug);
+}
+
+/* The registers of the frame, when the panel shows them */
+static void
+debug_registers_refresh (debugger_t *debug)
+{
+    if (debug->state != DEBUG_STOPPED || !debug->registers_shown || debug->backend == NULL
+        || debug->backend->ops->registers == NULL)
+        return;
+    (void) debug->backend->ops->registers (debug->backend, debug_reply_registers, NULL, NULL);
+}
+
+/* The registers shown in the panel, or hidden: they are asked for only when shown */
+static void
+debug_registers_toggle (debugger_t *debug)
+{
+    debug->registers_shown = !debug->registers_shown;
+    debug_registers_refresh (debug);
+    debug_session_refresh (debug);
+}
+
+/* The registers are of another program now: none changed */
+static void
+debug_registers_clear (debugger_t *debug)
+{
+    g_ptr_array_set_size (debug->registers, 0);
+    g_clear_pointer (&debug->registers_before, g_hash_table_destroy);
 }
 
 /* The value of a watch */
@@ -2118,6 +2860,12 @@ debug_finished (debugger_t *debug)
     debug_notes_clear (debug);
     g_ptr_array_set_size (debug->locals, 0);
     g_ptr_array_set_size (debug->frames, 0);
+    debug_registers_clear (debug);
+    g_clear_pointer (&debug->current_address, g_free);
+    g_clear_pointer (&debug->disasm_address, g_free);
+    g_ptr_array_set_size (debug->instructions, 0);
+    if (debug->disasm_window != NULL)
+        widget_draw (WIDGET (debug->disasm_window));
     debug_watches_clear_values (debug);
     debug_session_refresh (debug);
 }
@@ -2133,6 +2881,15 @@ debug_reply_run (void *ui, const debug_reply_t *reply, void *data)
         return;
     debug_error (debug, reply->msg != NULL ? reply->msg : _ ("GDB could not run the program."));
     debug_finished (debug);
+}
+
+/* Whether a source is of assembler: there the registers are the variables */
+static gboolean
+debug_source_is_asm (const char *file)
+{
+    return file != NULL
+        && (g_str_has_suffix (file, ".s") || g_str_has_suffix (file, ".S")
+            || g_str_has_suffix (file, ".asm"));
 }
 
 /* Whether the source of a frame is on this machine: the debug information of a library may name
@@ -2169,7 +2926,7 @@ debug_stopped (debugger_t *debug, const debug_stop_t *stop)
     }
     /* a step that ends in code with no source goes on out of it, the way it came: a step out of
        main ends the program, a step into printf comes back to the call */
-    if (file == NULL && stop->has_frame && debug->steps_out < 8
+    if (file == NULL && stop->has_frame && debug->steps_out < 8 && !debug->instruction_step
         && (stop->reason == DEBUG_STOP_STEP || stop->reason == DEBUG_STOP_FINISH))
     {
         char *text_value = g_strdup_printf (_ ("No source of %s here: stepping out.\n"),
@@ -2216,6 +2973,19 @@ debug_stopped (debugger_t *debug, const debug_stop_t *stop)
     debug_clear_current (debug);
     g_free (debug->current_func);
     debug->current_func = g_strdup (stop->func);
+    g_free (debug->current_address);
+    debug->current_address = g_strdup (stop->address);
+    g_free (debug->disasm_address);
+    debug->disasm_address = g_strdup (stop->address);
+    // in code with no source the registers and the instructions are what there is to see
+    if (file == NULL && stop->has_frame)
+    {
+        debug->registers_shown = TRUE;
+        debug_disasm_show (debug, !keep_debug_focus);
+    }
+    // nor has assembler other variables to see
+    if (debug_source_is_asm (file))
+        debug->registers_shown = TRUE;
     if (file != NULL && line > 0 && debug->host->show_location != NULL)
         (void) debug->host->show_location (debug->host, file, line);
     if (keep_debug_focus && debug->session_window != NULL)
@@ -2233,6 +3003,8 @@ debug_stopped (debugger_t *debug, const debug_stop_t *stop)
     (void) debug->backend->ops->select_frame (debug->backend, 0);
     (void) debug->backend->ops->stack (debug->backend, debug_reply_stack, NULL, NULL);
     (void) debug->backend->ops->variables (debug->backend, debug_reply_variables, NULL, NULL);
+    debug_registers_refresh (debug);
+    debug_disasm_refresh (debug);
     debug_watches_refresh (debug);
 }
 
@@ -2289,6 +3061,8 @@ debug_event_ready (void *ui)
         bp->pending_token = 0;
         (void) debug_breakpoint_install (debug, bp);
     }
+    for (i = 0; i < debug->address_breakpoints->len; i++)
+        debug_address_breakpoint_install (debug, g_ptr_array_index (debug->address_breakpoints, i));
     debug->breakpoints_installed = TRUE;
     debug_marks_show (debug, NULL);
     if (debug->backend->ops->exec (debug->backend, DEBUG_EXEC_RUN, debug_reply_run, NULL, NULL)
@@ -2396,6 +3170,91 @@ debug_breakpoint_install (debugger_t *debug, debug_breakpoint_t *bp)
     bp->pending_token = debug->backend->ops->break_insert (
         debug->backend, bp->file, bp->line, bp->disabled, debug_reply_breakpoint, NULL, NULL);
     return bp->pending_token != 0;
+}
+
+static void
+debug_address_breakpoint_free (gpointer p)
+{
+    debug_address_breakpoint_t *bp = (debug_address_breakpoint_t *) p;
+
+    g_free (bp->address);
+    g_free (bp->gdb_number);
+    g_free (bp);
+}
+
+/* The window of the instructions and the panel show the breakpoints on instructions */
+static void
+debug_address_breakpoints_show (debugger_t *debug)
+{
+    if (debug->disasm_window != NULL)
+        widget_draw (WIDGET (debug->disasm_window));
+    debug_session_refresh (debug);
+}
+
+/* The debugger has taken a breakpoint on an instruction, or has refused it */
+static void
+debug_reply_address_breakpoint (void *ui, const debug_reply_t *reply, void *data)
+{
+    debugger_t *debug = (debugger_t *) ui;
+    guint i;
+
+    (void) data;
+    for (i = 0; i < debug->address_breakpoints->len; i++)
+    {
+        debug_address_breakpoint_t *bp = g_ptr_array_index (debug->address_breakpoints, i);
+
+        if (bp->pending_token != reply->request)
+            continue;
+        bp->pending_token = 0;
+        if (reply->ok)
+            bp->gdb_number = g_strdup (reply->id);
+        else
+        {
+            if (reply->msg != NULL)
+                debug_output_console (debug, reply->msg, TRUE);
+            g_ptr_array_remove_index (debug->address_breakpoints, i);
+        }
+        debug_address_breakpoints_show (debug);
+        return;
+    }
+}
+
+static void
+debug_address_breakpoint_install (debugger_t *debug, debug_address_breakpoint_t *bp)
+{
+    g_clear_pointer (&bp->gdb_number, g_free);
+    bp->pending_token = debug->backend->ops->break_address (
+        debug->backend, bp->address, debug_reply_address_breakpoint, NULL, NULL);
+}
+
+/* A breakpoint on the instruction at @address, or none any more */
+static void
+debug_address_breakpoint_toggle (debugger_t *debug, const char *address)
+{
+    debug_address_breakpoint_t *bp;
+    guint i;
+
+    bp = debug_address_breakpoint_at (debug, address, &i);
+    if (bp != NULL)
+    {
+        if (bp->pending_token != 0)
+        {
+            debug_error (debug, _ ("Wait for GDB to confirm this breakpoint."));
+            return;
+        }
+        if (bp->gdb_number != NULL && debug_alive (debug))
+            (void) debug->backend->ops->break_delete (debug->backend, bp->gdb_number);
+        g_ptr_array_remove_index (debug->address_breakpoints, i);
+    }
+    else
+    {
+        bp = g_new0 (debug_address_breakpoint_t, 1);
+        bp->address = g_strdup (address);
+        g_ptr_array_add (debug->address_breakpoints, bp);
+        if (debug_session_live (debug) && debug->breakpoints_installed)
+            debug_address_breakpoint_install (debug, bp);
+    }
+    debug_address_breakpoints_show (debug);
 }
 
 static void
@@ -2614,6 +3473,7 @@ debug_project_switch (debugger_t *debug, char *project)
     debug->start_after_build = FALSE;
     debug->breakpoints_installed = FALSE;
     g_ptr_array_set_size (debug->breakpoints, 0);
+    g_ptr_array_set_size (debug->address_breakpoints, 0);
     debug_marks_show (debug, NULL);
     g_ptr_array_set_size (debug->launches, 0);
     g_ptr_array_set_size (debug->watches, 0);
@@ -3631,6 +4491,11 @@ debug_control (void *data, void *edit, debug_exec_t what, debug_state_t required
     (void) edit;
     if (debug->state != required || debug->backend == NULL)
         return MC_EPR_FAILED;
+    debug->instruction_step =
+        what == DEBUG_EXEC_STEP_INSTRUCTION || what == DEBUG_EXEC_NEXT_INSTRUCTION;
+    // a step by an instruction moves in no line of the source: the instructions show it
+    if (debug->instruction_step && debug->disasm_window == NULL)
+        debug_disasm_show (debug, FALSE);
     return debug->backend->ops->exec (debug->backend, what, NULL, NULL, NULL) != 0 ? MC_EPR_OK
                                                                                    : MC_EPR_FAILED;
 }
@@ -3654,6 +4519,16 @@ static mc_ep_result_t
 debug_step (void *data, void *edit)
 {
     return debug_control (data, edit, DEBUG_EXEC_STEP, DEBUG_STOPPED);
+}
+static mc_ep_result_t
+debug_step_instruction (void *data, void *edit)
+{
+    return debug_control (data, edit, DEBUG_EXEC_STEP_INSTRUCTION, DEBUG_STOPPED);
+}
+static mc_ep_result_t
+debug_next_instruction (void *data, void *edit)
+{
+    return debug_control (data, edit, DEBUG_EXEC_NEXT_INSTRUCTION, DEBUG_STOPPED);
 }
 static mc_ep_result_t
 debug_finish (void *data, void *edit)
@@ -3783,7 +4658,8 @@ debug_handle_key (void *data, int key, void *edit)
     // debug mode: the commands of the debugger have their keys, the editor's F3 to F8 too
     if (!debug_stepping (debug) && debug->debug_mode && cmd != DEBUG_CMD_NONE
         && cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && cmd != DEBUG_CMD_LEAVE
-        && cmd != DEBUG_CMD_EVALUATE)
+        && cmd != DEBUG_CMD_EVALUATE && cmd != DEBUG_CMD_STEP_INSTRUCTION
+        && cmd != DEBUG_CMD_NEXT_INSTRUCTION)
     {
         // a step with nothing running is no Search of the editor either
         if (!debug_run_command (debug, cmd, edit))
@@ -3891,6 +4767,10 @@ debug_select_frame (debugger_t *debug, const debug_frame_t *frame)
         (void) debug->host->show_location (debug->host, frame->file, frame->line);
     (void) debug->backend->ops->select_frame (debug->backend, frame->level);
     (void) debug->backend->ops->variables (debug->backend, debug_reply_variables, NULL, NULL);
+    debug_registers_refresh (debug);
+    g_free (debug->disasm_address);
+    debug->disasm_address = g_strdup (frame->address);
+    debug_disasm_refresh (debug);
     debug_watches_refresh (debug);
     // the mark goes with the frame: the steps go on from there
     if (debug_source_here (frame->file) && frame->line > 0)
@@ -4091,6 +4971,7 @@ debug_stop (void *data, void *edit)
     debug_notes_clear (debug);
     g_ptr_array_set_size (debug->locals, 0);
     g_ptr_array_set_size (debug->frames, 0);
+    debug_registers_clear (debug);
     debug_session_refresh (debug);
     // the windows as they were before, the output kept
     if (debug->layout_pushed)
@@ -4246,6 +5127,39 @@ debug_console_window (void *data)
     return (void *) (gsize) window;
 }
 
+static mc_ep_window_state_t
+debug_disasm_state (void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+
+    if (debug->disasm_window == NULL)
+        return MC_EP_WINDOW_CLOSED;
+    return debug->host->window_current (debug->host) == (void *) debug->disasm_window
+        ? MC_EP_WINDOW_FOCUSED
+        : MC_EP_WINDOW_OPEN;
+}
+
+static void
+debug_disasm_kind_show (void *data)
+{
+    debug_disasm_show ((debugger_t *) data, TRUE);
+}
+
+static void
+debug_disasm_kind_close (void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+
+    if (debug->disasm_window != NULL)
+        (void) debug->host->window_close (debug->host, debug->disasm_window);
+}
+
+static void *
+debug_disasm_window (void *data)
+{
+    return ((debugger_t *) data)->disasm_window;
+}
+
 static const mc_ep_window_kind_t debug_window_kinds[] = {
     {
         .name = "debugger.panel",
@@ -4265,6 +5179,14 @@ static const mc_ep_window_kind_t debug_window_kinds[] = {
         .show = debug_console_show,
         .close = debug_console_close,
     },
+    {
+        .name = "debugger.disassembly",
+        .window = debug_disasm_window,
+        .label = N_ ("Disassembl&y"),
+        .state = debug_disasm_state,
+        .show = debug_disasm_kind_show,
+        .close = debug_disasm_kind_close,
+    },
 };
 
 static void *
@@ -4282,6 +5204,9 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->dropped_tokens = g_array_new (FALSE, FALSE, sizeof (unsigned int));
     debug->locals = g_ptr_array_new_with_free_func (debug_variable_free);
     debug->frames = g_ptr_array_new_with_free_func (debug_frame_free);
+    debug->registers = g_ptr_array_new_with_free_func (debug_variable_free);
+    debug->instructions = g_ptr_array_new_with_free_func (debug_instruction_free);
+    debug->address_breakpoints = g_ptr_array_new_with_free_func (debug_address_breakpoint_free);
     debug->pty_master = -1;
     debug->pty_slave = -1;
     host->commands_register (host, DEBUG_KEYMAP_SECTION, N_ ("&Debugger"), debug_commands);
@@ -4315,6 +5240,8 @@ debug_close (void *data)
 
     if (debug->session_window != NULL)
         debug->session_window->debug = NULL;
+    if (debug->disasm_window != NULL)
+        debug->disasm_window->debug = NULL;
     if (debug->backend != NULL)
         debug->backend->ops->free (debug->backend);
     debug_clear_current (debug);
@@ -4332,6 +5259,15 @@ debug_close (void *data)
     g_free (debug->current_func);
     g_array_free (debug->dropped_tokens, TRUE);
     g_ptr_array_unref (debug->locals);
+    g_ptr_array_unref (debug->registers);
+    if (debug->registers_before != NULL)
+        g_hash_table_destroy (debug->registers_before);
+    g_free (debug->current_address);
+    g_ptr_array_unref (debug->instructions);
+    g_ptr_array_free (debug->address_breakpoints, TRUE);
+    g_free (debug->disasm_address);
+    g_free (debug->source_file);
+    g_strfreev (debug->source_lines);
     g_string_free (debug->console, TRUE);
     g_free (debug);
 }
@@ -4398,6 +5334,15 @@ debug_act_gdb_command (void *data, void *edit)
     return MC_EPR_OK;
 }
 
+/* Debug > Disassembly: the instructions of the frame, under the source */
+static mc_ep_result_t
+debug_act_disassembly (void *data, void *edit)
+{
+    (void) edit;
+    debug_disasm_show ((debugger_t *) data, TRUE);
+    return MC_EPR_OK;
+}
+
 /* Start, or go on when the program is stopped */
 static mc_ep_result_t
 debug_act_start (void *data, void *edit)
@@ -4437,6 +5382,9 @@ static const mc_ep_action_t debug_actions[] = {
     { "Run to function", debug_act_run_to_function },
     { "Evaluate", debug_act_evaluate },
     { "Run to cursor", debug_act_run_to_cursor },
+    { "Step into instruction", debug_step_instruction },
+    { "Step over instruction", debug_next_instruction },
+    { "Disassembly", debug_act_disassembly },
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
@@ -4451,6 +5399,8 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
     { DEBUG_MENU, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
     { DEBUG_MENU, N_ ("Step o&ut"), DEBUG_ACT_FINISH, NULL },
+    { DEBUG_MENU, N_ ("Step into instruction"), DEBUG_ACT_STEP_INSTRUCTION, NULL },
+    { DEBUG_MENU, N_ ("Step over instruction"), DEBUG_ACT_NEXT_INSTRUCTION, NULL },
     { DEBUG_MENU, N_ ("Run to cursor"), DEBUG_ACT_RUN_TO_CURSOR, NULL },
     { DEBUG_MENU, N_ ("Run t&o function..."), DEBUG_ACT_RUN_TO_FUNCTION, NULL },
     { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
@@ -4458,6 +5408,7 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, NULL, 0, NULL },
     { DEBUG_MENU, N_ ("Co&nsole"), DEBUG_ACT_OUTPUT, NULL },
     { DEBUG_MENU, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
+    { DEBUG_MENU, N_ ("Disassembly"), DEBUG_ACT_DISASSEMBLY, NULL },
     { DEBUG_MENU, N_ ("Evaluate e&xpression..."), DEBUG_ACT_EVALUATE, NULL },
     { DEBUG_MENU, N_ ("&Add watch..."), DEBUG_ACT_ADD_WATCH, NULL },
     { DEBUG_MENU, N_ ("&Remove watch..."), DEBUG_ACT_REMOVE_WATCH, NULL },
@@ -4493,6 +5444,8 @@ debug_menu_shortcut (int action_index)
         { DEBUG_ACT_NEXT, DEBUG_CMD_STEP_OVER },
         { DEBUG_ACT_STEP, DEBUG_CMD_STEP_INTO },
         { DEBUG_ACT_FINISH, DEBUG_CMD_STEP_OUT },
+        { DEBUG_ACT_STEP_INSTRUCTION, DEBUG_CMD_STEP_INSTRUCTION },
+        { DEBUG_ACT_NEXT_INSTRUCTION, DEBUG_CMD_NEXT_INSTRUCTION },
         { DEBUG_ACT_PAUSE, DEBUG_CMD_PAUSE },
         { DEBUG_ACT_STOP, DEBUG_CMD_STOP },
     };

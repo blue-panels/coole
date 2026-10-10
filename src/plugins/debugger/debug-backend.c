@@ -53,3 +53,17 @@ debug_variable_free (gpointer data)
     g_free (variable->value);
     g_free (variable);
 }
+
+void
+debug_instruction_free (gpointer data)
+{
+    debug_instruction_t *instruction = (debug_instruction_t *) data;
+
+    if (instruction == NULL)
+        return;
+    g_free (instruction->address);
+    g_free (instruction->func);
+    g_free (instruction->text);
+    g_free (instruction->file);
+    g_free (instruction);
+}

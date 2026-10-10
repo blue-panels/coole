@@ -41,7 +41,11 @@ typedef enum
     MI_REPLY_BREAKPOINT,
     MI_REPLY_STACK,
     MI_REPLY_VARIABLES,
-    MI_REPLY_VALUE
+    MI_REPLY_VALUE,
+    MI_REPLY_REGISTER_NAMES,
+    MI_REPLY_REGISTERS,
+    MI_REPLY_DISASSEMBLE_FUNCTION,
+    MI_REPLY_DISASSEMBLE
 } mi_reply_kind_t;
 
 typedef struct
@@ -62,13 +66,28 @@ typedef struct
     GPtrArray *requests;
     // the commands that load the program, one after the other
     GQueue *startup;
+    // the names of the registers by their numbers, and the numbers of those the panel shows
+    GPtrArray *register_names;
+    GArray *general;
 } mi_backend_t;
+
+/* A request that waits for another first: the registers for their names, the instructions near
+   an address for those of its function */
+typedef struct
+{
+    debug_reply_cb cb;
+    void *data;
+    GDestroyNotify free_data;
+    char *address;
+} mi_pending_t;
 
 #define MI(b)     ((mi_backend_t *) (b))
 #define EVENTS(m) ((m)->base.events)
 #define UI(m)     ((m)->base.ui)
 
 static void mi_startup_next (mi_backend_t *mi);
+static guint mi_register_values (mi_backend_t *mi, debug_reply_cb cb, void *data,
+                                 GDestroyNotify free_data);
 
 /* --------------------------------------------------------------------------------------------- */
 
@@ -195,6 +214,182 @@ mi_variables (const gdb_mi_record_t *record)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The values of the registers, from the reply to -data-list-register-values */
+static GPtrArray *
+mi_registers (const mi_backend_t *mi, const gdb_mi_record_t *record)
+{
+    const gdb_mi_value_t *list = gdb_mi_get (record->results, "register-values");
+    GPtrArray *registers = g_ptr_array_new_with_free_func (debug_variable_free);
+    guint i;
+
+    for (i = 0; list != NULL && list->items != NULL && i < list->items->len; i++)
+    {
+        const gdb_mi_value_t *item = g_ptr_array_index (list->items, i);
+        const char *number = gdb_mi_get_string (item, "number");
+        const char *value = gdb_mi_get_string (item, "value");
+        const long n = number != NULL ? atol (number) : -1;
+        debug_variable_t *entry;
+
+        if (n < 0 || (guint) n >= mi->register_names->len || value == NULL)
+            continue;
+        entry = g_new0 (debug_variable_t, 1);
+        entry->name = g_strdup (g_ptr_array_index (mi->register_names, n));
+        entry->value = g_strdup (value);
+        g_ptr_array_add (registers, entry);
+    }
+    return registers;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* An instruction of the reply to -data-disassemble, of the source line @file:@line */
+static debug_instruction_t *
+mi_instruction (const gdb_mi_value_t *item, const char *file, long line)
+{
+    const char *address = gdb_mi_get_string (item, "address");
+    const char *offset = gdb_mi_get_string (item, "offset");
+    debug_instruction_t *instruction;
+
+    if (address == NULL)
+        return NULL;
+    instruction = g_new0 (debug_instruction_t, 1);
+    instruction->address = g_strdup (address);
+    instruction->func = g_strdup (gdb_mi_get_string (item, "func-name"));
+    instruction->offset = offset != NULL ? atol (offset) : 0;
+    instruction->text = g_strdup (gdb_mi_get_string (item, "inst"));
+    instruction->file = g_strdup (file);
+    instruction->line = line;
+    return instruction;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The instructions, from the reply to -data-disassemble: with their source lines (mode 4) where
+   there are some, by themselves where there are none */
+static GPtrArray *
+mi_instructions (const gdb_mi_record_t *record)
+{
+    const gdb_mi_value_t *list = gdb_mi_get (record->results, "asm_insns");
+    GPtrArray *instructions = g_ptr_array_new_with_free_func (debug_instruction_free);
+    guint i, j;
+
+    for (i = 0; list != NULL && list->items != NULL && i < list->items->len; i++)
+    {
+        const gdb_mi_value_t *item = g_ptr_array_index (list->items, i);
+        debug_instruction_t *instruction;
+
+        if (g_strcmp0 (item->name, "src_and_asm_line") == 0)
+        {
+            const gdb_mi_value_t *of_line = gdb_mi_get (item, "line_asm_insn");
+            const char *file = gdb_mi_get_string (item, "fullname");
+            const char *line = gdb_mi_get_string (item, "line");
+
+            for (j = 0; of_line != NULL && of_line->items != NULL && j < of_line->items->len; j++)
+            {
+                instruction = mi_instruction (g_ptr_array_index (of_line->items, j), file,
+                                              line != NULL ? atol (line) : 0);
+                if (instruction != NULL)
+                    g_ptr_array_add (instructions, instruction);
+            }
+        }
+        else if ((instruction = mi_instruction (item, NULL, 0)) != NULL)
+            g_ptr_array_add (instructions, instruction);
+    }
+    return instructions;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The function around the address has been disassembled, or GDB knows of none there: then the
+   instructions that follow the address */
+static void
+mi_disassemble_function_reply (mi_backend_t *mi, const gdb_mi_record_t *record,
+                               mi_pending_t *pending)
+{
+    debug_reply_t reply = { 0 };
+    char *command;
+
+    if (g_strcmp0 (record->klass, "done") == 0)
+    {
+        reply.ok = TRUE;
+        reply.instructions = mi_instructions (record);
+        if (pending->cb != NULL)
+            pending->cb (UI (mi), &reply, pending->data);
+        g_ptr_array_unref (reply.instructions);
+        return;
+    }
+    command = g_strdup_printf ("-data-disassemble -s %s -e %s+256 -- 4", pending->address,
+                               pending->address);
+    // the request is the other one's now
+    (void) mi_request (mi, MI_REPLY_DISASSEMBLE, pending->cb, pending->data, pending->free_data,
+                       command);
+    pending->free_data = NULL;
+    g_free (command);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether a register is the first of those that are not general: the floating point and the
+   vector ones, of x86, ARM, AArch64, RISC-V and PowerPC */
+static gboolean
+mi_register_ends_general (const char *name)
+{
+    static const char *const first[] = {
+        "st0", "xmm0", "ymm0", "k0", "f0", "ft0", "d0", "s0", "v0", "q0", "vr0", "fpscr", "fpsr",
+    };
+    guint i;
+
+    for (i = 0; i < G_N_ELEMENTS (first); i++)
+        if (strcmp (name, first[i]) == 0)
+            return TRUE;
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The names of the registers have come: the values are asked for */
+static void
+mi_register_names_reply (mi_backend_t *mi, const gdb_mi_record_t *record, mi_pending_t *pending)
+{
+    const gdb_mi_value_t *list = gdb_mi_get (record->results, "register-names");
+    guint i;
+
+    if (g_strcmp0 (record->klass, "done") != 0 || list == NULL || list->items == NULL)
+    {
+        debug_reply_t reply = { 0 };
+
+        reply.msg = gdb_mi_record_string (record, "msg");
+        if (pending->cb != NULL)
+            pending->cb (UI (mi), &reply, pending->data);
+        return;
+    }
+    g_ptr_array_set_size (mi->register_names, 0);
+    g_array_set_size (mi->general, 0);
+    for (i = 0; i < list->items->len; i++)
+    {
+        const gdb_mi_value_t *item = g_ptr_array_index (list->items, i);
+        const char *name = item->string != NULL ? item->string : "";
+
+        g_ptr_array_add (mi->register_names, g_strdup (name));
+    }
+    // the general ones come first; a name may be empty, for a number GDB does not use
+    for (i = 0; i < mi->register_names->len && mi->general->len < 48; i++)
+    {
+        const char *name = g_ptr_array_index (mi->register_names, i);
+        const int n = (int) i;
+
+        if (mi_register_ends_general (name))
+            break;
+        if (*name != '\0')
+            g_array_append_val (mi->general, n);
+    }
+    // the request is the values' now
+    (void) mi_register_values (mi, pending->cb, pending->data, pending->free_data);
+    pending->free_data = NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A command of the start is done: the next one goes */
 static void
 mi_startup_reply (mi_backend_t *mi, const gdb_mi_record_t *record)
@@ -236,6 +431,18 @@ mi_request_reply (mi_backend_t *mi, const gdb_mi_record_t *record)
         mi_startup_reply (mi, record);
         return TRUE;
     }
+    if (request->kind == MI_REPLY_REGISTER_NAMES)
+    {
+        mi_register_names_reply (mi, record, request->data);
+        mi_request_free (request);
+        return TRUE;
+    }
+    if (request->kind == MI_REPLY_DISASSEMBLE_FUNCTION)
+    {
+        mi_disassemble_function_reply (mi, record, request->data);
+        mi_request_free (request);
+        return TRUE;
+    }
 
     reply.request = request->token;
     reply.ok = g_strcmp0 (record->klass, "error") != 0;
@@ -264,6 +471,14 @@ mi_request_reply (mi_backend_t *mi, const gdb_mi_record_t *record)
     case MI_REPLY_VALUE:
         reply.value = gdb_mi_record_string (record, "value");
         break;
+    case MI_REPLY_REGISTERS:
+        if (reply.ok)
+            reply.registers = mi_registers (mi, record);
+        break;
+    case MI_REPLY_DISASSEMBLE:
+        if (reply.ok)
+            reply.instructions = mi_instructions (record);
+        break;
     default:
         break;
     }
@@ -278,6 +493,10 @@ mi_request_reply (mi_backend_t *mi, const gdb_mi_record_t *record)
         g_ptr_array_unref (reply.frames);
     if (reply.variables != NULL)
         g_ptr_array_unref (reply.variables);
+    if (reply.registers != NULL)
+        g_ptr_array_unref (reply.registers);
+    if (reply.instructions != NULL)
+        g_ptr_array_unref (reply.instructions);
     mi_request_free (request);
     return TRUE;
 }
@@ -418,6 +637,9 @@ mi_start (debug_backend_t *b, const debug_start_t *spec, GError **error)
         gdb_mi_session_stop (mi->gdb);
     g_ptr_array_set_size (mi->requests, 0);
     g_queue_clear_full (mi->startup, g_free);
+    // another program, another machine perhaps
+    g_ptr_array_set_size (mi->register_names, 0);
+    g_array_set_size (mi->general, 0);
     if (!gdb_mi_session_start (mi->gdb, spec->debugger, error))
         return FALSE;
 
@@ -489,9 +711,14 @@ mi_exec (debug_backend_t *b, debug_exec_t what, debug_reply_cb cb, void *data,
          GDestroyNotify free_data)
 {
     static const char *const commands[] = {
-        [DEBUG_EXEC_RUN] = "-exec-run",         [DEBUG_EXEC_CONTINUE] = "-exec-continue",
-        [DEBUG_EXEC_PAUSE] = "-exec-interrupt", [DEBUG_EXEC_NEXT] = "-exec-next",
-        [DEBUG_EXEC_STEP] = "-exec-step",       [DEBUG_EXEC_FINISH] = "-exec-finish",
+        [DEBUG_EXEC_RUN] = "-exec-run",
+        [DEBUG_EXEC_CONTINUE] = "-exec-continue",
+        [DEBUG_EXEC_PAUSE] = "-exec-interrupt",
+        [DEBUG_EXEC_NEXT] = "-exec-next",
+        [DEBUG_EXEC_STEP] = "-exec-step",
+        [DEBUG_EXEC_FINISH] = "-exec-finish",
+        [DEBUG_EXEC_STEP_INSTRUCTION] = "-exec-step-instruction",
+        [DEBUG_EXEC_NEXT_INSTRUCTION] = "-exec-next-instruction",
     };
 
     return mi_request (MI (b), MI_REPLY_PLAIN, cb, data, free_data, commands[what]);
@@ -615,6 +842,99 @@ mi_evaluate (debug_backend_t *b, const char *expression, debug_reply_cb cb, void
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+mi_pending_free (gpointer p)
+{
+    mi_pending_t *pending = (mi_pending_t *) p;
+
+    if (pending->free_data != NULL)
+        pending->free_data (pending->data);
+    g_free (pending->address);
+    g_free (pending);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static guint
+mi_register_values (mi_backend_t *mi, debug_reply_cb cb, void *data, GDestroyNotify free_data)
+{
+    GString *command = g_string_new ("-data-list-register-values --skip-unavailable x");
+    guint i, token;
+
+    for (i = 0; i < mi->general->len; i++)
+        g_string_append_printf (command, " %d", g_array_index (mi->general, int, i));
+    token = mi_request (mi, MI_REPLY_REGISTERS, cb, data, free_data, command->str);
+    g_string_free (command, TRUE);
+    return token;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The general registers: their names are asked for once, the values at every stop */
+static guint
+mi_registers_request (debug_backend_t *b, debug_reply_cb cb, void *data, GDestroyNotify free_data)
+{
+    mi_backend_t *mi = MI (b);
+    mi_pending_t *pending;
+
+    if (mi->general->len > 0)
+        return mi_register_values (mi, cb, data, free_data);
+    pending = g_new0 (mi_pending_t, 1);
+    pending->cb = cb;
+    pending->data = data;
+    pending->free_data = free_data;
+    return mi_request (mi, MI_REPLY_REGISTER_NAMES, NULL, pending, mi_pending_free,
+                       "-data-list-register-names");
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The instructions of the function around an address */
+static guint
+mi_disassemble (debug_backend_t *b, const char *address, debug_reply_cb cb, void *data,
+                GDestroyNotify free_data)
+{
+    mi_pending_t *pending;
+    char *command;
+    guint token;
+
+    // an address goes into the command as it is: only what an address is made of
+    if (address == NULL || strspn (address, "0123456789abcdefABCDEFx$pc") != strlen (address))
+    {
+        if (free_data != NULL)
+            free_data (data);
+        return 0;
+    }
+    pending = g_new0 (mi_pending_t, 1);
+    pending->cb = cb;
+    pending->data = data;
+    pending->free_data = free_data;
+    pending->address = g_strdup (address);
+    command = g_strdup_printf ("-data-disassemble -a %s -- 4", address);
+    token =
+        mi_request (MI (b), MI_REPLY_DISASSEMBLE_FUNCTION, NULL, pending, mi_pending_free, command);
+    g_free (command);
+    return token;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static guint
+mi_break_address (debug_backend_t *b, const char *address, debug_reply_cb cb, void *data,
+                  GDestroyNotify free_data)
+{
+    char *location = g_strconcat ("*", address, NULL);
+    char *command = mi_command_quoted ("-break-insert", location);
+    guint token;
+
+    token = mi_request (MI (b), MI_REPLY_BREAKPOINT, cb, data, free_data, command);
+    g_free (command);
+    g_free (location);
+    return token;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A command of GDB itself: its words come on the console stream */
 static guint
 mi_console (debug_backend_t *b, const char *line, debug_reply_cb cb, void *data,
@@ -638,6 +958,8 @@ mi_free (debug_backend_t *b)
     gdb_mi_session_free (mi->gdb);
     g_ptr_array_free (mi->requests, TRUE);
     g_queue_free_full (mi->startup, g_free);
+    g_ptr_array_free (mi->register_names, TRUE);
+    g_array_free (mi->general, TRUE);
     g_free (mi);
 }
 
@@ -659,6 +981,9 @@ static const debug_backend_ops_t mi_ops = {
     .stack = mi_stack,
     .variables = mi_variables_request,
     .evaluate = mi_evaluate,
+    .break_address = mi_break_address,
+    .disassemble = mi_disassemble,
+    .registers = mi_registers_request,
     .console = mi_console,
     .free = mi_free,
 };
@@ -676,5 +1001,7 @@ debug_gdb_mi_new (const debug_backend_events_t *events, void *ui)
     mi->gdb = gdb_mi_session_new (mi_record, mi);
     mi->requests = g_ptr_array_new_with_free_func (mi_request_free);
     mi->startup = g_queue_new ();
+    mi->register_names = g_ptr_array_new_with_free_func (g_free);
+    mi->general = g_array_new (FALSE, FALSE, sizeof (int));
     return &mi->base;
 }

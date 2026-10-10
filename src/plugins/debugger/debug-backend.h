@@ -36,24 +36,37 @@ typedef struct
     char *label;    // "#0 func  file:line", made by the plugin
 } debug_frame_t;
 
-/* A variable of a frame */
+/* A variable of a frame, or a register */
 typedef struct
 {
     char *name;
     char *value;
 } debug_variable_t;
 
+/* An instruction of the machine */
+typedef struct
+{
+    char *address;  // 0x...
+    char *func;     // NULL in code with no symbol
+    long offset;    // from the start of the function
+    char *text;
+    char *file;  // the source line it is of, NULL when that is not known
+    long line;
+} debug_instruction_t;
+
 /* The answer to a request; what a kind of request does not give is NULL */
 typedef struct
 {
     guint request;
     gboolean ok;
-    const char *msg;    // why it failed
-    const char *value;  // of an expression
-    const char *id;     // of a breakpoint the debugger has taken
-    long line;          // where it has put it
-    GPtrArray *frames;     // debug_frame_t
-    GPtrArray *variables;  // debug_variable_t
+    const char *msg;          // why it failed
+    const char *value;        // of an expression
+    const char *id;           // of a breakpoint the debugger has taken
+    long line;                // where it has put it
+    GPtrArray *frames;        // debug_frame_t
+    GPtrArray *variables;     // debug_variable_t
+    GPtrArray *registers;     // debug_variable_t, the value in hex
+    GPtrArray *instructions;  // debug_instruction_t, by their addresses
 } debug_reply_t;
 
 typedef void (*debug_reply_cb) (void *ui, const debug_reply_t *reply, void *data);
@@ -65,7 +78,10 @@ typedef enum
     DEBUG_EXEC_PAUSE,
     DEBUG_EXEC_NEXT,
     DEBUG_EXEC_STEP,
-    DEBUG_EXEC_FINISH
+    DEBUG_EXEC_FINISH,
+    // by one instruction of the machine, into a call or over it
+    DEBUG_EXEC_STEP_INSTRUCTION,
+    DEBUG_EXEC_NEXT_INSTRUCTION
 } debug_exec_t;
 
 typedef enum
@@ -135,6 +151,9 @@ typedef struct
                            debug_reply_cb cb, void *data, GDestroyNotify free_data);
     // a breakpoint on a function, @temporary: taken off when the program stops there
     guint (*break_function) (debug_backend_t *b, const char *func, gboolean temporary);
+    // a breakpoint on an instruction
+    guint (*break_address) (debug_backend_t *b, const char *address, debug_reply_cb cb, void *data,
+                            GDestroyNotify free_data);
     guint (*break_delete) (debug_backend_t *b, const char *id);
     guint (*break_enable) (debug_backend_t *b, const char *id, gboolean enable);
     guint (*run_to) (debug_backend_t *b, const char *file, long line);
@@ -144,6 +163,12 @@ typedef struct
                         GDestroyNotify free_data);
     guint (*evaluate) (debug_backend_t *b, const char *expression, debug_reply_cb cb, void *data,
                        GDestroyNotify free_data);
+    // the registers of the frame: the general ones, the program counter and the flags
+    // the instructions of the function around @address, or near it when it has no symbol
+    guint (*disassemble) (debug_backend_t *b, const char *address, debug_reply_cb cb, void *data,
+                          GDestroyNotify free_data);
+    guint (*registers) (debug_backend_t *b, debug_reply_cb cb, void *data,
+                        GDestroyNotify free_data);
     // a command of the debugger itself, typed by the user
     guint (*console) (debug_backend_t *b, const char *line, debug_reply_cb cb, void *data,
                       GDestroyNotify free_data);
@@ -159,6 +184,7 @@ struct debug_backend_t
 
 void debug_frame_free (gpointer data);
 void debug_variable_free (gpointer data);
+void debug_instruction_free (gpointer data);
 
 /* GDB with its machine interface */
 debug_backend_t *debug_gdb_mi_new (const debug_backend_events_t *events, void *ui);
