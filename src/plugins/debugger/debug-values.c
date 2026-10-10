@@ -1,5 +1,6 @@
 /*
-   The debugger plugin: the values of the program, the variables, the registers, the watches, the call stack, a value as a tree, and those in the source.
+   The debugger plugin: the values of the program, the variables, the registers, the watches, the
+   call stack, a value as a tree, and those in the source.
 
    Copyright (C) 2026
    Ilia Maslakov <il.smind@gmail.com>
