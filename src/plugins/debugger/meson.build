@@ -1,7 +1,11 @@
 # The debugger plugin: a module the editor loads at run time from plugins_dir, as any other
 # editor plugin.  It calls the functions of the editor, which the program exports.  The debug
 # adapters are there when json-glib is.
-debugger_sources = ['debugger.c', 'debug-disasm.c', 'debug-program.c', 'debug-panel.c', 'debug-values.c', 'debug-breakpoints.c', 'debug-backend.c', 'debug-gdb-mi.c', 'gdb-mi.c']
+debugger_sources = [
+  'debugger.c', 'debug-breakpoints.c', 'debug-config.c', 'debug-disasm.c', 'debug-panel.c',
+  'debug-program.c', 'debug-values.c',
+  'debug-backend.c', 'debug-gdb-mi.c', 'gdb-mi.c',
+]
 if json_glib.found()
   debugger_sources += ['dap.c', 'debug-dap.c']
 endif

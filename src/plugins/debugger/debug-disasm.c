@@ -31,22 +31,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <glib/gstdio.h>
-#ifdef ENABLE_MCTERM
-#include <sys/ioctl.h>
-#ifdef __linux__
-#include <sys/timerfd.h>
-#endif
-#include <termios.h>
-#ifdef HAVE_PTY_H
-#include <pty.h>
-#endif
-#ifdef HAVE_UTIL_H
-#include <util.h>
-#endif
-#ifdef HAVE_LIBUTIL_H
-#include <libutil.h>
-#endif
-#endif
 
 #include "lib/global.h"
 #include "lib/skin.h"
