@@ -251,16 +251,16 @@ gboolean debug_alive (const debugger_t *debug);
 gboolean debug_session_live (const debugger_t *debug);
 int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
 void debug_marks_show (debugger_t *debug, const char *file);
-void debug_registers_toggle (debugger_t *debug);
+void debug_clear_current (debugger_t *debug);
+gboolean debug_source_is_asm (const char *file);
 gboolean debug_source_here (const char *file);
 void debug_breakpoint_remove (debugger_t *debug, guint index);
 void debug_breakpoint_toggle_enabled (debugger_t *debug, guint index);
+void debug_breakpoints_sync (debugger_t *debug);
+gboolean debug_require_project (debugger_t *debug, void *edit);
 GPtrArray *debug_functions (const debugger_t *debug, const char *root, const char *file,
                             const char *query);
 void debug_breakpoint_condition (debugger_t *debug, debug_breakpoint_t *bp);
-mc_ep_result_t debug_evaluate_text (debugger_t *debug, char *expression);
-void debug_select_frame (debugger_t *debug, const debug_frame_t *frame);
-mc_ep_result_t debug_add_watch (void *data, void *edit);
 
 /* debug-panel.c */
 void debug_window_buttonbar (const debugger_t *debug, Widget *w);
@@ -272,6 +272,25 @@ mc_ep_window_state_t debug_panel_state (void *data);
 void debug_panel_show (void *data);
 void debug_panel_close (void *data);
 void *debug_panel_window (void *data);
+
+/* debug-values.c */
+void debug_watch_free (gpointer data);
+void debug_watches_refresh (debugger_t *debug);
+void debug_watches_clear_values (debugger_t *debug);
+void debug_notes_clear (debugger_t *debug);
+void debug_reply_stack (void *ui, const debug_reply_t *reply, void *data);
+void debug_reply_variables (void *ui, const debug_reply_t *reply, void *data);
+void debug_registers_refresh (debugger_t *debug);
+void debug_registers_toggle (debugger_t *debug);
+void debug_registers_clear (debugger_t *debug);
+mc_ep_result_t debug_evaluate_text (debugger_t *debug, char *expression);
+mc_ep_result_t debug_evaluate (debugger_t *debug, void *edit);
+mc_ep_result_t debug_show_stack (void *data, void *edit);
+void debug_select_frame (debugger_t *debug, const debug_frame_t *frame);
+mc_ep_result_t debug_act_evaluate (void *data, void *edit);
+mc_ep_result_t debug_add_watch (void *data, void *edit);
+mc_ep_result_t debug_remove_watch (void *data, void *edit);
+mc_ep_result_t debug_show_watches (void *data, void *edit);
 
 /* debug-disasm.c */
 void debug_disasm_refresh (debugger_t *debug);
