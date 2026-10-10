@@ -238,16 +238,40 @@ typedef struct
 /*** functions shared by the files of the plugin */
 
 /* debugger.c */
+void debug_functions_free (gpointer p);
+debug_launch_t *debug_active_launch (const debugger_t *debug);
 int debug_command (const debugger_t *debug, long command);
 int debug_command_of_key (const debugger_t *debug, int key);
-void debug_window_buttonbar (const debugger_t *debug, Widget *w);
-gboolean debug_session_close_window (WEditWindow *win);
+gboolean debug_stepping (const debugger_t *debug);
+gboolean debug_step_passes (long command);
 gboolean debug_run_command (debugger_t *debug, int cmd, void *edit);
-void debug_session_refresh (debugger_t *debug);
+void debug_config_save (debugger_t *debug);
 void debug_error (debugger_t *debug, const char *message_text);
 gboolean debug_alive (const debugger_t *debug);
 gboolean debug_session_live (const debugger_t *debug);
+int debug_breakpoint_mark (const debugger_t *debug, const debug_breakpoint_t *bp);
+void debug_marks_show (debugger_t *debug, const char *file);
+void debug_registers_toggle (debugger_t *debug);
 gboolean debug_source_here (const char *file);
+void debug_breakpoint_remove (debugger_t *debug, guint index);
+void debug_breakpoint_toggle_enabled (debugger_t *debug, guint index);
+GPtrArray *debug_functions (const debugger_t *debug, const char *root, const char *file,
+                            const char *query);
+void debug_breakpoint_condition (debugger_t *debug, debug_breakpoint_t *bp);
+mc_ep_result_t debug_evaluate_text (debugger_t *debug, char *expression);
+void debug_select_frame (debugger_t *debug, const debug_frame_t *frame);
+mc_ep_result_t debug_add_watch (void *data, void *edit);
+
+/* debug-panel.c */
+void debug_window_buttonbar (const debugger_t *debug, Widget *w);
+void debug_editor_buttonbar (debugger_t *debug, Widget *edit);
+gboolean debug_session_close_window (WEditWindow *win);
+void debug_session_refresh (debugger_t *debug);
+mc_ep_result_t debug_session_show (void *data, void *edit);
+mc_ep_window_state_t debug_panel_state (void *data);
+void debug_panel_show (void *data);
+void debug_panel_close (void *data);
+void *debug_panel_window (void *data);
 
 /* debug-disasm.c */
 void debug_disasm_refresh (debugger_t *debug);
