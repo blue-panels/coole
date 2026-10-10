@@ -373,6 +373,25 @@ test_session (gconstpointer address)
     (void) seen.backend->ops->evaluate (seen.backend, "bad", on_reply, MINE);
     wait_answer ();
     g_assert_cmpstr (seen.error, ==, "no symbol bad");
+    // a value with members: its reference, then the members by it
+    g_clear_pointer (&seen.variables, g_ptr_array_unref);
+    (void) seen.backend->ops->inspect (seen.backend, "obj", on_reply, MINE);
+    wait_answer ();
+    variable = g_ptr_array_index (seen.variables, 0);
+    g_assert_cmpstr (variable->value, ==, "<object>");
+    g_assert_cmpstr (variable->ref, ==, "3");
+    {
+        char *ref = g_strdup (variable->ref);
+
+        g_clear_pointer (&seen.variables, g_ptr_array_unref);
+        (void) seen.backend->ops->children (seen.backend, ref, on_reply, MINE);
+        wait_answer ();
+        g_free (ref);
+    }
+    variable = g_ptr_array_index (seen.variables, 0);
+    g_assert_cmpstr (variable->name, ==, "a");
+    g_assert_cmpstr (variable->expression, ==, "obj.a");
+    g_assert_null (variable->ref);
     (void) seen.backend->ops->console (seen.backend, "info", on_reply, MINE);
     wait_answer ();
     g_assert_nonnull (strstr (seen.console->str, "<info>\n"));

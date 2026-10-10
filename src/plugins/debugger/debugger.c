@@ -2837,6 +2837,338 @@ debug_reply_evaluate (void *ui, const debug_reply_t *reply, void *data)
     g_free (text_value);
 }
 
+/* --------------------------------------------------------------------------------------------- */
+/* A value looked into: a structure, an object or an array, its members a tree */
+/* --------------------------------------------------------------------------------------------- */
+
+typedef struct debug_node_t debug_node_t;
+
+struct debug_node_t
+{
+    debug_variable_t *var;
+    debug_node_t *parent;
+    GPtrArray *members;  // debug_node_t, NULL until they are asked for
+    gboolean open;
+    gboolean asking;
+    guint id;
+    int depth;
+};
+
+/* The tree of the dialog open, NULL when none is */
+typedef struct
+{
+    debugger_t *debug;
+    debug_node_t *root;
+    WListbox *list;
+    GPtrArray *shown;  // debug_node_t in the order of the list
+} debug_tree_t;
+
+static debug_tree_t *debug_tree = NULL;
+static guint debug_node_ids = 0;
+
+static void
+debug_node_free (gpointer p)
+{
+    debug_node_t *node = (debug_node_t *) p;
+
+    debug_variable_free (node->var);
+    if (node->members != NULL)
+        g_ptr_array_free (node->members, TRUE);
+    g_free (node);
+}
+
+static debug_node_t *
+debug_node_new (const debug_variable_t *var, debug_node_t *parent)
+{
+    debug_node_t *node = g_new0 (debug_node_t, 1);
+
+    node->var = g_new0 (debug_variable_t, 1);
+    node->var->name = g_strdup (var->name);
+    node->var->value = g_strdup (var->value);
+    node->var->ref = g_strdup (var->ref);
+    node->var->expression = g_strdup (var->expression);
+    node->var->type = g_strdup (var->type);
+    node->parent = parent;
+    node->depth = parent != NULL ? parent->depth + 1 : 0;
+    node->id = ++debug_node_ids;
+    return node;
+}
+
+/* Whether an expression is a name, or ends as one: it takes a member without parentheses */
+static gboolean
+debug_expression_simple (const char *expression)
+{
+    const char *p;
+
+    for (p = expression; *p != '\0'; p++)
+        if (!(g_ascii_isalnum (*p) || *p == '_' || *p == '.' || *p == '[' || *p == ']'
+              || (*p == '-' && p[1] == '>') || (*p == '>' && p > expression && p[-1] == '-')))
+            return FALSE;
+    return TRUE;
+}
+
+/* Whether a type of C is a pointer: "struct pt *", spaces after the star or not */
+static gboolean
+debug_type_is_pointer (const char *type)
+{
+    gsize len = strlen (type);
+
+    while (len > 0 && g_ascii_isspace (type[len - 1]))
+        len--;
+    return len > 0 && type[len - 1] == '*';
+}
+
+/* The expression of a member, for a watch: the one the debugger gives, else made from that of
+   the structure as C has it, s.x, p->x, a[3] */
+static char *
+debug_node_expression (const debug_node_t *node)
+{
+    char *parent, *expression;
+    const char *type;
+
+    if (node->var->expression != NULL)
+        return g_strdup (node->var->expression);
+    if (node->parent == NULL)
+        return g_strdup (node->var->name);
+    parent = debug_node_expression (node->parent);
+    if (parent == NULL)
+        return NULL;
+    type = node->parent->var->type;
+    if (node->var->name[0] != '\0'
+        && strspn (node->var->name, "0123456789") == strlen (node->var->name))
+        expression = g_strdup_printf (debug_expression_simple (parent) ? "%s[%s]" : "(%s)[%s]",
+                                      parent, node->var->name);
+    else if (type != NULL && debug_type_is_pointer (type))
+        expression = g_strdup_printf (debug_expression_simple (parent) ? "%s->%s" : "(%s)->%s",
+                                      parent, node->var->name);
+    else
+        expression = g_strdup_printf (debug_expression_simple (parent) ? "%s.%s" : "(%s).%s",
+                                      parent, node->var->name);
+    g_free (parent);
+    return expression;
+}
+
+/* The nodes the list shows, from @node down */
+static void
+debug_tree_collect (GPtrArray *shown, debug_node_t *node)
+{
+    guint i;
+
+    g_ptr_array_add (shown, node);
+    if (!node->open || node->members == NULL)
+        return;
+    for (i = 0; i < node->members->len; i++)
+        debug_tree_collect (shown, g_ptr_array_index (node->members, i));
+}
+
+/* The list made again from the tree, the cursor on the node it was on */
+static void
+debug_tree_fill (debug_tree_t *tree, const debug_node_t *current)
+{
+    guint i;
+
+    g_ptr_array_set_size (tree->shown, 0);
+    debug_tree_collect (tree->shown, tree->root);
+    listbox_remove_list (tree->list);
+    for (i = 0; i < tree->shown->len; i++)
+    {
+        const debug_node_t *node = g_ptr_array_index (tree->shown, i);
+        const char *mark = node->var->ref == NULL ? " "
+            : node->asking                        ? "~"
+            : node->open                          ? "-"
+                                                  : "+";
+        char *text = g_strdup_printf ("%*s%s %s = %s", node->depth * 2, "", mark, node->var->name,
+                                      node->var->value);
+
+        listbox_add_item_take (tree->list, LISTBOX_APPEND_AT_END, 0, text, (void *) node, FALSE);
+    }
+    for (i = 0; i < tree->shown->len; i++)
+        if (g_ptr_array_index (tree->shown, i) == current)
+            listbox_set_current (tree->list, (int) i);
+    widget_draw (WIDGET (tree->list));
+}
+
+static debug_node_t *
+debug_tree_current (const debug_tree_t *tree)
+{
+    const int i = tree->list->current;
+
+    return i >= 0 && i < (int) tree->shown->len ? g_ptr_array_index (tree->shown, i) : NULL;
+}
+
+static debug_node_t *
+debug_node_find (debug_node_t *node, guint id)
+{
+    guint i;
+
+    if (node->id == id)
+        return node;
+    for (i = 0; node->members != NULL && i < node->members->len; i++)
+    {
+        debug_node_t *found = debug_node_find (g_ptr_array_index (node->members, i), id);
+
+        if (found != NULL)
+            return found;
+    }
+    return NULL;
+}
+
+/* The members of a node have come: of a tree still open, or of none */
+static void
+debug_reply_members (void *ui, const debug_reply_t *reply, void *data)
+{
+    debug_node_t *node;
+    guint i;
+
+    (void) ui;
+    if (debug_tree == NULL
+        || (node = debug_node_find (debug_tree->root, GPOINTER_TO_UINT (data))) == NULL)
+        return;
+    node->asking = FALSE;
+    node->members = g_ptr_array_new_with_free_func (debug_node_free);
+    for (i = 0; reply->variables != NULL && i < reply->variables->len; i++)
+        g_ptr_array_add (node->members,
+                         debug_node_new (g_ptr_array_index (reply->variables, i), node));
+    if (!reply->ok)
+    {
+        debug_variable_t why = { 0 };
+
+        why.name = (char *) _ ("<error>");
+        why.value = (char *) (reply->msg != NULL ? reply->msg : "");
+        g_ptr_array_add (node->members, debug_node_new (&why, node));
+    }
+    debug_tree_fill (debug_tree, debug_tree_current (debug_tree));
+}
+
+/* A node opened, its members asked for the first time, or closed */
+static void
+debug_tree_toggle (debug_tree_t *tree, debug_node_t *node)
+{
+    if (node == NULL || node->var->ref == NULL)
+        return;
+    node->open = !node->open;
+    if (node->open && node->members == NULL && !node->asking)
+    {
+        node->asking = tree->debug->backend->ops->children (tree->debug->backend, node->var->ref,
+                                                            debug_reply_members,
+                                                            GUINT_TO_POINTER (node->id), NULL)
+            != 0;
+        if (!node->asking)
+            node->open = FALSE;
+    }
+    debug_tree_fill (tree, node);
+}
+
+static lcback_ret_t
+debug_tree_activate (WListbox *l)
+{
+    (void) l;
+    if (debug_tree != NULL)
+        debug_tree_toggle (debug_tree, debug_tree_current (debug_tree));
+    return LISTBOX_CONT;
+}
+
+static cb_ret_t
+debug_tree_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    if (msg == MSG_KEY && debug_tree != NULL && (parm == KEY_RIGHT || parm == KEY_LEFT))
+    {
+        debug_node_t *node = debug_tree_current (debug_tree);
+
+        if (node == NULL)
+            return MSG_HANDLED;
+        if (parm == KEY_RIGHT && !node->open)
+            debug_tree_toggle (debug_tree, node);
+        else if (parm == KEY_LEFT && node->open)
+            debug_tree_toggle (debug_tree, node);
+        else if (parm == KEY_LEFT && node->parent != NULL)
+            debug_tree_fill (debug_tree, node->parent);
+        return MSG_HANDLED;
+    }
+    return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* The value of an expression with members, a tree to open: Enter or Right opens a member, Left
+   closes it; Add watch watches the member of the cursor */
+static void
+debug_tree_show (debugger_t *debug, const char *expression, const debug_variable_t *root)
+{
+    debug_tree_t tree = { 0 };
+    const int dlg_w = MIN (COLS - 4, 90);
+    const int list_h = MAX (5, MIN (LINES - 10, 20));
+    const int dlg_h = list_h + 5;
+    WDialog *dlg;
+    debug_variable_t named = *root;
+    debug_node_t *chosen;
+    char *watch = NULL;
+
+    named.name = (char *) expression;
+    named.expression = root->expression != NULL ? root->expression : (char *) expression;
+    tree.debug = debug;
+    tree.root = debug_node_new (&named, NULL);
+    tree.shown = g_ptr_array_new ();
+    dlg =
+        dlg_create (TRUE, (LINES - dlg_h) / 2, (COLS - dlg_w) / 2, dlg_h, dlg_w, WPOS_KEEP_DEFAULT,
+                    TRUE, dialog_colors, debug_tree_callback, NULL, "[Debugger]", _ ("Evaluate"));
+    dlg->help_file = "debugger.md";
+    tree.list = listbox_new (1, 1, list_h, dlg_w - 2, FALSE, debug_tree_activate);
+    group_add_widget (GROUP (dlg), tree.list);
+    group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+    group_add_widget (
+        GROUP (dlg),
+        button_new (dlg_h - 2, dlg_w / 2 - 14, B_USER, NORMAL_BUTTON, _ ("Add &watch"), NULL));
+    group_add_widget (
+        GROUP (dlg),
+        button_new (dlg_h - 2, dlg_w / 2 + 2, B_CANCEL, DEFPUSH_BUTTON, _ ("&Close"), NULL));
+    debug_tree = &tree;
+    // the first level open at once
+    debug_tree_toggle (&tree, tree.root);
+
+    if (dlg_run (dlg) == B_USER && (chosen = debug_tree_current (&tree)) != NULL)
+        watch = debug_node_expression (chosen);
+    debug_tree = NULL;
+    widget_destroy (WIDGET (dlg));
+    if (watch != NULL)
+        (void) debug_watch_add (debug, watch);
+    g_free (watch);
+    // the variable object of GDB
+    if (debug->backend != NULL && debug->backend->ops->release != NULL)
+        debug->backend->ops->release (debug->backend, root->ref);
+    debug_node_free (tree.root);
+    g_ptr_array_free (tree.shown, TRUE);
+}
+
+/* The value of an expression in a dialog that adds it to the watches: a tree when it has
+   members */
+static void
+debug_reply_inspect (void *ui, const debug_reply_t *reply, void *data)
+{
+    debugger_t *debug = (debugger_t *) ui;
+    const char *expression = (const char *) data;
+    const debug_variable_t *root =
+        reply->ok && reply->variables != NULL && reply->variables->len > 0
+        ? g_ptr_array_index (reply->variables, 0)
+        : NULL;
+    char *text_value;
+
+    debug->eval_pending = FALSE;
+    if (root != NULL && root->ref != NULL)
+    {
+        debug_tree_show (debug, expression, root);
+        return;
+    }
+    text_value = g_strdup_printf ("%s = %s", expression,
+                                  root != NULL             ? root->value
+                                      : reply->msg != NULL ? reply->msg
+                                                           : _ ("<unavailable>"));
+    if (root == NULL)
+        debug_error (debug, text_value);
+    else if (query_dialog (_ ("Evaluate"), text_value, D_NORMAL, 2, _ ("&OK"), _ ("Add &watch"))
+             == 1)
+        (void) debug_watch_add (debug, expression);
+    g_free (text_value);
+}
+
 /* The debugger has taken a breakpoint, or has refused it */
 static void
 debug_reply_breakpoint (void *ui, const debug_reply_t *reply, void *data)
@@ -5022,9 +5354,15 @@ debug_evaluate_text (debugger_t *debug, char *expression)
         g_free (expression);
         return MC_EPR_FAILED;
     }
-    sent = debug->backend->ops->evaluate (debug->backend, expression, debug_reply_evaluate,
-                                          expression, g_free)
-        != 0;
+    // looked into when the debugger can, its members a tree
+    if (debug->backend->ops->inspect != NULL)
+        sent = debug->backend->ops->inspect (debug->backend, expression, debug_reply_inspect,
+                                             expression, g_free)
+            != 0;
+    else
+        sent = debug->backend->ops->evaluate (debug->backend, expression, debug_reply_evaluate,
+                                              expression, g_free)
+            != 0;
     debug->eval_pending = sent;
     return sent ? MC_EPR_OK : MC_EPR_FAILED;
 }

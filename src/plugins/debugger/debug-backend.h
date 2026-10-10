@@ -40,11 +40,14 @@ typedef struct
     char *label;    // "#0 func  file:line", made by the plugin
 } debug_frame_t;
 
-/* A variable of a frame, or a register */
+/* A variable of a frame, a register, or a member of a structure */
 typedef struct
 {
     char *name;
     char *value;
+    char *ref;         // of its members, for children(); NULL when it has none
+    char *expression;  // that gives it, for a watch; NULL when it is not known
+    char *type;
 } debug_variable_t;
 
 /* An instruction of the machine */
@@ -178,6 +181,14 @@ typedef struct
     // the registers of the frame: the general ones, the program counter and the flags
     guint (*registers) (debug_backend_t *b, debug_reply_cb cb, void *data,
                         GDestroyNotify free_data);
+    /* an expression to look into: reply->variables has it, its value and the reference of its
+       members; release() the reference when done with (the varobj of GDB) */
+    guint (*inspect) (debug_backend_t *b, const char *expression, debug_reply_cb cb, void *data,
+                      GDestroyNotify free_data);
+    // the members of what has a reference, in reply->variables
+    guint (*children) (debug_backend_t *b, const char *ref, debug_reply_cb cb, void *data,
+                       GDestroyNotify free_data);
+    void (*release) (debug_backend_t *b, const char *ref);
     // a command of the debugger itself, typed by the user
     guint (*console) (debug_backend_t *b, const char *line, debug_reply_cb cb, void *data,
                       GDestroyNotify free_data);

@@ -1654,6 +1654,91 @@ dap_evaluate (debug_backend_t *b, const char *expression, debug_reply_cb cb, voi
                             free_data);
 }
 
+/* A variable of the adapter: a reference of its members when it has some */
+static debug_variable_t *
+dap_variable (JsonObject *item, const char *name, const char *value_member)
+{
+    debug_variable_t *variable = g_new0 (debug_variable_t, 1);
+    const gint64 ref = dap_int (item, "variablesReference", 0);
+
+    variable->name = g_strdup (name);
+    variable->value =
+        g_strdup (dap_string (item, value_member) != NULL ? dap_string (item, value_member) : "");
+    variable->ref = ref > 0 ? g_strdup_printf ("%" G_GINT64_FORMAT, ref) : NULL;
+    variable->expression = g_strdup (dap_string (item, "evaluateName"));
+    variable->type = g_strdup (dap_string (item, "type"));
+    return variable;
+}
+
+/* The expression looked into, from the answer to evaluate */
+static void
+dap_response_inspect (void *owner, gboolean success, const char *message, JsonObject *body,
+                      void *data)
+{
+    debug_reply_t reply = { 0 };
+
+    (void) owner;
+    reply.ok = success;
+    reply.msg = message;
+    if (success)
+    {
+        reply.variables = g_ptr_array_new_with_free_func (debug_variable_free);
+        g_ptr_array_add (reply.variables, dap_variable (body, NULL, "result"));
+    }
+    dap_wait_answer ((dap_wait_t *) data, &reply);
+    if (reply.variables != NULL)
+        g_ptr_array_unref (reply.variables);
+}
+
+static guint
+dap_inspect (debug_backend_t *b, const char *expression, debug_reply_cb cb, void *data,
+             GDestroyNotify free_data)
+{
+    return dap_evaluate_in (DAP (b), expression, "watch", dap_response_inspect, cb, data,
+                            free_data);
+}
+
+/* The members of a variable */
+static void
+dap_response_children (void *owner, gboolean success, const char *message, JsonObject *body,
+                       void *data)
+{
+    JsonArray *list = dap_array (body, "variables");
+    debug_reply_t reply = { 0 };
+    guint i;
+
+    (void) owner;
+    reply.ok = success;
+    reply.msg = message;
+    reply.variables = g_ptr_array_new_with_free_func (debug_variable_free);
+    for (i = 0; success && list != NULL && i < json_array_get_length (list) && i < 1000; i++)
+    {
+        JsonObject *item = json_array_get_object_element (list, i);
+
+        if (item != NULL && dap_string (item, "name") != NULL)
+            g_ptr_array_add (reply.variables,
+                             dap_variable (item, dap_string (item, "name"), "value"));
+    }
+    dap_wait_answer ((dap_wait_t *) data, &reply);
+    g_ptr_array_unref (reply.variables);
+}
+
+static guint
+dap_children (debug_backend_t *b, const char *ref, debug_reply_cb cb, void *data,
+              GDestroyNotify free_data)
+{
+    dap_backend_t *dap = DAP (b);
+    dap_wait_t *wait = dap_wait_new (dap, cb, data, free_data);
+    const guint token = wait->token;
+    JsonObject *args;
+    JsonNode *node = dap_args (&args);
+
+    json_object_set_int_member (args, "variablesReference", g_ascii_strtoll (ref, NULL, 10));
+    return dap_request (dap, "variables", node, dap_response_children, wait, dap_wait_free) != 0
+        ? token
+        : 0;
+}
+
 /* What the adapter answers to a command typed for it goes to the console */
 static void
 dap_response_console (void *owner, gboolean success, const char *message, JsonObject *body,
@@ -1883,6 +1968,8 @@ static const debug_backend_ops_t dap_ops = {
     .disassemble = dap_disassemble,
     .has_registers = dap_has_registers,
     .registers = dap_registers,
+    .inspect = dap_inspect,
+    .children = dap_children,
     .console = dap_console,
     .free = dap_free,
 };

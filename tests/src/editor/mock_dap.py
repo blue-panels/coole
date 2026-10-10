@@ -139,12 +139,16 @@ class Adapter:
             elif ref == 2:
                 variables = [{"name": "rip", "value": "0x1000", "variablesReference": 0}]
             else:
-                variables = [{"name": "a", "value": "1", "variablesReference": 0}]
+                variables = [{"name": "a", "value": "1", "variablesReference": 0,
+                              "evaluateName": "obj.a"}]
             self.respond(request, {"variables": variables})
         elif command == "evaluate":
             expression = args.get("expression", "")
             if expression == "bad":
                 self.respond(request, success=False, message="no symbol bad")
+            elif expression == "obj":
+                self.respond(request, {"result": "<object>", "variablesReference": 3,
+                                       "type": "Thing"})
             else:
                 self.respond(request, {"result": "<%s>" % expression, "variablesReference": 0})
         elif command == "disassemble":

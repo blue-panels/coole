@@ -51,6 +51,9 @@ debug_variable_free (gpointer data)
         return;
     g_free (variable->name);
     g_free (variable->value);
+    g_free (variable->ref);
+    g_free (variable->expression);
+    g_free (variable->type);
     g_free (variable);
 }
 

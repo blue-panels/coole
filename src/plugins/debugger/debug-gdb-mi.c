@@ -45,7 +45,9 @@ typedef enum
     MI_REPLY_REGISTER_NAMES,
     MI_REPLY_REGISTERS,
     MI_REPLY_DISASSEMBLE_FUNCTION,
-    MI_REPLY_DISASSEMBLE
+    MI_REPLY_DISASSEMBLE,
+    MI_REPLY_VAROBJ,
+    MI_REPLY_CHILDREN
 } mi_reply_kind_t;
 
 typedef struct
@@ -86,6 +88,7 @@ typedef struct
 #define UI(m)     ((m)->base.ui)
 
 static void mi_startup_next (mi_backend_t *mi);
+static void mi_release (debug_backend_t *b, const char *ref);
 static guint mi_register_values (mi_backend_t *mi, debug_reply_cb cb, void *data,
                                  GDestroyNotify free_data);
 
@@ -210,6 +213,46 @@ mi_variables (const gdb_mi_record_t *record)
         g_ptr_array_add (variables, entry);
     }
     return variables;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A variable object of GDB: its value, and its name as the reference of its members when it has
+   some (a pretty-printer may give them while it says none) */
+static debug_variable_t *
+mi_varobj (const gdb_mi_value_t *tuple, const char *name)
+{
+    const char *numchild = gdb_mi_get_string (tuple, "numchild");
+    const char *value = gdb_mi_get_string (tuple, "value");
+    const gboolean members = (numchild != NULL && atol (numchild) > 0)
+        || g_strcmp0 (gdb_mi_get_string (tuple, "dynamic"), "1") == 0
+        || g_strcmp0 (gdb_mi_get_string (tuple, "has_more"), "1") == 0;
+    debug_variable_t *variable = g_new0 (debug_variable_t, 1);
+
+    variable->name = g_strdup (name);
+    variable->value = g_strdup (value != NULL ? value : "{...}");
+    variable->ref = members ? g_strdup (gdb_mi_get_string (tuple, "name")) : NULL;
+    variable->type = g_strdup (gdb_mi_get_string (tuple, "type"));
+    return variable;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The members of a variable object, from the reply to -var-list-children */
+static GPtrArray *
+mi_children (const gdb_mi_record_t *record)
+{
+    const gdb_mi_value_t *list = gdb_mi_get (record->results, "children");
+    GPtrArray *children = g_ptr_array_new_with_free_func (debug_variable_free);
+    guint i;
+
+    for (i = 0; list != NULL && list->items != NULL && i < list->items->len; i++)
+    {
+        const gdb_mi_value_t *child = g_ptr_array_index (list->items, i);
+
+        g_ptr_array_add (children, mi_varobj (child, gdb_mi_get_string (child, "exp")));
+    }
+    return children;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -478,6 +521,22 @@ mi_request_reply (mi_backend_t *mi, const gdb_mi_record_t *record)
     case MI_REPLY_DISASSEMBLE:
         if (reply.ok)
             reply.instructions = mi_instructions (record);
+        break;
+    case MI_REPLY_VAROBJ:
+        if (reply.ok)
+        {
+            debug_variable_t *root = mi_varobj (record->results, NULL);
+
+            reply.variables = g_ptr_array_new_with_free_func (debug_variable_free);
+            g_ptr_array_add (reply.variables, root);
+            // with no members to look into, it is of no use any more
+            if (root->ref == NULL)
+                mi_release (&mi->base, gdb_mi_record_string (record, "name"));
+        }
+        break;
+    case MI_REPLY_CHILDREN:
+        if (reply.ok)
+            reply.variables = mi_children (record);
         break;
     default:
         break;
@@ -935,6 +994,61 @@ mi_break_address (debug_backend_t *b, const char *address, debug_reply_cb cb, vo
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* An expression looked into: a variable object of GDB, in the frame chosen */
+static guint
+mi_inspect (debug_backend_t *b, const char *expression, debug_reply_cb cb, void *data,
+            GDestroyNotify free_data)
+{
+    char *command = mi_command_quoted ("-var-create - *", expression);
+    guint token;
+
+    token = mi_request (MI (b), MI_REPLY_VAROBJ, cb, data, free_data, command);
+    g_free (command);
+    return token;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static guint
+mi_children_request (debug_backend_t *b, const char *ref, debug_reply_cb cb, void *data,
+                     GDestroyNotify free_data)
+{
+    char *command = mi_command_quoted ("-var-list-children --all-values", ref);
+    guint token;
+
+    token = mi_request (MI (b), MI_REPLY_CHILDREN, cb, data, free_data, command);
+    g_free (command);
+    return token;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* An answer that matters to no one: a variable object gone with the GDB before, say */
+static void
+mi_ignore (void *ui, const debug_reply_t *reply, void *data)
+{
+    (void) ui;
+    (void) reply;
+    (void) data;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The variable object of an expression, its members with it */
+static void
+mi_release (debug_backend_t *b, const char *ref)
+{
+    char *command;
+
+    if (ref == NULL || !gdb_mi_session_alive (MI (b)->gdb))
+        return;
+    command = mi_command_quoted ("-var-delete", ref);
+    (void) mi_request (MI (b), MI_REPLY_PLAIN, mi_ignore, NULL, NULL, command);
+    g_free (command);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A command of GDB itself: its words come on the console stream */
 static guint
 mi_console (debug_backend_t *b, const char *line, debug_reply_cb cb, void *data,
@@ -984,6 +1098,9 @@ static const debug_backend_ops_t mi_ops = {
     .break_address = mi_break_address,
     .disassemble = mi_disassemble,
     .registers = mi_registers_request,
+    .inspect = mi_inspect,
+    .children = mi_children_request,
+    .release = mi_release,
     .console = mi_console,
     .free = mi_free,
 };

@@ -172,9 +172,16 @@ the cursor of the topmost file window, F10 closes the panel), and:
 : Move from one row to another.
 
 **Enter**
-: On a variable or a watch, its whole value, a structure for one, in a
-dialog that can add it to the watches; on a frame, go to it; on a
-breakpoint, go to its line.
+: On a variable or a watch, its whole value in a dialog that can add it to
+the watches; on a frame, go to it; on a breakpoint, go to its line.
+
+A value with members, a structure, an array, a pointer to one, an object of
+Python, comes as a tree, its members shown. **Enter** or **Right** opens a
+member, **Left** closes it or goes up to the one it is of; **Add watch**
+watches the member of the cursor, *p->corner[1]* for one, by the expression
+the debugger gives or one made as C has it. The members come from the
+debugger as they are opened. **Evaluate expression...** and **Enter** in a
+source window give the same tree.
 
 **Space**
 : Disable a breakpoint, or enable it again: GDB keeps it but does not stop
