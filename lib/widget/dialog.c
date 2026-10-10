@@ -285,7 +285,9 @@ frontend_dlg_run (WDialog *h)
 
         // Clear interrupt flag
         tty_got_interrupt ();
+        tty_paste_as_block = TRUE;
         d_key = tty_get_event (&event, GROUP (h)->mouse_status == MOU_REPEAT, TRUE);
+        tty_paste_as_block = FALSE;
 
         dlg_process_event (h, d_key, &event);
 
@@ -310,6 +312,25 @@ dlg_default_destroy (Widget *w)
     g_free (h);
 
     do_refresh ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* A paste that no widget takes as a whole is typed key by key, as before MSG_PASTE. Until the
+   last key the input is not idle, so that a widget draws once and not after every key. */
+
+static void
+dlg_paste_as_keys (WDialog *h, const GString *text)
+{
+    size_t i;
+
+    bracketed_pasting_in_progress = TRUE;
+    for (i = 0; i < text->len && widget_get_state (WIDGET (h), WST_ACTIVE); i++)
+    {
+        tty_paste_keys_pending = i + 1 < text->len;
+        dlg_key_event (h, (unsigned char) text->str[i]);
+    }
+    tty_paste_keys_pending = FALSE;
+    bracketed_pasting_in_progress = FALSE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -519,6 +540,19 @@ dlg_process_event (WDialog *h, int key, Gpm_Event *event)
         Widget *w = WIDGET (h);
 
         GROUP (h)->mouse_status = w->mouse_handler (w, event);
+        break;
+    }
+
+    case MCKEY_PASTE:
+    {
+        GString *text = tty_paste_take ();
+
+        if (text != NULL)
+        {
+            if (send_message (h, NULL, MSG_PASTE, 0, text) != MSG_HANDLED)
+                dlg_paste_as_keys (h, text);
+            g_string_free (text, TRUE);
+        }
         break;
     }
 

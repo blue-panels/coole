@@ -411,6 +411,10 @@ terminal_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm,
            hotkey first, which the terminal types into the shell as it is. */
         return send_message (tw->term, NULL, MSG_KEY, parm, NULL);
 
+    case MSG_PASTE:
+        // the paste goes where the keys go: the current widget of the group is not the terminal
+        return send_message (tw->term, NULL, MSG_PASTE, parm, data);
+
     case MSG_DESTROY:
         // the window goes, and the shell with it
         if (tw->plugin != NULL && tw->program)

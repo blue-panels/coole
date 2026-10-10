@@ -638,6 +638,10 @@ group_default_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, v
     case MSG_HOTKEY:
         return group_handle_hotkey (g, parm);
 
+    case MSG_PASTE:
+        return g->current != NULL ? send_message (g->current->data, NULL, MSG_PASTE, parm, data)
+                                  : MSG_NOT_HANDLED;
+
     case MSG_CURSOR:
         return group_update_cursor (g);
 
