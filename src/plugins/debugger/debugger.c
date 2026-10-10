@@ -223,6 +223,11 @@ typedef struct
     // the program runs in the terminal of the plugin terminal, the tab Program
     gboolean program_terminal;
     gboolean service;  // the service "debugger" is offered
+    /* the time the program was run on at, by a continue or a step, and the time it ran till it
+       stopped, in microseconds: the work of the debugger is in it, and of the user typing what
+       the program reads */
+    gint64 run_started;
+    gint64 run_time;
     // a program that runs on longer than a step: its tab takes the focus, a timerfd tells when
     int run_timer;
     char *current_file;
@@ -769,6 +774,16 @@ debug_panel_rows (const debugger_t *debug)
             rows, PANEL_TEXT, 0,
             g_strdup_printf (_ ("%s %s, with no source"), debug->current_func,
                              debug->current_address != NULL ? debug->current_address : ""));
+
+    // how long the step or the continue took, a slow line to be seen at once
+    if (debug->state == DEBUG_STOPPED && debug->run_time > 0)
+    {
+        const double seconds = (double) debug->run_time / G_USEC_PER_SEC;
+
+        debug_panel_add (rows, PANEL_TEXT, 0,
+                         seconds < 10.0 ? g_strdup_printf (_ ("  ran %.3f s"), seconds)
+                                        : g_strdup_printf (_ ("  ran %.1f s"), seconds));
+    }
 
     /* a program that runs does not stop by itself to read: the user is to type its answer in its
        terminal, which nothing would tell else */
@@ -3352,6 +3367,7 @@ debug_finished (debugger_t *debug)
     if (debug->state != DEBUG_OFF)
         debug->state = DEBUG_FINISHED;
     debug_run_timer (debug, FALSE);
+    debug->run_started = 0;
     debug->breakpoints_installed = FALSE;
     debug_clear_current (debug);
     debug_marks_show (debug, NULL);
@@ -3586,7 +3602,10 @@ debug_event_running (void *ui)
     debugger_t *debug = (debugger_t *) ui;
 
     if (debug->state != DEBUG_RUNNING)
+    {
+        debug->run_started = g_get_monotonic_time ();
         debug_run_timer (debug, TRUE);
+    }
     debug->state = DEBUG_RUNNING;
     debug_notes_clear (debug);
     debug_watches_clear_values (debug);
@@ -3601,6 +3620,8 @@ debug_event_stopped (void *ui, const debug_stop_t *stop)
     // the program has had what was typed in its tab: the place it stops at is to be seen
     const gboolean from_program = debug_program_current (debug);
 
+    debug->run_time = debug->run_started != 0 ? g_get_monotonic_time () - debug->run_started : 0;
+    debug->run_started = 0;
     debug_run_timer (debug, FALSE);
     debug_stopped (debug, stop);
     if (from_program)
