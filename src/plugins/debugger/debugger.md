@@ -9,7 +9,7 @@ beside it.
 
 **The start**
 
-Put a breakpoint on a line with **Ctrl-B** and run with **Alt-Shift-R** (or
+Put a breakpoint on a line with **Ctrl-F8** and run with **Shift-F9** (or
 **Debug → Toggle breakpoint** and **Debug → Start or continue**). The first
 time, the debugger makes a configuration of its own:
 
@@ -46,7 +46,7 @@ While it is stopped, the keys that run it on, Continue, the steps and Stop,
 work in the tab too; while it runs, every key there is the program's.
 A program that takes the whole screen, an editor or
 coole itself, runs there as in any terminal. A click on the tab, or
-**Window → Program**, goes to it; **Alt-Shift-G** leaves it for the panel of
+**Window → Program**, goes to it; **Alt-F5** leaves it for the panel of
 the debugger. The tab stays when the program ends, to be read, and is
 cleared when it starts again. Without the plugin terminal, or unchecked,
 the output of the program comes in the console, and **Send line...** gives
@@ -86,15 +86,19 @@ plugin ctags); **Navigate** jumps by them.
 
 These work in a file window too, since the editor has nothing on them:
 
-**Alt-Shift-G**
+**Alt-F5**
 : Go to the panel of the debugger, and back to the file.
 
-**Ctrl-B**
+**Ctrl-F8**, **Ctrl-B**
 : Toggle a breakpoint on the line of the cursor.
 
-**Alt-Shift-R**
+**Shift-F9**
 : Run: build the program and start it, or go on when it is stopped. The
 first time it asks what to run.
+
+**Ctrl-F2**
+: Stop the program, while one is debugged; the rest of the time it is Save
+as.
 
 **The configurations**
 
@@ -111,7 +115,7 @@ While the program is stopped the source windows take the debugger keys; the
 keys that move around the text, search, select or switch windows stay the
 editor's, and a key that would change the text beeps.
 
-**F5**
+**F5**, **Shift-F9**
 : Continue.
 
 **Shift-F6**
@@ -121,12 +125,12 @@ editor's, and a key that would change the text beeps.
 : Step into, step over, step out.
 
 **Shift-F7**, **Shift-F4**
-: Step into, step over, by one instruction of the machine (**Ctrl-F7** and
-**Ctrl-F8** too, where the terminal sends them). These two keys are the
+: Step into, step over, by one instruction of the machine (**Ctrl-F7** too
+for the first). These two keys are the
 debugger's only while the program is stopped: the rest of the time they are
 Search again and Replace again, in debug mode too.
 
-**F4**
+**F4**, **Alt-F9**
 : Run to the line of the cursor, **Debug → Run to cursor** too: from where
 the program stopped, it stops at that line, at a breakpoint before it, or
 when the function it is in returns. A line of another function is reached
@@ -140,11 +144,15 @@ with a breakpoint, or with **Debug → Run to function...**.
 
 F2, F9 and F10 stay Save, the menu and Quit.
 
-**Enter**
+**Enter**, **Alt-F8**
 : Evaluate the selection or the word under the cursor; the value comes in a
 dialog that can add it to the watches.
 
-**Shift-F5**
+**Alt-F10**
+: Back to the line the program is stopped at, the cursor having gone
+elsewhere; **Debug → Show the stop line** too.
+
+**Shift-F5**, **Ctrl-F2**
 : Stop the program.
 
 **Esc**
@@ -154,6 +162,12 @@ The keys can be changed in **Options → Key bindings → Editor → Debugger**,
 in the *[debugger]* section of the keymap, *DebugStepOver = alt-o* for one;
 *f15* is the name of Shift-F5, *f18* that of Shift-F8, *f17* that of
 Shift-F7.
+
+The keys are those of IntelliJ IDEA, PyCharm and CLion where the editor
+leaves them free: F7, F8 and Shift-F8 step, Ctrl-F8 is a breakpoint, Alt-F8
+evaluates, Alt-F9 runs to the cursor, Alt-F10 shows the stop, Shift-F9 runs
+and Ctrl-F2 stops. F9 and F10 stay the menu and Quit, so F5 continues, as in
+NetBeans, and F4 runs to the cursor too.
 
 **The layout of debugging**
 

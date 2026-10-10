@@ -147,6 +147,7 @@ enum
     DEBUG_CMD_INDEX,
     DEBUG_CMD_STEP_INSTRUCTION,
     DEBUG_CMD_NEXT_INSTRUCTION,
+    DEBUG_CMD_SHOW_STOP,
     DEBUG_CMD_COUNT
 };
 
@@ -156,25 +157,29 @@ enum
 
 static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
     { "Help", NULL, "f1" },
-    { "DebugStartContinue", N_ ("Start or continue debugging"), "f5; alt-shift-r" },
+    /* the keys of IntelliJ IDEA where the editor leaves them free: F9 and F10 stay the menu and
+       Quit, F5 runs as in NetBeans */
+    { "DebugStartContinue", N_ ("Start or continue debugging"), "f5; f19" },
     // F2, F9 and F10 stay Save, the menu and Quit
     { "DebugPause", N_ ("Pause debugging"), "f16" },
     { "DebugStepInto", N_ ("Step into"), "f7" },
     { "DebugStepOver", N_ ("Step over"), "f8" },
     { "DebugStepOut", N_ ("Step out"), "f18" },
-    { "DebugStop", N_ ("Stop debugging"), "f15" },
-    { "DebugToggleBreakpoint", N_ ("Toggle breakpoint"), "f6; ctrl-b" },
-    { "DebugRunToCursor", N_ ("Run to cursor"), "f4" },
-    { "DebugEvaluate", N_ ("Evaluate expression"), "enter" },
+    // Ctrl-F2 is Save as again while nothing is debugged
+    { "DebugStop", N_ ("Stop debugging"), "f15; ctrl-f2" },
+    { "DebugToggleBreakpoint", N_ ("Toggle breakpoint"), "f6; ctrl-f8; ctrl-b" },
+    { "DebugRunToCursor", N_ ("Run to cursor"), "f4; alt-f9" },
+    { "DebugEvaluate", N_ ("Evaluate expression"), "enter; alt-f8" },
     { "DebugLeave", N_ ("Leave step mode"), "esc" },
     { "DebugClose", N_ ("Close debug session window"), "f10" },
     // from any window: to the panel of the debugger, and back to the file
-    { "DebugPanel", N_ ("Go to the panel of the debugger and back"), "alt-shift-g" },
+    { "DebugPanel", N_ ("Go to the panel of the debugger and back"), "alt-f5" },
     { "DebugIndex", N_ ("Index the symbols of the project"), "f3" },
     /* Shift-F8 is Step out; these two are the debugger's only while the program is stopped, the
        editor's Search and Replace again the rest of the time */
     { "DebugStepInstruction", N_ ("Step into by an instruction"), "f17; ctrl-f7" },
-    { "DebugNextInstruction", N_ ("Step over by an instruction"), "f14; ctrl-f8" },
+    { "DebugNextInstruction", N_ ("Step over by an instruction"), "f14" },
+    { "DebugShowStop", N_ ("Show the line the program is stopped at"), "alt-f10" },
     { NULL, NULL, NULL },
 };
 
@@ -326,7 +331,8 @@ enum
     DEBUG_ACT_RUN_TO_CURSOR,
     DEBUG_ACT_STEP_INSTRUCTION,
     DEBUG_ACT_NEXT_INSTRUCTION,
-    DEBUG_ACT_DISASSEMBLY
+    DEBUG_ACT_DISASSEMBLY,
+    DEBUG_ACT_SHOW_STOP
 };
 
 // the entry of the module
@@ -790,7 +796,7 @@ debug_panel_rows (const debugger_t *debug)
     if (debug->state == DEBUG_RUNNING && debug->program_terminal)
     {
         debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  output and input: tab Program")));
-        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  (a click on it; Alt-Shift-G back)")));
+        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  (a click on it; Alt-F5 back)")));
     }
 
     // what to do next, while nothing runs
@@ -800,11 +806,11 @@ debug_panel_rows (const debugger_t *debug)
         if (debug->breakpoints->len == 0)
             debug_panel_add (rows, PANEL_TEXT, 0,
                              g_strdup (debug->debug_mode ? _ ("  F6 on a line: breakpoint")
-                                                         : _ ("  Ctrl-B on a line: breakpoint")));
+                                                         : _ ("  Ctrl-F8 on a line: breakpoint")));
         debug_panel_add (rows, PANEL_TEXT, 0,
                          g_strdup (debug->debug_mode ? _ ("  F5: build and run")
-                                                     : _ ("  F5 here, Alt-Shift-R anywhere: run")));
-        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Alt-Shift-G: here and back")));
+                                                     : _ ("  F5 here, Shift-F9 anywhere: run")));
+        debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  Alt-F5: here and back")));
         if (debug_active_launch (debug) == NULL)
             debug_panel_add (rows, PANEL_TEXT, 0, g_strdup (_ ("  the first F5 asks what to run")));
     }
@@ -1256,6 +1262,14 @@ debug_run_command (debugger_t *debug, int cmd, void *edit)
         g_free (file);
         return TRUE;
     }
+    case DEBUG_CMD_SHOW_STOP:
+        if (debug->state == DEBUG_STOPPED && debug->current_file != NULL
+            && debug->host->show_location != NULL)
+            (void) debug->host->show_location (debug->host, debug->current_file,
+                                               debug->current_line);
+        else
+            tty_beep ();
+        return TRUE;
     case DEBUG_CMD_PANEL:
         if (debug->session_window != NULL
             && debug->host->window_current (debug->host) == debug->session_window)
@@ -5303,6 +5317,15 @@ debug_act_function_breakpoint (void *data, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Debug > Show the stop line: the source at the line the program is stopped at, the cursor
+   having gone elsewhere */
+static mc_ep_result_t
+debug_act_show_stop (void *data, void *edit)
+{
+    return debug_run_command ((debugger_t *) data, DEBUG_CMD_SHOW_STOP, edit) ? MC_EPR_OK
+                                                                              : MC_EPR_FAILED;
+}
+
 /* Debug > Run to function: a breakpoint the debugger takes off when it stops there */
 static mc_ep_result_t
 debug_act_run_to_function (void *data, void *edit)
@@ -5622,6 +5645,9 @@ debug_handle_key (void *data, int key, void *edit)
         return cmd == DEBUG_CMD_PANEL && debug_run_command (debug, cmd, NULL)
             ? MC_EPR_OK
             : MC_EPR_NOT_SUPPORTED;
+    // Stop, Ctrl-F2 and Shift-F5, is the editor's Save as and Insert file while nothing is debugged
+    if (cmd == DEBUG_CMD_STOP && !debug_session_live (debug))
+        return MC_EPR_NOT_SUPPORTED;
     // debug mode: the commands of the debugger have their keys, the editor's F3 to F8 too
     if (!debug_stepping (debug) && debug->debug_mode && cmd != DEBUG_CMD_NONE
         && cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && cmd != DEBUG_CMD_LEAVE
@@ -5634,9 +5660,13 @@ debug_handle_key (void *data, int key, void *edit)
         return MC_EPR_OK;
     }
     /* out of step mode, a key of the debugger the editor has nothing on is the debugger's:
-       Alt-Shift-G, Ctrl-B, Alt-Shift-R; F5 stays Copy */
+       Alt-F5, Ctrl-B, Ctrl-F8, Shift-F9; F5 stays Copy, Ctrl-F2 Save as unless a program is
+       debugged */
     if (!debug_stepping (debug))
     {
+        // the program debugged, Stop is the debugger's
+        if (cmd == DEBUG_CMD_STOP)
+            return debug_run_command (debug, cmd, edit) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
         if (cmd == DEBUG_CMD_NONE || cmd == DEBUG_CMD_HELP || cmd == DEBUG_CMD_CLOSE
             || cmd == DEBUG_CMD_LEAVE || cmd == DEBUG_CMD_EVALUATE
             || keybind_lookup_keymap_command (WIDGET (edit)->keymap, key) != CK_IgnoreKey)
@@ -6361,6 +6391,7 @@ static const mc_ep_action_t debug_actions[] = {
     { "Step into instruction", debug_step_instruction },
     { "Step over instruction", debug_next_instruction },
     { "Disassembly", debug_act_disassembly },
+    { "Show stop", debug_act_show_stop },
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
@@ -6379,6 +6410,7 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("Step over instruction"), DEBUG_ACT_NEXT_INSTRUCTION, NULL },
     { DEBUG_MENU, N_ ("Run to cursor"), DEBUG_ACT_RUN_TO_CURSOR, NULL },
     { DEBUG_MENU, N_ ("Run t&o function..."), DEBUG_ACT_RUN_TO_FUNCTION, NULL },
+    { DEBUG_MENU, N_ ("Show the stop line"), DEBUG_ACT_SHOW_STOP, NULL },
     { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
     { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
@@ -6424,6 +6456,7 @@ debug_menu_shortcut (int action_index)
         { DEBUG_ACT_NEXT_INSTRUCTION, DEBUG_CMD_NEXT_INSTRUCTION },
         { DEBUG_ACT_PAUSE, DEBUG_CMD_PAUSE },
         { DEBUG_ACT_STOP, DEBUG_CMD_STOP },
+        { DEBUG_ACT_SHOW_STOP, DEBUG_CMD_SHOW_STOP },
     };
     const global_keymap_t *map = keymap_section_map (DEBUG_KEYMAP_SECTION);
     const char *first = NULL;
