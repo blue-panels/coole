@@ -133,6 +133,8 @@ typedef struct
     char *stop_file;
     long stop_line;
     char *exit_code;
+    char *exception_name;
+    char *exception_text;
     GString *console;
     GString *program;
     // the answers
@@ -155,6 +157,8 @@ seen_clear (void)
 {
     g_free (seen.stop_file);
     g_free (seen.exit_code);
+    g_free (seen.exception_name);
+    g_free (seen.exception_text);
     g_free (seen.bp_id);
     g_free (seen.value);
     g_free (seen.error);
@@ -210,6 +214,10 @@ on_stopped (void *ui, const debug_stop_t *stop)
     g_free (seen.stop_file);
     seen.stop_file = g_strdup (stop->file);
     seen.stop_line = stop->line;
+    g_free (seen.exception_name);
+    seen.exception_name = g_strdup (stop->exception_name);
+    g_free (seen.exception_text);
+    seen.exception_text = g_strdup (stop->exception_text);
     if (stop->reason == DEBUG_STOP_EXITED)
     {
         seen.exited = TRUE;
@@ -523,6 +531,69 @@ test_no_conditions (void)
     g_free (python);
 }
 
+/* The exceptions the adapter offers; those chosen go to it, one it has not left out, and the
+   program stops on one, what it is asked of the adapter */
+static void
+test_exceptions (void)
+{
+    char *python = g_find_program_in_path ("python3");
+    char *command;
+    char *argv[] = { NULL };
+    const char *const ids[] = { "raised", "bogus", NULL };
+    debug_start_t spec = { 0 };
+    GError *error = NULL;
+    GPtrArray *filters;
+    const debug_exception_filter_t *filter;
+
+    if (python == NULL)
+    {
+        g_test_skip ("python3 is unavailable");
+        return;
+    }
+    seen_clear ();
+    command = g_strdup_printf ("%s %s", python, MOCK_DAP);
+    spec.program = "/bin/true";
+    spec.argv = argv;
+    spec.directory = "/";
+    spec.tty = "/dev/null";
+    spec.debugger = command;
+    seen.backend = debug_dap_new (&events, NULL);
+    // before the start it knows none
+    filters = seen.backend->ops->exception_filters (seen.backend);
+    g_assert_cmpuint (filters->len, ==, 0);
+    g_ptr_array_unref (filters);
+    g_assert_true (seen.backend->ops->start (seen.backend, &spec, &error));
+    g_assert_no_error (error);
+    run_until (&seen.ready);
+    g_assert_true (seen.ready);
+
+    filters = seen.backend->ops->exception_filters (seen.backend);
+    g_assert_cmpuint (filters->len, ==, 2);
+    filter = g_ptr_array_index (filters, 0);
+    g_assert_cmpstr (filter->id, ==, "raised");
+    g_assert_cmpstr (filter->label, ==, "Raised Exceptions");
+    g_assert_false (filter->on);
+    filter = g_ptr_array_index (filters, 1);
+    g_assert_cmpstr (filter->id, ==, "uncaught");
+    g_assert_true (filter->on);
+    g_ptr_array_unref (filters);
+
+    g_assert_cmpuint (seen.backend->ops->break_exceptions (seen.backend, ids), >, 0);
+    run_until_text (seen.console, "mock: exceptions ['raised']");
+    g_assert_cmpuint (seen.backend->ops->exec (seen.backend, DEBUG_EXEC_RUN, NULL, NULL, NULL), >,
+                      0);
+    run_until (&seen.stopped);
+    g_assert_cmpint (seen.reason, ==, DEBUG_STOP_EXCEPTION);
+    g_assert_cmpstr (seen.exception_name, ==, "ValueError");
+    g_assert_cmpstr (seen.exception_text, ==, "bad value");
+
+    seen.backend->ops->stop (seen.backend);
+    seen.backend->ops->free (seen.backend);
+    seen_clear ();
+    g_free (command);
+    g_free (python);
+}
+
 static void
 test_missing_adapter (void)
 {
@@ -547,6 +618,7 @@ main (int argc, char **argv)
     g_test_add_data_func ("/debugger/dap-backend-stdio", NULL, test_session);
     g_test_add_data_func ("/debugger/dap-backend-tcp", "127.0.0.1:0", test_session);
     g_test_add_func ("/debugger/dap-backend-no-conditions", test_no_conditions);
+    g_test_add_func ("/debugger/dap-backend-exceptions", test_exceptions);
     g_test_add_func ("/debugger/dap-backend-missing", test_missing_adapter);
     return g_test_run ();
 }

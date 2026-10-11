@@ -70,3 +70,26 @@ debug_instruction_free (gpointer data)
     g_free (instruction->file);
     g_free (instruction);
 }
+
+debug_exception_filter_t *
+debug_exception_filter_new (const char *id, const char *label, gboolean on)
+{
+    debug_exception_filter_t *filter = g_new0 (debug_exception_filter_t, 1);
+
+    filter->id = g_strdup (id);
+    filter->label = g_strdup (label != NULL ? label : id);
+    filter->on = on;
+    return filter;
+}
+
+void
+debug_exception_filter_free (gpointer data)
+{
+    debug_exception_filter_t *filter = (debug_exception_filter_t *) data;
+
+    if (filter == NULL)
+        return;
+    g_free (filter->id);
+    g_free (filter->label);
+    g_free (filter);
+}

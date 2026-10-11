@@ -79,6 +79,14 @@ typedef struct
 
 typedef void (*debug_reply_cb) (void *ui, const debug_reply_t *reply, void *data);
 
+/* A kind of exception the program can stop on, as the debugger offers it: "raised", "uncaught" */
+typedef struct
+{
+    char *id;
+    char *label;
+    gboolean on;  // the debugger stops on it unless told otherwise
+} debug_exception_filter_t;
+
 typedef enum
 {
     DEBUG_EXEC_RUN,
@@ -99,6 +107,7 @@ typedef enum
     DEBUG_STOP_STEP,    // a step has ended
     DEBUG_STOP_FINISH,  // a step out has ended
     DEBUG_STOP_SIGNAL,
+    DEBUG_STOP_EXCEPTION,
     DEBUG_STOP_EXITED
 } debug_stop_reason_t;
 
@@ -114,6 +123,9 @@ typedef struct
     const char *exit_code;
     const char *signal_name;
     const char *signal_meaning;
+    // of an exception: its kind, AssertionError, and what it says
+    const char *exception_name;
+    const char *exception_text;
 } debug_stop_t;
 
 typedef enum
@@ -143,6 +155,8 @@ typedef struct
     void (*error) (void *ui, const char *msg, gboolean unasked);
     // all that came in is told: time to draw
     void (*flush) (void *ui);
+    // the debugger offers other kinds of exceptions: the session of the program has its own
+    void (*exception_filters) (void *ui);
 } debug_backend_events_t;
 
 /* A request gives its number, 0 when it could not be sent (the backend says why); @cb NULL
@@ -170,6 +184,12 @@ typedef struct
     guint (*break_enable) (debug_backend_t *b, const char *id, gboolean enable);
     // the condition of a breakpoint changed, NULL or "" for none
     guint (*break_condition) (debug_backend_t *b, const char *id, const char *condition);
+    /* the kinds of exceptions it can stop on, debug_exception_filter_t, to be unreffed; empty
+       when it has none, or has not said them yet (an adapter does once it has started) */
+    GPtrArray *(*exception_filters) (const debug_backend_t *b);
+    /* the program stops on the exceptions of these kinds, by their ids, NULL-terminated; NULL:
+       on those the debugger stops on by itself, of each session it has */
+    guint (*break_exceptions) (debug_backend_t *b, const char *const *ids);
     guint (*run_to) (debug_backend_t *b, const char *file, long line);
     guint (*select_frame) (debug_backend_t *b, long level);
     guint (*stack) (debug_backend_t *b, debug_reply_cb cb, void *data, GDestroyNotify free_data);
@@ -209,9 +229,13 @@ struct debug_backend_t
 void debug_frame_free (gpointer data);
 void debug_variable_free (gpointer data);
 void debug_instruction_free (gpointer data);
+void debug_exception_filter_free (gpointer data);
+debug_exception_filter_t *debug_exception_filter_new (const char *id, const char *label,
+                                                      gboolean on);
 
 /* GDB with its machine interface */
 debug_backend_t *debug_gdb_mi_new (const debug_backend_events_t *events, void *ui);
+GPtrArray *debug_gdb_mi_exception_filters (void);
 #ifdef ENABLE_DAP
 /* A debug adapter of the Debug Adapter Protocol */
 debug_backend_t *debug_dap_new (const debug_backend_events_t *events, void *ui);

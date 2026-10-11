@@ -120,6 +120,26 @@ first time it asks what to run.
 : Stop the program, while one is debugged; the rest of the time it is Save
 as.
 
+**Exceptions**
+
+**Debug → Exceptions...** chooses the exceptions the program stops on, of the
+selected configuration, kept with it. The debugger offers the kinds:
+
+```
+GDB        C++ exceptions, when thrown or when caught
+debugpy    raised, uncaught, user uncaught
+```
+
+A debug adapter tells its kinds when it starts: the first time the form has
+them after one run. Until some are chosen it stops on those the adapter
+stops on by itself, uncaught ones for debugpy. A test of pytest is no
+uncaught exception, pytest catches it: *User uncaught* stops where it leaves
+the code of the project. A change goes to the program that runs at once.
+
+The stop says which exception it is, in the console: *Stopped on an
+exception: ValueError: bad value*. GDB stops in *__cxa_throw*, which has no
+source; the frame that threw it is the one shown.
+
 **The configurations**
 
 A project may have several: **New configuration...** guesses another one,
@@ -458,6 +478,7 @@ breakpoint the adapter has on no code yet is pending, *◊*, until it says it
 is on some.
 
 The configuration keeps these as *backend*, *adapter*, *address* and
-*launch_extra* in *debug.ini*.
+*launch_extra* in *debug.ini*, the exceptions as *exceptions* and the kinds
+the adapter offered as *exception_filters*.
 
 The debugger runs one local program at a time.

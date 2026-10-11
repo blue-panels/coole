@@ -74,6 +74,9 @@ debug_launch_free (gpointer data)
     g_free (launch->adapter);
     g_free (launch->address);
     g_free (launch->launch_extra);
+    g_strfreev (launch->exceptions);
+    if (launch->exception_filters != NULL)
+        g_ptr_array_unref (launch->exception_filters);
     g_free (launch);
 }
 
@@ -121,6 +124,63 @@ debug_path_from_root (const debugger_t *debug, const char *path, gboolean relati
     return g_strdup (path != NULL ? path : "");
 }
 
+/* The kinds of exceptions an adapter offers, each "1:id:label", 1 for one it stops on by
+   itself */
+static void
+debug_exception_filters_write (GKeyFile *keyfile, const char *group, const GPtrArray *filters)
+{
+    GPtrArray *list = g_ptr_array_new_with_free_func (g_free);
+    guint i;
+
+    for (i = 0; i < filters->len; i++)
+    {
+        const debug_exception_filter_t *filter = g_ptr_array_index (filters, i);
+
+        g_ptr_array_add (list,
+                         g_strdup_printf ("%d:%zu:%s:%s", filter->on ? 1 : 0, strlen (filter->id),
+                                          filter->id, filter->label));
+    }
+    g_key_file_set_string_list (keyfile, group, "exception_filters",
+                                (const char *const *) list->pdata, list->len);
+    g_ptr_array_free (list, TRUE);
+}
+
+static GPtrArray *
+debug_exception_filters_read (GKeyFile *keyfile, const char *group)
+{
+    char **list = g_key_file_get_string_list (keyfile, group, "exception_filters", NULL, NULL);
+    GPtrArray *filters;
+    guint i;
+
+    if (list == NULL)
+        return NULL;
+    filters = g_ptr_array_new_with_free_func (debug_exception_filter_free);
+    /* on:length:id:label, the id by its length: a ':' in it, kind:uncaught say, is of it, and
+       the label is the rest */
+    for (i = 0; list[i] != NULL; i++)
+    {
+        const char *p = list[i];
+        char *end;
+        guint64 length;
+
+        if ((p[0] != '0' && p[0] != '1') || p[1] != ':')
+            continue;
+        length = g_ascii_strtoull (p + 2, &end, 10);
+        if (end == p + 2 || *end != ':' || length == 0 || strlen (end + 1) <= length
+            || end[1 + length] != ':')
+            continue;
+        {
+            char *id = g_strndup (end + 1, (gsize) length);
+
+            g_ptr_array_add (filters,
+                             debug_exception_filter_new (id, end + 2 + length, p[0] == '1'));
+            g_free (id);
+        }
+    }
+    g_strfreev (list);
+    return filters;
+}
+
 static void
 debug_launches_write (const debugger_t *debug, GKeyFile *keyfile, gboolean relative)
 {
@@ -154,6 +214,12 @@ debug_launches_write (const debugger_t *debug, GKeyFile *keyfile, gboolean relat
             g_key_file_set_string (keyfile, group, "address", launch->address);
         if (launch->launch_extra != NULL)
             g_key_file_set_string (keyfile, group, "launch_extra", launch->launch_extra);
+        if (launch->exceptions != NULL)
+            g_key_file_set_string_list (keyfile, group, "exceptions",
+                                        (const char *const *) launch->exceptions,
+                                        g_strv_length (launch->exceptions));
+        if (launch->exception_filters != NULL)
+            debug_exception_filters_write (keyfile, group, launch->exception_filters);
         g_free (executable);
         g_free (directory);
         g_free (group);
@@ -208,6 +274,15 @@ debug_launches_read (debugger_t *debug, GKeyFile *keyfile)
         launch->adapter = g_key_file_get_string (keyfile, group, "adapter", NULL);
         launch->address = g_key_file_get_string (keyfile, group, "address", NULL);
         launch->launch_extra = g_key_file_get_string (keyfile, group, "launch_extra", NULL);
+        // empty: none of them, which is not the same as the key not there
+        if (g_key_file_has_key (keyfile, group, "exceptions", NULL))
+        {
+            launch->exceptions =
+                g_key_file_get_string_list (keyfile, group, "exceptions", NULL, NULL);
+            if (launch->exceptions == NULL)
+                launch->exceptions = g_new0 (char *, 1);
+        }
+        launch->exception_filters = debug_exception_filters_read (keyfile, group);
         if (executable != NULL && *executable != '\0')
             launch->executable = g_canonicalize_filename (executable, debug->project_dir);
         launch->directory = g_canonicalize_filename (
@@ -428,6 +503,7 @@ debug_config_load (debugger_t *debug)
     debug->launches_in_project = !own_launches && debug->launches->len == 0;
     if (!own_launches && g_key_file_load_from_file (shared, shared_path, G_KEY_FILE_NONE, NULL))
     {
+        debug->session_launch = NULL;
         g_ptr_array_set_size (debug->launches, 0);
         debug->active_launch = 0;
         debug_launches_read (debug, shared);
@@ -508,6 +584,7 @@ debug_project_switch (debugger_t *debug, char *project)
     g_ptr_array_set_size (debug->breakpoints, 0);
     g_ptr_array_set_size (debug->address_breakpoints, 0);
     debug_marks_show (debug, NULL);
+    debug->session_launch = NULL;
     g_ptr_array_set_size (debug->launches, 0);
     g_ptr_array_set_size (debug->watches, 0);
     debug->active_launch = 0;
@@ -632,6 +709,9 @@ debug_launch_copy (debug_launch_t *to, const debug_launch_t *from)
     to->adapter = g_strdup (from->adapter);
     to->address = g_strdup (from->address);
     to->launch_extra = g_strdup (from->launch_extra);
+    to->exceptions = g_strdupv (from->exceptions);
+    if (from->exception_filters != NULL)
+        to->exception_filters = g_ptr_array_ref (from->exception_filters);
 }
 
 static void
@@ -647,6 +727,9 @@ debug_launch_clear (debug_launch_t *launch)
     g_free (launch->adapter);
     g_free (launch->address);
     g_free (launch->launch_extra);
+    g_strfreev (launch->exceptions);
+    if (launch->exception_filters != NULL)
+        g_ptr_array_unref (launch->exception_filters);
     memset (launch, 0, sizeof (*launch));
 }
 
@@ -1226,7 +1309,9 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
         char *name = NULL, *executable = NULL, *arguments = NULL, *directory = NULL;
         char *environment = NULL, *gdb_path = NULL, *ctags = NULL;
         char *adapter = NULL, *address = NULL, *extra = NULL, *problem_text = NULL;
-        char **entries = NULL;
+        char **entries = NULL, **exceptions;
+        GPtrArray *exception_filters;
+        char *debugger_before, *debugger_now;
         gboolean build = launch->build, keep = *in_project, terminal = launch->terminal;
         const char *backend_items[] = { _ ("&GDB"), _ ("Debug &adapter") };
         int backend = debug_launch_is_dap (launch) ? 1 : 0;
@@ -1330,7 +1415,12 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
             g_free (ctags);
         }
 
-        // what was typed stays for the next round
+        // what was typed stays for the next round; the exceptions are not of the form
+        exceptions = launch->exceptions;
+        exception_filters = launch->exception_filters;
+        launch->exceptions = NULL;
+        launch->exception_filters = NULL;
+        debugger_before = debug_launch_debugger (launch);
         debug_launch_clear (launch);
         launch->name = g_strstrip (name);
         launch->executable = *g_strstrip (executable) != '\0'
@@ -1358,6 +1448,21 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
         if (debug_launch_is_dap (launch) || debug_is_script (debug, launch->executable))
             debug_launch_adapter_defaults (debug, launch);
         *in_project = keep;
+        // those of another debugger are not of this one, the adapter it has by itself counted
+        debugger_now = debug_launch_debugger (launch);
+        if (strcmp (debugger_before, debugger_now) == 0)
+        {
+            launch->exceptions = exceptions;
+            launch->exception_filters = exception_filters;
+        }
+        else
+        {
+            g_strfreev (exceptions);
+            if (exception_filters != NULL)
+                g_ptr_array_unref (exception_filters);
+        }
+        g_free (debugger_before);
+        g_free (debugger_now);
 
         if (*launch->name == '\0')
             problem = _ ("Enter a configuration name.");
@@ -1447,7 +1552,20 @@ debug_configure_impl (debugger_t *debug, void *edit, gboolean create_new)
         debug->active_launch = debug->launches->len - 1;
     }
     else
+    {
+        // the program that runs is of the debugger it had: another one is no more its
+        if (existing == debug->session_launch)
+        {
+            char *before = debug_launch_debugger (existing);
+            char *now = debug_launch_debugger (&form);
+
+            if (strcmp (before, now) != 0)
+                debug->session_launch = NULL;
+            g_free (before);
+            g_free (now);
+        }
         debug_launch_clear (existing);
+    }
     *existing = form;
     debug->launches_in_project = in_project;
     debug_config_save (debug);
@@ -1516,6 +1634,8 @@ debug_delete_configuration (void *data, void *edit)
                       _ ("&Delete"), _ ("&Cancel"))
         != 0)
         return MC_EPR_FAILED;
+    if (debug->session_launch == launch)
+        debug->session_launch = NULL;
     g_ptr_array_remove_index (debug->launches, debug->active_launch);
     debug->active_launch = 0;
     debug_config_save (debug);
@@ -1528,6 +1648,17 @@ gboolean
 debug_launch_is_dap (const debug_launch_t *launch)
 {
     return g_strcmp0 (launch->backend, "dap") == 0;
+}
+
+/* Which debugger a configuration has: GDB, or an adapter by its command and its address; the
+   kinds of exceptions of one are none of another's */
+char *
+debug_launch_debugger (const debug_launch_t *launch)
+{
+    if (!debug_launch_is_dap (launch))
+        return g_strdup ("gdb-mi");
+    return g_strdup_printf ("dap\x1f%s\x1f%s", launch->adapter != NULL ? launch->adapter : "",
+                            launch->address != NULL ? launch->address : "");
 }
 
 /* The command of the debug adapter of a configuration, NULL when it is not there to run, and

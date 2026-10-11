@@ -75,6 +75,11 @@ typedef struct
     char *adapter;
     char *address;
     char *launch_extra;
+    // the kinds of exceptions the program stops on, by their ids; NULL: those the debugger
+    // stops on by itself
+    char **exceptions;
+    // the kinds the adapter offered when it last ran, debug_exception_filter_t; NULL: not known
+    GPtrArray *exception_filters;
 } debug_launch_t;
 
 typedef struct
@@ -143,6 +148,12 @@ typedef struct
     char *project_dir;
     GPtrArray *launches;
     guint active_launch;
+    // the configuration the program debugged was started with, NULL when none runs
+    debug_launch_t *session_launch;
+    // the kinds of exceptions its sessions have offered, each adapter session adding its own
+    GPtrArray *session_filters;
+    // the stop the program is at, for an answer to know it is of another
+    guint stop_serial;
     GPtrArray *breakpoints;
     GPtrArray *watches;
     // what GDB says of itself, apart from the output of the program
@@ -175,6 +186,7 @@ typedef struct
     GPtrArray *registers;
     GHashTable *registers_before;
     gboolean registers_shown;
+    gboolean registers_closed;  // closed by the user: a stop with no source keeps them so
     // the last step went by an instruction: code with no source is not stepped out of
     gboolean instruction_step;
     char *current_func;
@@ -217,6 +229,8 @@ typedef struct
     long panel_frame;  // the level of the frame chosen
     // the virtual environment of the project with no debugpy has been told of
     gboolean venv_told;
+    // stopped on an exception in code with no source: the frame of the stack with one is chosen
+    gboolean source_frame_wanted;
     // the window of the instructions, those it shows, and the address of the frame among them
     debug_disasm_window_t *disasm_window;
     GPtrArray *instructions;
@@ -281,6 +295,7 @@ mc_ep_result_t debug_new_configuration (void *data, void *edit);
 mc_ep_result_t debug_select_configuration (void *data, void *edit);
 mc_ep_result_t debug_delete_configuration (void *data, void *edit);
 gboolean debug_launch_is_dap (const debug_launch_t *launch);
+char *debug_launch_debugger (const debug_launch_t *launch);
 char *debug_adapter_check (debugger_t *debug, const debug_launch_t *launch);
 
 /* debug-panel.c */
@@ -292,6 +307,8 @@ void debug_session_refresh (debugger_t *debug);
    chosen */
 void debug_panel_forget_members (debugger_t *debug);
 void debug_panel_stopped (debugger_t *debug);
+void debug_exceptions_cache (debugger_t *debug);
+void debug_panel_show_registers (debugger_t *debug);
 /* The debugger is gone: the panel tells it, with nothing to show */
 void debug_panel_ended (debugger_t *debug);
 mc_ep_result_t debug_session_show (void *data, void *edit);
@@ -354,6 +371,8 @@ void debug_breakpoint_condition (debugger_t *debug, debug_breakpoint_t *bp);
 mc_ep_result_t debug_condition_at_cursor (debugger_t *debug, void *edit);
 mc_ep_result_t debug_act_condition (void *data, void *edit);
 mc_ep_result_t debug_toggle_breakpoint (void *data, void *edit);
+void debug_exceptions_install (debugger_t *debug);
+mc_ep_result_t debug_act_exceptions (void *data, void *edit);
 
 /* debug-program.c */
 void debug_output_show (debugger_t *debug);

@@ -7,6 +7,9 @@
 #   mock_dap.py --tcp N    on a socket of port N; 0: a port of its own, said on stdout
 #   --no-conditions        an adapter without conditions of breakpoints: one refuses the set
 #
+# It offers the exceptions "raised" and "uncaught", the latter by default; with "raised" set the
+# program stops on a ValueError rather than on its breakpoint.
+#
 # A breakpoint with a member its kind has not, or a null, refuses the set, as a strict adapter
 # does.
 #   mock_dap.py --split    each message written a byte at a time
@@ -26,6 +29,7 @@ class Adapter:
         self.seq = 0
         self.breakpoints = {}
         self.functions = []
+        self.exceptions = []
 
     def write(self, message):
         self.seq += 1
@@ -116,7 +120,13 @@ class Adapter:
                                    "supportsConditionalBreakpoints": self.conditions,
                                    "supportsDisassembleRequest": True,
                                    "supportsSteppingGranularity": True,
-                                   "supportsInstructionBreakpoints": True})
+                                   "supportsInstructionBreakpoints": True,
+                                   "supportsExceptionInfoRequest": True,
+                                   "exceptionBreakpointFilters": [
+                                       {"filter": "raised", "label": "Raised Exceptions",
+                                        "default": False},
+                                       {"filter": "uncaught", "label": "Uncaught Exceptions",
+                                        "default": True}]})
             self.event("initialized")
         elif command == "launch":
             self.respond(request)
@@ -149,11 +159,23 @@ class Adapter:
                 {"id": 300 + i, "verified": True}
                 for i in range(len(args.get("breakpoints", [])))]})
         elif command == "setExceptionBreakpoints":
+            self.exceptions = args.get("filters", [])
+            self.event("output", {"category": "console",
+                                  "output": "mock: exceptions %s\n" % self.exceptions})
             self.respond(request, {"breakpoints": []})
+        elif command == "exceptionInfo":
+            self.respond(request, {"exceptionId": "ValueError  (a note)",
+                                   "description": "bad value\n  at the stack",
+                                   "breakMode": "always"})
         elif command == "configurationDone":
             self.respond(request)
             self.event("output", {"category": "stdout", "output": "program says hello\n"})
-            self.stopped("breakpoint")
+            if "raised" in self.exceptions:
+                self.event("stopped", {"reason": "exception", "threadId": 1,
+                                       "allThreadsStopped": True, "text": "ValueError",
+                                       "description": "Paused on exception"})
+            else:
+                self.stopped("breakpoint")
         elif command == "threads":
             self.respond(request, {"threads": [{"id": 1, "name": "main"}]})
         elif command == "stackTrace":

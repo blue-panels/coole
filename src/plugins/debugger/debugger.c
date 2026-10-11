@@ -134,7 +134,8 @@ enum
     DEBUG_ACT_NEXT_INSTRUCTION,
     DEBUG_ACT_DISASSEMBLY,
     DEBUG_ACT_SHOW_STOP,
-    DEBUG_ACT_CONDITION
+    DEBUG_ACT_CONDITION,
+    DEBUG_ACT_EXCEPTIONS
 };
 
 // the entry of the module
@@ -478,6 +479,8 @@ debug_finished (debugger_t *debug)
     debug_run_timer (debug, FALSE);
     debug->run_started = 0;
     debug->breakpoints_installed = FALSE;
+    debug->session_launch = NULL;
+    g_clear_pointer (&debug->session_filters, g_ptr_array_unref);
     debug_clear_current (debug);
     debug_marks_show (debug, NULL);
     debug_notes_clear (debug);
@@ -588,6 +591,17 @@ debug_stopped (debugger_t *debug, const debug_stop_t *stop)
         debug_output_append (debug, text_value);
         g_free (text_value);
     }
+    else if (stop->reason == DEBUG_STOP_EXCEPTION)
+    {
+        const char *name = stop->exception_name != NULL ? stop->exception_name : _ ("Exception");
+        char *text_value = stop->exception_text != NULL && *stop->exception_text != '\0'
+            ? g_strdup_printf (_ ("\nStopped on an exception: %s: %s\n"), name,
+                               stop->exception_text)
+            : g_strdup_printf (_ ("\nStopped on an exception: %s\n"), name);
+
+        debug_output_append (debug, text_value);
+        g_free (text_value);
+    }
 
     keep_debug_focus = debug->session_window != NULL
         && debug->host->window_current (debug->host) == debug->session_window;
@@ -601,15 +615,20 @@ debug_stopped (debugger_t *debug, const debug_stop_t *stop)
     debug->current_address = g_strdup (stop->address);
     g_free (debug->disasm_address);
     debug->disasm_address = g_strdup (stop->address);
+    /* an exception is thrown in code with no source, __cxa_throw: the frame that threw it is
+       the one to see, when the stack comes */
+    debug->stop_serial++;
+    debug->source_frame_wanted =
+        file == NULL && stop->has_frame && stop->reason == DEBUG_STOP_EXCEPTION;
     // in code with no source the registers and the instructions are what there is to see
-    if (file == NULL && stop->has_frame)
+    if (file == NULL && stop->has_frame && !debug->source_frame_wanted)
     {
-        debug->registers_shown = TRUE;
+        debug_panel_show_registers (debug);
         debug_disasm_show (debug, !keep_debug_focus);
     }
     // nor has assembler other variables to see
     if (debug_source_is_asm (file))
-        debug->registers_shown = TRUE;
+        debug_panel_show_registers (debug);
     if (file != NULL && line > 0 && debug->host->show_location != NULL)
         (void) debug->host->show_location (debug->host, file, line);
     if (keep_debug_focus && debug->session_window != NULL)
@@ -625,7 +644,8 @@ debug_stopped (debugger_t *debug, const debug_stop_t *stop)
         debug_marks_show (debug, file);
     }
     (void) debug->backend->ops->select_frame (debug->backend, 0);
-    (void) debug->backend->ops->stack (debug->backend, debug_reply_stack, NULL, NULL);
+    (void) debug->backend->ops->stack (debug->backend, debug_reply_stack,
+                                       GUINT_TO_POINTER (debug->stop_serial), NULL);
     (void) debug->backend->ops->variables (debug->backend, debug_reply_variables, NULL, NULL);
     debug_registers_refresh (debug);
     debug_disasm_refresh (debug);
@@ -666,6 +686,7 @@ debug_event_ready (void *ui)
     }
     for (i = 0; i < debug->address_breakpoints->len; i++)
         debug_address_breakpoint_install (debug, g_ptr_array_index (debug->address_breakpoints, i));
+    debug_exceptions_install (debug);
     debug->breakpoints_installed = TRUE;
     debug_marks_show (debug, NULL);
     if (debug->backend->ops->exec (debug->backend, DEBUG_EXEC_RUN, debug_reply_run, NULL, NULL)
@@ -814,6 +835,15 @@ debug_event_flush (void *ui)
     tty_refresh ();
 }
 
+/* The session of the program offers other kinds of exceptions than the adapter did */
+static void
+debug_event_exception_filters (void *ui)
+{
+    debug_exceptions_cache ((debugger_t *) ui);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static const debug_backend_events_t debug_events = {
     .output = debug_event_output,
     .ready = debug_event_ready,
@@ -825,6 +855,7 @@ static const debug_backend_events_t debug_events = {
     .breakpoint_verified = debug_event_breakpoint_verified,
     .error = debug_event_error,
     .flush = debug_event_flush,
+    .exception_filters = debug_event_exception_filters,
 };
 
 /* Ask the build plugin something about the project, NULL without that plugin */
@@ -970,6 +1001,8 @@ debug_start (void *data, void *edit)
 #else
         debug->backend = debug_gdb_mi_new (&debug_events, debug);
 #endif
+    debug->session_launch = launch;
+    g_clear_pointer (&debug->session_filters, g_ptr_array_unref);
 #ifdef ENABLE_MCTERM
     // the terminal window of the program, else a terminal whose output goes to the console
     if (!(launch->terminal && debug_terminal_open (debug)) && !debug_pty_open (debug))
@@ -1416,6 +1449,8 @@ debug_close (void *data)
     for (int i = 0; i < DEBUG_MARK_COUNT; i++)
         g_free (debug->glyphs[i]);
     g_free (debug->current_func);
+    if (debug->session_filters != NULL)
+        g_ptr_array_unref (debug->session_filters);
     g_array_free (debug->dropped_tokens, TRUE);
     g_ptr_array_unref (debug->locals);
     g_ptr_array_unref (debug->registers);
@@ -1536,6 +1571,7 @@ static const mc_ep_action_t debug_actions[] = {
     { "Disassembly", debug_act_disassembly },
     { "Show stop", debug_act_show_stop },
     { "Breakpoint condition", debug_act_condition },
+    { "Exceptions", debug_act_exceptions },
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
@@ -1545,6 +1581,7 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
     { DEBUG_MENU, N_ ("Breakpoint condition..."), DEBUG_ACT_CONDITION, NULL },
     { DEBUG_MENU, N_ ("Breakpoint on fun&ction..."), DEBUG_ACT_FUNCTION_BREAKPOINT, NULL },
+    { DEBUG_MENU, N_ ("Exceptions..."), DEBUG_ACT_EXCEPTIONS, NULL },
     { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
     { DEBUG_MENU, N_ ("Debug ke&ys in files"), DEBUG_ACT_MODE, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
