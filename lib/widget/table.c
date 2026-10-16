@@ -74,6 +74,15 @@ table_col_width (const WTable *t, int c)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The x after the last cell: the scrollbar has the last column of the widget. */
+static int
+table_cells_right (const WTable *t)
+{
+    return CONST_WIDGET (t)->rect.cols - ((t->scrollbar || t->scrollbar_on_frame) ? 1 : 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The line a data row is drawn on: below the header when there is one. */
 static int
 table_row_y (const WTable *t, int i)
@@ -108,9 +117,7 @@ static void
 table_draw_cells (WTable *t, int y, int row_idx, int nrows, int row_color, gboolean focused,
                   gboolean disabled)
 {
-    const WRect *w = &CONST_WIDGET (t)->rect;
-    /* the scrollbar has the last column of cells */
-    int right = w->cols - ((t->scrollbar || t->scrollbar_on_frame) ? 1 : 0);
+    int right = table_cells_right (t);
     int col_x = 1;
     int last_col = t->ncols - 1;
     int c;
@@ -861,7 +868,8 @@ table_set_cell_color (WTable *t, int (*cell_color) (void *data, int row, int col
 void
 table_layout (WTable *t)
 {
-    int cols = CONST_WIDGET (t)->rect.cols - 1;
+    // the cells start at x = 1 and end before the scrollbar
+    int cols = table_cells_right (t) - 1;
     int total = 0, spare, nexpand = 0;
     int c;
 
