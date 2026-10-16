@@ -67,6 +67,7 @@ libmc_sources = files(
   'widget/check.c',
   'widget/dialog-switch.c',
   'widget/dialog.c',
+  'widget/filechooser.c',
   'widget/frame.c',
   'widget/gauge.c',
   'widget/group.c',

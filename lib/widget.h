@@ -40,6 +40,7 @@ typedef struct WGroup WGroup;
 #include "lib/widget/wtools.h"
 #include "lib/widget/quicksearch.h"
 #include "lib/widget/table.h"
+#include "lib/widget/filechooser.h"
 #include "lib/widget/dialog-switch.h"
 
 /*** typedefs(not structures) and defined constants **********************************************/

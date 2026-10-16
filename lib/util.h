@@ -166,6 +166,7 @@ const char *size_trunc (uintmax_t size, gboolean use_si);
  * not including trailing 0. BUFFER should be at least LEN+1 long.
  *
  * Units: size units (0=bytes, 1=Kbytes, 2=Mbytes, etc.) */
+void size_trunc_len (char *buffer, unsigned int len, uintmax_t size, int units, gboolean use_si);
 
 const char *extension (const char *);
 const char *unix_error_string (int error_num);

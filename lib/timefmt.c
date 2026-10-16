@@ -51,6 +51,10 @@ char *user_old_timeformat = NULL;     // time format string for older dates
 
 /*** file scope macro definitions ****************************************************************/
 
+/* the formats of the panels of M-Commander, when no other is set */
+#define FMTYEAR _ ("%b %e  %Y")
+#define FMTTIME _ ("%b %e %H:%M")
+
 /*** file scope type declarations ****************************************************************/
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -67,6 +71,20 @@ static size_t i18n_timelength_cache = MAX_I18NTIMELENGTH + 1;
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
+
+static const char *
+recent_timeformat (void)
+{
+    return user_recent_timeformat != NULL ? user_recent_timeformat : FMTTIME;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static const char *
+old_timeformat (void)
+{
+    return user_old_timeformat != NULL ? user_old_timeformat : FMTYEAR;
+}
 
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
@@ -104,10 +122,10 @@ i18n_checktimelength (void)
         // Loop through all months to find out the longest one
         for (lt->tm_mon = 0; lt->tm_mon < 12; lt->tm_mon++)
         {
-            strftime (buf, sizeof (buf) - 1, user_recent_timeformat, lt);
+            strftime (buf, sizeof (buf) - 1, recent_timeformat (), lt);
             tlen = (size_t) str_term_width1 (buf);
             length = MAX (tlen, length);
-            strftime (buf, sizeof (buf) - 1, user_old_timeformat, lt);
+            strftime (buf, sizeof (buf) - 1, old_timeformat (), lt);
             tlen = (size_t) str_term_width1 (buf);
             length = MAX (tlen, length);
         }
@@ -144,9 +162,9 @@ file_date (time_t when)
            to allow for NFS server/client clock disagreement.
            Show the year instead of the time of day.  */
 
-        fmt = user_old_timeformat;
+        fmt = old_timeformat ();
     else
-        fmt = user_recent_timeformat;
+        fmt = recent_timeformat ();
 
     FMT_LOCALTIME (timebuf, sizeof (timebuf), fmt, when);
 
