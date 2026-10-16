@@ -81,6 +81,7 @@ libmc_sources = files(
   'widget/menu.c',
   'widget/mouse.c',
   'widget/quick.c',
+  'widget/quicksearch.c',
   'widget/radio.c',
   'widget/scrollbar.c',
   'widget/rect.c',
