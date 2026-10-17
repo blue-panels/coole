@@ -7,38 +7,38 @@
 # up to the next line that is not indented.
 
 context default
-    keyword linestart shell_patterns=\{01\} yellow
+    keyword linestart shell_patterns=\{01\} KEYWORD_OTHER
     # the hot key of an entry
-    keyword linestart \{!"$%&'()\*,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\} brightcyan
+    keyword linestart \{!"$%&'()\*,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\} ENTITY_NAME_FUNCTION
 
 # a comment
-context linestart # \n brown
+context linestart # \n COMMENT_LINE
 
 # the condition an entry is shown or made the default under
-context linestart \+ \n yellow
-    keyword whole f brightgreen
-    keyword whole F brightgreen
-    keyword whole d brightgreen
-    keyword whole D brightgreen
-    keyword whole t brightgreen
-    keyword whole T brightgreen
-    keyword whole x brightgreen
-    keyword whole y brightgreen
-    keyword ! brightred
-    keyword & brightred
-    keyword | brightred
-context linestart = \n yellow
-    keyword whole f brightgreen
-    keyword whole F brightgreen
-    keyword whole d brightgreen
-    keyword whole D brightgreen
-    keyword whole t brightgreen
-    keyword whole T brightgreen
-    keyword whole x brightgreen
-    keyword whole y brightgreen
-    keyword ! brightred
-    keyword & brightred
-    keyword | brightred
+context linestart \+ \n KEYWORD_CONTROL_CONDITIONAL
+    keyword whole f CONSTANT_OTHER
+    keyword whole F CONSTANT_OTHER
+    keyword whole d CONSTANT_OTHER
+    keyword whole D CONSTANT_OTHER
+    keyword whole t CONSTANT_OTHER
+    keyword whole T CONSTANT_OTHER
+    keyword whole x CONSTANT_OTHER
+    keyword whole y CONSTANT_OTHER
+    keyword ! KEYWORD_OPERATOR_LOGICAL
+    keyword & KEYWORD_OPERATOR_LOGICAL
+    keyword | KEYWORD_OPERATOR_LOGICAL
+context linestart = \n KEYWORD_CONTROL_CONDITIONAL
+    keyword whole f CONSTANT_OTHER
+    keyword whole F CONSTANT_OTHER
+    keyword whole d CONSTANT_OTHER
+    keyword whole D CONSTANT_OTHER
+    keyword whole t CONSTANT_OTHER
+    keyword whole T CONSTANT_OTHER
+    keyword whole x CONSTANT_OTHER
+    keyword whole y CONSTANT_OTHER
+    keyword ! KEYWORD_OPERATOR_LOGICAL
+    keyword & KEYWORD_OPERATOR_LOGICAL
+    keyword | KEYWORD_OPERATOR_LOGICAL
 
 # the commands of an entry: from the first indented line up to the first line
 # that is not indented; a blank line does not end them

@@ -8,386 +8,386 @@
 # - 2011: String-literal fixes.
 # - 2005: Started by Mike Gorchak <lestat@i.com.ua>
 
-context default lightgray
+context default
 
-# Keywords use the closest 16-color equivalents of GitHub's syntax palette.
-    keyword whole and brightred
-    keyword whole break brightred
-    keyword whole do brightred
-    keyword whole else brightred
-    keyword whole elseif brightred
-    keyword whole end brightred
-    keyword whole for brightred
-    keyword whole function brightred
-    keyword whole goto brightred
-    keyword whole if brightred
-    keyword whole in brightred
-    keyword whole local brightred
-    keyword whole not brightred
-    keyword whole or brightred
-    keyword whole repeat brightred
-    keyword whole return brightred
-    keyword whole then brightred
-    keyword whole until brightred
-    keyword whole while brightred
+# Keywords
+    keyword whole and KEYWORD_OPERATOR_WORD
+    keyword whole break KEYWORD_CONTROL
+    keyword whole do KEYWORD_CONTROL
+    keyword whole else KEYWORD_CONTROL
+    keyword whole elseif KEYWORD_CONTROL
+    keyword whole end KEYWORD_CONTROL
+    keyword whole for KEYWORD_CONTROL
+    keyword whole function STORAGE_TYPE_FUNCTION
+    keyword whole goto KEYWORD_CONTROL
+    keyword whole if KEYWORD_CONTROL
+    keyword whole in KEYWORD_CONTROL
+    keyword whole local STORAGE_MODIFIER
+    keyword whole not KEYWORD_OPERATOR_WORD
+    keyword whole or KEYWORD_OPERATOR_WORD
+    keyword whole repeat KEYWORD_CONTROL
+    keyword whole return KEYWORD_CONTROL
+    keyword whole then KEYWORD_CONTROL
+    keyword whole until KEYWORD_CONTROL
+    keyword whole while KEYWORD_CONTROL
 
 # Literal constants
-    keyword whole false brightcyan
-    keyword whole nil brightcyan
-    keyword whole true brightcyan
+    keyword whole false CONSTANT_LANGUAGE
+    keyword whole nil CONSTANT_LANGUAGE
+    keyword whole true CONSTANT_LANGUAGE
 
 # Lua 5.4 variable attributes (const and close are not keywords on their own)
-    keyword <const> brightmagenta
-    keyword <close> brightmagenta
+    keyword <const> STORAGE_MODIFIER
+    keyword <close> STORAGE_MODIFIER
 
 # Numbers
     wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_
 
-    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\]\.\[0123456789abcdefABCDEF\]\{pP\}\{0123456789\}\[0123456789\] cyan
-    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\]\.\[0123456789abcdefABCDEF\]\{pP\}\{\-\+\}\{0123456789\}\[0123456789\] cyan
-    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\]\{pP\}\{0123456789\}\[0123456789\] cyan
-    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\]\{pP\}\{\-\+\}\{0123456789\}\[0123456789\] cyan
-    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\] cyan
-    keyword whole \{0123456789\}\[0123456789\] cyan
-    keyword whole \[0123456789\]\.\{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\]\.\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\]\.\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\]\.\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] cyan
+    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\]\.\[0123456789abcdefABCDEF\]\{pP\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\]\.\[0123456789abcdefABCDEF\]\{pP\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\]\{pP\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\]\{pP\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[0123456789\]\.\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\.\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\.\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\.\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
 
 # Comment and string delimiters
-    keyword -- brown
-    keyword ]\[=\]] brown
+    keyword -- COMMENT_LINE
+    keyword ]\[=\]] COMMENT_BLOCK
     # The following colorizes the start delimiter of "long" strings.
     # The start delimiter of "long" comments isn't affected by the following
     # directive but gets its color from the "--" above (gods know why).
-    keyword [\[=\][ brown
+    keyword [\[=\][ COMMENT_BLOCK
 
 # Operators
     # Field names.  The syntax engine has no lookbehind, so '.' is part of the
     # match; unlike a context rule, this cannot leak into following text.
-    keyword .\{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_\}+ brightmagenta
-    keyword ... white
-    keyword .. white
-    keyword // white
-    keyword << white
-    keyword >> white
-    keyword <= white
-    keyword >= white
-    keyword == white
-    keyword ~= white
-    keyword :: brightcyan
-    keyword ( white
-    keyword ) white
-    keyword { white
-    keyword } white
-    keyword [ white
-    keyword ] white
-    keyword . white
-    keyword , white
-    keyword ; white
-    keyword : white
-    keyword = white
-    keyword > white
-    keyword < white
-    keyword \+ white
-    keyword - white
-    keyword \* white
-    keyword / white
-    keyword % white
-    keyword ^ white
-    keyword # white
-    keyword & white
-    keyword | white
-    keyword ~ white
+    keyword .\{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_\}+ VARIABLE_OTHER_MEMBER
+    keyword ... KEYWORD_OPERATOR
+    keyword .. KEYWORD_OPERATOR
+    keyword // KEYWORD_OPERATOR
+    keyword << KEYWORD_OPERATOR
+    keyword >> KEYWORD_OPERATOR
+    keyword <= KEYWORD_OPERATOR
+    keyword >= KEYWORD_OPERATOR
+    keyword == KEYWORD_OPERATOR
+    keyword ~= KEYWORD_OPERATOR
+    keyword :: PUNCTUATION_SECTION
+    keyword ( PUNCTUATION_SECTION
+    keyword ) PUNCTUATION_SECTION
+    keyword { PUNCTUATION_SECTION
+    keyword } PUNCTUATION_SECTION
+    keyword [ PUNCTUATION_SECTION
+    keyword ] PUNCTUATION_SECTION
+    keyword . KEYWORD_OPERATOR
+    keyword , PUNCTUATION_SEPARATOR
+    keyword ; PUNCTUATION_TERMINATOR
+    keyword : PUNCTUATION_SEPARATOR
+    keyword = KEYWORD_OPERATOR
+    keyword > KEYWORD_OPERATOR
+    keyword < KEYWORD_OPERATOR
+    keyword \+ KEYWORD_OPERATOR
+    keyword - KEYWORD_OPERATOR
+    keyword \* KEYWORD_OPERATOR
+    keyword / KEYWORD_OPERATOR
+    keyword % KEYWORD_OPERATOR
+    keyword ^ KEYWORD_OPERATOR
+    keyword # KEYWORD_OPERATOR
+    keyword & KEYWORD_OPERATOR
+    keyword | KEYWORD_OPERATOR
+    keyword ~ KEYWORD_OPERATOR
 
 
 # Library Functions
 
     # basiclib
-    keyword whole error brightmagenta
-    keyword whole getmetatable brightmagenta
-    keyword whole setmetatable brightmagenta
-    keyword whole getfenv brightmagenta
-    keyword whole setfenv brightmagenta
-    keyword whole next brightmagenta
-    keyword whole ipairs brightmagenta
-    keyword whole pairs brightmagenta
-    keyword whole print brightmagenta
-    keyword whole tonumber brightmagenta
-    keyword whole tostring brightmagenta
-    keyword whole type brightmagenta
-    keyword whole assert brightmagenta
+    keyword whole error SUPPORT_FUNCTION
+    keyword whole getmetatable SUPPORT_FUNCTION
+    keyword whole setmetatable SUPPORT_FUNCTION
+    keyword whole getfenv SUPPORT_FUNCTION
+    keyword whole setfenv SUPPORT_FUNCTION
+    keyword whole next SUPPORT_FUNCTION
+    keyword whole ipairs SUPPORT_FUNCTION
+    keyword whole pairs SUPPORT_FUNCTION
+    keyword whole print SUPPORT_FUNCTION
+    keyword whole tonumber SUPPORT_FUNCTION
+    keyword whole tostring SUPPORT_FUNCTION
+    keyword whole type SUPPORT_FUNCTION
+    keyword whole assert SUPPORT_FUNCTION
     #keyword whole unpack yellow    # modern code should use table.unpack()
-    keyword whole rawequal brightmagenta
-    keyword whole rawget brightmagenta
-    keyword whole rawlen brightmagenta
-    keyword whole rawset brightmagenta
-    keyword whole pcall brightmagenta
-    keyword whole xpcall brightmagenta
-    keyword whole collectgarbage brightmagenta
-    keyword whole gcinfo brightmagenta
-    keyword whole loadfile brightmagenta
-    keyword whole load brightmagenta
-    keyword whole dofile brightmagenta
-    keyword whole loadstring brightmagenta
-    keyword whole require brightmagenta
-    keyword whole select brightmagenta
-    keyword whole warn brightmagenta
-    keyword whole coroutine.create brightmagenta
-    keyword whole coroutine.wrap brightmagenta
-    keyword whole coroutine.resume brightmagenta
-    keyword whole coroutine.yield brightmagenta
-    keyword whole coroutine.status brightmagenta
-    keyword whole coroutine.isyieldable brightmagenta
-    keyword whole coroutine.running brightmagenta
-    keyword whole coroutine.close brightmagenta
+    keyword whole rawequal SUPPORT_FUNCTION
+    keyword whole rawget SUPPORT_FUNCTION
+    keyword whole rawlen SUPPORT_FUNCTION
+    keyword whole rawset SUPPORT_FUNCTION
+    keyword whole pcall SUPPORT_FUNCTION
+    keyword whole xpcall SUPPORT_FUNCTION
+    keyword whole collectgarbage SUPPORT_FUNCTION
+    keyword whole gcinfo SUPPORT_FUNCTION
+    keyword whole loadfile SUPPORT_FUNCTION
+    keyword whole load SUPPORT_FUNCTION
+    keyword whole dofile SUPPORT_FUNCTION
+    keyword whole loadstring SUPPORT_FUNCTION
+    keyword whole require SUPPORT_FUNCTION
+    keyword whole select SUPPORT_FUNCTION
+    keyword whole warn SUPPORT_FUNCTION
+    keyword whole coroutine.create SUPPORT_FUNCTION
+    keyword whole coroutine.wrap SUPPORT_FUNCTION
+    keyword whole coroutine.resume SUPPORT_FUNCTION
+    keyword whole coroutine.yield SUPPORT_FUNCTION
+    keyword whole coroutine.status SUPPORT_FUNCTION
+    keyword whole coroutine.isyieldable SUPPORT_FUNCTION
+    keyword whole coroutine.running SUPPORT_FUNCTION
+    keyword whole coroutine.close SUPPORT_FUNCTION
 
     # stringlib
-    keyword whole string.len brightmagenta
-    keyword whole string.sub brightmagenta
-    keyword whole string.lower brightmagenta
-    keyword whole string.upper brightmagenta
-    keyword whole string.char brightmagenta
-    keyword whole string.rep brightmagenta
-    keyword whole string.byte brightmagenta
-    keyword whole string.format brightmagenta
-    keyword whole string.dump brightmagenta
-    keyword whole string.find brightmagenta
-    keyword whole string.gfind brightmagenta
-    keyword whole string.gsub brightmagenta
-    keyword whole string.gmatch brightmagenta
-    keyword whole string.match brightmagenta
-    keyword whole string.reverse brightmagenta
-    keyword whole string.pack brightmagenta
-    keyword whole string.packsize brightmagenta
-    keyword whole string.unpack brightmagenta
+    keyword whole string.len SUPPORT_FUNCTION
+    keyword whole string.sub SUPPORT_FUNCTION
+    keyword whole string.lower SUPPORT_FUNCTION
+    keyword whole string.upper SUPPORT_FUNCTION
+    keyword whole string.char SUPPORT_FUNCTION
+    keyword whole string.rep SUPPORT_FUNCTION
+    keyword whole string.byte SUPPORT_FUNCTION
+    keyword whole string.format SUPPORT_FUNCTION
+    keyword whole string.dump SUPPORT_FUNCTION
+    keyword whole string.find SUPPORT_FUNCTION
+    keyword whole string.gfind SUPPORT_FUNCTION
+    keyword whole string.gsub SUPPORT_FUNCTION
+    keyword whole string.gmatch SUPPORT_FUNCTION
+    keyword whole string.match SUPPORT_FUNCTION
+    keyword whole string.reverse SUPPORT_FUNCTION
+    keyword whole string.pack SUPPORT_FUNCTION
+    keyword whole string.packsize SUPPORT_FUNCTION
+    keyword whole string.unpack SUPPORT_FUNCTION
 
     # tablelib
-    keyword whole table.concat brightmagenta
-    keyword whole table.foreach brightmagenta
-    keyword whole table.foreachi brightmagenta
-    keyword whole table.getn brightmagenta
-    keyword whole table.setn brightmagenta
-    keyword whole table.sort brightmagenta
-    keyword whole table.insert brightmagenta
-    keyword whole table.remove brightmagenta
-    keyword whole table.unpack brightmagenta
-    keyword whole table.pack brightmagenta
-    keyword whole table.move brightmagenta
+    keyword whole table.concat SUPPORT_FUNCTION
+    keyword whole table.foreach SUPPORT_FUNCTION
+    keyword whole table.foreachi SUPPORT_FUNCTION
+    keyword whole table.getn SUPPORT_FUNCTION
+    keyword whole table.setn SUPPORT_FUNCTION
+    keyword whole table.sort SUPPORT_FUNCTION
+    keyword whole table.insert SUPPORT_FUNCTION
+    keyword whole table.remove SUPPORT_FUNCTION
+    keyword whole table.unpack SUPPORT_FUNCTION
+    keyword whole table.pack SUPPORT_FUNCTION
+    keyword whole table.move SUPPORT_FUNCTION
 
     # mathlib
-    keyword whole math.abs brightmagenta
-    keyword whole math.sin brightmagenta
-    keyword whole math.cos brightmagenta
-    keyword whole math.tan brightmagenta
-    keyword whole math.asin brightmagenta
-    keyword whole math.acos brightmagenta
-    keyword whole math.atan brightmagenta
-    keyword whole math.atan2 brightmagenta
-    keyword whole math.ceil brightmagenta
-    keyword whole math.floor brightmagenta
-    keyword whole math.mod brightmagenta
-    keyword whole math.frexp brightmagenta
-    keyword whole math.ldexp brightmagenta
-    keyword whole math.sqrt brightmagenta
-    keyword whole math.min brightmagenta
-    keyword whole math.max brightmagenta
-    keyword whole math.log brightmagenta
-    keyword whole math.log10 brightmagenta
-    keyword whole math.exp brightmagenta
-    keyword whole math.deg brightmagenta
-    keyword whole math.pow brightmagenta
-    keyword whole math.rad brightmagenta
-    keyword whole math.random brightmagenta
-    keyword whole math.randomseed brightmagenta
-    keyword whole math.fmod brightmagenta
-    keyword whole math.modf brightmagenta
-    keyword whole math.tointeger brightmagenta
-    keyword whole math.type brightmagenta
-    keyword whole math.ult brightmagenta
-    keyword whole math.huge cyan
-    keyword whole math.maxinteger cyan
-    keyword whole math.mininteger cyan
-    keyword whole math.pi cyan
+    keyword whole math.abs SUPPORT_FUNCTION
+    keyword whole math.sin SUPPORT_FUNCTION
+    keyword whole math.cos SUPPORT_FUNCTION
+    keyword whole math.tan SUPPORT_FUNCTION
+    keyword whole math.asin SUPPORT_FUNCTION
+    keyword whole math.acos SUPPORT_FUNCTION
+    keyword whole math.atan SUPPORT_FUNCTION
+    keyword whole math.atan2 SUPPORT_FUNCTION
+    keyword whole math.ceil SUPPORT_FUNCTION
+    keyword whole math.floor SUPPORT_FUNCTION
+    keyword whole math.mod SUPPORT_FUNCTION
+    keyword whole math.frexp SUPPORT_FUNCTION
+    keyword whole math.ldexp SUPPORT_FUNCTION
+    keyword whole math.sqrt SUPPORT_FUNCTION
+    keyword whole math.min SUPPORT_FUNCTION
+    keyword whole math.max SUPPORT_FUNCTION
+    keyword whole math.log SUPPORT_FUNCTION
+    keyword whole math.log10 SUPPORT_FUNCTION
+    keyword whole math.exp SUPPORT_FUNCTION
+    keyword whole math.deg SUPPORT_FUNCTION
+    keyword whole math.pow SUPPORT_FUNCTION
+    keyword whole math.rad SUPPORT_FUNCTION
+    keyword whole math.random SUPPORT_FUNCTION
+    keyword whole math.randomseed SUPPORT_FUNCTION
+    keyword whole math.fmod SUPPORT_FUNCTION
+    keyword whole math.modf SUPPORT_FUNCTION
+    keyword whole math.tointeger SUPPORT_FUNCTION
+    keyword whole math.type SUPPORT_FUNCTION
+    keyword whole math.ult SUPPORT_FUNCTION
+    keyword whole math.huge SUPPORT_CONSTANT
+    keyword whole math.maxinteger SUPPORT_CONSTANT
+    keyword whole math.mininteger SUPPORT_CONSTANT
+    keyword whole math.pi SUPPORT_CONSTANT
 
     # iolib
-    keyword whole io.input brightmagenta
-    keyword whole io.output brightmagenta
-    keyword whole io.lines brightmagenta
-    keyword whole io.close brightmagenta
-    keyword whole io.flush brightmagenta
-    keyword whole io.open brightmagenta
-    keyword whole io.popen brightmagenta
-    keyword whole io.read brightmagenta
-    keyword whole io.tmpfile brightmagenta
-    keyword whole io.type brightmagenta
-    keyword whole io.write brightmagenta
+    keyword whole io.input SUPPORT_FUNCTION
+    keyword whole io.output SUPPORT_FUNCTION
+    keyword whole io.lines SUPPORT_FUNCTION
+    keyword whole io.close SUPPORT_FUNCTION
+    keyword whole io.flush SUPPORT_FUNCTION
+    keyword whole io.open SUPPORT_FUNCTION
+    keyword whole io.popen SUPPORT_FUNCTION
+    keyword whole io.read SUPPORT_FUNCTION
+    keyword whole io.tmpfile SUPPORT_FUNCTION
+    keyword whole io.type SUPPORT_FUNCTION
+    keyword whole io.write SUPPORT_FUNCTION
 
     # filelib
-    keyword whole file.flush brightmagenta
-    keyword whole file.read brightmagenta
-    keyword whole file.lines brightmagenta
-    keyword whole file.seek brightmagenta
-    keyword whole file.write brightmagenta
-    keyword whole file.close brightmagenta
-    keyword whole file.__gc brightmagenta
-    keyword whole file.__tostring brightmagenta
+    keyword whole file.flush SUPPORT_FUNCTION
+    keyword whole file.read SUPPORT_FUNCTION
+    keyword whole file.lines SUPPORT_FUNCTION
+    keyword whole file.seek SUPPORT_FUNCTION
+    keyword whole file.write SUPPORT_FUNCTION
+    keyword whole file.close SUPPORT_FUNCTION
+    keyword whole file.__gc SUPPORT_FUNCTION
+    keyword whole file.__tostring SUPPORT_FUNCTION
 
     # syslib
-    keyword whole os.clock brightmagenta
-    keyword whole os.date brightmagenta
-    keyword whole os.difftime brightmagenta
-    keyword whole os.execute brightmagenta
-    keyword whole os.exit brightmagenta
-    keyword whole os.getenv brightmagenta
-    keyword whole os.remove brightmagenta
-    keyword whole os.rename brightmagenta
-    keyword whole os.setlocale brightmagenta
-    keyword whole os.time brightmagenta
-    keyword whole os.tmpname brightmagenta
+    keyword whole os.clock SUPPORT_FUNCTION
+    keyword whole os.date SUPPORT_FUNCTION
+    keyword whole os.difftime SUPPORT_FUNCTION
+    keyword whole os.execute SUPPORT_FUNCTION
+    keyword whole os.exit SUPPORT_FUNCTION
+    keyword whole os.getenv SUPPORT_FUNCTION
+    keyword whole os.remove SUPPORT_FUNCTION
+    keyword whole os.rename SUPPORT_FUNCTION
+    keyword whole os.setlocale SUPPORT_FUNCTION
+    keyword whole os.time SUPPORT_FUNCTION
+    keyword whole os.tmpname SUPPORT_FUNCTION
 
     # debuglib
-    keyword whole debug.getlocal brightmagenta
-    keyword whole debug.getinfo brightmagenta
-    keyword whole debug.gethook brightmagenta
-    keyword whole debug.getupvalue brightmagenta
-    keyword whole debug.sethook brightmagenta
-    keyword whole debug.setlocal brightmagenta
-    keyword whole debug.setupvalue brightmagenta
-    keyword whole debug.debug brightmagenta
-    keyword whole debug.traceback brightmagenta
-    keyword whole debug.getmetatable brightmagenta
-    keyword whole debug.setmetatable brightmagenta
-    keyword whole debug.getregistry brightmagenta
-    keyword whole debug.getuservalue brightmagenta
-    keyword whole debug.setuservalue brightmagenta
-    keyword whole debug.upvalueid brightmagenta
-    keyword whole debug.upvaluejoin brightmagenta
+    keyword whole debug.getlocal SUPPORT_FUNCTION
+    keyword whole debug.getinfo SUPPORT_FUNCTION
+    keyword whole debug.gethook SUPPORT_FUNCTION
+    keyword whole debug.getupvalue SUPPORT_FUNCTION
+    keyword whole debug.sethook SUPPORT_FUNCTION
+    keyword whole debug.setlocal SUPPORT_FUNCTION
+    keyword whole debug.setupvalue SUPPORT_FUNCTION
+    keyword whole debug.debug SUPPORT_FUNCTION
+    keyword whole debug.traceback SUPPORT_FUNCTION
+    keyword whole debug.getmetatable SUPPORT_FUNCTION
+    keyword whole debug.setmetatable SUPPORT_FUNCTION
+    keyword whole debug.getregistry SUPPORT_FUNCTION
+    keyword whole debug.getuservalue SUPPORT_FUNCTION
+    keyword whole debug.setuservalue SUPPORT_FUNCTION
+    keyword whole debug.upvalueid SUPPORT_FUNCTION
+    keyword whole debug.upvaluejoin SUPPORT_FUNCTION
 
     # utf8lib
-    keyword whole utf8.char brightmagenta
-    keyword whole utf8.charpattern cyan
-    keyword whole utf8.codepoint brightmagenta
-    keyword whole utf8.codes brightmagenta
-    keyword whole utf8.len brightmagenta
-    keyword whole utf8.offset brightmagenta
+    keyword whole utf8.char SUPPORT_FUNCTION
+    keyword whole utf8.charpattern SUPPORT_CONSTANT
+    keyword whole utf8.codepoint SUPPORT_FUNCTION
+    keyword whole utf8.codes SUPPORT_FUNCTION
+    keyword whole utf8.len SUPPORT_FUNCTION
+    keyword whole utf8.offset SUPPORT_FUNCTION
 
     # packagelib
-    keyword whole package.config cyan
-    keyword whole package.cpath cyan
-    keyword whole package.loaded cyan
-    keyword whole package.loadlib brightmagenta
-    keyword whole package.path cyan
-    keyword whole package.preload cyan
-    keyword whole package.searchers cyan
-    keyword whole package.searchpath brightmagenta
+    keyword whole package.config SUPPORT_CONSTANT
+    keyword whole package.cpath SUPPORT_CONSTANT
+    keyword whole package.loaded SUPPORT_CONSTANT
+    keyword whole package.loadlib SUPPORT_FUNCTION
+    keyword whole package.path SUPPORT_CONSTANT
+    keyword whole package.preload SUPPORT_CONSTANT
+    keyword whole package.searchers SUPPORT_CONSTANT
+    keyword whole package.searchpath SUPPORT_FUNCTION
 
 # Function names in declarations and calls.  The leading word boundary also
 # handles method calls after '.' and ':'.
-    keyword wholeleft +\[\s\]( magenta
+    keyword wholeleft +\[\s\]( VARIABLE_FUNCTION
 
 # Global Variables
-    keyword whole _VERSION cyan
-    keyword whole _G cyan
-    keyword whole _ENV cyan
-    keyword whole io.stdin cyan
-    keyword whole io.stdout cyan
-    keyword whole io.stderr cyan
+    keyword whole _VERSION SUPPORT_CONSTANT
+    keyword whole _G SUPPORT_CONSTANT
+    keyword whole _ENV SUPPORT_CONSTANT
+    keyword whole io.stdin SUPPORT_CONSTANT
+    keyword whole io.stdout SUPPORT_CONSTANT
+    keyword whole io.stderr SUPPORT_CONSTANT
 
 #
 # Long comments
 #
 
-context exclusive --[[ ]] brown
+context exclusive --[[ ]] COMMENT_BLOCK
     # hightlights ldoc tags: "@todo", "@param", "@function" etc.
-    keyword @\[abcdefghijklmnopqrstuvwxyz\] brightred base
+    keyword @\[abcdefghijklmnopqrstuvwxyz\] KEYWORD_OTHER base
     spellcheck
-context exclusive --[=[ ]=] brown
-    keyword @\[abcdefghijklmnopqrstuvwxyz\] brightred base
+context exclusive --[=[ ]=] COMMENT_BLOCK
+    keyword @\[abcdefghijklmnopqrstuvwxyz\] KEYWORD_OTHER base
     spellcheck
-context exclusive --[==[ ]==] brown
-    keyword @\[abcdefghijklmnopqrstuvwxyz\] brightred base
+context exclusive --[==[ ]==] COMMENT_BLOCK
+    keyword @\[abcdefghijklmnopqrstuvwxyz\] KEYWORD_OTHER base
     spellcheck
-context exclusive --[===[ ]===] brown
-    keyword @\[abcdefghijklmnopqrstuvwxyz\] brightred base
+context exclusive --[===[ ]===] COMMENT_BLOCK
+    keyword @\[abcdefghijklmnopqrstuvwxyz\] KEYWORD_OTHER base
     spellcheck
 # 4 equals and up (the number of ='s doesn't have to match, but that's the best we can do):
-context exclusive --[====\[=\][ ]====\[=\]] brown
-    keyword @\[abcdefghijklmnopqrstuvwxyz\] brightred base
+context exclusive --[====\[=\][ ]====\[=\]] COMMENT_BLOCK
+    keyword @\[abcdefghijklmnopqrstuvwxyz\] KEYWORD_OTHER base
     spellcheck
 
 #
 # Long strings
 #
 
-context exclusive [[ ]] brightcyan
+context exclusive [[ ]] STRING_QUOTED_OTHER
     spellcheck
-context exclusive [=[ ]=] brightcyan
+context exclusive [=[ ]=] STRING_QUOTED_OTHER
     spellcheck
-context exclusive [==[ ]==] brightcyan
+context exclusive [==[ ]==] STRING_QUOTED_OTHER
     spellcheck
-context exclusive [===[ ]===] brightcyan
+context exclusive [===[ ]===] STRING_QUOTED_OTHER
     spellcheck
 # 4 equals and up (the number of ='s doesn't have to match, but that's the best we can do):
-context exclusive [====\[=\][ ]====\[=\]] brightcyan
+context exclusive [====\[=\][ ]====\[=\]] STRING_QUOTED_OTHER
     spellcheck
 
 
 # Simple comments
-context exclusive -- \n brown
-    keyword @\[abcdefghijklmnopqrstuvwxyz\] brightred base
+context exclusive -- \n COMMENT_LINE
+    keyword @\[abcdefghijklmnopqrstuvwxyz\] KEYWORD_OTHER base
     spellcheck
 
 # Shebang line
-context linestart #! \n brown
+context linestart #! \n COMMENT_LINE
 
 # Strings
-context " " brightcyan
-    keyword %a brightgreen
-    keyword %c brightgreen
-    keyword %d brightgreen
-    keyword %l brightgreen
-    keyword %p brightgreen
-    keyword %q brightgreen
-    keyword %s brightgreen
-    keyword %u brightgreen
-    keyword %w brightgreen
-    keyword %x brightgreen
-    keyword %z brightgreen
-    keyword \\\\ brightgreen
-    keyword \\" brightgreen
-    keyword \\' brightgreen
-    keyword \\\{abtnvfr\} brightgreen
-    keyword \\z brightgreen
-    keyword \\x\{0123456789abcdefABCDEF\}\{0123456789abcdefABCDEF\} brightgreen
-    keyword \\u{*} brightgreen
-    keyword \\\{0123456789\}\{0123456789\}\{0123456789\} brightgreen
-    keyword \\\{0123456789\}\{0123456789\} brightgreen
-    keyword \\\{0123456789\} brightgreen
+context " " STRING_QUOTED_DOUBLE
+    keyword %a CONSTANT_OTHER_PLACEHOLDER
+    keyword %c CONSTANT_OTHER_PLACEHOLDER
+    keyword %d CONSTANT_OTHER_PLACEHOLDER
+    keyword %l CONSTANT_OTHER_PLACEHOLDER
+    keyword %p CONSTANT_OTHER_PLACEHOLDER
+    keyword %q CONSTANT_OTHER_PLACEHOLDER
+    keyword %s CONSTANT_OTHER_PLACEHOLDER
+    keyword %u CONSTANT_OTHER_PLACEHOLDER
+    keyword %w CONSTANT_OTHER_PLACEHOLDER
+    keyword %x CONSTANT_OTHER_PLACEHOLDER
+    keyword %z CONSTANT_OTHER_PLACEHOLDER
+    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword \\' CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\z CONSTANT_CHARACTER_ESCAPE
+    keyword \\x\{0123456789abcdefABCDEF\}\{0123456789abcdefABCDEF\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\u{*} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{0123456789\}\{0123456789\}\{0123456789\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{0123456789\}\{0123456789\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{0123456789\} CONSTANT_CHARACTER_ESCAPE
     spellcheck
 
-context ' ' brightcyan
-    keyword %a brightgreen
-    keyword %c brightgreen
-    keyword %d brightgreen
-    keyword %l brightgreen
-    keyword %p brightgreen
-    keyword %q brightgreen
-    keyword %s brightgreen
-    keyword %u brightgreen
-    keyword %w brightgreen
-    keyword %x brightgreen
-    keyword %z brightgreen
-    keyword \\\\ brightgreen
-    keyword \\" brightgreen
-    keyword \\' brightgreen
-    keyword \\\{abtnvfr\} brightgreen
-    keyword \\z brightgreen
-    keyword \\x\{0123456789abcdefABCDEF\}\{0123456789abcdefABCDEF\} brightgreen
-    keyword \\u{*} brightgreen
-    keyword \\\{0123456789\}\{0123456789\}\{0123456789\} brightgreen
-    keyword \\\{0123456789\}\{0123456789\} brightgreen
-    keyword \\\{0123456789\} brightgreen
+context ' ' STRING_QUOTED_SINGLE
+    keyword %a CONSTANT_OTHER_PLACEHOLDER
+    keyword %c CONSTANT_OTHER_PLACEHOLDER
+    keyword %d CONSTANT_OTHER_PLACEHOLDER
+    keyword %l CONSTANT_OTHER_PLACEHOLDER
+    keyword %p CONSTANT_OTHER_PLACEHOLDER
+    keyword %q CONSTANT_OTHER_PLACEHOLDER
+    keyword %s CONSTANT_OTHER_PLACEHOLDER
+    keyword %u CONSTANT_OTHER_PLACEHOLDER
+    keyword %w CONSTANT_OTHER_PLACEHOLDER
+    keyword %x CONSTANT_OTHER_PLACEHOLDER
+    keyword %z CONSTANT_OTHER_PLACEHOLDER
+    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword \\' CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\z CONSTANT_CHARACTER_ESCAPE
+    keyword \\x\{0123456789abcdefABCDEF\}\{0123456789abcdefABCDEF\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\u{*} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{0123456789\}\{0123456789\}\{0123456789\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{0123456789\}\{0123456789\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{0123456789\} CONSTANT_CHARACTER_ESCAPE
     spellcheck

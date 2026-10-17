@@ -3,25 +3,25 @@
 # trailers stand out.
 
 context default
-    keyword linestart Signed-off-by: brightgreen
-    keyword linestart Co-authored-by: brightgreen
-    keyword linestart Co-Authored-By: brightgreen
-    keyword linestart Reviewed-by: brightgreen
-    keyword linestart Acked-by: brightgreen
-    keyword linestart Reported-by: brightgreen
-    keyword linestart Suggested-by: brightgreen
-    keyword linestart Tested-by: brightgreen
-    keyword linestart Fixes: brightgreen
-    keyword linestart Closes: brightgreen
-    keyword linestart Refs: brightgreen
-    keyword linestart Change-Id: brightgreen
-    keyword #\{0123456789\}\[0123456789\] brightcyan
+    keyword linestart Signed-off-by: CONSTANT_OTHER_TRAILER
+    keyword linestart Co-authored-by: CONSTANT_OTHER_TRAILER
+    keyword linestart Co-Authored-By: CONSTANT_OTHER_TRAILER
+    keyword linestart Reviewed-by: CONSTANT_OTHER_TRAILER
+    keyword linestart Acked-by: CONSTANT_OTHER_TRAILER
+    keyword linestart Reported-by: CONSTANT_OTHER_TRAILER
+    keyword linestart Suggested-by: CONSTANT_OTHER_TRAILER
+    keyword linestart Tested-by: CONSTANT_OTHER_TRAILER
+    keyword linestart Fixes: CONSTANT_OTHER_TRAILER
+    keyword linestart Closes: CONSTANT_OTHER_TRAILER
+    keyword linestart Refs: CONSTANT_OTHER_TRAILER
+    keyword linestart Change-Id: CONSTANT_OTHER_TRAILER
+    keyword #\{0123456789\}\[0123456789\] ENTITY_NAME_REFERENCE
 
 # what git leaves out of the message
-context linestart # \n brown
-    keyword modified: yellow
-    keyword new\sfile: brightgreen
-    keyword deleted: brightred
-    keyword renamed: yellow
-    keyword typechange: yellow
-    keyword both\smodified: brightred
+context linestart # \n COMMENT_LINE
+    keyword modified: MARKUP_CHANGED
+    keyword new\sfile: MARKUP_INSERTED
+    keyword deleted: MARKUP_DELETED
+    keyword renamed: MARKUP_CHANGED
+    keyword typechange: MARKUP_CHANGED
+    keyword both\smodified: MARKUP_DELETED

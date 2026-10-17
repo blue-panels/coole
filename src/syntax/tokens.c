@@ -75,6 +75,7 @@ static const syntax_token_classic_t classic[] = {
     { "variable.language", "yellow", NULL },
     { "keyword.other.todo", "brightred", NULL },
     { "support", "brightred", NULL },
+    { "support.type.property.name", "yellow", NULL },
     { "entity.name", "brightcyan", NULL },
     { "string", "green", NULL },
     { "constant", "brightgreen", NULL },

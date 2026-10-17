@@ -13,44 +13,44 @@ context default
 
     #=========================
     # Keys
-    keyword "*"\[\s\t\]: yellow
+    keyword "*"\[\s\t\]: SUPPORT_TYPE_PROPERTY_NAME
 
     #=========================
     # Constants
-    keyword whole true brightred
-    keyword whole false brightred
-    keyword whole null brightred
+    keyword whole true CONSTANT_LANGUAGE
+    keyword whole false CONSTANT_LANGUAGE
+    keyword whole null CONSTANT_LANGUAGE
 
     #=========================
     # Numbers, the longest form first: the first that fits is taken
-    keyword whole \[-\]\{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] brightmagenta
-    keyword whole \[-\]\{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] brightmagenta
-    keyword whole \[-\]\{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] brightmagenta
-    keyword whole \[-\]\{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] brightmagenta
-    keyword whole \[-\]\{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\] brightmagenta
-    keyword whole \[-\]\{0123456789\}\[0123456789\] brightmagenta
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
 
     #=========================
     # Separators
-    keyword { brightcyan
-    keyword } brightcyan
-    keyword [ brightcyan
-    keyword ] brightcyan
-    keyword , brightcyan
-    keyword : brightcyan
+    keyword { PUNCTUATION_SECTION
+    keyword } PUNCTUATION_SECTION
+    keyword [ PUNCTUATION_SECTION
+    keyword ] PUNCTUATION_SECTION
+    keyword , PUNCTUATION_SEPARATOR
+    keyword : PUNCTUATION_SEPARATOR
 
 #=============================
 # Comments.  JSON has none, but many files that are read as JSON take them:
 # "//" to the end of the line, and "/* */"
-context // \n brown
+context // \n COMMENT_LINE
     spellcheck
 
-context /\* \*/ brown
+context /\* \*/ COMMENT_BLOCK
     spellcheck
 
 #=============================
 # String values
-context " " green
+context " " STRING_QUOTED_DOUBLE
     spellcheck
-    keyword \\\{"\\/bfnrt\} brightgreen
-    keyword \\u\{0123456789ABCDEFabcdef\}\{0123456789ABCDEFabcdef\}\{0123456789ABCDEFabcdef\}\{0123456789ABCDEFabcdef\} brightgreen
+    keyword \\\{"\\/bfnrt\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\u\{0123456789ABCDEFabcdef\}\{0123456789ABCDEFabcdef\}\{0123456789ABCDEFabcdef\}\{0123456789ABCDEFabcdef\} CONSTANT_CHARACTER_ESCAPE

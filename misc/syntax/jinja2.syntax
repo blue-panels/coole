@@ -20,17 +20,17 @@
 context default
     # numbers in the template body (engine takes the first matching rule at a
     # position, so most specific forms go first: decimal+exp, exp, decimal, int)
-    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{\+-\}\{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{\+-\}\{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\}\[0123456789\] cyan
-    keyword whole \{0123456789\} cyan
+    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{\+-\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{\+-\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\} CONSTANT_NUMERIC
 
     # the tags of a raw block, which is exclusive and leaves them to this context
-    keyword {%\[\s-\]raw\[\s-\]%} brightcyan
-    keyword {%\[\s-\]endraw\[\s-\]%} brightcyan
+    keyword {%\[\s-\]raw\[\s-\]%} META_PREPROCESSOR
+    keyword {%\[\s-\]endraw\[\s-\]%} META_PREPROCESSOR
 
 
 # raw block: {% raw %} ... {% endraw %}, and {%- raw -%} alike; before {% %},
@@ -38,12 +38,12 @@ context default
 context exclusive {%\[\s-\]raw\[\s-\]%} {%\[\s-\]endraw\[\s-\]%}
 
 # jinja2 statement / block tag: {% ... %}
-context {% %} brightcyan
+context {% %} META_PREPROCESSOR
     embed soft Jinja2\sStatement
 
 # jinja2 expression tag: {{ ... }}
-context {{ }} brightred
+context {{ }} META_PREPROCESSOR
     embed soft Jinja2\sExpression
 
 # jinja2 comment: {# ... #}
-context {# #} brown
+context {# #} COMMENT_BLOCK

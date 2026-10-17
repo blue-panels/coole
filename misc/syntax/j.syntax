@@ -1,42 +1,110 @@
-# J syntax highlighting
+# J language Syntax highlighting Definition
+# Version 3.0.0 2026-03-18
+# See updates and changelog at https://github.com/jip/syntax-highlighting
+#
+# J is a high-level, general-purpose programming language
+# https://www.jsoftware.com
+#
+# This file is part of GNU Midnight Commander
+# https://midnight-commander.org/
+#
+# SPDX-FileCopyrightText: 2009,2026 Igor Zhuravlov <zhuravlov.ip@ya.ru>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# for the default (lightgray on blue)
+define _alerthi KEYWORD_OTHER_TODO red
+define _alertmi KEYWORD_OTHER_TODO yellow
+define _alertlo KEYWORD_OTHER_TODO cyan
+define _noun    VARIABLE_PARAMETER blue bold
+define _nounblk STRING_UNQUOTED brightblue
 
 context default
+    # controls
+    wholechars {}
+    keyword {{ KEYWORD_CONTROL
+    keyword }} KEYWORD_CONTROL
+    wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._
+    keyword wholeleft assert. KEYWORD_CONTROL
+    keyword wholeleft break. KEYWORD_CONTROL
+    keyword wholeleft case. KEYWORD_CONTROL
+    keyword wholeleft catch. KEYWORD_CONTROL
+    keyword wholeleft catch\{dt\}. KEYWORD_CONTROL
+    keyword wholeleft continue. KEYWORD_CONTROL
+    keyword wholeleft do. KEYWORD_CONTROL
+    keyword wholeleft else. KEYWORD_CONTROL
+    keyword wholeleft elseif. KEYWORD_CONTROL
+    keyword wholeleft end. KEYWORD_CONTROL
+    keyword wholeleft fcase. KEYWORD_CONTROL
+    keyword wholeleft for. KEYWORD_CONTROL
+    keyword wholeleft for_\{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]. KEYWORD_CONTROL
+    keyword wholeleft goto_\{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]. KEYWORD_CONTROL
+    keyword wholeleft if. KEYWORD_CONTROL
+    keyword wholeleft label_\{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]. KEYWORD_CONTROL
+    keyword wholeleft return. KEYWORD_CONTROL
+    keyword wholeleft select. KEYWORD_CONTROL
+    keyword wholeleft throw. KEYWORD_CONTROL
+    keyword wholeleft try. KEYWORD_CONTROL
+    keyword wholeleft while. KEYWORD_CONTROL
+    keyword wholeleft whilst. KEYWORD_CONTROL
+    # comments
+    keyword wholeleft NB. COMMENT_LINE
+    # copula
+    keyword =: KEYWORD_OPERATOR
+    keyword =. KEYWORD_OPERATOR
+    # parenthesis
+    keyword \{()\} PUNCTUATION_SECTION
+    # actors
+    keyword {:: KEYWORD_OPERATOR blue bold
+    keyword &.: KEYWORD_OPERATOR blue bold
+    keyword __: KEYWORD_OPERATOR blue bold
+    keyword /.. KEYWORD_OPERATOR blue bold
+    keyword \{<>\+\*-%$~|,#{}"\}\{.:\} KEYWORD_OPERATOR blue bold
+    keyword \{_;/\\[\}: KEYWORD_OPERATOR blue bold
+    keyword \{^?\}. KEYWORD_OPERATOR blue bold
+    keyword \{^`\}: KEYWORD_OPERATOR blue bold
+    keyword \{;[]\}. KEYWORD_OPERATOR blue bold
+    keyword \{!:@&\}\{.:\} KEYWORD_OPERATOR blue bold
+    keyword \{/\\\}. KEYWORD_OPERATOR blue bold
+    keyword ]: KEYWORD_OPERATOR blue bold
+    keyword \{=<>\+\*-%^$|,;#![]{?\} KEYWORD_OPERATOR blue bold
+    keyword \{~/\\}\} KEYWORD_OPERATOR blue bold
+    keyword \{".:`@&\} KEYWORD_OPERATOR blue bold
+    keyword wholeleft \{AcCeEIjLorv\}. KEYWORD_OPERATOR blue bold
+    keyword wholeleft \{bfM\}. KEYWORD_OPERATOR blue bold
+    keyword wholeleft \{Hmt\}. KEYWORD_OPERATOR blue bold
+    keyword wholeleft p.. KEYWORD_OPERATOR blue bold
+    keyword wholeleft \{ipu\}\{.:\} KEYWORD_OPERATOR blue bold
+    keyword wholeleft \{LS\}: KEYWORD_OPERATOR blue bold
+    keyword wholeleft \{qsxZ\}: KEYWORD_OPERATOR blue bold
+    keyword whole     \{uv\} KEYWORD_OPERATOR blue bold
+    keyword wholeleft _\{123456789\}: KEYWORD_OPERATOR blue bold
+    keyword wholeleft \{0123456789\}: KEYWORD_OPERATOR blue bold
+    # numbers
+    keyword whole \{0123456789_\}\[abcdefghijklmnopqrstuvwxyz0123456789_.\] CONSTANT_NUMERIC
+    # nouns
+    keyword whole a\{.:\} _noun
+    keyword whole \{mnxy\} _noun
 
-    keyword assert. brightred
-    keyword break. brightred
-    keyword case. brightred
-    keyword catch. brightred
-    keyword catchd. brightred
-    keyword catcht. brightred
-    keyword continue. brightred
-    keyword do. brightred
-    keyword else. brightred
-    keyword elseif. brightred
-    keyword end. brightred
-    keyword fcase. brightred
-    keyword for. brightred
-    keyword for_\{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]. brightred
-    keyword goto_\{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]. brightred
-    keyword if. brightred
-    keyword label_\{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]. brightred
-    keyword return. brightred
-    keyword select. brightred
-    keyword throw. brightred
-    keyword trap. brightred
-    keyword try. brightred
-    keyword while. brightred
-    keyword whilst. brightred
+# strings
 
-    keyword NB. green
+context ' ' STRING_QUOTED_SINGLE
 
-    keyword \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]\[\s\]=: white
-    keyword '\{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\s\]'\[\s\]=: white
+# block nouns
 
-context ' ' brightcyan
-#    spellcheck
+context exclusive 0\s\[\s\t\]:\[\s\t\]0\[)\s\t\]\n linestart ) _nounblk
 
-context exclusive linestart NB.\s\*\s \n brightgreen
-#    spellcheck
+context exclusive whole Note linestart ) COMMENT_BLOCK brightblue
 
-context exclusive NB. \n green
-#    spellcheck
+# comments
+
+context exclusive linestart NB.\s\*\s \n COMMENT_LINE blue underline
+
+context exclusive NB. \n COMMENT_LINE
+    keyword whole BUG        _alerthi
+    keyword whole DEPRECATED _alertmi
+    keyword whole FIXME      _alerthi
+    keyword whole NOTE       _alertlo
+    keyword whole TEST       _alertlo
+    keyword whole TODO       _alertmi
+    keyword whole WARN       _alertmi
+    spellcheck
