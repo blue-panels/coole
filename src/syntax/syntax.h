@@ -151,6 +151,7 @@ gboolean syntax_rules_is_line_local (const syntax_rules_t *r);
 guint syntax_rules_color_count (const syntax_rules_t *r);
 void syntax_rules_color_spec (const syntax_rules_t *r, guint color, const char **fg,
                               const char **bg, const char **attrs);
+const char *syntax_rules_color_scope (const syntax_rules_t *r, guint color);
 /** Color a state maps to; the projection that makes the scanner a highlighter. */
 guint syntax_rules_color_of (const syntax_rules_t *r, syntax_state_t st);
 

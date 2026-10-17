@@ -199,6 +199,25 @@ check_mask_len (const char *s, off_t len, const char *expected)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/** The color the rules give the byte @i of @s. */
+static guint
+color_at (const char *s, off_t i)
+{
+    syntax_scanner_t *sc;
+    guint color;
+
+    text = s;
+    text_len = (off_t) strlen (s);
+
+    sc = syntax_scanner_new (rules, get_byte, NULL, text_len);
+    color = syntax_rules_color_of (rules, syntax_state_at (sc, i));
+    syntax_scanner_free (sc);
+
+    return color;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 check_mask (const char *s, const char *expected)
 {
@@ -787,6 +806,64 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+START_TEST (test_token_kept_as_written)
+{
+    const char *fg, *bg, *attrs;
+
+    // a rule set that ignores case lowers its patterns, not the tokens it colors with
+    load ("caseinsensitive\n"
+          "context default\n"
+          "  keyword whole INT KEYWORD_CONTROL\n"
+          "context \" \" STRING_QUOTED_DOUBLE\n");
+
+    check_mask ("int Int \"s\"", "KKK.KKK.SSS");
+
+    syntax_rules_color_spec (rules, color_at ("int", 0), &fg, &bg, &attrs);
+    ck_assert_str_eq (fg, "KEYWORD_CONTROL");
+    ck_assert (bg == NULL || *bg == '\0');
+
+    // the rest of the line is folded as it always was: a color, a directive
+    load ("caseinsensitive\n"
+          "Context default\n"
+          "  Keyword whole SELECT Yellow\n");
+    check_mask ("select Select", "yyyyyy.yyyyyy");
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_token_scope_of_context)
+{
+    const char *s = "\"a\\nb\" x";
+
+    load ("context default\n"
+          "  keyword whole x KEYWORD_CONTROL\n"
+          "context \" \" STRING_QUOTED_DOUBLE\n"
+          "  keyword \\\\n CONSTANT_CHARACTER_ESCAPE\n"
+          "  keyword b\n"
+          "  keyword a red\n");
+
+    // a token inside a context of a token knows the context it stands in
+    ck_assert_str_eq (syntax_rules_color_scope (rules, color_at (s, 2)), "STRING_QUOTED_DOUBLE");
+    // the context itself, a keyword of the default context, a keyword that takes
+    // the color of its context and one with a color of its own know none
+    ck_assert_ptr_null (syntax_rules_color_scope (rules, color_at (s, 0)));
+    ck_assert_ptr_null (syntax_rules_color_scope (rules, color_at (s, 7)));
+    ck_assert_ptr_null (syntax_rules_color_scope (rules, color_at (s, 4)));
+    ck_assert_ptr_null (syntax_rules_color_scope (rules, color_at (s, 1)));
+
+    // the same token in two contexts is two colors
+    load ("context default\n"
+          "context \" \" STRING_QUOTED_DOUBLE\n"
+          "  keyword \\\\n CONSTANT_CHARACTER_ESCAPE\n"
+          "context ' ' STRING_QUOTED_SINGLE\n"
+          "  keyword \\\\n CONSTANT_CHARACTER_ESCAPE\n");
+    ck_assert_uint_ne (color_at ("\"\\n\"", 1), color_at ("'\\n'", 1));
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 START_TEST (test_parse_errors)
 {
     // the parser reports the line it stopped at, and never a dialog
@@ -1222,7 +1299,7 @@ END_TEST
 START_TEST (test_embed_case)
 {
     // the rules around ignore case, the embedded ones do not; the type is found
-    // though the line naming it was folded
+    // in any case
     ck_assert_int_eq (load_toplevel ("file .\\* Tested\n"
                                      "caseinsensitive\n"
                                      "context default\n"
@@ -1894,6 +1971,8 @@ add_tests (TCase *tc_core)
     tcase_add_test (tc_core, test_spellcheck_and_comments);
     tcase_add_test (tc_core, test_keyword_color_inherited);
     tcase_add_test (tc_core, test_define);
+    tcase_add_test (tc_core, test_token_kept_as_written);
+    tcase_add_test (tc_core, test_token_scope_of_context);
     tcase_add_test (tc_core, test_parse_errors);
     tcase_add_test (tc_core, test_rules_without_include);
     tcase_add_test (tc_core, test_include_that_is_not_there);
