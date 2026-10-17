@@ -18,8 +18,9 @@ entirely, even with --strict; use it only where the literal colors are the conte
 Usage: check-tokens.py [--strict] [FILE ...]   (default: all *.syntax here)
 meson test runs it as check_tokens, with --strict.
 
-Written by hza for mc PR #5189; the oneline flag, the line-local directives and
-the numbered colors of 256-color terminals are coole's.
+Written by Henady Zakalusky (hza) for mc PR #5189; the oneline flag, the
+line-local directives and the numbered colors of 256-color terminals are
+coole's.
 Exit status: 0 when clean, 1 when violations were found.
 """
 

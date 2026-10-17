@@ -206,6 +206,6 @@ check-tokens.py, kept with the syntax files in the source tree
 It ends with status 1 when it finds one.  meson test runs it with --strict
 as check_tokens.
 
-The tokens, the converted syntax files and check-tokens.py come from mc
-pull request #5189 by hza, which took the scope names over from Sublime
-Text; in coole the colors are the skin's.
+The idea of the tokens, the converted syntax files and check-tokens.py
+come from mc pull request #5189 by Henady Zakalusky (hza), which took the
+scope names over from Sublime Text; in coole the colors are the skin's.
