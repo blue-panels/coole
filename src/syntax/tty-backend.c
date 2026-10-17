@@ -108,32 +108,26 @@ syntax_tty_alloc_color (void *backend_data, const char *fg, const char *bg, cons
     }
     if (color.fg == NULL || color.bg == NULL)
     {
-        char *editnormal;
+        char *normal_fg, *normal_bg, *normal_attrs;
 
-        editnormal = mc_skin_get (backend_data != NULL ? (const char *) backend_data : "core",
-                                  "_default_", "default;default");
+        // the colors of the text around, through the aliases of the skin: Fg;Bg
+        mc_skin_color_names (backend_data != NULL ? (const char *) backend_data : "core",
+                             "_default_", &normal_fg, &normal_bg, &normal_attrs);
 
         if (color.fg == NULL)
         {
-            g_strlcpy (f, editnormal, sizeof (f));
-            p = strchr (f, ';');
-            if (p != NULL)
-                *p = '\0';
-            if (f[0] == '\0')
-                g_strlcpy (f, "default", sizeof (f));
+            g_strlcpy (f, normal_fg != NULL ? normal_fg : "default", sizeof (f));
             color.fg = f;
         }
         if (color.bg == NULL)
         {
-            p = strchr (editnormal, ';');
-            if ((p != NULL) && (*(++p) != '\0'))
-                g_strlcpy (b, p, sizeof (b));
-            else
-                g_strlcpy (b, "default", sizeof (b));
+            g_strlcpy (b, normal_bg != NULL ? normal_bg : "default", sizeof (b));
             color.bg = b;
         }
 
-        g_free (editnormal);
+        g_free (normal_fg);
+        g_free (normal_bg);
+        g_free (normal_attrs);
     }
 
     if (color.attrs != NULL)
