@@ -414,7 +414,7 @@ Undo.
 Redo.
 
 .TP
-\fBAlt\-Shift\-u\fP
+\fBCtrl\-t, Alt\-Shift\-u\fP
 The undo history, to take back several changes at once.
 
 .TP

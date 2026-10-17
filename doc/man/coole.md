@@ -336,7 +336,7 @@ see
 **Alt-r**
 : Redo.
 
-**Alt-Shift-u**
+**Ctrl-t, Alt-Shift-u**
 : The undo history, to take back several changes at once.
 
 **Ctrl-y**
