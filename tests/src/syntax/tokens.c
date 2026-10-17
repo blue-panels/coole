@@ -49,7 +49,7 @@ skin_lookup (const char *key, char **fg, char **bg, char **attrs, void *data)
 
             *fg = parts[0] != NULL && *parts[0] != '\0' ? g_strdup (parts[0]) : NULL;
             *bg = parts[0] != NULL && parts[1] != NULL && *parts[1] != '\0' ? g_strdup (parts[1])
-                                                                              : NULL;
+                                                                            : NULL;
             *attrs = NULL;
             g_strfreev (parts);
             return TRUE;
@@ -145,11 +145,16 @@ END_TEST
 START_TEST (test_skin)
 {
     static const char *const s[] = {
-        "keyword", "red",
-        "keyword.control", "magenta",
-        "string", "cyan",
-        "string constant.character.escape", "white;black",
-        "constant", "blue",
+        "keyword",
+        "red",
+        "keyword.control",
+        "magenta",
+        "string",
+        "cyan",
+        "string constant.character.escape",
+        "white;black",
+        "constant",
+        "blue",
         NULL,
     };
 

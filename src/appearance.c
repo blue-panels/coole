@@ -46,6 +46,8 @@
 #include "lib/util.h"
 #include "lib/widget.h"
 
+#include "editor/edit.h"  // edit_syntax_skin_leaving(), edit_syntax_skin_arrived()
+
 #include "appearance.h"
 
 /*** global variables ****************************************************************************/
@@ -76,10 +78,12 @@ skin_apply (const gchar *skin_override)
 {
     GError *mcerror = NULL;
 
+    edit_syntax_skin_leaving ();
     mc_skin_deinit ();
     mc_skin_init (skin_override, &mcerror);
     dlg_set_default_colors ();
     input_set_default_colors ();
+    edit_syntax_skin_arrived ();
     repaint_screen ();
 
     mc_error_message (&mcerror, NULL);
