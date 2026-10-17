@@ -16,7 +16,7 @@ there and develops it as a program of its own.
 - **Code folding** of a bracket block from the gutter or the Command menu;
   a folded line keeps its text and shows the matching bracket and the number
   of lines.
-- **Undo history browser** (`Alt+Shift+U`): the undoable and redoable groups,
+- **Undo history browser** (`Ctrl+T` or `Alt+Shift+U`): the undoable and redoable groups,
   with line, action and a preview, and a jump to any point in the history.
 - **Macros** recorded from the keyboard, and a **macro explorer**
   (`Alt+Shift+M`) that lists them, shows their actions, runs, deletes or

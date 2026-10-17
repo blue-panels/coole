@@ -488,9 +488,9 @@ line!
    instead of the system one.
 
    The editor also has code folding (Command -> Fold / Unfold block),
-   an undo history on Alt-Shift-u and a macro explorer on Alt-Shift-m;
-   a filter on Alt-s hides every line that does not match, which is a
-   quick way through a log.
+   an undo history on Ctrl-t and Alt-Shift-u and a macro explorer on
+   Alt-Shift-m; a filter on Alt-s hides every line that does not match,
+   which is a quick way through a log.
 
 5.3 Is there any way to include additional commands?
 

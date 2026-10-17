@@ -432,31 +432,87 @@ mc_lua_provides_parse (const char *value, guint *provides)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/**
+ * The name of a key as macros compare it: the modifiers and the names of keys
+ * in lower case, Ctrl, Alt and Shift in that order, and a letter as it was
+ * typed after Alt or alone, since a terminal tells Alt-u from Alt-U (Alt-Shift-u),
+ * which the keymap gives commands of their own.  Shift with a letter is that
+ * letter in capitals; after Ctrl a letter is one key in either case.
+ *
+ *     ALT-u -> alt-u    Alt-U, Alt-Shift-u -> alt-U    Ctrl-S -> ctrl-s    F11 -> f11
+ */
 static char *
 mc_lua_key_name_normalize (const char *key)
 {
-    char *normalized;
+    static const char *const modifiers[] = { "ctrl", "alt", "shift" };
+    gboolean has[G_N_ELEMENTS (modifiers)] = { FALSE, FALSE, FALSE };
+    char *trimmed;
+    const char *rest;
+    GString *normalized;
     gsize i;
 
     if (key == NULL)
         return NULL;
 
-    normalized = g_ascii_strdown (key, -1);
-    g_strstrip (normalized);
-    if (normalized[0] == '\0' || strlen (normalized) > MC_LUA_ID_MAX_LENGTH)
+    trimmed = g_strstrip (g_strdup (key));
+    if (trimmed[0] == '\0' || strlen (trimmed) > MC_LUA_ID_MAX_LENGTH)
     {
-        g_free (normalized);
+        g_free (trimmed);
         return NULL;
     }
 
-    for (i = 0; normalized[i] != '\0'; i++)
-        if (!g_ascii_isprint (normalized[i]) || g_ascii_isspace (normalized[i]))
+    for (i = 0; trimmed[i] != '\0'; i++)
+        if (!g_ascii_isprint (trimmed[i]) || g_ascii_isspace (trimmed[i]))
         {
-            g_free (normalized);
+            g_free (trimmed);
             return NULL;
         }
 
-    return normalized;
+    // the modifiers in front, in any order and case: "Alt-Shift-", "ctrl-"
+    rest = trimmed;
+    while (TRUE)
+    {
+        gboolean found = FALSE;
+
+        for (i = 0; i < G_N_ELEMENTS (modifiers); i++)
+        {
+            const size_t len = strlen (modifiers[i]);
+
+            if (g_ascii_strncasecmp (rest, modifiers[i], len) == 0 && rest[len] == '-'
+                && rest[len + 1] != '\0')
+            {
+                has[i] = TRUE;
+                rest += len + 1;
+                found = TRUE;
+                break;
+            }
+        }
+        if (!found)
+            break;
+    }
+
+    normalized = g_string_sized_new (strlen (trimmed));
+    if (rest[1] == '\0' && g_ascii_isalpha (rest[0]) && !has[0])
+    {
+        // a letter keeps its case; Shift with it is the capital
+        for (i = 0; i < 2; i++)
+            if (has[i])
+                g_string_append_printf (normalized, "%s-", modifiers[i]);
+        g_string_append_c (normalized, has[2] ? g_ascii_toupper (rest[0]) : rest[0]);
+    }
+    else
+    {
+        char *name = g_ascii_strdown (rest, -1);
+
+        for (i = 0; i < G_N_ELEMENTS (modifiers); i++)
+            if (has[i])
+                g_string_append_printf (normalized, "%s-", modifiers[i]);
+        g_string_append (normalized, name);
+        g_free (name);
+    }
+
+    g_free (trimmed);
+    return g_string_free (normalized, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */

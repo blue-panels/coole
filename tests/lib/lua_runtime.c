@@ -677,6 +677,22 @@ create_macro_script (void)
         "    description = \"Hidden F9\",\n"
         "    listed = false,\n"
         "    action = function() return mc.CONSUME end,\n"
+        "})\n"
+        "assert(mc.macro {\n"
+        "    id = \"alt-u\",\n"
+        "    area = \"editor\",\n"
+        "    key = \"Alt-u\",\n"
+        "    description = \"Alt-u, not Alt-U\",\n"
+        "    listed = false,\n"
+        "    action = function() record(\"alt-u\") return mc.CONSUME end,\n"
+        "})\n"
+        "assert(mc.macro {\n"
+        "    id = \"alt-shift-p\",\n"
+        "    area = \"editor\",\n"
+        "    key = \"Alt-Shift-p\",\n"
+        "    description = \"Alt-P\",\n"
+        "    listed = false,\n"
+        "    action = function() record(\"alt-P\") return mc.CONSUME end,\n"
         "})\n",
         output_path);
     write_file (entry_path, script);
@@ -2030,9 +2046,35 @@ START_TEST (test_lua_runtime_registers_editor_macros)
     mctest_assert_false (snapshot->consumed);
     mc_runtime_event_snapshot_free (snapshot);
 
+    /* a letter after Alt keeps its case: Alt-U (Alt-Shift-u) is not the Alt-u of
+       a script, the modifiers are in any case, and Alt-Shift-p is Alt-P */
+    {
+        static const struct
+        {
+            const char *name;
+            gboolean consumed;
+        } keys[] = {
+            { "Alt-U", FALSE }, { "Alt-u", TRUE },  { "ALT-u", TRUE },
+            { "Alt-P", TRUE },  { "Alt-p", FALSE },
+        };
+        size_t k;
+
+        for (k = 0; k < G_N_ELEMENTS (keys); k++)
+        {
+            snapshot = mc_runtime_event_snapshot_new (MC_RUNTIME_EVENT_EDITOR_KEY);
+            snapshot->data.editor_key.editor =
+                (mc_runtime_handle_t) { MC_RUNTIME_HANDLE_EDITOR, 2, 1 };
+            snapshot->data.editor_key.key.name = g_strdup (keys[k].name);
+            mctest_assert_true (mc_runtime_event_publish (snapshot, &error));
+            ck_assert_msg (snapshot->consumed == keys[k].consumed, "%s", keys[k].name);
+            mc_runtime_event_snapshot_free (snapshot);
+        }
+    }
+
     mctest_assert_true (g_file_get_contents (output_path, &contents, NULL, &error));
     g_clear_error (&error);
-    ck_assert_str_eq (contents, "macro-pass\nmenu-only\nmacro-consume\nmacro-pass\n");
+    ck_assert_str_eq (contents,
+                      "macro-pass\nmenu-only\nmacro-consume\nmacro-pass\nalt-u\nalt-u\nalt-P\n");
     g_free (contents);
     g_unsetenv ("MC_LUA_TEST_MACRO");
 }

@@ -131,8 +131,12 @@ mc.macro {
 }
 ```
 
-Macro IDs are unique inside their script.  Key names are case-insensitive and
-use the same spelling as `ev.key.name`, for example `F11` or `Ctrl-S`.
+Macro IDs are unique inside their script.  Key names use the same spelling as
+`ev.key.name`, for example `F11` or `Ctrl-S`; the modifiers and the names of
+keys may be written in any case, but a letter after `Alt` or alone keeps its
+own: a terminal tells `Alt-u` from `Alt-U`, which is `Alt-Shift-u` and may be
+written so, and the keymap gives them commands of their own.  After `Ctrl` a
+letter is the same key in either case.
 The matching macro with the greatest priority runs; equal priorities retain
 script load and registration order.  A macro consumes its key by default.
 Return `false` or `mc.PASS` to allow normal editor processing to continue.
