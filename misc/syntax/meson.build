@@ -127,3 +127,9 @@ install_data(
   'yxx.syntax',
   install_dir: pkgdatadir / 'syntax',
 )
+
+# the shipped rules name scope tokens where they name a foreground, not colors
+python3 = find_program('python3', required: false)
+if python3.found()
+  test('check_tokens', python3, args: [files('check-tokens.py'), '--strict'], suite: 'misc/syntax')
+endif
