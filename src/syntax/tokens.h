@@ -31,9 +31,21 @@
 
 #include "lib/global.h"
 
+/**
+ * Where the colors of the tokens come from: the colors @key gives, as names, or FALSE
+ * when it gives none.  @key is a scope, keyword.control, or the scope of a context and
+ * a scope, "string constant.character.escape".
+ */
+typedef gboolean (*syntax_token_lookup_fn) (const char *key, char **fg, char **bg, char **attrs,
+                                            void *data);
+
 /*** declarations of public functions ************************************************************/
 
 gboolean syntax_token_is (const char *word);
 char *syntax_token_scope (const char *token);
+
+void syntax_token_set_lookup (syntax_token_lookup_fn lookup, void *data);
+gboolean syntax_token_resolve (const char *ctx_token, const char *token, char **fg, char **bg,
+                               char **attrs);
 
 #endif

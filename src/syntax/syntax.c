@@ -3349,6 +3349,53 @@ syntax_rules_color_spec (const syntax_rules_t *r, guint color, const char **fg, 
 /* --------------------------------------------------------------------------------------------- */
 
 /**
+ * A color of the rule set as names to draw with: a token is looked up for the
+ * colors of its kind of text (see tokens.c).  A background or attributes the
+ * rule gives itself stand over the colors of mcedit, and under the ones a skin
+ * gives that token: the rule keeps its classic look, and the skin has the last
+ * word.  The strings are new, to be freed with g_free(); NULL where the color
+ * says nothing.
+ */
+
+void
+syntax_rules_color_resolve (const syntax_rules_t *r, guint color, char **fg, char **bg,
+                            char **attrs)
+{
+    const syntax_color_t *c;
+    gboolean from_skin;
+
+    *fg = NULL;
+    *bg = NULL;
+    *attrs = NULL;
+
+    if (r == NULL || color >= r->colors->len)
+        return;
+
+    c = &g_array_index (r->colors, syntax_color_t, color);
+    if (!syntax_token_is (c->fg))
+    {
+        *fg = g_strdup (c->fg);
+        *bg = g_strdup (c->bg);
+        *attrs = g_strdup (c->attrs);
+        return;
+    }
+
+    from_skin = syntax_token_resolve (c->scope, c->fg, fg, bg, attrs);
+    if (c->bg != NULL && *c->bg != '\0' && !(from_skin && *bg != NULL))
+    {
+        g_free (*bg);
+        *bg = g_strdup (c->bg);
+    }
+    if (c->attrs != NULL && *c->attrs != '\0' && !(from_skin && *attrs != NULL))
+    {
+        g_free (*attrs);
+        *attrs = g_strdup (c->attrs);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/**
  * The token of the context a color stands in, when the color is a token met
  * inside a context colored by a token: STRING_QUOTED_DOUBLE for the escape
  * CONSTANT_CHARACTER_ESCAPE in a string.  NULL otherwise.
@@ -3614,10 +3661,25 @@ syntax_palette_new (const syntax_rules_t *rules, syntax_color_alloc_fn alloc,
 
     for (i = 0; i < rules->colors->len; i++)
     {
-        const syntax_color_t *c = &g_array_index (rules->colors, syntax_color_t, i);
         int pair;
 
-        pair = i == SYNTAX_COLOR_NONE ? normal : alloc (backend_data, c->fg, c->bg, c->attrs);
+        if (i == SYNTAX_COLOR_NONE)
+            pair = normal;
+        else
+        {
+            char *fg, *bg, *attrs;
+
+            syntax_rules_color_resolve (rules, i, &fg, &bg, &attrs);
+            /* a token no one gives a color is the text around, that of the editor,
+               not whatever the backend makes of no color at all */
+            if (fg == NULL && bg == NULL && attrs == NULL)
+                pair = normal;
+            else
+                pair = alloc (backend_data, fg, bg, attrs);
+            g_free (fg);
+            g_free (bg);
+            g_free (attrs);
+        }
         g_array_append_val (p->pairs, pair);
     }
 

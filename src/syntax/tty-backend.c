@@ -162,3 +162,26 @@ syntax_tty_release_color (int color)
 {
     tty_color_release_temp (color);
 }
+
+/* --------------------------------------------------------------------------------------------- */
+
+/**
+ * The colors of a scope token as the skin gives them, in its section [syntax]:
+ *
+ *     [syntax]
+ *         keyword.control = yellow
+ *         string constant.character.escape = brightgreen
+ *
+ * @param key a scope, or the scope of a context and a scope
+ * @return FALSE when the skin does not name @key
+ */
+
+gboolean
+syntax_tty_token_colors (const char *key, char **fg, char **bg, char **attrs, void *data)
+{
+    (void) data;
+
+    return mc_skin_color_names ("syntax", key, fg, bg, attrs);
+}
+
+/* --------------------------------------------------------------------------------------------- */

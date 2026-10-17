@@ -148,6 +148,8 @@ void mc_skin_deinit (void);
 int mc_skin_color_get (const gchar *group, const gchar *name);
 gboolean mc_skin_color_is_set (const gchar *group, const gchar *name);
 int mc_skin_color_on (const gchar *group, const gchar *name, const gchar *fg);
+gboolean mc_skin_color_names (const gchar *group, const gchar *key, gchar **fg, gchar **bg,
+                              gchar **attrs);
 
 void mc_skin_lines_parse_ini_file (mc_skin_t *mc_skin);
 

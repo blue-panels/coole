@@ -42,4 +42,7 @@
 int syntax_tty_alloc_color (void *backend_data, const char *fg, const char *bg, const char *attrs);
 void syntax_tty_release_color (int color);
 
+/** syntax_token_lookup_fn of the skin: the section [syntax], aliases and all. */
+gboolean syntax_tty_token_colors (const char *key, char **fg, char **bg, char **attrs, void *data);
+
 #endif

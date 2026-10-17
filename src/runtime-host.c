@@ -1380,16 +1380,15 @@ runtime_host_syntax_scan (const char *text, gsize text_length, const char *type,
     result->type = g_strdup (syntax_rules_type (rules));
     result->colors_count = colors;
     result->colors = g_new0 (mc_runtime_syntax_color_t, colors + 1);
+    // the names to draw with: a scope token comes out in the colors the skin gives it
     for (i = 0; i < colors; i++)
     {
-        const char *fg = NULL;
-        const char *bg = NULL;
-        const char *attrs = NULL;
+        char *fg, *bg, *attrs;
 
-        syntax_rules_color_spec (rules, i, &fg, &bg, &attrs);
-        result->colors[i].fg = g_strdup (fg);
-        result->colors[i].bg = g_strdup (bg);
-        result->colors[i].attrs = g_strdup (attrs);
+        syntax_rules_color_resolve (rules, i, &fg, &bg, &attrs);
+        result->colors[i].fg = fg;
+        result->colors[i].bg = bg;
+        result->colors[i].attrs = attrs;
     }
 
     result->runs_count = runs->len;
