@@ -13,6 +13,7 @@ configure_file(
 )
 
 install_data(
+  'README.txt',
   'PKGBUILD.syntax',
   'ada95.syntax',
   'as.syntax',
