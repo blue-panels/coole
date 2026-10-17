@@ -1265,10 +1265,11 @@ editor_host_save_modified_files_impl (mc_editor_host_t *host, const char *projec
     for (i = 0; i < modified->len; i++)
     {
         WEdit *edit = g_ptr_array_index (modified, i);
-        char *question = g_strdup_printf (_ ("Save %s before debugging?"), edit->filename);
+        // asked for the build and for the debugger alike
+        char *question = g_strdup_printf (_ ("Save %s first?"), edit->filename);
 
         edit_window_show (EDIT_WINDOW (edit));
-        if (query_dialog (_ ("Debug"), question, D_NORMAL, 2, _ ("&Save"), _ ("&Cancel")) != 0
+        if (query_dialog (_ ("Save"), question, D_NORMAL, 2, _ ("&Save"), _ ("&Cancel")) != 0
             || !edit_runtime_save (edit) || edit->modified)
             saved = FALSE;
         g_free (question);
