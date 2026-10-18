@@ -55,6 +55,8 @@
 #include "lib/widget.h"
 
 #include "editor/edit.h"  // edit_files(), edit_arg_free()
+#include "syntax/tokens.h"
+#include "syntax/tty-backend.h"
 
 #include "events_init.h"
 #include "args.h"
@@ -269,6 +271,8 @@ main (int argc, char *argv[])
     mc_skin_init (NULL, &mcerror);
     dlg_set_default_colors ();
     input_set_default_colors ();
+    // the scope tokens of the highlighting take their colors from the skin
+    syntax_token_set_lookup (syntax_tty_token_colors, NULL);
 
     mc_error_message (&mcerror, NULL);
 

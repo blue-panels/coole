@@ -21,6 +21,7 @@ libinternal_sources = files(
   'util.c',
 
   'syntax/syntax.c',
+  'syntax/tokens.c',
   'syntax/tty-backend.c',
 
 

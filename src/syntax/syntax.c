@@ -57,6 +57,7 @@
 #include "lib/util.h"
 
 #include "syntax.h"
+#include "tokens.h"
 
 /*** global variables ****************************************************************************/
 
@@ -157,6 +158,7 @@ typedef struct
     const char *fg;
     const char *bg;
     const char *attrs;
+    const char *scope;  // token of the context a keyword stands in, when fg is a token too
 } syntax_color_spec_t;
 
 /** One symbolic color of a rule set: names, not an allocated pair. */
@@ -165,6 +167,7 @@ typedef struct
     char *fg;
     char *bg;
     char *attrs;
+    char *scope;
 } syntax_color_t;
 
 /** A resumable point in the walk.  State only, never bytes. */
@@ -508,7 +511,7 @@ syntax_intern_color (syntax_rules_t *r, const syntax_color_spec_t *color)
         const syntax_color_t *e = &g_array_index (r->colors, syntax_color_t, i);
 
         if (g_strcmp0 (e->fg, color->fg) == 0 && g_strcmp0 (e->bg, color->bg) == 0
-            && g_strcmp0 (e->attrs, attrs) == 0)
+            && g_strcmp0 (e->attrs, attrs) == 0 && g_strcmp0 (e->scope, color->scope) == 0)
         {
             g_free (attrs);
             return i;
@@ -518,6 +521,7 @@ syntax_intern_color (syntax_rules_t *r, const syntax_color_spec_t *color)
     c.fg = g_strdup (color->fg);
     c.bg = g_strdup (color->bg);
     c.attrs = attrs;
+    c.scope = g_strdup (color->scope);
     g_array_append_val (r->colors, c);
 
     return r->colors->len - 1;
@@ -544,6 +548,7 @@ syntax_rules_free (syntax_rules_t *r)
         g_free (c->fg);
         g_free (c->bg);
         g_free (c->attrs);
+        g_free (c->scope);
     }
     g_array_free (r->colors, TRUE);
 
@@ -559,7 +564,7 @@ static syntax_rules_t *
 syntax_rules_new (void)
 {
     syntax_rules_t *r;
-    syntax_color_t none = { NULL, NULL, NULL };
+    syntax_color_t none = { NULL, NULL, NULL, NULL };
 
     r = g_new0 (syntax_rules_t, 1);
     r->refs = 1;
@@ -1414,6 +1419,7 @@ read_color_spec (syntax_color_spec_t *color, char ***args)
     color->attrs = *a;
     if (*a != NULL)
         a++;
+    color->scope = NULL;
     *args = a;
 }
 
@@ -1465,16 +1471,52 @@ open_include_file (const char *filename, char **error_file)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/**
+ * Lower a line of a rule set that ignores case, as it was always lowered, but
+ * for its scope tokens: a word of capitals, digits and underscores keeps its
+ * case.  A pattern that looks so, SELECT, is lowered again where the rule takes
+ * it, by xx_lowerize_pattern().
+ */
+static void
+xx_lowerize_line (gboolean case_insensitive, char *line)
+{
+    char *word = line;
+    char *c;
+
+    if (!case_insensitive)
+        return;
+
+    while (*word != '\0')
+    {
+        char *end, saved;
+
+        while (*word == ' ' || *word == '\t')
+            word++;
+        for (end = word; *end != '\0' && *end != ' ' && *end != '\t'; end++)
+            ;
+        saved = *end;
+        *end = '\0';
+        if (!syntax_token_is (word))
+            for (c = word; *c != '\0'; c++)
+                *c = tolower ((unsigned char) *c);
+        *end = saved;
+        word = end;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/**
+ * Lower a pattern of a rule set that ignores case: a delimiter, a keyword, the
+ * characters of a word.  The line was lowered already but for the words that
+ * look like scope tokens; a pattern among them is lowered here.
+ */
 inline static void
-xx_lowerize_line (gboolean case_insensitive, char *line, size_t len)
+xx_lowerize_pattern (gboolean case_insensitive, char *pattern)
 {
     if (case_insensitive)
-    {
-        size_t i;
-
-        for (i = 0; i < len; ++i)
-            line[i] = tolower (line[i]);
-    }
+        for (; *pattern != '\0'; pattern++)
+            *pattern = tolower ((unsigned char) *pattern);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1657,16 +1699,20 @@ directive_wholechars (syntax_parser_t *p)
     {
         a++;
         g_strlcpy (p->whole_left, *a, sizeof (p->whole_left));
+        xx_lowerize_pattern (p->rules->case_insensitive, p->whole_left);
     }
     else if (strcmp (*a, "right") == 0)
     {
         a++;
         g_strlcpy (p->whole_right, *a, sizeof (p->whole_right));
+        xx_lowerize_pattern (p->rules->case_insensitive, p->whole_right);
     }
     else
     {
         g_strlcpy (p->whole_left, *a, sizeof (p->whole_left));
         g_strlcpy (p->whole_right, *a, sizeof (p->whole_right));
+        xx_lowerize_pattern (p->rules->case_insensitive, p->whole_left);
+        xx_lowerize_pattern (p->rules->case_insensitive, p->whole_right);
     }
     a++;
 
@@ -1740,6 +1786,8 @@ directive_context (syntax_parser_t *p)
         if (*a == NULL)
             return SYNTAX_DIRECTIVE_ERROR;
         c->right = g_string_new (*a++);
+        xx_lowerize_pattern (r->case_insensitive, c->left->str);
+        xx_lowerize_pattern (r->case_insensitive, c->right->str);
         c->first_left = c->left->str[0];
         c->first_right = c->right->str[0];
     }
@@ -1864,8 +1912,13 @@ directive_keyword (syntax_parser_t *p)
         return SYNTAX_DIRECTIVE_ERROR;
 
     k->keyword = g_string_new (*a++);
+    xx_lowerize_pattern (r->case_insensitive, k->keyword->str);
     subst_defines (r->defines, a, &p->args[ARGS_LEN]);
     read_color_spec (&color, &a);
+    /* a token of its own, inside a context of a token: the skin may color it
+       for that context, an escape in a string apart from one elsewhere */
+    if (syntax_token_is (color.fg) && syntax_token_is (p->last_fg))
+        color.scope = p->last_fg;
     if (color.fg == NULL)
         color.fg = p->last_fg;
     if (color.bg == NULL)
@@ -2120,6 +2173,7 @@ syntax_reintern_color (syntax_rules_t *r, const syntax_rules_t *from, guint colo
     syntax_color_spec_t spec;
 
     syntax_rules_color_spec (from, color, &spec.fg, &spec.bg, &spec.attrs);
+    spec.scope = syntax_rules_color_scope (from, color);
 
     return syntax_intern_color (r, &spec);
 }
@@ -2488,7 +2542,7 @@ edit_read_syntax_rules (syntax_rules_t *r, FILE *f, char **args, int args_size,
                 break;
         }
 
-        xx_lowerize_line (r->case_insensitive, l, len);
+        xx_lowerize_line (r->case_insensitive, l);
         p.argc = get_args (l, args, args_size);
 
         res = run_directive (&p);
@@ -3294,6 +3348,70 @@ syntax_rules_color_spec (const syntax_rules_t *r, guint color, const char **fg, 
 
 /* --------------------------------------------------------------------------------------------- */
 
+/**
+ * A color of the rule set as names to draw with: a token is looked up for the
+ * colors of its kind of text (see tokens.c).  A background or attributes the
+ * rule gives itself stand over the colors of mcedit, and under the ones a skin
+ * gives that token: the rule keeps its classic look, and the skin has the last
+ * word.  The strings are new, to be freed with g_free(); NULL where the color
+ * says nothing.
+ */
+
+void
+syntax_rules_color_resolve (const syntax_rules_t *r, guint color, char **fg, char **bg,
+                            char **attrs)
+{
+    const syntax_color_t *c;
+    gboolean from_skin;
+
+    *fg = NULL;
+    *bg = NULL;
+    *attrs = NULL;
+
+    if (r == NULL || color >= r->colors->len)
+        return;
+
+    c = &g_array_index (r->colors, syntax_color_t, color);
+    if (!syntax_token_is (c->fg))
+    {
+        *fg = g_strdup (c->fg);
+        *bg = g_strdup (c->bg);
+        *attrs = g_strdup (c->attrs);
+        return;
+    }
+
+    from_skin = syntax_token_resolve (c->scope, c->fg, fg, bg, attrs);
+    if (c->bg != NULL && *c->bg != '\0' && !(from_skin && *bg != NULL))
+    {
+        g_free (*bg);
+        *bg = g_strdup (c->bg);
+    }
+    if (c->attrs != NULL && *c->attrs != '\0' && !(from_skin && *attrs != NULL))
+    {
+        g_free (*attrs);
+        *attrs = g_strdup (c->attrs);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/**
+ * The token of the context a color stands in, when the color is a token met
+ * inside a context colored by a token: STRING_QUOTED_DOUBLE for the escape
+ * CONSTANT_CHARACTER_ESCAPE in a string.  NULL otherwise.
+ */
+
+const char *
+syntax_rules_color_scope (const syntax_rules_t *r, guint color)
+{
+    if (r == NULL || color >= r->colors->len)
+        return NULL;
+
+    return g_array_index (r->colors, syntax_color_t, color).scope;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 guint
 syntax_rules_color_of (const syntax_rules_t *r, syntax_state_t st)
 {
@@ -3543,10 +3661,25 @@ syntax_palette_new (const syntax_rules_t *rules, syntax_color_alloc_fn alloc,
 
     for (i = 0; i < rules->colors->len; i++)
     {
-        const syntax_color_t *c = &g_array_index (rules->colors, syntax_color_t, i);
         int pair;
 
-        pair = i == SYNTAX_COLOR_NONE ? normal : alloc (backend_data, c->fg, c->bg, c->attrs);
+        if (i == SYNTAX_COLOR_NONE)
+            pair = normal;
+        else
+        {
+            char *fg, *bg, *attrs;
+
+            syntax_rules_color_resolve (rules, i, &fg, &bg, &attrs);
+            /* a token no one gives a color is the text around, that of the editor,
+               not whatever the backend makes of no color at all */
+            if (fg == NULL && bg == NULL && attrs == NULL)
+                pair = normal;
+            else
+                pair = alloc (backend_data, fg, bg, attrs);
+            g_free (fg);
+            g_free (bg);
+            g_free (attrs);
+        }
         g_array_append_val (p->pairs, pair);
     }
 

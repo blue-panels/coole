@@ -413,6 +413,44 @@ Git graph section
             a terminal of 256 colors)
 
 
+Syntax section
+==============
+
+    [syntax]
+        The colors of the kinds of text the syntax highlighting names.  The
+        rules of the syntax files name, instead of a color, a scope token
+        such as KEYWORD_CONTROL_IMPORT, read as the scope
+        keyword.control.import; a key of this section is such a scope, or
+        the scope of the context a token stands in and the scope of the
+        token, with a blank between them.  The value is a color pair with
+        attributes, as everywhere else; aliases are taken.
+
+        The longest scope the section names wins: keyword.control.import
+        before keyword.control before keyword, and for each of them the
+        scope with that of its context before the scope alone.  A kind of
+        text the section does not name keeps the colors the classic mcedit
+        gave it, so a skin may name a few kinds and leave the rest, and a
+        skin without the section looks as mcedit always has.  A missing
+        foreground or background is that of the text of the editor,
+        [editor] _default_.
+
+        Example:
+            [syntax]
+                comment = gray
+                keyword = yellow
+                keyword.control = brightmagenta
+                string = green
+                string constant.character.escape = white;red
+                markup.heading = brightcyan;;bold
+                invalid = white;red
+
+        The tokens the shipped syntax files use, with their classic colors,
+        are listed in the README.txt of the syntax directory.  The skins
+        gruvbox256, nord256, catppuccin256, catppuccin-latte256,
+        kanagawa256, rose-pine256, everforest256 and tokyo-night-16M give
+        the section in the colors of their themes.
+
+
 Aliases section
 ===============
 

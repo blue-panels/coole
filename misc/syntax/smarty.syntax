@@ -18,8 +18,8 @@ context default
     keyword {\n
 
 # a comment
-context {\* \*} brown
+context {\* \*} COMMENT_BLOCK
 
 # a tag: {$variable}, {function ...}, {block} and {/block}
-context { } brightcyan
+context { } META_PREPROCESSOR
     embed soft Smarty\sTag

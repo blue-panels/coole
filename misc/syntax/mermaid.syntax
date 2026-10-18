@@ -9,147 +9,147 @@
 # to the relation, and the one that opens a class body ends its line.
 
 context default
-    keyword whole graph brightmagenta
-    keyword whole flowchart brightmagenta
-    keyword whole sequenceDiagram brightmagenta
-    keyword whole classDiagram brightmagenta
-    keyword whole stateDiagram-v2 brightmagenta
-    keyword whole stateDiagram brightmagenta
-    keyword whole erDiagram brightmagenta
-    keyword whole gantt brightmagenta
-    keyword whole pie brightmagenta
-    keyword whole journey brightmagenta
-    keyword whole gitGraph brightmagenta
-    keyword whole mindmap brightmagenta
-    keyword whole timeline brightmagenta
-    keyword whole quadrantChart brightmagenta
-    keyword whole requirementDiagram brightmagenta
-    keyword whole C4Context brightmagenta
-    keyword whole C4Container brightmagenta
-    keyword whole C4Component brightmagenta
-    keyword whole C4Dynamic brightmagenta
-    keyword whole C4Deployment brightmagenta
-    keyword whole sankey-beta brightmagenta
-    keyword whole xychart-beta brightmagenta
-    keyword whole block-beta brightmagenta
-    keyword whole packet-beta brightmagenta
-    keyword whole architecture-beta brightmagenta
-    keyword whole kanban brightmagenta
-    keyword whole zenuml brightmagenta
+    keyword whole graph STORAGE_TYPE
+    keyword whole flowchart STORAGE_TYPE
+    keyword whole sequenceDiagram STORAGE_TYPE
+    keyword whole classDiagram STORAGE_TYPE
+    keyword whole stateDiagram-v2 STORAGE_TYPE
+    keyword whole stateDiagram STORAGE_TYPE
+    keyword whole erDiagram STORAGE_TYPE
+    keyword whole gantt STORAGE_TYPE
+    keyword whole pie STORAGE_TYPE
+    keyword whole journey STORAGE_TYPE
+    keyword whole gitGraph STORAGE_TYPE
+    keyword whole mindmap STORAGE_TYPE
+    keyword whole timeline STORAGE_TYPE
+    keyword whole quadrantChart STORAGE_TYPE
+    keyword whole requirementDiagram STORAGE_TYPE
+    keyword whole C4Context STORAGE_TYPE
+    keyword whole C4Container STORAGE_TYPE
+    keyword whole C4Component STORAGE_TYPE
+    keyword whole C4Dynamic STORAGE_TYPE
+    keyword whole C4Deployment STORAGE_TYPE
+    keyword whole sankey-beta STORAGE_TYPE
+    keyword whole xychart-beta STORAGE_TYPE
+    keyword whole block-beta STORAGE_TYPE
+    keyword whole packet-beta STORAGE_TYPE
+    keyword whole architecture-beta STORAGE_TYPE
+    keyword whole kanban STORAGE_TYPE
+    keyword whole zenuml STORAGE_TYPE
 
-    keyword whole TB brightcyan
-    keyword whole TD brightcyan
-    keyword whole BT brightcyan
-    keyword whole RL brightcyan
-    keyword whole LR brightcyan
+    keyword whole TB CONSTANT_OTHER
+    keyword whole TD CONSTANT_OTHER
+    keyword whole BT CONSTANT_OTHER
+    keyword whole RL CONSTANT_OTHER
+    keyword whole LR CONSTANT_OTHER
 
-    keyword whole subgraph yellow
-    keyword whole end yellow
-    keyword whole direction yellow
-    keyword whole click yellow
-    keyword whole href yellow
-    keyword whole style yellow
-    keyword whole classDef yellow
-    keyword whole class yellow
-    keyword whole linkStyle yellow
-    keyword whole participant yellow
-    keyword whole actor yellow
-    keyword whole Note yellow
-    keyword whole note yellow
-    keyword whole loop yellow
-    keyword whole alt yellow
-    keyword whole else yellow
-    keyword whole opt yellow
-    keyword whole par yellow
-    keyword whole critical yellow
-    keyword whole break yellow
-    keyword whole rect yellow
-    keyword whole activate yellow
-    keyword whole deactivate yellow
-    keyword whole autonumber yellow
-    keyword whole box yellow
-    keyword whole namespace yellow
-    keyword whole state yellow
-    keyword whole title yellow
-    keyword whole dateFormat yellow
-    keyword whole axisFormat yellow
-    keyword whole tickInterval yellow
-    keyword whole todayMarker yellow
-    keyword whole excludes yellow
-    keyword whole section yellow
-    keyword whole after yellow
-    keyword whole crit yellow
-    keyword whole done yellow
-    keyword whole active yellow
-    keyword whole milestone yellow
-    keyword whole showData yellow
-    keyword whole accTitle yellow
-    keyword whole accDescr yellow
-    keyword whole x-axis yellow
-    keyword whole y-axis yellow
-    keyword whole quadrant-1 yellow
-    keyword whole quadrant-2 yellow
-    keyword whole quadrant-3 yellow
-    keyword whole quadrant-4 yellow
-    keyword whole commit yellow
-    keyword whole branch yellow
-    keyword whole checkout yellow
-    keyword whole merge yellow
-    keyword whole cherry-pick yellow
-    keyword whole HIGHLIGHT yellow
-    keyword whole REVERSE yellow
-    keyword whole NORMAL yellow
+    keyword whole subgraph KEYWORD_OTHER
+    keyword whole end KEYWORD_OTHER
+    keyword whole direction KEYWORD_OTHER
+    keyword whole click KEYWORD_OTHER
+    keyword whole href KEYWORD_OTHER
+    keyword whole style KEYWORD_OTHER
+    keyword whole classDef KEYWORD_OTHER
+    keyword whole class KEYWORD_OTHER
+    keyword whole linkStyle KEYWORD_OTHER
+    keyword whole participant KEYWORD_OTHER
+    keyword whole actor KEYWORD_OTHER
+    keyword whole Note KEYWORD_OTHER
+    keyword whole note KEYWORD_OTHER
+    keyword whole loop KEYWORD_OTHER
+    keyword whole alt KEYWORD_OTHER
+    keyword whole else KEYWORD_OTHER
+    keyword whole opt KEYWORD_OTHER
+    keyword whole par KEYWORD_OTHER
+    keyword whole critical KEYWORD_OTHER
+    keyword whole break KEYWORD_OTHER
+    keyword whole rect KEYWORD_OTHER
+    keyword whole activate KEYWORD_OTHER
+    keyword whole deactivate KEYWORD_OTHER
+    keyword whole autonumber KEYWORD_OTHER
+    keyword whole box KEYWORD_OTHER
+    keyword whole namespace KEYWORD_OTHER
+    keyword whole state KEYWORD_OTHER
+    keyword whole title KEYWORD_OTHER
+    keyword whole dateFormat KEYWORD_OTHER
+    keyword whole axisFormat KEYWORD_OTHER
+    keyword whole tickInterval KEYWORD_OTHER
+    keyword whole todayMarker KEYWORD_OTHER
+    keyword whole excludes KEYWORD_OTHER
+    keyword whole section KEYWORD_OTHER
+    keyword whole after KEYWORD_OTHER
+    keyword whole crit KEYWORD_OTHER
+    keyword whole done KEYWORD_OTHER
+    keyword whole active KEYWORD_OTHER
+    keyword whole milestone KEYWORD_OTHER
+    keyword whole showData KEYWORD_OTHER
+    keyword whole accTitle KEYWORD_OTHER
+    keyword whole accDescr KEYWORD_OTHER
+    keyword whole x-axis KEYWORD_OTHER
+    keyword whole y-axis KEYWORD_OTHER
+    keyword whole quadrant-1 KEYWORD_OTHER
+    keyword whole quadrant-2 KEYWORD_OTHER
+    keyword whole quadrant-3 KEYWORD_OTHER
+    keyword whole quadrant-4 KEYWORD_OTHER
+    keyword whole commit KEYWORD_OTHER
+    keyword whole branch KEYWORD_OTHER
+    keyword whole checkout KEYWORD_OTHER
+    keyword whole merge KEYWORD_OTHER
+    keyword whole cherry-pick KEYWORD_OTHER
+    keyword whole HIGHLIGHT KEYWORD_OTHER
+    keyword whole REVERSE KEYWORD_OTHER
+    keyword whole NORMAL KEYWORD_OTHER
 
     # arrows and relations; the longer first, as the first that fits is taken
-    keyword \{|}\}\{|o\}\{-.\}\{-.\}\{|o\}\{|{\} brightred
-    keyword <--> brightred
-    keyword <==> brightred
-    keyword <-.-> brightred
-    keyword -.-> brightred
-    keyword -->> brightred
-    keyword ->> brightred
-    keyword <|-- brightred
-    keyword --|> brightred
-    keyword --\* brightred
-    keyword --> brightred
-    keyword ==> brightred
-    keyword wholeright --x brightred
-    keyword wholeright --o brightred
-    keyword --- brightred
-    keyword --) brightred
-    keyword -- brightred
-    keyword === brightred
-    keyword -.- brightred
-    keyword -) brightred
-    keyword wholeright -x brightred
-    keyword -> brightred
-    keyword ~~~ brightred
-    keyword <|.. brightred
-    keyword ..|> brightred
-    keyword ..> brightred
-    keyword .. brightred
-    keyword <.. brightred
-    keyword \*-- brightred
-    keyword wholeleft o-- brightred
+    keyword \{|}\}\{|o\}\{-.\}\{-.\}\{|o\}\{|{\} KEYWORD_OPERATOR
+    keyword <--> KEYWORD_OPERATOR
+    keyword <==> KEYWORD_OPERATOR
+    keyword <-.-> KEYWORD_OPERATOR
+    keyword -.-> KEYWORD_OPERATOR
+    keyword -->> KEYWORD_OPERATOR
+    keyword ->> KEYWORD_OPERATOR
+    keyword <|-- KEYWORD_OPERATOR
+    keyword --|> KEYWORD_OPERATOR
+    keyword --\* KEYWORD_OPERATOR
+    keyword --> KEYWORD_OPERATOR
+    keyword ==> KEYWORD_OPERATOR
+    keyword wholeright --x KEYWORD_OPERATOR
+    keyword wholeright --o KEYWORD_OPERATOR
+    keyword --- KEYWORD_OPERATOR
+    keyword --) KEYWORD_OPERATOR
+    keyword -- KEYWORD_OPERATOR
+    keyword === KEYWORD_OPERATOR
+    keyword -.- KEYWORD_OPERATOR
+    keyword -) KEYWORD_OPERATOR
+    keyword wholeright -x KEYWORD_OPERATOR
+    keyword -> KEYWORD_OPERATOR
+    keyword ~~~ KEYWORD_OPERATOR
+    keyword <|.. KEYWORD_OPERATOR
+    keyword ..|> KEYWORD_OPERATOR
+    keyword ..> KEYWORD_OPERATOR
+    keyword .. KEYWORD_OPERATOR
+    keyword <.. KEYWORD_OPERATOR
+    keyword \*-- KEYWORD_OPERATOR
+    keyword wholeleft o-- KEYWORD_OPERATOR
 
     # the marks of nodes, groups and annotations
-    keyword [\*] brightcyan
-    keyword [ brightcyan
-    keyword ] brightcyan
-    keyword ( brightcyan
-    keyword ) brightcyan
-    keyword { brightcyan
-    keyword } brightcyan
-    keyword << brightcyan
-    keyword >> brightcyan
-    keyword : brightcyan
-    keyword ; brightcyan
+    keyword [\*] PUNCTUATION_SECTION
+    keyword [ PUNCTUATION_SECTION
+    keyword ] PUNCTUATION_SECTION
+    keyword ( PUNCTUATION_SECTION
+    keyword ) PUNCTUATION_SECTION
+    keyword { PUNCTUATION_SECTION
+    keyword } PUNCTUATION_SECTION
+    keyword << PUNCTUATION_SECTION
+    keyword >> PUNCTUATION_SECTION
+    keyword : PUNCTUATION_SEPARATOR
+    keyword ; PUNCTUATION_SEPARATOR
 
 # a directive: %%{init: {...}}%%
-context %%{ }%% brightgreen
+context %%{ }%% META_PREPROCESSOR
 
 # a comment
-context %% \n brown
+context %% \n COMMENT_LINE
 
 # the text of a node
 context exclusive oneline [ ]
@@ -157,9 +157,9 @@ context exclusive oneline ( )
 context exclusive oneline { }
 
 # the label of an edge: A -->|label| B
-context oneline | | green
+context oneline | | STRING_UNQUOTED
 
 # a message, a description, the data of a task
 context exclusive : \n
 
-context oneline " " green
+context oneline " " STRING_QUOTED_DOUBLE

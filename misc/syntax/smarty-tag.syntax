@@ -2,90 +2,90 @@
 #
 # Embedded by smarty.syntax, never chosen for a file of its own.
 
-context default brightcyan
-    keyword whole if yellow
-    keyword whole elseif yellow
-    keyword whole else yellow
-    keyword whole foreach yellow
-    keyword whole foreachelse yellow
-    keyword whole as yellow
-    keyword whole section yellow
-    keyword whole sectionelse yellow
-    keyword whole while yellow
-    keyword whole for yellow
-    keyword whole to yellow
-    keyword whole step yellow
-    keyword whole include yellow
-    keyword whole include_php yellow
-    keyword whole assign yellow
-    keyword whole append yellow
-    keyword whole capture yellow
-    keyword whole strip yellow
-    keyword whole literal yellow
-    keyword whole block yellow
-    keyword whole extends yellow
-    keyword whole function yellow
-    keyword whole call yellow
-    keyword whole nocache yellow
-    keyword whole insert yellow
-    keyword whole ldelim yellow
-    keyword whole rdelim yellow
-    keyword whole config_load yellow
-    keyword whole break yellow
-    keyword whole continue yellow
+context default META_PREPROCESSOR
+    keyword whole if KEYWORD_CONTROL
+    keyword whole elseif KEYWORD_CONTROL
+    keyword whole else KEYWORD_CONTROL
+    keyword whole foreach KEYWORD_CONTROL
+    keyword whole foreachelse KEYWORD_CONTROL
+    keyword whole as KEYWORD_OTHER
+    keyword whole section KEYWORD_CONTROL
+    keyword whole sectionelse KEYWORD_CONTROL
+    keyword whole while KEYWORD_CONTROL
+    keyword whole for KEYWORD_CONTROL
+    keyword whole to KEYWORD_OTHER
+    keyword whole step KEYWORD_OTHER
+    keyword whole include KEYWORD_CONTROL_IMPORT
+    keyword whole include_php KEYWORD_CONTROL_IMPORT
+    keyword whole assign KEYWORD_OTHER
+    keyword whole append KEYWORD_OTHER
+    keyword whole capture KEYWORD_OTHER
+    keyword whole strip KEYWORD_OTHER
+    keyword whole literal KEYWORD_OTHER
+    keyword whole block KEYWORD_OTHER
+    keyword whole extends KEYWORD_CONTROL_IMPORT
+    keyword whole function KEYWORD_OTHER
+    keyword whole call KEYWORD_OTHER
+    keyword whole nocache KEYWORD_OTHER
+    keyword whole insert KEYWORD_OTHER
+    keyword whole ldelim KEYWORD_OTHER
+    keyword whole rdelim KEYWORD_OTHER
+    keyword whole config_load KEYWORD_CONTROL_IMPORT
+    keyword whole break KEYWORD_CONTROL
+    keyword whole continue KEYWORD_CONTROL
 
     # variables, properties and config values
-    keyword wholeright $+ brightgreen
-    keyword #+# brightgreen
+    keyword wholeright $+ VARIABLE_OTHER
+    keyword #+# VARIABLE_OTHER
 
     # modifiers: {$x|escape|default:"-"}
-    keyword wholeright |+ brightmagenta
+    keyword wholeright |+ SUPPORT_FUNCTION
 
-    keyword whole eq brightred
-    keyword whole ne brightred
-    keyword whole neq brightred
-    keyword whole gt brightred
-    keyword whole lt brightred
-    keyword whole gte brightred
-    keyword whole ge brightred
-    keyword whole lte brightred
-    keyword whole le brightred
-    keyword whole not brightred
-    keyword whole and brightred
-    keyword whole or brightred
-    keyword whole mod brightred
-    keyword whole is brightred
-    keyword whole div brightred
-    keyword whole by brightred
-    keyword whole even brightred
-    keyword whole odd brightred
+    keyword whole eq KEYWORD_OPERATOR_WORD
+    keyword whole ne KEYWORD_OPERATOR_WORD
+    keyword whole neq KEYWORD_OPERATOR_WORD
+    keyword whole gt KEYWORD_OPERATOR_WORD
+    keyword whole lt KEYWORD_OPERATOR_WORD
+    keyword whole gte KEYWORD_OPERATOR_WORD
+    keyword whole ge KEYWORD_OPERATOR_WORD
+    keyword whole lte KEYWORD_OPERATOR_WORD
+    keyword whole le KEYWORD_OPERATOR_WORD
+    keyword whole not KEYWORD_OPERATOR_WORD
+    keyword whole and KEYWORD_OPERATOR_WORD
+    keyword whole or KEYWORD_OPERATOR_WORD
+    keyword whole mod KEYWORD_OPERATOR_WORD
+    keyword whole is KEYWORD_OPERATOR_WORD
+    keyword whole div KEYWORD_OPERATOR_WORD
+    keyword whole by KEYWORD_OPERATOR_WORD
+    keyword whole even KEYWORD_OPERATOR_WORD
+    keyword whole odd KEYWORD_OPERATOR_WORD
 
-    keyword === brightred
-    keyword == brightred
-    keyword != brightred
-    keyword >= brightred
-    keyword <= brightred
-    keyword && brightred
-    keyword || brightred
-    keyword -> brightred
+    keyword === KEYWORD_OPERATOR
+    keyword == KEYWORD_OPERATOR
+    keyword != KEYWORD_OPERATOR
+    keyword >= KEYWORD_OPERATOR
+    keyword <= KEYWORD_OPERATOR
+    keyword && KEYWORD_OPERATOR
+    keyword || KEYWORD_OPERATOR
+    keyword -> KEYWORD_OPERATOR
 
     # attributes: from=$list item=x; after the operators, the first that fits is taken
-    keyword wholeleft \[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]= white
+    keyword wholeleft \[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]= ENTITY_OTHER_ATTRIBUTE_NAME
 
-    keyword whole true brightmagenta
-    keyword whole false brightmagenta
-    keyword whole null brightmagenta
-    keyword whole TRUE brightmagenta
-    keyword whole FALSE brightmagenta
-    keyword whole NULL brightmagenta
+    keyword whole true CONSTANT_LANGUAGE
+    keyword whole false CONSTANT_LANGUAGE
+    keyword whole null CONSTANT_LANGUAGE
+    keyword whole TRUE CONSTANT_LANGUAGE
+    keyword whole FALSE CONSTANT_LANGUAGE
+    keyword whole NULL CONSTANT_LANGUAGE
 
-    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\] brightmagenta
-    keyword whole \{0123456789\}\[0123456789\] brightmagenta
+    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\] CONSTANT_NUMERIC
 
-context " " green
-    keyword \\" brightgreen
-    keyword wholeright $+ brightgreen
-    keyword `*` brightgreen
+context " " STRING_QUOTED_DOUBLE
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword wholeright $+ VARIABLE_OTHER
+    keyword `*` VARIABLE_OTHER
 
-context ' ' green
-    keyword \\' brightgreen
+context ' ' STRING_QUOTED_SINGLE
+    keyword \\' CONSTANT_CHARACTER_ESCAPE

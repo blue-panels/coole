@@ -1,4 +1,4 @@
-foreach name : ['line_local', 'context_rules']
+foreach name : ['line_local', 'context_rules', 'tokens']
   test(name,
     executable(name, name + '.c', c_args: test_c_args, dependencies: test_src_deps),
     workdir: meson.current_build_dir(),

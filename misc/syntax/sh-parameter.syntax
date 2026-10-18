@@ -4,24 +4,24 @@
 # ends the expansion counts outside the strings and escapes below, so that
 # ${X="${Y}"} and ${x/\}/y} end where the shell ends them.
 
-context default brightgreen
-    keyword \\} brightgreen
-    keyword \\" brightgreen
-    keyword \\' brightgreen
-    keyword \\$ brightgreen
-    keyword $(*) brightgreen
+context default VARIABLE_OTHER
+    keyword \\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword \\' CONSTANT_CHARACTER_ESCAPE
+    keyword \\$ CONSTANT_CHARACTER_ESCAPE
+    keyword $(*) VARIABLE_OTHER
 
 # a parameter expanded inside, as in ${a:-${b}}
-context ${ } brightgreen
+context ${ } VARIABLE_OTHER
     embed soft Shell\sParameter
 
-context " " green
-    keyword \\" brightgreen
-    keyword \\$ brightgreen
-    keyword \\\\ brightgreen
-    keyword $(*) brightgreen
-    keyword ${*} brightgreen
-    keyword wholeright $+ brightgreen
-    keyword $ brightgreen
+context " " STRING_QUOTED_DOUBLE
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword \\$ CONSTANT_CHARACTER_ESCAPE
+    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
+    keyword $(*) VARIABLE_OTHER
+    keyword ${*} VARIABLE_OTHER
+    keyword wholeright $+ VARIABLE_OTHER
+    keyword $ VARIABLE_OTHER
 
-context ' ' green
+context ' ' STRING_QUOTED_SINGLE

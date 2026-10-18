@@ -1,123 +1,123 @@
 # Markdown syntax highlighting
 
-context default lightgray
+context default
     spellcheck
     # links
-    keyword whole [*](*) yellow
-    keyword \*\* white
-    keyword \*   yellow
-    keyword \\_  lightgray
-    keyword wholeleft  __ white
-    keyword wholeright __ white
-    keyword wholeleft  _  yellow
-    keyword wholeright _  yellow
+    keyword whole [*](*) MARKUP_UNDERLINE_LINK
+    keyword \*\* MARKUP_BOLD
+    keyword \*   MARKUP_ITALIC
+    keyword \\_  CONSTANT_CHARACTER_ESCAPE
+    keyword wholeleft  __ MARKUP_BOLD
+    keyword wholeright __ MARKUP_BOLD
+    keyword wholeleft  _  MARKUP_ITALIC
+    keyword wholeright _  MARKUP_ITALIC
     # inline code in single backticks ends on its line: a backtick left
     # open colors nothing
-    keyword `*` cyan
+    keyword `*` MARKUP_RAW_INLINE
 
-context linestart #### \n red
+context linestart #### \n ENTITY_NAME_SECTION
     spellcheck
 
-context linestart # \n brightred
+context linestart # \n ENTITY_NAME_SECTION
     spellcheck
 
-context linestart > \n green
+context linestart > \n MARKUP_QUOTE
     spellcheck
 
-context linestart \s\s\s\s \n cyan
+context linestart \s\s\s\s \n MARKUP_RAW_BLOCK
 
 # a fenced block that names its language is read by the rules of that
 # language; the fence closes it wherever it stands at the start of a line.
 # The more specific names come first: the first one that fits is taken
-context linestart ```py*\n linestart ``` cyan
+context linestart ```py*\n linestart ``` MARKUP_RAW_BLOCK
     embed Python\sProgram
 
-context linestart ```json*\n linestart ``` cyan
+context linestart ```json*\n linestart ``` MARKUP_RAW_BLOCK
     embed JSON\sFile
 
-context linestart ```js*\n linestart ``` cyan
+context linestart ```js*\n linestart ``` MARKUP_RAW_BLOCK
     embed JavaScript\sProgram
 
-context linestart ```javascript*\n linestart ``` cyan
+context linestart ```javascript*\n linestart ``` MARKUP_RAW_BLOCK
     embed JavaScript\sProgram
 
-context linestart ```ts*\n linestart ``` cyan
+context linestart ```ts*\n linestart ``` MARKUP_RAW_BLOCK
     embed TypeScript\sProgram
 
-context linestart ```typescript*\n linestart ``` cyan
+context linestart ```typescript*\n linestart ``` MARKUP_RAW_BLOCK
     embed TypeScript\sProgram
 
-context linestart ```sh*\n linestart ``` cyan
+context linestart ```sh*\n linestart ``` MARKUP_RAW_BLOCK
     embed Shell\sScript
 
-context linestart ```bash*\n linestart ``` cyan
+context linestart ```bash*\n linestart ``` MARKUP_RAW_BLOCK
     embed Shell\sScript
 
-context linestart ```zsh*\n linestart ``` cyan
+context linestart ```zsh*\n linestart ``` MARKUP_RAW_BLOCK
     embed Shell\sScript
 
-context linestart ```c\n linestart ``` cyan
+context linestart ```c\n linestart ``` MARKUP_RAW_BLOCK
     embed C\sProgram
 
-context linestart ```cpp*\n linestart ``` cyan
+context linestart ```cpp*\n linestart ``` MARKUP_RAW_BLOCK
     embed C/C\+\+\sProgram
 
-context linestart ```c\+\+*\n linestart ``` cyan
+context linestart ```c\+\+*\n linestart ``` MARKUP_RAW_BLOCK
     embed C/C\+\+\sProgram
 
-context linestart ```rust*\n linestart ``` cyan
+context linestart ```rust*\n linestart ``` MARKUP_RAW_BLOCK
     embed Rust\sProgram
 
-context linestart ```go*\n linestart ``` cyan
+context linestart ```go*\n linestart ``` MARKUP_RAW_BLOCK
     embed GoLang\sProgram
 
-context linestart ```lua*\n linestart ``` cyan
+context linestart ```lua*\n linestart ``` MARKUP_RAW_BLOCK
     embed Lua\sProgram
 
-context linestart ```sql*\n linestart ``` cyan
+context linestart ```sql*\n linestart ``` MARKUP_RAW_BLOCK
     embed SQL\sProgram
 
-context linestart ```yaml*\n linestart ``` cyan
+context linestart ```yaml*\n linestart ``` MARKUP_RAW_BLOCK
     embed YAML\sFile
 
-context linestart ```yml*\n linestart ``` cyan
+context linestart ```yml*\n linestart ``` MARKUP_RAW_BLOCK
     embed YAML\sFile
 
-context linestart ```toml*\n linestart ``` cyan
+context linestart ```toml*\n linestart ``` MARKUP_RAW_BLOCK
     embed TOML\sFile
 
-context linestart ```html*\n linestart ``` cyan
+context linestart ```html*\n linestart ``` MARKUP_RAW_BLOCK
     embed HTML\sFile
 
-context linestart ```jinja*\n linestart ``` cyan
+context linestart ```jinja*\n linestart ``` MARKUP_RAW_BLOCK
     embed Jinja2\sTemplate
 
-context linestart ```j2*\n linestart ``` cyan
+context linestart ```j2*\n linestart ``` MARKUP_RAW_BLOCK
     embed Jinja2\sTemplate
 
-context linestart ```xml*\n linestart ``` cyan
+context linestart ```xml*\n linestart ``` MARKUP_RAW_BLOCK
     embed XML\sdocument
 
-context linestart ```css*\n linestart ``` cyan
+context linestart ```css*\n linestart ``` MARKUP_RAW_BLOCK
     embed CSS\sFile
 
-context linestart ```diff*\n linestart ``` cyan
+context linestart ```diff*\n linestart ``` MARKUP_RAW_BLOCK
     embed Diff\sOutput
 
-context linestart ```make*\n linestart ``` cyan
+context linestart ```make*\n linestart ``` MARKUP_RAW_BLOCK
     embed Makefile
 
-context linestart ```menu*\n linestart ``` cyan
+context linestart ```menu*\n linestart ``` MARKUP_RAW_BLOCK
     embed User\smenu
 
-context linestart ```mermaid*\n linestart ``` cyan
+context linestart ```mermaid*\n linestart ``` MARKUP_RAW_BLOCK
     embed Mermaid\sDiagram
 
 # a fence that names no language known above
-context linestart ``` linestart ``` cyan
+context linestart ``` linestart ``` MARKUP_RAW_BLOCK
 
 # inline code in double or triple backticks, which can hold a single one;
 # left open, it ends with its line
-context oneline ``` ``` cyan
+context oneline ``` ``` MARKUP_RAW_INLINE
 
-context oneline `` `` cyan
+context oneline `` `` MARKUP_RAW_INLINE

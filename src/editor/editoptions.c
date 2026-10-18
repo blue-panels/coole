@@ -93,7 +93,7 @@ edit_screen_foreach (void *data, void *user_data)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
+void
 edit_editors_foreach (GFunc fn)
 {
     dialog_switch_foreach (edit_screen_foreach, &fn);

@@ -252,6 +252,7 @@ void edit_set_filename (WEdit *edit, const char *name);
 
 MC_MOCKABLE void edit_load_syntax (WEdit *edit, GPtrArray *pnames, const char *type);
 void edit_free_syntax_rules (WEdit *edit);
+void edit_editors_foreach (GFunc fn);
 MC_MOCKABLE int edit_get_syntax_color (WEdit *edit, off_t byte_index);
 void edit_line_local_syntax_reset (syntax_line_local_state_t *state, off_t line_start);
 gboolean edit_syntax_is_line_local (const WEdit *edit);

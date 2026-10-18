@@ -31,6 +31,7 @@
 
 #include "lib/global.h"
 #include "src/syntax/syntax.h"
+#include "src/syntax/tokens.h"
 
 /* A rule set is only ever built from a real syntax file, so the tests write one.
    Nothing else here needs mc to be running: the scanner reads its bytes through
@@ -195,6 +196,25 @@ check_mask_len (const char *s, off_t len, const char *expected)
     ck_assert_msg (strcmp (got, expected) == 0, "text [%s]\n  expected [%s]\n  got      [%s]", s,
                    expected, got);
     g_free (got);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** The color the rules give the byte @i of @s. */
+static guint
+color_at (const char *s, off_t i)
+{
+    syntax_scanner_t *sc;
+    guint color;
+
+    text = s;
+    text_len = (off_t) strlen (s);
+
+    sc = syntax_scanner_new (rules, get_byte, NULL, text_len);
+    color = syntax_rules_color_of (rules, syntax_state_at (sc, i));
+    syntax_scanner_free (sc);
+
+    return color;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -787,6 +807,159 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+START_TEST (test_token_kept_as_written)
+{
+    const char *fg, *bg, *attrs;
+
+    // a rule set that ignores case lowers its patterns, not the tokens it colors with
+    load ("caseinsensitive\n"
+          "context default\n"
+          "  keyword whole INT KEYWORD_CONTROL\n"
+          "context \" \" STRING_QUOTED_DOUBLE\n");
+
+    check_mask ("int Int \"s\"", "KKK.KKK.SSS");
+
+    syntax_rules_color_spec (rules, color_at ("int", 0), &fg, &bg, &attrs);
+    ck_assert_str_eq (fg, "KEYWORD_CONTROL");
+    ck_assert (bg == NULL || *bg == '\0');
+
+    // the rest of the line is folded as it always was: a color, a directive
+    load ("caseinsensitive\n"
+          "Context default\n"
+          "  Keyword whole SELECT Yellow\n");
+    check_mask ("select Select", "yyyyyy.yyyyyy");
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_token_scope_of_context)
+{
+    const char *s = "\"a\\nb\" x";
+
+    load ("context default\n"
+          "  keyword whole x KEYWORD_CONTROL\n"
+          "context \" \" STRING_QUOTED_DOUBLE\n"
+          "  keyword \\\\n CONSTANT_CHARACTER_ESCAPE\n"
+          "  keyword b\n"
+          "  keyword a red\n");
+
+    // a token inside a context of a token knows the context it stands in
+    ck_assert_str_eq (syntax_rules_color_scope (rules, color_at (s, 2)), "STRING_QUOTED_DOUBLE");
+    // the context itself, a keyword of the default context, a keyword that takes
+    // the color of its context and one with a color of its own know none
+    ck_assert_ptr_null (syntax_rules_color_scope (rules, color_at (s, 0)));
+    ck_assert_ptr_null (syntax_rules_color_scope (rules, color_at (s, 7)));
+    ck_assert_ptr_null (syntax_rules_color_scope (rules, color_at (s, 4)));
+    ck_assert_ptr_null (syntax_rules_color_scope (rules, color_at (s, 1)));
+
+    // the same token in two contexts is two colors
+    load ("context default\n"
+          "context \" \" STRING_QUOTED_DOUBLE\n"
+          "  keyword \\\\n CONSTANT_CHARACTER_ESCAPE\n"
+          "context ' ' STRING_QUOTED_SINGLE\n"
+          "  keyword \\\\n CONSTANT_CHARACTER_ESCAPE\n");
+    ck_assert_uint_ne (color_at ("\"\\n\"", 1), color_at ("'\\n'", 1));
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* a skin of the tests: the todo comments white on blue */
+static gboolean
+fake_skin (const char *key, char **fg, char **bg, char **attrs, void *data)
+{
+    (void) data;
+
+    if (strcmp (key, "keyword.other.todo") != 0)
+        return FALSE;
+
+    *fg = g_strdup ("white");
+    *bg = g_strdup ("blue");
+    *attrs = NULL;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_token_resolved)
+{
+    char *fg, *bg, *attrs;
+
+    // a token is drawn in the colors of its kind of text, a background of the
+    // rule standing over the token's
+    load ("context default\n"
+          "  keyword whole todo KEYWORD_OTHER_TODO black\n"
+          "  keyword whole bad INVALID\n"
+          "  keyword whole x yellow blue bold\n");
+
+    syntax_rules_color_resolve (rules, color_at ("todo", 0), &fg, &bg, &attrs);
+    ck_assert_str_eq (fg, "brightred");
+    ck_assert_str_eq (bg, "black");
+    ck_assert_ptr_null (attrs);
+    g_free (fg);
+    g_free (bg);
+
+    syntax_rules_color_resolve (rules, color_at ("bad", 0), &fg, &bg, &attrs);
+    ck_assert_str_eq (fg, "white");
+    ck_assert_str_eq (bg, "red");
+    g_free (fg);
+    g_free (bg);
+    g_free (attrs);
+
+    // a skin that names the token has the last word on its background
+    syntax_token_set_lookup (fake_skin, NULL);
+    syntax_rules_color_resolve (rules, color_at ("todo", 0), &fg, &bg, &attrs);
+    ck_assert_str_eq (fg, "white");
+    ck_assert_str_eq (bg, "blue");
+    g_free (fg);
+    g_free (bg);
+    g_free (attrs);
+    syntax_token_set_lookup (NULL, NULL);
+
+    // a color of the old kind comes out as written
+    syntax_rules_color_resolve (rules, color_at ("x", 0), &fg, &bg, &attrs);
+    ck_assert_str_eq (fg, "yellow");
+    ck_assert_str_eq (bg, "blue");
+    ck_assert_str_eq (attrs, "bold");
+    g_free (fg);
+    g_free (bg);
+    g_free (attrs);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+fake_alloc (void *backend_data, const char *fg, const char *bg, const char *attrs)
+{
+    (void) backend_data;
+    (void) bg;
+    (void) attrs;
+
+    return fg != NULL ? 100 : 200;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_token_without_color)
+{
+    syntax_palette_t *palette;
+
+    // a token nothing gives a color is drawn as the text around, not by the backend
+    load ("context default\n"
+          "  keyword whole x VARIABLE_OTHER\n"
+          "  keyword whole y KEYWORD_CONTROL\n");
+
+    palette = syntax_palette_new (rules, fake_alloc, NULL, NULL, 7);
+    ck_assert_int_eq (syntax_palette_get (palette, color_at ("x", 0)), 7);
+    ck_assert_int_eq (syntax_palette_get (palette, color_at ("y", 0)), 100);
+    syntax_palette_free (palette);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 START_TEST (test_parse_errors)
 {
     // the parser reports the line it stopped at, and never a dialog
@@ -1222,7 +1395,7 @@ END_TEST
 START_TEST (test_embed_case)
 {
     // the rules around ignore case, the embedded ones do not; the type is found
-    // though the line naming it was folded
+    // in any case
     ck_assert_int_eq (load_toplevel ("file .\\* Tested\n"
                                      "caseinsensitive\n"
                                      "context default\n"
@@ -1894,6 +2067,10 @@ add_tests (TCase *tc_core)
     tcase_add_test (tc_core, test_spellcheck_and_comments);
     tcase_add_test (tc_core, test_keyword_color_inherited);
     tcase_add_test (tc_core, test_define);
+    tcase_add_test (tc_core, test_token_kept_as_written);
+    tcase_add_test (tc_core, test_token_scope_of_context);
+    tcase_add_test (tc_core, test_token_resolved);
+    tcase_add_test (tc_core, test_token_without_color);
     tcase_add_test (tc_core, test_parse_errors);
     tcase_add_test (tc_core, test_rules_without_include);
     tcase_add_test (tc_core, test_include_that_is_not_there);

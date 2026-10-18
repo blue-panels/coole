@@ -153,6 +153,49 @@ exec_edit_syntax_dialog (const GPtrArray *names, const char *current_syntax)
     return listbox_run (syntaxlist);
 }
 
+/** The colors of a rule set on the terminal, in the skin as it is now. */
+static syntax_palette_t *
+edit_syntax_palette_new (const syntax_rules_t *rules)
+{
+    return syntax_palette_new (rules, syntax_tty_alloc_color, syntax_tty_release_color,
+                               (void *) "editor", EDITOR_NORMAL_COLOR);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** GFunc for edit_editors_foreach(): give the colors of an editor back. */
+static void
+edit_syntax_palette_drop (void *data, void *user_data)
+{
+    (void) user_data;
+
+    if (edit_widget_is_editor (CONST_WIDGET (data)))
+    {
+        WEdit *edit = EDIT (data);
+
+        syntax_palette_free (edit->palette);
+        edit->palette = NULL;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** GFunc for edit_editors_foreach(): color an editor in the skin as it is now. */
+static void
+edit_syntax_palette_make (void *data, void *user_data)
+{
+    (void) user_data;
+
+    if (edit_widget_is_editor (CONST_WIDGET (data)))
+    {
+        WEdit *edit = EDIT (data);
+
+        if (edit->syntax != NULL && edit->palette == NULL)
+            edit->palette = edit_syntax_palette_new (syntax_scanner_rules (edit->syntax));
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -270,9 +313,7 @@ edit_load_syntax (WEdit *edit, GPtrArray *pnames, const char *type)
         {
             edit->syntax =
                 syntax_scanner_new (rules, edit_syntax_get_byte, edit, edit->buffer.size);
-            edit->palette =
-                syntax_palette_new (rules, syntax_tty_alloc_color, syntax_tty_release_color,
-                                    (void *) "editor", EDITOR_NORMAL_COLOR);
+            edit->palette = edit_syntax_palette_new (rules);
             syntax_rules_unref (rules);
         }
         else if (r < 0 && g_file_test (f, G_FILE_TEST_EXISTS))
@@ -288,6 +329,31 @@ edit_load_syntax (WEdit *edit, GPtrArray *pnames, const char *type)
     g_free (error_file);
     g_free (f);
     g_free (saved_type);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Give back the colors of the highlighting of every editor window, before the
+ * skin goes: the skin frees every color pair with it, the ones the windows
+ * hold among them.  The editors of every screen, those left open behind too.
+ */
+
+void
+edit_syntax_skin_leaving (void)
+{
+    edit_editors_foreach (edit_syntax_palette_drop);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Color the highlighting of every editor window again, in the skin that came:
+ * the colors of the scope tokens are the skin's.
+ */
+
+void
+edit_syntax_skin_arrived (void)
+{
+    edit_editors_foreach (edit_syntax_palette_make);
 }
 
 /* --------------------------------------------------------------------------------------------- */

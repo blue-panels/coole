@@ -106,5 +106,9 @@ off_t edit_get_cursor_offset (const WEdit *edit);
 long edit_get_curs_col (const WEdit *edit);
 const char *edit_get_syntax_type (const WEdit *edit);
 
+/* the colors of the highlighting around a change of the skin */
+void edit_syntax_skin_leaving (void);
+void edit_syntax_skin_arrived (void);
+
 /*** inline functions ****************************************************************************/
 #endif

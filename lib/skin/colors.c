@@ -325,8 +325,10 @@ mc_skin_color_cache_init (void)
 static gboolean
 mc_skin_color_check_inisection (const gchar *group)
 {
+    // [syntax] holds the colors of the scope tokens, made into pairs by the highlighting
     return !((strcasecmp ("skin", group) == 0) || (strcasecmp ("aliases", group) == 0)
-             || (strcasecmp ("lines", group) == 0) || (strncasecmp ("widget-", group, 7) == 0));
+             || (strcasecmp ("lines", group) == 0) || (strcasecmp ("syntax", group) == 0)
+             || (strncasecmp ("widget-", group, 7) == 0));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -441,6 +443,57 @@ gboolean
 mc_skin_color_is_set (const gchar *group, const gchar *name)
 {
     return mc_skin_color_get_from_hash (NULL, group, name) != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * The names of the colors a key of the skin gives, its aliases resolved, without a pair
+ * made of them: for colors that are made into pairs elsewhere, the scope tokens of the
+ * highlighting.  A part the key leaves empty is NULL.
+ *
+ * @return FALSE when the skin has no such key
+ */
+
+gboolean
+mc_skin_color_names (const gchar *group, const gchar *key, gchar **fg, gchar **bg, gchar **attrs)
+{
+    gchar **values;
+    gsize items_count;
+    gchar **out[3];
+    gsize i;
+
+    *fg = NULL;
+    *bg = NULL;
+    *attrs = NULL;
+
+    if (mc_skin__default.config == NULL)
+        return FALSE;
+
+    values = mc_config_get_string_list (mc_skin__default.config, group, key, &items_count);
+    if (values == NULL || values[0] == NULL)
+    {
+        g_strfreev (values);
+        return FALSE;
+    }
+
+    out[0] = fg;
+    out[1] = bg;
+    out[2] = attrs;
+    for (i = 0; i < 3 && i < items_count; i++)
+    {
+        gchar *v = g_strstrip (g_strdup (values[i]));
+
+        if (*v == '\0')
+            g_free (v);
+        else
+            *out[i] = mc_skin_color_look_up_alias (&mc_skin__default, v);
+    }
+
+    g_strfreev (values);
+
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */

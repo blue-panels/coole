@@ -1824,6 +1824,31 @@ without modifying the background color. When 256 colors are available,
 they can be specified either as color16 to color255, or as rgb000 to rgb555
 and gray0 to gray23.
 
+Instead of a color, the foreground may be a scope token, a word in capitals
+that says what the text is rather than how it looks:
+
+```
+keyword  whole  if   KEYWORD_CONTROL
+context  " " STRING_QUOTED_DOUBLE
+    keyword  \\"   CONSTANT_CHARACTER_ESCAPE
+keyword  linestart TODO  KEYWORD_OTHER_TODO black
+```
+
+The color of a token comes from the skin, so that one skin colors the
+program and the text alike, and every language in the same way; see
+[Skins](#skins).
+A token is read as a scope, the token in lower case with dots for its
+underscores: KEYWORD_CONTROL_IMPORT is keyword.control.import, a kind of
+keyword.control, which is a kind of keyword. The names are those of the
+scopes of Sublime Text and TextMate. What the skin does not color keeps the
+colors mcedit gave that kind of text. A background or attributes after a
+token stand over the colors of mcedit, as black does above, but not over a
+background or attributes the skin gives that token itself. A token may
+stand in a define, and on the number, string and symbols lines of
+line-local rules. The syntax files installed with coole use tokens alone;
+the list of the tokens they use, with the colors of mcedit, is in
+**{{pkgdatadir}}/syntax/README.txt**.
+
 If the syntax file is shared with
 **cooledit**,
 it is possible to specify different colors for
@@ -1941,8 +1966,26 @@ found):
 
 The format of skin files is described in
 **{{pkgdatadir}}/skins/README.txt**.
-The colors of the syntax highlighting come from the syntax files, not from
-the skin; see
+The colors of the syntax highlighting come from the section
+**[syntax]**
+of the skin: there a scope names the colors of a kind of text, and a scope
+and the scope of the context it stands in, the two with a blank between
+them, name the colors of that kind of text in that context. The longest
+scope the skin names wins:
+
+```
+[syntax]
+    comment = gray
+    keyword = yellow
+    keyword.control = brightmagenta
+    string = green
+    string constant.character.escape = white;red
+    invalid = white;red;bold
+```
+
+A kind of text the skin does not name keeps the colors mcedit gave it, so a
+skin may name a few kinds and leave the rest. The rules that name colors
+instead of scope tokens keep their colors whatever the skin; see
 [Syntax Highlighting](#syntax-highlighting).
 
 # Terminal databases
