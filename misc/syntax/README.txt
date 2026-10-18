@@ -89,6 +89,7 @@ Keywords
     KEYWORD_CONTROL_IMPORT         yellow     import, include, use, using
     KEYWORD_OPERATOR               yellow     + - * / = == < > && ||
     KEYWORD_OPERATOR_WORD          yellow     and, or, not, instanceof, sizeof
+    KEYWORD_OPERATOR_ARROW         brightred  arrows and relations of mermaid
     KEYWORD_OTHER                  yellow     other keywords of the language
     KEYWORD_OTHER_RESERVED         yellow     reserved or less common keywords
     KEYWORD_OTHER_NEW              yellow     new, delete
@@ -104,6 +105,7 @@ Storage (declarations and types)
     STORAGE_TYPE_CLASS             yellow     class, struct, enum, interface
     STORAGE_TYPE_FUNCTION          yellow     function, def, func, fun, fn, sub
     STORAGE_TYPE_ANNOTATION        yellow     @Override, @Component, decorators
+    STORAGE_TYPE_DIAGRAM           brightmagenta  the type of a mermaid diagram
     STORAGE_MODIFIER               yellow     public, static, const, final
 
 Constants

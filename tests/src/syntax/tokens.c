@@ -135,6 +135,10 @@ START_TEST (test_classic)
     // a string in a preprocessor line is red, elsewhere green
     check ("META_PREPROCESSOR", "STRING_QUOTED_DOUBLE", "red;");
     check ("COMMENT_LINE", "STRING_QUOTED_DOUBLE", "green;");
+    // the diagram types and arrows of mermaid keep the colors its rules had
+    check (NULL, "STORAGE_TYPE_DIAGRAM", "brightmagenta;");
+    check (NULL, "KEYWORD_OPERATOR_ARROW", "brightred;");
+    check (NULL, "STORAGE_TYPE", "yellow;");
     // a kind of text mcedit had no color for keeps the color around it
     check (NULL, "VARIABLE_OTHER", ";");
 }
