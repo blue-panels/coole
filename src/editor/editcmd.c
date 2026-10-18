@@ -1315,9 +1315,13 @@ edit_load_cmd (WDialog *h)
 {
     char *exp;
     gboolean ret = TRUE;  // possible cancel
+    const WEdit *e = edit_find_editor (h);
 
-    exp = input_expand_dialog (_ ("Load"), _ ("Enter file name:"), MC_HISTORY_EDIT_LOAD,
-                               INPUT_LAST_TEXT, INPUT_COMPLETE_FILENAMES | INPUT_COMPLETE_CD);
+    // start where the file of the editor is; hidden files show, as in the panels by default
+    exp = file_chooser_dialog (
+        _ ("Load"), e != NULL ? e->filename : NULL, MC_HISTORY_EDIT_LOAD, FILE_CHOOSER_OPEN,
+        FILE_CHOOSER_NEW_OK | FILE_CHOOSER_HIDDEN
+            | (OS_SORT_CASE_SENSITIVE_DEFAULT ? FILE_CHOOSER_SEARCH_CASE : 0));
 
     if (exp != NULL && *exp != '\0')
     {
