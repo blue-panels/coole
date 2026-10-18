@@ -9,33 +9,33 @@
 # to the relation, and the one that opens a class body ends its line.
 
 context default
-    keyword whole graph STORAGE_TYPE
-    keyword whole flowchart STORAGE_TYPE
-    keyword whole sequenceDiagram STORAGE_TYPE
-    keyword whole classDiagram STORAGE_TYPE
-    keyword whole stateDiagram-v2 STORAGE_TYPE
-    keyword whole stateDiagram STORAGE_TYPE
-    keyword whole erDiagram STORAGE_TYPE
-    keyword whole gantt STORAGE_TYPE
-    keyword whole pie STORAGE_TYPE
-    keyword whole journey STORAGE_TYPE
-    keyword whole gitGraph STORAGE_TYPE
-    keyword whole mindmap STORAGE_TYPE
-    keyword whole timeline STORAGE_TYPE
-    keyword whole quadrantChart STORAGE_TYPE
-    keyword whole requirementDiagram STORAGE_TYPE
-    keyword whole C4Context STORAGE_TYPE
-    keyword whole C4Container STORAGE_TYPE
-    keyword whole C4Component STORAGE_TYPE
-    keyword whole C4Dynamic STORAGE_TYPE
-    keyword whole C4Deployment STORAGE_TYPE
-    keyword whole sankey-beta STORAGE_TYPE
-    keyword whole xychart-beta STORAGE_TYPE
-    keyword whole block-beta STORAGE_TYPE
-    keyword whole packet-beta STORAGE_TYPE
-    keyword whole architecture-beta STORAGE_TYPE
-    keyword whole kanban STORAGE_TYPE
-    keyword whole zenuml STORAGE_TYPE
+    keyword whole graph STORAGE_TYPE_DIAGRAM
+    keyword whole flowchart STORAGE_TYPE_DIAGRAM
+    keyword whole sequenceDiagram STORAGE_TYPE_DIAGRAM
+    keyword whole classDiagram STORAGE_TYPE_DIAGRAM
+    keyword whole stateDiagram-v2 STORAGE_TYPE_DIAGRAM
+    keyword whole stateDiagram STORAGE_TYPE_DIAGRAM
+    keyword whole erDiagram STORAGE_TYPE_DIAGRAM
+    keyword whole gantt STORAGE_TYPE_DIAGRAM
+    keyword whole pie STORAGE_TYPE_DIAGRAM
+    keyword whole journey STORAGE_TYPE_DIAGRAM
+    keyword whole gitGraph STORAGE_TYPE_DIAGRAM
+    keyword whole mindmap STORAGE_TYPE_DIAGRAM
+    keyword whole timeline STORAGE_TYPE_DIAGRAM
+    keyword whole quadrantChart STORAGE_TYPE_DIAGRAM
+    keyword whole requirementDiagram STORAGE_TYPE_DIAGRAM
+    keyword whole C4Context STORAGE_TYPE_DIAGRAM
+    keyword whole C4Container STORAGE_TYPE_DIAGRAM
+    keyword whole C4Component STORAGE_TYPE_DIAGRAM
+    keyword whole C4Dynamic STORAGE_TYPE_DIAGRAM
+    keyword whole C4Deployment STORAGE_TYPE_DIAGRAM
+    keyword whole sankey-beta STORAGE_TYPE_DIAGRAM
+    keyword whole xychart-beta STORAGE_TYPE_DIAGRAM
+    keyword whole block-beta STORAGE_TYPE_DIAGRAM
+    keyword whole packet-beta STORAGE_TYPE_DIAGRAM
+    keyword whole architecture-beta STORAGE_TYPE_DIAGRAM
+    keyword whole kanban STORAGE_TYPE_DIAGRAM
+    keyword whole zenuml STORAGE_TYPE_DIAGRAM
 
     keyword whole TB CONSTANT_OTHER
     keyword whole TD CONSTANT_OTHER
@@ -101,36 +101,36 @@ context default
     keyword whole NORMAL KEYWORD_OTHER
 
     # arrows and relations; the longer first, as the first that fits is taken
-    keyword \{|}\}\{|o\}\{-.\}\{-.\}\{|o\}\{|{\} KEYWORD_OPERATOR
-    keyword <--> KEYWORD_OPERATOR
-    keyword <==> KEYWORD_OPERATOR
-    keyword <-.-> KEYWORD_OPERATOR
-    keyword -.-> KEYWORD_OPERATOR
-    keyword -->> KEYWORD_OPERATOR
-    keyword ->> KEYWORD_OPERATOR
-    keyword <|-- KEYWORD_OPERATOR
-    keyword --|> KEYWORD_OPERATOR
-    keyword --\* KEYWORD_OPERATOR
-    keyword --> KEYWORD_OPERATOR
-    keyword ==> KEYWORD_OPERATOR
-    keyword wholeright --x KEYWORD_OPERATOR
-    keyword wholeright --o KEYWORD_OPERATOR
-    keyword --- KEYWORD_OPERATOR
-    keyword --) KEYWORD_OPERATOR
-    keyword -- KEYWORD_OPERATOR
-    keyword === KEYWORD_OPERATOR
-    keyword -.- KEYWORD_OPERATOR
-    keyword -) KEYWORD_OPERATOR
-    keyword wholeright -x KEYWORD_OPERATOR
-    keyword -> KEYWORD_OPERATOR
-    keyword ~~~ KEYWORD_OPERATOR
-    keyword <|.. KEYWORD_OPERATOR
-    keyword ..|> KEYWORD_OPERATOR
-    keyword ..> KEYWORD_OPERATOR
-    keyword .. KEYWORD_OPERATOR
-    keyword <.. KEYWORD_OPERATOR
-    keyword \*-- KEYWORD_OPERATOR
-    keyword wholeleft o-- KEYWORD_OPERATOR
+    keyword \{|}\}\{|o\}\{-.\}\{-.\}\{|o\}\{|{\} KEYWORD_OPERATOR_ARROW
+    keyword <--> KEYWORD_OPERATOR_ARROW
+    keyword <==> KEYWORD_OPERATOR_ARROW
+    keyword <-.-> KEYWORD_OPERATOR_ARROW
+    keyword -.-> KEYWORD_OPERATOR_ARROW
+    keyword -->> KEYWORD_OPERATOR_ARROW
+    keyword ->> KEYWORD_OPERATOR_ARROW
+    keyword <|-- KEYWORD_OPERATOR_ARROW
+    keyword --|> KEYWORD_OPERATOR_ARROW
+    keyword --\* KEYWORD_OPERATOR_ARROW
+    keyword --> KEYWORD_OPERATOR_ARROW
+    keyword ==> KEYWORD_OPERATOR_ARROW
+    keyword wholeright --x KEYWORD_OPERATOR_ARROW
+    keyword wholeright --o KEYWORD_OPERATOR_ARROW
+    keyword --- KEYWORD_OPERATOR_ARROW
+    keyword --) KEYWORD_OPERATOR_ARROW
+    keyword -- KEYWORD_OPERATOR_ARROW
+    keyword === KEYWORD_OPERATOR_ARROW
+    keyword -.- KEYWORD_OPERATOR_ARROW
+    keyword -) KEYWORD_OPERATOR_ARROW
+    keyword wholeright -x KEYWORD_OPERATOR_ARROW
+    keyword -> KEYWORD_OPERATOR_ARROW
+    keyword ~~~ KEYWORD_OPERATOR_ARROW
+    keyword <|.. KEYWORD_OPERATOR_ARROW
+    keyword ..|> KEYWORD_OPERATOR_ARROW
+    keyword ..> KEYWORD_OPERATOR_ARROW
+    keyword .. KEYWORD_OPERATOR_ARROW
+    keyword <.. KEYWORD_OPERATOR_ARROW
+    keyword \*-- KEYWORD_OPERATOR_ARROW
+    keyword wholeleft o-- KEYWORD_OPERATOR_ARROW
 
     # the marks of nodes, groups and annotations
     keyword [\*] PUNCTUATION_SECTION

@@ -71,6 +71,9 @@ static const syntax_token_classic_t classic[] = {
     { "comment", "brown", NULL },
     { "keyword", "yellow", NULL },
     { "storage", "yellow", NULL },
+    // the types of mermaid diagrams and their arrows, as the mermaid rules had them
+    { "storage.type.diagram", "brightmagenta", NULL },
+    { "keyword.operator.arrow", "brightred", NULL },
     { "constant.language", "yellow", NULL },
     { "variable.language", "yellow", NULL },
     { "keyword.other.todo", "brightred", NULL },
