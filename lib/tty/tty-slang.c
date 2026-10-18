@@ -259,7 +259,7 @@ tty_init (gboolean mouse_enable, gboolean is_xterm)
 
     tcgetattr (SLang_TT_Read_FD, &new_mode);
 
-    tty_reset_prog_mode ();
+    tcsetattr (SLang_TT_Read_FD, TCSANOW, &new_mode);
     load_terminfo_keys ();
 
     SLtt_Blink_Mode = (tty_use_256colors (NULL) || tty_use_truecolors (NULL)) ? 1 : 0;

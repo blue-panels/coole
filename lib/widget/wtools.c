@@ -480,8 +480,9 @@ status_msg_init (status_msg_t *sm, const char *title, double delay, status_msg_c
 {
     gint64 start;
 
-    // repaint screen to remove previous finished dialog
-    mc_refresh ();
+    // repaint screen to remove previous finished dialog; before the first one it is empty
+    if (top_dlg != NULL && widget_get_state (WIDGET (top_dlg->data), WST_ACTIVE))
+        mc_refresh ();
 
     start = g_get_monotonic_time ();
 
