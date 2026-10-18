@@ -158,9 +158,7 @@ Per definire una macro, premere
 poi premere i tasti che si vuole vengano eseguiti. Premere nuovamente
 \fBCtrl\-R\fP
 quando si ha finito e assegnare la macro a un tasto premendolo. La macro
-viene eseguita con quel tasto e anche premendo
-\fBCtrl\-A\fP
-seguito dal tasto assegnato. Le macro stanno nella sezione
+viene eseguita con quel tasto. Le macro stanno nella sezione
 \fB[editor]\fP
 del file
 \fB~/.local/share/coole/macros\fP,

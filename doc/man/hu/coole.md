@@ -134,9 +134,7 @@ majd üsd le azokat a billentyűket, amelyeknek le kell futniuk. Ha kész vagy,
 nyomd le újra a
 **Ctrl-R**-t,
 és rendeld a makrót egy billentyűhöz annak lenyomásával. A makró ezzel a
-billentyűvel, valamint a
-**Ctrl-A**
-és a hozzárendelt billentyű leütésével fut le. A makrók a
+billentyűvel fut le. A makrók a
 **~/.local/share/coole/macros**
 fájl
 **[editor]**

@@ -369,6 +369,9 @@ other open files). See [Completion](#completion).
 **F13**
 : Start a column block.
 
+**Ctrl-a**
+: Highlight the whole text.
+
 **Shift-arrows, Shift-PgUp, Shift-PgDn, Shift-Home, Shift-End**
 : Highlight the text the cursor goes over.
 
@@ -414,9 +417,6 @@ other open files). See [Completion](#completion).
 
 **Ctrl-r**
 : Start and stop recording a macro. See [Macros](#macros).
-
-**Ctrl-a**
-: Followed by a key, run the macro assigned to it.
 
 **Alt-Shift-m**
 : The [Macro Explorer](#macro-explorer).
@@ -1138,9 +1138,7 @@ To define a macro, press
 and then type out the keys you want to be executed. Press
 **Ctrl-r**
 again when finished, and assign the macro to a key by pressing that key. The
-macro is executed by that key, and by
-**Ctrl-a**
-followed by the assigned key.
+macro is executed by that key.
 
 The macros are kept in the section
 **[editor]**

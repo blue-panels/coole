@@ -315,7 +315,7 @@ static const global_keymap_ini_t default_editor_keymap[] = {
     { "BookmarkNext", "alt-j" },
     { "BookmarkPrev", "alt-i" },
     { "MacroStartStopRecord", "ctrl-r" },
-    { "MacroExecute", "ctrl-a" },
+    { "MarkAll", "ctrl-a" },
     { "ShowNumbers", "alt-n" },
     { "ShowTabTws", "alt-underline" },
     { "SyntaxOnOff", "ctrl-s" },
