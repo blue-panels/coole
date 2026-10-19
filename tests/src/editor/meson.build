@@ -38,6 +38,18 @@ if json_glib.found()
                                '../../../src/content-frame.c',
                                c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py')],
                                dependencies: [glib_dep, screen_deps, json_glib]), suite: 'src/editor')
+  lsp_test_sources = ['../../../src/plugins/lsp/lsp-text.c',
+                      '../../../src/plugins/lsp/lsp-config.c']
+  test('lsp_text', executable('lsp_text', 'lsp_text.c', lsp_test_sources,
+                              dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  test('lsp_config', executable('lsp_config', 'lsp_config.c', lsp_test_sources,
+                                dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  test('lsp_client', executable('lsp_client', 'lsp_client.c', lsp_test_sources,
+                                '../../../src/plugins/lsp/lsp-client.c',
+                                '../../../src/content-frame.c',
+                                c_args: ['-DMOCK_LSP="@0@"'.format(meson.current_source_dir() / 'mock_lsp.py')],
+                                dependencies: [glib_dep, screen_deps, json_glib]),
+       suite: 'src/editor', timeout: 120)
 endif
 
 test('fuzzy', executable('fuzzy', 'fuzzy.c', '../../../src/fuzzy.c', dependencies: [glib_dep]),
