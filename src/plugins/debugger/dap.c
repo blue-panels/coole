@@ -44,114 +44,12 @@
 #include "lib/global.h"
 #include "lib/tty/key.h"
 
+#include "src/content-frame.h"
+
 #include "dap.h"
 
 /* a message bigger than that is a broken stream */
 #define DAP_MAX_MESSAGE (64 * 1024 * 1024)
-
-/* --------------------------------------------------------------------------------------------- */
-/* The messages of a stream of bytes */
-/* --------------------------------------------------------------------------------------------- */
-
-struct dap_reader_t
-{
-    GString *buffer;
-};
-
-dap_reader_t *
-dap_reader_new (void)
-{
-    dap_reader_t *reader = g_new0 (dap_reader_t, 1);
-
-    reader->buffer = g_string_new (NULL);
-    return reader;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The length the header says, -1 when it says none, 0 when the header is not all there yet;
-   @header_len is that of the header with its empty line */
-static gssize
-dap_reader_header (const GString *buffer, gsize *header_len)
-{
-    const char *end = g_strstr_len (buffer->str, (gssize) buffer->len, "\r\n\r\n");
-    gssize length = -1;
-    const char *line;
-
-    if (end == NULL)
-        // a header is a few short lines: one that long is no header
-        return buffer->len > 4096 ? -1 : 0;
-    *header_len = (gsize) (end - buffer->str) + 4;
-    for (line = buffer->str; line < end;)
-    {
-        const char *eol = strstr (line, "\r\n");
-
-        if (g_ascii_strncasecmp (line, "Content-Length:", 15) == 0)
-        {
-            char *digits_end = NULL;
-            const gint64 n = g_ascii_strtoll (line + 15, &digits_end, 10);
-
-            if (digits_end != line + 15 && n >= 0 && n <= DAP_MAX_MESSAGE)
-                length = (gssize) n;
-        }
-        line = eol + 2;
-    }
-    return length;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-gboolean
-dap_reader_feed (dap_reader_t *reader, const char *bytes, gsize len, dap_message_fn fn, void *data)
-{
-    g_string_append_len (reader->buffer, bytes, (gssize) len);
-    while (reader->buffer->len > 0)
-    {
-        gsize header_len = 0;
-        const gssize length = dap_reader_header (reader->buffer, &header_len);
-        char *message;
-
-        if (length < 0)
-        {
-            g_string_truncate (reader->buffer, 0);
-            return FALSE;
-        }
-        if (length == 0 && header_len == 0)
-            return TRUE;  // the header is not all there yet
-        if (reader->buffer->len < header_len + (gsize) length)
-            return TRUE;  // nor the body
-        // taken out of the buffer first: @fn may close what reads, and more may come
-        message = g_strndup (reader->buffer->str + header_len, (gsize) length);
-        g_string_erase (reader->buffer, 0, (gssize) (header_len + (gsize) length));
-        fn (message, (gsize) length, data);
-        g_free (message);
-    }
-    return TRUE;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-void
-dap_reader_free (dap_reader_t *reader)
-{
-    if (reader == NULL)
-        return;
-    g_string_free (reader->buffer, TRUE);
-    g_free (reader);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-char *
-dap_message_frame (const char *json, gsize json_len, gsize *len)
-{
-    GString *out = g_string_sized_new (json_len + 32);
-
-    g_string_append_printf (out, "Content-Length: %" G_GSIZE_FORMAT "\r\n\r\n", json_len);
-    g_string_append_len (out, json, (gssize) json_len);
-    *len = out->len;
-    return g_string_free (out, FALSE);
-}
 
 /* --------------------------------------------------------------------------------------------- */
 /* The members of a JSON object */
@@ -253,7 +151,7 @@ struct dap_client_t
     int output;  // what comes from it: its stdout, or the socket
     int errors;  // its stderr
     int said;    // its stdout, when it speaks on a socket
-    dap_reader_t *reader;
+    content_frame_reader_t *reader;
     guint next_seq;
     GPtrArray *pending;  // dap_pending_t
     char *host;
@@ -282,7 +180,7 @@ dap_client_new (const dap_handlers_t *handlers, void *owner)
     client->handlers = handlers;
     client->owner = owner;
     client->input = client->output = client->errors = client->said = -1;
-    client->reader = dap_reader_new ();
+    client->reader = content_frame_reader_new (DAP_MAX_MESSAGE);
     client->pending = g_ptr_array_new_with_free_func (dap_pending_free);
     return client;
 }
@@ -434,7 +332,7 @@ dap_client_read (int fd, void *data)
     n = read (fd, buf, sizeof (buf));
     if (n > 0)
     {
-        if (!dap_reader_feed (client->reader, buf, (gsize) n, dap_client_message, client))
+        if (!content_frame_reader_feed (client->reader, buf, (gsize) n, dap_client_message, client))
             dap_client_lost (client, _ ("The debug adapter does not speak the protocol."));
         if (client->handlers->flush != NULL)
             client->handlers->flush (client->owner);
@@ -488,8 +386,8 @@ static void
 dap_client_watch (dap_client_t *client)
 {
     // what the adapter before left of a message is not the start of this one's
-    dap_reader_free (client->reader);
-    client->reader = dap_reader_new ();
+    content_frame_reader_free (client->reader);
+    client->reader = content_frame_reader_new (DAP_MAX_MESSAGE);
     client->next_seq = 0;
     dap_nonblocking (client->output);
     add_select_channel (client->output, dap_client_read, client);
@@ -702,7 +600,7 @@ dap_client_send (dap_client_t *client, JsonObject *message)
     json_node_take_object (root, message);
     json_generator_set_root (generator, root);
     json = json_generator_to_data (generator, &json_len);
-    framed = dap_message_frame (json, json_len, &len);
+    framed = content_frame_wrap (json, json_len, &len);
     // an adapter that has crashed can close its input between two writes
     ignore.sa_handler = SIG_IGN;
     sigemptyset (&ignore.sa_mask);
@@ -825,7 +723,7 @@ dap_client_close (dap_client_t *client, int wait_ms)
         return;
     dap_client_shut (client, wait_ms);
     g_ptr_array_set_size (client->pending, 0);
-    g_string_truncate (client->reader->buffer, 0);
+    content_frame_reader_reset (client->reader);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -836,7 +734,7 @@ dap_client_free (dap_client_t *client)
     if (client == NULL)
         return;
     dap_client_close (client, 0);
-    dap_reader_free (client->reader);
+    content_frame_reader_free (client->reader);
     g_ptr_array_free (client->pending, TRUE);
     g_free (client->host);
     g_free (client);

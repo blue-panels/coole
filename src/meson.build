@@ -103,6 +103,8 @@ libforplugins = static_library('forplugins',
   # the ANSI colors, for the terminal and the viewer; in mc a part of the viewer
   'viewer/ansi.c',
   'viewer/ansi_color.c',
+  # the messages of the debug adapters and of the language servers
+  'content-frame.c',
   c_args: src_c_args,
   dependencies: [libmc_dep, intl],
   implicit_include_directories: false,
