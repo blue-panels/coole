@@ -353,6 +353,20 @@ edit_publish_runtime_idle (WEdit *edit)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* The editor drawn again, and the dialogs over it after it: what a plugin draws when a server or
+   a program it runs says something must not hide the dialog the user is in */
+static void
+editor_host_draw (const mc_editor_host_t *host)
+{
+    if (top_dlg != NULL && top_dlg->data != host->host_data)
+        do_refresh ();
+    else
+        widget_draw (WIDGET (host->host_data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /**
  * Host callback: request redraw/refresh.
  */
@@ -361,7 +375,7 @@ static void
 editor_host_redraw_impl (mc_editor_host_t *host)
 {
     if (host != NULL && host->host_data != NULL)
-        widget_draw (WIDGET (host->host_data));
+        editor_host_draw (host);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -919,7 +933,7 @@ editor_host_set_marker_impl (mc_editor_host_t *host, const char *file, long line
         edit->force |= REDRAW_COMPLETELY;
     }
     editor_host_marker_gutter (host);
-    widget_draw (WIDGET (host->host_data));
+    editor_host_draw (host);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -943,7 +957,7 @@ editor_host_clear_markers_impl (mc_editor_host_t *host, const char *file, int ki
         book_mark_flush (edit, EDIT_MARKER_BASE + kind);
     }
     editor_host_marker_gutter (host);
-    widget_draw (WIDGET (host->host_data));
+    editor_host_draw (host);
 }
 
 /* --------------------------------------------------------------------------------------------- */
