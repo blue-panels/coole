@@ -71,10 +71,20 @@ window is not served when it is not.
 : What the server of the file has written on its error output and the
 messages it has sent, the newest last.
 
+**Settings**
+: When the servers start and when they complete by themselves, and the
+servers: the list says which are installed, Enter opens one, its command, the
+files it serves, the files that mark the root of a project, whether it is on,
+whether it serves files in no project, and when it starts. Reset sets a server
+of the system back as the system has it, Delete takes away one of the user's,
+New server adds one. OK writes ~/.config/coole/lsp.json, with only what is
+not as the system has it, and the servers start again as it says. The same
+dialog is Configure of the plugin in Options > Manage plugins.
+
 **lsp.json**
 
-The servers are those of the lsp.json of the system, /etc/coole/lsp.json, and
-of
+LSP Settings changes them; what it does not have is in the files. The servers
+are those of the lsp.json of the system, /etc/coole/lsp.json, and of
 **~/.config/coole/lsp.json**.
 A server of the user's file takes the place of the one of the same id, and a
 setting of the file that of the system's. For example
@@ -127,4 +137,8 @@ server; "*.csproj" is a pattern.
 : Variables for the program, null taking one away; what the server is given
 when it starts; and the settings it asks for.
 
-The file is read when coole starts.
+**enabled**
+: false: the server is there and serves nothing; true by default.
+
+The file is read when coole starts, and again when the settings dialog writes
+it.

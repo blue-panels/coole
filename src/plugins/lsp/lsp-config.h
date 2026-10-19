@@ -34,6 +34,7 @@ typedef struct
     GHashTable *extensions;  // the end of a file name to the language id: ".c" to "c"
     char **root_markers;     // names, or patterns of one name, that mark the root of a project
     gboolean single_file;    // a file in no project is served all the same, from its directory
+    gboolean enabled;        // false: the backend is there, and serves nothing
     lsp_when_t autostart;
     JsonObject *environment;           // the variables to set, a null one taken away; NULL: none
     JsonNode *initialization_options;  // NULL: none
@@ -54,6 +55,10 @@ typedef struct
 
 /*** declarations of public functions ************************************************************/
 
+/* "never", "ide" or "always", true or false: FALSE when the node is none of them */
+gboolean lsp_when_parse (JsonNode *node, lsp_when_t *when);
+const char *lsp_when_name (lsp_when_t when);
+
 /* The configuration of the system file and of the user's, either of them NULL or missing: a
    setting or a backend of the user takes the place of the system's one.  What is wrong in a
    file goes to @errors, a line each, and the file is not taken. */
@@ -62,8 +67,9 @@ lsp_config_t *lsp_config_load (const char *system_file, const char *user_file, G
 lsp_config_t *lsp_config_parse (const char *json, gssize len, GError **error);
 void lsp_config_free (lsp_config_t *config);
 
-/* The backend of a file and the language of the file for it: the first that has the end of its
-   name, the longest end of a backend counting, and whose program is there; NULL when none */
+/* The backend of a file and the language of the file for it: the first enabled that has the end
+   of its name, the longest end of a backend counting, and whose program is there; NULL when
+   none */
 const lsp_backend_t *lsp_config_backend_for (const lsp_config_t *config, const char *path,
                                              const char **language_id);
 const lsp_backend_t *lsp_config_backend (const lsp_config_t *config, const char *id);

@@ -50,6 +50,7 @@
 #include "lsp-client.h"
 #include "lsp-config.h"
 #include "lsp-text.h"
+#include "lsp-wizard.h"
 
 /*** global variables ****************************************************************************/
 
@@ -84,6 +85,7 @@ typedef enum
     LSP_CMD_RESTART,
     LSP_CMD_STATUS,
     LSP_CMD_LOG,
+    LSP_CMD_SETTINGS,
     LSP_CMD_COUNT,
     LSP_CMD_NONE = LSP_CMD_COUNT
 } lsp_cmd_t;
@@ -114,6 +116,7 @@ typedef struct
     gint64 idle_since;         // 0: it has files
     gint64 message_at;         // the last dialog of an error it said
     GHashTable *diagnostics;   // uri -> JsonArray
+    gboolean retired;          // of the settings before: stopped, and no file goes to it
 } lsp_server_t;
 
 /* A file window, served or not */
@@ -200,6 +203,7 @@ static const mc_ep_command_t lsp_commands[LSP_CMD_COUNT + 1] = {
     { "LspRestart", N_ ("Restart the language server of the file"), NULL },
     { "LspStatus", N_ ("The state of the language servers"), NULL },
     { "LspLog", N_ ("The log of a language server"), NULL },
+    { "LspSettings", N_ ("The settings of the language servers"), NULL },
     { NULL, NULL, NULL },
 };
 
@@ -451,7 +455,8 @@ lsp_server_find (lsp_plugin_t *plugin, const char *backend_id, const char *root)
     {
         lsp_server_t *server = g_ptr_array_index (plugin->servers, i);
 
-        if (strcmp (server->backend_id, backend_id) == 0 && strcmp (server->root, root) == 0)
+        if (!server->retired && strcmp (server->backend_id, backend_id) == 0
+            && strcmp (server->root, root) == 0)
             return server;
     }
     return NULL;
@@ -2072,6 +2077,76 @@ lsp_show_log (lsp_plugin_t *plugin, WEdit *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The system's lsp.json and the user's */
+static void
+lsp_config_files (char **system, char **user)
+{
+    *system = g_build_filename (mc_global.sysconfig_dir, LSP_CONFIG_FILE, (char *) NULL);
+    *user = g_build_filename (mc_config_get_path (), LSP_CONFIG_FILE, (char *) NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+lsp_load_config (lsp_plugin_t *plugin)
+{
+    char *system, *user;
+    GString *errors = g_string_new (NULL);
+
+    lsp_config_files (&system, &user);
+    plugin->config = lsp_config_load (system, user, errors);
+    g_free (plugin->config_errors);
+    plugin->config_errors = errors->len > 0 ? g_strdup (errors->str) : NULL;
+    g_string_free (errors, TRUE);
+    g_free (system);
+    g_free (user);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* lsp.json read again: the servers of before stop, the windows go to the servers of now */
+static void
+lsp_reload (lsp_plugin_t *plugin)
+{
+    guint i;
+
+    for (i = 0; i < plugin->windows->len; i++)
+        lsp_window_unbind (plugin, g_ptr_array_index (plugin->windows, i));
+    for (i = 0; i < plugin->servers->len; i++)
+    {
+        lsp_server_t *server = g_ptr_array_index (plugin->servers, i);
+
+        server->retired = TRUE;
+        server->manual_stop = TRUE;
+        server->restart_at = 0;
+        server->restart_stopped = FALSE;
+        lsp_client_stop (server->client);
+    }
+    lsp_config_free (plugin->config);
+    lsp_load_config (plugin);
+    for (i = 0; i < plugin->windows->len; i++)
+        (void) lsp_window_sync (
+            plugin, ((lsp_window_t *) g_ptr_array_index (plugin->windows, i))->edit, FALSE);
+    lsp_ticker_update (plugin);
+    plugin->host->redraw (plugin->host);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+lsp_settings_dialog (lsp_plugin_t *plugin)
+{
+    char *system, *user;
+
+    lsp_config_files (&system, &user);
+    if (lsp_wizard_run (system, user))
+        lsp_reload (plugin);
+    g_free (system);
+    g_free (user);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static gboolean
 lsp_run_command (lsp_plugin_t *plugin, lsp_cmd_t cmd, WEdit *edit)
 {
@@ -2093,6 +2168,9 @@ lsp_run_command (lsp_plugin_t *plugin, lsp_cmd_t cmd, WEdit *edit)
         return TRUE;
     case LSP_CMD_LOG:
         lsp_show_log (plugin, edit);
+        return TRUE;
+    case LSP_CMD_SETTINGS:
+        lsp_settings_dialog (plugin);
         return TRUE;
     default:
         break;
@@ -2179,7 +2257,7 @@ lsp_handle_key (void *data, int key, void *edit)
         const lsp_window_t *w = lsp_window_sync (plugin, EDIT (edit), FALSE);
 
         if (w->server == NULL && cmd != LSP_CMD_PROBLEMS && cmd != LSP_CMD_STATUS
-            && cmd != LSP_CMD_LOG)
+            && cmd != LSP_CMD_LOG && cmd != LSP_CMD_SETTINGS)
             return MC_EPR_NOT_SUPPORTED;
         (void) lsp_run_command (plugin, cmd, EDIT (edit));
         return MC_EPR_OK;
@@ -2274,20 +2352,6 @@ lsp_file_close (void *data, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-lsp_load_config (lsp_plugin_t *plugin)
-{
-    char *system = g_build_filename (mc_global.sysconfig_dir, LSP_CONFIG_FILE, (char *) NULL);
-    char *user = g_build_filename (mc_config_get_path (), LSP_CONFIG_FILE, (char *) NULL);
-    GString *errors = g_string_new (NULL);
-
-    plugin->config = lsp_config_load (system, user, errors);
-    plugin->config_errors = errors->len > 0 ? g_strdup (errors->str) : NULL;
-    g_string_free (errors, TRUE);
-    g_free (system);
-    g_free (user);
-}
-
 /* --------------------------------------------------------------------------------------------- */
 
 static void *
@@ -2375,6 +2439,17 @@ lsp_close (void *data)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* Options > Manage plugins, the plugin chosen */
+static mc_ep_result_t
+lsp_configure (void *data, void *edit)
+{
+    (void) edit;
+    lsp_settings_dialog ((lsp_plugin_t *) data);
+    return MC_EPR_OK;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /* The menu */
 
 static mc_ep_result_t
@@ -2402,6 +2477,7 @@ LSP_ACTION (lsp_act_stop, LSP_CMD_STOP)
 LSP_ACTION (lsp_act_restart, LSP_CMD_RESTART)
 LSP_ACTION (lsp_act_status, LSP_CMD_STATUS)
 LSP_ACTION (lsp_act_log, LSP_CMD_LOG)
+LSP_ACTION (lsp_act_settings, LSP_CMD_SETTINGS)
 
 /* in the order of lsp_cmd_t */
 static const mc_ep_action_t lsp_actions[LSP_CMD_COUNT] = {
@@ -2414,6 +2490,7 @@ static const mc_ep_action_t lsp_actions[LSP_CMD_COUNT] = {
     { "Restart", lsp_act_restart },
     { "Status", lsp_act_status },
     { "Log", lsp_act_log },
+    { "Settings", lsp_act_settings },
 };
 
 static const mc_ep_cmd_menu_entry_t lsp_menu[] = {
@@ -2428,6 +2505,7 @@ static const mc_ep_cmd_menu_entry_t lsp_menu[] = {
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("St&atus..."), LSP_CMD_STATUS, NULL },
     { LSP_MENU, N_ ("&Log..."), LSP_CMD_LOG, NULL },
+    { LSP_MENU, N_ ("S&ettings..."), LSP_CMD_SETTINGS, NULL },
 };
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2463,6 +2541,7 @@ static const mc_editor_plugin_t lsp_plugin_table = {
     .handle_key = lsp_handle_key,
     .handle_action = lsp_handle_action,
     .handle_event = lsp_handle_event,
+    .configure = lsp_configure,
     .actions = lsp_actions,
     .action_count = G_N_ELEMENTS (lsp_actions),
     .cmd_menu_entries = lsp_menu,

@@ -105,27 +105,10 @@ lsp_config_strings (JsonNode *node, const char *where, GError **error)
 static gboolean
 lsp_config_when (JsonNode *node, const char *where, lsp_when_t *when, GError **error)
 {
-    const char *value = NULL;
-
-    if (JSON_NODE_HOLDS_VALUE (node) && json_node_get_value_type (node) == G_TYPE_BOOLEAN)
-    {
-        *when = json_node_get_boolean (node) ? LSP_WHEN_ALWAYS : LSP_WHEN_NEVER;
+    if (lsp_when_parse (node, when))
         return TRUE;
-    }
-    if (JSON_NODE_HOLDS_VALUE (node) && json_node_get_value_type (node) == G_TYPE_STRING)
-        value = json_node_get_string (node);
-    if (g_strcmp0 (value, "never") == 0)
-        *when = LSP_WHEN_NEVER;
-    else if (g_strcmp0 (value, "ide") == 0)
-        *when = LSP_WHEN_IDE;
-    else if (g_strcmp0 (value, "always") == 0)
-        *when = LSP_WHEN_ALWAYS;
-    else
-    {
-        g_set_error (error, LSP_CONFIG_ERROR, 0, "%s: not \"never\", \"ide\" or \"always\"", where);
-        return FALSE;
-    }
-    return TRUE;
+    g_set_error (error, LSP_CONFIG_ERROR, 0, "%s: not \"never\", \"ide\" or \"always\"", where);
+    return FALSE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -149,6 +132,7 @@ lsp_config_backend_parse (JsonNode *node, guint index, GError **error)
     backend = g_new0 (lsp_backend_t, 1);
     backend->extensions = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
     backend->single_file = TRUE;
+    backend->enabled = TRUE;
     backend->autostart = LSP_WHEN_UNSET;
 
     member = json_object_get_member (o, "id");
@@ -209,6 +193,17 @@ lsp_config_backend_parse (JsonNode *node, guint index, GError **error)
         backend->root_markers = lsp_config_strings (member, where, error);
         if (backend->root_markers == NULL)
             goto fail;
+    }
+
+    member = json_object_get_member (o, "enabled");
+    if (member != NULL)
+    {
+        if (!JSON_NODE_HOLDS_VALUE (member) || json_node_get_value_type (member) != G_TYPE_BOOLEAN)
+        {
+            g_set_error (error, LSP_CONFIG_ERROR, 0, "%s.enabled: not true or false", where);
+            goto fail;
+        }
+        backend->enabled = json_node_get_boolean (member);
     }
 
     member = json_object_get_member (o, "single_file");
@@ -329,6 +324,49 @@ lsp_find_up (const char *dir, const char *const *names)
 
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+lsp_when_parse (JsonNode *node, lsp_when_t *when)
+{
+    const char *value = NULL;
+
+    if (node == NULL || !JSON_NODE_HOLDS_VALUE (node))
+        return FALSE;
+    if (json_node_get_value_type (node) == G_TYPE_BOOLEAN)
+    {
+        *when = json_node_get_boolean (node) ? LSP_WHEN_ALWAYS : LSP_WHEN_NEVER;
+        return TRUE;
+    }
+    if (json_node_get_value_type (node) == G_TYPE_STRING)
+        value = json_node_get_string (node);
+    if (g_strcmp0 (value, "never") == 0)
+        *when = LSP_WHEN_NEVER;
+    else if (g_strcmp0 (value, "ide") == 0)
+        *when = LSP_WHEN_IDE;
+    else if (g_strcmp0 (value, "always") == 0)
+        *when = LSP_WHEN_ALWAYS;
+    else
+        return FALSE;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+const char *
+lsp_when_name (lsp_when_t when)
+{
+    switch (when)
+    {
+    case LSP_WHEN_NEVER:
+        return "never";
+    case LSP_WHEN_ALWAYS:
+        return "always";
+    default:
+        return "ide";
+    }
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 lsp_config_t *
@@ -528,7 +566,7 @@ lsp_config_backend_for (const lsp_config_t *config, const char *path, const char
                 language = value;
             }
         }
-        if (language != NULL && lsp_backend_runnable (backend))
+        if (language != NULL && backend->enabled && lsp_backend_runnable (backend))
         {
             if (language_id != NULL)
                 *language_id = language;
