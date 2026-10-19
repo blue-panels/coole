@@ -43,8 +43,10 @@ These are the default keys; they are kept in
 (see Settings below).
 
 **Ctrl-Enter**
-: Jump to the declaration of the name under the cursor. Where several
-declarations answer, a list asks which one.
+: Jump to the declaration of the name under the cursor; in a file a language
+server serves, it is asked first, and so for Find references. Where several
+declarations answer, a list asks which one. A click with Ctrl on a name does
+the same, when no language server knows the file.
 
 **Ctrl-Backslash**
 : Find a declaration by its name.

@@ -125,6 +125,17 @@ typedef struct
 /* Keymap loading */
 /* --------------------------------------------------------------------------------------------- */
 
+/* What the tags would guess offered first to what knows, a language server: TRUE when it has
+   taken it */
+static gboolean
+ctags_offer (ctags_data_t *d, WEdit *edit, int event_id)
+{
+    return d != NULL && edit != NULL && d->host != NULL && d->host->navigate != NULL
+        && d->host->navigate (d->host, edit, event_id);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static long
 ctags_keymap_action_from_name (const char *name)
 {
@@ -2055,13 +2066,15 @@ ctags_dispatch_command (ctags_data_t *d, WEdit *edit, long command)
         /* handled at call site */
         break;
     case CTAGS_CMD_GOTO:
-        ctags_goto_declaration (d, edit);
+        if (!ctags_offer (d, edit, MC_EP_EVENT_CTRL_CLICK))
+            ctags_goto_declaration (d, edit);
         break;
     case CTAGS_CMD_FIND_SYMBOL:
         ctags_find_symbol (d, edit);
         break;
     case CTAGS_CMD_GREP_REFS:
-        ctags_grep_refs (d, edit);
+        if (!ctags_offer (d, edit, MC_EP_EVENT_REFERENCES))
+            ctags_grep_refs (d, edit);
         break;
     case CTAGS_CMD_HISTORY:
         ctags_show_history (d, edit);
@@ -2612,7 +2625,8 @@ ctags_plugin_handle_key (void *plugin_data, int key, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A file of a project saved: the plugin's own index of it is built again, in the background */
+/* A file of a project saved: the plugin's own index of it is built again, in the background.  A
+   click with Ctrl: the declaration of the name. */
 static mc_ep_result_t
 ctags_plugin_handle_event (void *plugin_data, void *edit, int event_id, void *payload)
 {
@@ -2621,7 +2635,35 @@ ctags_plugin_handle_event (void *plugin_data, void *edit, int event_id, void *pa
     ctags_repo_t *repo;
     char *own;
 
-    (void) edit;
+    /* Ctrl with a click: when no language server knows the name, the tags may; a click on no
+       word, or on one the tags do not know, only puts the cursor there */
+    if (d != NULL && edit != NULL && event_id == MC_EP_EVENT_CTRL_CLICK
+        && GPOINTER_TO_INT (payload) == 1)
+    {
+        char *word =
+            d->host->get_cursor_word != NULL ? d->host->get_cursor_word (d->host, edit) : NULL;
+        gboolean known = FALSE;
+
+        if (word != NULL && *word != '\0')
+        {
+            char *file = d->host->get_current_file != NULL
+                ? d->host->get_current_file (d->host, edit)
+                : NULL;
+            GPtrArray *found;
+
+            ctags_ensure_repo (d, file);
+            g_free (file);
+            found = ctags_repos_find_exact (d->repos, word);
+            known = found != NULL && found->len > 0;
+            if (found != NULL)
+                g_ptr_array_free (found, TRUE);
+        }
+        g_free (word);
+        if (!known)
+            return MC_EPR_NOT_SUPPORTED;
+        ctags_goto_declaration (d, (WEdit *) edit);
+        return MC_EPR_OK;
+    }
     if (d == NULL || !d->cfg.auto_discover
         || (event_id != MC_EP_EVENT_FILE_SAVED && event_id != MC_EP_EVENT_FILE_RENAMED)
         || path == NULL)
@@ -2692,7 +2734,8 @@ ctags_plugin_on_file_open (void *plugin_data, void *edit)
 static mc_ep_result_t
 ctags_act_goto (void *pd, void *edit)
 {
-    ctags_goto_declaration ((ctags_data_t *) pd, (WEdit *) edit);
+    if (!ctags_offer ((ctags_data_t *) pd, (WEdit *) edit, MC_EP_EVENT_CTRL_CLICK))
+        ctags_goto_declaration ((ctags_data_t *) pd, (WEdit *) edit);
     return MC_EPR_OK;
 }
 
@@ -2706,7 +2749,8 @@ ctags_act_find (void *pd, void *edit)
 static mc_ep_result_t
 ctags_act_grep_refs (void *pd, void *edit)
 {
-    ctags_grep_refs ((ctags_data_t *) pd, (WEdit *) edit);
+    if (!ctags_offer ((ctags_data_t *) pd, (WEdit *) edit, MC_EP_EVENT_REFERENCES))
+        ctags_grep_refs ((ctags_data_t *) pd, (WEdit *) edit);
     return MC_EPR_OK;
 }
 
@@ -2829,7 +2873,7 @@ static const mc_ep_action_t ctags_actions[] = {
 
 /* Shortcuts are resolved dynamically from ctags.keymap via get_menu_shortcut. */
 static const mc_ep_cmd_menu_entry_t ctags_menu_entries[] = {
-    { MC_EP_MENU_NAVIGATE, N_ ("Go to &declaration"), CTAGS_ACT_GOTO, NULL },
+    { MC_EP_MENU_NAVIGATE, N_ ("Go to &definition"), CTAGS_ACT_GOTO, NULL },
     { MC_EP_MENU_NAVIGATE, N_ ("&Find declaration"), CTAGS_ACT_FIND, NULL },
     { MC_EP_MENU_NAVIGATE, N_ ("Find &references"), CTAGS_ACT_GREP_REFS, NULL },
     { MC_EP_MENU_NAVIGATE, NULL, 0, NULL },
