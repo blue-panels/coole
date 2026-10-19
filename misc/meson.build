@@ -39,3 +39,7 @@ install_symlink('keymap.ini', pointing_to: 'keymap.default.ini', install_dir: pk
 install_data('edit.indent.rc', install_dir: pkgsysconfdir, install_mode: 'rwxr-xr-x')
 # the menu of a message of the git plugin and what it asks the AI
 install_data('git-menu.ini', 'ai.ini', install_dir: pkgsysconfdir)
+# the language servers the LSP plugin knows; ~/.config/coole/lsp.json adds and replaces
+if have_gmodule and json_glib.found()
+  install_data('lsp.json', install_dir: pkgsysconfdir)
+endif

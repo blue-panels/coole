@@ -1,0 +1,126 @@
+# LSP <!-- help:notitle -->
+
+**Language servers**
+
+A language server knows a language as a compiler does: it tells the problems of
+the code, what a name is, where it is defined and how a word goes on. The LSP
+plugin runs the servers of the languages and asks them for the files of the
+editor. The servers are programs of their own, clangd for C and C++, pylsp or
+pyright for Python, rust-analyzer, gopls and so on; they have to be installed.
+
+**When a server runs**
+
+A file whose language has a server in
+**lsp.json**
+is served by it. The server starts by itself when the file is opened, if
+coole was started on a project with -D; else LSP Start in the LSP menu starts
+it. One server serves all the files of a project: the directory with
+**.coole**,
+else the nearest one with a file the server names, compile_commands.json for
+clangd for one, else the root of the git, hg or svn repository. A file in no
+project is served from its own directory.
+
+A server with no file open stops after a minute. One that fails is started
+again, three times in a minute at most; then LSP Restart starts it.
+
+**The keys**
+
+**Ctrl-Space**
+: Complete the word at the cursor: the list of what the server offers, the
+words that start as the one typed. Enter puts the one chosen in the text, with
+what the server adds elsewhere, an include for one; one Undo takes all of it
+back.
+On a project of -D the list comes by itself after a dot, "->" or "::", the
+members of what is before it.
+
+**Alt-.**
+: Go to the definition of the name at the cursor; to a list of them when
+there are several. A file not open yet is opened as Navigate opens one, and
+Back returns.
+
+**Alt-,**
+: What the server says of the name at the cursor, its type and its
+documentation, after the problems of the line.
+
+The keys are those of the section
+**[lsp]**
+of the keymap, which Options > Key bindings changes. A key of LSP in a file no
+server serves is the editor's.
+
+**The problems**
+
+The lines with a problem have a mark in the gutter:
+**E**
+for an error,
+**W**
+for a warning,
+**i**
+for a note. LSP Problems lists them all, Enter goes to the one chosen.
+
+**The menu LSP**
+
+**Start server, Stop server, Restart server**
+: The server of the file of the window. A server stopped stays so until it is
+started again.
+
+**Status**
+: The servers, the projects they serve, their state, and why the file of the
+window is not served when it is not.
+
+**Log**
+: What the server of the file has written on its error output and the
+messages it has sent, the newest last.
+
+**lsp.json**
+
+The servers are those of the lsp.json of the system, /etc/coole/lsp.json, and
+of
+**~/.config/coole/lsp.json**.
+A server of the user's file takes the place of the one of the same id, and a
+setting of the file that of the system's. For example
+
+```
+{
+  "autostart": "always",
+  "completion_on_trigger": "always",
+  "backends": [
+    {
+      "id": "clangd",
+      "command": ["clangd", "--background-index", "--clang-tidy"],
+      "extensions": {".c": "c", ".h": "c", ".cpp": "cpp", ".hpp": "cpp"},
+      "root_markers": ["compile_commands.json", "compile_flags.txt"],
+      "single_file": true,
+      "settings": {}
+    }
+  ]
+}
+```
+
+**autostart**
+: "ide", the default, starts a server by itself on a project of -D only;
+"always" on any file; "never" by LSP Start only. A backend may have its own.
+
+**completion_on_trigger**
+: The list of completion shown by itself after a character the server
+completes after, a dot, "->" or "::", as it is typed: "ide", the default, on a
+project of -D only; "always"; "never", by Ctrl-Space only. When the server has
+nothing to offer there, nothing is shown.
+
+**command**
+: The program and its arguments, without a shell.
+
+**extensions**
+: The ends of the names of the files the server serves, with their language.
+
+**root_markers**
+: The files or the directories that mark the root of a project for the
+server; "*.csproj" is a pattern.
+
+**single_file**
+: Whether a file in no project is served; true by default.
+
+**environment, initialization_options, settings**
+: Variables for the program, null taking one away; what the server is given
+when it starts; and the settings it asks for.
+
+The file is read when coole starts.

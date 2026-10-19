@@ -73,4 +73,7 @@ test('git_core', executable('git_core', 'git_core.c',
 if have_gmodule and module_symbols_sh.found()
   test('debugger_module_symbols', module_symbols_sh, args: [coole, debugger_module],
        suite: 'src/editor')
+  if json_glib.found()
+    test('lsp_module_symbols', module_symbols_sh, args: [coole, lsp_module], suite: 'src/editor')
+  endif
 endif

@@ -141,6 +141,9 @@ install_data(
 if have_terminal
   install_data('plugins/terminal/terminal.md', install_dir: pkgdatadir / 'help')
 endif
+if have_gmodule and json_glib.found()
+  install_data('plugins/lsp/lsp.md', install_dir: pkgdatadir / 'help')
+endif
 # their translations, found by the help as name.lang.md
 if have_nls
   install_data('plugins/git/git.ru.md', install_dir: pkgdatadir / 'help')
@@ -163,6 +166,9 @@ endif
 if have_gmodule
   subdir('plugins/viewer')
   subdir('plugins/debugger')
+  if json_glib.found()
+    subdir('plugins/lsp')
+  endif
 endif
 
 # "meson devenv -C BUILDDIR coole": the program of the build with the plugins of the build, not
