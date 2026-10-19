@@ -86,7 +86,8 @@ setting of the file that of the system's. For example
   "backends": [
     {
       "id": "clangd",
-      "command": ["clangd", "--background-index", "--clang-tidy"],
+      "command": ["clangd", "--background-index", "--clang-tidy",
+                  "--compile-commands-dir=${build_dir}"],
       "extensions": {".c": "c", ".h": "c", ".cpp": "cpp", ".hpp": "cpp"},
       "root_markers": ["compile_commands.json", "compile_flags.txt"],
       "single_file": true,
@@ -107,7 +108,10 @@ project of -D only; "always"; "never", by Ctrl-Space only. When the server has
 nothing to offer there, nothing is shown.
 
 **command**
-: The program and its arguments, without a shell.
+: The program and its arguments, without a shell. ${build_dir} in an
+argument is the build directory of meson or cmake of the project, in its root
+or next to it; an argument with it is left out when there is none. clangd
+finds compile_commands.json so.
 
 **extensions**
 : The ends of the names of the files the server serves, with their language.

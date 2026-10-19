@@ -1227,6 +1227,15 @@ lsp_client_free (lsp_client_t *client)
 
 /* --------------------------------------------------------------------------------------------- */
 
+void
+lsp_client_set_command (lsp_client_t *client, char *const *command)
+{
+    g_strfreev (client->command);
+    client->command = g_strdupv ((char **) command);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 gboolean
 lsp_client_start (lsp_client_t *client, GError **error)
 {
@@ -1263,8 +1272,13 @@ lsp_client_start (lsp_client_t *client, GError **error)
     client->state = LSP_CLIENT_STARTING;
     client->state_changed = TRUE;
     g_clear_pointer (&client->reason, g_free);
-    lsp_client_log_add (client, "started %s in %s, pid %d", client->command[0], client->root,
-                        (int) client->pid);
+    {
+        char *line = g_strjoinv (" ", client->command);
+
+        lsp_client_log_add (client, "started %s in %s, pid %d", line, client->root,
+                            (int) client->pid);
+        g_free (line);
+    }
     if (lsp_client_send_request (client, "initialize", lsp_client_initialize_params (client),
                                  LSP_INITIALIZE_TIMEOUT_MS, TRUE, lsp_client_initialized, NULL,
                                  NULL)

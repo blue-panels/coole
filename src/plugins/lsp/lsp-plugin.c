@@ -40,6 +40,7 @@
 #include "lib/widget.h"
 
 #include "src/keymap.h"
+#include "src/plugins/build/build-core.h"  // build_detect (), the build directory of a project
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
 #include "src/editor/editwindow.h"
@@ -104,6 +105,7 @@ typedef struct
     lsp_client_t *client;
     char *backend_id;
     char *root;
+    char **command;            // of the backend, ${build_dir} in it
     gboolean manual_stop;      // stopped by the user: no autostart, no restart
     gboolean start_failed;     // could not be run: not tried again by itself
     gboolean restart_stopped;  // LSP Restart: started again once stopped
@@ -463,6 +465,7 @@ lsp_server_free (gpointer data)
     lsp_server_t *server = (lsp_server_t *) data;
 
     lsp_client_free (server->client);
+    g_strfreev (server->command);
     g_free (server->backend_id);
     g_free (server->root);
     g_array_free (server->failures, TRUE);
@@ -480,6 +483,7 @@ lsp_server_new (lsp_plugin_t *plugin, const lsp_backend_t *backend, const char *
     server->plugin = plugin;
     server->backend_id = g_strdup (backend->id);
     server->root = g_strdup (root);
+    server->command = g_strdupv (backend->command);
     server->client = lsp_client_new (backend, root, &lsp_handlers, server);
     server->failures = g_array_new (FALSE, FALSE, sizeof (gint64));
     server->diagnostics =
@@ -501,6 +505,24 @@ lsp_ticker_update (lsp_plugin_t *plugin)
             lsp_client_writing (((lsp_server_t *) g_ptr_array_index (plugin->servers, i))->client);
     g_atomic_int_set (&plugin->ticker_on, plugin->servers->len > 0 || lsp_client_reaping ());
     g_atomic_int_set (&plugin->ticker_fast, fast);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The command of the server for its project now: the build directory may have come since */
+static void
+lsp_server_command (lsp_server_t *server)
+{
+    build_info_t *build = build_detect (server->root);
+    const char *build_dir =
+        build != NULL && (build->system == BUILD_MESON || build->system == BUILD_CMAKE)
+        ? build->build_dir
+        : NULL;
+    char **command = lsp_command_expand (server->command, build_dir);
+
+    lsp_client_set_command (server->client, command);
+    g_strfreev (command);
+    build_info_free (build);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -527,6 +549,7 @@ lsp_server_start (lsp_server_t *server, gboolean manual)
                                    _ ("Too many language servers run already."));
         return FALSE;
     }
+    lsp_server_command (server);
     if (!lsp_client_start (server->client, &error))
     {
         server->start_failed = TRUE;

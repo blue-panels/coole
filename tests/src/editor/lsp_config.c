@@ -284,6 +284,27 @@ test_root (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+test_command (void)
+{
+    char *command[] = { (char *) "clangd", (char *) "--compile-commands-dir=${build_dir}",
+                        (char *) "${build_dir}/x:${build_dir}", (char *) "-j", NULL };
+    char **expanded;
+
+    expanded = lsp_command_expand (command, "/b");
+    g_assert_cmpuint (g_strv_length (expanded), ==, 4);
+    g_assert_cmpstr (expanded[1], ==, "--compile-commands-dir=/b");
+    g_assert_cmpstr (expanded[2], ==, "/b/x:/b");
+    g_assert_cmpstr (expanded[3], ==, "-j");
+    g_strfreev (expanded);
+    // no build directory: the arguments that name it are left out
+    expanded = lsp_command_expand (command, NULL);
+    g_assert_cmpuint (g_strv_length (expanded), ==, 2);
+    g_assert_cmpstr (expanded[0], ==, "clangd");
+    g_assert_cmpstr (expanded[1], ==, "-j");
+    g_strfreev (expanded);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -295,6 +316,7 @@ main (int argc, char **argv)
     g_test_add_func ("/lsp/config-parse", test_parse);
     g_test_add_func ("/lsp/config-load", test_load);
     g_test_add_func ("/lsp/config-root", test_root);
+    g_test_add_func ("/lsp/config-command", test_command);
     result = g_test_run ();
     remove_tree (top);
     g_free (top);

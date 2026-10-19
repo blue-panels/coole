@@ -83,6 +83,8 @@ lsp_client_t *lsp_client_new (const lsp_backend_t *backend, const char *root,
 /* The server stopped at once if it runs, the requests closed, the client freed */
 void lsp_client_free (lsp_client_t *client);
 
+/* The command the next start runs, @command copied */
+void lsp_client_set_command (lsp_client_t *client, char *const *command);
 /* The server run and initialized; the documents of the client are opened on it once it is.
    FALSE with @error when it cannot be run. */
 gboolean lsp_client_start (lsp_client_t *client, GError **error);

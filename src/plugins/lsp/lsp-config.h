@@ -76,6 +76,11 @@ lsp_when_t lsp_backend_autostart (const lsp_config_t *config, const lsp_backend_
    .svn, else the directory of the file when the backend serves single files; NULL when none. */
 char *lsp_find_root (const lsp_backend_t *backend, const char *path, const char *project);
 
+/* The command of a server for a project: "${build_dir}" in an argument is the build directory of
+   the project; an argument with it is left out when the project has none (@build_dir NULL).
+   NULL ended, free with g_strfreev(). */
+char **lsp_command_expand (char *const *command, const char *build_dir);
+
 /* The setting @section, "a.b.c", of @settings; all of them for a NULL or empty section; NULL when
    there is none.  The node is one of @settings. */
 JsonNode *lsp_settings_lookup (JsonNode *settings, const char *section);

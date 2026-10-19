@@ -611,3 +611,27 @@ lsp_settings_lookup (JsonNode *settings, const char *section)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+char **
+lsp_command_expand (char *const *command, const char *build_dir)
+{
+    GPtrArray *out = g_ptr_array_new ();
+    int i;
+
+    for (i = 0; command[i] != NULL; i++)
+    {
+        if (strstr (command[i], "${build_dir}") == NULL)
+            g_ptr_array_add (out, g_strdup (command[i]));
+        else if (build_dir != NULL)
+        {
+            char **parts = g_strsplit (command[i], "${build_dir}", -1);
+
+            g_ptr_array_add (out, g_strjoinv (build_dir, parts));
+            g_strfreev (parts);
+        }
+    }
+    g_ptr_array_add (out, NULL);
+    return (char **) g_ptr_array_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */

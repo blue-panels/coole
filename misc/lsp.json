@@ -4,7 +4,7 @@
   "backends": [
     {
       "id": "clangd",
-      "command": ["clangd", "--background-index"],
+      "command": ["clangd", "--background-index", "--compile-commands-dir=${build_dir}"],
       "extensions": {".c": "c", ".h": "c", ".cc": "cpp", ".cpp": "cpp", ".cxx": "cpp",
                      ".hh": "cpp", ".hpp": "cpp", ".hxx": "cpp", ".m": "objective-c"},
       "root_markers": ["compile_commands.json", "compile_flags.txt"]
