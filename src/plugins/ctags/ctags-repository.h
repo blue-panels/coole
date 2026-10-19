@@ -16,15 +16,12 @@
 
 /*** structures declarations (and typedefs of structures)*****************************************/
 
-#define CTAGS_HISTORY_MAX 50
-
 typedef struct
 {
     char *tags_path;    /* absolute path to the tags file */
     char *root_dir;     /* directory containing the tags file */
     GPtrArray *entries; /* owned ctags_entry_t* */
     ctags_index_t *index;
-    GPtrArray *nav_history; /* owned ctags_entry_t*, oldest at [0], newest at [len-1] */
 } ctags_repo_t;
 
 /*** global variables defined in .c file *********************************************************/
@@ -64,10 +61,6 @@ GPtrArray *ctags_repos_find_prefix (GSList *repos, const char *prefix, gboolean 
 /* Return file matches by basename/path suffix across all repos.
  * Returns new GPtrArray or NULL. */
 GPtrArray *ctags_repos_find_basename (GSList *repos, const char *name);
-
-/* Prepend a navigation entry to @repo's history, trim to CTAGS_HISTORY_MAX, and persist.
- * @name may be NULL.  @file must be non-NULL and @line > 0. */
-void ctags_repo_history_push (ctags_repo_t *repo, const char *name, const char *file, long line);
 
 /*** inline functions ****************************************************************************/
 

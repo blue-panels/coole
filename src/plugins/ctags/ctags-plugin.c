@@ -45,6 +45,7 @@
 #include "lib/plugin-service.h"
 
 #include "src/editor/editwidget.h"
+#include "src/editor/editnav.h"
 #include "src/editor/edit-impl.h"
 #include "src/editor/editcomplete.h" /* edit_complete_word_cmd for Complete fallback */
 
@@ -341,63 +342,21 @@ ctags_keymap_lookup_command (const GArray *keymap, int key)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Find the repo that owns @file_path; fall back to first repo. */
-static ctags_repo_t *
-ctags_find_repo_for_path (ctags_data_t *d, const char *file_path)
-{
-    ctags_repo_t *fallback = NULL;
-    GSList *l;
-
-    for (l = d->repos; l != NULL; l = g_slist_next (l))
-    {
-        ctags_repo_t *repo = (ctags_repo_t *) l->data;
-
-        if (fallback == NULL)
-            fallback = repo;
-
-        if (ctags_path_is_under (file_path, repo->root_dir))
-            return repo;
-    }
-    return fallback;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* Jump to @path:@line and record the location in the repo's history. */
+/* Jump to @path:@line, recorded for Go back */
 static void
 ctags_do_jump (ctags_data_t *d, WEdit *edit, const char *path, long line, const char *name)
 {
-    /* Record where we are before jumping so the user can return from history. */
-    if (d->host->get_current_file != NULL && d->host->get_cursor_line != NULL)
-    {
-        char *cur_file = d->host->get_current_file (d->host, edit);
-        long cur_line = d->host->get_cursor_line (d->host, edit);
-
-        if (cur_file != NULL && cur_line > 0)
-        {
-            const char *base = strrchr (cur_file, G_DIR_SEPARATOR);
-            base = (base != NULL) ? base + 1 : cur_file;
-            ctags_repo_history_push (ctags_find_repo_for_path (d, cur_file), base, cur_file,
-                                     cur_line);
-        }
-        g_free (cur_file);
-    }
-
+    (void) name;
     if (d->host->jump_to != NULL && !d->host->jump_to (d->host, edit, path, line))
     {
-        /* The host refused (e.g. its own navigation stack is full).
-           Don't pretend the jump happened: skip the history push and
-           surface the error so the user knows nothing moved. */
+        // the file cannot be opened: nothing moved, and the user is told
         if (d->host->message != NULL)
         {
             char *text = g_strdup_printf (_ ("Cannot jump to %s:%ld."), path, line);
             d->host->message (d->host, D_ERROR, _ ("Ctags"), text);
             g_free (text);
         }
-        return;
     }
-
-    ctags_repo_history_push (ctags_find_repo_for_path (d, path), name, path, line);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2000,59 +1959,9 @@ ctags_reindex (ctags_data_t *d, WEdit *edit)
 static void
 ctags_show_history (ctags_data_t *d, WEdit *edit)
 {
-    GPtrArray *all;
-    ctags_entry_t *chosen = NULL;
-    GSList *l;
-    guint i;
-
-    /* Ensure the repo for the current file is loaded so its saved history is available. */
-    {
-        char *file =
-            d->host->get_current_file != NULL ? d->host->get_current_file (d->host, edit) : NULL;
-        ctags_ensure_repo (d, file);
-        g_free (file);
-    }
-
-    all = g_ptr_array_new ();
-
-    /* Collect history from all repos, newest entries first (iterate in reverse) */
-    for (l = d->repos; l != NULL; l = g_slist_next (l))
-    {
-        ctags_repo_t *repo = (ctags_repo_t *) l->data;
-
-        if (repo->nav_history == NULL)
-            continue;
-
-        for (i = repo->nav_history->len; i > 0; i--)
-            g_ptr_array_add (all, g_ptr_array_index (repo->nav_history, i - 1));
-    }
-
-    if (all->len == 0)
-    {
-        g_ptr_array_free (all, TRUE);
-        message (D_NORMAL, _ ("Ctags"), _ ("Navigation history is empty."));
-        return;
-    }
-
-    chosen = ctags_ui_select_refs (_ ("Navigation History"), all);
-
-    if (chosen != NULL && chosen->file != NULL)
-    {
-        /* chosen points into some repo->nav_history; ctags_do_jump() pushes
-           the current position first, which can trim the oldest entry from
-           that array and free `chosen` underneath us.  Copy fields out
-           before the jump. */
-        char *file = g_strdup (chosen->file);
-        long line = chosen->line;
-
-        ctags_do_jump (d, edit, file, line, NULL);
-        g_free (file);
-    }
-
-    g_ptr_array_free (all, TRUE);
-
-    if (d->host->redraw != NULL)
-        d->host->redraw (d->host);
+    // the places of all the jumps, of the language servers too, are the editor's
+    (void) d;
+    edit_nav_history (edit);
 }
 
 /* --------------------------------------------------------------------------------------------- */

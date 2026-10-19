@@ -67,12 +67,10 @@
 #define KEY_PRESS       1500000000
 
 /* Tabs spaces: (sofar only HALF_TAB_SIZE is used: */
-#define TAB_SIZE      option_tab_spacing
-#define HALF_TAB_SIZE ((int) option_tab_spacing / 2)
+#define TAB_SIZE         option_tab_spacing
+#define HALF_TAB_SIZE    ((int) option_tab_spacing / 2)
 
-/* max count stack files */
-#define MAX_HISTORY_MOVETO 50
-#define LINE_STATE_WIDTH   9
+#define LINE_STATE_WIDTH 9
 /* bookmarks of this color and up are the gutter marks of the plugins */
 #define EDIT_MARKER_BASE                  0x40000000
 
@@ -106,9 +104,6 @@ typedef enum
 extern const char VERTICAL_MAGIC[5];
 /* if enable_show_tabs_tws == TRUE then use visible_tab visible_tws */
 extern gboolean enable_show_tabs_tws;
-
-extern unsigned int edit_stack_iterator;
-extern edit_arg_t edit_history_moveto[MAX_HISTORY_MOVETO];
 
 extern int max_undo;
 extern gboolean auto_syntax;

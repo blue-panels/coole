@@ -255,6 +255,10 @@ typedef struct mc_editor_host_t
     /* MC_EP_EVENT_CTRL_CLICK or MC_EP_EVENT_REFERENCES offered to the plugins that know, the
        first round: TRUE when one has taken it.  A plugin that guesses, from tags, asks first. */
     gboolean (*navigate) (struct mc_editor_host_t *host, void *edit, int event_id);
+    /* As jump_to(), @column bytes into the line, the window of the file to the front when one
+       has it, its undo kept */
+    gboolean (*go_to) (struct mc_editor_host_t *host, void *edit, const char *file, long line,
+                       long column);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.

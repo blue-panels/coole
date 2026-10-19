@@ -72,6 +72,7 @@
 
 #include "edit-impl.h"
 #include "editwidget.h"
+#include "editnav.h"
 #include "editdock.h"
 #include "editlayout.h"
 #include "editmacros.h"  // edit_execute_macro()
@@ -535,46 +536,28 @@ static gboolean
 editor_host_jump_to_impl (mc_editor_host_t *host, void *edit, const char *file, long line)
 {
     WEdit *e = (WEdit *) edit;
-    WDialog *dlg;
-    gboolean ret;
 
     (void) host;
 
     if (e == NULL || file == NULL)
         return FALSE;
 
-    dlg = DIALOG (WIDGET (e)->owner);
+    // recorded for Go back; a file changed here goes in a window of its own
+    return edit_nav_jump (e, file, line, 0);
+}
 
-    /* If the current file is modified, open target in a new window without
-     * touching the navigation stack -- we are not navigating away. */
-    if (e->modified != 0)
-    {
-        char *path = mc_path_absolute (file);
-        edit_arg_t arg;
+/* --------------------------------------------------------------------------------------------- */
 
-        edit_arg_init (&arg, path, line);
-        ret = edit_load_file_from_filename (dlg, &arg);
-        g_free (path);
-        return ret;
-    }
+/**
+ * Host callback: jump to file:line, @column bytes into the line, recorded for Go back.
+ */
 
-    if (edit_stack_iterator + 1 >= MAX_HISTORY_MOVETO)
-        return FALSE;
-
-    /* Save current position */
-    if (e->filename != NULL)
-    {
-        edit_update_curs_col (e);
-        edit_arg_assign (&edit_history_moveto[edit_stack_iterator], g_strdup (e->filename),
-                         e->start_line + e->curs_row + 1);
-        edit_history_moveto[edit_stack_iterator].column = e->curs_col;
-        edit_history_moveto[edit_stack_iterator].start_line = e->start_line;
-    }
-
-    /* Push target and jump */
-    edit_stack_iterator++;
-    edit_arg_assign (&edit_history_moveto[edit_stack_iterator], mc_path_absolute (file), line);
-    return edit_reload_line (e, &edit_history_moveto[edit_stack_iterator]);
+static gboolean
+editor_host_go_to_impl (mc_editor_host_t *host, void *edit, const char *file, long line,
+                        long column)
+{
+    (void) host;
+    return edit != NULL && edit_nav_jump (EDIT (edit), file, line, column);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1485,6 +1468,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->layout_pop = editor_host_layout_pop_impl;
     ctx->host->window_docked = editor_host_window_docked_impl;
     ctx->host->navigate = editor_host_navigate_impl;
+    ctx->host->go_to = editor_host_go_to_impl;
     ctx->window_kinds = g_ptr_array_new_with_free_func (editor_window_kind_free);
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
     // the plugins reach it from open(): call_later() for one

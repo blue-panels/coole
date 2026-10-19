@@ -68,6 +68,7 @@
 #include "src/clipboard.h"  // clipboard_info_read()
 
 #include "edit-impl.h"
+#include "editnav.h"
 #include "editwidget.h"
 #include "editsearch.h"
 #include "editcomplete.h"  // edit_complete_word_cmd()
@@ -114,8 +115,6 @@ int max_undo = 32768;
 
 gboolean enable_show_tabs_tws = TRUE;
 
-unsigned int edit_stack_iterator = 0;
-edit_arg_t edit_history_moveto[MAX_HISTORY_MOVETO];
 /* magic sequence for say than block is vertical */
 const char VERTICAL_MAGIC[] = { '\1', '\1', '\1', '\1', '\n' };
 
@@ -5694,10 +5693,7 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
 void
 edit_stack_init (void)
 {
-    for (edit_stack_iterator = 0; edit_stack_iterator < MAX_HISTORY_MOVETO; edit_stack_iterator++)
-        edit_arg_init (&edit_history_moveto[edit_stack_iterator], NULL, -1);
-
-    edit_stack_iterator = 0;
+    edit_nav_free ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -5705,8 +5701,7 @@ edit_stack_init (void)
 void
 edit_stack_free (void)
 {
-    for (edit_stack_iterator = 0; edit_stack_iterator < MAX_HISTORY_MOVETO; edit_stack_iterator++)
-        g_free (edit_history_moveto[edit_stack_iterator].file_name);
+    edit_nav_free ();
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -56,10 +56,14 @@ the same, when no language server knows the file.
 
 **Alt-Minus, Alt-Plus**
 : Back to where the last jump started, and forward again, like the back and
-forward of a browser.
+forward of a browser. Every jump counts, those of a language server too: Go
+to definition, Find references, a click with Ctrl, a problem chosen. A file
+open in a window is shown in it, as it is, its undo kept; a file changed
+here is not let go, the other one opens in a window of its own.
 
 **Alt-h**
-: The history of the jumps.
+: The history of the jumps: each place with the text of its line, the list
+open at the place the editor is; Enter goes to the one chosen.
 
 **Alt-=**
 : The members of a class or a structure.
@@ -96,5 +100,4 @@ The keys are read from
 *ctags.keymap*
 of the system configuration directory of coole, and then from
 *~/.config/coole/ctags.keymap*,
-which overrides it. The history of the jumps is kept in
-*~/.local/share/coole/ctags/*.
+which overrides it. The history of the jumps lasts as long as the editor.
