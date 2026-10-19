@@ -76,6 +76,19 @@ dlg_default_get_colors (const Widget *w)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The widgets drawn over the others, after what the others have drawn of themselves */
+static void
+dlg_draw_overlays (WDialog *h)
+{
+    GList *l;
+
+    for (l = GROUP (h)->widgets; l != NULL; l = g_list_next (l))
+        if (widget_get_options (WIDGET (l->data), WOP_OVERLAY))
+            (void) widget_draw (WIDGET (l->data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 refresh_cmd (void)
 {
@@ -281,6 +294,7 @@ frontend_dlg_run (WDialog *h)
                 break;
         }
 
+        dlg_draw_overlays (h);
         widget_update_cursor (wh);
 
         // Clear interrupt flag

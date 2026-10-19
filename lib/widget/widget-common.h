@@ -76,7 +76,10 @@ typedef enum
     WOP_IS_INPUT = (1 << 3),
     WOP_SELECTABLE = (1 << 4),
     WOP_TOP_SELECT = (1 << 5),
-    WOP_WANT_ALT_KEYS = (1 << 6)  // In focus, gets MSG_HOTKEY with its Alt keys as they are first
+    WOP_WANT_ALT_KEYS = (1 << 6),  // In focus, gets MSG_HOTKEY with its Alt keys as they are first
+    /* Drawn over all the widgets of its dialog, again each time before the keys are waited for:
+       a list over the windows, which a window drawing itself would hide */
+    WOP_OVERLAY = (1 << 7)
 } widget_options_t;
 
 /* Widget state */
