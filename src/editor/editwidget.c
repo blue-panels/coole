@@ -904,7 +904,9 @@ editor_host_marker_kind_impl (mc_editor_host_t *host, const mc_ep_marker_kind_t 
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The gutter shows the marks: it is turned on for them, and off again with the last of them */
+/* The gutter shows the marks: it is turned on for them, and stays on until the editor ends, so
+   that the text does not move aside and back as the marks come and go: a jump to a file with
+   none of them, for one */
 static gboolean editor_marker_gutter_auto = FALSE;
 
 static void
@@ -931,12 +933,6 @@ editor_host_marker_gutter (mc_editor_host_t *host)
                 return;
             }
     }
-    if (editor_marker_gutter_auto && edit_options.line_state)
-    {
-        edit_options.line_state = FALSE;
-        edit_options.line_state_width = 0;
-    }
-    editor_marker_gutter_auto = FALSE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
