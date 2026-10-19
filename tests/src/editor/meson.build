@@ -40,6 +40,9 @@ if json_glib.found()
                                dependencies: [glib_dep, screen_deps, json_glib]), suite: 'src/editor')
 endif
 
+test('fuzzy', executable('fuzzy', 'fuzzy.c', '../../../src/fuzzy.c', dependencies: [glib_dep]),
+     suite: 'src/editor')
+
 test('content_frame', executable('content_frame', 'content_frame.c',
                                  '../../../src/content-frame.c',
                                  dependencies: [glib_dep]), suite: 'src/editor')

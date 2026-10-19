@@ -5,6 +5,7 @@ libinternal_sources = files(
   'events_init.c',
   'execute.c',
   'file_history.c',
+  'fuzzy.c',
   'help.c',
   'help_md.c',
   'key_learn.c',

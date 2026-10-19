@@ -52,6 +52,7 @@
 #include "ctags-index.h"
 #include "ctags-repository.h"
 #include "ctags-config.h"
+#include "src/fuzzy.h"
 #include "ctags-fuzzy.h"
 #include "ctags-ui.h"
 #include "ctags-plugin.h"
@@ -2292,7 +2293,7 @@ ctags_symbols (ctags_data_t *d, const char *root, const char *file, const char *
         ctags_scored_t m;
 
         m.e = (const ctags_entry_t *) g_ptr_array_index (entries, i);
-        m.score = query == NULL || *query == '\0' ? 1 : ctags_fuzzy_score (m.e->name, query);
+        m.score = query == NULL || *query == '\0' ? 1 : fuzzy_score (m.e->name, query, NULL);
         // a tags file made without --fields=+n has the patterns alone: the line is looked for
         m.line = file != NULL && m.score > 0 ? ctags_entry_resolve_line (m.e, file) : m.e->line;
         // a project with nothing typed has too many to list
