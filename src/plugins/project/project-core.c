@@ -323,6 +323,41 @@ project_is_project (const char *root)
 
 /* --------------------------------------------------------------------------------------------- */
 
+char *
+project_display_path (const char *path, const char *project)
+{
+    const char *home = g_get_home_dir ();
+    char *root = NULL;
+    char *shown = NULL;
+    gsize len;
+
+    if (path == NULL)
+        return NULL;
+    if (project != NULL && *project != '\0')
+        root = g_strdup (project);
+    len = root != NULL ? strlen (root) : 0;
+    if (root == NULL || strncmp (path, root, len) != 0 || path[len] != G_DIR_SEPARATOR)
+    {
+        g_free (root);
+        root = project_find_root (path);
+        if (root != NULL && !project_is_project (root))
+            g_clear_pointer (&root, g_free);
+        len = root != NULL ? strlen (root) : 0;
+    }
+    // the root "/" holds every file: its name from it says nothing more
+    if (root != NULL && len > 1 && strncmp (path, root, len) == 0 && path[len] == G_DIR_SEPARATOR)
+        shown = g_strdup (path + len + 1);
+    else if (home != NULL && *home != '\0' && strlen (home) > 1
+             && strncmp (path, home, strlen (home)) == 0 && path[strlen (home)] == G_DIR_SEPARATOR)
+        shown = g_strconcat ("~", path + strlen (home), (char *) NULL);
+    else
+        shown = g_strdup (path);
+    g_free (root);
+    return shown;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 GPtrArray *
 project_list_files (const char *root)
 {

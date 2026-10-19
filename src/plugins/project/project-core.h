@@ -28,6 +28,10 @@ char *project_find_root (const char *path);
 /* Whether a directory is the root of a project by a mark of its own: .coole, .git or a build
    file, not only the directory of a file found by nothing else */
 gboolean project_is_project (const char *root);
+/* The name of a file to show: from the root of its project, @project (that of -D, may be NULL)
+   when it holds the file, else the one project_find_root () finds when it is a project of its
+   own; else the whole path, the home directory as "~".  Free with g_free(). */
+char *project_display_path (const char *path, const char *project);
 
 /* The files of a project, names relative to its root, sorted: what git knows and does not ignore
    in a repository, else what is under the root but hidden directories and build trees; for a
