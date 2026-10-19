@@ -456,6 +456,10 @@ Start or end the highlighting of a block.
 Start a column block.
 
 .TP
+\fBCtrl\-a\fP
+Highlight the whole text.
+
+.TP
 \fBShift\-arrows, Shift\-PgUp, Shift\-PgDn, Shift\-Home, Shift\-End\fP
 Highlight the text the cursor goes over.
 
@@ -512,10 +516,6 @@ Fold the block, or the lines between a bracket and its match, or unfold.
 .TP
 \fBCtrl\-r\fP
 Start and stop recording a macro. See Macros\&.
-
-.TP
-\fBCtrl\-a\fP
-Followed by a key, run the macro assigned to it.
 
 .TP
 \fBAlt\-Shift\-m\fP
@@ -1367,9 +1367,7 @@ To define a macro, press
 and then type out the keys you want to be executed. Press
 \fBCtrl\-r\fP
 again when finished, and assign the macro to a key by pressing that key. The
-macro is executed by that key, and by
-\fBCtrl\-a\fP
-followed by the assigned key.
+macro is executed by that key.
 
 .PP
 The macros are kept in the section

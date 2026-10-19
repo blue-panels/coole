@@ -161,9 +161,7 @@ y entonces teclearemos las secuencias de teclas que deseamos sean
 ejecutadas. Pulsaremos
 \fBCtrl\-r\fP
 de nuevo al finalizar y asignaremos la macro a una tecla pulsando sobre
-ella. La macro se ejecuta con esa tecla y también con
-\fBCtrl\-a\fP
-seguido de la tecla asignada. Las macros se guardan en la sección
+ella. La macro se ejecuta con esa tecla. Las macros se guardan en la sección
 \fB[editor]\fP
 del archivo
 \fB~/.local/share/coole/macros\fP,

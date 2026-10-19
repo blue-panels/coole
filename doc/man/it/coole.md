@@ -132,9 +132,7 @@ Per definire una macro, premere
 poi premere i tasti che si vuole vengano eseguiti. Premere nuovamente
 **Ctrl-R**
 quando si ha finito e assegnare la macro a un tasto premendolo. La macro
-viene eseguita con quel tasto e anche premendo
-**Ctrl-A**
-seguito dal tasto assegnato. Le macro stanno nella sezione
+viene eseguita con quel tasto. Le macro stanno nella sezione
 **[editor]**
 del file
 **~/.local/share/coole/macros**,

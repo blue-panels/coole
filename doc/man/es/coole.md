@@ -135,9 +135,7 @@ y entonces teclearemos las secuencias de teclas que deseamos sean
 ejecutadas. Pulsaremos
 **Ctrl-r**
 de nuevo al finalizar y asignaremos la macro a una tecla pulsando sobre
-ella. La macro se ejecuta con esa tecla y también con
-**Ctrl-a**
-seguido de la tecla asignada. Las macros se guardan en la sección
+ella. La macro se ejecuta con esa tecla. Las macros se guardan en la sección
 **[editor]**
 del archivo
 **~/.local/share/coole/macros**,

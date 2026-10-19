@@ -129,9 +129,7 @@ Aby zdefiniować makro, naciśnij
 a potem te klawisze, które mają zostać wykonane. Naciśnij ponownie
 **Ctrl-R**,
 kiedy skończysz, i przypisz makro do klawisza, naciskając go. Makro wykonuje
-się tym klawiszem, a także skrótem
-**Ctrl-A**
-i przypisanym klawiszem. Makra są przechowywane w sekcji
+się tym klawiszem. Makra są przechowywane w sekcji
 **[editor]**
 pliku
 **~/.local/share/coole/macros**,

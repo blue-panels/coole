@@ -155,9 +155,7 @@ Aby zdefiniować makro, naciśnij
 a potem te klawisze, które mają zostać wykonane. Naciśnij ponownie
 \fBCtrl\-R\fP,
 kiedy skończysz, i przypisz makro do klawisza, naciskając go. Makro wykonuje
-się tym klawiszem, a także skrótem
-\fBCtrl\-A\fP
-i przypisanym klawiszem. Makra są przechowywane w sekcji
+się tym klawiszem. Makra są przechowywane w sekcji
 \fB[editor]\fP
 pliku
 \fB~/.local/share/coole/macros\fP,
