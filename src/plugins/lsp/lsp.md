@@ -54,10 +54,24 @@ of its members.
 : Close the list. Any other key that is no part of a word closes it too, and
 does what it does; Tab is the editor's again once there is no list.
 
-**Alt-.**
-: Go to the definition of the name at the cursor; to a list of them when
+**The menu Navigate**
+: Go to definition (Ctrl-J), Find references (Alt-g) and the others of ctags
+ask the language server first, when it serves the file; the tags answer only
+when it does not.
+
+**Alt-., Ctrl with a click**
+: Go to the definition of the name at the cursor, or clicked; to a list of them when
 there are several. A file not open yet is opened as Navigate opens one, and
 Back returns.
+
+**Alt-Shift-.**
+: Go to the prototype of a function in its header, the declaration of the name
+at the cursor; in the menu Navigate.
+
+**Alt-g**
+: Find the uses of the name at the cursor: a list of them with their lines,
+the definition among them, the one the cursor is on chosen; Enter goes to
+one.
 
 **Alt-,**
 : What the server says of the name at the cursor, its type and its

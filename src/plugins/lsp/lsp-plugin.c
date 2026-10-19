@@ -45,8 +45,10 @@
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
 #include "src/editor/editwindow.h"
+#include "src/editor/editnav.h"  // edit_nav_history ()
 
 #include "lib/editor-plugin.h"
+#include "lib/plugin-prefs.h"  // mc_plugin_prefs_is_disabled ()
 
 #include "lsp-client.h"
 #include "lsp-config.h"
@@ -88,6 +90,10 @@ typedef enum
     LSP_CMD_STATUS,
     LSP_CMD_LOG,
     LSP_CMD_SETTINGS,
+    LSP_CMD_DECLARATION,
+    LSP_CMD_SETUP,
+    LSP_CMD_REFERENCES,
+    LSP_CMD_HISTORY,
     LSP_CMD_COUNT,
     LSP_CMD_NONE = LSP_CMD_COUNT
 } lsp_cmd_t;
@@ -137,7 +143,9 @@ typedef enum
 {
     LSP_ASK_HOVER,
     LSP_ASK_DEFINITION,
-    LSP_ASK_COMPLETION
+    LSP_ASK_COMPLETION,
+    LSP_ASK_DECLARATION,
+    LSP_ASK_REFERENCES
 } lsp_ask_kind_t;
 
 /* A request of the user, and its answer once there */
@@ -231,6 +239,9 @@ static const mc_ep_command_t lsp_commands[LSP_CMD_COUNT + 1] = {
     { "LspStatus", N_ ("The state of the language servers"), NULL },
     { "LspLog", N_ ("The log of a language server"), NULL },
     { "LspSettings", N_ ("The settings of the language servers"), NULL },
+    { "LspDeclaration", N_ ("Go to the declaration"), "alt-gt" },
+    { "LspReferences", N_ ("Find the uses of the name"), NULL },
+    { "LspHistory", N_ ("The places the jumps went from and to"), NULL },
     { NULL, NULL, NULL },
 };
 
@@ -1154,9 +1165,11 @@ static gboolean
 lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *trigger)
 {
     static const char *const methods[] = { "textDocument/hover", "textDocument/definition",
-                                           "textDocument/completion" };
+                                           "textDocument/completion", "textDocument/declaration",
+                                           "textDocument/references" };
     static const char *const providers[] = { "hoverProvider", "definitionProvider",
-                                             "completionProvider" };
+                                             "completionProvider", "declarationProvider",
+                                             "referencesProvider" };
     lsp_window_t *w = lsp_window_served (plugin, edit, trigger == NULL);
     lsp_client_t *client;
     const char *why = NULL;
@@ -1202,6 +1215,14 @@ lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *tri
     json_object_set_int_member (position, "line", line);
     json_object_set_int_member (position, "character", character);
     json_object_set_object_member (params, "position", position);
+    if (kind == LSP_ASK_REFERENCES)
+    {
+        JsonObject *context = json_object_new ();
+
+        // the definition is a use to see too
+        json_object_set_boolean_member (context, "includeDeclaration", TRUE);
+        json_object_set_object_member (params, "context", context);
+    }
     if (kind == LSP_ASK_COMPLETION)
     {
         JsonObject *context = json_object_new ();
@@ -1439,10 +1460,17 @@ lsp_go (lsp_plugin_t *plugin, WEdit *edit, const lsp_place_t *place)
 {
     mc_editor_host_t *host = plugin->host;
     const long column = lsp_place_column (plugin, place);
-    char *open = lsp_open_path (plugin, place->path);
+    char *open;
     gboolean gone;
     void *now;
 
+    // recorded for Go back, the window of the file to the front when one has it
+    if (host->go_to != NULL)
+    {
+        (void) host->go_to (host, edit, place->path, (long) place->line + 1, column);
+        return;
+    }
+    open = lsp_open_path (plugin, place->path);
     if (open != NULL)
         gone = host->show_location (host, open, (long) place->line + 1);
     else
@@ -1545,6 +1573,113 @@ lsp_show_definition (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
             lsp_go (plugin, w->edit, g_ptr_array_index (places, chosen));
     }
     g_ptr_array_free (places, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The line @line of a file, its text in a window first, the file else; NULL when there is none */
+static char *
+lsp_line_of (lsp_plugin_t *plugin, GHashTable *texts, const char *path, gint64 line)
+{
+    GBytes *text = g_hash_table_lookup (texts, path);
+    gsize len, start = 0, end;
+    const char *data;
+    char *row, *shown;
+
+    if (text == NULL)
+    {
+        char *content = NULL;
+        gsize content_len = 0;
+        guint i;
+
+        for (i = 0; i < plugin->windows->len && content == NULL; i++)
+        {
+            const lsp_window_t *w = g_ptr_array_index (plugin->windows, i);
+            char *canonical = lsp_canonical_path (w->path);
+
+            if (g_strcmp0 (canonical, path) == 0)
+                content = plugin->host->get_text (plugin->host, w->edit, &content_len);
+            g_free (canonical);
+        }
+        if (content == NULL && !g_file_get_contents (path, &content, &content_len, NULL))
+            content = NULL;
+        text = content != NULL ? g_bytes_new_take (content, content_len) : g_bytes_new (NULL, 0);
+        g_hash_table_insert (texts, g_strdup (path), text);
+    }
+    data = g_bytes_get_data (text, &len);
+    if (data == NULL || !lsp_text_offset (data, len, line, 0, LSP_ENCODING_UTF8, &start))
+        return NULL;
+    for (end = start; end < len && data[end] != '\n' && data[end] != '\r'; end++)
+        ;
+    row = g_strndup (data + start, end - start);
+    shown = lsp_shown (g_strstrip (row), 1);
+    g_free (row);
+    return shown;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The uses of a name: a list of them with their lines, the one chosen gone to */
+static void
+lsp_show_references (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
+{
+    GPtrArray *places = g_ptr_array_new_with_free_func (lsp_place_free);
+    GHashTable *texts =
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_bytes_unref);
+    char *here = lsp_canonical_path (w->path);
+    guint here_line = 0, here_character = 0;
+    GPtrArray *rows;
+    int chosen = 0, current = 0;
+    gsize len;
+    const char *text = g_bytes_get_data (ask->text, &len);
+    guint i;
+
+    (void) lsp_text_position (text, len, (gsize) ask->offset, ask->encoding, &here_line,
+                              &here_character);
+    if (ask->result != NULL && JSON_NODE_HOLDS_ARRAY (ask->result))
+    {
+        JsonArray *array = json_node_get_array (ask->result);
+
+        for (i = 0; i < json_array_get_length (array); i++)
+            lsp_place_add (places, json_array_get_element (array, i), ask->encoding);
+    }
+    if (places->len == 0)
+    {
+        plugin->host->message (plugin->host, D_NORMAL, _ ("Find references"),
+                               _ ("The language server knows no use of it."));
+        g_ptr_array_free (places, TRUE);
+        g_hash_table_destroy (texts);
+        g_free (here);
+        return;
+    }
+    rows = g_ptr_array_new_with_free_func (g_free);
+    for (i = 0; i < places->len; i++)
+    {
+        const lsp_place_t *place = g_ptr_array_index (places, i);
+        char *line = lsp_line_of (plugin, texts, place->path, place->line);
+
+        g_ptr_array_add (rows,
+                         g_strdup_printf ("%s:%" G_GINT64_FORMAT ": %s",
+                                          lsp_short_path (place->path, w->server->root),
+                                          place->line + 1, line != NULL ? line : ""));
+        g_free (line);
+        // the list opens at the use the cursor is on
+        if (g_strcmp0 (place->path, here) == 0 && place->line == (gint64) here_line)
+            current = (int) i;
+    }
+    if (places->len > 1)
+    {
+        char *title = g_strdup_printf (_ ("References: %u"), places->len);
+
+        chosen = lsp_choose (title, rows, current);
+        g_free (title);
+    }
+    if (chosen >= 0)
+        lsp_go (plugin, w->edit, g_ptr_array_index (places, chosen));
+    g_ptr_array_free (rows, TRUE);
+    g_ptr_array_free (places, TRUE);
+    g_hash_table_destroy (texts);
+    g_free (here);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2256,6 +2391,8 @@ lsp_later (void *data)
             plugin->host->message (plugin->host, D_ERROR, _ ("Language server"), error);
         else if (ask->kind == LSP_ASK_HOVER)
             lsp_show_hover (plugin, w, ask);
+        else if (ask->kind == LSP_ASK_REFERENCES)
+            lsp_show_references (plugin, w, ask);
         else
             lsp_show_definition (plugin, w, ask);
         g_free (error);
@@ -2547,6 +2684,14 @@ lsp_run_command (lsp_plugin_t *plugin, lsp_cmd_t cmd, WEdit *edit)
     case LSP_CMD_SETTINGS:
         lsp_settings_dialog (plugin);
         return TRUE;
+    case LSP_CMD_DECLARATION:
+        return lsp_ask (plugin, edit, LSP_ASK_DECLARATION, NULL);
+    case LSP_CMD_HISTORY:
+        if (edit != NULL)
+            edit_nav_history (edit);
+        return TRUE;
+    case LSP_CMD_REFERENCES:
+        return lsp_ask (plugin, edit, LSP_ASK_REFERENCES, NULL);
     default:
         break;
     }
@@ -2689,17 +2834,42 @@ lsp_handle_action (void *data, long command, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether the server of the file of @edit is to answer what the plugins are offered, in the round
+   @payload: the first, and only when the server can */
+static gboolean
+lsp_offered (lsp_plugin_t *plugin, WEdit *edit, void *payload, const char *provider)
+{
+    const lsp_window_t *w;
+
+    if (GPOINTER_TO_INT (payload) != 0)
+        return FALSE;
+    w = lsp_window_served (plugin, edit, FALSE);
+    return w != NULL && lsp_client_supports (w->server->client, provider);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static mc_ep_result_t
 lsp_handle_event (void *data, void *edit, int event_id, void *payload)
 {
     lsp_plugin_t *plugin = (lsp_plugin_t *) data;
     lsp_window_t *w;
 
-    (void) payload;
     if (edit == NULL)
         return MC_EPR_NOT_SUPPORTED;
     switch (event_id)
     {
+    case MC_EP_EVENT_CTRL_CLICK:
+        // what the server knows comes first; the tags guess after it, with no word of a server
+        if (lsp_offered (plugin, EDIT (edit), payload, "definitionProvider")
+            && lsp_ask (plugin, EDIT (edit), LSP_ASK_DEFINITION, NULL))
+            return MC_EPR_OK;
+        break;
+    case MC_EP_EVENT_REFERENCES:
+        if (lsp_offered (plugin, EDIT (edit), payload, "referencesProvider")
+            && lsp_ask (plugin, EDIT (edit), LSP_ASK_REFERENCES, NULL))
+            return MC_EPR_OK;
+        break;
     case MC_EP_EVENT_FOCUS_OUT:
     case MC_EP_EVENT_CURSOR_MOVED:
         // the list is of a word of a line of this window
@@ -2878,6 +3048,9 @@ LSP_ACTION (lsp_act_restart, LSP_CMD_RESTART)
 LSP_ACTION (lsp_act_status, LSP_CMD_STATUS)
 LSP_ACTION (lsp_act_log, LSP_CMD_LOG)
 LSP_ACTION (lsp_act_settings, LSP_CMD_SETTINGS)
+LSP_ACTION (lsp_act_declaration, LSP_CMD_DECLARATION)
+LSP_ACTION (lsp_act_references, LSP_CMD_REFERENCES)
+LSP_ACTION (lsp_act_history, LSP_CMD_HISTORY)
 
 /* in the order of lsp_cmd_t */
 static const mc_ep_action_t lsp_actions[LSP_CMD_COUNT] = {
@@ -2891,11 +3064,35 @@ static const mc_ep_action_t lsp_actions[LSP_CMD_COUNT] = {
     { "Status", lsp_act_status },
     { "Log", lsp_act_log },
     { "Settings", lsp_act_settings },
+    { "Declaration", lsp_act_declaration },
+    { "References", lsp_act_references },
+    { "History", lsp_act_history },
+};
+
+/* With no ctags, what goes to a name is in the menu LSP too: Navigate has nothing of it then */
+static const mc_ep_cmd_menu_entry_t lsp_menu_alone[] = {
+    { MC_EP_MENU_NAVIGATE, N_ ("Go to the protot&ype"), LSP_CMD_DECLARATION, NULL },
+    { LSP_MENU, N_ ("Go to &definition"), LSP_CMD_DEFINITION, NULL },
+    { LSP_MENU, N_ ("Find re&ferences"), LSP_CMD_REFERENCES, NULL },
+    { LSP_MENU, N_ ("Navigation histor&y..."), LSP_CMD_HISTORY, NULL },
+    { LSP_MENU, NULL, 0, NULL },
+    { LSP_MENU, N_ ("&Completion"), LSP_CMD_COMPLETION, NULL },
+    { LSP_MENU, N_ ("&Hover"), LSP_CMD_HOVER, NULL },
+    { LSP_MENU, N_ ("&Problems..."), LSP_CMD_PROBLEMS, NULL },
+    { LSP_MENU, NULL, 0, NULL },
+    { LSP_MENU, N_ ("&Start server"), LSP_CMD_START, NULL },
+    { LSP_MENU, N_ ("S&top server"), LSP_CMD_STOP, NULL },
+    { LSP_MENU, N_ ("&Restart server"), LSP_CMD_RESTART, NULL },
+    { LSP_MENU, NULL, 0, NULL },
+    { LSP_MENU, N_ ("St&atus..."), LSP_CMD_STATUS, NULL },
+    { LSP_MENU, N_ ("&Log..."), LSP_CMD_LOG, NULL },
+    { LSP_MENU, N_ ("S&ettings..."), LSP_CMD_SETTINGS, NULL },
 };
 
 static const mc_ep_cmd_menu_entry_t lsp_menu[] = {
+    // what goes to a name is in Navigate, with the tags: the server is asked first
+    { MC_EP_MENU_NAVIGATE, N_ ("Go to the protot&ype"), LSP_CMD_DECLARATION, NULL },
     { LSP_MENU, N_ ("&Completion"), LSP_CMD_COMPLETION, NULL },
-    { LSP_MENU, N_ ("Go to &definition"), LSP_CMD_DEFINITION, NULL },
     { LSP_MENU, N_ ("&Hover"), LSP_CMD_HOVER, NULL },
     { LSP_MENU, N_ ("&Problems..."), LSP_CMD_PROBLEMS, NULL },
     { LSP_MENU, NULL, 0, NULL },
@@ -2929,7 +3126,7 @@ lsp_menu_shortcut (int action_index)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static const mc_editor_plugin_t lsp_plugin_table = {
+static mc_editor_plugin_t lsp_plugin_table = {
     .api_version = MC_EDITOR_PLUGIN_API_VERSION,
     .name = "lsp",
     .display_name = "Language servers",
@@ -2957,6 +3154,13 @@ static const mc_editor_plugin_t lsp_plugin_table = {
 const mc_editor_plugin_t *
 mc_editor_plugin_register (void)
 {
+    // the plugins of the program are there before those of the modules
+    if (mc_editor_plugin_find_by_name ("ctags") == NULL
+        || mc_plugin_prefs_is_disabled (MC_PLUGIN_KIND_EDITOR, "ctags"))
+    {
+        lsp_plugin_table.cmd_menu_entries = lsp_menu_alone;
+        lsp_plugin_table.cmd_menu_entry_count = G_N_ELEMENTS (lsp_menu_alone);
+    }
     return &lsp_plugin_table;
 }
 
