@@ -123,12 +123,14 @@ while True:
                                                  "end": {"line": 1, "character": 5}}}]})
     elif method == "textDocument/completion":
         write({"id": message["id"], "result": {"isIncomplete": False, "items": [
-            {"label": "alpha", "detail": "int alpha", "sortText": "2"},
-            {"label": "alphabet", "detail": "char *alphabet", "sortText": "1",
+            {"label": "alpha", "kind": 6, "detail": "int", "sortText": "2"},
+            {"label": "alphabet", "kind": 5, "detail": "char *", "sortText": "1",
              "additionalTextEdits": [{"range": {"start": {"line": 0, "character": 0},
                                                 "end": {"line": 0, "character": 0}},
                                       "newText": "/* added */\n"}]},
-            {"label": "beta", "insertText": "beta()", "sortText": "3"}]}})
+            {"label": "make_global", "kind": 2, "detail": "void (*)(Widget *, const WRect *)",
+             "sortText": "4"},
+            {"label": "beta", "kind": 3, "insertText": "beta()", "sortText": "3"}]}})
     elif method == "test/error":
         write({"id": message["id"], "error": {"code": -32000, "message": "it went wrong"}})
     elif method == "test/slow":

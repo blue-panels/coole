@@ -26,12 +26,33 @@ again, three times in a minute at most; then LSP Restart starts it.
 **The keys**
 
 **Ctrl-Space**
-: Complete the word at the cursor: the list of what the server offers, the
-words that start as the one typed. Enter puts the one chosen in the text, with
-what the server adds elsewhere, an include for one; one Undo takes all of it
-back.
-On a project of -D the list comes by itself after a dot, "->" or "::", the
-members of what is before it.
+: The list of completion of the word at the cursor, of all the server offers
+when there is no word yet. On a project of -D the list comes by itself as a
+word is typed, and after a dot, "->" or "::", with the members of what is
+before it.
+
+The list is under the word and leaves the keys to the text: what is typed
+goes on in the word, and the list keeps what fits it, the best first. The
+characters typed are found anywhere in a name, in their order, "mkg" finding
+make_global; those found are in another color. A letter at the left says what
+an item is: f a field, m a method, F a function, v a variable, C a class, S a
+struct, T a type parameter, # a constant, k a keyword; what the item is, its
+type, is at the right.
+
+**Up, Down, PgUp, PgDn**
+: Choose in the list.
+
+**Enter, Tab**
+: Put the item chosen in place of the word, with what the server adds
+elsewhere, an include for one; one Undo takes all of it back.
+
+**., ->, ::**
+: Put the item chosen in place of the word, then the dot, and show the list
+of its members.
+
+**Esc**
+: Close the list. Any other key that is no part of a word closes it too, and
+does what it does; Tab is the editor's again once there is no list.
 
 **Alt-.**
 : Go to the definition of the name at the cursor; to a list of them when

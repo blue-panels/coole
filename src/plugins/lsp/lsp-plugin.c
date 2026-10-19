@@ -40,6 +40,7 @@
 #include "lib/widget.h"
 
 #include "src/keymap.h"
+#include "src/fuzzy.h"
 #include "src/plugins/build/build-core.h"  // build_detect (), the build directory of a project
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
@@ -49,6 +50,7 @@
 
 #include "lsp-client.h"
 #include "lsp-config.h"
+#include "lsp-popup.h"
 #include "lsp-text.h"
 #include "lsp-wizard.h"
 
@@ -149,10 +151,29 @@ typedef struct
     GBytes *text;  // as the server had it
     lsp_encoding_t encoding;
     gboolean triggered;  // by a character typed, not by the user: nothing found is no news
+    guint64 session;     // of a completion: the session it is of
     lsp_request_status_t status;
     JsonNode *result;
     char *error;
 } lsp_ask_t;
+
+/* A completion going on: the word it is of, the items the server said */
+typedef struct lsp_session_t
+{
+    guint64 id;
+    guint64 window_id;
+    off_t start;          // where the word starts in the text
+    gboolean any;         // asked for, or after a dot: an empty word shows all
+    char *trigger;        // the character it came after, NULL for none
+    gboolean asking;      // a request out
+    char *asked;          // the word as it was asked for
+    JsonArray *items;     // of the last answer; NULL before it
+    gboolean incomplete;  // the server has more than it said: the list is asked for again
+    GBytes *text;         // the text of the answer: its ranges are of it
+    off_t asked_at;       // the cursor in it
+    lsp_encoding_t encoding;
+    char pending;  // '-' or ':' typed, "->" or "::" if the next is '>' or ':'
+} lsp_session_t;
 
 struct lsp_plugin_t
 {
@@ -166,11 +187,15 @@ struct lsp_plugin_t
     long commands[LSP_CMD_COUNT];
     int marks[LSP_MARK_COUNT];
 
-    GQueue *answers;  // lsp_ask_t, to show once the editor is idle
-    char *trigger;    // a character that starts a completion, typed
-    gboolean later;   // a call of the editor asked for
+    GQueue *answers;    // lsp_ask_t, to show once the editor is idle
+    char *trigger;      // a character that starts a completion, typed
+    gboolean refilter;  // a key typed in the word completed: the list again
+    gboolean later;     // a call of the editor asked for
     lsp_client_t *completing;
-    guint64 completion;  // the request of the completion of the moment
+    guint64 completion;      // the request of the completion of the moment
+    lsp_session_t *session;  // the completion of the moment, NULL when none
+    guint64 next_session;
+    lsp_popup_t *popup;
 
     // the ticks: a thread writes a byte in the pipe, the main loop reads it
     int tick_pipe[2];
@@ -190,6 +215,8 @@ static void lsp_on_diagnostics (void *owner, lsp_client_t *client, const char *u
                                 JsonArray *diagnostics);
 static void lsp_on_message (void *owner, lsp_client_t *client, int type, const char *text);
 static void lsp_later (void *data);
+static void lsp_session_end (lsp_plugin_t *plugin);
+static gboolean lsp_session_in_word (const lsp_session_t *s, WEdit *edit, off_t end);
 
 /*** file scope variables ************************************************************************/
 
@@ -861,6 +888,8 @@ lsp_window_forget (lsp_plugin_t *plugin, WEdit *edit)
 
     if (w == NULL)
         return;
+    if (plugin->session != NULL && plugin->session->window_id == w->id)
+        lsp_session_end (plugin);
     lsp_window_unbind (plugin, w);
     g_ptr_array_remove (plugin->windows, w);
     g_free (w);
@@ -969,6 +998,18 @@ lsp_tick (lsp_plugin_t *plugin)
     const gint64 now = g_get_monotonic_time ();
     guint i;
 
+    // the list of a completion goes once the cursor is put out of its word, by the mouse
+    if (plugin->session != NULL)
+    {
+        const lsp_window_t *w = lsp_window_by_id (plugin, plugin->session->window_id);
+
+        if (w == NULL
+            || !lsp_session_in_word (plugin->session, w->edit,
+                                     w->edit->buffer.curs1
+                                         - (plugin->session->pending != 0 ? 1 : 0)))
+            lsp_session_end (plugin);
+    }
+
     for (i = 0; i < plugin->servers->len; i++)
     {
         lsp_server_t *server = g_ptr_array_index (plugin->servers, i);
@@ -1046,9 +1087,12 @@ lsp_answered (lsp_client_t *client, lsp_request_status_t status, JsonNode *resul
         plugin->completing = NULL;
         plugin->completion = 0;
     }
-    if (status != LSP_REQUEST_OK && status != LSP_REQUEST_ERROR)
+    /* given up, or the server is gone: nothing to show; but a completion waits for its answer,
+       and is ended by one that will not come */
+    if (status == LSP_REQUEST_CANCELLED
+        || (status != LSP_REQUEST_OK && status != LSP_REQUEST_ERROR
+            && ask->kind != LSP_ASK_COMPLETION))
     {
-        // given up, or the server is gone: nothing to show
         lsp_ask_free (ask);
         return;
     }
@@ -1145,6 +1189,7 @@ lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *tri
     ask->revision = plugin->host->get_revision (plugin->host, edit);
     ask->offset = edit->buffer.curs1;
     ask->triggered = trigger != NULL;
+    ask->session = kind == LSP_ASK_COMPLETION && plugin->session != NULL ? plugin->session->id : 0;
     ask->encoding = lsp_client_encoding (client);
     ask->text = g_bytes_new_take (text, len);
     (void) lsp_text_position (text, len, (gsize) ask->offset, ask->encoding, &line, &character);
@@ -1503,30 +1548,7 @@ lsp_show_definition (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-/* Completion */
-
-typedef struct
-{
-    JsonObject *item;
-    const char *label;
-    const char *sort;
-    const char *filter;
-    guint index;  // in the order of the server
-} lsp_choice_t;
-
-static int
-lsp_choice_cmp (gconstpointer a, gconstpointer b)
-{
-    const lsp_choice_t *x = *(const lsp_choice_t *const *) a;
-    const lsp_choice_t *y = *(const lsp_choice_t *const *) b;
-    const int c = strcmp (x->sort, y->sort);
-
-    if (c != 0)
-        return c;
-    return x->index < y->index ? -1 : x->index > y->index ? 1 : 0;
-}
-
-/* --------------------------------------------------------------------------------------------- */
+/* Completion: a list under the word typed, which follows it as it is typed */
 
 /* Whether a byte is of a word: letters, digits, '_' and what is not ASCII */
 static gboolean
@@ -1611,20 +1633,38 @@ lsp_edit_cmp (gconstpointer a, gconstpointer b)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A TextEdit added to @edits; FALSE when it is no edit of @text */
+/* What is typed in the word since the items were asked for moves what comes after it: a place
+   of the text of the answer in the text now; FALSE for one inside the word, which is no more */
 static gboolean
-lsp_edit_add (GPtrArray *edits, JsonObject *edit, const char *text, gsize len,
-              lsp_encoding_t encoding)
+lsp_session_map (const lsp_session_t *s, off_t now_at, gsize at, gsize *out)
+{
+    if ((off_t) at <= s->start)
+        *out = at;
+    else if ((off_t) at >= s->asked_at)
+        *out = (gsize) ((off_t) at + now_at - s->asked_at);
+    else
+        return FALSE;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A TextEdit of the answer added to @edits, at its place in the text now; FALSE when it is no
+   edit of the text */
+static gboolean
+lsp_edit_add (GPtrArray *edits, JsonObject *edit, const lsp_session_t *s, off_t now_at)
 {
     JsonObject *range = lsp_member_object (edit, "range");
     const char *new_text = lsp_member_string (edit, "newText");
+    gsize len, from, to;
+    const char *text = g_bytes_get_data (s->text, &len);
     lsp_edit_t *e;
-    gsize from, to;
 
     // an InsertReplaceEdit, which the client does not ask for: its insert range
     if (range == NULL)
         range = lsp_member_object (edit, "insert");
-    if (new_text == NULL || !lsp_range_offsets (range, text, len, encoding, &from, &to))
+    if (new_text == NULL || !lsp_range_offsets (range, text, len, s->encoding, &from, &to)
+        || !lsp_session_map (s, now_at, from, &from) || !lsp_session_map (s, now_at, to, &to))
         return FALSE;
     e = g_new0 (lsp_edit_t, 1);
     e->from = from;
@@ -1636,52 +1676,58 @@ lsp_edit_add (GPtrArray *edits, JsonObject *edit, const char *text, gsize len,
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A completion put in the text: its edit and its additional edits, all or none, as one step of
-   undo */
+/* A completion put in the text: the word from its start to @end, and the additional edits, all
+   or none, as one step of undo */
 static void
-lsp_complete (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask, JsonObject *item,
-              gsize word_start)
+lsp_complete (lsp_plugin_t *plugin, WEdit *edit, const lsp_session_t *s, JsonObject *item,
+              off_t end)
 {
     GPtrArray *edits = g_ptr_array_new_with_free_func (lsp_edit_free);
-    gsize len;
-    const char *text = g_bytes_get_data (ask->text, &len);
     JsonObject *text_edit = lsp_member_object (item, "textEdit");
     JsonNode *additional = lsp_member (item, "additionalTextEdits");
     const gboolean snippet = lsp_member_int (item, "insertTextFormat", 1) == 2;
-    WEdit *edit = w->edit;
-    lsp_edit_t *main_edit;
+    const char *insert = lsp_member_string (item, "insertText");
+    lsp_edit_t *main_edit = g_new0 (lsp_edit_t, 1);
+    // what is typed after the word, the '-' of "->", stays after the cursor
+    const off_t tail = edit->buffer.curs1 - end;
     gboolean ok = TRUE;
     off_t cursor;
     guint i;
 
+    // the word typed, all of it, whatever the server thought it was when asked
+    main_edit->from = (gsize) s->start;
+    main_edit->to = (gsize) end;
     if (text_edit != NULL)
-        ok = lsp_edit_add (edits, text_edit, text, len, ask->encoding);
-    else
     {
-        const char *insert = lsp_member_string (item, "insertText");
+        GPtrArray *one = g_ptr_array_new_with_free_func (lsp_edit_free);
 
-        main_edit = g_new0 (lsp_edit_t, 1);
-        main_edit->from = word_start;
-        main_edit->to = (gsize) ask->offset;
+        if (lsp_edit_add (one, text_edit, s, end))
+        {
+            const lsp_edit_t *e = g_ptr_array_index (one, 0);
+
+            main_edit->from = MIN (e->from, main_edit->from);
+            main_edit->to = MAX (e->to, main_edit->to);
+            main_edit->text = g_strdup (e->text);
+        }
+        g_ptr_array_free (one, TRUE);
+    }
+    if (main_edit->text == NULL)
         main_edit->text = g_strdup (insert != NULL ? insert : lsp_member_string (item, "label"));
-        g_ptr_array_add (edits, main_edit);
-    }
-    if (ok && snippet)
+    if (snippet)
     {
-        lsp_edit_t *e = g_ptr_array_index (edits, 0);
-        char *plain = lsp_snippet_text (e->text);
+        char *plain = lsp_snippet_text (main_edit->text);
 
-        g_free (e->text);
-        e->text = plain;
+        g_free (main_edit->text);
+        main_edit->text = plain;
     }
-    main_edit = ok ? g_ptr_array_index (edits, 0) : NULL;
-    if (ok && additional != NULL && JSON_NODE_HOLDS_ARRAY (additional))
+    g_ptr_array_add (edits, main_edit);
+    if (additional != NULL && JSON_NODE_HOLDS_ARRAY (additional))
         for (i = 0; ok && i < json_array_get_length (json_node_get_array (additional)); i++)
         {
             JsonNode *node = json_array_get_element (json_node_get_array (additional), i);
 
             ok = JSON_NODE_HOLDS_OBJECT (node)
-                && lsp_edit_add (edits, json_node_get_object (node), text, len, ask->encoding);
+                && lsp_edit_add (edits, json_node_get_object (node), s, edit->buffer.curs1);
         }
     // from the end, none over another, none two at one place
     g_ptr_array_sort (edits, lsp_edit_cmp);
@@ -1699,7 +1745,7 @@ lsp_complete (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask, JsonObject 
         g_ptr_array_free (edits, TRUE);
         return;
     }
-    cursor = (off_t) (main_edit->from + strlen (main_edit->text));
+    cursor = (off_t) (main_edit->from + strlen (main_edit->text)) + tail;
     for (i = 0; i < edits->len; i++)
     {
         const lsp_edit_t *e = g_ptr_array_index (edits, i);
@@ -1726,143 +1772,451 @@ lsp_complete (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask, JsonObject 
 /* --------------------------------------------------------------------------------------------- */
 
 static void
-lsp_show_completion (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
+lsp_session_free (lsp_session_t *s)
 {
-    JsonArray *items = NULL;
-    GPtrArray *choices = g_ptr_array_new_with_free_func (g_free);
-    gsize len, word_start;
-    const char *text = g_bytes_get_data (ask->text, &len);
-    char *prefix;
-    int chosen = 0;
-    guint i;
-
-    if (ask->result != NULL && JSON_NODE_HOLDS_ARRAY (ask->result))
-        items = json_node_get_array (ask->result);
-    else if (ask->result != NULL && JSON_NODE_HOLDS_OBJECT (ask->result))
-    {
-        JsonNode *node = lsp_member (json_node_get_object (ask->result), "items");
-
-        if (node != NULL && JSON_NODE_HOLDS_ARRAY (node))
-            items = json_node_get_array (node);
-    }
-    for (word_start = (gsize) ask->offset; word_start > 0 && lsp_word_byte (text[word_start - 1]);
-         word_start--)
-        ;
-    prefix = g_strndup (text + word_start, (gsize) ask->offset - word_start);
-
-    for (i = 0; items != NULL && i < json_array_get_length (items); i++)
-    {
-        JsonNode *node = json_array_get_element (items, i);
-        lsp_choice_t *choice;
-        JsonObject *item;
-
-        if (!JSON_NODE_HOLDS_OBJECT (node))
-            continue;
-        item = json_node_get_object (node);
-        if (lsp_member_string (item, "label") == NULL)
-            continue;
-        choice = g_new0 (lsp_choice_t, 1);
-        choice->item = item;
-        choice->label = lsp_member_string (item, "label");
-        choice->sort = lsp_member_string (item, "sortText");
-        choice->filter = lsp_member_string (item, "filterText");
-        if (choice->sort == NULL)
-            choice->sort = choice->label;
-        if (choice->filter == NULL)
-            choice->filter = choice->label;
-        choice->index = i;
-        // what does not start as the word typed is not what is meant
-        if (g_ascii_strncasecmp (choice->filter, prefix, strlen (prefix)) != 0)
-            g_free (choice);
-        else
-            g_ptr_array_add (choices, choice);
-    }
-    g_ptr_array_sort (choices, lsp_choice_cmp);
-
-    if (choices->len == 0)
-    {
-        // a character the server starts a completion after, '>' for "->", is not always there
-        if (!ask->triggered)
-            tty_beep ();
-    }
-    else
-    {
-        if (choices->len > 1)
-        {
-            const WRect *r = &CONST_WIDGET (w->edit)->rect;
-            GPtrArray *rows = g_ptr_array_new_with_free_func (g_free);
-            int width = 10, height, x, y;
-            Listbox *list;
-
-            for (i = 0; i < choices->len; i++)
-            {
-                const lsp_choice_t *choice = g_ptr_array_index (choices, i);
-                const char *detail = lsp_member_string (choice->item, "detail");
-                char *row = detail != NULL ? g_strdup_printf ("%s  %s", choice->label, detail)
-                                           : g_strdup (choice->label);
-                char *shown = lsp_shown (row, 1);
-
-                width = MAX (width, str_term_width1 (shown));
-                g_ptr_array_add (rows, shown);
-                g_free (row);
-            }
-            height = MIN ((int) rows->len, MAX (LINES / 2, 5));
-            // the list takes two columns of its own
-            width = MIN (width + 2, MAX (COLS / 2, 30));
-            // under the cursor, as the completion of the editor
-            x = r->x + w->edit->curs_col + w->edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET
-                + (EDIT_WINDOW (w->edit)->fullscreen != 0 ? 0 : 1) + edit_options.line_state_width;
-            y = r->y + w->edit->curs_row + EDIT_TEXT_VERTICAL_OFFSET
-                + (EDIT_WINDOW (w->edit)->fullscreen != 0 ? 0 : 1) + 1;
-            list = listbox_window_centered_new (y + height / 2 + 2, x + width / 2 + 2, height,
-                                                width, NULL, NULL);
-            list->dlg->help_file = "lsp.md";
-            for (i = 0; i < rows->len; i++)
-                LISTBOX_APPEND_TEXT (list, 0, g_ptr_array_index (rows, i), NULL, FALSE);
-            chosen = listbox_run (list);
-            g_ptr_array_free (rows, TRUE);
-        }
-        if (chosen >= 0)
-            lsp_complete (plugin, w, ask,
-                          ((lsp_choice_t *) g_ptr_array_index (choices, chosen))->item, word_start);
-    }
-    g_free (prefix);
-    g_ptr_array_free (choices, TRUE);
+    if (s == NULL)
+        return;
+    g_free (s->trigger);
+    g_free (s->asked);
+    if (s->items != NULL)
+        json_array_unref (s->items);
+    if (s->text != NULL)
+        g_bytes_unref (s->text);
+    g_free (s);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A trigger character typed: a completion, once the editor has put it in the text */
+/* The completion of the moment ended, its list gone */
 static void
-lsp_trigger (lsp_plugin_t *plugin)
+lsp_session_end (lsp_plugin_t *plugin)
 {
-    void *current = plugin->host->window_current (plugin->host);
-    char *trigger = plugin->trigger;
-    lsp_window_t *w;
-    WEdit *edit;
-    off_t at;
-    char two[3] = { 0, 0, 0 };
+    if (plugin->popup != NULL)
+        lsp_popup_hide (plugin->popup);
+    if (plugin->completing != NULL && plugin->completion != 0)
+        lsp_client_cancel (plugin->completing, plugin->completion);
+    lsp_session_free (plugin->session);
+    plugin->session = NULL;
+    plugin->refilter = FALSE;
+}
 
-    plugin->trigger = NULL;
-    if (current == NULL || !edit_widget_is_editor (CONST_WIDGET (current)))
+/* --------------------------------------------------------------------------------------------- */
+
+/* The letter of a CompletionItemKind */
+static char
+lsp_kind_letter (gint64 kind)
+{
+    // text, method, function, constructor, field, variable, class, interface, module, property,
+    // unit, value, enum, keyword, snippet, color, file, reference, folder, enum member,
+    // constant, struct, event, operator, type parameter
+    static const char letters[] = " tmFcfvCIMpu=Eksxdrde#SeoT";
+
+    return kind >= 1 && kind < (gint64) sizeof (letters) - 1 ? letters[kind] : ' ';
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+typedef struct
+{
+    JsonObject *item;
+    int score;
+    const char *sort;
+    guint index;  // in the order of the server
+} lsp_choice_t;
+
+static int
+lsp_choice_cmp (gconstpointer a, gconstpointer b)
+{
+    const lsp_choice_t *x = *(const lsp_choice_t *const *) a;
+    const lsp_choice_t *y = *(const lsp_choice_t *const *) b;
+    int c;
+
+    if (x->score != y->score)
+        return x->score > y->score ? -1 : 1;
+    c = strcmp (x->sort, y->sort);
+    if (c != 0)
+        return c;
+    return x->index < y->index ? -1 : x->index > y->index ? 1 : 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The word before the cursor: where it starts, and its text */
+static off_t
+lsp_word_before (WEdit *edit, char **word)
+{
+    off_t start = edit->buffer.curs1;
+    GString *out = g_string_new (NULL);
+    off_t i;
+
+    while (start > 0 && lsp_word_byte ((char) edit_buffer_get_byte (&edit->buffer, start - 1)))
+        start--;
+    for (i = start; i < edit->buffer.curs1; i++)
+        g_string_append_c (out, (char) edit_buffer_get_byte (&edit->buffer, i));
+    *word = g_string_free (out, FALSE);
+    return start;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void lsp_session_take_cb (void *data);
+
+/* The items that fit the word typed, best first, in the list under it */
+static void
+lsp_session_show (lsp_plugin_t *plugin, lsp_window_t *w, const char *word)
+{
+    lsp_session_t *s = plugin->session;
+    GPtrArray *choices = g_ptr_array_new_with_free_func (g_free);
+    GPtrArray *items;
+    WEdit *edit = w->edit;
+    const WRect *r = &CONST_WIDGET (edit)->rect;
+    const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1;
+    guint i;
+    int x, y;
+
+    for (i = 0; i < json_array_get_length (s->items); i++)
     {
-        g_free (trigger);
+        JsonNode *node = json_array_get_element (s->items, i);
+        JsonObject *item;
+        const char *label, *filter;
+        lsp_choice_t *choice;
+        int score;
+
+        if (!JSON_NODE_HOLDS_OBJECT (node))
+            continue;
+        item = json_node_get_object (node);
+        label = lsp_member_string (item, "label");
+        if (label == NULL)
+            continue;
+        filter = lsp_member_string (item, "filterText");
+        if (filter == NULL)
+            filter = label;
+        score = *word == '\0' ? 1 : fuzzy_score (filter, word, NULL);
+        if (score == 0)
+            continue;
+        choice = g_new0 (lsp_choice_t, 1);
+        choice->item = item;
+        choice->score = score;
+        choice->sort = lsp_member_string (item, "sortText");
+        if (choice->sort == NULL)
+            choice->sort = label;
+        choice->index = i;
+        g_ptr_array_add (choices, choice);
+    }
+    if (choices->len == 0)
+    {
+        g_ptr_array_free (choices, TRUE);
+        lsp_popup_hide (plugin->popup);
         return;
     }
-    edit = EDIT (current);
-    w = lsp_window_served (plugin, edit, FALSE);
-    at = edit->buffer.curs1;
-    if (w != NULL && at >= 1)
+    g_ptr_array_sort (choices, lsp_choice_cmp);
+
+    items = g_ptr_array_new ();
+    for (i = 0; i < choices->len && i < 500; i++)
     {
-        two[1] = (char) edit_buffer_get_byte (&edit->buffer, at - 1);
-        two[0] = at >= 2 ? (char) edit_buffer_get_byte (&edit->buffer, at - 2) : '\0';
-        // "->" before "-" and ">"
-        if (two[0] != '\0' && lsp_client_completion_trigger (w->server->client, two))
-            (void) lsp_ask (plugin, edit, LSP_ASK_COMPLETION, two);
-        else if (two[1] == trigger[0] && lsp_client_completion_trigger (w->server->client, two + 1))
-            (void) lsp_ask (plugin, edit, LSP_ASK_COMPLETION, two + 1);
+        const lsp_choice_t *choice = g_ptr_array_index (choices, i);
+        const char *label = lsp_member_string (choice->item, "label");
+        const char *detail = lsp_member_string (choice->item, "detail");
+        GArray *hits = NULL;
+        char *shown, *detail_shown = NULL;
+
+        // clangd puts a space before most of its labels, a mark before those it would include
+        while (*label == ' ')
+            label++;
+        if (*word != '\0')
+        {
+            hits = g_array_new (FALSE, FALSE, sizeof (int));
+            (void) fuzzy_score (label, word, hits);
+        }
+        shown = lsp_shown (label, 1);
+        if (detail != NULL)
+        {
+            while (*detail == ' ')
+                detail++;
+            detail_shown = lsp_shown (detail, 1);
+        }
+        g_ptr_array_add (
+            items,
+            lsp_popup_item_new (lsp_kind_letter (lsp_member_int (choice->item, "kind", 0)), shown,
+                                detail_shown, hits, choice->item));
+        g_free (shown);
+        g_free (detail_shown);
     }
-    g_free (trigger);
+    g_ptr_array_free (choices, TRUE);
+    lsp_popup_set_items (plugin->popup, items);
+
+    // under the start of the word
+    edit_update_curs_col (edit);
+    x = r->x + edit->curs_col + edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET + frame
+        + edit_options.line_state_width - str_term_width1 (word);
+    y = r->y + edit->curs_row + EDIT_TEXT_VERTICAL_OFFSET + frame;
+    lsp_popup_show (plugin->popup, WIDGET (edit)->owner, y, x);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The items asked for, for the word before the cursor */
+static void
+lsp_session_ask (lsp_plugin_t *plugin, WEdit *edit, const char *word)
+{
+    lsp_session_t *s = plugin->session;
+
+    g_free (s->asked);
+    s->asked = g_strdup (word);
+    s->asking = lsp_ask (plugin, edit, LSP_ASK_COMPLETION, s->trigger);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The list as the word before the cursor is now: a new completion when it is another word, the
+   items asked for again when the server had more, the list sifted else */
+static void
+lsp_session_update (lsp_plugin_t *plugin, WEdit *edit, gboolean asked_for, const char *trigger)
+{
+    lsp_window_t *w = lsp_window_served (plugin, edit, FALSE);
+    lsp_session_t *s = plugin->session;
+    char *word = NULL;
+    off_t start;
+
+    if (w == NULL)
+    {
+        lsp_session_end (plugin);
+        return;
+    }
+    start = lsp_word_before (edit, &word);
+    if (s != NULL && (s->window_id != w->id || s->start != start || asked_for))
+    {
+        lsp_session_end (plugin);
+        s = NULL;
+    }
+    if (s == NULL)
+    {
+        /* nothing typed yet, nor asked for: nothing to complete; nor with a server that does
+           not complete, unless the user asks it and is told so */
+        if ((*word == '\0' && !asked_for && trigger == NULL)
+            || (!asked_for && !lsp_client_supports (w->server->client, "completionProvider")))
+        {
+            g_free (word);
+            return;
+        }
+        s = g_new0 (lsp_session_t, 1);
+        s->id = ++plugin->next_session;
+        s->window_id = w->id;
+        s->start = start;
+        s->any = asked_for || trigger != NULL;
+        s->trigger = g_strdup (trigger);
+        plugin->session = s;
+        lsp_session_ask (plugin, edit, word);
+    }
+    else if (*word == '\0' && !s->any)
+        lsp_session_end (plugin);
+    else if (s->items != NULL)
+    {
+        if (s->incomplete && !s->asking && g_strcmp0 (s->asked, word) != 0)
+            lsp_session_ask (plugin, edit, word);
+        lsp_session_show (plugin, w, word);
+    }
+    g_free (word);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The answer of the server: the items of the session */
+static void
+lsp_session_answer (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
+{
+    lsp_session_t *s = plugin->session;
+    JsonArray *items = NULL;
+
+    if (s == NULL || s->id != ask->session || w == NULL)
+        return;
+    s->asking = FALSE;
+    if (ask->status != LSP_REQUEST_OK)
+    {
+        lsp_session_end (plugin);
+        return;
+    }
+    s->incomplete = FALSE;
+    if (ask->result != NULL && JSON_NODE_HOLDS_ARRAY (ask->result))
+        items = json_node_get_array (ask->result);
+    else if (ask->result != NULL && JSON_NODE_HOLDS_OBJECT (ask->result))
+    {
+        JsonObject *list = json_node_get_object (ask->result);
+        JsonNode *node = lsp_member (list, "items");
+
+        if (node != NULL && JSON_NODE_HOLDS_ARRAY (node))
+            items = json_node_get_array (node);
+        s->incomplete = lsp_member (list, "isIncomplete") != NULL
+            && JSON_NODE_HOLDS_VALUE (lsp_member (list, "isIncomplete"))
+            && json_node_get_boolean (lsp_member (list, "isIncomplete"));
+    }
+    if (s->items != NULL)
+        json_array_unref (s->items);
+    s->items = items != NULL ? json_array_ref (items) : json_array_new ();
+    if (s->text != NULL)
+        g_bytes_unref (s->text);
+    s->text = g_bytes_ref (ask->text);
+    s->asked_at = ask->offset;
+    s->encoding = ask->encoding;
+    lsp_session_update (plugin, w->edit, FALSE, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the text from the start of the word of @s to @end is still a word: the cursor may have
+   been put elsewhere in the line, by the mouse, the editor saying nothing of it */
+static gboolean
+lsp_session_in_word (const lsp_session_t *s, WEdit *edit, off_t end)
+{
+    off_t at;
+
+    if (end < s->start || end > edit->buffer.size)
+        return FALSE;
+    for (at = s->start; at < end; at++)
+        if (!lsp_word_byte ((char) edit_buffer_get_byte (&edit->buffer, at)))
+            return FALSE;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The item chosen put in the text, the word up to @end replaced; nothing put when the cursor is
+   no more in the word */
+static void
+lsp_session_take (lsp_plugin_t *plugin, WEdit *edit, off_t end)
+{
+    lsp_popup_item_t *item = plugin->popup != NULL ? lsp_popup_current (plugin->popup) : NULL;
+    lsp_session_t *s = plugin->session;
+
+    if (item != NULL && s != NULL && s->text != NULL && lsp_session_in_word (s, edit, end))
+    {
+        plugin->session = NULL;
+        lsp_popup_hide (plugin->popup);
+        lsp_complete (plugin, edit, s, (JsonObject *) item->data, end);
+        lsp_session_free (s);
+    }
+    lsp_session_end (plugin);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A double click on an item */
+static void
+lsp_session_take_cb (void *data)
+{
+    lsp_plugin_t *plugin = (lsp_plugin_t *) data;
+    void *current = plugin->host->window_current (plugin->host);
+
+    if (current != NULL && edit_widget_is_editor (CONST_WIDGET (current)))
+        lsp_session_take (plugin, EDIT (current), EDIT (current)->buffer.curs1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A key while the list is there: the choice moved, taken or let go; the others are the editor's,
+   and the list follows what they do to the word */
+static gboolean
+lsp_session_key (lsp_plugin_t *plugin, WEdit *edit, int key)
+{
+    lsp_session_t *s = plugin->session;
+    const lsp_window_t *w = lsp_window_of (plugin, edit);
+    const gboolean shown = plugin->popup != NULL && lsp_popup_shown (plugin->popup);
+
+    if (s == NULL || w == NULL || s->window_id != w->id)
+        return FALSE;
+    // the cursor put out of the word: the list is of no use, the key is the editor's
+    if (!lsp_session_in_word (s, edit, edit->buffer.curs1 - (s->pending != 0 ? 1 : 0)))
+    {
+        lsp_session_end (plugin);
+        return FALSE;
+    }
+    if (s->pending != 0)
+    {
+        const char pending = s->pending;
+
+        s->pending = 0;
+        // "->" or "::": the item, then the members of it
+        if ((pending == '-' && key == '>') || (pending == ':' && key == ':'))
+        {
+            lsp_session_take (plugin, edit, edit->buffer.curs1 - 1);
+            g_free (plugin->trigger);
+            plugin->trigger = g_strdup (pending == '-' ? "->" : "::");
+            lsp_ask_later (plugin);
+        }
+        else
+            lsp_session_end (plugin);
+        return FALSE;
+    }
+    if (shown)
+        switch (key)
+        {
+        case KEY_UP:
+            lsp_popup_move (plugin->popup, -1);
+            return TRUE;
+        case KEY_DOWN:
+            lsp_popup_move (plugin->popup, 1);
+            return TRUE;
+        case KEY_PPAGE:
+            lsp_popup_move (plugin->popup, -LSP_POPUP_LINES);
+            return TRUE;
+        case KEY_NPAGE:
+            lsp_popup_move (plugin->popup, LSP_POPUP_LINES);
+            return TRUE;
+        case '\n':
+        case KEY_ENTER:
+        case '\t':
+            lsp_session_take (plugin, edit, edit->buffer.curs1);
+            return TRUE;
+        case ESC_CHAR:
+            lsp_session_end (plugin);
+            return TRUE;
+        case '.':
+            // the item, then the members of it
+            lsp_session_take (plugin, edit, edit->buffer.curs1);
+            g_free (plugin->trigger);
+            plugin->trigger = g_strdup (".");
+            lsp_ask_later (plugin);
+            return FALSE;
+        case '-':
+        case ':':
+            s->pending = (char) key;
+            return FALSE;
+        default:
+            break;
+        }
+    if (key == KEY_BACKSPACE || (key >= 0 && key < 0x100 && lsp_word_byte ((char) key)))
+    {
+        plugin->refilter = TRUE;
+        lsp_ask_later (plugin);
+    }
+    else
+        lsp_session_end (plugin);
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The trigger of the server just typed before the cursor: "->" or "::" before the character
+   itself; NULL when it is none */
+static const char *
+lsp_trigger_typed (WEdit *edit, const lsp_window_t *w, const char *typed)
+{
+    static char two[3];
+    const off_t at = edit->buffer.curs1;
+
+    if (typed == NULL || w == NULL || w->server == NULL || at < 1)
+        return NULL;
+    two[0] = at >= 2 ? (char) edit_buffer_get_byte (&edit->buffer, at - 2) : '\0';
+    two[1] = (char) edit_buffer_get_byte (&edit->buffer, at - 1);
+    two[2] = '\0';
+    if (two[0] != '\0' && lsp_client_completion_trigger (w->server->client, two))
+        return two;
+    if (two[1] == typed[0] && lsp_client_completion_trigger (w->server->client, two + 1))
+        return two + 1;
+    // the trigger of a list taken: "->" after the item put in place of the word
+    if (strlen (typed) == 2 && strcmp (two, typed) == 0)
+        return two;
+    return NULL;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1873,37 +2227,55 @@ lsp_later (void *data)
 {
     lsp_plugin_t *plugin = (lsp_plugin_t *) data;
     lsp_ask_t *ask;
+    char *trigger;
+    gboolean refilter;
 
     plugin->later = FALSE;
-    if (plugin->trigger != NULL)
-        lsp_trigger (plugin);
+    /* the answers first, what was typed then: an answer that ends a completion, given up for no
+       answer, comes with the key typed after it, which then asks again */
+    trigger = plugin->trigger;
+    refilter = plugin->refilter;
+    plugin->trigger = NULL;
+    plugin->refilter = FALSE;
     while ((ask = g_queue_pop_head (plugin->answers)) != NULL)
     {
         lsp_window_t *w = ask->window_id != 0 ? lsp_window_by_id (plugin, ask->window_id) : NULL;
         char *error = ask->error != NULL ? lsp_shown (ask->error, 20) : NULL;
 
-        if (ask->window_id == 0)
+        if (ask->kind == LSP_ASK_COMPLETION && ask->window_id != 0)
+            // the list follows what is typed: the text has changed since, and that is right
+            lsp_session_answer (plugin, w, ask);
+        else if (ask->window_id == 0)
             // a message of a server
             plugin->host->message (plugin->host, D_ERROR, _ ("Language server"), error);
         // the window gone, its text changed, the cursor moved: the answer is of no use
         else if (w == NULL || plugin->host->get_revision (plugin->host, w->edit) != ask->revision
                  || w->edit->buffer.curs1 != ask->offset)
             ;
-        else if (ask->status == LSP_REQUEST_ERROR && ask->kind != LSP_ASK_COMPLETION)
-            plugin->host->message (plugin->host, D_ERROR, _ ("Language server"), error);
         else if (ask->status == LSP_REQUEST_ERROR)
-        {
-            if (!ask->triggered)
-                tty_beep ();
-        }
+            plugin->host->message (plugin->host, D_ERROR, _ ("Language server"), error);
         else if (ask->kind == LSP_ASK_HOVER)
             lsp_show_hover (plugin, w, ask);
-        else if (ask->kind == LSP_ASK_DEFINITION)
-            lsp_show_definition (plugin, w, ask);
         else
-            lsp_show_completion (plugin, w, ask);
+            lsp_show_definition (plugin, w, ask);
         g_free (error);
         lsp_ask_free (ask);
+    }
+    if (trigger != NULL || refilter)
+    {
+        void *current = plugin->host->window_current (plugin->host);
+
+        if (current != NULL && edit_widget_is_editor (CONST_WIDGET (current)))
+        {
+            WEdit *edit = EDIT (current);
+            const lsp_window_t *w = lsp_window_of (plugin, edit);
+            const char *now = lsp_trigger_typed (edit, w, trigger);
+
+            // a '>' that is no "->", a ':' that is no "::": nothing to complete
+            if (trigger == NULL || now != NULL)
+                lsp_session_update (plugin, edit, FALSE, now);
+        }
+        g_free (trigger);
     }
 }
 
@@ -2155,7 +2527,10 @@ lsp_run_command (lsp_plugin_t *plugin, lsp_cmd_t cmd, WEdit *edit)
     switch (cmd)
     {
     case LSP_CMD_COMPLETION:
-        return lsp_ask (plugin, edit, LSP_ASK_COMPLETION, NULL);
+        if (lsp_window_served (plugin, edit, TRUE) == NULL)
+            return FALSE;
+        lsp_session_update (plugin, edit, TRUE, NULL);
+        return TRUE;
     case LSP_CMD_DEFINITION:
         return lsp_ask (plugin, edit, LSP_ASK_DEFINITION, NULL);
     case LSP_CMD_HOVER:
@@ -2262,17 +2637,33 @@ lsp_handle_key (void *data, int key, void *edit)
         (void) lsp_run_command (plugin, cmd, EDIT (edit));
         return MC_EPR_OK;
     }
-    // a character that starts a completion: asked for once the editor has typed it
-    if (lsp_now (plugin, plugin->config->completion_on_trigger) && key > ' ' && key < 0x7f)
+    // the list of a completion has the keys it moves by; it follows the others
+    if (plugin->session != NULL)
+    {
+        const gboolean taken = lsp_session_key (plugin, EDIT (edit), key);
+
+        if (taken)
+            return MC_EPR_OK;
+        if (plugin->session != NULL || plugin->trigger != NULL)
+            return MC_EPR_NOT_SUPPORTED;
+    }
+    // as a word is typed, or after a dot: a completion, once the editor has typed the character
+    if (lsp_now (plugin, plugin->config->completion_on_trigger) && key > ' ' && key < 0x100)
     {
         const lsp_window_t *w = lsp_window_of (plugin, EDIT (edit));
         const char c[2] = { (char) key, '\0' };
 
-        if (w != NULL && w->server != NULL
-            && lsp_client_state (w->server->client) == LSP_CLIENT_RUNNING
-            && (lsp_client_completion_trigger (w->server->client, c)
-                || (key == '>' && lsp_client_completion_trigger (w->server->client, "->"))
-                || (key == ':' && lsp_client_completion_trigger (w->server->client, "::"))))
+        if (w == NULL || w->server == NULL
+            || lsp_client_state (w->server->client) != LSP_CLIENT_RUNNING)
+            return MC_EPR_NOT_SUPPORTED;
+        if (lsp_word_byte ((char) key))
+        {
+            plugin->refilter = TRUE;
+            lsp_ask_later (plugin);
+        }
+        else if (lsp_client_completion_trigger (w->server->client, c)
+                 || (key == '>' && lsp_client_completion_trigger (w->server->client, "->"))
+                 || (key == ':' && lsp_client_completion_trigger (w->server->client, "::")))
         {
             g_free (plugin->trigger);
             plugin->trigger = g_strdup (c);
@@ -2309,6 +2700,12 @@ lsp_handle_event (void *data, void *edit, int event_id, void *payload)
         return MC_EPR_NOT_SUPPORTED;
     switch (event_id)
     {
+    case MC_EP_EVENT_FOCUS_OUT:
+    case MC_EP_EVENT_CURSOR_MOVED:
+        // the list is of a word of a line of this window
+        if (plugin->session != NULL)
+            lsp_session_end (plugin);
+        break;
     case MC_EP_EVENT_TEXT_CHANGED:
     case MC_EP_EVENT_FILE_RENAMED:
         (void) lsp_window_sync (plugin, EDIT (edit), TRUE);
@@ -2369,6 +2766,7 @@ lsp_open (mc_editor_host_t *host, void *editor_dialog)
     plugin->windows = g_ptr_array_new ();
     plugin->answers = g_queue_new ();
     plugin->project = host->startup_option (host, "debug");
+    plugin->popup = lsp_popup_new (lsp_session_take_cb, plugin);
     lsp_load_config (plugin);
 
     host->commands_register (host, LSP_KEYMAP_SECTION, N_ ("Language servers"), lsp_commands);
@@ -2432,6 +2830,8 @@ lsp_close (void *data)
     g_ptr_array_free (plugin->servers, TRUE);
     g_queue_free_full (plugin->answers, (GDestroyNotify) lsp_ask_free);
     g_free (plugin->trigger);
+    lsp_session_free (plugin->session);
+    lsp_popup_free (plugin->popup);
     lsp_config_free (plugin->config);
     g_free (plugin->config_errors);
     g_free (plugin);
