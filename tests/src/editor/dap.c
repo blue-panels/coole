@@ -224,17 +224,25 @@ talk (dap_client_t *client)
     g_assert_false (dap_client_alive (client));
 }
 
+/* The interpreter of the scripts the tests run, the one meson runs with; NULL when there is none */
+static char *
+test_python (void)
+{
+    // a full path, or python3 to be found in PATH when meson could not say
+    return g_find_program_in_path (TEST_PYTHON);
+}
+
 static void
 test_stdio (gconstpointer split)
 {
-    char *python = g_find_program_in_path ("python3");
+    char *python = test_python ();
     char *argv[] = { python, (char *) MOCK_DAP, (char *) split, NULL };
     dap_client_t *client;
     GError *error = NULL;
 
     if (python == NULL)
     {
-        g_test_skip ("python3 is unavailable");
+        g_test_skip ("python is unavailable");
         return;
     }
     memset (&seen, 0, sizeof (seen));
@@ -250,14 +258,14 @@ test_stdio (gconstpointer split)
 static void
 test_tcp (void)
 {
-    char *python = g_find_program_in_path ("python3");
+    char *python = test_python ();
     char *argv[] = { python, (char *) MOCK_DAP, (char *) "--tcp", (char *) "0", NULL };
     dap_client_t *client;
     GError *error = NULL;
 
     if (python == NULL)
     {
-        g_test_skip ("python3 is unavailable");
+        g_test_skip ("python is unavailable");
         return;
     }
     memset (&seen, 0, sizeof (seen));

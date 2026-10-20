@@ -27,16 +27,23 @@ test('gdb_mi', executable('gdb_mi', 'gdb_mi.c',
                          dependencies: [glib_dep, screen_deps]), suite: 'src/editor')
 
 if json_glib.found()
+  # the servers of the tests are scripts: run them with the python meson runs with, which is
+  # there wherever meson is, when no python3 is in PATH
+  test_python = import('python').find_installation(required: false)
+  test_python_arg = '-DTEST_PYTHON="@0@"'.format(test_python.found() ? test_python.full_path()
+                                                                     : 'python3')
   test('dap', executable('dap', 'dap.c',
                          '../../../src/plugins/debugger/dap.c', '../../../src/content-frame.c',
-                         c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py')],
+                         c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py'),
+                                 test_python_arg],
                          dependencies: [glib_dep, screen_deps, json_glib]), suite: 'src/editor')
   test('debug_dap', executable('debug_dap', 'debug_dap.c',
                                '../../../src/plugins/debugger/debug-dap.c',
                                '../../../src/plugins/debugger/debug-backend.c',
                                '../../../src/plugins/debugger/dap.c',
                                '../../../src/content-frame.c',
-                               c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py')],
+                               c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py'),
+                                 test_python_arg],
                                dependencies: [glib_dep, screen_deps, json_glib]), suite: 'src/editor')
   lsp_test_sources = ['../../../src/plugins/lsp/lsp-text.c',
                       '../../../src/plugins/lsp/lsp-config.c']
@@ -53,7 +60,8 @@ if json_glib.found()
   test('lsp_client', executable('lsp_client', 'lsp_client.c', lsp_test_sources,
                                 '../../../src/plugins/lsp/lsp-client.c',
                                 '../../../src/content-frame.c',
-                                c_args: ['-DMOCK_LSP="@0@"'.format(meson.current_source_dir() / 'mock_lsp.py')],
+                                c_args: ['-DMOCK_LSP="@0@"'.format(meson.current_source_dir() / 'mock_lsp.py'),
+                                        test_python_arg],
                                 dependencies: [glib_dep, screen_deps, json_glib]),
        suite: 'src/editor', timeout: 120)
 endif

@@ -294,7 +294,7 @@ server_has (const char *needle)
 static void
 test_no_python (void)
 {
-    g_test_skip ("python3 is unavailable");
+    g_test_skip ("python is unavailable");
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -653,6 +653,16 @@ test_quit (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The interpreter of the scripts the tests run, the one meson runs with; NULL when there is none */
+static char *
+test_python (void)
+{
+    // a full path, or python3 to be found in PATH when meson could not say
+    return g_find_program_in_path (TEST_PYTHON);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 test_missing (void)
 {
@@ -680,7 +690,7 @@ main (int argc, char **argv)
     int result;
 
     g_test_init (&argc, &argv, NULL);
-    python = g_find_program_in_path ("python3");
+    python = test_python ();
     if (python == NULL)
         g_test_add_func ("/lsp/client-session", test_no_python);
     else
