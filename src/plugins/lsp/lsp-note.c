@@ -31,6 +31,7 @@
 #include "lib/skin.h"
 #include "lib/strutil.h"
 #include "lib/tty/tty.h"
+#include "lib/tty/key.h"
 #include "lib/tty/mouse.h"
 #include "lib/widget.h"
 
@@ -41,7 +42,7 @@
 
 /*** file scope macro definitions ****************************************************************/
 
-/* the widest box, and the most lines it shows at once */
+/* the widest box, and the most lines it shows at once: half of the screen, this at least */
 #define LSP_NOTE_MAX_COLS  80
 #define LSP_NOTE_MAX_LINES 15
 
@@ -62,6 +63,10 @@ struct lsp_note_t
     GPtrArray *lines;  // char *: the lines as they fit in the box
     int top;
     WScrollBar *bar;
+    gboolean reading;  // its keys scroll it
+    char *read_key;    // the key that has it read, NULL for none
+    char *text;        // as it was given, to be laid out again on another screen
+    int y, x;          // the place it is shown at
 };
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -311,6 +316,23 @@ lsp_note_draw_rows (lsp_note_t *note)
     for (r = 0; r < rows && note->top + r < (int) note->lines->len; r++)
         lsp_note_draw_line (w, 1 + r, g_ptr_array_index (note->lines, note->top + r), inner - 2);
 
+    // the keys that scroll it, on the lower frame, when there is more than is seen
+    if ((int) note->lines->len > rows)
+    {
+        char *keys = note->reading   ? g_strdup (" Up Down PgUp PgDn Home End, Esc ")
+            : note->read_key != NULL ? g_strdup_printf (" (%s) PgUp PgDn ", note->read_key)
+                                     : g_strdup (" PgUp PgDn ");
+        const int width = str_term_width1 (keys);
+
+        if (width < w->rect.cols - 4)
+        {
+            tty_setcolor (dialog_colors[DLG_COLOR_NORMAL]);
+            widget_gotoyx (w, w->rect.lines - 1, w->rect.cols - 2 - width);
+            tty_print_string (keys);
+        }
+        g_free (keys);
+    }
+
     // a bar when there is more than is seen
     if ((int) note->lines->len > rows)
     {
@@ -338,12 +360,65 @@ lsp_note_draw (lsp_note_t *note)
 /* --------------------------------------------------------------------------------------------- */
 
 static void
-lsp_note_scroll (lsp_note_t *note, int lines)
+lsp_note_scroll_by (lsp_note_t *note, int lines)
 {
     const int last = MAX ((int) note->lines->len - lsp_note_rows (note), 0);
 
     note->top = CLAMP (note->top + lines, 0, last);
     lsp_note_draw (note);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The lines of the text and the place of the box on the screen as it is now: under the place it
+   is shown at, or above it when there is more room there; FALSE when there is no room for it */
+static gboolean
+lsp_note_layout (lsp_note_t *note, WRect *r)
+{
+    int cols = 0, code_cols = 0, below, above, rows, i;
+    char **parts;
+
+    /* as wide as the widest line, the frame and a column of room at each side, the bar being on
+       the frame; the text in LSP_NOTE_MAX_COLS at most, code in the screen, as little of it going
+       on under itself as can be */
+    parts = g_strsplit (note->text, "\n", -1);
+    for (i = 0; parts[i] != NULL; i++)
+        if (*parts[i] == LSP_NOTE_CODE)
+            code_cols = MAX (code_cols, lsp_note_width (parts[i]));
+        else
+            cols = MAX (cols, lsp_note_width (parts[i]));
+    g_strfreev (parts);
+    if (note->title != NULL)
+        cols = MAX (cols, str_term_width1 (note->title) + 4);
+    cols = MAX (MIN (cols + 4, LSP_NOTE_MAX_COLS), code_cols + 4);
+    cols = MIN (MAX (cols, 20), COLS);
+    if (cols < 10)
+        return FALSE;
+
+    g_ptr_array_free (note->lines, TRUE);
+    note->lines = lsp_note_wrap (note->text, cols - 4);
+
+    // the place in the screen; the button bar stays
+    note->y = MIN (note->y, LINES - 2);
+    below = LINES - 1 - (note->y + 1);
+    above = note->y;
+    rows = MIN ((int) note->lines->len, MAX (LSP_NOTE_MAX_LINES, (LINES - 2) / 2)) + 2;
+    r->cols = cols;
+    r->x = MAX (MIN (note->x, COLS - cols), 0);
+    if (rows <= below || below >= above)
+    {
+        r->lines = MIN (rows, below);
+        r->y = note->y + 1;
+    }
+    else
+    {
+        r->lines = MIN (rows, above);
+        r->y = note->y - r->lines;
+    }
+    if (r->lines < 3)
+        return FALSE;
+    note->top = CLAMP (note->top, 0, MAX ((int) note->lines->len - (r->lines - 2), 0));
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -358,6 +433,21 @@ lsp_note_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *
     case MSG_DRAW:
         if (note != NULL)
             lsp_note_draw_rows (note);
+        return MSG_HANDLED;
+    case MSG_RESIZE:
+        // another screen: laid out again in it, out of sight when it has no room
+        if (note != NULL && note->text != NULL)
+        {
+            WRect r;
+
+            if (lsp_note_layout (note, &r))
+            {
+                w->rect = r;
+                widget_set_state (w, WST_VISIBLE, TRUE);
+            }
+            else
+                widget_set_state (w, WST_VISIBLE, FALSE);
+        }
         return MSG_HANDLED;
     case MSG_DESTROY:
         if (note != NULL)
@@ -381,10 +471,10 @@ lsp_note_mouse (Widget *w, mouse_msg_t msg, mouse_event_t *event)
     switch (msg)
     {
     case MSG_MOUSE_SCROLL_UP:
-        lsp_note_scroll (note, -1);
+        lsp_note_scroll_by (note, -1);
         break;
     case MSG_MOUSE_SCROLL_DOWN:
-        lsp_note_scroll (note, 1);
+        lsp_note_scroll_by (note, 1);
         break;
     default:
         break;
@@ -424,6 +514,8 @@ lsp_note_free (lsp_note_t *note)
     }
     g_ptr_array_free (note->lines, TRUE);
     g_free (note->title);
+    g_free (note->read_key);
+    g_free (note->text);
     widget_destroy (WIDGET (note->bar));
     g_free (note);
 }
@@ -431,52 +523,23 @@ lsp_note_free (lsp_note_t *note)
 /* --------------------------------------------------------------------------------------------- */
 
 void
-lsp_note_show (lsp_note_t *note, WGroup *group, const char *title, const char *text, int y, int x)
+lsp_note_show (lsp_note_t *note, WGroup *group, const char *title, const char *read_key,
+               const char *text, int y, int x)
 {
     Widget *w;
-    int cols = 0, code_cols = 0, below, above, rows;
-    char **parts;
     WRect r;
-    int i;
 
-    /* as wide as the widest line, the frame and a column of room at each side, the bar being on
-       the frame; the text in LSP_NOTE_MAX_COLS at most, code in the screen, as little of it going
-       on under itself as can be */
-    parts = g_strsplit (text, "\n", -1);
-    for (i = 0; parts[i] != NULL; i++)
-        if (*parts[i] == LSP_NOTE_CODE)
-            code_cols = MAX (code_cols, lsp_note_width (parts[i]));
-        else
-            cols = MAX (cols, lsp_note_width (parts[i]));
-    g_strfreev (parts);
-    if (title != NULL)
-        cols = MAX (cols, str_term_width1 (title) + 4);
-    cols = MAX (MIN (cols + 4, LSP_NOTE_MAX_COLS), code_cols + 4);
-    cols = CLAMP (cols, 20, COLS);
-
-    g_ptr_array_free (note->lines, TRUE);
-    note->lines = lsp_note_wrap (text, cols - 4);
+    g_free (note->text);
+    note->text = g_strdup (text);
+    note->y = y;
+    note->x = x;
     note->top = 0;
+    note->reading = FALSE;
+    g_free (note->read_key);
+    note->read_key = g_strdup (read_key);
     g_free (note->title);
     note->title = g_strdup (title);
-
-    // under the line, or above it when there is more room there; the button bar stays
-    below = LINES - 1 - (y + 1);
-    above = y;
-    rows = MIN ((int) note->lines->len, LSP_NOTE_MAX_LINES) + 2;
-    r.cols = cols;
-    r.x = MAX (MIN (x, COLS - cols), 0);
-    if (rows <= below || below >= above)
-    {
-        r.lines = MIN (rows, below);
-        r.y = y + 1;
-    }
-    else
-    {
-        r.lines = MIN (rows, above);
-        r.y = y - r.lines;
-    }
-    if (r.lines < 3)
+    if (!lsp_note_layout (note, &r))
     {
         lsp_note_hide (note);
         return;
@@ -494,6 +557,7 @@ lsp_note_show (lsp_note_t *note, WGroup *group, const char *title, const char *t
     w = WIDGET (note->widget);
     if (w->owner != NULL && w->owner != group)
         lsp_note_hide (note);
+    widget_set_state (w, WST_VISIBLE, TRUE);
     widget_set_size_rect (w, &r);
     if (w->owner == NULL)
         group_add_widget (group, w);
@@ -518,9 +582,76 @@ lsp_note_hide (lsp_note_t *note)
 /* --------------------------------------------------------------------------------------------- */
 
 gboolean
-lsp_note_shown (const lsp_note_t *note)
+lsp_note_there (const lsp_note_t *note)
 {
     return note->widget != NULL && CONST_WIDGET (note->widget)->owner != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+lsp_note_shown (const lsp_note_t *note)
+{
+    return note->widget != NULL && CONST_WIDGET (note->widget)->owner != NULL
+        && widget_get_state (CONST_WIDGET (note->widget), WST_VISIBLE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+lsp_note_key (lsp_note_t *note, int key)
+{
+    const int page = MAX (lsp_note_rows (note) - 1, 1);
+
+    if (!lsp_note_shown (note))
+        return FALSE;
+    switch (key)
+    {
+    case KEY_PPAGE:
+        lsp_note_scroll_by (note, -page);
+        return TRUE;
+    case KEY_NPAGE:
+        lsp_note_scroll_by (note, page);
+        return TRUE;
+    default:
+        break;
+    }
+    if (!note->reading)
+        return FALSE;
+    switch (key)
+    {
+    case KEY_UP:
+        lsp_note_scroll_by (note, -1);
+        return TRUE;
+    case KEY_DOWN:
+        lsp_note_scroll_by (note, 1);
+        return TRUE;
+    case KEY_HOME:
+        lsp_note_scroll_by (note, -(int) note->lines->len);
+        return TRUE;
+    case KEY_END:
+        lsp_note_scroll_by (note, (int) note->lines->len);
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+lsp_note_read (lsp_note_t *note)
+{
+    note->reading = TRUE;
+    lsp_note_draw (note);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+lsp_note_reading (const lsp_note_t *note)
+{
+    return lsp_note_shown (note) && note->reading;
 }
 
 /* --------------------------------------------------------------------------------------------- */

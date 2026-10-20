@@ -227,6 +227,9 @@ struct lsp_plugin_t
     guint64 next_preview;
     lsp_popup_t *popup;
     lsp_note_t *note;  // what the server says of a name, Hover
+    // the window and the place of the cursor the note is of: a click in the line moves no line
+    guint64 note_window;
+    off_t note_offset;
 
     // the ticks: a thread writes a byte in the pipe, the main loop reads it
     int tick_pipe[2];
@@ -248,6 +251,7 @@ static void lsp_on_message (void *owner, lsp_client_t *client, int type, const c
 static void lsp_later (void *data);
 static void lsp_session_end (lsp_plugin_t *plugin);
 static gboolean lsp_session_in_word (const lsp_session_t *s, WEdit *edit, off_t end);
+static char *lsp_menu_shortcut (int action_index);
 
 /*** file scope variables ************************************************************************/
 
@@ -1044,6 +1048,18 @@ lsp_tick (lsp_plugin_t *plugin)
                                          - (plugin->session->pending != 0 ? 1 : 0)))
             lsp_session_end (plugin);
     }
+    // the note goes too once the cursor is put elsewhere, in its line too
+    if (lsp_note_there (plugin->note))
+    {
+        const lsp_window_t *w = lsp_window_by_id (plugin, plugin->note_window);
+
+        // by the mouse, out of a key: no one draws the screen after it
+        if (w == NULL || w->edit->buffer.curs1 != plugin->note_offset)
+        {
+            lsp_note_hide (plugin->note);
+            tty_refresh ();
+        }
+    }
 
     for (i = 0; i < plugin->servers->len; i++)
     {
@@ -1514,7 +1530,7 @@ lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask, JsonNode 
     WEdit *edit = w->edit;
     const WRect *r = &CONST_WIDGET (edit)->rect;
     const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1;
-    char *shown;
+    char *shown, *read_key;
     int x, y;
 
     // of a window no more in front: of no use, and in the way of another
@@ -1587,7 +1603,13 @@ lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask, JsonNode 
     x = r->x + edit->curs_col + edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET + frame
         + edit_options.line_state_width;
     y = r->y + edit->curs_row + EDIT_TEXT_VERTICAL_OFFSET + frame;
-    lsp_note_show (plugin->note, WIDGET (edit)->owner, _ ("Quick documentation"), shown, y, x);
+    // the key of Quick documentation, which has it read when it is long
+    read_key = lsp_menu_shortcut (LSP_CMD_HOVER);
+    lsp_note_show (plugin->note, WIDGET (edit)->owner, _ ("Quick documentation"), read_key, shown,
+                   y, x);
+    plugin->note_window = w->id;
+    plugin->note_offset = edit->buffer.curs1;
+    g_free (read_key);
     g_free (shown);
     g_string_free (out, TRUE);
 }
@@ -3188,15 +3210,27 @@ lsp_handle_key (void *data, int key, void *edit)
 
     if (edit == NULL)
         return MC_EPR_NOT_SUPPORTED;
-    // Hover goes at the first key, which does what it does; Esc only takes it away
-    if (lsp_note_shown (plugin->note))
-    {
-        lsp_note_hide (plugin->note);
-        if (key == ESC_CHAR)
-            return MC_EPR_OK;
-    }
     cmd = lsp_command_of (plugin,
                           plugin->host->command_lookup (plugin->host, LSP_KEYMAP_SECTION, key));
+    /* Quick documentation: PgUp and PgDn scroll it; its key again has it read, the arrows
+       scrolling it, and once read takes it away; Esc only takes it away; another key takes it
+       away and does what it does */
+    if (lsp_note_shown (plugin->note))
+    {
+        if (lsp_note_key (plugin->note, key))
+            return MC_EPR_OK;
+        if (cmd == LSP_CMD_HOVER && !lsp_note_reading (plugin->note))
+        {
+            lsp_note_read (plugin->note);
+            return MC_EPR_OK;
+        }
+        lsp_note_hide (plugin->note);
+        if (key == ESC_CHAR || cmd == LSP_CMD_HOVER)
+            return MC_EPR_OK;
+    }
+    // out of sight, the screen too small for it: it goes all the same
+    else if (lsp_note_there (plugin->note))
+        lsp_note_hide (plugin->note);
     if (cmd != LSP_CMD_NONE)
     {
         // a file no server serves: the key is the editor's
@@ -3301,7 +3335,7 @@ lsp_handle_event (void *data, void *edit, int event_id, void *payload)
         // the list and Hover are of a word of a line of this window, the one asked for too
         if (plugin->session != NULL)
             lsp_session_end (plugin);
-        if (lsp_note_shown (plugin->note))
+        if (lsp_note_there (plugin->note))
             lsp_note_hide (plugin->note);
         lsp_preview_free (plugin, plugin->preview);
         plugin->preview = NULL;
