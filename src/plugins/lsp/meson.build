@@ -2,7 +2,7 @@
 # It speaks JSON, so it is there when json-glib is.
 lsp_module = shared_module('lsp',
   'lsp-plugin.c', 'lsp-client.c', 'lsp-config.c', 'lsp-settings.c', 'lsp-text.c',
-  'lsp-popup.c', 'lsp-wizard.c',
+  'lsp-popup.c', 'lsp-setup.c', 'lsp-setup-core.c', 'lsp-wizard.c',
   name_prefix: '',
   c_args: src_c_args,
   dependencies: [glib_dep, intl, screen_headers, json_glib],

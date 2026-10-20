@@ -47,6 +47,9 @@ if json_glib.found()
   test('lsp_settings', executable('lsp_settings', 'lsp_settings.c', lsp_test_sources,
                                   '../../../src/plugins/lsp/lsp-settings.c',
                                   dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  test('lsp_setup', executable('lsp_setup', 'lsp_setup.c',
+                               '../../../src/plugins/lsp/lsp-setup-core.c',
+                               dependencies: [glib_dep, json_glib]), suite: 'src/editor')
   test('lsp_client', executable('lsp_client', 'lsp_client.c', lsp_test_sources,
                                 '../../../src/plugins/lsp/lsp-client.c',
                                 '../../../src/content-frame.c',

@@ -106,6 +106,20 @@ window is not served when it is not.
 : What the server of the file has written on its error output and the
 messages it has sent, the newest last.
 
+**Project setup**
+: Look at the project as its server sees it, and mend what goes wrong; it
+knows clangd for now. It checks every header alone, as clangd reads it: the
+headers of many C projects count on what the files that include them include
+first, and have errors alone the build has not. It finds the headers the files
+of the project include first and tries them, and says how many errors are
+left with the ones that help. It finds the functions the tests define again,
+whose copies take the place of the real ones in Go to definition, and offers
+to leave the directories of the tests out of the index. Show the file shows
+what it would write; Apply writes it in .clangd at the root of the project, in
+a block of its own between the lines "# >>> coole" and "# <<< coole", the
+rest of the file kept, and starts the server again. The checks take a few
+seconds to a minute; Cancel stops them.
+
 **Settings**
 : When the servers start and when they complete by themselves, and the
 servers: the list says which are installed, Enter opens one, its command, the

@@ -53,6 +53,7 @@
 #include "lsp-client.h"
 #include "lsp-config.h"
 #include "lsp-popup.h"
+#include "lsp-setup.h"
 #include "lsp-text.h"
 #include "lsp-wizard.h"
 
@@ -240,6 +241,7 @@ static const mc_ep_command_t lsp_commands[LSP_CMD_COUNT + 1] = {
     { "LspLog", N_ ("The log of a language server"), NULL },
     { "LspSettings", N_ ("The settings of the language servers"), NULL },
     { "LspDeclaration", N_ ("Go to the declaration"), "alt-gt" },
+    { "LspSetup", N_ ("Set the project up for its language server"), NULL },
     { "LspReferences", N_ ("Find the uses of the name"), NULL },
     { "LspHistory", N_ ("The places the jumps went from and to"), NULL },
     { NULL, NULL, NULL },
@@ -2706,6 +2708,14 @@ lsp_run_command (lsp_plugin_t *plugin, lsp_cmd_t cmd, WEdit *edit)
     }
     switch (cmd)
     {
+    case LSP_CMD_SETUP:
+        if (!lsp_setup_knows (w->server->command[0]))
+            plugin->host->message (plugin->host, D_NORMAL, _ ("Project setup"),
+                                   _ ("The project setup knows clangd only, for now."));
+        else if (lsp_setup_run (w->server->root, w->server->command[0]))
+            // the server reads its configuration as it starts, whatever it does now
+            return lsp_run_command (plugin, LSP_CMD_RESTART, edit);
+        break;
     case LSP_CMD_START:
         if (lsp_client_state (w->server->client) == LSP_CLIENT_STOPPING)
             w->server->restart_stopped = TRUE;
@@ -3049,6 +3059,7 @@ LSP_ACTION (lsp_act_status, LSP_CMD_STATUS)
 LSP_ACTION (lsp_act_log, LSP_CMD_LOG)
 LSP_ACTION (lsp_act_settings, LSP_CMD_SETTINGS)
 LSP_ACTION (lsp_act_declaration, LSP_CMD_DECLARATION)
+LSP_ACTION (lsp_act_setup, LSP_CMD_SETUP)
 LSP_ACTION (lsp_act_references, LSP_CMD_REFERENCES)
 LSP_ACTION (lsp_act_history, LSP_CMD_HISTORY)
 
@@ -3065,6 +3076,7 @@ static const mc_ep_action_t lsp_actions[LSP_CMD_COUNT] = {
     { "Log", lsp_act_log },
     { "Settings", lsp_act_settings },
     { "Declaration", lsp_act_declaration },
+    { "Setup", lsp_act_setup },
     { "References", lsp_act_references },
     { "History", lsp_act_history },
 };
@@ -3087,6 +3099,7 @@ static const mc_ep_cmd_menu_entry_t lsp_menu_alone[] = {
     { LSP_MENU, N_ ("St&atus..."), LSP_CMD_STATUS, NULL },
     { LSP_MENU, N_ ("&Log..."), LSP_CMD_LOG, NULL },
     { LSP_MENU, N_ ("S&ettings..."), LSP_CMD_SETTINGS, NULL },
+    { LSP_MENU, N_ ("Pro&ject setup..."), LSP_CMD_SETUP, NULL },
 };
 
 static const mc_ep_cmd_menu_entry_t lsp_menu[] = {
@@ -3103,6 +3116,7 @@ static const mc_ep_cmd_menu_entry_t lsp_menu[] = {
     { LSP_MENU, N_ ("St&atus..."), LSP_CMD_STATUS, NULL },
     { LSP_MENU, N_ ("&Log..."), LSP_CMD_LOG, NULL },
     { LSP_MENU, N_ ("S&ettings..."), LSP_CMD_SETTINGS, NULL },
+    { LSP_MENU, N_ ("Pro&ject setup..."), LSP_CMD_SETUP, NULL },
 };
 
 /* --------------------------------------------------------------------------------------------- */
