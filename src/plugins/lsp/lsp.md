@@ -78,6 +78,9 @@ one.
 documentation, after the problems of the line, in a box under the cursor,
 above it when there is no room under it. The text is as the server wrote it,
 at the left; the mouse wheel scrolls it when it is longer than the box. The
+Markdown of the server is drawn in the colors of the skin: the headings as the
+title of a dialog, the names in backquotes as its hot keys, the rules as its
+lines, and the blocks of code on the colors of the editor. The
 box takes no key: the first one takes it away and does what it does, Esc only
 takes it away; it goes too when the cursor moves.
 

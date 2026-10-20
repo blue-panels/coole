@@ -52,6 +52,7 @@
 
 #include "lsp-client.h"
 #include "lsp-config.h"
+#include "lsp-markdown.h"
 #include "lsp-note.h"
 #include "lsp-popup.h"
 #include "lsp-setup.h"
@@ -1257,27 +1258,51 @@ lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *tri
 /* --------------------------------------------------------------------------------------------- */
 /* Hover */
 
-/* The text of MarkupContent, MarkedString, or an array of them, added to @out */
+/* The text of MarkupContent, MarkedString, or an array of them, added to @out; @markdown set
+   when one of them is Markdown */
 static void
-lsp_hover_text (JsonNode *node, GString *out)
+lsp_hover_text (JsonNode *node, GString *out, gboolean *markdown)
 {
     if (node == NULL)
         return;
     if (JSON_NODE_HOLDS_VALUE (node) && json_node_get_value_type (node) == G_TYPE_STRING)
     {
+        // a MarkedString alone is Markdown
         if (out->len > 0)
             g_string_append (out, "\n\n");
         g_string_append (out, json_node_get_string (node));
+        *markdown = TRUE;
     }
     else if (JSON_NODE_HOLDS_OBJECT (node))
-        lsp_hover_text (lsp_member (json_node_get_object (node), "value"), out);
+    {
+        JsonObject *o = json_node_get_object (node);
+        const char *language = lsp_member_string (o, "language");
+        const char *value = lsp_member_string (o, "value");
+
+        if (value == NULL)
+            return;
+        if (out->len > 0)
+            g_string_append (out, "\n\n");
+        // MarkedString of a language is code; MarkupContent says what it is
+        if (language != NULL)
+        {
+            g_string_append_printf (out, "```%s\n%s\n```", language, value);
+            *markdown = TRUE;
+        }
+        else
+        {
+            g_string_append (out, value);
+            if (g_strcmp0 (lsp_member_string (o, "kind"), "markdown") == 0)
+                *markdown = TRUE;
+        }
+    }
     else if (JSON_NODE_HOLDS_ARRAY (node))
     {
         JsonArray *array = json_node_get_array (node);
         guint i;
 
         for (i = 0; i < json_array_get_length (array); i++)
-            lsp_hover_text (json_array_get_element (array, i), out);
+            lsp_hover_text (json_array_get_element (array, i), out, markdown);
     }
 }
 
@@ -1316,19 +1341,39 @@ lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
             g_string_append_printf (out, "%s%s: %s", out->len > 0 ? "\n" : "",
                                     _ (kinds[lsp_mark_of (d)]), lsp_member_string (d, "message"));
     }
+    // a long text scrolls in the box; an endless one is cut
+    shown = lsp_shown (out->str, 500);
+    g_string_assign (out, shown);
+    g_free (shown);
     if (ask->result != NULL && JSON_NODE_HOLDS_OBJECT (ask->result))
     {
         GString *hover = g_string_new (NULL);
+        gboolean markdown = FALSE;
 
-        lsp_hover_text (lsp_member (json_node_get_object (ask->result), "contents"), hover);
-        if (hover->len > 0)
-            g_string_append_printf (out, "%s%s", out->len > 0 ? "\n\n" : "", hover->str);
+        lsp_hover_text (lsp_member (json_node_get_object (ask->result), "contents"), hover,
+                        &markdown);
+        // its controls gone first: the note has its marks in them
+        shown = lsp_shown (hover->str, 500);
+        if (markdown)
+        {
+            char *note = lsp_markdown_note (shown);
+
+            g_free (shown);
+            shown = note;
+        }
+        if (*shown != '\0')
+        {
+            // a rule between the problems and what the server says of the name
+            if (out->len > 0)
+                g_string_append_printf (out, "\n%c\n", LSP_NOTE_RULE);
+            g_string_append (out, shown);
+        }
+        g_free (shown);
         g_string_free (hover, TRUE);
     }
     if (out->len == 0)
         g_string_assign (out, _ ("The language server says nothing of it."));
-    // a long text scrolls in the box; an endless one is cut
-    shown = lsp_shown (out->str, 500);
+    shown = g_strdup (out->str);
     // under the cursor, from its column
     edit_update_curs_col (edit);
     x = r->x + edit->curs_col + edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET + frame
