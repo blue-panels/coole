@@ -31,11 +31,16 @@
 /*** declarations of public functions ************************************************************/
 
 /* The text of a note of @markdown, which has no control but the new lines: the headings and the
-   lines of the fenced blocks marked, the rules of the server alone on their lines, the escaped
-   dashes of a comment of the source gone, the code in backquotes and what is strong hot, the
-   escapes and the marks of Markdown gone, the arrow clangd puts before what a function gives
-   said "Returns:"; no empty line at the ends, nor two together, nor around a rule */
+   lines of the fenced blocks marked, an empty line of code before and after a block, the rules of
+   the server alone on their lines, the escaped dashes of a comment of the source gone, the code
+   in backquotes and what is strong hot, the escapes and the marks of Markdown gone, the arrow
+   clangd puts before what a function gives said "Returns:"; no empty line at the ends, nor two
+   together, nor around a rule */
 char *lsp_markdown_note (const char *markdown);
+/* @markdown with the lines of its first fenced block replaced by @code when @code has more of
+   them, @max_lines of them at most, "..." for the rest: the source of a definition for what a
+   server prints of it; a copy of @markdown else */
+char *lsp_markdown_with_code (const char *markdown, const char *code, int max_lines);
 
 /*** inline functions ****************************************************************************/
 

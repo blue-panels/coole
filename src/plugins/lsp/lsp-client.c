@@ -149,6 +149,8 @@ static const char lsp_client_capabilities_json[] =
     "\"willSaveWaitUntil\":false,\"didSave\":true},"
     "\"hover\":{\"dynamicRegistration\":false,\"contentFormat\":[\"markdown\",\"plaintext\"]},"
     "\"definition\":{\"dynamicRegistration\":false,\"linkSupport\":true},"
+    "\"documentSymbol\":{\"dynamicRegistration\":false,"
+    "\"hierarchicalDocumentSymbolSupport\":true},"
     "\"declaration\":{\"dynamicRegistration\":false,\"linkSupport\":true},"
     "\"references\":{\"dynamicRegistration\":false},"
     "\"completion\":{\"dynamicRegistration\":false,\"contextSupport\":true,"

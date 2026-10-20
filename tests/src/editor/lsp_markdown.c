@@ -102,10 +102,12 @@ test_clangd (void)
            "-\n"
            "Type: {simple_status_msg_t *} (aka {struct simple_status_msg_t *})\n"
            "-\n"
+           "|\n"
            "|#define SIMPLE_STATUS_MSG(x) ((simple_status_msg_t *) (x))\n"
            "|\n"
            "|// Expands to\n"
-           "|((simple_status_msg_t *) (sm))");
+           "|((simple_status_msg_t *) (sm))\n"
+           "|");
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -137,10 +139,40 @@ test_lines (void)
     // two are no ornament
     check ("\\-- two", "-- two");
     // a fence of tildes, the code inside as it is, a line of a list stays
-    check ("~~~\n  **x**  \n~~~\n- item", "|  **x**  \n- item");
+    check ("~~~\n  **x**  \n~~~\n- item", "|\n|  **x**  \n|\n- item");
     // a fence not closed takes the rest
-    check ("text\n```\ncode", "text\n|code");
+    check ("text\n```\ncode", "text\n|\n|code");
     check ("", "");
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The source of a definition for what the server prints of it */
+static void
+test_with_code (void)
+{
+    static const char hover[] = "### type-alias `t`\n---\n```c\ntypedef struct s t\n```\nafter";
+    static const char source[] = "typedef struct s\n{\n    int a;\n} t;\n\n";
+    char *made;
+
+    made = lsp_markdown_with_code (hover, source, 10);
+    g_assert_cmpstr (
+        made, ==,
+        "### type-alias `t`\n---\n```c\ntypedef struct s\n{\n    int a;\n} t;\n```\nafter");
+    g_free (made);
+    // cut, the rest said
+    made = lsp_markdown_with_code (hover, source, 2);
+    g_assert_cmpstr (made, ==,
+                     "### type-alias `t`\n---\n```c\ntypedef struct s\n{\n...\n```\nafter");
+    g_free (made);
+    // what the server prints has more: the expansion of a macro stays
+    made = lsp_markdown_with_code ("```\n#define M 1\n\n// Expands to\n1\n```", "#define M 1", 10);
+    g_assert_cmpstr (made, ==, "```\n#define M 1\n\n// Expands to\n1\n```");
+    g_free (made);
+    // no block: nothing to replace
+    made = lsp_markdown_with_code ("text", "a\nb", 10);
+    g_assert_cmpstr (made, ==, "text");
+    g_free (made);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -152,6 +184,7 @@ main (int argc, char **argv)
     g_test_add_func ("/lsp/markdown-clangd", test_clangd);
     g_test_add_func ("/lsp/markdown-inline", test_inline);
     g_test_add_func ("/lsp/markdown-lines", test_lines);
+    g_test_add_func ("/lsp/markdown-with-code", test_with_code);
     return g_test_run ();
 }
 

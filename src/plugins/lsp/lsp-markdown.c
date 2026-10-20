@@ -229,6 +229,15 @@ lsp_markdown_ornament (const char *line, gsize len)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether @line, from the start of a line, opens or closes a fenced block */
+static gboolean
+lsp_markdown_is_fence (const char *line)
+{
+    while (*line == ' ')
+        line++;
+    return strncmp (line, "```", 3) == 0 || strncmp (line, "~~~", 3) == 0;
+}
+
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -255,8 +264,12 @@ lsp_markdown_note (const char *markdown)
             trimmed++;
         if (*fence != '\0')
         {
+            // a block has a line of room under it, as over it
             if (strncmp (trimmed, fence, 3) == 0)
+            {
                 *fence = '\0';
+                lsp_markdown_add (lines, g_strdup_printf ("%c", LSP_NOTE_CODE));
+            }
             else
                 lsp_markdown_add (lines, g_strdup_printf ("%c%s", LSP_NOTE_CODE, line));
             continue;
@@ -264,6 +277,7 @@ lsp_markdown_note (const char *markdown)
         if (strncmp (trimmed, "```", 3) == 0 || strncmp (trimmed, "~~~", 3) == 0)
         {
             g_strlcpy (fence, trimmed, sizeof (fence));
+            lsp_markdown_add (lines, g_strdup_printf ("%c", LSP_NOTE_CODE));
             continue;
         }
         if (lsp_markdown_is_rule (trimmed))
@@ -330,6 +344,50 @@ lsp_markdown_note (const char *markdown)
         g_string_append_printf (out, "%s%s", i > 0 ? "\n" : "",
                                 (const char *) g_ptr_array_index (lines, i));
     g_ptr_array_free (lines, TRUE);
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+lsp_markdown_with_code (const char *markdown, const char *code, int max_lines)
+{
+    char **lines = g_strsplit (markdown, "\n", -1);
+    char **code_lines;
+    int open = -1, close = -1, count, i;
+    GString *out;
+
+    for (i = 0; lines[i] != NULL && close < 0; i++)
+        if (lsp_markdown_is_fence (lines[i]))
+        {
+            if (open < 0)
+                open = i;
+            else
+                close = i;
+        }
+    code_lines = g_strsplit (code != NULL ? code : "", "\n", -1);
+    count = (int) g_strv_length (code_lines);
+    // the empty lines at the end of the source are none of it
+    while (count > 0 && strspn (code_lines[count - 1], " \t\r") == strlen (code_lines[count - 1]))
+        count--;
+    if (close < 0 || count <= close - open - 1)
+    {
+        g_strfreev (lines);
+        g_strfreev (code_lines);
+        return g_strdup (markdown);
+    }
+
+    out = g_string_new (NULL);
+    for (i = 0; i <= open; i++)
+        g_string_append_printf (out, "%s\n", lines[i]);
+    for (i = 0; i < count && i < max_lines; i++)
+        g_string_append_printf (out, "%s\n", code_lines[i]);
+    if (count > max_lines)
+        g_string_append (out, "...\n");
+    for (i = close; lines[i] != NULL; i++)
+        g_string_append_printf (out, "%s%s", lines[i], lines[i + 1] != NULL ? "\n" : "");
+    g_strfreev (lines);
+    g_strfreev (code_lines);
     return g_string_free (out, FALSE);
 }
 
