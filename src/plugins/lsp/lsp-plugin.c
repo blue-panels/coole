@@ -1587,7 +1587,7 @@ lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask, JsonNode 
     x = r->x + edit->curs_col + edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET + frame
         + edit_options.line_state_width;
     y = r->y + edit->curs_row + EDIT_TEXT_VERTICAL_OFFSET + frame;
-    lsp_note_show (plugin->note, WIDGET (edit)->owner, _ ("Hover"), shown, y, x);
+    lsp_note_show (plugin->note, WIDGET (edit)->owner, _ ("Quick documentation"), shown, y, x);
     g_free (shown);
     g_string_free (out, TRUE);
 }
@@ -3515,7 +3515,7 @@ static const mc_ep_cmd_menu_entry_t lsp_menu_alone[] = {
     { LSP_MENU, N_ ("Navigation histor&y..."), LSP_CMD_HISTORY, NULL },
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("&Completion"), LSP_CMD_COMPLETION, NULL },
-    { LSP_MENU, N_ ("&Hover"), LSP_CMD_HOVER, NULL },
+    { LSP_MENU, N_ ("&Quick documentation"), LSP_CMD_HOVER, NULL },
     { LSP_MENU, N_ ("&Problems..."), LSP_CMD_PROBLEMS, NULL },
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("&Start server"), LSP_CMD_START, NULL },
@@ -3532,7 +3532,7 @@ static const mc_ep_cmd_menu_entry_t lsp_menu[] = {
     // what goes to a name is in Navigate, with the tags: the server is asked first
     { MC_EP_MENU_NAVIGATE, N_ ("Go to the protot&ype"), LSP_CMD_DECLARATION, NULL },
     { LSP_MENU, N_ ("&Completion"), LSP_CMD_COMPLETION, NULL },
-    { LSP_MENU, N_ ("&Hover"), LSP_CMD_HOVER, NULL },
+    { LSP_MENU, N_ ("&Quick documentation"), LSP_CMD_HOVER, NULL },
     { LSP_MENU, N_ ("&Problems..."), LSP_CMD_PROBLEMS, NULL },
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("&Start server"), LSP_CMD_START, NULL },
