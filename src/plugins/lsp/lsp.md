@@ -75,7 +75,11 @@ one.
 
 **Alt-,**
 : What the server says of the name at the cursor, its type and its
-documentation, after the problems of the line.
+documentation, after the problems of the line, in a box under the cursor,
+above it when there is no room under it. The text is as the server wrote it,
+at the left; the mouse wheel scrolls it when it is longer than the box. The
+box takes no key: the first one takes it away and does what it does, Esc only
+takes it away; it goes too when the cursor moves.
 
 The keys are those of the section
 **[lsp]**

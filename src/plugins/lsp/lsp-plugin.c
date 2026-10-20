@@ -52,6 +52,7 @@
 
 #include "lsp-client.h"
 #include "lsp-config.h"
+#include "lsp-note.h"
 #include "lsp-popup.h"
 #include "lsp-setup.h"
 #include "lsp-text.h"
@@ -205,6 +206,7 @@ struct lsp_plugin_t
     lsp_session_t *session;  // the completion of the moment, NULL when none
     guint64 next_session;
     lsp_popup_t *popup;
+    lsp_note_t *note;  // what the server says of a name, Hover
 
     // the ticks: a thread writes a byte in the pipe, the main loop reads it
     int tick_pipe[2];
@@ -1289,7 +1291,11 @@ lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
     guint line = 0, character = 0, i;
     gsize len;
     const char *text = g_bytes_get_data (ask->text, &len);
+    WEdit *edit = w->edit;
+    const WRect *r = &CONST_WIDGET (edit)->rect;
+    const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1;
     char *shown;
+    int x, y;
 
     // the problems of the line first
     (void) lsp_text_position (text, len, (gsize) ask->offset, ask->encoding, &line, &character);
@@ -1321,8 +1327,14 @@ lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
     }
     if (out->len == 0)
         g_string_assign (out, _ ("The language server says nothing of it."));
-    shown = lsp_shown (out->str, (gsize) MAX (LINES - 8, 3));
-    plugin->host->message (plugin->host, D_NORMAL, _ ("Hover"), shown);
+    // a long text scrolls in the box; an endless one is cut
+    shown = lsp_shown (out->str, 500);
+    // under the cursor, from its column
+    edit_update_curs_col (edit);
+    x = r->x + edit->curs_col + edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET + frame
+        + edit_options.line_state_width;
+    y = r->y + edit->curs_row + EDIT_TEXT_VERTICAL_OFFSET + frame;
+    lsp_note_show (plugin->note, WIDGET (edit)->owner, _ ("Hover"), shown, y, x);
     g_free (shown);
     g_string_free (out, TRUE);
 }
@@ -2779,6 +2791,13 @@ lsp_handle_key (void *data, int key, void *edit)
 
     if (edit == NULL)
         return MC_EPR_NOT_SUPPORTED;
+    // Hover goes at the first key, which does what it does; Esc only takes it away
+    if (lsp_note_shown (plugin->note))
+    {
+        lsp_note_hide (plugin->note);
+        if (key == ESC_CHAR)
+            return MC_EPR_OK;
+    }
     cmd = lsp_command_of (plugin,
                           plugin->host->command_lookup (plugin->host, LSP_KEYMAP_SECTION, key));
     if (cmd != LSP_CMD_NONE)
@@ -2882,9 +2901,11 @@ lsp_handle_event (void *data, void *edit, int event_id, void *payload)
         break;
     case MC_EP_EVENT_FOCUS_OUT:
     case MC_EP_EVENT_CURSOR_MOVED:
-        // the list is of a word of a line of this window
+        // the list and Hover are of a word of a line of this window
         if (plugin->session != NULL)
             lsp_session_end (plugin);
+        if (lsp_note_shown (plugin->note))
+            lsp_note_hide (plugin->note);
         break;
     case MC_EP_EVENT_TEXT_CHANGED:
     case MC_EP_EVENT_FILE_RENAMED:
@@ -2947,6 +2968,7 @@ lsp_open (mc_editor_host_t *host, void *editor_dialog)
     plugin->answers = g_queue_new ();
     plugin->project = host->startup_option (host, "debug");
     plugin->popup = lsp_popup_new (lsp_session_take_cb, plugin);
+    plugin->note = lsp_note_new ();
     lsp_load_config (plugin);
 
     host->commands_register (host, LSP_KEYMAP_SECTION, N_ ("Language servers"), lsp_commands);
@@ -3012,6 +3034,7 @@ lsp_close (void *data)
     g_free (plugin->trigger);
     lsp_session_free (plugin->session);
     lsp_popup_free (plugin->popup);
+    lsp_note_free (plugin->note);
     lsp_config_free (plugin->config);
     g_free (plugin->config_errors);
     g_free (plugin);
