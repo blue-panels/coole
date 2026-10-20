@@ -1106,7 +1106,9 @@ lsp_tick_ready (int fd, void *data)
     while (read (fd, buf, sizeof (buf)) > 0)
         ;
     lsp_tick ((lsp_plugin_t *) data);
-    return 0;
+    // an answer given up for no answer is shown, or ends what waited for it, now: not with the
+    // next key
+    return ((lsp_plugin_t *) data)->later ? 1 : 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
