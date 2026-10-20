@@ -55,6 +55,8 @@
 #include "lib/charsets.h"
 #include "lib/extension-runtime.h"
 
+#include "src/plugins/project/project-core.h"  // project_display_path ()
+
 #include "edit-impl.h"
 #include "editwidget.h"
 
@@ -92,7 +94,57 @@ typedef struct
 
 /*** file scope variables ************************************************************************/
 
+/* the names the files are shown by, by their paths: finding the project of a file reads the disk,
+   and the status is drawn at every key */
+static GHashTable *edit_shown_names = NULL;
+
 /*** file scope functions ************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+/* The name of the file of @edit in the status: from the root of its project, all of it else; all
+   of it always with the full name option */
+static const char *
+edit_shown_name (const WEdit *edit)
+{
+    const char *shown;
+
+    if (edit->filename == NULL)
+        return _ ("NoName");
+    if (edit_options.state_full_filename || !g_path_is_absolute (edit->filename))
+        return edit->filename;
+    if (edit_shown_names == NULL)
+        edit_shown_names = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    shown = g_hash_table_lookup (edit_shown_names, edit->filename);
+    if (shown == NULL)
+    {
+        char *name = project_display_path (edit->filename, edit_startup_option ("debug"));
+
+        shown = name != NULL ? name : g_strdup (edit->filename);
+        g_hash_table_insert (edit_shown_names, g_strdup (edit->filename), (char *) shown);
+    }
+    return shown;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A name in @width columns: cut at its start, "~" there, so that the file itself is seen */
+static const char *
+edit_shown_name_fit (const char *name, int width)
+{
+    const char *p = name;
+
+    if (width <= 0)
+        return "";
+    if (str_term_width1 (name) <= width)
+        return name;
+    // the "~" the caller puts before what is returned is all there is room for
+    if (width == 1)
+        return "";
+    // the characters at the start go, until the rest and the "~" fit
+    while (*p != '\0' && str_term_width1 (p) > width - 1)
+        str_cnext_char (&p);
+    return p;
+}
 
 static inline void
 printwstr (const char *s, int len)
@@ -230,12 +282,7 @@ edit_status_fullscreen (WEdit *edit, int color)
     right_reserved += indicator_len > 0 ? indicator_len + 1 : 0;
 
     if (edit->filename != NULL)
-    {
-        fname = edit->filename;
-
-        if (!edit_options.state_full_filename)
-            fname = x_basename (fname);
-    }
+        fname = edit_shown_name (edit);
 
     fname_len = str_term_width1 (fname);
     if (fname_len < preferred_fname_len)
@@ -248,12 +295,20 @@ edit_status_fullscreen (WEdit *edit, int color)
         else
             fname_len = w - (gap + status_len + right_reserved);
         fname_len = MAX (0, fname_len);
-        fname = str_trunc (fname, fname_len);
     }
+    {
+        const char *fit = edit_shown_name_fit (fname, fname_len);
 
-    widget_gotoyx (h, 0, 0);
-    tty_setcolor (color);
-    printwstr (fname, fname_len + gap);
+        widget_gotoyx (h, 0, 0);
+        tty_setcolor (color);
+        if (fit != fname)
+        {
+            tty_print_char ('~');
+            printwstr (fit, fname_len + gap - 1);
+        }
+        else
+            printwstr (fname, fname_len + gap);
+    }
     printwstr (status, MAX (0, w - (fname_len + gap + right_reserved)));
 
     if (indicator_len > 0)
@@ -296,20 +351,11 @@ edit_status_window (WEdit *edit)
 
     if (cols > 5)
     {
-        const char *fname;
-
-        if (edit->filename != NULL)
-        {
-            fname = edit->filename;
-
-            if (!edit_options.state_full_filename)
-                fname = x_basename (fname);
-        }
-        else
-            fname = _ ("NoName");
+        const char *fname = edit_shown_name (edit);
+        const char *fit = edit_shown_name_fit (fname, MAX (0, w->rect.cols - right_reserved - 6));
 
         edit_move (2, 0);
-        tty_printf ("[%s]", str_term_trim (fname, MAX (0, w->rect.cols - right_reserved - 6)));
+        tty_printf ("[%s%s]", fit != fname ? "~" : "", fit);
     }
 
     tty_getyx (&y, &x);

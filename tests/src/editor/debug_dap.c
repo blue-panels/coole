@@ -306,10 +306,18 @@ wait_answer (void)
 
 #define MINE (g_strdup ("mine")), g_free
 
+/* The interpreter of the scripts the tests run, the one meson runs with; NULL when there is none */
+static char *
+test_python (void)
+{
+    // a full path, or python3 to be found in PATH when meson could not say
+    return g_find_program_in_path (TEST_PYTHON);
+}
+
 static void
 test_session (gconstpointer address)
 {
-    char *python = g_find_program_in_path ("python3");
+    char *python = test_python ();
     char *command;
     char *argv[] = { (char *) "one arg", NULL };
     char *environment[] = { (char *) "GREETING=hi", NULL };
@@ -320,7 +328,7 @@ test_session (gconstpointer address)
 
     if (python == NULL)
     {
-        g_test_skip ("python3 is unavailable");
+        g_test_skip ("python is unavailable");
         return;
     }
     seen_clear ();
@@ -467,7 +475,7 @@ test_session (gconstpointer address)
 static void
 test_no_conditions (void)
 {
-    char *python = g_find_program_in_path ("python3");
+    char *python = test_python ();
     char *command;
     char *argv[] = { NULL };
     debug_start_t spec = { 0 };
@@ -475,7 +483,7 @@ test_no_conditions (void)
 
     if (python == NULL)
     {
-        g_test_skip ("python3 is unavailable");
+        g_test_skip ("python is unavailable");
         return;
     }
     seen_clear ();

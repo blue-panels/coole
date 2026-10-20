@@ -1,0 +1,13 @@
+# >>> coole: LSP > Project setup writes what is down to the line "<<< coole"
+# a header is read alone: it gets what the files that include it include first
+If:
+  PathMatch: .*\.(h|hh|hpp|hxx)
+CompileFlags:
+  Add: [-include, "lib/widget.h"]
+---
+# the functions the tests define again are not those of the program
+If:
+  PathMatch: (debian/tests|tests)/.*
+Index:
+  Background: Skip
+# <<< coole

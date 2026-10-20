@@ -69,6 +69,7 @@
 #include "src/clipboard.h"  // clipboard_info_write()
 
 #include "edit-impl.h"
+#include "editnav.h"
 #include "editwidget.h"
 #include "editcmd_private.h"
 #include "editsearch.h"
@@ -2175,28 +2176,8 @@ edit_select_codepage_cmd (WEdit *edit)
 gboolean
 edit_load_forward_cmd (WEdit *edit)
 {
-    if (edit->modified != 0
-        && edit_query_dialog2 (_ ("Warning"),
-                               _ ("Current text was modified without a file save.\n"
-                                  "Continue discards these changes."),
-                               _ ("C&ontinue"), _ ("&Cancel"))
-            == 1)
-    {
-        edit->force |= REDRAW_COMPLETELY;
-        return TRUE;
-    }
-
-    if (edit_stack_iterator + 1 >= MAX_HISTORY_MOVETO)
-        return FALSE;
-
-    if (edit_history_moveto[edit_stack_iterator + 1].line_number < 1)
-        return FALSE;
-
-    edit_stack_iterator++;
-    if (edit_history_moveto[edit_stack_iterator].file_name != NULL)
-        return edit_reload_line (edit, &edit_history_moveto[edit_stack_iterator]);
-
-    return FALSE;
+    // a file changed here is not let go: the other one goes in a window of its own
+    return edit_nav_forward (edit);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2204,26 +2185,7 @@ edit_load_forward_cmd (WEdit *edit)
 gboolean
 edit_load_back_cmd (WEdit *edit)
 {
-    if (edit->modified != 0
-        && edit_query_dialog2 (_ ("Warning"),
-                               _ ("Current text was modified without a file save.\n"
-                                  "Continue discards these changes."),
-                               _ ("C&ontinue"), _ ("&Cancel"))
-            == 1)
-    {
-        edit->force |= REDRAW_COMPLETELY;
-        return TRUE;
-    }
-
-    // we are in the bottom of the stack, NO WAY!
-    if (edit_stack_iterator == 0)
-        return FALSE;
-
-    edit_stack_iterator--;
-    if (edit_history_moveto[edit_stack_iterator].file_name != NULL)
-        return edit_reload_line (edit, &edit_history_moveto[edit_stack_iterator]);
-
-    return FALSE;
+    return edit_nav_back (edit);
 }
 
 /* --------------------------------------------------------------------------------------------- */

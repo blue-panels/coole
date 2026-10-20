@@ -1,0 +1,56 @@
+{
+  "autostart": "ide",
+  "completion_on_trigger": "ide",
+  "backends": [
+    {
+      "id": "clangd",
+      "command": ["clangd", "--background-index", "--compile-commands-dir=${build_dir}"],
+      "extensions": {".c": "c", ".h": "c", ".cc": "cpp", ".cpp": "cpp", ".cxx": "cpp",
+                     ".hh": "cpp", ".hpp": "cpp", ".hxx": "cpp", ".m": "objective-c"},
+      "root_markers": ["compile_commands.json", "compile_flags.txt"]
+    },
+    {
+      "id": "pylsp",
+      "command": ["pylsp"],
+      "extensions": {".py": "python"},
+      "root_markers": ["pyproject.toml", "setup.py", "setup.cfg"]
+    },
+    {
+      "id": "pyright",
+      "command": ["pyright-langserver", "--stdio"],
+      "extensions": {".py": "python"},
+      "root_markers": ["pyproject.toml", "pyrightconfig.json"]
+    },
+    {
+      "id": "rust-analyzer",
+      "command": ["rust-analyzer"],
+      "extensions": {".rs": "rust"},
+      "root_markers": ["Cargo.toml"],
+      "single_file": false
+    },
+    {
+      "id": "gopls",
+      "command": ["gopls"],
+      "extensions": {".go": "go"},
+      "root_markers": ["go.mod", "go.work"]
+    },
+    {
+      "id": "typescript",
+      "command": ["typescript-language-server", "--stdio"],
+      "extensions": {".ts": "typescript", ".tsx": "typescriptreact",
+                     ".js": "javascript", ".jsx": "javascriptreact"},
+      "root_markers": ["package.json", "tsconfig.json", "jsconfig.json"]
+    },
+    {
+      "id": "bash",
+      "command": ["bash-language-server", "start"],
+      "extensions": {".sh": "shellscript", ".bash": "shellscript"}
+    },
+    {
+      "id": "lua",
+      "command": ["lua-language-server"],
+      "extensions": {".lua": "lua"},
+      "root_markers": [".luarc.json"]
+    }
+  ]
+}

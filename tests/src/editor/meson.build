@@ -27,17 +27,51 @@ test('gdb_mi', executable('gdb_mi', 'gdb_mi.c',
                          dependencies: [glib_dep, screen_deps]), suite: 'src/editor')
 
 if json_glib.found()
+  # the servers of the tests are scripts: run them with the python meson runs with, which is
+  # there wherever meson is, when no python3 is in PATH
+  test_python = import('python').find_installation(required: false)
+  test_python_arg = '-DTEST_PYTHON="@0@"'.format(test_python.found() ? test_python.full_path()
+                                                                     : 'python3')
   test('dap', executable('dap', 'dap.c',
-                         '../../../src/plugins/debugger/dap.c',
-                         c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py')],
+                         '../../../src/plugins/debugger/dap.c', '../../../src/content-frame.c',
+                         c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py'),
+                                 test_python_arg],
                          dependencies: [glib_dep, screen_deps, json_glib]), suite: 'src/editor')
   test('debug_dap', executable('debug_dap', 'debug_dap.c',
                                '../../../src/plugins/debugger/debug-dap.c',
                                '../../../src/plugins/debugger/debug-backend.c',
                                '../../../src/plugins/debugger/dap.c',
-                               c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py')],
+                               '../../../src/content-frame.c',
+                               c_args: ['-DMOCK_DAP="@0@"'.format(meson.current_source_dir() / 'mock_dap.py'),
+                                 test_python_arg],
                                dependencies: [glib_dep, screen_deps, json_glib]), suite: 'src/editor')
+  lsp_test_sources = ['../../../src/plugins/lsp/lsp-text.c',
+                      '../../../src/plugins/lsp/lsp-config.c']
+  test('lsp_text', executable('lsp_text', 'lsp_text.c', lsp_test_sources,
+                              dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  test('lsp_config', executable('lsp_config', 'lsp_config.c', lsp_test_sources,
+                                dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  test('lsp_settings', executable('lsp_settings', 'lsp_settings.c', lsp_test_sources,
+                                  '../../../src/plugins/lsp/lsp-settings.c',
+                                  dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  test('lsp_setup', executable('lsp_setup', 'lsp_setup.c',
+                               '../../../src/plugins/lsp/lsp-setup-core.c',
+                               dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  test('lsp_client', executable('lsp_client', 'lsp_client.c', lsp_test_sources,
+                                '../../../src/plugins/lsp/lsp-client.c',
+                                '../../../src/content-frame.c',
+                                c_args: ['-DMOCK_LSP="@0@"'.format(meson.current_source_dir() / 'mock_lsp.py'),
+                                        test_python_arg],
+                                dependencies: [glib_dep, screen_deps, json_glib]),
+       suite: 'src/editor', timeout: 120)
 endif
+
+test('fuzzy', executable('fuzzy', 'fuzzy.c', '../../../src/fuzzy.c', dependencies: [glib_dep]),
+     suite: 'src/editor')
+
+test('content_frame', executable('content_frame', 'content_frame.c',
+                                 '../../../src/content-frame.c',
+                                 dependencies: [glib_dep]), suite: 'src/editor')
 
 test('build_core', executable('build_core', 'build_core.c',
                               '../../../src/plugins/build/build-core.c',
@@ -53,4 +87,7 @@ test('git_core', executable('git_core', 'git_core.c',
 if have_gmodule and module_symbols_sh.found()
   test('debugger_module_symbols', module_symbols_sh, args: [coole, debugger_module],
        suite: 'src/editor')
+  if json_glib.found()
+    test('lsp_module_symbols', module_symbols_sh, args: [coole, lsp_module], suite: 'src/editor')
+  endif
 endif

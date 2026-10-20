@@ -386,6 +386,7 @@ summary({
   'Spell checking': have_spell,
   'Terminal': have_terminal,
   'Debug adapters (DAP)': json_glib.found(),
+  'Language servers (LSP)': json_glib.found() and have_gmodule,
   'Lua runtime plugin': lua.found() ? lua.version() : false,
   'Translations': have_nls,
   'Unit tests': check.found(),

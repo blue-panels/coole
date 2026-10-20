@@ -28,6 +28,7 @@
 #include "tests/mctest.h"
 
 #include "src/plugins/ctags/ctags-parser.h"
+#include "src/fuzzy.h"
 #include "src/plugins/ctags/ctags-fuzzy.h"
 
 /* --------------------------------------------------------------------------------------------- */
@@ -36,22 +37,22 @@
 START_TEST (test_fuzzy_match_basic)
 {
     /* Each query character must appear in name in the original order. */
-    ck_assert (ctags_fuzzy_match ("Width", "wid"));
-    ck_assert (ctags_fuzzy_match ("fillWidth", "fw"));
-    ck_assert (ctags_fuzzy_match ("WorkingId", "wid"));
+    ck_assert (fuzzy_match ("Width", "wid"));
+    ck_assert (fuzzy_match ("fillWidth", "fw"));
+    ck_assert (fuzzy_match ("WorkingId", "wid"));
 
     /* Order matters: "dw" cannot match "Width". */
-    ck_assert (!ctags_fuzzy_match ("Width", "dw"));
+    ck_assert (!fuzzy_match ("Width", "dw"));
 
     /* No match. */
-    ck_assert (!ctags_fuzzy_match ("Width", "zz"));
+    ck_assert (!fuzzy_match ("Width", "zz"));
 
     /* Empty query: every name matches. */
-    ck_assert (ctags_fuzzy_match ("Width", ""));
+    ck_assert (fuzzy_match ("Width", ""));
 
     /* NULL or empty inputs survive without crashing. */
-    ck_assert (!ctags_fuzzy_match (NULL, "x"));
-    ck_assert (!ctags_fuzzy_match ("Width", NULL));
+    ck_assert (!fuzzy_match (NULL, "x"));
+    ck_assert (!fuzzy_match ("Width", NULL));
 }
 END_TEST
 
@@ -62,10 +63,10 @@ START_TEST (test_fuzzy_score_ordering)
 {
     int s_exact, s_split, s_boundary, s_midword;
 
-    s_exact = ctags_fuzzy_score ("getWidth", "width");
-    s_split = ctags_fuzzy_score ("WorkingId", "wid");
-    s_boundary = ctags_fuzzy_score ("get_value", "gv");
-    s_midword = ctags_fuzzy_score ("ungrateful", "gv");
+    s_exact = fuzzy_score ("getWidth", "width", NULL);
+    s_split = fuzzy_score ("WorkingId", "wid", NULL);
+    s_boundary = fuzzy_score ("get_value", "gv", NULL);
+    s_midword = fuzzy_score ("ungrateful", "gv", NULL);
 
     /* A contiguous, word-boundary-aligned match should rank no worse than
        a split one. */
@@ -106,8 +107,8 @@ START_TEST (test_fuzzy_search_orders_results)
         const ctags_entry_t *first = (const ctags_entry_t *) g_ptr_array_index (result, 0);
         const ctags_entry_t *second = (const ctags_entry_t *) g_ptr_array_index (result, 1);
 
-        ck_assert_int_ge (ctags_fuzzy_score (first->name, "wid"),
-                          ctags_fuzzy_score (second->name, "wid"));
+        ck_assert_int_ge (fuzzy_score (first->name, "wid", NULL),
+                          fuzzy_score (second->name, "wid", NULL));
     }
 
     g_ptr_array_free (result, TRUE);

@@ -99,74 +99,6 @@ run_until (const gboolean *done)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static GPtrArray *messages;
-
-static void
-collect (const char *json, gsize len, void *data)
-{
-    (void) data;
-    g_assert_cmpuint (strlen (json), ==, len);
-    g_ptr_array_add (messages, g_strdup (json));
-}
-
-static void
-test_reader_split (void)
-{
-    const char *stream =
-        "Content-Length: 7\r\n\r\n{\"a\":1}content-length:2\r\nX-Other: y\r\n\r\n[]";
-    const gsize len = strlen (stream);
-    gsize cut;
-
-    // the stream torn at every byte gives the same two messages
-    for (cut = 0; cut <= len; cut++)
-    {
-        dap_reader_t *reader = dap_reader_new ();
-
-        messages = g_ptr_array_new_with_free_func (g_free);
-        g_assert_true (dap_reader_feed (reader, stream, cut, collect, NULL));
-        g_assert_true (dap_reader_feed (reader, stream + cut, len - cut, collect, NULL));
-        g_assert_cmpuint (messages->len, ==, 2);
-        g_assert_cmpstr (g_ptr_array_index (messages, 0), ==, "{\"a\":1}");
-        g_assert_cmpstr (g_ptr_array_index (messages, 1), ==, "[]");
-        g_ptr_array_free (messages, TRUE);
-        dap_reader_free (reader);
-    }
-}
-
-static void
-test_reader_byte_by_byte (void)
-{
-    char *framed;
-    gsize len, i;
-    dap_reader_t *reader = dap_reader_new ();
-
-    framed = dap_message_frame ("{\"seq\":1}", 9, &len);
-    g_assert_cmpstr (framed, ==, "Content-Length: 9\r\n\r\n{\"seq\":1}");
-    messages = g_ptr_array_new_with_free_func (g_free);
-    for (i = 0; i < len; i++)
-        g_assert_true (dap_reader_feed (reader, framed + i, 1, collect, NULL));
-    g_assert_cmpuint (messages->len, ==, 1);
-    g_ptr_array_free (messages, TRUE);
-    g_free (framed);
-    dap_reader_free (reader);
-}
-
-static void
-test_reader_broken (void)
-{
-    dap_reader_t *reader = dap_reader_new ();
-
-    messages = g_ptr_array_new_with_free_func (g_free);
-    // a header with no length is no header
-    g_assert_false (dap_reader_feed (reader, "Content-Type: x\r\n\r\n{}", 21, collect, NULL));
-    g_assert_cmpuint (messages->len, ==, 0);
-    // and the reader is clean for what comes after
-    g_assert_true (dap_reader_feed (reader, "Content-Length: 2\r\n\r\n{}", 23, collect, NULL));
-    g_assert_cmpuint (messages->len, ==, 1);
-    g_ptr_array_free (messages, TRUE);
-    dap_reader_free (reader);
-}
-
 static void
 test_members (void)
 {
@@ -292,17 +224,25 @@ talk (dap_client_t *client)
     g_assert_false (dap_client_alive (client));
 }
 
+/* The interpreter of the scripts the tests run, the one meson runs with; NULL when there is none */
+static char *
+test_python (void)
+{
+    // a full path, or python3 to be found in PATH when meson could not say
+    return g_find_program_in_path (TEST_PYTHON);
+}
+
 static void
 test_stdio (gconstpointer split)
 {
-    char *python = g_find_program_in_path ("python3");
+    char *python = test_python ();
     char *argv[] = { python, (char *) MOCK_DAP, (char *) split, NULL };
     dap_client_t *client;
     GError *error = NULL;
 
     if (python == NULL)
     {
-        g_test_skip ("python3 is unavailable");
+        g_test_skip ("python is unavailable");
         return;
     }
     memset (&seen, 0, sizeof (seen));
@@ -318,14 +258,14 @@ test_stdio (gconstpointer split)
 static void
 test_tcp (void)
 {
-    char *python = g_find_program_in_path ("python3");
+    char *python = test_python ();
     char *argv[] = { python, (char *) MOCK_DAP, (char *) "--tcp", (char *) "0", NULL };
     dap_client_t *client;
     GError *error = NULL;
 
     if (python == NULL)
     {
-        g_test_skip ("python3 is unavailable");
+        g_test_skip ("python is unavailable");
         return;
     }
     memset (&seen, 0, sizeof (seen));
@@ -358,9 +298,6 @@ int
 main (int argc, char **argv)
 {
     g_test_init (&argc, &argv, NULL);
-    g_test_add_func ("/debugger/dap-reader-split", test_reader_split);
-    g_test_add_func ("/debugger/dap-reader-byte-by-byte", test_reader_byte_by_byte);
-    g_test_add_func ("/debugger/dap-reader-broken", test_reader_broken);
     g_test_add_func ("/debugger/dap-members", test_members);
     g_test_add_data_func ("/debugger/dap-stdio", NULL, test_stdio);
     g_test_add_data_func ("/debugger/dap-stdio-split", "--split", test_stdio);

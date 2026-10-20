@@ -236,6 +236,44 @@ remove_tree (const char *path)
     (void) g_remove (path);
 }
 
+/* The name a file is shown by: from the root of its project, else all of it */
+static void
+test_display_path (void)
+{
+    char *file, *shown, *project;
+
+    touch ("shown/.git");
+    touch ("shown/src/x.c");
+    file = at ("shown/src/x.c");
+    shown = project_display_path (file, NULL);
+    g_assert_cmpstr (shown, ==, "src/x.c");
+    g_free (shown);
+    // the project of -D before the repository
+    project = at ("shown/src");
+    shown = project_display_path (file, project);
+    g_assert_cmpstr (shown, ==, "x.c");
+    g_free (shown);
+    g_free (project);
+    // one that does not hold the file is not its project
+    project = at ("meson");
+    shown = project_display_path (file, project);
+    g_assert_cmpstr (shown, ==, "src/x.c");
+    g_free (shown);
+    g_free (project);
+    g_free (file);
+
+    // in no project: the whole path
+    touch ("loose/f.c");
+    file = at ("loose/f.c");
+    shown = project_display_path (file, NULL);
+    if (!project_is_project (top))
+        g_assert_cmpstr (shown, ==, file);
+    g_free (shown);
+    g_free (file);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (int argc, char **argv)
 {
@@ -245,6 +283,7 @@ main (int argc, char **argv)
     top = g_dir_make_tmp ("project-core-XXXXXX", NULL);
     g_assert_nonnull (top);
     g_test_add_func ("/project/find-root", test_find_root);
+    g_test_add_func ("/project/display-path", test_display_path);
     g_test_add_func ("/project/list-files", test_list_files);
     g_test_add_func ("/project/match-score", test_match_score);
     g_test_add_func ("/project/alternate", test_alternate);

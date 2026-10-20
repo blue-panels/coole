@@ -40,6 +40,7 @@
 
 #include "ctags-parser.h"
 #include "ctags-repository.h"
+#include "src/fuzzy.h"
 #include "ctags-fuzzy.h"
 #include "ctags-ui.h"
 
@@ -213,7 +214,7 @@ ctags_sel_refilter (void)
             m.score = 0;
         else
         {
-            m.score = ctags_fuzzy_score (e->name, text);
+            m.score = fuzzy_score (e->name, text, NULL);
             if (m.score == 0)
                 continue;
         }

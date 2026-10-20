@@ -94,6 +94,9 @@ typedef int (*select_fn) (int fd, void *info);
 
 /* Channel manipulation */
 void add_select_channel (int fd, select_fn callback, void *info);
+/* KEY_M_SHIFT, KEY_M_ALT and KEY_M_CTRL held with the button of the last event of the mouse of
+   the terminal: Ctrl with a click for one */
+int tty_mouse_modifiers (void);
 void delete_select_channel (int fd);
 
 /* Activate/deactivate the channel checking */

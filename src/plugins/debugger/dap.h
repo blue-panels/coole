@@ -13,22 +13,6 @@
 #include <json-glib/json-glib.h>
 
 /* --------------------------------------------------------------------------------------------- */
-/* The messages of a stream of bytes */
-
-typedef struct dap_reader_t dap_reader_t;
-typedef void (*dap_message_fn) (const char *json, gsize len, void *data);
-
-dap_reader_t *dap_reader_new (void);
-/* The bytes that came: @fn gets each message they end.  FALSE when the stream is broken: a
-   header without its length, or a length too big; what is buffered is then dropped. */
-gboolean dap_reader_feed (dap_reader_t *reader, const char *bytes, gsize len, dap_message_fn fn,
-                          void *data);
-void dap_reader_free (dap_reader_t *reader);
-
-/* A message with its header, as it goes to the adapter; free with g_free() */
-char *dap_message_frame (const char *json, gsize json_len, gsize *len);
-
-/* --------------------------------------------------------------------------------------------- */
 /* The members of a JSON object: NULL, or @fallback, when there is none or it is of another type */
 
 const char *dap_string (JsonObject *object, const char *name);

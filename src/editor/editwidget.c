@@ -72,6 +72,7 @@
 
 #include "edit-impl.h"
 #include "editwidget.h"
+#include "editnav.h"
 #include "editdock.h"
 #include "editlayout.h"
 #include "editmacros.h"  // edit_execute_macro()
@@ -254,6 +255,47 @@ edit_plugins_tell (WEdit *edit, int event_id)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* An event of navigation offered to the plugins, from @first to @last round, until one takes it:
+   what knows the name first, a language server, then what guesses, the tags */
+static gboolean
+edit_plugins_offer (WEdit *edit, int event_id, int first, int last)
+{
+    const Widget *owner = CONST_WIDGET (CONST_WIDGET (edit)->owner);
+    const editor_plugin_ctx_t *ctx;
+    int round;
+    guint i;
+
+    if (owner == NULL)
+        return FALSE;
+    ctx = (const editor_plugin_ctx_t *) CONST_DIALOG (owner)->data.p;
+    if (ctx == NULL)
+        return FALSE;
+    for (round = first; round <= last; round++)
+        for (i = 0; i < ctx->instances->len; i++)
+        {
+            const editor_plugin_instance_t *inst = g_ptr_array_index (ctx->instances, i);
+
+            if (inst->plugin->handle_event != NULL
+                && inst->plugin->handle_event (inst->plugin_data, edit, event_id,
+                                               GINT_TO_POINTER (round))
+                    == MC_EPR_OK)
+                return TRUE;
+        }
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A click with Ctrl in the text: the plugin that knows the name under the cursor goes to its
+   definition, a language server first, tags else */
+static void
+edit_plugins_ctrl_click (WEdit *edit)
+{
+    (void) edit_plugins_offer (edit, MC_EP_EVENT_CTRL_CLICK, 0, 1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The file of @edit is written: MC_EP_EVENT_FILE_SAVED, or MC_EP_EVENT_FILE_RENAMED for Save as,
    with its name */
 void
@@ -353,6 +395,20 @@ edit_publish_runtime_idle (WEdit *edit)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* The editor drawn again, and the dialogs over it after it: what a plugin draws when a server or
+   a program it runs says something must not hide the dialog the user is in */
+static void
+editor_host_draw (const mc_editor_host_t *host)
+{
+    if (top_dlg != NULL && top_dlg->data != host->host_data)
+        do_refresh ();
+    else
+        widget_draw (WIDGET (host->host_data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /**
  * Host callback: request redraw/refresh.
  */
@@ -361,7 +417,7 @@ static void
 editor_host_redraw_impl (mc_editor_host_t *host)
 {
     if (host != NULL && host->host_data != NULL)
-        widget_draw (WIDGET (host->host_data));
+        editor_host_draw (host);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -480,46 +536,28 @@ static gboolean
 editor_host_jump_to_impl (mc_editor_host_t *host, void *edit, const char *file, long line)
 {
     WEdit *e = (WEdit *) edit;
-    WDialog *dlg;
-    gboolean ret;
 
     (void) host;
 
     if (e == NULL || file == NULL)
         return FALSE;
 
-    dlg = DIALOG (WIDGET (e)->owner);
+    // recorded for Go back; a file changed here goes in a window of its own
+    return edit_nav_jump (e, file, line, 0);
+}
 
-    /* If the current file is modified, open target in a new window without
-     * touching the navigation stack -- we are not navigating away. */
-    if (e->modified != 0)
-    {
-        char *path = mc_path_absolute (file);
-        edit_arg_t arg;
+/* --------------------------------------------------------------------------------------------- */
 
-        edit_arg_init (&arg, path, line);
-        ret = edit_load_file_from_filename (dlg, &arg);
-        g_free (path);
-        return ret;
-    }
+/**
+ * Host callback: jump to file:line, @column bytes into the line, recorded for Go back.
+ */
 
-    if (edit_stack_iterator + 1 >= MAX_HISTORY_MOVETO)
-        return FALSE;
-
-    /* Save current position */
-    if (e->filename != NULL)
-    {
-        edit_update_curs_col (e);
-        edit_arg_assign (&edit_history_moveto[edit_stack_iterator], g_strdup (e->filename),
-                         e->start_line + e->curs_row + 1);
-        edit_history_moveto[edit_stack_iterator].column = e->curs_col;
-        edit_history_moveto[edit_stack_iterator].start_line = e->start_line;
-    }
-
-    /* Push target and jump */
-    edit_stack_iterator++;
-    edit_arg_assign (&edit_history_moveto[edit_stack_iterator], mc_path_absolute (file), line);
-    return edit_reload_line (e, &edit_history_moveto[edit_stack_iterator]);
+static gboolean
+editor_host_go_to_impl (mc_editor_host_t *host, void *edit, const char *file, long line,
+                        long column)
+{
+    (void) host;
+    return edit != NULL && edit_nav_jump (EDIT (edit), file, line, column);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -849,7 +887,9 @@ editor_host_marker_kind_impl (mc_editor_host_t *host, const mc_ep_marker_kind_t 
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The gutter shows the marks: it is turned on for them, and off again with the last of them */
+/* The gutter shows the marks: it is turned on for them, and stays on until the editor ends, so
+   that the text does not move aside and back as the marks come and go: a jump to a file with
+   none of them, for one */
 static gboolean editor_marker_gutter_auto = FALSE;
 
 static void
@@ -876,12 +916,6 @@ editor_host_marker_gutter (mc_editor_host_t *host)
                 return;
             }
     }
-    if (editor_marker_gutter_auto && edit_options.line_state)
-    {
-        edit_options.line_state = FALSE;
-        edit_options.line_state_width = 0;
-    }
-    editor_marker_gutter_auto = FALSE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -919,7 +953,7 @@ editor_host_set_marker_impl (mc_editor_host_t *host, const char *file, long line
         edit->force |= REDRAW_COMPLETELY;
     }
     editor_host_marker_gutter (host);
-    widget_draw (WIDGET (host->host_data));
+    editor_host_draw (host);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -943,7 +977,7 @@ editor_host_clear_markers_impl (mc_editor_host_t *host, const char *file, int ki
         book_mark_flush (edit, EDIT_MARKER_BASE + kind);
     }
     editor_host_marker_gutter (host);
-    widget_draw (WIDGET (host->host_data));
+    editor_host_draw (host);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -991,6 +1025,15 @@ edit_set_startup_option (const char *name, const char *value)
     if (startup_options == NULL)
         startup_options = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
     g_hash_table_insert (startup_options, g_strdup (name), g_strdup (value));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_navigate_impl (mc_editor_host_t *host, void *edit, int event_id)
+{
+    (void) host;
+    return edit != NULL && edit_plugins_offer (EDIT (edit), event_id, 0, 0);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1424,6 +1467,8 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->layout_push = editor_host_layout_push_impl;
     ctx->host->layout_pop = editor_host_layout_pop_impl;
     ctx->host->window_docked = editor_host_window_docked_impl;
+    ctx->host->navigate = editor_host_navigate_impl;
+    ctx->host->go_to = editor_host_go_to_impl;
     ctx->window_kinds = g_ptr_array_new_with_free_func (editor_window_kind_free);
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
     // the plugins reach it from open(): call_later() for one
@@ -3119,6 +3164,12 @@ edit_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
         edit_total_update (edit);
         edit->word_highlight = FALSE;
         edit->line_highlight = FALSE;
+        break;
+
+    case MSG_MOUSE_CLICK:
+        // Ctrl with a click: to the definition of what is clicked, the cursor there already
+        if (event->count == GPM_SINGLE && (tty_mouse_modifiers () & KEY_M_CTRL) != 0)
+            edit_plugins_ctrl_click (edit);
         break;
 
     case MSG_MOUSE_DRAG:

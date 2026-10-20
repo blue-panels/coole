@@ -44,6 +44,7 @@
 #include "lib/util.h"
 
 #include "src/editor/editwidget.h"
+#include "src/editor/editnav.h"
 
 #include "etags.h"
 
@@ -359,29 +360,15 @@ editcmd_dialog_select_definition_show (WEdit *edit, char *match_expr, GPtrArray 
     if (dlg_run (def_dlg) == B_ENTER)
     {
         etags_hash_t *curr_def = NULL;
-        gboolean do_moveto = FALSE;
 
         listbox_get_current (def_list, &curr, (void **) &curr_def);
-
-        if (edit->modified == 0)
-            do_moveto = TRUE;
-        else if (!edit_query_dialog2 (_ ("Warning"),
-                                      _ ("Current text was modified without a file save.\n"
-                                         "Continue discards these changes."),
-                                      _ ("C&ontinue"), _ ("&Cancel")))
+        // recorded for Go back; a file changed here goes in a window of its own
+        if (curr != NULL)
         {
-            edit->force |= REDRAW_COMPLETELY;
-            do_moveto = TRUE;
-        }
+            char *path = mc_path_absolute (curr_def->fullpath);
 
-        if (curr != NULL && do_moveto && edit_stack_iterator + 1 < MAX_HISTORY_MOVETO)
-        {
-            edit_arg_assign (&edit_history_moveto[edit_stack_iterator], g_strdup (edit->filename),
-                             edit->start_line + edit->curs_row + 1);
-            edit_stack_iterator++;
-            edit_arg_assign (&edit_history_moveto[edit_stack_iterator],
-                             mc_path_absolute (curr_def->fullpath), curr_def->line);
-            edit_reload_line (edit, &edit_history_moveto[edit_stack_iterator]);
+            (void) edit_nav_jump (edit, path, curr_def->line, 0);
+            g_free (path);
         }
     }
 

@@ -822,6 +822,9 @@ getch_with_delay (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Shift, Meta and Ctrl with the last button of the mouse the terminal told of */
+static int xmouse_modifiers = 0;
+
 static void
 xmouse_get_event (Gpm_Event *ev, gboolean extended)
 {
@@ -879,6 +882,19 @@ xmouse_get_event (Gpm_Event *ev, gboolean extended)
            known, but for the sake of simplicity we just ignore it. */
         if (c == 'm')
             btn = 3;
+    }
+
+    /* A button reports Shift, Meta and Ctrl in its code (4, 8, 16) too: a click with them is a
+       click, and they are kept for who asks */
+    if (btn >= 64)
+        xmouse_modifiers = 0;
+    else
+    {
+        // a release keeps those of the press: the click is made of both
+        if ((btn & ~(4 | 8 | 16)) != 3)
+            xmouse_modifiers = ((btn & 4) != 0 ? KEY_M_SHIFT : 0) | ((btn & 8) != 0 ? KEY_M_ALT : 0)
+                | ((btn & 16) != 0 ? KEY_M_CTRL : 0);
+        btn &= ~(4 | 8 | 16);
     }
 
     // There seems to be no way of knowing which button was released
@@ -1572,6 +1588,14 @@ done_key (void)
     if (x11_display)
         mc_XCloseDisplay (x11_display);
 #endif
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+int
+tty_mouse_modifiers (void)
+{
+    return xmouse_modifiers;
 }
 
 /* --------------------------------------------------------------------------------------------- */

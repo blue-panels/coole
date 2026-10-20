@@ -30,13 +30,11 @@
 #include "lib/global.h"
 
 #include "ctags-parser.h"
+#include "src/fuzzy.h"
+
 #include "ctags-fuzzy.h"
 
 /*** file scope macro definitions ****************************************************************/
-
-#define SCORE_CONSECUTIVE   8 /* bonus per char in a consecutive run */
-#define SCORE_WORD_BOUNDARY 5 /* bonus for matching at start / after '_' / after case change */
-#define SCORE_MATCH         1 /* base score per matched character */
 
 /*** file scope type declarations ****************************************************************/
 
@@ -52,21 +50,6 @@ typedef struct
 
 /* --------------------------------------------------------------------------------------------- */
 
-static gboolean
-is_word_boundary (const char *name, int pos)
-{
-    if (pos == 0)
-        return TRUE;
-    if (name[pos - 1] == '_')
-        return TRUE;
-    /* camelCase boundary: previous char lowercase, current uppercase */
-    if (g_ascii_islower (name[pos - 1]) && g_ascii_isupper (name[pos]))
-        return TRUE;
-    return FALSE;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 static int
 compare_fuzzy_result (const void *a, const void *b)
 {
@@ -78,72 +61,6 @@ compare_fuzzy_result (const void *a, const void *b)
 
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
-/* --------------------------------------------------------------------------------------------- */
-
-gboolean
-ctags_fuzzy_match (const char *name, const char *query)
-{
-    const char *q;
-
-    if (name == NULL || query == NULL)
-        return FALSE;
-    if (*query == '\0')
-        return TRUE;
-
-    q = query;
-    while (*name != '\0' && *q != '\0')
-    {
-        if (g_ascii_tolower (*name) == g_ascii_tolower (*q))
-            q++;
-        name++;
-    }
-    return *q == '\0';
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-int
-ctags_fuzzy_score (const char *name, const char *query)
-{
-    const char *q;
-    int score = 0;
-    int name_pos = 0;
-    int consecutive = 0;
-    int prev_matched = -1;
-
-    if (name == NULL || query == NULL || *query == '\0')
-        return 0;
-
-    q = query;
-    while (name[name_pos] != '\0' && *q != '\0')
-    {
-        if (g_ascii_tolower (name[name_pos]) == g_ascii_tolower (*q))
-        {
-            score += SCORE_MATCH;
-
-            if (prev_matched == name_pos - 1)
-            {
-                consecutive++;
-                score += SCORE_CONSECUTIVE * consecutive;
-            }
-            else
-                consecutive = 0;
-
-            if (is_word_boundary (name, name_pos))
-                score += SCORE_WORD_BOUNDARY;
-
-            prev_matched = name_pos;
-            q++;
-        }
-        name_pos++;
-    }
-
-    if (*q != '\0')
-        return 0; /* not all query chars matched */
-
-    return score;
-}
-
 /* --------------------------------------------------------------------------------------------- */
 
 GPtrArray *
@@ -166,7 +83,7 @@ ctags_fuzzy_search (const GPtrArray *entries, const char *query)
         if (e->name == NULL)
             continue;
 
-        score = ctags_fuzzy_score (e->name, query);
+        score = fuzzy_score (e->name, query, NULL);
         if (score > 0)
         {
             fuzzy_result_t r;

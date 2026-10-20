@@ -45,6 +45,7 @@
 #include "lib/plugin-service.h"
 
 #include "src/editor/editwidget.h"
+#include "src/editor/editnav.h"
 #include "src/editor/edit-impl.h"
 #include "src/editor/editcomplete.h" /* edit_complete_word_cmd for Complete fallback */
 
@@ -52,6 +53,7 @@
 #include "ctags-index.h"
 #include "ctags-repository.h"
 #include "ctags-config.h"
+#include "src/fuzzy.h"
 #include "ctags-fuzzy.h"
 #include "ctags-ui.h"
 #include "ctags-plugin.h"
@@ -122,6 +124,17 @@ typedef struct
 
 /* --------------------------------------------------------------------------------------------- */
 /* Keymap loading */
+/* --------------------------------------------------------------------------------------------- */
+
+/* What the tags would guess offered first to what knows, a language server: TRUE when it has
+   taken it */
+static gboolean
+ctags_offer (ctags_data_t *d, WEdit *edit, int event_id)
+{
+    return d != NULL && edit != NULL && d->host != NULL && d->host->navigate != NULL
+        && d->host->navigate (d->host, edit, event_id);
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 static long
@@ -329,63 +342,21 @@ ctags_keymap_lookup_command (const GArray *keymap, int key)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Find the repo that owns @file_path; fall back to first repo. */
-static ctags_repo_t *
-ctags_find_repo_for_path (ctags_data_t *d, const char *file_path)
-{
-    ctags_repo_t *fallback = NULL;
-    GSList *l;
-
-    for (l = d->repos; l != NULL; l = g_slist_next (l))
-    {
-        ctags_repo_t *repo = (ctags_repo_t *) l->data;
-
-        if (fallback == NULL)
-            fallback = repo;
-
-        if (ctags_path_is_under (file_path, repo->root_dir))
-            return repo;
-    }
-    return fallback;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* Jump to @path:@line and record the location in the repo's history. */
+/* Jump to @path:@line, recorded for Go back */
 static void
 ctags_do_jump (ctags_data_t *d, WEdit *edit, const char *path, long line, const char *name)
 {
-    /* Record where we are before jumping so the user can return from history. */
-    if (d->host->get_current_file != NULL && d->host->get_cursor_line != NULL)
-    {
-        char *cur_file = d->host->get_current_file (d->host, edit);
-        long cur_line = d->host->get_cursor_line (d->host, edit);
-
-        if (cur_file != NULL && cur_line > 0)
-        {
-            const char *base = strrchr (cur_file, G_DIR_SEPARATOR);
-            base = (base != NULL) ? base + 1 : cur_file;
-            ctags_repo_history_push (ctags_find_repo_for_path (d, cur_file), base, cur_file,
-                                     cur_line);
-        }
-        g_free (cur_file);
-    }
-
+    (void) name;
     if (d->host->jump_to != NULL && !d->host->jump_to (d->host, edit, path, line))
     {
-        /* The host refused (e.g. its own navigation stack is full).
-           Don't pretend the jump happened: skip the history push and
-           surface the error so the user knows nothing moved. */
+        // the file cannot be opened: nothing moved, and the user is told
         if (d->host->message != NULL)
         {
             char *text = g_strdup_printf (_ ("Cannot jump to %s:%ld."), path, line);
             d->host->message (d->host, D_ERROR, _ ("Ctags"), text);
             g_free (text);
         }
-        return;
     }
-
-    ctags_repo_history_push (ctags_find_repo_for_path (d, path), name, path, line);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1988,59 +1959,9 @@ ctags_reindex (ctags_data_t *d, WEdit *edit)
 static void
 ctags_show_history (ctags_data_t *d, WEdit *edit)
 {
-    GPtrArray *all;
-    ctags_entry_t *chosen = NULL;
-    GSList *l;
-    guint i;
-
-    /* Ensure the repo for the current file is loaded so its saved history is available. */
-    {
-        char *file =
-            d->host->get_current_file != NULL ? d->host->get_current_file (d->host, edit) : NULL;
-        ctags_ensure_repo (d, file);
-        g_free (file);
-    }
-
-    all = g_ptr_array_new ();
-
-    /* Collect history from all repos, newest entries first (iterate in reverse) */
-    for (l = d->repos; l != NULL; l = g_slist_next (l))
-    {
-        ctags_repo_t *repo = (ctags_repo_t *) l->data;
-
-        if (repo->nav_history == NULL)
-            continue;
-
-        for (i = repo->nav_history->len; i > 0; i--)
-            g_ptr_array_add (all, g_ptr_array_index (repo->nav_history, i - 1));
-    }
-
-    if (all->len == 0)
-    {
-        g_ptr_array_free (all, TRUE);
-        message (D_NORMAL, _ ("Ctags"), _ ("Navigation history is empty."));
-        return;
-    }
-
-    chosen = ctags_ui_select_refs (_ ("Navigation History"), all);
-
-    if (chosen != NULL && chosen->file != NULL)
-    {
-        /* chosen points into some repo->nav_history; ctags_do_jump() pushes
-           the current position first, which can trim the oldest entry from
-           that array and free `chosen` underneath us.  Copy fields out
-           before the jump. */
-        char *file = g_strdup (chosen->file);
-        long line = chosen->line;
-
-        ctags_do_jump (d, edit, file, line, NULL);
-        g_free (file);
-    }
-
-    g_ptr_array_free (all, TRUE);
-
-    if (d->host->redraw != NULL)
-        d->host->redraw (d->host);
+    // the places of all the jumps, of the language servers too, are the editor's
+    (void) d;
+    edit_nav_history (edit);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2054,13 +1975,15 @@ ctags_dispatch_command (ctags_data_t *d, WEdit *edit, long command)
         /* handled at call site */
         break;
     case CTAGS_CMD_GOTO:
-        ctags_goto_declaration (d, edit);
+        if (!ctags_offer (d, edit, MC_EP_EVENT_CTRL_CLICK))
+            ctags_goto_declaration (d, edit);
         break;
     case CTAGS_CMD_FIND_SYMBOL:
         ctags_find_symbol (d, edit);
         break;
     case CTAGS_CMD_GREP_REFS:
-        ctags_grep_refs (d, edit);
+        if (!ctags_offer (d, edit, MC_EP_EVENT_REFERENCES))
+            ctags_grep_refs (d, edit);
         break;
     case CTAGS_CMD_HISTORY:
         ctags_show_history (d, edit);
@@ -2292,7 +2215,7 @@ ctags_symbols (ctags_data_t *d, const char *root, const char *file, const char *
         ctags_scored_t m;
 
         m.e = (const ctags_entry_t *) g_ptr_array_index (entries, i);
-        m.score = query == NULL || *query == '\0' ? 1 : ctags_fuzzy_score (m.e->name, query);
+        m.score = query == NULL || *query == '\0' ? 1 : fuzzy_score (m.e->name, query, NULL);
         // a tags file made without --fields=+n has the patterns alone: the line is looked for
         m.line = file != NULL && m.score > 0 ? ctags_entry_resolve_line (m.e, file) : m.e->line;
         // a project with nothing typed has too many to list
@@ -2611,7 +2534,8 @@ ctags_plugin_handle_key (void *plugin_data, int key, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A file of a project saved: the plugin's own index of it is built again, in the background */
+/* A file of a project saved: the plugin's own index of it is built again, in the background.  A
+   click with Ctrl: the declaration of the name. */
 static mc_ep_result_t
 ctags_plugin_handle_event (void *plugin_data, void *edit, int event_id, void *payload)
 {
@@ -2620,7 +2544,35 @@ ctags_plugin_handle_event (void *plugin_data, void *edit, int event_id, void *pa
     ctags_repo_t *repo;
     char *own;
 
-    (void) edit;
+    /* Ctrl with a click: when no language server knows the name, the tags may; a click on no
+       word, or on one the tags do not know, only puts the cursor there */
+    if (d != NULL && edit != NULL && event_id == MC_EP_EVENT_CTRL_CLICK
+        && GPOINTER_TO_INT (payload) == 1)
+    {
+        char *word =
+            d->host->get_cursor_word != NULL ? d->host->get_cursor_word (d->host, edit) : NULL;
+        gboolean known = FALSE;
+
+        if (word != NULL && *word != '\0')
+        {
+            char *file = d->host->get_current_file != NULL
+                ? d->host->get_current_file (d->host, edit)
+                : NULL;
+            GPtrArray *found;
+
+            ctags_ensure_repo (d, file);
+            g_free (file);
+            found = ctags_repos_find_exact (d->repos, word);
+            known = found != NULL && found->len > 0;
+            if (found != NULL)
+                g_ptr_array_free (found, TRUE);
+        }
+        g_free (word);
+        if (!known)
+            return MC_EPR_NOT_SUPPORTED;
+        ctags_goto_declaration (d, (WEdit *) edit);
+        return MC_EPR_OK;
+    }
     if (d == NULL || !d->cfg.auto_discover
         || (event_id != MC_EP_EVENT_FILE_SAVED && event_id != MC_EP_EVENT_FILE_RENAMED)
         || path == NULL)
@@ -2691,7 +2643,8 @@ ctags_plugin_on_file_open (void *plugin_data, void *edit)
 static mc_ep_result_t
 ctags_act_goto (void *pd, void *edit)
 {
-    ctags_goto_declaration ((ctags_data_t *) pd, (WEdit *) edit);
+    if (!ctags_offer ((ctags_data_t *) pd, (WEdit *) edit, MC_EP_EVENT_CTRL_CLICK))
+        ctags_goto_declaration ((ctags_data_t *) pd, (WEdit *) edit);
     return MC_EPR_OK;
 }
 
@@ -2705,7 +2658,8 @@ ctags_act_find (void *pd, void *edit)
 static mc_ep_result_t
 ctags_act_grep_refs (void *pd, void *edit)
 {
-    ctags_grep_refs ((ctags_data_t *) pd, (WEdit *) edit);
+    if (!ctags_offer ((ctags_data_t *) pd, (WEdit *) edit, MC_EP_EVENT_REFERENCES))
+        ctags_grep_refs ((ctags_data_t *) pd, (WEdit *) edit);
     return MC_EPR_OK;
 }
 
@@ -2828,7 +2782,7 @@ static const mc_ep_action_t ctags_actions[] = {
 
 /* Shortcuts are resolved dynamically from ctags.keymap via get_menu_shortcut. */
 static const mc_ep_cmd_menu_entry_t ctags_menu_entries[] = {
-    { MC_EP_MENU_NAVIGATE, N_ ("Go to &declaration"), CTAGS_ACT_GOTO, NULL },
+    { MC_EP_MENU_NAVIGATE, N_ ("Go to &definition"), CTAGS_ACT_GOTO, NULL },
     { MC_EP_MENU_NAVIGATE, N_ ("&Find declaration"), CTAGS_ACT_FIND, NULL },
     { MC_EP_MENU_NAVIGATE, N_ ("Find &references"), CTAGS_ACT_GREP_REFS, NULL },
     { MC_EP_MENU_NAVIGATE, NULL, 0, NULL },

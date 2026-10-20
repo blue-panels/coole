@@ -65,6 +65,14 @@ typedef struct mc_ep_state_t
 /* The editor is idle with the cursor of @edit on another line, or another file window in
    front.  payload = NULL */
 #define MC_EP_EVENT_CURSOR_MOVED 6
+/* A click with Ctrl in the text of @edit, the cursor put there: go to the definition of the name
+   there, as the IDEs do.  The plugins are offered it in two rounds, until one takes it with
+   MC_EPR_OK: first what knows (a language server), then what guesses (tags).  payload = the
+   round, GINT_TO_POINTER (0 or 1) */
+#define MC_EP_EVENT_CTRL_CLICK 7
+/* Find the uses of the name at the cursor of @edit, offered as MC_EP_EVENT_CTRL_CLICK is.
+   payload = the round */
+#define MC_EP_EVENT_REFERENCES 8
 
 /*** structures declarations (and typedefs of structures)*****************************************/
 
@@ -244,6 +252,13 @@ typedef struct mc_editor_host_t
     void (*layout_pop) (struct mc_editor_host_t *host);
     /* Whether a window is in a dock: open, a tab of the bottom not seen too */
     gboolean (*window_docked) (struct mc_editor_host_t *host, void *window);
+    /* MC_EP_EVENT_CTRL_CLICK or MC_EP_EVENT_REFERENCES offered to the plugins that know, the
+       first round: TRUE when one has taken it.  A plugin that guesses, from tags, asks first. */
+    gboolean (*navigate) (struct mc_editor_host_t *host, void *edit, int event_id);
+    /* As jump_to(), @column bytes into the line, the window of the file to the front when one
+       has it, its undo kept */
+    gboolean (*go_to) (struct mc_editor_host_t *host, void *edit, const char *file, long line,
+                       long column);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.

@@ -5,6 +5,7 @@ libinternal_sources = files(
   'events_init.c',
   'execute.c',
   'file_history.c',
+  'fuzzy.c',
   'help.c',
   'help_md.c',
   'key_learn.c',
@@ -33,6 +34,7 @@ libinternal_sources = files(
   'editor/editdraw.c',
   'editor/editmacros.c',
   'editor/editmenu.c',
+  'editor/editnav.c',
   'editor/editoptions.c',
   'editor/editsearch.c',
   'editor/editwidget.c',
@@ -103,6 +105,8 @@ libforplugins = static_library('forplugins',
   # the ANSI colors, for the terminal and the viewer; in mc a part of the viewer
   'viewer/ansi.c',
   'viewer/ansi_color.c',
+  # the messages of the debug adapters and of the language servers
+  'content-frame.c',
   c_args: src_c_args,
   dependencies: [libmc_dep, intl],
   implicit_include_directories: false,
@@ -137,6 +141,9 @@ install_data(
 if have_terminal
   install_data('plugins/terminal/terminal.md', install_dir: pkgdatadir / 'help')
 endif
+if have_gmodule and json_glib.found()
+  install_data('plugins/lsp/lsp.md', install_dir: pkgdatadir / 'help')
+endif
 # their translations, found by the help as name.lang.md
 if have_nls
   install_data('plugins/git/git.ru.md', install_dir: pkgdatadir / 'help')
@@ -159,6 +166,9 @@ endif
 if have_gmodule
   subdir('plugins/viewer')
   subdir('plugins/debugger')
+  if json_glib.found()
+    subdir('plugins/lsp')
+  endif
 endif
 
 # "meson devenv -C BUILDDIR coole": the program of the build with the plugins of the build, not

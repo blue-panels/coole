@@ -95,129 +95,6 @@ ctags_excmd_resolve (const char *file_path, const char *excmd)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-
-/* Returns a newly-allocated path for the history file of @repo.
- * Stored in ~/.local/share/coole/ctags/<hash_of_root_dir>.history */
-static char *
-ctags_repo_history_path (const ctags_repo_t *repo)
-{
-    const char *data_dir;
-    char *ctags_dir;
-    char *path;
-
-    if (repo->root_dir == NULL)
-        return NULL;
-
-    data_dir = mc_config_get_data_path ();
-    /* mc_config_get_data_path() can return NULL very early in startup or in
-       a stripped runtime; g_build_filename(NULL, "ctags", NULL) would yield
-       just "ctags", and g_mkdir_with_parents would create that directory in
-       the current working directory.  Refuse instead. */
-    if (data_dir == NULL)
-        return NULL;
-
-    ctags_dir = g_build_filename (data_dir, "ctags", NULL);
-
-    if (!g_file_test (ctags_dir, G_FILE_TEST_IS_DIR))
-        g_mkdir_with_parents (ctags_dir, 0700);
-
-    path = g_strdup_printf ("%s/%08x.history", ctags_dir, g_str_hash (repo->root_dir));
-    g_free (ctags_dir);
-    return path;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-ctags_repo_history_load (ctags_repo_t *repo)
-{
-    char *hpath;
-    char *contents = NULL;
-    gchar **lines;
-    gchar **it;
-
-    hpath = ctags_repo_history_path (repo);
-    if (hpath == NULL)
-        return;
-
-    if (!g_file_get_contents (hpath, &contents, NULL, NULL))
-    {
-        g_free (hpath);
-        return;
-    }
-    g_free (hpath);
-
-    lines = g_strsplit (contents, "\n", -1);
-    g_free (contents);
-
-    for (it = lines; *it != NULL; it++)
-    {
-        gchar **parts;
-        ctags_entry_t *e;
-        long line_num;
-
-        if (**it == '\0')
-            continue;
-
-        parts = g_strsplit (*it, "\t", 3);
-        if (g_strv_length (parts) < 3)
-        {
-            g_strfreev (parts);
-            continue;
-        }
-
-        line_num = strtol (parts[2], NULL, 10);
-        if (*parts[1] == '\0' || line_num <= 0)
-        {
-            g_strfreev (parts);
-            continue;
-        }
-
-        e = g_new0 (ctags_entry_t, 1);
-        e->name = *parts[0] != '\0' ? g_strdup (parts[0]) : NULL;
-        e->file = g_strdup (parts[1]);
-        e->line = line_num;
-        g_ptr_array_add (repo->nav_history, e);
-
-        g_strfreev (parts);
-    }
-
-    g_strfreev (lines);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-ctags_repo_history_save (const ctags_repo_t *repo)
-{
-    char *hpath;
-    GString *buf;
-    guint i;
-
-    hpath = ctags_repo_history_path (repo);
-    if (hpath == NULL)
-        return;
-
-    buf = g_string_new (NULL);
-
-    for (i = 0; i < repo->nav_history->len; i++)
-    {
-        const ctags_entry_t *e = (const ctags_entry_t *) g_ptr_array_index (repo->nav_history, i);
-
-        g_string_append_printf (buf, "%s\t%s\t%ld\n", e->name != NULL ? e->name : "",
-                                e->file != NULL ? e->file : "", e->line);
-    }
-
-    g_file_set_contents (hpath, buf->str, (gssize) buf->len, NULL);
-    g_free (hpath);
-    g_string_free (buf, TRUE);
-}
-
-/*** file scope variables ************************************************************************/
-
-/*** file scope functions ************************************************************************/
-
-/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -269,7 +146,6 @@ ctags_repo_load_root (const char *tags_path, const char *root_dir)
     repo->tags_path = g_strdup (tags_path);
     repo->root_dir = g_strdup (root_dir);
     repo->entries = g_ptr_array_new_with_free_func (ctags_entry_free_ptr);
-    repo->nav_history = g_ptr_array_new_with_free_func (ctags_entry_free_ptr);
 
     if (ctags_parse_file (tags_path, repo->entries) == 0)
     {
@@ -284,7 +160,6 @@ ctags_repo_load_root (const char *tags_path, const char *root_dir)
         return NULL;
     }
 
-    ctags_repo_history_load (repo);
     return repo;
 }
 
@@ -301,8 +176,6 @@ ctags_repo_free (ctags_repo_t *repo)
     ctags_index_free (repo->index);
     if (repo->entries != NULL)
         g_ptr_array_free (repo->entries, TRUE);
-    if (repo->nav_history != NULL)
-        g_ptr_array_free (repo->nav_history, TRUE);
 
     g_free (repo);
 }
@@ -464,38 +337,6 @@ ctags_repos_find_prefix (GSList *repos, const char *prefix, gboolean ci)
     }
 
     return result;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-void
-ctags_repo_history_push (ctags_repo_t *repo, const char *name, const char *file, long line)
-{
-    ctags_entry_t *e;
-
-    if (repo == NULL || repo->nav_history == NULL || file == NULL || line <= 0)
-        return;
-
-    /* Skip duplicate of the most recent entry */
-    if (repo->nav_history->len > 0)
-    {
-        const ctags_entry_t *last = (const ctags_entry_t *) g_ptr_array_index (
-            repo->nav_history, repo->nav_history->len - 1);
-        if (last->line == line && g_strcmp0 (last->file, file) == 0)
-            return;
-    }
-
-    e = g_new0 (ctags_entry_t, 1);
-    e->name = (name != NULL && *name != '\0') ? g_strdup (name) : NULL;
-    e->file = g_strdup (file);
-    e->line = line;
-    g_ptr_array_add (repo->nav_history, e);
-
-    /* Trim oldest entries */
-    while (repo->nav_history->len > CTAGS_HISTORY_MAX)
-        g_ptr_array_remove_index (repo->nav_history, 0);
-
-    ctags_repo_history_save (repo);
 }
 
 /* --------------------------------------------------------------------------------------------- */
