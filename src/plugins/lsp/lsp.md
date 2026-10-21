@@ -37,7 +37,10 @@ characters typed are found anywhere in a name, in their order, "mkg" finding
 make_global; those found are in another color. A letter at the left says what
 an item is: f a field, m a method, F a function, v a variable, C a class, S a
 struct, T a type parameter, # a constant, k a keyword; what the item is, its
-type, is at the right.
+type, is at the right. In the arguments of a call, while Parameter info is
+shown, what has the type of its parameter comes first: a variable of it, a
+function that gives it; "const" and the spaces are not minded, so that a
+"char *" is one for a "const char *", but a typedef is another type.
 
 **Up, Down, PgUp, PgDn**
 : Choose in the list.

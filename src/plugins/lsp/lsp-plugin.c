@@ -1796,6 +1796,116 @@ lsp_cursor_screen (WEdit *edit, int *x)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The signature shown of the last answer, its label, and its parameter of the moment with the
+   bytes of it in the label, from == to when they are not known; FALSE when there is none, and
+   NULL for a parameter when there is none */
+static gboolean
+lsp_signature_parameter (const lsp_plugin_t *plugin, JsonObject **sig_out, const char **label_out,
+                         JsonObject **param_out, gsize *from, gsize *to)
+{
+    JsonArray *signatures = lsp_signatures (plugin->sig_help);
+    JsonObject *help, *sig, *param = NULL;
+    JsonArray *params = NULL;
+    JsonNode *node;
+    const char *label;
+    gint64 active;
+    gsize f = 0, t = 0;
+
+    if (signatures == NULL)
+        return FALSE;
+    help = json_node_get_object (plugin->sig_help);
+    node = json_array_get_element (signatures, (guint) plugin->sig_active);
+    if (node == NULL || !JSON_NODE_HOLDS_OBJECT (node))
+        return FALSE;
+    sig = json_node_get_object (node);
+    label = lsp_member_string (sig, "label");
+    if (label == NULL)
+        return FALSE;
+    node = lsp_member (sig, "parameters");
+    if (node != NULL && JSON_NODE_HOLDS_ARRAY (node))
+        params = json_node_get_array (node);
+    // that of the signature first, of the help else
+    active = lsp_member (sig, "activeParameter") != NULL
+        ? lsp_member_int (sig, "activeParameter", 0)
+        : lsp_member_int (help, "activeParameter", 0);
+    if (params != NULL && active >= 0 && active < (gint64) json_array_get_length (params)
+        && JSON_NODE_HOLDS_OBJECT (json_array_get_element (params, (guint) active)))
+        param = json_array_get_object_element (params, (guint) active);
+    if (param != NULL && !lsp_parameter_place (label, param, plugin->sig_encoding, &f, &t))
+        f = t = 0;
+    if (sig_out != NULL)
+        *sig_out = sig;
+    if (label_out != NULL)
+        *label_out = label;
+    if (param_out != NULL)
+        *param_out = param;
+    if (from != NULL)
+        *from = f;
+    if (to != NULL)
+        *to = t;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A type as it is compared: no "const", no spaces; "const char *" is "char*" */
+static char *
+lsp_type_key (const char *type, gsize len)
+{
+    GString *out = g_string_new (NULL);
+    gsize i = 0;
+
+    while (i < len)
+    {
+        if (strncmp (type + i, "const", 5) == 0 && (i == 0 || !g_ascii_isalnum (type[i - 1]))
+            && (i + 5 >= len || !(g_ascii_isalnum (type[i + 5]) || type[i + 5] == '_')))
+            i += 5;
+        else
+        {
+            if (!g_ascii_isspace (type[i]))
+                g_string_append_c (out, type[i]);
+            i++;
+        }
+    }
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The type of the parameter of the moment of the help of a call in the window @window_id, as
+   lsp_type_key () has it: what its label has before its name; NULL when it is not known */
+static char *
+lsp_signature_expected (const lsp_plugin_t *plugin, guint64 window_id)
+{
+    const char *label;
+    gsize from, to, end;
+    char *name, *key;
+
+    if (plugin->sig_id == 0 || plugin->sig_window != window_id
+        || !lsp_signature_parameter (plugin, NULL, &label, NULL, &from, &to) || to <= from)
+        return NULL;
+    // "const char *file": the name is the last word; a label of a type alone has none
+    end = to;
+    name = lsp_parameter_name (label + from, to - from);
+    if (name != NULL)
+    {
+        const char *at = g_strrstr_len (label + from, (gssize) (to - from), name);
+
+        if (at != NULL && at > label + from)
+            end = (gsize) (at - label);
+        g_free (name);
+    }
+    key = lsp_type_key (label + from, end - from);
+    if (*key == '\0' || strcmp (key, "...") == 0)
+    {
+        g_free (key);
+        return NULL;
+    }
+    return key;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* Whether the help of a call has its room over the line of @edit: no list of a completion there,
    and a box of a line at least over it */
 static gboolean
@@ -1816,11 +1926,8 @@ static void
 lsp_signature_show (lsp_plugin_t *plugin, lsp_window_t *w)
 {
     JsonArray *signatures = lsp_signatures (plugin->sig_help);
-    JsonObject *help, *sig;
-    JsonArray *params = NULL;
-    JsonNode *node;
+    JsonObject *sig;
     const char *label;
-    gint64 active;
     GString *out;
     char *title = NULL, *doc = NULL;
     const char *value;
@@ -1828,23 +1935,8 @@ lsp_signature_show (lsp_plugin_t *plugin, lsp_window_t *w)
     WEdit *edit = w->edit;
     int x, y;
 
-    if (signatures == NULL)
+    if (!lsp_signature_parameter (plugin, &sig, &label, NULL, NULL, NULL))
         return;
-    help = json_node_get_object (plugin->sig_help);
-    node = json_array_get_element (signatures, (guint) plugin->sig_active);
-    if (!JSON_NODE_HOLDS_OBJECT (node))
-        return;
-    sig = json_node_get_object (node);
-    label = lsp_member_string (sig, "label");
-    if (label == NULL)
-        return;
-    node = lsp_member (sig, "parameters");
-    if (node != NULL && JSON_NODE_HOLDS_ARRAY (node))
-        params = json_node_get_array (node);
-    // that of the signature first, of the help else
-    active = lsp_member (sig, "activeParameter") != NULL
-        ? lsp_member_int (sig, "activeParameter", 0)
-        : lsp_member_int (help, "activeParameter", 0);
 
     out = g_string_new (NULL);
     {
@@ -1852,10 +1944,7 @@ lsp_signature_show (lsp_plugin_t *plugin, lsp_window_t *w)
         gsize from = 0, to = 0;
         char *part;
 
-        if (params != NULL && active >= 0 && active < (gint64) json_array_get_length (params)
-            && JSON_NODE_HOLDS_OBJECT (json_array_get_element (params, (guint) active)))
-            param = json_array_get_object_element (params, (guint) active);
-        if (param != NULL && lsp_parameter_place (label, param, plugin->sig_encoding, &from, &to))
+        if (lsp_signature_parameter (plugin, NULL, NULL, &param, &from, &to) && to > from)
         {
             char *before = g_strndup (label, from);
             char *name = g_strndup (label + from, to - from);
@@ -2699,6 +2788,7 @@ lsp_kind_letter (gint64 kind)
 typedef struct
 {
     JsonObject *item;
+    gboolean typed;  // of the type of the parameter the cursor is in: first
     int score;
     const char *sort;
     guint index;  // in the order of the server
@@ -2711,6 +2801,8 @@ lsp_choice_cmp (gconstpointer a, gconstpointer b)
     const lsp_choice_t *y = *(const lsp_choice_t *const *) b;
     int c;
 
+    if (x->typed != y->typed)
+        return x->typed ? -1 : 1;
     if (x->score != y->score)
         return x->score > y->score ? -1 : 1;
     c = strcmp (x->sort, y->sort);
@@ -2751,6 +2843,9 @@ lsp_session_show (lsp_plugin_t *plugin, lsp_window_t *w, const char *word)
     WEdit *edit = w->edit;
     const WRect *r = &CONST_WIDGET (edit)->rect;
     const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1;
+    // in the arguments of a call: what is of the type of the parameter first, as the smart
+    // completion of the IDEs
+    char *expected = lsp_signature_expected (plugin, s->window_id);
     guint i;
     int x, y;
 
@@ -2781,8 +2876,17 @@ lsp_session_show (lsp_plugin_t *plugin, lsp_window_t *w, const char *word)
         if (choice->sort == NULL)
             choice->sort = label;
         choice->index = i;
+        if (expected != NULL && lsp_member_string (item, "detail") != NULL)
+        {
+            const char *detail = lsp_member_string (item, "detail");
+            char *key = lsp_type_key (detail, strlen (detail));
+
+            choice->typed = strcmp (key, expected) == 0;
+            g_free (key);
+        }
         g_ptr_array_add (choices, choice);
     }
+    g_free (expected);
     if (choices->len == 0)
     {
         g_ptr_array_free (choices, TRUE);
