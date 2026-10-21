@@ -42,8 +42,8 @@ char *lsp_markdown_note (const char *markdown);
    server prints of it; a copy of @markdown else */
 char *lsp_markdown_with_code (const char *markdown, const char *code, int max_lines);
 /* What the comment of the source @doc, Markdown or plain text, says of the parameter @name,
-   after "@param name" or "\\param name", with the lines going on with it; NULL when it says
-   nothing of it */
+   after "@param name" or "\\param name", or in an item of a list as rustdoc has them,
+   "* `name` - text", with the lines going on with it; NULL when it says nothing of it */
 char *lsp_markdown_param (const char *doc, const char *name);
 /* The first paragraph of @doc, to its first command or block of code: what a function does;
    NULL when there is none */

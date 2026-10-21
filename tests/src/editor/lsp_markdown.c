@@ -203,6 +203,19 @@ test_param (void)
     g_assert_cmpstr (made, ==, "the count");
     g_free (made);
 
+    // the arguments as rustdoc lists them
+    made = lsp_markdown_param ("Opens it.\n\n# Arguments\n\n* `path` - the path\n  of the file\n"
+                               "* `mode` - how it is opened",
+                               "path");
+    g_assert_cmpstr (made, ==, "the path of the file");
+    g_free (made);
+    made = lsp_markdown_param ("- mode: how", "mode");
+    g_assert_cmpstr (made, ==, "how");
+    g_free (made);
+    // a list that says no name
+    g_assert_null (lsp_markdown_param ("* path is a word", "path"));
+    g_assert_null (lsp_markdown_param ("* `pathname` - other", "path"));
+
     made = lsp_markdown_brief (doc);
     g_assert_cmpstr (made, ==, "Calculate percentage");
     g_free (made);

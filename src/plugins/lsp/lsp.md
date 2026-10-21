@@ -40,7 +40,9 @@ struct, T a type parameter, # a constant, k a keyword; what the item is, its
 type, is at the right. In the arguments of a call, while Parameter info is
 shown, what has the type of its parameter comes first: a variable of it, a
 function that gives it; "const" and the spaces are not minded, so that a
-"char *" is one for a "const char *", but a typedef is another type.
+"char *" is one for a "const char *", but a typedef is another type. The type
+is before the name of the parameter in C, after it and a colon in Rust,
+Python and TypeScript.
 
 **Up, Down, PgUp, PgDn**
 : Choose in the list.
@@ -96,8 +98,9 @@ too when the cursor moves.
 **Alt-(**
 : Parameter info: the signature of the call the cursor is in, in a box over
 its line, the parameter of the moment hot; under it, what the parameter is, as
-the comment of the function says it after "@param", or else the first sentence
-of the comment: not all of it, so that the box stays small. In the mode of an IDE, -D, the characters the server names
+the comment of the function says it after "@param", or in a list of the
+arguments as rustdoc has them, "* `path` - the path", or else the first
+sentence of the comment: not all of it, so that the box stays small. In the mode of an IDE, -D, the characters the server names
 open it as they are typed, "(" and "," for clangd, as completion_on_trigger
 says for the list of a completion. It follows the cursor as the arguments are
 typed, the hot parameter moving after a ","; it goes when the cursor leaves

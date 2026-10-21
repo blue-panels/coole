@@ -1710,20 +1710,64 @@ lsp_signatures (JsonNode *help)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The name of a parameter in its label, "const char *file": the last word of it; NULL when it
-   has none, as "..." */
+/* The last word of the @len bytes of @label, the brackets of an array after it; NULL when there
+   is none */
 static char *
-lsp_parameter_name (const char *label, gsize len)
+lsp_last_word (const char *label, gsize len, gsize *at)
 {
     gsize end = len, start;
 
-    // after it, the brackets of an array
     while (end > 0 && !(g_ascii_isalnum (label[end - 1]) || label[end - 1] == '_'))
         end--;
     for (start = end; start > 0 && (g_ascii_isalnum (label[start - 1]) || label[start - 1] == '_');
          start--)
         ;
+    if (at != NULL)
+        *at = start;
     return end > start ? g_strndup (label + start, end - start) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The name of a parameter in its label, @len bytes, NULL when it has none, as "..." or a type
+   alone; and the bytes of its type in it, @type_len 0 when they are not known: "name: type" of
+   Rust, Python, TypeScript, "mut name" too, the type to a default; "type name" of C else */
+static char *
+lsp_parameter_name (const char *label, gsize len, gsize *type_from, gsize *type_len)
+{
+    gsize i, at = 0, from = 0, to = 0;
+    char *name;
+
+    for (i = 0; i < len; i++)
+        if (label[i] == ':' && (i + 1 >= len || label[i + 1] != ':')
+            && (i == 0 || label[i - 1] != ':'))
+            break;
+    if (i < len)
+    {
+        name = lsp_last_word (label, i, NULL);
+        from = i + 1;
+        to = from;
+        while (to < len && !(label[to] == '=' && (to + 1 >= len || label[to + 1] != '=')))
+            to++;
+    }
+    else
+    {
+        name = lsp_last_word (label, len, &at);
+        // a type alone: no name before it
+        if (name != NULL && at == 0)
+        {
+            to = len;
+            g_free (name);
+            name = NULL;
+        }
+        else
+            to = at;
+    }
+    if (type_from != NULL)
+        *type_from = from;
+    if (type_len != NULL)
+        *type_len = to - from;
+    return name;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1873,29 +1917,19 @@ lsp_type_key (const char *type, gsize len)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The type of the parameter of the moment of the help of a call in the window @window_id, as
-   lsp_type_key () has it: what its label has before its name; NULL when it is not known */
+   lsp_type_key () has it; NULL when it is not known */
 static char *
 lsp_signature_expected (const lsp_plugin_t *plugin, guint64 window_id)
 {
     const char *label;
-    gsize from, to, end;
-    char *name, *key;
+    gsize from, to, type_from, type_len;
+    char *key;
 
     if (plugin->sig_id == 0 || plugin->sig_window != window_id
         || !lsp_signature_parameter (plugin, NULL, &label, NULL, &from, &to) || to <= from)
         return NULL;
-    // "const char *file": the name is the last word; a label of a type alone has none
-    end = to;
-    name = lsp_parameter_name (label + from, to - from);
-    if (name != NULL)
-    {
-        const char *at = g_strrstr_len (label + from, (gssize) (to - from), name);
-
-        if (at != NULL && at > label + from)
-            end = (gsize) (at - label);
-        g_free (name);
-    }
-    key = lsp_type_key (label + from, end - from);
+    g_free (lsp_parameter_name (label + from, to - from, &type_from, &type_len));
+    key = lsp_type_key (label + from + type_from, type_len);
     if (*key == '\0' || strcmp (key, "...") == 0)
     {
         g_free (key);
@@ -1975,7 +2009,8 @@ lsp_signature_show (lsp_plugin_t *plugin, lsp_window_t *w)
         {
             gboolean param_markdown;
             const char *own = lsp_doc_value (lsp_member (param, "documentation"), &param_markdown);
-            char *name = to > from ? lsp_parameter_name (label + from, to - from) : NULL;
+            char *name =
+                to > from ? lsp_parameter_name (label + from, to - from, NULL, NULL) : NULL;
 
             if (own != NULL)
                 doc = lsp_doc_note (own, param_markdown);
