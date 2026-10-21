@@ -17,7 +17,12 @@ time, the debugger makes a configuration of its own:
 directory has to be named. **Debug → Open project...** names another.
 2. The program is the one the build has made, found by the build plugin
 among the programs of the project with debug information; of several, the
-newest come first in a list to choose from.
+newest come first in a list to choose from. In a project of Cargo, with a
+Cargo.toml, the copies cargo keeps for itself, with a hash in target/*/deps,
+and its build scripts are none to choose from, so that the program of the
+package is taken unasked; before the first build it is target/debug and
+the name of the package. GDB is rust-gdb when it is there, the printers of
+the types of Rust with it.
 3. A program without debug information, or built with optimization, is
 told of, with the command that builds it fit for debugging.
 4. The form **Debug configuration** shows it all at once: the name, the

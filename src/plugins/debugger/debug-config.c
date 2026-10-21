@@ -854,9 +854,72 @@ debug_launch_adapter_defaults (debugger_t *debug, debug_launch_t *launch)
     debug_launch_python (debug, launch);
 }
 
+/* The name of the package of the Cargo.toml of @project_dir, the program cargo builds of it;
+   NULL when the project has none */
+static char *
+debug_cargo_package (const char *project_dir)
+{
+    char *path = g_build_filename (project_dir, "Cargo.toml", (char *) NULL);
+    char *text = NULL, *name = NULL;
+    char **lines;
+    gboolean package = FALSE;
+    guint i;
+
+    if (!g_file_get_contents (path, &text, NULL, NULL))
+    {
+        g_free (path);
+        return NULL;
+    }
+    g_free (path);
+    lines = g_strsplit (text, "\n", -1);
+    g_free (text);
+    // name = "try-rust", in [package]; a quoted string, the escapes of TOML not minded
+    for (i = 0; lines[i] != NULL && name == NULL; i++)
+    {
+        const char *line = g_strstrip (lines[i]);
+
+        if (*line == '[')
+            package = strcmp (line, "[package]") == 0;
+        else if (package && strncmp (line, "name", 4) == 0)
+        {
+            const char *p = line + 4;
+            const char *end;
+
+            while (*p == ' ' || *p == '\t')
+                p++;
+            if (*p++ != '=')
+                continue;
+            while (*p == ' ' || *p == '\t')
+                p++;
+            if (*p != '"' && *p != '\'')
+                continue;
+            end = strchr (p + 1, *p);
+            if (end != NULL && end > p + 1)
+                name = g_strndup (p + 1, (gsize) (end - p - 1));
+        }
+    }
+    g_strfreev (lines);
+    return name;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether @program is one cargo keeps for itself: a copy with a hash, in deps, a test, a build
+   script, not one to debug */
+static gboolean
+debug_cargo_internal (const char *program)
+{
+    return strstr (program, "/target/") != NULL
+        && (strstr (program, "/deps/") != NULL || strstr (program, "/build/") != NULL
+            || strstr (program, "/incremental/") != NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A new configuration as the project suggests it: the program the build has made, the root of
    the project to run it in, and a build before the start when the project can be built; else
-   the file in front, when it is a script an adapter runs */
+   the file in front, when it is a script an adapter runs.  A project of Cargo has the program of
+   its package, and rust-gdb, which shows the types of Rust as they are, when it is there. */
 static void
 debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
 {
@@ -864,10 +927,13 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
     const char **programs = NULL;
     const char *system = NULL, *command = NULL, *dir = NULL;
     char *program = NULL;
+    char *package = debug_cargo_package (debug->project_dir);
+    char *rust_gdb = package != NULL ? g_find_program_in_path ("rust-gdb") : NULL;
 
     launch->directory = g_strdup (debug->project_dir);
-    launch->gdb_path = g_strdup ("gdb");
+    launch->gdb_path = g_strdup (rust_gdb != NULL ? "rust-gdb" : "gdb");
     launch->terminal = TRUE;
+    g_free (rust_gdb);
     if (reply != NULL)
     {
         (void) g_variant_lookup (reply, "programs", "^a&s", &programs);
@@ -876,7 +942,16 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
         (void) g_variant_lookup (reply, "dir", "&s", &dir);
         launch->build = command != NULL;
     }
+    // the copies cargo keeps for itself are none to choose from
+    if (package != NULL && programs != NULL)
+    {
+        guint i, kept = 0;
 
+        for (i = 0; programs[i] != NULL; i++)
+            if (!debug_cargo_internal (programs[i]))
+                programs[kept++] = programs[i];
+        programs[kept] = NULL;
+    }
     if (programs != NULL && programs[0] != NULL && programs[1] == NULL)
         program = g_strdup (programs[0]);
     else if (programs != NULL && programs[0] != NULL)
@@ -901,6 +976,9 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
         chosen = listbox_run_with_data (selector, NULL);
         program = g_strdup (chosen != NULL ? chosen : programs[0]);
     }
+    // not built yet: the program cargo builds
+    if (program == NULL && package != NULL)
+        program = g_build_filename (debug->project_dir, "target", "debug", package, (char *) NULL);
 
     if (program == NULL)
     {
@@ -926,6 +1004,7 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
     }
     else if (launch->name == NULL)
         launch->name = g_strdup (_ ("Debug"));
+    g_free (package);
     g_free (programs);
     if (reply != NULL)
         g_variant_unref (reply);
