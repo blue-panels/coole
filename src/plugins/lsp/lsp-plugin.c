@@ -3072,6 +3072,10 @@ lsp_session_answer (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
     if (s->items != NULL)
         json_array_unref (s->items);
     s->items = items != NULL ? json_array_ref (items) : json_array_new ();
+    /* nothing is no list: the server may know nothing at a dot alone, where the line is no code
+       yet, "item." in "sum(item. for item in items)" for pylsp, and all after a letter */
+    if (json_array_get_length (s->items) == 0)
+        s->incomplete = TRUE;
     if (s->text != NULL)
         g_bytes_unref (s->text);
     s->text = g_bytes_ref (ask->text);
