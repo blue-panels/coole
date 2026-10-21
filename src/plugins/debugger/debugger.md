@@ -17,12 +17,17 @@ time, the debugger makes a configuration of its own:
 directory has to be named. **Debug → Open project...** names another.
 2. The program is the one the build has made, found by the build plugin
 among the programs of the project with debug information; of several, the
-newest come first in a list to choose from. In a project of Cargo, with a
-Cargo.toml, the copies cargo keeps for itself, with a hash in target/*/deps,
-and its build scripts are none to choose from, so that the program of the
-package is taken unasked; before the first build it is target/debug and
-the name of the package. GDB is rust-gdb when it is there, the printers of
-the types of Rust with it.
+newest come first in a list to choose from. The language of the project,
+as its copy in *.coole/project.ini* has it, else *presets.ini* (see the help
+of the build), gives the rest: the programs not to choose from (*hide*), the
+program before the first build (*program*) and GDB (*gdb*, the first of the
+list that is there). In a
+project of Cargo, with a Cargo.toml, the copies cargo keeps for itself, with
+a hash in target/*/deps, and its build scripts are none to choose from, so
+that the program of the package is taken unasked; before the first build it
+is target/debug and the name of the package. GDB is rust-gdb when it is
+there, the printers of the types of Rust with it. The title of the form
+names the language: *Debug configuration: rust*.
 3. A program without debug information, or built with optimization, is
 told of, with the command that builds it fit for debugging.
 4. The form **Debug configuration** shows it all at once: the name, the
@@ -119,9 +124,10 @@ as.
 
 A project may have several: **New configuration...** guesses another one,
 **Select configuration...** chooses the one **Start** runs, **Configure
-selected...** changes it. They are kept with the settings of the user, or,
-when **Keep in the project** is checked, in *.coole/debug.ini* in the project,
-with the names relative to it, for everyone who works on it. The breakpoints
+selected...** changes it. They are kept, when **Keep in the project** is
+checked, in *.coole/debug.ini* in the project, with the names relative to it,
+for everyone who works on it; else with the settings of the user. A project
+new to the debugger has it checked. The breakpoints
 and the watches are one's own: they stay with the settings of the user.
 
 **Step mode**
@@ -365,7 +371,8 @@ having its own: *{"mode": "debug"}* for Delve, *{"justMyCode": false}* for
 debugpy. The form checks it: an error is told with its line and column.
 
 A program by the name of its file has its adapter set when the form is
-taken, if the configuration has none:
+taken, if the configuration has none, as *presets.ini* has it (*adapter*,
+*address* and *launch* of its language):
 
 ```
 .py              python3 -m debugpy.adapter

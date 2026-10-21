@@ -326,6 +326,11 @@ project_set_root (project_t *project, const char *root, gboolean chosen)
 {
     if (root == NULL || g_strcmp0 (project->root, root) == 0)
     {
+        // the project of a file opened as a project now: told, as one opened
+        if (root != NULL && chosen && !project->root_chosen && project->service)
+            project->host->service_emit (
+                project->host, PROJECT_SERVICE, "changed",
+                g_variant_new_parsed ("{'root': <%s>, 'chosen': <%b>}", project->root, TRUE));
         project->root_chosen = project->root_chosen || chosen;
         return;
     }
@@ -342,8 +347,9 @@ project_set_root (project_t *project, const char *root, gboolean chosen)
         project_tree_rebuild (project->tree);
     }
     if (project->service)
-        project->host->service_emit (project->host, PROJECT_SERVICE, "changed",
-                                     g_variant_new_parsed ("{'root': <%s>}", project->root));
+        project->host->service_emit (
+            project->host, PROJECT_SERVICE, "changed",
+            g_variant_new_parsed ("{'root': <%s>, 'chosen': <%b>}", project->root, chosen));
 }
 
 /* --------------------------------------------------------------------------------------------- */
