@@ -157,7 +157,7 @@ static const char lsp_client_capabilities_json[] =
     "\"documentationFormat\":[\"markdown\",\"plaintext\"],"
     "\"parameterInformation\":{\"labelOffsetSupport\":true},\"activeParameterSupport\":true}},"
     "\"completion\":{\"dynamicRegistration\":false,\"contextSupport\":true,"
-    "\"completionItem\":{\"snippetSupport\":false,\"commitCharactersSupport\":false,"
+    "\"completionItem\":{\"snippetSupport\":true,\"commitCharactersSupport\":false,"
     "\"documentationFormat\":[\"plaintext\"],\"insertReplaceSupport\":false}},"
     "\"publishDiagnostics\":{\"relatedInformation\":false,\"versionSupport\":true}"
     "}}";

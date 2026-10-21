@@ -14,7 +14,8 @@
       "id": "pylsp",
       "command": ["pylsp"],
       "extensions": {".py": "python"},
-      "root_markers": ["pyproject.toml", "setup.py", "setup.cfg"]
+      "root_markers": ["pyproject.toml", "setup.py", "setup.cfg"],
+      "settings": {"pylsp": {"plugins": {"jedi_completion": {"include_params": true}}}}
     },
     {
       "id": "pyright",

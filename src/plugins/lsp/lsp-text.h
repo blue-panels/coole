@@ -37,6 +37,13 @@ gboolean lsp_text_position (const char *text, gsize len, gsize offset, lsp_encod
 gboolean lsp_text_offset (const char *text, gsize len, gint64 line, gint64 character,
                           lsp_encoding_t encoding, gsize *offset);
 
+/* The text of a snippet of LSP as plain text, and the byte the cursor goes to in it: that of the
+   first tab stop, "$1", "${1:x}", else of "$0", else the end.  Placeholders, the first of a
+   choice and the defaults of variables are what they hold; with @drop, all from the first tab
+   stop to the end of the last goes, the arguments of "f(${1:int a}, ${2:int b})", the cursor
+   then where they were: "f()" with the cursor in it. */
+char *lsp_snippet_plain (const char *snippet, gboolean drop, gsize *cursor);
+
 /* The absolute path of a file with its links resolved, as far as the file is there: a new file
    in a directory that is there gets the directory's path.  NULL for a relative @path. */
 char *lsp_canonical_path (const char *path);

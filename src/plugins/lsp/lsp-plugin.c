@@ -2563,50 +2563,6 @@ lsp_word_byte (char c)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The text of a snippet as plain text: "$1", "${1:x}" and "${1|a,b|}" are what they hold */
-static char *
-lsp_snippet_text (const char *snippet)
-{
-    GString *out = g_string_new (NULL);
-    const char *p = snippet;
-
-    while (*p != '\0')
-    {
-        if (*p == '\\' && p[1] != '\0')
-        {
-            g_string_append_c (out, p[1]);
-            p += 2;
-        }
-        else if (*p == '$' && g_ascii_isdigit (p[1]))
-            for (p++; g_ascii_isdigit (*p); p++)
-                ;
-        else if (*p == '$' && p[1] == '{')
-        {
-            p += 2;
-            while (g_ascii_isalnum (*p) || *p == '_')
-                p++;
-            if (*p == ':')
-                p++;
-            else if (*p == '|')
-            {
-                // the first choice
-                for (p++; *p != '\0' && *p != ',' && *p != '|'; p++)
-                    g_string_append_c (out, *p);
-                while (*p != '\0' && *p != '}')
-                    p++;
-            }
-            // what it holds is copied on; its '}' is dropped below
-        }
-        else if (*p == '}')
-            p++;
-        else
-            g_string_append_c (out, *p++);
-    }
-    return g_string_free (out, FALSE);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 typedef struct
 {
     gsize from;
@@ -2694,6 +2650,8 @@ lsp_complete (lsp_plugin_t *plugin, WEdit *edit, const lsp_session_t *s, JsonObj
     lsp_edit_t *main_edit = g_new0 (lsp_edit_t, 1);
     // what is typed after the word, the '-' of "->", stays after the cursor
     const off_t tail = edit->buffer.curs1 - end;
+    // in the text put, from its start, where the cursor goes: its end unless a snippet says
+    gssize in_text = -1;
     gboolean ok = TRUE;
     off_t cursor;
     guint i;
@@ -2719,10 +2677,23 @@ lsp_complete (lsp_plugin_t *plugin, WEdit *edit, const lsp_session_t *s, JsonObj
         main_edit->text = g_strdup (insert != NULL ? insert : lsp_member_string (item, "label"));
     if (snippet)
     {
-        char *plain = lsp_snippet_text (main_edit->text);
+        /* the arguments of a function, of a method, are typed, Parameter info saying what they
+           are: its parentheses alone, the cursor in them */
+        const gint64 kind = lsp_member_int (item, "kind", 0);
+        gsize at = 0;
+        char *plain = lsp_snippet_plain (main_edit->text, kind == 2 || kind == 3 || kind == 4, &at);
+        const char *paren = strchr (plain, '(');
 
         g_free (main_edit->text);
         main_edit->text = plain;
+        in_text = at < strlen (plain) ? (gssize) at : -1;
+        // a call there already: the name alone
+        if (paren != NULL && end < edit->buffer.size
+            && edit_buffer_get_byte (&edit->buffer, end) == '(')
+        {
+            main_edit->text[paren - plain] = '\0';
+            in_text = -1;
+        }
     }
     g_ptr_array_add (edits, main_edit);
     if (additional != NULL && JSON_NODE_HOLDS_ARRAY (additional))
@@ -2749,7 +2720,8 @@ lsp_complete (lsp_plugin_t *plugin, WEdit *edit, const lsp_session_t *s, JsonObj
         g_ptr_array_free (edits, TRUE);
         return;
     }
-    cursor = (off_t) (main_edit->from + strlen (main_edit->text)) + tail;
+    cursor = in_text >= 0 ? (off_t) main_edit->from + in_text
+                          : (off_t) (main_edit->from + strlen (main_edit->text)) + tail;
     for (i = 0; i < edits->len; i++)
     {
         const lsp_edit_t *e = g_ptr_array_index (edits, i);
@@ -2770,6 +2742,10 @@ lsp_complete (lsp_plugin_t *plugin, WEdit *edit, const lsp_session_t *s, JsonObj
     edit->force |= REDRAW_PAGE;
     edit_scroll_screen_over_cursor (edit);
     plugin->host->redraw (plugin->host);
+    // the cursor in the parentheses of a call: its parameters, as after a "(" typed
+    if (in_text > 0 && main_edit->text[in_text - 1] == '('
+        && lsp_now (plugin, plugin->config->completion_on_trigger))
+        (void) lsp_signature_start (plugin, edit, FALSE);
     g_ptr_array_free (edits, TRUE);
 }
 

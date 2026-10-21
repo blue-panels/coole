@@ -49,7 +49,12 @@ Python and TypeScript.
 
 **Enter, Tab**
 : Put the item chosen in place of the word, with what the server adds
-elsewhere, an include for one; one Undo takes all of it back.
+elsewhere, an include for one; one Undo takes all of it back. A function
+comes with its parentheses, the cursor in them and Parameter info over the
+line, so that its arguments are typed next; the names of the parameters are
+not put in. A keyword the server completes as a whole, a "for" with its
+parts, is put as it is, the cursor at its first part. Before a "(" already
+there the name alone is put.
 
 **., ->, ::**
 : Put the item chosen in place of the word, then the dot, and show the list

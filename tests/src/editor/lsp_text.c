@@ -166,11 +166,50 @@ test_uri (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+check_snippet (const char *snippet, gboolean drop, const char *text, gsize cursor)
+{
+    gsize at = 99;
+    char *plain = lsp_snippet_plain (snippet, drop, &at);
+
+    g_assert_cmpstr (plain, ==, text);
+    g_assert_cmpuint (at, ==, cursor);
+    g_free (plain);
+}
+
+/* Snippets as plain text, the cursor at the first tab stop */
+static void
+test_snippets (void)
+{
+    // the arguments of a function go, the cursor in the parentheses
+    check_snippet ("f(${1:int a}, ${2:int b})", TRUE, "f()", 2);
+    check_snippet ("load(${1:names})$0", TRUE, "load()", 5);
+    check_snippet ("total()$0", TRUE, "total()", 7);
+    check_snippet ("total()", TRUE, "total()", 7);
+    // the arguments of a template and those of the call, each in its pair
+    check_snippet ("make_shared<${1:class T}>(${2:Args &&args...})", TRUE, "make_shared<>()", 12);
+    check_snippet ("f(${1:a}, ${2:g(${3:b})})", TRUE, "f()", 2);
+    // a snippet of a keyword keeps what it holds, the cursor at its first place
+    check_snippet ("for (${1:init}; ${2:cond}; ${3:inc}) {\n\t$0\n}", FALSE,
+                   "for (init; cond; inc) {\n\t\n}", 5);
+    check_snippet ("if ($2) {$1}", FALSE, "if () {}", 7);
+    // the braces of the text stay; the escapes go
+    check_snippet ("\\$x \\} y}", FALSE, "$x } y}", 7);
+    check_snippet ("${1|one,two|} x", FALSE, "one x", 0);
+    check_snippet ("${1:a${2:b}c}", FALSE, "abc", 0);
+    check_snippet ("${TM_FILENAME:file}.c $TM_LINE", FALSE, "file.c ", 7);
+    check_snippet ("${1/(.*)/$1/}x", FALSE, "x", 0);
+    check_snippet ("", TRUE, "", 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (int argc, char **argv)
 {
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/lsp/text-positions", test_positions);
     g_test_add_func ("/lsp/text-uri", test_uri);
+    g_test_add_func ("/lsp/text-snippets", test_snippets);
     return g_test_run ();
 }
