@@ -703,6 +703,9 @@ mi_start (debug_backend_t *b, const debug_start_t *spec, GError **error)
         return FALSE;
 
     g_queue_push_tail (mi->startup, g_strdup ("-gdb-set mi-async on"));
+    /* the printers of the types, those of rust-gdb, of the C++ library: a String, a vector shown
+       as it is, not by its fields */
+    g_queue_push_tail (mi->startup, g_strdup ("-enable-pretty-printing"));
     // the arguments go through sh, as they are split: quotes and spaces as typed
     g_queue_push_tail (mi->startup, g_strdup ("-gdb-set startup-with-shell on"));
     if (g_getenv ("SHELL") != NULL && strchr (g_getenv ("SHELL"), '\n') == NULL)
