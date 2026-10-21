@@ -649,7 +649,8 @@ lsp_text_node (GBytes *text)
 {
     gsize len;
     const char *data = g_bytes_get_data (text, &len);
-    char *copy = g_strndup (data, len);
+    // an empty file has no data: NULL, which g_strndup () gives back
+    char *copy = data != NULL ? g_strndup (data, len) : g_strdup ("");
     JsonNode *node = json_node_new (JSON_NODE_VALUE);
 
     json_node_set_string (node, copy);
