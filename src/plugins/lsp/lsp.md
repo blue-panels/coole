@@ -74,8 +74,21 @@ the definition among them, the one the cursor is on chosen; Enter goes to
 one.
 
 **Alt-,**
-: What the server says of the name at the cursor, its type and its
-documentation, after the problems of the line.
+: Quick documentation: what the server says of the name at the cursor, its
+type and its documentation, after the problems of the line, in a box under
+the cursor, above it when there is no room under it. The text is as the
+server wrote it, at the left, in half of the screen at most; when it is
+longer, the mouse wheel, PgUp and PgDn scroll it, and the keys say so on its
+frame. The Markdown of the server is drawn in the colors of the skin: the
+headings as the title of a dialog, the names in backquotes as its hot keys,
+the rules as its lines, and the blocks of code on the colors of the editor.
+The code the server prints of the name gives way to the source of its
+definition when that is longer: a structure with its fields, a function with
+its first lines; ten lines are shown at most, "..." for the rest. The
+expansion of a macro, longer than the macro, stays. Alt-, again has it read:
+the arrows, Home and End scroll it too, and Alt-, takes it away. Esc only
+takes it away; any other key takes it away and does what it does; it goes
+too when the cursor moves.
 
 The keys are those of the section
 **[lsp]**

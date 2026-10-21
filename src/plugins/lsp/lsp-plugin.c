@@ -52,6 +52,8 @@
 
 #include "lsp-client.h"
 #include "lsp-config.h"
+#include "lsp-markdown.h"
+#include "lsp-note.h"
 #include "lsp-popup.h"
 #include "lsp-setup.h"
 #include "lsp-text.h"
@@ -76,6 +78,9 @@
 /* the ticks: while a server writes, and else */
 #define LSP_TICK_FAST_MS 5
 #define LSP_TICK_MS      100
+
+/* the lines of the source of a definition Hover shows at most */
+#define LSP_HOVER_SOURCE_LINES 10
 
 /*** file scope type declarations ****************************************************************/
 
@@ -146,8 +151,21 @@ typedef enum
     LSP_ASK_DEFINITION,
     LSP_ASK_COMPLETION,
     LSP_ASK_DECLARATION,
-    LSP_ASK_REFERENCES
+    LSP_ASK_REFERENCES,
+    LSP_ASK_PREVIEW,  // the definition, its source shown in Hover
+    LSP_ASK_SYMBOLS   // the symbols of the file of the definition, for its extent
 } lsp_ask_kind_t;
+
+/* Hover waiting for the source of the definition of its name */
+typedef struct lsp_preview_t
+{
+    guint64 id;
+    JsonNode *hover;       // what the server said of the name
+    lsp_client_t *client;  // the server asked
+    char *uri;             // the file of the definition, opened on the server when @opened
+    gboolean opened;
+    gint64 line, character;  // the place of the name of the definition
+} lsp_preview_t;
 
 /* A request of the user, and its answer once there */
 typedef struct
@@ -161,6 +179,7 @@ typedef struct
     lsp_encoding_t encoding;
     gboolean triggered;  // by a character typed, not by the user: nothing found is no news
     guint64 session;     // of a completion: the session it is of
+    guint64 preview;     // of the source of a definition: the Hover it is of
     lsp_request_status_t status;
     JsonNode *result;
     char *error;
@@ -196,15 +215,21 @@ struct lsp_plugin_t
     long commands[LSP_CMD_COUNT];
     int marks[LSP_MARK_COUNT];
 
-    GQueue *answers;    // lsp_ask_t, to show once the editor is idle
-    char *trigger;      // a character that starts a completion, typed
-    gboolean refilter;  // a key typed in the word completed: the list again
-    gboolean later;     // a call of the editor asked for
+    GQueue *answers;                // lsp_ask_t, to show once the editor is idle
+    struct lsp_preview_t *preview;  // Hover while the source of its definition is asked for
+    char *trigger;                  // a character that starts a completion, typed
+    gboolean refilter;              // a key typed in the word completed: the list again
+    gboolean later;                 // a call of the editor asked for
     lsp_client_t *completing;
     guint64 completion;      // the request of the completion of the moment
     lsp_session_t *session;  // the completion of the moment, NULL when none
     guint64 next_session;
+    guint64 next_preview;
     lsp_popup_t *popup;
+    lsp_note_t *note;  // what the server says of a name, Hover
+    // the window and the place of the cursor the note is of: a click in the line moves no line
+    guint64 note_window;
+    off_t note_offset;
 
     // the ticks: a thread writes a byte in the pipe, the main loop reads it
     int tick_pipe[2];
@@ -226,6 +251,7 @@ static void lsp_on_message (void *owner, lsp_client_t *client, int type, const c
 static void lsp_later (void *data);
 static void lsp_session_end (lsp_plugin_t *plugin);
 static gboolean lsp_session_in_word (const lsp_session_t *s, WEdit *edit, off_t end);
+static char *lsp_menu_shortcut (int action_index);
 
 /*** file scope variables ************************************************************************/
 
@@ -1022,6 +1048,18 @@ lsp_tick (lsp_plugin_t *plugin)
                                          - (plugin->session->pending != 0 ? 1 : 0)))
             lsp_session_end (plugin);
     }
+    // the note goes too once the cursor is put elsewhere, in its line too
+    if (lsp_note_there (plugin->note))
+    {
+        const lsp_window_t *w = lsp_window_by_id (plugin, plugin->note_window);
+
+        // by the mouse, out of a key: no one draws the screen after it
+        if (w == NULL || w->edit->buffer.curs1 != plugin->note_offset)
+        {
+            lsp_note_hide (plugin->note);
+            tty_refresh ();
+        }
+    }
 
     for (i = 0; i < plugin->servers->len; i++)
     {
@@ -1068,7 +1106,9 @@ lsp_tick_ready (int fd, void *data)
     while (read (fd, buf, sizeof (buf)) > 0)
         ;
     lsp_tick ((lsp_plugin_t *) data);
-    return 0;
+    // an answer given up for no answer is shown, or ends what waited for it, now: not with the
+    // next key
+    return ((lsp_plugin_t *) data)->later ? 1 : 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1101,10 +1141,12 @@ lsp_answered (lsp_client_t *client, lsp_request_status_t status, JsonNode *resul
         plugin->completion = 0;
     }
     /* given up, or the server is gone: nothing to show; but a completion waits for its answer,
-       and is ended by one that will not come */
+       and is ended by one that will not come, and Hover waits for the source of the definition,
+       and is shown without it */
     if (status == LSP_REQUEST_CANCELLED
         || (status != LSP_REQUEST_OK && status != LSP_REQUEST_ERROR
-            && ask->kind != LSP_ASK_COMPLETION))
+            && ask->kind != LSP_ASK_COMPLETION && ask->kind != LSP_ASK_PREVIEW
+            && ask->kind != LSP_ASK_SYMBOLS))
     {
         lsp_ask_free (ask);
         return;
@@ -1166,12 +1208,12 @@ lsp_window_served (lsp_plugin_t *plugin, WEdit *edit, gboolean tell)
 static gboolean
 lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *trigger)
 {
-    static const char *const methods[] = { "textDocument/hover", "textDocument/definition",
+    static const char *const methods[] = { "textDocument/hover",      "textDocument/definition",
                                            "textDocument/completion", "textDocument/declaration",
-                                           "textDocument/references" };
-    static const char *const providers[] = { "hoverProvider", "definitionProvider",
+                                           "textDocument/references", "textDocument/definition" };
+    static const char *const providers[] = { "hoverProvider",      "definitionProvider",
                                              "completionProvider", "declarationProvider",
-                                             "referencesProvider" };
+                                             "referencesProvider", "definitionProvider" };
     lsp_window_t *w = lsp_window_served (plugin, edit, trigger == NULL);
     lsp_client_t *client;
     const char *why = NULL;
@@ -1205,6 +1247,7 @@ lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *tri
     ask->offset = edit->buffer.curs1;
     ask->triggered = trigger != NULL;
     ask->session = kind == LSP_ASK_COMPLETION && plugin->session != NULL ? plugin->session->id : 0;
+    ask->preview = kind == LSP_ASK_PREVIEW && plugin->preview != NULL ? plugin->preview->id : 0;
     ask->encoding = lsp_client_encoding (client);
     ask->text = g_bytes_new_take (text, len);
     (void) lsp_text_position (text, len, (gsize) ask->offset, ask->encoding, &line, &character);
@@ -1255,42 +1298,249 @@ lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *tri
 /* --------------------------------------------------------------------------------------------- */
 /* Hover */
 
-/* The text of MarkupContent, MarkedString, or an array of them, added to @out */
+/* The text of MarkupContent, MarkedString, or an array of them, added to @out; @markdown set
+   when one of them is Markdown */
 static void
-lsp_hover_text (JsonNode *node, GString *out)
+lsp_hover_text (JsonNode *node, GString *out, gboolean *markdown)
 {
     if (node == NULL)
         return;
     if (JSON_NODE_HOLDS_VALUE (node) && json_node_get_value_type (node) == G_TYPE_STRING)
     {
+        // a MarkedString alone is Markdown
         if (out->len > 0)
             g_string_append (out, "\n\n");
         g_string_append (out, json_node_get_string (node));
+        *markdown = TRUE;
     }
     else if (JSON_NODE_HOLDS_OBJECT (node))
-        lsp_hover_text (lsp_member (json_node_get_object (node), "value"), out);
+    {
+        JsonObject *o = json_node_get_object (node);
+        const char *language = lsp_member_string (o, "language");
+        const char *value = lsp_member_string (o, "value");
+
+        if (value == NULL)
+            return;
+        if (out->len > 0)
+            g_string_append (out, "\n\n");
+        // MarkedString of a language is code; MarkupContent says what it is
+        if (language != NULL)
+        {
+            g_string_append_printf (out, "```%s\n%s\n```", language, value);
+            *markdown = TRUE;
+        }
+        else
+        {
+            g_string_append (out, value);
+            if (g_strcmp0 (lsp_member_string (o, "kind"), "markdown") == 0)
+                *markdown = TRUE;
+        }
+    }
     else if (JSON_NODE_HOLDS_ARRAY (node))
     {
         JsonArray *array = json_node_get_array (node);
         guint i;
 
         for (i = 0; i < json_array_get_length (array); i++)
-            lsp_hover_text (json_array_get_element (array, i), out);
+            lsp_hover_text (json_array_get_element (array, i), out, markdown);
     }
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The text of a file: that of a window of it, else the file; NULL when there is none */
+static char *
+lsp_file_text (lsp_plugin_t *plugin, const char *path, gsize *len)
+{
+    char *text = NULL;
+    guint i;
+
+    for (i = 0; i < plugin->windows->len && text == NULL; i++)
+    {
+        const lsp_window_t *w = g_ptr_array_index (plugin->windows, i);
+        char *canonical = lsp_canonical_path (w->path);
+
+        if (g_strcmp0 (canonical, path) == 0)
+            text = plugin->host->get_text (plugin->host, w->edit, len);
+        g_free (canonical);
+    }
+    if (text == NULL && !g_file_get_contents (path, &text, len, NULL))
+        text = NULL;
+    return text;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The lines @first to @last, from 0, of a file, whole; NULL when there are none */
+static char *
+lsp_source_lines (lsp_plugin_t *plugin, const char *path, gint64 first, gint64 last)
+{
+    gsize len = 0, from = 0, to = 0;
+    char *text = lsp_file_text (plugin, path, &len);
+    char *source = NULL;
+
+    if (text != NULL && lsp_text_offset (text, len, first, 0, LSP_ENCODING_UTF8, &from))
+    {
+        // to the end of the last line
+        if (!lsp_text_offset (text, len, last, 0, LSP_ENCODING_UTF8, &to))
+            to = from;
+        while (to < len && text[to] != '\n')
+            to++;
+        source = g_strndup (text + from, to - from);
+    }
+    g_free (text);
+    return source;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The first Location or LocationLink of the answer of a definition, NULL when there is none */
+static JsonObject *
+lsp_first_location (JsonNode *result)
+{
+    if (result != NULL && JSON_NODE_HOLDS_ARRAY (result)
+        && json_array_get_length (json_node_get_array (result)) > 0)
+        result = json_array_get_element (json_node_get_array (result), 0);
+    return result != NULL && JSON_NODE_HOLDS_OBJECT (result) ? json_node_get_object (result) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the place @line, @character is in @range */
+static gboolean
+lsp_range_has (JsonObject *range, gint64 line, gint64 character)
+{
+    JsonObject *start = lsp_member_object (range, "start");
+    JsonObject *end = lsp_member_object (range, "end");
+    const gint64 l0 = lsp_member_int (start, "line", -1);
+    const gint64 c0 = lsp_member_int (start, "character", 0);
+    const gint64 l1 = lsp_member_int (end, "line", -1);
+    const gint64 c1 = lsp_member_int (end, "character", 0);
+
+    if (l0 < 0 || l1 < 0)
+        return FALSE;
+    return (line > l0 || (line == l0 && character >= c0))
+        && (line < l1 || (line == l1 && character <= c1));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The extent of the symbol of @symbols, DocumentSymbol or SymbolInformation, the deepest, whose
+   name is at @line, @character: its first and last lines; FALSE when there is none */
+static gboolean
+lsp_symbol_extent (JsonNode *symbols, gint64 line, gint64 character, gint64 *first, gint64 *last)
+{
+    JsonArray *array;
+    guint i;
+
+    if (symbols == NULL || !JSON_NODE_HOLDS_ARRAY (symbols))
+        return FALSE;
+    array = json_node_get_array (symbols);
+    for (i = 0; i < json_array_get_length (array); i++)
+    {
+        JsonNode *node = json_array_get_element (array, i);
+        JsonObject *symbol, *range, *name;
+        gboolean found = FALSE;
+
+        if (!JSON_NODE_HOLDS_OBJECT (node))
+            continue;
+        symbol = json_node_get_object (node);
+        range = lsp_member_object (symbol, "range");
+        name = lsp_member_object (symbol, "selectionRange");
+        // SymbolInformation: the range of its location is all of it
+        if (range == NULL)
+            range = name = lsp_member_object (lsp_member_object (symbol, "location"), "range");
+        if (!lsp_range_has (range, line, character))
+            continue;
+        if (lsp_range_has (name, line, character))
+        {
+            *first = lsp_member_int (lsp_member_object (range, "start"), "line", 0);
+            *last = lsp_member_int (lsp_member_object (range, "end"), "line", *first);
+            found = TRUE;
+        }
+        // a symbol in it is nearer
+        if (lsp_symbol_extent (lsp_member (symbol, "children"), line, character, first, last)
+            || found)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether @client is that of a server still there */
+static gboolean
+lsp_client_alive (lsp_plugin_t *plugin, const lsp_client_t *client)
+{
+    guint i;
+
+    for (i = 0; i < plugin->servers->len; i++)
+        if (((const lsp_server_t *) g_ptr_array_index (plugin->servers, i))->client == client)
+            return TRUE;
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether a window served by @client has the document @uri */
+static gboolean
+lsp_doc_in_window (lsp_plugin_t *plugin, const lsp_client_t *client, const char *uri)
+{
+    guint i;
+
+    for (i = 0; i < plugin->windows->len; i++)
+    {
+        const lsp_window_t *w = g_ptr_array_index (plugin->windows, i);
+
+        if (w->server != NULL && w->server->client == client && g_strcmp0 (w->uri, uri) == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
-lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
+lsp_preview_free (lsp_plugin_t *plugin, lsp_preview_t *preview)
+{
+    if (preview == NULL)
+        return;
+    /* the file opened for its symbols is the server's no more, unless a window has it now: the
+       user may have gone to it meanwhile */
+    if (preview->opened && lsp_client_alive (plugin, preview->client)
+        && !lsp_doc_in_window (plugin, preview->client, preview->uri))
+        lsp_client_doc_close (preview->client, preview->uri);
+    if (preview->hover != NULL)
+        json_node_unref (preview->hover);
+    g_free (preview->uri);
+    g_free (preview);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What the server says of the name at the cursor of @ask, @hover, after the problems of its line;
+   the code it prints replaced by @source, that of the definition, when it is longer */
+static void
+lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask, JsonNode *hover_node,
+                const char *source)
 {
     GString *out = g_string_new (NULL);
     JsonArray *diagnostics = NULL;
     guint line = 0, character = 0, i;
     gsize len;
     const char *text = g_bytes_get_data (ask->text, &len);
-    char *shown;
+    WEdit *edit = w->edit;
+    const WRect *r = &CONST_WIDGET (edit)->rect;
+    const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1;
+    char *shown, *read_key;
+    int x, y;
 
+    // of a window no more in front: of no use, and in the way of another
+    if (plugin->host->window_current (plugin->host) != (void *) edit)
+    {
+        g_string_free (out, TRUE);
+        return;
+    }
     // the problems of the line first
     (void) lsp_text_position (text, len, (gsize) ask->offset, ask->encoding, &line, &character);
     if (w->server != NULL)
@@ -1310,19 +1560,58 @@ lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
             g_string_append_printf (out, "%s%s: %s", out->len > 0 ? "\n" : "",
                                     _ (kinds[lsp_mark_of (d)]), lsp_member_string (d, "message"));
     }
-    if (ask->result != NULL && JSON_NODE_HOLDS_OBJECT (ask->result))
+    // a long text scrolls in the box; an endless one is cut
+    shown = lsp_shown (out->str, 500);
+    g_string_assign (out, shown);
+    g_free (shown);
+    if (hover_node != NULL && JSON_NODE_HOLDS_OBJECT (hover_node))
     {
         GString *hover = g_string_new (NULL);
+        gboolean markdown = FALSE;
 
-        lsp_hover_text (lsp_member (json_node_get_object (ask->result), "contents"), hover);
-        if (hover->len > 0)
-            g_string_append_printf (out, "%s%s", out->len > 0 ? "\n\n" : "", hover->str);
+        lsp_hover_text (lsp_member (json_node_get_object (hover_node), "contents"), hover,
+                        &markdown);
+        if (markdown && source != NULL)
+        {
+            char *with = lsp_markdown_with_code (hover->str, source, LSP_HOVER_SOURCE_LINES);
+
+            g_string_assign (hover, with);
+            g_free (with);
+        }
+        // its controls gone first: the note has its marks in them
+        shown = lsp_shown (hover->str, 500);
+        if (markdown)
+        {
+            char *note = lsp_markdown_note (shown);
+
+            g_free (shown);
+            shown = note;
+        }
+        if (*shown != '\0')
+        {
+            // a rule between the problems and what the server says of the name
+            if (out->len > 0)
+                g_string_append_printf (out, "\n%c\n", LSP_NOTE_RULE);
+            g_string_append (out, shown);
+        }
+        g_free (shown);
         g_string_free (hover, TRUE);
     }
     if (out->len == 0)
         g_string_assign (out, _ ("The language server says nothing of it."));
-    shown = lsp_shown (out->str, (gsize) MAX (LINES - 8, 3));
-    plugin->host->message (plugin->host, D_NORMAL, _ ("Hover"), shown);
+    shown = g_strdup (out->str);
+    // under the cursor, from its column
+    edit_update_curs_col (edit);
+    x = r->x + edit->curs_col + edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET + frame
+        + edit_options.line_state_width;
+    y = r->y + edit->curs_row + EDIT_TEXT_VERTICAL_OFFSET + frame;
+    // the key of Quick documentation, which has it read when it is long
+    read_key = lsp_menu_shortcut (LSP_CMD_HOVER);
+    lsp_note_show (plugin->note, WIDGET (edit)->owner, _ ("Quick documentation"), read_key, shown,
+                   y, x);
+    plugin->note_window = w->id;
+    plugin->note_offset = edit->buffer.curs1;
+    g_free (read_key);
     g_free (shown);
     g_string_free (out, TRUE);
 }
@@ -2358,6 +2647,128 @@ lsp_trigger_typed (WEdit *edit, const lsp_window_t *w, const char *typed)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The symbols of the file of the definition of @preview asked for, the file opened on the server
+   when it has not got it; FALSE when they cannot be */
+static gboolean
+lsp_preview_symbols (lsp_plugin_t *plugin, lsp_preview_t *preview, const lsp_ask_t *after)
+{
+    JsonObject *params, *document;
+    lsp_ask_t *ask;
+    char *path = lsp_path_from_uri (preview->uri);
+    guint64 id;
+
+    if (path == NULL || !lsp_client_supports (preview->client, "documentSymbolProvider"))
+    {
+        g_free (path);
+        return FALSE;
+    }
+    if (!lsp_client_has_doc (preview->client, preview->uri))
+    {
+        const char *language = NULL;
+        gsize len = 0;
+        char *text = lsp_file_text (plugin, path, &len);
+
+        if (text == NULL || lsp_config_backend_for (plugin->config, path, &language) == NULL)
+        {
+            g_free (text);
+            g_free (path);
+            return FALSE;
+        }
+        lsp_client_doc_open (preview->client, preview->uri, language, text, len);
+        preview->opened = TRUE;
+        g_free (text);
+    }
+    g_free (path);
+
+    // of the window and the text of Hover: the answer is of no use once they change
+    ask = g_new0 (lsp_ask_t, 1);
+    ask->plugin = plugin;
+    ask->kind = LSP_ASK_SYMBOLS;
+    ask->preview = preview->id;
+    ask->window_id = after->window_id;
+    ask->revision = after->revision;
+    ask->offset = after->offset;
+    ask->encoding = after->encoding;
+    ask->text = g_bytes_ref (after->text);
+    params = json_object_new ();
+    document = json_object_new ();
+    json_object_set_string_member (document, "uri", preview->uri);
+    json_object_set_object_member (params, "textDocument", document);
+    id = lsp_client_request (preview->client, "textDocument/documentSymbol",
+                             lsp_object_node (params), 0, lsp_answered, ask, NULL);
+    if (id == 0)
+        lsp_ask_free (ask);
+    return id != 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The definition of the name of Hover, then the symbols of its file: the source of the
+   definition, Hover shown with it, or without it when it cannot be had */
+static void
+lsp_preview_answer (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
+{
+    lsp_preview_t *preview = plugin->preview;
+    char *source = NULL;
+
+    // the answer of a Hover asked for before: this one is not its
+    if (preview == NULL || preview->id != ask->preview)
+        return;
+    // the window gone, its text changed, the cursor moved: Hover is of no use
+    if (w == NULL || plugin->host->get_revision (plugin->host, w->edit) != ask->revision
+        || w->edit->buffer.curs1 != ask->offset)
+    {
+        lsp_preview_free (plugin, preview);
+        plugin->preview = NULL;
+        return;
+    }
+    if (ask->kind == LSP_ASK_PREVIEW && ask->status == LSP_REQUEST_OK)
+    {
+        JsonObject *place = lsp_first_location (ask->result);
+        JsonObject *range = lsp_member_object (place, "targetRange");
+
+        if (range != NULL)
+        {
+            // a LocationLink has all of the definition
+            char *path = lsp_path_from_uri (lsp_member_string (place, "targetUri"));
+            const gint64 first = lsp_member_int (lsp_member_object (range, "start"), "line", 0);
+
+            if (path != NULL)
+                source = lsp_source_lines (
+                    plugin, path, first,
+                    lsp_member_int (lsp_member_object (range, "end"), "line", first));
+            g_free (path);
+        }
+        else if (place != NULL && lsp_member_string (place, "uri") != NULL)
+        {
+            // a Location has the name alone: the symbol named there has all of it
+            JsonObject *start = lsp_member_object (lsp_member_object (place, "range"), "start");
+
+            preview->uri = g_strdup (lsp_member_string (place, "uri"));
+            preview->line = lsp_member_int (start, "line", 0);
+            preview->character = lsp_member_int (start, "character", 0);
+            if (lsp_preview_symbols (plugin, preview, ask))
+                return;
+        }
+    }
+    else if (ask->kind == LSP_ASK_SYMBOLS && ask->status == LSP_REQUEST_OK)
+    {
+        gint64 first, last;
+        char *path = lsp_path_from_uri (preview->uri);
+
+        if (path != NULL
+            && lsp_symbol_extent (ask->result, preview->line, preview->character, &first, &last))
+            source = lsp_source_lines (plugin, path, first, last);
+        g_free (path);
+    }
+    lsp_show_hover (plugin, w, ask, preview->hover, source);
+    g_free (source);
+    lsp_preview_free (plugin, preview);
+    plugin->preview = NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The editor idle: the answers shown, the completion of a trigger asked for */
 static void
 lsp_later (void *data)
@@ -2379,7 +2790,10 @@ lsp_later (void *data)
         lsp_window_t *w = ask->window_id != 0 ? lsp_window_by_id (plugin, ask->window_id) : NULL;
         char *error = ask->error != NULL ? lsp_shown (ask->error, 20) : NULL;
 
-        if (ask->kind == LSP_ASK_COMPLETION && ask->window_id != 0)
+        if (ask->kind == LSP_ASK_PREVIEW || ask->kind == LSP_ASK_SYMBOLS)
+            // Hover waited for the source of the definition
+            lsp_preview_answer (plugin, w, ask);
+        else if (ask->kind == LSP_ASK_COMPLETION && ask->window_id != 0)
             // the list follows what is typed: the text has changed since, and that is right
             lsp_session_answer (plugin, w, ask);
         else if (ask->window_id == 0)
@@ -2392,7 +2806,26 @@ lsp_later (void *data)
         else if (ask->status == LSP_REQUEST_ERROR)
             plugin->host->message (plugin->host, D_ERROR, _ ("Language server"), error);
         else if (ask->kind == LSP_ASK_HOVER)
-            lsp_show_hover (plugin, w, ask);
+        {
+            // the source of the definition first, when the server can say where it is
+            lsp_preview_free (plugin, plugin->preview);
+            plugin->preview = NULL;
+            if (ask->result != NULL && JSON_NODE_HOLDS_OBJECT (ask->result)
+                && lsp_client_supports (w->server->client, "definitionProvider"))
+            {
+                plugin->preview = g_new0 (lsp_preview_t, 1);
+                plugin->preview->id = ++plugin->next_preview;
+                plugin->preview->hover = json_node_ref (ask->result);
+                plugin->preview->client = w->server->client;
+                if (!lsp_ask (plugin, w->edit, LSP_ASK_PREVIEW, NULL))
+                {
+                    lsp_preview_free (plugin, plugin->preview);
+                    plugin->preview = NULL;
+                }
+            }
+            if (plugin->preview == NULL)
+                lsp_show_hover (plugin, w, ask, ask->result, NULL);
+        }
         else if (ask->kind == LSP_ASK_REFERENCES)
             lsp_show_references (plugin, w, ask);
         else
@@ -2781,6 +3214,25 @@ lsp_handle_key (void *data, int key, void *edit)
         return MC_EPR_NOT_SUPPORTED;
     cmd = lsp_command_of (plugin,
                           plugin->host->command_lookup (plugin->host, LSP_KEYMAP_SECTION, key));
+    /* Quick documentation: PgUp and PgDn scroll it; its key again has it read, the arrows
+       scrolling it, and once read takes it away; Esc only takes it away; another key takes it
+       away and does what it does */
+    if (lsp_note_shown (plugin->note))
+    {
+        if (lsp_note_key (plugin->note, key))
+            return MC_EPR_OK;
+        if (cmd == LSP_CMD_HOVER && !lsp_note_reading (plugin->note))
+        {
+            lsp_note_read (plugin->note);
+            return MC_EPR_OK;
+        }
+        lsp_note_hide (plugin->note);
+        if (key == ESC_CHAR || cmd == LSP_CMD_HOVER)
+            return MC_EPR_OK;
+    }
+    // out of sight, the screen too small for it: it goes all the same
+    else if (lsp_note_there (plugin->note))
+        lsp_note_hide (plugin->note);
     if (cmd != LSP_CMD_NONE)
     {
         // a file no server serves: the key is the editor's
@@ -2882,9 +3334,13 @@ lsp_handle_event (void *data, void *edit, int event_id, void *payload)
         break;
     case MC_EP_EVENT_FOCUS_OUT:
     case MC_EP_EVENT_CURSOR_MOVED:
-        // the list is of a word of a line of this window
+        // the list and Hover are of a word of a line of this window, the one asked for too
         if (plugin->session != NULL)
             lsp_session_end (plugin);
+        if (lsp_note_there (plugin->note))
+            lsp_note_hide (plugin->note);
+        lsp_preview_free (plugin, plugin->preview);
+        plugin->preview = NULL;
         break;
     case MC_EP_EVENT_TEXT_CHANGED:
     case MC_EP_EVENT_FILE_RENAMED:
@@ -2947,6 +3403,7 @@ lsp_open (mc_editor_host_t *host, void *editor_dialog)
     plugin->answers = g_queue_new ();
     plugin->project = host->startup_option (host, "debug");
     plugin->popup = lsp_popup_new (lsp_session_take_cb, plugin);
+    plugin->note = lsp_note_new ();
     lsp_load_config (plugin);
 
     host->commands_register (host, LSP_KEYMAP_SECTION, N_ ("Language servers"), lsp_commands);
@@ -2991,6 +3448,10 @@ lsp_close (void *data)
         close (plugin->tick_pipe[0]);
         close (plugin->tick_pipe[1]);
     }
+    /* before the servers quit, and before the windows, which it looks at: the file it opened on
+       one is closed there */
+    lsp_preview_free (plugin, plugin->preview);
+    plugin->preview = NULL;
     // all the servers told at once, then waited for together
     for (i = 0; i < plugin->servers->len; i++)
         lsp_client_quit (((lsp_server_t *) g_ptr_array_index (plugin->servers, i))->client);
@@ -3012,6 +3473,7 @@ lsp_close (void *data)
     g_free (plugin->trigger);
     lsp_session_free (plugin->session);
     lsp_popup_free (plugin->popup);
+    lsp_note_free (plugin->note);
     lsp_config_free (plugin->config);
     g_free (plugin->config_errors);
     g_free (plugin);
@@ -3089,7 +3551,7 @@ static const mc_ep_cmd_menu_entry_t lsp_menu_alone[] = {
     { LSP_MENU, N_ ("Navigation histor&y..."), LSP_CMD_HISTORY, NULL },
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("&Completion"), LSP_CMD_COMPLETION, NULL },
-    { LSP_MENU, N_ ("&Hover"), LSP_CMD_HOVER, NULL },
+    { LSP_MENU, N_ ("&Quick documentation"), LSP_CMD_HOVER, NULL },
     { LSP_MENU, N_ ("&Problems..."), LSP_CMD_PROBLEMS, NULL },
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("&Start server"), LSP_CMD_START, NULL },
@@ -3106,7 +3568,7 @@ static const mc_ep_cmd_menu_entry_t lsp_menu[] = {
     // what goes to a name is in Navigate, with the tags: the server is asked first
     { MC_EP_MENU_NAVIGATE, N_ ("Go to the protot&ype"), LSP_CMD_DECLARATION, NULL },
     { LSP_MENU, N_ ("&Completion"), LSP_CMD_COMPLETION, NULL },
-    { LSP_MENU, N_ ("&Hover"), LSP_CMD_HOVER, NULL },
+    { LSP_MENU, N_ ("&Quick documentation"), LSP_CMD_HOVER, NULL },
     { LSP_MENU, N_ ("&Problems..."), LSP_CMD_PROBLEMS, NULL },
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("&Start server"), LSP_CMD_START, NULL },
