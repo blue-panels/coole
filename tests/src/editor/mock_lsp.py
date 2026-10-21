@@ -81,7 +81,8 @@ while True:
         capabilities = {"textDocumentSync": {"openClose": True, "change": 1,
                                              "save": {"includeText": True}},
                         "hoverProvider": True, "definitionProvider": True,
-                        "completionProvider": {"triggerCharacters": [".", "->"]}}
+                        "completionProvider": {"triggerCharacters": [".", "->"]},
+                        "signatureHelpProvider": {"triggerCharacters": ["(", ","]}}
         if mode == "utf8":
             capabilities["positionEncoding"] = "utf-8"
         write({"id": message["id"], "result": {"capabilities": capabilities}})

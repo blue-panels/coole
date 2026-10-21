@@ -124,6 +124,9 @@ JsonObject *lsp_client_capabilities (const lsp_client_t *client);
 gboolean lsp_client_supports (const lsp_client_t *client, const char *provider);
 /* Whether @c is one of the characters that start a completion */
 gboolean lsp_client_completion_trigger (const lsp_client_t *client, const char *c);
+/* Whether @c is one of the triggerCharacters of the options of @provider ("signatureHelpProvider")
+ */
+gboolean lsp_client_trigger (const lsp_client_t *client, const char *provider, const char *c);
 
 /* A document, @len bytes of UTF-8: opened on the server now, or once it runs */
 void lsp_client_doc_open (lsp_client_t *client, const char *uri, const char *language_id,

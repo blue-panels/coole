@@ -153,6 +153,9 @@ static const char lsp_client_capabilities_json[] =
     "\"hierarchicalDocumentSymbolSupport\":true},"
     "\"declaration\":{\"dynamicRegistration\":false,\"linkSupport\":true},"
     "\"references\":{\"dynamicRegistration\":false},"
+    "\"signatureHelp\":{\"dynamicRegistration\":false,\"signatureInformation\":{"
+    "\"documentationFormat\":[\"markdown\",\"plaintext\"],"
+    "\"parameterInformation\":{\"labelOffsetSupport\":true},\"activeParameterSupport\":true}},"
     "\"completion\":{\"dynamicRegistration\":false,\"contextSupport\":true,"
     "\"completionItem\":{\"snippetSupport\":false,\"commitCharactersSupport\":false,"
     "\"documentationFormat\":[\"plaintext\"],\"insertReplaceSupport\":false}},"
@@ -1600,8 +1603,16 @@ lsp_client_supports (const lsp_client_t *client, const char *provider)
 gboolean
 lsp_client_completion_trigger (const lsp_client_t *client, const char *c)
 {
-    JsonObject *completion = lsp_member_object (client->capabilities, "completionProvider");
-    JsonNode *triggers = lsp_member (completion, "triggerCharacters");
+    return lsp_client_trigger (client, "completionProvider", c);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+lsp_client_trigger (const lsp_client_t *client, const char *provider, const char *c)
+{
+    JsonObject *options = lsp_member_object (client->capabilities, provider);
+    JsonNode *triggers = lsp_member (options, "triggerCharacters");
     JsonArray *array;
     guint i;
 

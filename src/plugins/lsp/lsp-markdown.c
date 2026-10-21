@@ -239,6 +239,25 @@ lsp_markdown_is_fence (const char *line)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* The command of a comment of the source at the start of @line, "@param" or "\\param", its
+   backslash escaped in Markdown or not: what is after its name, NULL when the line has none */
+static const char *
+lsp_markdown_command (const char *line)
+{
+    while (*line == ' ')
+        line++;
+    if (*line == '@')
+        line++;
+    else if (*line == '\\')
+        while (*line == '\\')
+            line++;
+    else
+        return NULL;
+    return g_ascii_isalpha (*line) ? line : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -388,6 +407,90 @@ lsp_markdown_with_code (const char *markdown, const char *code, int max_lines)
         g_string_append_printf (out, "%s%s", lines[i], lines[i + 1] != NULL ? "\n" : "");
     g_strfreev (lines);
     g_strfreev (code_lines);
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+char *
+lsp_markdown_param (const char *doc, const char *name)
+{
+    char **lines;
+    GString *out = NULL;
+    const gsize len = name != NULL ? strlen (name) : 0;
+    guint i;
+
+    if (doc == NULL || len == 0)
+        return NULL;
+    lines = g_strsplit (doc, "\n", -1);
+    for (i = 0; lines[i] != NULL && out == NULL; i++)
+    {
+        const char *p = lsp_markdown_command (lines[i]);
+
+        if (p == NULL || strncmp (p, "param", 5) != 0
+            || (p[5] != ' ' && p[5] != '\\' && p[5] != '['))
+            continue;
+        p += 5;
+        while (*p == ' ')
+            p++;
+        // the direction, [in] or [out], escaped in Markdown or not
+        if (*p == '\\' && p[1] == '[')
+            p++;
+        if (*p == '[')
+        {
+            const char *end = strchr (p, ']');
+
+            if (end == NULL)
+                continue;
+            p = end + 1;
+            while (*p == ' ')
+                p++;
+        }
+        if (strncmp (p, name, len) != 0 || (p[len] != ' ' && p[len] != '\0' && p[len] != ','))
+            continue;
+        p += len;
+        while (*p == ' ' || *p == ',')
+            p++;
+        out = g_string_new (p);
+        // the lines that go on with it, to an empty one or another command
+        for (i++; lines[i] != NULL && lines[i][strspn (lines[i], " ")] != '\0'
+             && lsp_markdown_command (lines[i]) == NULL;
+             i++)
+            g_string_append_printf (out, " %s", lines[i] + strspn (lines[i], " "));
+        break;
+    }
+    g_strfreev (lines);
+    if (out != NULL && out->len == 0)
+    {
+        g_string_free (out, TRUE);
+        out = NULL;
+    }
+    return out != NULL ? g_string_free (out, FALSE) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+lsp_markdown_brief (const char *doc)
+{
+    char **lines;
+    GString *out = g_string_new (NULL);
+    guint i = 0;
+
+    if (doc == NULL)
+        return g_string_free (out, TRUE);
+    lines = g_strsplit (doc, "\n", -1);
+    while (lines[i] != NULL && lines[i][strspn (lines[i], " ")] == '\0')
+        i++;
+    for (; lines[i] != NULL && lines[i][strspn (lines[i], " ")] != '\0'
+         && lsp_markdown_command (lines[i]) == NULL && !lsp_markdown_is_fence (lines[i]);
+         i++)
+        g_string_append_printf (out, "%s%s", out->len > 0 ? "\n" : "", lines[i]);
+    g_strfreev (lines);
+    if (out->len == 0)
+    {
+        g_string_free (out, TRUE);
+        return NULL;
+    }
     return g_string_free (out, FALSE);
 }
 

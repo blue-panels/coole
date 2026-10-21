@@ -177,6 +177,43 @@ test_with_code (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* What a comment says of a parameter, and of its function */
+static void
+test_param (void)
+{
+    static const char doc[] = "Calculate percentage\n@param buf pointer to editor buffer\n"
+                              "@param p character offset\n  of the cursor\n\n@return percentage";
+    char *made;
+
+    made = lsp_markdown_param (doc, "buf");
+    g_assert_cmpstr (made, ==, "pointer to editor buffer");
+    g_free (made);
+    // the lines going on with it
+    made = lsp_markdown_param (doc, "p");
+    g_assert_cmpstr (made, ==, "character offset of the cursor");
+    g_free (made);
+    // a name it does not say, or that starts another
+    g_assert_null (lsp_markdown_param (doc, "offset"));
+    g_assert_null (lsp_markdown_param (doc, "bu"));
+    // the backslash, escaped in Markdown, and the direction
+    made = lsp_markdown_param ("\\\\param\\[in\\] file the path", "file");
+    g_assert_cmpstr (made, ==, "the path");
+    g_free (made);
+    made = lsp_markdown_param ("@param[out] n, the count", "n");
+    g_assert_cmpstr (made, ==, "the count");
+    g_free (made);
+
+    made = lsp_markdown_brief (doc);
+    g_assert_cmpstr (made, ==, "Calculate percentage");
+    g_free (made);
+    made = lsp_markdown_brief ("\nOne\ntwo\n\nthree");
+    g_assert_cmpstr (made, ==, "One\ntwo");
+    g_free (made);
+    g_assert_null (lsp_markdown_brief ("@param a b"));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (int argc, char **argv)
 {
@@ -185,6 +222,7 @@ main (int argc, char **argv)
     g_test_add_func ("/lsp/markdown-inline", test_inline);
     g_test_add_func ("/lsp/markdown-lines", test_lines);
     g_test_add_func ("/lsp/markdown-with-code", test_with_code);
+    g_test_add_func ("/lsp/markdown-param", test_param);
     return g_test_run ();
 }
 

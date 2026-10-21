@@ -41,6 +41,13 @@ char *lsp_markdown_note (const char *markdown);
    them, @max_lines of them at most, "..." for the rest: the source of a definition for what a
    server prints of it; a copy of @markdown else */
 char *lsp_markdown_with_code (const char *markdown, const char *code, int max_lines);
+/* What the comment of the source @doc, Markdown or plain text, says of the parameter @name,
+   after "@param name" or "\\param name", with the lines going on with it; NULL when it says
+   nothing of it */
+char *lsp_markdown_param (const char *doc, const char *name);
+/* The first paragraph of @doc, to its first command or block of code: what a function does;
+   NULL when there is none */
+char *lsp_markdown_brief (const char *doc);
 
 /*** inline functions ****************************************************************************/
 

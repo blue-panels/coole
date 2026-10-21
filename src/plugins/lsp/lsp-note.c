@@ -67,6 +67,8 @@ struct lsp_note_t
     char *read_key;    // the key that has it read, NULL for none
     char *text;        // as it was given, to be laid out again on another screen
     int y, x;          // the place it is shown at
+    gboolean above;    // over the place rather than under it
+    int max_lines;     // the most lines it shows at once, 0 for half of the screen
 };
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -371,7 +373,8 @@ lsp_note_scroll_by (lsp_note_t *note, int lines)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The lines of the text and the place of the box on the screen as it is now: under the place it
-   is shown at, or above it when there is more room there; FALSE when there is no room for it */
+   is shown at, or above it when there is more room there, the other way for a box over it;
+   FALSE when there is no room for it */
 static gboolean
 lsp_note_layout (lsp_note_t *note, WRect *r)
 {
@@ -402,10 +405,12 @@ lsp_note_layout (lsp_note_t *note, WRect *r)
     note->y = MIN (note->y, LINES - 2);
     below = LINES - 1 - (note->y + 1);
     above = note->y;
-    rows = MIN ((int) note->lines->len, MAX (LSP_NOTE_MAX_LINES, (LINES - 2) / 2)) + 2;
+    rows = MIN ((int) note->lines->len,
+                note->max_lines > 0 ? note->max_lines : MAX (LSP_NOTE_MAX_LINES, (LINES - 2) / 2))
+        + 2;
     r->cols = cols;
     r->x = MAX (MIN (note->x, COLS - cols), 0);
-    if (rows <= below || below >= above)
+    if (note->above ? rows > above && below > above : rows <= below || below >= above)
     {
         r->lines = MIN (rows, below);
         r->y = note->y + 1;
@@ -562,6 +567,15 @@ lsp_note_show (lsp_note_t *note, WGroup *group, const char *title, const char *r
     if (w->owner == NULL)
         group_add_widget (group, w);
     lsp_note_draw (note);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+lsp_note_set_place (lsp_note_t *note, gboolean above, int max_lines)
+{
+    note->above = above;
+    note->max_lines = max_lines;
 }
 
 /* --------------------------------------------------------------------------------------------- */

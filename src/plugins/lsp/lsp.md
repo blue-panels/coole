@@ -90,6 +90,19 @@ the arrows, Home and End scroll it too, and Alt-, takes it away. Esc only
 takes it away; any other key takes it away and does what it does; it goes
 too when the cursor moves.
 
+**Alt-(**
+: Parameter info: the signature of the call the cursor is in, in a box over
+its line, the parameter of the moment hot; under it, what the parameter is, as
+the comment of the function says it after "@param", or else the first sentence
+of the comment: not all of it, so that the box stays small. In the mode of an IDE, -D, the characters the server names
+open it as they are typed, "(" and "," for clangd, as completion_on_trigger
+says for the list of a completion. It follows the cursor as the arguments are
+typed, the hot parameter moving after a ","; it goes when the cursor leaves
+the call, at Esc, and when the window loses the focus. A list of a completion
+has it wait until the list goes. When a function has several signatures, the
+box says which of them it shows, "1/3", and Alt-Up and Alt-Down go through
+them.
+
 The keys are those of the section
 **[lsp]**
 of the keymap, which Options > Key bindings changes. A key of LSP in a file no
@@ -177,7 +190,8 @@ setting of the file that of the system's. For example
 : The list of completion shown by itself after a character the server
 completes after, a dot, "->" or "::", as it is typed: "ide", the default, on a
 project of -D only; "always"; "never", by Ctrl-Space only. When the server has
-nothing to offer there, nothing is shown.
+nothing to offer there, nothing is shown. Parameter info opens by itself after
+"(" and "," as the list does, by Alt-( only with "never".
 
 **command**
 : The program and its arguments, without a shell. ${build_dir} in an
