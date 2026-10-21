@@ -86,6 +86,8 @@ test_settings (void)
     g_assert_no_error (error);
     g_assert_cmpint (lsp_settings_when (settings, "autostart"), ==, LSP_WHEN_NEVER);
     g_assert_cmpint (lsp_settings_when (settings, "completion_on_trigger"), ==, LSP_WHEN_IDE);
+    // a file that does not say it has it never
+    g_assert_cmpint (lsp_settings_when (settings, "completion_on_arguments"), ==, LSP_WHEN_NEVER);
     ids = lsp_settings_ids (settings);
     g_assert_cmpuint (ids->len, ==, 2);
     g_ptr_array_free (ids, TRUE);
@@ -94,6 +96,7 @@ test_settings (void)
 
     // what is as the system has it is not written
     lsp_settings_set_when (settings, "autostart", LSP_WHEN_NEVER);
+    lsp_settings_set_when (settings, "completion_on_arguments", LSP_WHEN_NEVER);
     lsp_settings_put (settings,
                       backend ("{\"id\":\"a\",\"command\":[\"a\"],"
                                "\"extensions\":{\".a\":\"a\"}}"));
@@ -115,6 +118,7 @@ test_settings (void)
 
     g_assert_true (g_file_get_contents (user, &text, NULL, NULL));
     g_assert_null (strstr (text, "autostart"));
+    g_assert_null (strstr (text, "completion_on_arguments"));
     g_assert_null (strstr (text, "\"a\""));
     g_assert_nonnull (strstr (text, "\"always\""));
     g_free (text);

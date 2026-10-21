@@ -55,6 +55,8 @@ void lsp_popup_show (lsp_popup_t *popup, WGroup *group, int y, int x);
 /* Out of its group, what it covered drawn again */
 void lsp_popup_hide (lsp_popup_t *popup);
 gboolean lsp_popup_shown (const lsp_popup_t *popup);
+/* The first row of the screen the list is shown at; -1 when it is not shown */
+int lsp_popup_top (const lsp_popup_t *popup);
 void lsp_popup_draw (lsp_popup_t *popup);
 
 /* The choice moved by @lines, a page for LSP_POPUP_LINES; it stops at the ends */

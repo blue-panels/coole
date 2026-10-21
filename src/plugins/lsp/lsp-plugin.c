@@ -1296,9 +1296,15 @@ lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *tri
     {
         JsonObject *context = json_object_new ();
 
-        json_object_set_int_member (context, "triggerKind", trigger != NULL ? 2 : 1);
-        if (trigger != NULL)
+        /* a character the server completes after; the "(" of the arguments is none of them, and
+           the list is asked for as by the user */
+        if (trigger != NULL && lsp_client_completion_trigger (client, trigger))
+        {
+            json_object_set_int_member (context, "triggerKind", 2);
             json_object_set_string_member (context, "triggerCharacter", trigger);
+        }
+        else
+            json_object_set_int_member (context, "triggerKind", 1);
         json_object_set_object_member (params, "context", context);
         // the completion of before is of no use now
         if (plugin->completing != NULL && plugin->completion != 0)
@@ -1775,6 +1781,35 @@ lsp_signature_end (lsp_plugin_t *plugin)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The row of the screen of the cursor of @edit, and its column */
+static int
+lsp_cursor_screen (WEdit *edit, int *x)
+{
+    const WRect *r = &CONST_WIDGET (edit)->rect;
+    const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1;
+
+    edit_update_curs_col (edit);
+    *x = r->x + edit->curs_col + edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET + frame
+        + edit_options.line_state_width;
+    return r->y + edit->curs_row + EDIT_TEXT_VERTICAL_OFFSET + frame;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the help of a call has its room over the line of @edit: no list of a completion there,
+   and a box of a line at least over it */
+static gboolean
+lsp_signature_room (lsp_plugin_t *plugin, WEdit *edit)
+{
+    const int top = lsp_popup_top (plugin->popup);
+    int x;
+    const int y = lsp_cursor_screen (edit, &x);
+
+    return top < 0 || (top > y && y >= 3);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The help of the last answer, over the line of the cursor: the signature, its parameter of the
    moment hot, and what the server says of them */
 static void
@@ -1791,8 +1826,6 @@ lsp_signature_show (lsp_plugin_t *plugin, lsp_window_t *w)
     const char *value;
     gboolean markdown;
     WEdit *edit = w->edit;
-    const WRect *r = &CONST_WIDGET (edit)->rect;
-    const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1;
     int x, y;
 
     if (signatures == NULL)
@@ -1889,10 +1922,7 @@ lsp_signature_show (lsp_plugin_t *plugin, lsp_window_t *w)
         title =
             g_strdup_printf ("%d/%u", plugin->sig_active + 1, json_array_get_length (signatures));
     // over the line of the cursor, from its column: what is typed stays in sight
-    edit_update_curs_col (edit);
-    x = r->x + edit->curs_col + edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET + frame
-        + edit_options.line_state_width;
-    y = r->y + edit->curs_row + EDIT_TEXT_VERTICAL_OFFSET + frame;
+    y = lsp_cursor_screen (edit, &x);
     lsp_note_show (plugin->signature, WIDGET (edit)->owner, title, NULL, out->str, y, x);
     g_free (title);
     g_string_free (out, TRUE);
@@ -1987,8 +2017,8 @@ lsp_signature_answer (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
         CLAMP (plugin->sig_active, 0, (int) json_array_get_length (signatures) - 1);
     plugin->sig_help = json_node_ref (ask->result);
     plugin->sig_encoding = ask->encoding;
-    // the list of a completion is in front: the help waits for it to go
-    if (!lsp_popup_shown (plugin->popup)
+    // the list of a completion over the line: the help waits for it to go
+    if (lsp_signature_room (plugin, w->edit)
         && plugin->host->window_current (plugin->host) == (void *) w->edit)
         lsp_signature_show (plugin, w);
 }
@@ -2012,7 +2042,7 @@ lsp_signature_tick (lsp_plugin_t *plugin)
         tty_refresh ();
         return;
     }
-    if (lsp_popup_shown (plugin->popup))
+    if (!lsp_signature_room (plugin, w->edit))
     {
         if (lsp_note_there (plugin->signature))
         {
@@ -3046,6 +3076,20 @@ lsp_session_key (lsp_plugin_t *plugin, WEdit *edit, int key)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether @typed, "(" or ",", was typed before the cursor of @edit to have the arguments
+   completed */
+static gboolean
+lsp_arguments_typed (const lsp_plugin_t *plugin, WEdit *edit, const char *typed)
+{
+    const off_t at = edit->buffer.curs1;
+
+    return typed != NULL && (strcmp (typed, "(") == 0 || strcmp (typed, ",") == 0)
+        && lsp_now (plugin, plugin->config->completion_on_arguments) && at >= 1
+        && edit_buffer_get_byte (&edit->buffer, at - 1) == typed[0];
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The trigger of the server just typed before the cursor: "->" or "::" before the character
    itself; NULL when it is none */
 static const char *
@@ -3268,7 +3312,9 @@ lsp_later (void *data)
         {
             WEdit *edit = EDIT (current);
             const lsp_window_t *w = lsp_window_of (plugin, edit);
-            const char *now = lsp_trigger_typed (edit, w, trigger);
+            const char *now = lsp_arguments_typed (plugin, edit, trigger)
+                ? trigger
+                : lsp_trigger_typed (edit, w, trigger);
 
             // a '>' that is no "->", a ':' that is no "::": nothing to complete
             if (trigger == NULL || now != NULL)
@@ -3695,6 +3741,24 @@ lsp_handle_key (void *data, int key, void *edit)
             return MC_EPR_OK;
         if (plugin->session != NULL || plugin->trigger != NULL)
             return MC_EPR_NOT_SUPPORTED;
+    }
+    // the arguments of a call: all that may be one, once the editor has typed the character
+    if ((key == '(' || key == ',') && lsp_now (plugin, plugin->config->completion_on_arguments))
+    {
+        const lsp_window_t *w = lsp_window_of (plugin, EDIT (edit));
+
+        if (w != NULL && w->server != NULL
+            && lsp_client_state (w->server->client) == LSP_CLIENT_RUNNING)
+        {
+            const char c[2] = { (char) key, '\0' };
+
+            g_free (plugin->trigger);
+            plugin->trigger = g_strdup (c);
+            lsp_ask_later (plugin);
+            if (lsp_client_trigger (w->server->client, "signatureHelpProvider", c))
+                (void) lsp_signature_start (plugin, EDIT (edit), FALSE);
+            return MC_EPR_NOT_SUPPORTED;
+        }
     }
     // as a word is typed, or after a dot: a completion, once the editor has typed the character
     if (lsp_now (plugin, plugin->config->completion_on_trigger) && key > ' ' && key < 0x100)

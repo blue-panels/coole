@@ -518,7 +518,7 @@ lsp_wizard_run (const char *system_file, const char *user_file)
 {
     GError *error = NULL;
     lsp_settings_t *settings = lsp_settings_load (system_file, user_file, &error);
-    int start, complete;
+    int start, complete, arguments;
     gboolean saved = FALSE;
 
     if (settings == NULL)
@@ -529,6 +529,7 @@ lsp_wizard_run (const char *system_file, const char *user_file)
     }
     start = lsp_settings_when (settings, "autostart");
     complete = lsp_settings_when (settings, "completion_on_trigger");
+    arguments = lsp_settings_when (settings, "completion_on_arguments");
     lsp_wizard_settings = settings;
     {
         const char *starts[] = {
@@ -541,6 +542,11 @@ lsp_wizard_run (const char *system_file, const char *user_file)
             _ ("On a pro&ject of -D"),
             _ ("Al&ways"),
         };
+        const char *arguments_when[] = {
+            _ ("Ne&ver: by Ctrl-Space"),
+            _ ("On a projec&t of -D"),
+            _ ("Alwa&ys"),
+        };
         quick_widget_t widgets[] = {
             QUICK_START_COLUMNS,
             QUICK_START_GROUPBOX (_ ("Start a server by itself")),
@@ -549,6 +555,9 @@ lsp_wizard_run (const char *system_file, const char *user_file)
             QUICK_NEXT_COLUMN,
             QUICK_START_GROUPBOX (_ ("Complete after a dot")),
             QUICK_RADIO (3, completes, &complete, NULL),
+            QUICK_STOP_GROUPBOX,
+            QUICK_START_GROUPBOX (_ ("Complete the arguments")),
+            QUICK_RADIO (3, arguments_when, &arguments, NULL),
             QUICK_STOP_GROUPBOX,
             QUICK_STOP_COLUMNS,
             QUICK_START_BUTTONS (TRUE, TRUE),
@@ -571,6 +580,7 @@ lsp_wizard_run (const char *system_file, const char *user_file)
         {
             lsp_settings_set_when (settings, "autostart", (lsp_when_t) start);
             lsp_settings_set_when (settings, "completion_on_trigger", (lsp_when_t) complete);
+            lsp_settings_set_when (settings, "completion_on_arguments", (lsp_when_t) arguments);
             saved = lsp_settings_save (settings, &error);
             if (!saved)
             {

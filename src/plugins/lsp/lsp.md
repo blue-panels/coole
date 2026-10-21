@@ -193,6 +193,13 @@ project of -D only; "always"; "never", by Ctrl-Space only. When the server has
 nothing to offer there, nothing is shown. Parameter info opens by itself after
 "(" and "," as the list does, by Alt-( only with "never".
 
+**completion_on_arguments**
+: The list of completion shown by itself after the "(" of a call and after
+each ",": all that may be an argument, as the server ranks it. "never", the
+default: a list at each call is in the way, and Ctrl-Space shows it; "ide", on
+a project of -D only; "always". Parameter info stays over the line while the
+list is under it.
+
 **command**
 : The program and its arguments, without a shell. ${build_dir} in an
 argument is the build directory of meson or cmake of the project, in its root

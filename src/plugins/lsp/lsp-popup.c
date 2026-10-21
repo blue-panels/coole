@@ -420,6 +420,14 @@ lsp_popup_shown (const lsp_popup_t *popup)
 
 /* --------------------------------------------------------------------------------------------- */
 
+int
+lsp_popup_top (const lsp_popup_t *popup)
+{
+    return lsp_popup_shown (popup) ? CONST_WIDGET (popup->widget)->rect.y : -1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 void
 lsp_popup_draw (lsp_popup_t *popup)
 {
