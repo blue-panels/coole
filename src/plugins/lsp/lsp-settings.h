@@ -33,7 +33,7 @@ void lsp_settings_free (lsp_settings_t *settings);
 /* The user's file, with what has been changed; FALSE with @error when it cannot be written */
 gboolean lsp_settings_save (lsp_settings_t *settings, GError **error);
 
-/* "autostart" or "completion_on_trigger" */
+/* "autostart", "completion_on_trigger" or "completion_on_arguments" */
 lsp_when_t lsp_settings_when (const lsp_settings_t *settings, const char *key);
 void lsp_settings_set_when (lsp_settings_t *settings, const char *key, lsp_when_t when);
 

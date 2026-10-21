@@ -45,10 +45,12 @@ typedef struct
 {
     lsp_when_t autostart;
     lsp_when_t completion_on_trigger;
-    GPtrArray *backends;  // lsp_backend_t, the user's first
+    lsp_when_t completion_on_arguments;  // the list after "(" and ","
+    GPtrArray *backends;                 // lsp_backend_t, the user's first
     // whether the file said them: those of the user's file take the place of the system's
     gboolean has_autostart;
     gboolean has_completion_on_trigger;
+    gboolean has_completion_on_arguments;
 } lsp_config_t;
 
 /*** global variables defined in .c file *********************************************************/

@@ -1,6 +1,7 @@
 {
   "autostart": "ide",
   "completion_on_trigger": "ide",
+  "completion_on_arguments": "never",
   "backends": [
     {
       "id": "clangd",

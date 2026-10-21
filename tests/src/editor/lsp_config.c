@@ -90,7 +90,8 @@ test_parse (void)
     JsonNode *setting;
 
     config = lsp_config_parse (
-        "{\"autostart\":\"always\",\"completion_on_trigger\":true,\"backends\":["
+        "{\"autostart\":\"always\",\"completion_on_trigger\":true,"
+        "\"completion_on_arguments\":\"ide\",\"backends\":["
         "{\"id\":\"sh\",\"command\":[\"sh\",\"-c\",\"true\"],"
         "\"extensions\":{\".c\":\"c\",\".tar.c\":\"tarc\",\".C\":\"cpp\"},"
         "\"root_markers\":[\"*.proj\"],\"single_file\":false,\"autostart\":\"never\","
@@ -104,6 +105,7 @@ test_parse (void)
     g_assert_nonnull (config);
     g_assert_cmpint (config->autostart, ==, LSP_WHEN_ALWAYS);
     g_assert_cmpint (config->completion_on_trigger, ==, LSP_WHEN_ALWAYS);
+    g_assert_cmpint (config->completion_on_arguments, ==, LSP_WHEN_IDE);
     g_assert_cmpuint (config->backends->len, ==, 2);
 
     backend = lsp_config_backend_for (config, "/x/y.c", &language);
@@ -185,6 +187,8 @@ test_load (void)
     g_assert_cmpint (config->autostart, ==, LSP_WHEN_NEVER);
     // nor completion_on_trigger: the default of both files, on a project of -D
     g_assert_cmpint (config->completion_on_trigger, ==, LSP_WHEN_IDE);
+    // nor completion_on_arguments: never, a list at each call being in the way
+    g_assert_cmpint (config->completion_on_arguments, ==, LSP_WHEN_NEVER);
     g_assert_cmpstr (lsp_config_backend_for (config, "/f.a", &language)->id, ==, "c");
     g_assert_null (lsp_config_backend_for (config, "/f.x", &language));
     lsp_config_free (config);

@@ -257,6 +257,8 @@ lsp_config_new (void)
 
     config->autostart = LSP_WHEN_IDE;
     config->completion_on_trigger = LSP_WHEN_IDE;
+    // a list at each call is in the way, unless the user wants it
+    config->completion_on_arguments = LSP_WHEN_NEVER;
     config->backends = g_ptr_array_new_with_free_func (lsp_backend_free);
     return config;
 }
@@ -400,6 +402,13 @@ lsp_config_parse (const char *json, gssize len, GError **error)
         goto fail;
     config->has_completion_on_trigger = member != NULL;
 
+    member = json_object_get_member (o, "completion_on_arguments");
+    if (member != NULL
+        && !lsp_config_when (member, "completion_on_arguments", &config->completion_on_arguments,
+                             error))
+        goto fail;
+    config->has_completion_on_arguments = member != NULL;
+
     member = json_object_get_member (o, "backends");
     if (member != NULL)
     {
@@ -477,6 +486,8 @@ lsp_config_load (const char *system_file, const char *user_file, GString *errors
                 config->autostart = parsed[0]->autostart;
             if (!config->has_completion_on_trigger)
                 config->completion_on_trigger = parsed[0]->completion_on_trigger;
+            if (!config->has_completion_on_arguments)
+                config->completion_on_arguments = parsed[0]->completion_on_arguments;
 
             // the system's backends the user has not got, after the user's
             for (b = 0; b < parsed[0]->backends->len; b++)

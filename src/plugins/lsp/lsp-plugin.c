@@ -81,6 +81,8 @@
 
 /* the lines of the source of a definition Hover shows at most */
 #define LSP_HOVER_SOURCE_LINES 10
+/* the lines the help of a call shows at once: the code typed under it stays in sight */
+#define LSP_SIGNATURE_LINES 8
 
 /*** file scope type declarations ****************************************************************/
 
@@ -100,6 +102,7 @@ typedef enum
     LSP_CMD_SETUP,
     LSP_CMD_REFERENCES,
     LSP_CMD_HISTORY,
+    LSP_CMD_SIGNATURE,
     LSP_CMD_COUNT,
     LSP_CMD_NONE = LSP_CMD_COUNT
 } lsp_cmd_t;
@@ -152,8 +155,9 @@ typedef enum
     LSP_ASK_COMPLETION,
     LSP_ASK_DECLARATION,
     LSP_ASK_REFERENCES,
-    LSP_ASK_PREVIEW,  // the definition, its source shown in Hover
-    LSP_ASK_SYMBOLS   // the symbols of the file of the definition, for its extent
+    LSP_ASK_PREVIEW,   // the definition, its source shown in Hover
+    LSP_ASK_SYMBOLS,   // the symbols of the file of the definition, for its extent
+    LSP_ASK_SIGNATURE  // the parameters of the call at the cursor
 } lsp_ask_kind_t;
 
 /* Hover waiting for the source of the definition of its name */
@@ -180,6 +184,7 @@ typedef struct
     gboolean triggered;  // by a character typed, not by the user: nothing found is no news
     guint64 session;     // of a completion: the session it is of
     guint64 preview;     // of the source of a definition: the Hover it is of
+    guint64 signature;   // of the parameters of a call: the help it is of
     lsp_request_status_t status;
     JsonNode *result;
     char *error;
@@ -230,6 +235,18 @@ struct lsp_plugin_t
     // the window and the place of the cursor the note is of: a click in the line moves no line
     guint64 note_window;
     off_t note_offset;
+    // the parameters of the call the cursor is in, over its line, as it is typed
+    lsp_note_t *signature;
+    guint64 sig_id;  // the help of the moment, 0 for none
+    guint64 next_signature;
+    guint64 sig_window;  // its window
+    gboolean sig_told;   // asked for by the user: nothing found is said
+    gboolean sig_asking;
+    off_t sig_offset;  // the cursor and the text as last asked for
+    guint64 sig_revision;
+    JsonNode *sig_help;  // the last answer, SignatureHelp
+    lsp_encoding_t sig_encoding;
+    int sig_active;  // the signature shown, of several
 
     // the ticks: a thread writes a byte in the pipe, the main loop reads it
     int tick_pipe[2];
@@ -252,6 +269,7 @@ static void lsp_later (void *data);
 static void lsp_session_end (lsp_plugin_t *plugin);
 static gboolean lsp_session_in_word (const lsp_session_t *s, WEdit *edit, off_t end);
 static char *lsp_menu_shortcut (int action_index);
+static void lsp_signature_tick (lsp_plugin_t *plugin);
 
 /*** file scope variables ************************************************************************/
 
@@ -270,6 +288,7 @@ static const mc_ep_command_t lsp_commands[LSP_CMD_COUNT + 1] = {
     { "LspSetup", N_ ("Set the project up for its language server"), NULL },
     { "LspReferences", N_ ("Find the uses of the name"), NULL },
     { "LspHistory", N_ ("The places the jumps went from and to"), NULL },
+    { "LspSignature", N_ ("The parameters of the call at the cursor"), "alt-lparenthesis" },
     { NULL, NULL, NULL },
 };
 
@@ -1048,6 +1067,7 @@ lsp_tick (lsp_plugin_t *plugin)
                                          - (plugin->session->pending != 0 ? 1 : 0)))
             lsp_session_end (plugin);
     }
+    lsp_signature_tick (plugin);
     // the note goes too once the cursor is put elsewhere, in its line too
     if (lsp_note_there (plugin->note))
     {
@@ -1141,12 +1161,12 @@ lsp_answered (lsp_client_t *client, lsp_request_status_t status, JsonNode *resul
         plugin->completion = 0;
     }
     /* given up, or the server is gone: nothing to show; but a completion waits for its answer,
-       and is ended by one that will not come, and Hover waits for the source of the definition,
-       and is shown without it */
+       and is ended by one that will not come, Hover waits for the source of the definition, and
+       is shown without it, and the help of a call is asked for again once answered */
     if (status == LSP_REQUEST_CANCELLED
         || (status != LSP_REQUEST_OK && status != LSP_REQUEST_ERROR
             && ask->kind != LSP_ASK_COMPLETION && ask->kind != LSP_ASK_PREVIEW
-            && ask->kind != LSP_ASK_SYMBOLS))
+            && ask->kind != LSP_ASK_SYMBOLS && ask->kind != LSP_ASK_SIGNATURE))
     {
         lsp_ask_free (ask);
         return;
@@ -1208,12 +1228,15 @@ lsp_window_served (lsp_plugin_t *plugin, WEdit *edit, gboolean tell)
 static gboolean
 lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *trigger)
 {
-    static const char *const methods[] = { "textDocument/hover",      "textDocument/definition",
-                                           "textDocument/completion", "textDocument/declaration",
-                                           "textDocument/references", "textDocument/definition" };
-    static const char *const providers[] = { "hoverProvider",      "definitionProvider",
-                                             "completionProvider", "declarationProvider",
-                                             "referencesProvider", "definitionProvider" };
+    static const char *const methods[] = {
+        "textDocument/hover",          "textDocument/definition",   "textDocument/completion",
+        "textDocument/declaration",    "textDocument/references",   "textDocument/definition",
+        "textDocument/documentSymbol", "textDocument/signatureHelp"
+    };
+    static const char *const providers[] = { "hoverProvider",          "definitionProvider",
+                                             "completionProvider",     "declarationProvider",
+                                             "referencesProvider",     "definitionProvider",
+                                             "documentSymbolProvider", "signatureHelpProvider" };
     lsp_window_t *w = lsp_window_served (plugin, edit, trigger == NULL);
     lsp_client_t *client;
     const char *why = NULL;
@@ -1248,6 +1271,7 @@ lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *tri
     ask->triggered = trigger != NULL;
     ask->session = kind == LSP_ASK_COMPLETION && plugin->session != NULL ? plugin->session->id : 0;
     ask->preview = kind == LSP_ASK_PREVIEW && plugin->preview != NULL ? plugin->preview->id : 0;
+    ask->signature = kind == LSP_ASK_SIGNATURE ? plugin->sig_id : 0;
     ask->encoding = lsp_client_encoding (client);
     ask->text = g_bytes_new_take (text, len);
     (void) lsp_text_position (text, len, (gsize) ask->offset, ask->encoding, &line, &character);
@@ -1272,9 +1296,15 @@ lsp_ask (lsp_plugin_t *plugin, WEdit *edit, lsp_ask_kind_t kind, const char *tri
     {
         JsonObject *context = json_object_new ();
 
-        json_object_set_int_member (context, "triggerKind", trigger != NULL ? 2 : 1);
-        if (trigger != NULL)
+        /* a character the server completes after; the "(" of the arguments is none of them, and
+           the list is asked for as by the user */
+        if (trigger != NULL && lsp_client_completion_trigger (client, trigger))
+        {
+            json_object_set_int_member (context, "triggerKind", 2);
             json_object_set_string_member (context, "triggerCharacter", trigger);
+        }
+        else
+            json_object_set_int_member (context, "triggerKind", 1);
         json_object_set_object_member (params, "context", context);
         // the completion of before is of no use now
         if (plugin->completing != NULL && plugin->completion != 0)
@@ -1614,6 +1644,554 @@ lsp_show_hover (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask, JsonNode 
     g_free (read_key);
     g_free (shown);
     g_string_free (out, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* The help of a call */
+
+/* The documentation of a signature or a parameter, a string or MarkupContent: its text, NULL
+   when there is none, and whether it is Markdown */
+static const char *
+lsp_doc_value (JsonNode *doc, gboolean *markdown)
+{
+    const char *value = NULL;
+
+    *markdown = FALSE;
+    if (doc != NULL && JSON_NODE_HOLDS_VALUE (doc)
+        && json_node_get_value_type (doc) == G_TYPE_STRING)
+        value = json_node_get_string (doc);
+    else if (doc != NULL && JSON_NODE_HOLDS_OBJECT (doc))
+    {
+        value = lsp_member_string (json_node_get_object (doc), "value");
+        *markdown =
+            g_strcmp0 (lsp_member_string (json_node_get_object (doc), "kind"), "markdown") == 0;
+    }
+    return value != NULL && *value != '\0' ? value : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A text of documentation, Markdown or not, as the text of a note; NULL when it is empty */
+static char *
+lsp_doc_note (const char *value, gboolean markdown)
+{
+    char *shown, *note;
+
+    if (value == NULL)
+        return NULL;
+    // its controls gone first: the note has its marks in them
+    shown = lsp_shown (value, 50);
+    if (!markdown)
+        return shown;
+    note = lsp_markdown_note (shown);
+    g_free (shown);
+    if (*note == '\0')
+    {
+        g_free (note);
+        return NULL;
+    }
+    return note;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static JsonArray *
+lsp_signatures (JsonNode *help)
+{
+    JsonNode *node = help != NULL && JSON_NODE_HOLDS_OBJECT (help)
+        ? lsp_member (json_node_get_object (help), "signatures")
+        : NULL;
+
+    return node != NULL && JSON_NODE_HOLDS_ARRAY (node)
+            && json_array_get_length (json_node_get_array (node)) > 0
+        ? json_node_get_array (node)
+        : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The last word of the @len bytes of @label, the brackets of an array after it; NULL when there
+   is none */
+static char *
+lsp_last_word (const char *label, gsize len, gsize *at)
+{
+    gsize end = len, start;
+
+    while (end > 0 && !(g_ascii_isalnum (label[end - 1]) || label[end - 1] == '_'))
+        end--;
+    for (start = end; start > 0 && (g_ascii_isalnum (label[start - 1]) || label[start - 1] == '_');
+         start--)
+        ;
+    if (at != NULL)
+        *at = start;
+    return end > start ? g_strndup (label + start, end - start) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The name of a parameter in its label, @len bytes, NULL when it has none, as "..." or a type
+   alone; and the bytes of its type in it, @type_len 0 when they are not known: "name: type" of
+   Rust, Python, TypeScript, "mut name" too, the type to a default; "type name" of C else */
+static char *
+lsp_parameter_name (const char *label, gsize len, gsize *type_from, gsize *type_len)
+{
+    gsize i, at = 0, from = 0, to = 0;
+    char *name;
+
+    for (i = 0; i < len; i++)
+        if (label[i] == ':' && (i + 1 >= len || label[i + 1] != ':')
+            && (i == 0 || label[i - 1] != ':'))
+            break;
+    if (i < len)
+    {
+        name = lsp_last_word (label, i, NULL);
+        from = i + 1;
+        to = from;
+        while (to < len && !(label[to] == '=' && (to + 1 >= len || label[to + 1] != '=')))
+            to++;
+    }
+    else
+    {
+        name = lsp_last_word (label, len, &at);
+        // a type alone: no name before it
+        if (name != NULL && at == 0)
+        {
+            to = len;
+            g_free (name);
+            name = NULL;
+        }
+        else
+            to = at;
+    }
+    if (type_from != NULL)
+        *type_from = from;
+    if (type_len != NULL)
+        *type_len = to - from;
+    return name;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The bytes of the parameter @param in @label: its label, a string in it or the offsets of it */
+static gboolean
+lsp_parameter_place (const char *label, JsonObject *param, lsp_encoding_t encoding, gsize *from,
+                     gsize *to)
+{
+    JsonNode *node = lsp_member (param, "label");
+    const gsize len = strlen (label);
+
+    if (node == NULL)
+        return FALSE;
+    if (JSON_NODE_HOLDS_VALUE (node) && json_node_get_value_type (node) == G_TYPE_STRING)
+    {
+        const char *name = json_node_get_string (node);
+        const char *at = *name != '\0' ? strstr (label, name) : NULL;
+
+        if (at == NULL)
+            return FALSE;
+        *from = (gsize) (at - label);
+        *to = *from + strlen (name);
+        return TRUE;
+    }
+    if (JSON_NODE_HOLDS_ARRAY (node) && json_array_get_length (json_node_get_array (node)) == 2)
+    {
+        JsonArray *offsets = json_node_get_array (node);
+
+        // offsets in the units of the positions, in a label of one line
+        return lsp_text_offset (label, len, 0, json_array_get_int_element (offsets, 0), encoding,
+                                from)
+            && lsp_text_offset (label, len, 0, json_array_get_int_element (offsets, 1), encoding,
+                                to)
+            && *from <= *to;
+    }
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+lsp_signature_end (lsp_plugin_t *plugin)
+{
+    if (lsp_note_there (plugin->signature))
+        lsp_note_hide (plugin->signature);
+    // a request out is answered for no help
+    plugin->sig_id = 0;
+    plugin->sig_window = 0;
+    plugin->sig_told = FALSE;
+    if (plugin->sig_help != NULL)
+        json_node_unref (plugin->sig_help);
+    plugin->sig_help = NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The row of the screen of the cursor of @edit, and its column */
+static int
+lsp_cursor_screen (WEdit *edit, int *x)
+{
+    const WRect *r = &CONST_WIDGET (edit)->rect;
+    const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1;
+
+    edit_update_curs_col (edit);
+    *x = r->x + edit->curs_col + edit->start_col + EDIT_TEXT_HORIZONTAL_OFFSET + frame
+        + edit_options.line_state_width;
+    return r->y + edit->curs_row + EDIT_TEXT_VERTICAL_OFFSET + frame;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The signature shown of the last answer, its label, and its parameter of the moment with the
+   bytes of it in the label, from == to when they are not known; FALSE when there is none, and
+   NULL for a parameter when there is none */
+static gboolean
+lsp_signature_parameter (const lsp_plugin_t *plugin, JsonObject **sig_out, const char **label_out,
+                         JsonObject **param_out, gsize *from, gsize *to)
+{
+    JsonArray *signatures = lsp_signatures (plugin->sig_help);
+    JsonObject *help, *sig, *param = NULL;
+    JsonArray *params = NULL;
+    JsonNode *node;
+    const char *label;
+    gint64 active;
+    gsize f = 0, t = 0;
+
+    if (signatures == NULL)
+        return FALSE;
+    help = json_node_get_object (plugin->sig_help);
+    node = json_array_get_element (signatures, (guint) plugin->sig_active);
+    if (node == NULL || !JSON_NODE_HOLDS_OBJECT (node))
+        return FALSE;
+    sig = json_node_get_object (node);
+    label = lsp_member_string (sig, "label");
+    if (label == NULL)
+        return FALSE;
+    node = lsp_member (sig, "parameters");
+    if (node != NULL && JSON_NODE_HOLDS_ARRAY (node))
+        params = json_node_get_array (node);
+    // that of the signature first, of the help else
+    active = lsp_member (sig, "activeParameter") != NULL
+        ? lsp_member_int (sig, "activeParameter", 0)
+        : lsp_member_int (help, "activeParameter", 0);
+    if (params != NULL && active >= 0 && active < (gint64) json_array_get_length (params)
+        && JSON_NODE_HOLDS_OBJECT (json_array_get_element (params, (guint) active)))
+        param = json_array_get_object_element (params, (guint) active);
+    if (param != NULL && !lsp_parameter_place (label, param, plugin->sig_encoding, &f, &t))
+        f = t = 0;
+    if (sig_out != NULL)
+        *sig_out = sig;
+    if (label_out != NULL)
+        *label_out = label;
+    if (param_out != NULL)
+        *param_out = param;
+    if (from != NULL)
+        *from = f;
+    if (to != NULL)
+        *to = t;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A type as it is compared: no "const", no spaces; "const char *" is "char*" */
+static char *
+lsp_type_key (const char *type, gsize len)
+{
+    GString *out = g_string_new (NULL);
+    gsize i = 0;
+
+    while (i < len)
+    {
+        if (strncmp (type + i, "const", 5) == 0 && (i == 0 || !g_ascii_isalnum (type[i - 1]))
+            && (i + 5 >= len || !(g_ascii_isalnum (type[i + 5]) || type[i + 5] == '_')))
+            i += 5;
+        else
+        {
+            if (!g_ascii_isspace (type[i]))
+                g_string_append_c (out, type[i]);
+            i++;
+        }
+    }
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The type of the parameter of the moment of the help of a call in the window @window_id, as
+   lsp_type_key () has it; NULL when it is not known */
+static char *
+lsp_signature_expected (const lsp_plugin_t *plugin, guint64 window_id)
+{
+    const char *label;
+    gsize from, to, type_from, type_len;
+    char *key;
+
+    if (plugin->sig_id == 0 || plugin->sig_window != window_id
+        || !lsp_signature_parameter (plugin, NULL, &label, NULL, &from, &to) || to <= from)
+        return NULL;
+    g_free (lsp_parameter_name (label + from, to - from, &type_from, &type_len));
+    key = lsp_type_key (label + from + type_from, type_len);
+    if (*key == '\0' || strcmp (key, "...") == 0)
+    {
+        g_free (key);
+        return NULL;
+    }
+    return key;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the help of a call has its room over the line of @edit: no list of a completion there,
+   and a box of a line at least over it */
+static gboolean
+lsp_signature_room (lsp_plugin_t *plugin, WEdit *edit)
+{
+    const int top = lsp_popup_top (plugin->popup);
+    int x;
+    const int y = lsp_cursor_screen (edit, &x);
+
+    return top < 0 || (top > y && y >= 3);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The help of the last answer, over the line of the cursor: the signature, its parameter of the
+   moment hot, and what the server says of them */
+static void
+lsp_signature_show (lsp_plugin_t *plugin, lsp_window_t *w)
+{
+    JsonArray *signatures = lsp_signatures (plugin->sig_help);
+    JsonObject *sig;
+    const char *label;
+    GString *out;
+    char *title = NULL, *doc = NULL;
+    const char *value;
+    gboolean markdown;
+    WEdit *edit = w->edit;
+    int x, y;
+
+    if (!lsp_signature_parameter (plugin, &sig, &label, NULL, NULL, NULL))
+        return;
+
+    out = g_string_new (NULL);
+    {
+        JsonObject *param = NULL;
+        gsize from = 0, to = 0;
+        char *part;
+
+        if (lsp_signature_parameter (plugin, NULL, NULL, &param, &from, &to) && to > from)
+        {
+            char *before = g_strndup (label, from);
+            char *name = g_strndup (label + from, to - from);
+
+            part = lsp_shown (before, 1);
+            g_string_append (out, part);
+            g_free (part);
+            part = lsp_shown (name, 1);
+            g_string_append_printf (out, "%c%s%c", LSP_NOTE_HOT_ON, part, LSP_NOTE_HOT_OFF);
+            g_free (part);
+            part = lsp_shown (label + to, 1);
+            g_string_append (out, part);
+            g_free (part);
+            g_free (before);
+            g_free (name);
+        }
+        else
+        {
+            part = lsp_shown (label, 1);
+            g_string_append (out, part);
+            g_free (part);
+        }
+        /* what the parameter is, as the server says it, or as the comment of the function says
+           it, "@param"; else what the function does, in a word, not all of its comment */
+        markdown = FALSE;
+        value = lsp_doc_value (lsp_member (sig, "documentation"), &markdown);
+        if (param != NULL)
+        {
+            gboolean param_markdown;
+            const char *own = lsp_doc_value (lsp_member (param, "documentation"), &param_markdown);
+            char *name =
+                to > from ? lsp_parameter_name (label + from, to - from, NULL, NULL) : NULL;
+
+            if (own != NULL)
+                doc = lsp_doc_note (own, param_markdown);
+            else
+            {
+                char *said = lsp_markdown_param (value, name);
+
+                doc = lsp_doc_note (said, markdown);
+                g_free (said);
+            }
+            if (doc != NULL && name != NULL)
+            {
+                // the name, hot as in the signature
+                part = g_strdup_printf ("%c%s%c %s", LSP_NOTE_HOT_ON, name, LSP_NOTE_HOT_OFF, doc);
+                g_free (doc);
+                doc = part;
+            }
+            g_free (name);
+        }
+        if (doc == NULL)
+        {
+            char *brief = lsp_markdown_brief (value);
+
+            doc = lsp_doc_note (brief, markdown);
+            g_free (brief);
+        }
+        if (doc != NULL)
+            g_string_append_printf (out, "\n%c\n%s", LSP_NOTE_RULE, doc);
+        g_free (doc);
+    }
+
+    if (json_array_get_length (signatures) > 1)
+        title =
+            g_strdup_printf ("%d/%u", plugin->sig_active + 1, json_array_get_length (signatures));
+    // over the line of the cursor, from its column: what is typed stays in sight
+    y = lsp_cursor_screen (edit, &x);
+    lsp_note_show (plugin->signature, WIDGET (edit)->owner, title, NULL, out->str, y, x);
+    g_free (title);
+    g_string_free (out, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The help of the call at the cursor of @edit, asked for at the next tick and as the cursor
+   moves; told when the user asks for it and there is none */
+static gboolean
+lsp_signature_start (lsp_plugin_t *plugin, WEdit *edit, gboolean told)
+{
+    lsp_window_t *w = lsp_window_served (plugin, edit, told);
+
+    if (w == NULL)
+        return FALSE;
+    if (!lsp_client_supports (w->server->client, "signatureHelpProvider"))
+    {
+        if (told)
+            plugin->host->message (plugin->host, D_NORMAL, _ ("Language server"),
+                                   _ ("The language server cannot do that."));
+        return FALSE;
+    }
+    if (plugin->sig_window != w->id || plugin->sig_id == 0)
+    {
+        lsp_signature_end (plugin);
+        plugin->sig_id = ++plugin->next_signature;
+        plugin->sig_window = w->id;
+        plugin->sig_active = 0;
+    }
+    plugin->sig_told = plugin->sig_told || told;
+    // asked for again, at once
+    plugin->sig_offset = -1;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The signature before or after the one shown, when there are several; FALSE else */
+static gboolean
+lsp_signature_next (lsp_plugin_t *plugin, int by)
+{
+    JsonArray *signatures = lsp_signatures (plugin->sig_help);
+    lsp_window_t *w = lsp_window_by_id (plugin, plugin->sig_window);
+    int count;
+
+    if (signatures == NULL || w == NULL || json_array_get_length (signatures) < 2)
+        return FALSE;
+    count = (int) json_array_get_length (signatures);
+    plugin->sig_active = (plugin->sig_active + by + count) % count;
+    lsp_signature_show (plugin, w);
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The answer of the server: the help shown, or ended when the cursor is in no call */
+static void
+lsp_signature_answer (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
+{
+    const gboolean told = plugin->sig_told;
+    JsonArray *signatures;
+
+    plugin->sig_asking = FALSE;
+    // the answer of a help ended since
+    if (plugin->sig_id == 0 || ask->signature != plugin->sig_id)
+        return;
+    if (w == NULL)
+    {
+        lsp_signature_end (plugin);
+        return;
+    }
+    plugin->sig_told = FALSE;
+    signatures = ask->status == LSP_REQUEST_OK ? lsp_signatures (ask->result) : NULL;
+    if (signatures == NULL)
+    {
+        if (told && ask->status == LSP_REQUEST_ERROR)
+            plugin->host->message (plugin->host, D_ERROR, _ ("Language server"), ask->error);
+        else if (told)
+            plugin->host->message (plugin->host, D_NORMAL, _ ("Language server"),
+                                   _ ("The language server sees no call here."));
+        lsp_signature_end (plugin);
+        return;
+    }
+    // the signature the server says, the first time; the one the user went to, after
+    if (plugin->sig_help == NULL)
+        plugin->sig_active =
+            (int) lsp_member_int (json_node_get_object (ask->result), "activeSignature", 0);
+    else
+        json_node_unref (plugin->sig_help);
+    plugin->sig_active =
+        CLAMP (plugin->sig_active, 0, (int) json_array_get_length (signatures) - 1);
+    plugin->sig_help = json_node_ref (ask->result);
+    plugin->sig_encoding = ask->encoding;
+    // the list of a completion over the line: the help waits for it to go
+    if (lsp_signature_room (plugin, w->edit)
+        && plugin->host->window_current (plugin->host) == (void *) w->edit)
+        lsp_signature_show (plugin, w);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* At a tick: the help asked for again once the cursor or the text has moved, out of the way of
+   the list of a completion, ended with its window out of the front */
+static void
+lsp_signature_tick (lsp_plugin_t *plugin)
+{
+    lsp_window_t *w;
+
+    if (plugin->sig_id == 0)
+        return;
+    w = lsp_window_by_id (plugin, plugin->sig_window);
+    if (w == NULL || plugin->host->window_current (plugin->host) != (void *) w->edit)
+    {
+        // out of a key: no one draws the screen after it
+        lsp_signature_end (plugin);
+        tty_refresh ();
+        return;
+    }
+    if (!lsp_signature_room (plugin, w->edit))
+    {
+        if (lsp_note_there (plugin->signature))
+        {
+            lsp_note_hide (plugin->signature);
+            tty_refresh ();
+        }
+        return;
+    }
+    if (plugin->sig_asking)
+        return;
+    if (w->edit->buffer.curs1 != plugin->sig_offset
+        || plugin->host->get_revision (plugin->host, w->edit) != plugin->sig_revision)
+    {
+        plugin->sig_offset = w->edit->buffer.curs1;
+        plugin->sig_revision = plugin->host->get_revision (plugin->host, w->edit);
+        plugin->sig_asking =
+            lsp_ask (plugin, w->edit, LSP_ASK_SIGNATURE, plugin->sig_told ? NULL : "(");
+        if (!plugin->sig_asking)
+        {
+            lsp_signature_end (plugin);
+            tty_refresh ();
+        }
+    }
+    else if (!lsp_note_there (plugin->signature) && plugin->sig_help != NULL)
+        lsp_signature_show (plugin, w);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2245,6 +2823,7 @@ lsp_kind_letter (gint64 kind)
 typedef struct
 {
     JsonObject *item;
+    gboolean typed;  // of the type of the parameter the cursor is in: first
     int score;
     const char *sort;
     guint index;  // in the order of the server
@@ -2257,6 +2836,8 @@ lsp_choice_cmp (gconstpointer a, gconstpointer b)
     const lsp_choice_t *y = *(const lsp_choice_t *const *) b;
     int c;
 
+    if (x->typed != y->typed)
+        return x->typed ? -1 : 1;
     if (x->score != y->score)
         return x->score > y->score ? -1 : 1;
     c = strcmp (x->sort, y->sort);
@@ -2297,6 +2878,9 @@ lsp_session_show (lsp_plugin_t *plugin, lsp_window_t *w, const char *word)
     WEdit *edit = w->edit;
     const WRect *r = &CONST_WIDGET (edit)->rect;
     const int frame = EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 1;
+    // in the arguments of a call: what is of the type of the parameter first, as the smart
+    // completion of the IDEs
+    char *expected = lsp_signature_expected (plugin, s->window_id);
     guint i;
     int x, y;
 
@@ -2327,8 +2911,17 @@ lsp_session_show (lsp_plugin_t *plugin, lsp_window_t *w, const char *word)
         if (choice->sort == NULL)
             choice->sort = label;
         choice->index = i;
+        if (expected != NULL && lsp_member_string (item, "detail") != NULL)
+        {
+            const char *detail = lsp_member_string (item, "detail");
+            char *key = lsp_type_key (detail, strlen (detail));
+
+            choice->typed = strcmp (key, expected) == 0;
+            g_free (key);
+        }
         g_ptr_array_add (choices, choice);
     }
+    g_free (expected);
     if (choices->len == 0)
     {
         g_ptr_array_free (choices, TRUE);
@@ -2622,6 +3215,20 @@ lsp_session_key (lsp_plugin_t *plugin, WEdit *edit, int key)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether @typed, "(" or ",", was typed before the cursor of @edit to have the arguments
+   completed */
+static gboolean
+lsp_arguments_typed (const lsp_plugin_t *plugin, WEdit *edit, const char *typed)
+{
+    const off_t at = edit->buffer.curs1;
+
+    return typed != NULL && (strcmp (typed, "(") == 0 || strcmp (typed, ",") == 0)
+        && lsp_now (plugin, plugin->config->completion_on_arguments) && at >= 1
+        && edit_buffer_get_byte (&edit->buffer, at - 1) == typed[0];
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The trigger of the server just typed before the cursor: "->" or "::" before the character
    itself; NULL when it is none */
 static const char *
@@ -2796,6 +3403,9 @@ lsp_later (void *data)
         else if (ask->kind == LSP_ASK_COMPLETION && ask->window_id != 0)
             // the list follows what is typed: the text has changed since, and that is right
             lsp_session_answer (plugin, w, ask);
+        else if (ask->kind == LSP_ASK_SIGNATURE)
+            // so does the help of a call
+            lsp_signature_answer (plugin, w, ask);
         else if (ask->window_id == 0)
             // a message of a server
             plugin->host->message (plugin->host, D_ERROR, _ ("Language server"), error);
@@ -2841,7 +3451,9 @@ lsp_later (void *data)
         {
             WEdit *edit = EDIT (current);
             const lsp_window_t *w = lsp_window_of (plugin, edit);
-            const char *now = lsp_trigger_typed (edit, w, trigger);
+            const char *now = lsp_arguments_typed (plugin, edit, trigger)
+                ? trigger
+                : lsp_trigger_typed (edit, w, trigger);
 
             // a '>' that is no "->", a ':' that is no "::": nothing to complete
             if (trigger == NULL || now != NULL)
@@ -3107,6 +3719,8 @@ lsp_run_command (lsp_plugin_t *plugin, lsp_cmd_t cmd, WEdit *edit)
         return lsp_ask (plugin, edit, LSP_ASK_DEFINITION, NULL);
     case LSP_CMD_HOVER:
         return lsp_ask (plugin, edit, LSP_ASK_HOVER, NULL);
+    case LSP_CMD_SIGNATURE:
+        return lsp_signature_start (plugin, edit, TRUE);
     case LSP_CMD_PROBLEMS:
         lsp_show_problems (plugin, edit);
         return TRUE;
@@ -3233,6 +3847,19 @@ lsp_handle_key (void *data, int key, void *edit)
     // out of sight, the screen too small for it: it goes all the same
     else if (lsp_note_there (plugin->note))
         lsp_note_hide (plugin->note);
+    /* the help of a call takes no key but Esc, which takes it away, and Alt-Up and Alt-Down,
+       which go through the signatures when there are several */
+    if (lsp_note_shown (plugin->signature))
+    {
+        if (key == ESC_CHAR)
+        {
+            lsp_signature_end (plugin);
+            return MC_EPR_OK;
+        }
+        if ((key == ALT (KEY_UP) || key == ALT (KEY_DOWN))
+            && lsp_signature_next (plugin, key == ALT (KEY_UP) ? -1 : 1))
+            return MC_EPR_OK;
+    }
     if (cmd != LSP_CMD_NONE)
     {
         // a file no server serves: the key is the editor's
@@ -3253,6 +3880,24 @@ lsp_handle_key (void *data, int key, void *edit)
             return MC_EPR_OK;
         if (plugin->session != NULL || plugin->trigger != NULL)
             return MC_EPR_NOT_SUPPORTED;
+    }
+    // the arguments of a call: all that may be one, once the editor has typed the character
+    if ((key == '(' || key == ',') && lsp_now (plugin, plugin->config->completion_on_arguments))
+    {
+        const lsp_window_t *w = lsp_window_of (plugin, EDIT (edit));
+
+        if (w != NULL && w->server != NULL
+            && lsp_client_state (w->server->client) == LSP_CLIENT_RUNNING)
+        {
+            const char c[2] = { (char) key, '\0' };
+
+            g_free (plugin->trigger);
+            plugin->trigger = g_strdup (c);
+            lsp_ask_later (plugin);
+            if (lsp_client_trigger (w->server->client, "signatureHelpProvider", c))
+                (void) lsp_signature_start (plugin, EDIT (edit), FALSE);
+            return MC_EPR_NOT_SUPPORTED;
+        }
     }
     // as a word is typed, or after a dot: a completion, once the editor has typed the character
     if (lsp_now (plugin, plugin->config->completion_on_trigger) && key > ' ' && key < 0x100)
@@ -3276,6 +3921,9 @@ lsp_handle_key (void *data, int key, void *edit)
             plugin->trigger = g_strdup (c);
             lsp_ask_later (plugin);
         }
+        // a call opened: its parameters, asked for once the editor has typed the character
+        if (lsp_client_trigger (w->server->client, "signatureHelpProvider", c))
+            (void) lsp_signature_start (plugin, EDIT (edit), FALSE);
     }
     return MC_EPR_NOT_SUPPORTED;
 }
@@ -3341,6 +3989,9 @@ lsp_handle_event (void *data, void *edit, int event_id, void *payload)
             lsp_note_hide (plugin->note);
         lsp_preview_free (plugin, plugin->preview);
         plugin->preview = NULL;
+        // the help of a call follows the lines of the call, in its window
+        if (event_id == MC_EP_EVENT_FOCUS_OUT)
+            lsp_signature_end (plugin);
         break;
     case MC_EP_EVENT_TEXT_CHANGED:
     case MC_EP_EVENT_FILE_RENAMED:
@@ -3404,6 +4055,8 @@ lsp_open (mc_editor_host_t *host, void *editor_dialog)
     plugin->project = host->startup_option (host, "debug");
     plugin->popup = lsp_popup_new (lsp_session_take_cb, plugin);
     plugin->note = lsp_note_new ();
+    plugin->signature = lsp_note_new ();
+    lsp_note_set_place (plugin->signature, TRUE, LSP_SIGNATURE_LINES);
     lsp_load_config (plugin);
 
     host->commands_register (host, LSP_KEYMAP_SECTION, N_ ("Language servers"), lsp_commands);
@@ -3474,6 +4127,9 @@ lsp_close (void *data)
     lsp_session_free (plugin->session);
     lsp_popup_free (plugin->popup);
     lsp_note_free (plugin->note);
+    lsp_note_free (plugin->signature);
+    if (plugin->sig_help != NULL)
+        json_node_unref (plugin->sig_help);
     lsp_config_free (plugin->config);
     g_free (plugin->config_errors);
     g_free (plugin);
@@ -3513,6 +4169,7 @@ lsp_action (lsp_cmd_t cmd, void *edit)
 LSP_ACTION (lsp_act_completion, LSP_CMD_COMPLETION)
 LSP_ACTION (lsp_act_definition, LSP_CMD_DEFINITION)
 LSP_ACTION (lsp_act_hover, LSP_CMD_HOVER)
+LSP_ACTION (lsp_act_signature, LSP_CMD_SIGNATURE)
 LSP_ACTION (lsp_act_problems, LSP_CMD_PROBLEMS)
 LSP_ACTION (lsp_act_start, LSP_CMD_START)
 LSP_ACTION (lsp_act_stop, LSP_CMD_STOP)
@@ -3541,6 +4198,7 @@ static const mc_ep_action_t lsp_actions[LSP_CMD_COUNT] = {
     { "Setup", lsp_act_setup },
     { "References", lsp_act_references },
     { "History", lsp_act_history },
+    { "Signature", lsp_act_signature },
 };
 
 /* With no ctags, what goes to a name is in the menu LSP too: Navigate has nothing of it then */
@@ -3552,6 +4210,7 @@ static const mc_ep_cmd_menu_entry_t lsp_menu_alone[] = {
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("&Completion"), LSP_CMD_COMPLETION, NULL },
     { LSP_MENU, N_ ("&Quick documentation"), LSP_CMD_HOVER, NULL },
+    { LSP_MENU, N_ ("Parameter &info"), LSP_CMD_SIGNATURE, NULL },
     { LSP_MENU, N_ ("&Problems..."), LSP_CMD_PROBLEMS, NULL },
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("&Start server"), LSP_CMD_START, NULL },
@@ -3569,6 +4228,7 @@ static const mc_ep_cmd_menu_entry_t lsp_menu[] = {
     { MC_EP_MENU_NAVIGATE, N_ ("Go to the protot&ype"), LSP_CMD_DECLARATION, NULL },
     { LSP_MENU, N_ ("&Completion"), LSP_CMD_COMPLETION, NULL },
     { LSP_MENU, N_ ("&Quick documentation"), LSP_CMD_HOVER, NULL },
+    { LSP_MENU, N_ ("Parameter &info"), LSP_CMD_SIGNATURE, NULL },
     { LSP_MENU, N_ ("&Problems..."), LSP_CMD_PROBLEMS, NULL },
     { LSP_MENU, NULL, 0, NULL },
     { LSP_MENU, N_ ("&Start server"), LSP_CMD_START, NULL },

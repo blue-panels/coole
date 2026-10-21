@@ -37,7 +37,12 @@ characters typed are found anywhere in a name, in their order, "mkg" finding
 make_global; those found are in another color. A letter at the left says what
 an item is: f a field, m a method, F a function, v a variable, C a class, S a
 struct, T a type parameter, # a constant, k a keyword; what the item is, its
-type, is at the right.
+type, is at the right. In the arguments of a call, while Parameter info is
+shown, what has the type of its parameter comes first: a variable of it, a
+function that gives it; "const" and the spaces are not minded, so that a
+"char *" is one for a "const char *", but a typedef is another type. The type
+is before the name of the parameter in C, after it and a colon in Rust,
+Python and TypeScript.
 
 **Up, Down, PgUp, PgDn**
 : Choose in the list.
@@ -89,6 +94,20 @@ expansion of a macro, longer than the macro, stays. Alt-, again has it read:
 the arrows, Home and End scroll it too, and Alt-, takes it away. Esc only
 takes it away; any other key takes it away and does what it does; it goes
 too when the cursor moves.
+
+**Alt-(**
+: Parameter info: the signature of the call the cursor is in, in a box over
+its line, the parameter of the moment hot; under it, what the parameter is, as
+the comment of the function says it after "@param", or in a list of the
+arguments as rustdoc has them, "* `path` - the path", or else the first
+sentence of the comment: not all of it, so that the box stays small. In the mode of an IDE, -D, the characters the server names
+open it as they are typed, "(" and "," for clangd, as completion_on_trigger
+says for the list of a completion. It follows the cursor as the arguments are
+typed, the hot parameter moving after a ","; it goes when the cursor leaves
+the call, at Esc, and when the window loses the focus. A list of a completion
+has it wait until the list goes. When a function has several signatures, the
+box says which of them it shows, "1/3", and Alt-Up and Alt-Down go through
+them.
 
 The keys are those of the section
 **[lsp]**
@@ -177,7 +196,15 @@ setting of the file that of the system's. For example
 : The list of completion shown by itself after a character the server
 completes after, a dot, "->" or "::", as it is typed: "ide", the default, on a
 project of -D only; "always"; "never", by Ctrl-Space only. When the server has
-nothing to offer there, nothing is shown.
+nothing to offer there, nothing is shown. Parameter info opens by itself after
+"(" and "," as the list does, by Alt-( only with "never".
+
+**completion_on_arguments**
+: The list of completion shown by itself after the "(" of a call and after
+each ",": all that may be an argument, as the server ranks it. "never", the
+default: a list at each call is in the way, and Ctrl-Space shows it; "ide", on
+a project of -D only; "always". Parameter info stays over the line while the
+list is under it.
 
 **command**
 : The program and its arguments, without a shell. ${build_dir} in an

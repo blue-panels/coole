@@ -239,6 +239,108 @@ lsp_markdown_is_fence (const char *line)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* The command of a comment of the source at the start of @line, "@param" or "\\param", its
+   backslash escaped in Markdown or not: what is after its name, NULL when the line has none */
+static const char *
+lsp_markdown_command (const char *line)
+{
+    while (*line == ' ')
+        line++;
+    if (*line == '@')
+        line++;
+    else if (*line == '\\')
+        while (*line == '\\')
+            line++;
+    else
+        return NULL;
+    return g_ascii_isalpha (*line) ? line : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether @line is an item of a list: "*", "-" or "+" and a space */
+static gboolean
+lsp_markdown_is_item (const char *line)
+{
+    while (*line == ' ')
+        line++;
+    return (*line == '*' || *line == '-' || *line == '+') && line[1] == ' ';
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What "@param name" or "\\param name" at the start of @line says, the direction, [in] or
+   [out], before the name; NULL when the line says nothing of @name, @len bytes */
+static const char *
+lsp_markdown_command_param (const char *line, const char *name, gsize len)
+{
+    const char *p = lsp_markdown_command (line);
+
+    if (p == NULL || strncmp (p, "param", 5) != 0 || (p[5] != ' ' && p[5] != '\\' && p[5] != '['))
+        return NULL;
+    p += 5;
+    while (*p == ' ')
+        p++;
+    // the direction, escaped in Markdown or not
+    if (*p == '\\' && p[1] == '[')
+        p++;
+    if (*p == '[')
+    {
+        const char *end = strchr (p, ']');
+
+        if (end == NULL)
+            return NULL;
+        p = end + 1;
+        while (*p == ' ')
+            p++;
+    }
+    if (strncmp (p, name, len) != 0 || (p[len] != ' ' && p[len] != '\0' && p[len] != ','))
+        return NULL;
+    p += len;
+    while (*p == ' ' || *p == ',')
+        p++;
+    return p;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What an item of a list of the arguments says, as rustdoc has them: "* `name` - text", the name
+   in backquotes or not, "-" or ":" after it; NULL when @line is no item of @name, @len bytes */
+static const char *
+lsp_markdown_item_param (const char *line, const char *name, gsize len)
+{
+    const char *p = line;
+    gboolean quoted;
+
+    if (!lsp_markdown_is_item (line))
+        return NULL;
+    while (*p == ' ')
+        p++;
+    p += 2;
+    while (*p == ' ')
+        p++;
+    quoted = *p == '`';
+    if (quoted)
+        p++;
+    if (strncmp (p, name, len) != 0)
+        return NULL;
+    p += len;
+    if (quoted && *p++ != '`')
+        return NULL;
+    while (*p == ' ')
+        p++;
+    // what says the name is done: not a word that goes on with it
+    if (*p != '-' && *p != ':')
+        return NULL;
+    while (*p == '-' || *p == ':')
+        p++;
+    while (*p == ' ')
+        p++;
+    return p;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -388,6 +490,70 @@ lsp_markdown_with_code (const char *markdown, const char *code, int max_lines)
         g_string_append_printf (out, "%s%s", lines[i], lines[i + 1] != NULL ? "\n" : "");
     g_strfreev (lines);
     g_strfreev (code_lines);
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+char *
+lsp_markdown_param (const char *doc, const char *name)
+{
+    char **lines;
+    GString *out = NULL;
+    const gsize len = name != NULL ? strlen (name) : 0;
+    guint i;
+
+    if (doc == NULL || len == 0)
+        return NULL;
+    lines = g_strsplit (doc, "\n", -1);
+    for (i = 0; lines[i] != NULL && out == NULL; i++)
+    {
+        const char *p = lsp_markdown_command_param (lines[i], name, len);
+
+        if (p == NULL)
+            p = lsp_markdown_item_param (lines[i], name, len);
+        if (p == NULL)
+            continue;
+        out = g_string_new (p);
+        // the lines that go on with it, to an empty one, another command or another item
+        for (i++; lines[i] != NULL && lines[i][strspn (lines[i], " ")] != '\0'
+             && lsp_markdown_command (lines[i]) == NULL && !lsp_markdown_is_item (lines[i]);
+             i++)
+            g_string_append_printf (out, " %s", lines[i] + strspn (lines[i], " "));
+        break;
+    }
+    g_strfreev (lines);
+    if (out != NULL && out->len == 0)
+    {
+        g_string_free (out, TRUE);
+        out = NULL;
+    }
+    return out != NULL ? g_string_free (out, FALSE) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+lsp_markdown_brief (const char *doc)
+{
+    char **lines;
+    GString *out = g_string_new (NULL);
+    guint i = 0;
+
+    if (doc == NULL)
+        return g_string_free (out, TRUE);
+    lines = g_strsplit (doc, "\n", -1);
+    while (lines[i] != NULL && lines[i][strspn (lines[i], " ")] == '\0')
+        i++;
+    for (; lines[i] != NULL && lines[i][strspn (lines[i], " ")] != '\0'
+         && lsp_markdown_command (lines[i]) == NULL && !lsp_markdown_is_fence (lines[i]);
+         i++)
+        g_string_append_printf (out, "%s%s", out->len > 0 ? "\n" : "", lines[i]);
+    g_strfreev (lines);
+    if (out->len == 0)
+    {
+        g_string_free (out, TRUE);
+        return NULL;
+    }
     return g_string_free (out, FALSE);
 }
 

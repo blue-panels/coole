@@ -444,6 +444,8 @@ test_session (gconstpointer mode)
     g_assert_false (lsp_client_supports (client, "renameProvider"));
     g_assert_true (lsp_client_completion_trigger (client, "->"));
     g_assert_false (lsp_client_completion_trigger (client, ":"));
+    g_assert_true (lsp_client_trigger (client, "signatureHelpProvider", ","));
+    g_assert_false (lsp_client_trigger (client, "signatureHelpProvider", "."));
     problems_wanted = 1;
     run_until (has_problems);
     g_assert_cmpstr (told.last_problem, ==, "length 6");

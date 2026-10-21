@@ -36,6 +36,9 @@ void lsp_note_free (lsp_note_t *note);
    NULL for none */
 void lsp_note_show (lsp_note_t *note, WGroup *group, const char *title, const char *read_key,
                     const char *text, int y, int x);
+/* Over the place it is shown at when @above, under it else, when there is room; @max_lines of
+   the text at most at once, 0 for half of the screen */
+void lsp_note_set_place (lsp_note_t *note, gboolean above, int max_lines);
 /* Out of its group, what it covered drawn again */
 void lsp_note_hide (lsp_note_t *note);
 /* Whether the box is there, out of sight too, when the screen has no room for it */

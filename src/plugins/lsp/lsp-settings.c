@@ -140,6 +140,15 @@ lsp_settings_equal (JsonObject *a, JsonObject *b)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* What a file that does not say @key has, as lsp-config.c has it */
+static lsp_when_t
+lsp_settings_default (const char *key)
+{
+    return strcmp (key, "completion_on_arguments") == 0 ? LSP_WHEN_NEVER : LSP_WHEN_IDE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -205,7 +214,7 @@ lsp_settings_save (lsp_settings_t *settings, GError **error)
 lsp_when_t
 lsp_settings_when (const lsp_settings_t *settings, const char *key)
 {
-    lsp_when_t when = LSP_WHEN_IDE;
+    lsp_when_t when = lsp_settings_default (key);
 
     if (json_object_has_member (settings->user, key)
         && lsp_when_parse (json_object_get_member (settings->user, key), &when))
@@ -220,7 +229,7 @@ lsp_settings_when (const lsp_settings_t *settings, const char *key)
 void
 lsp_settings_set_when (lsp_settings_t *settings, const char *key, lsp_when_t when)
 {
-    lsp_when_t system = LSP_WHEN_IDE;
+    lsp_when_t system = lsp_settings_default (key);
 
     if (json_object_has_member (settings->system, key))
         (void) lsp_when_parse (json_object_get_member (settings->system, key), &system);
