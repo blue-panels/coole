@@ -574,6 +574,8 @@ test_too_deep (void)
 
     new_client ("deep", "null");
     lsp_client_doc_open (client, "file:///tmp/c.c", "c", "x", 1);
+    // an empty file, a new one, is opened too: its text is no NULL
+    lsp_client_doc_open (client, "file:///tmp/empty.c", "c", "", 0);
     g_assert_true (lsp_client_start (client, NULL));
     run_until (is_running);
     waited = &answer;
