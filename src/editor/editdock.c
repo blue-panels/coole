@@ -37,6 +37,7 @@
 #include "lib/global.h"
 
 #include "lib/tty/tty.h"
+#include "lib/skin.h"
 #include "lib/strutil.h"
 #include "lib/widget.h"
 
@@ -124,6 +125,21 @@ static char *
 dock_tab_title (const WEditWindow *win)
 {
     return win->klass->get_title != NULL ? win->klass->get_title (win) : g_strdup ("?");
+}
+
+/* The tabs in the title as those of git have them, "[ Program ] [ Debug console ]", from the
+   column 2, a space between them; the label of a tab, a copy, and its width */
+#define DOCK_TAB_FIRST 2
+
+static char *
+dock_tab_label (const WEditWindow *win, int *width)
+{
+    char *title = dock_tab_title (win);
+    char *label = g_strdup_printf ("[ %s ]", title);
+
+    g_free (title);
+    *width = str_term_width1 (label);
+    return label;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -378,7 +394,7 @@ edit_dock_tab_step (WDialog *h, int step)
 gboolean
 edit_dock_tab_click (WEditWindow *win, int x)
 {
-    int at = 1;
+    int at = DOCK_TAB_FIRST;
     guint i;
 
     if (dock_bottom_index (win) < 0 || bottom->len < 2)
@@ -386,17 +402,16 @@ edit_dock_tab_click (WEditWindow *win, int x)
     for (i = 0; i < bottom->len; i++)
     {
         WEditWindow *t = g_ptr_array_index (bottom, i);
-        char *title = dock_tab_title (t);
-        const int width = str_term_width1 (title) + 3;
+        int width;
 
-        g_free (title);
+        g_free (dock_tab_label (t, &width));
         if (x >= at && x < at + width)
         {
             if (t != win)
                 edit_dock_tab_select (t);
             return TRUE;
         }
-        at += width;
+        at += width + 1;
     }
     // the rest of the title of a tab is no handle to move it by
     return TRUE;
@@ -411,7 +426,7 @@ edit_dock_draw_tabs (const WEditWindow *win, int color)
     const gboolean focused = widget_get_state (w, WST_FOCUSED);
     // the icons of the window keep the end of the title
     const int end = w->rect.cols - 9;
-    int at = 1;
+    int at = DOCK_TAB_FIRST;
     guint i;
 
     if (dock_bottom_index (win) < 0 || bottom->len < 2 || end <= at)
@@ -422,14 +437,19 @@ edit_dock_draw_tabs (const WEditWindow *win, int color)
     for (i = 0; i < bottom->len && at < end; i++)
     {
         const WEditWindow *t = g_ptr_array_index (bottom, i);
-        char *title = dock_tab_title (t);
-        char *label = g_strdup_printf (t == win ? "[%s]" : " %s ", title);
+        int width;
+        char *label = dock_tab_label (t, &width);
 
+        // the tab in front marked, as the tab of git is
+        tty_setcolor (t == win ? EDITOR_MARKED_COLOR : color);
         widget_gotoyx (w, 0, at);
         tty_print_string (str_trunc (label, end - at));
-        at += str_term_width1 (title) + 3;
+        at += width;
         g_free (label);
-        g_free (title);
+        tty_setcolor (color);
+        if (i + 1 < bottom->len && at < end)
+            tty_print_char (' ');
+        at++;
     }
 }
 
