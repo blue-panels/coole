@@ -660,6 +660,8 @@ debug_event_start_failed (void *ui, const char *msg)
     debugger_t *debug = (debugger_t *) ui;
 
     debug->state = DEBUG_FINISHED;
+    // what the adapter said of it, a build of Delve that failed, is in the console
+    debug_output_front (debug);
     if (msg != NULL)
         debug_error (debug, msg);
     debug_session_refresh (debug);

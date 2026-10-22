@@ -257,11 +257,54 @@ dap_client_lost (dap_client_t *client, const char *why)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* What a refusal says: the text of its error, its {names} replaced by its variables, which has
+   the reason, where the message is a word of it, "Failed to launch" of Delve with no build
+   error; NULL when it has none */
+static char *
+dap_client_error_text (JsonObject *body)
+{
+    JsonObject *error = dap_object (body, "error");
+    JsonObject *variables = dap_object (error, "variables");
+    const char *format = dap_string (error, "format");
+    const char *p;
+    GString *text;
+
+    if (format == NULL || *format == '\0')
+        return NULL;
+    text = g_string_new (NULL);
+    for (p = format; *p != '\0'; p++)
+    {
+        const char *end = *p == '{' ? strchr (p, '}') : NULL;
+        char *name;
+        const char *value;
+
+        if (end == NULL)
+        {
+            g_string_append_c (text, *p);
+            continue;
+        }
+        name = g_strndup (p + 1, (gsize) (end - p - 1));
+        value = dap_string (variables, name);
+        if (value != NULL)
+            g_string_append (text, value);
+        else
+            g_string_append_len (text, p, end - p + 1);
+        g_free (name);
+        p = end;
+    }
+    return g_string_free (text, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 dap_client_response (dap_client_t *client, JsonObject *message)
 {
     const gint64 seq = dap_int (message, "request_seq", -1);
+    const gboolean success = dap_bool (message, "success", FALSE);
+    JsonObject *body = dap_object (message, "body");
     dap_pending_t *pending = NULL;
+    char *error = NULL;
     guint i;
 
     for (i = 0; i < client->pending->len && pending == NULL; i++)
@@ -269,9 +312,12 @@ dap_client_response (dap_client_t *client, JsonObject *message)
             pending = g_ptr_array_steal_index (client->pending, i);
     if (pending == NULL)
         return;
+    if (!success)
+        error = dap_client_error_text (body);
     if (pending->fn != NULL)
-        pending->fn (client->owner, dap_bool (message, "success", FALSE),
-                     dap_string (message, "message"), dap_object (message, "body"), pending->data);
+        pending->fn (client->owner, success,
+                     error != NULL ? error : dap_string (message, "message"), body, pending->data);
+    g_free (error);
     dap_pending_free (pending);
 }
 

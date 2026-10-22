@@ -350,7 +350,12 @@ viewer_show (viewer_t *v, WEditWindow *win, gboolean focus, void *prev)
         viewer_place (v, win, dock);
     v->host->window_show (v->host, win);
     if (!focus && prev != NULL && prev != win)
+    {
         v->host->window_show (v->host, prev);
+        // a tab of the dock of @win, which hides it again: @win is to be seen, with the focus
+        if (!widget_get_state (CONST_WIDGET (win), WST_VISIBLE))
+            v->host->window_show (v->host, win);
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
