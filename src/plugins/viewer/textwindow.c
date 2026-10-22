@@ -106,7 +106,8 @@ typedef struct
     tw_text_t text;
     long cur_line;  // the cursor: the line of the text, and the column in it
     long cur_col;
-    long want_col;  // the column it goes back to on a line long enough
+    long want_col;         // the column it goes back to on a line long enough
+    gboolean line_cursor;  // a list: the line of the cursor drawn across the window
     // what is marked: from the mark to the cursor
     gboolean selected;
     gboolean marking;   // F3: the cursor takes the selection with it as it moves
@@ -502,6 +503,7 @@ text_window_draw_text (const WTextWindow *tw)
     int row;
     long l1 = 0, c1 = 0, l2 = 0, c2 = 0;
     const gboolean marked = text_window_selection (tw, &l1, &c1, &l2, &c2);
+    const int cursor_color = EDITOR_BOOKMARK_COLOR;
 
     colors.normal = EDITOR_NORMAL_COLOR;
     colors.bold = text_window_bold_color ();
@@ -521,7 +523,9 @@ text_window_draw_text (const WTextWindow *tw)
         if (tw->text.lines != NULL && n < (long) tw->text.lines->len)
             line = g_array_index (tw->text.lines, GArray *, n);
 
-        tty_setcolor (colors.normal);
+        const gboolean on_cursor = tw->line_cursor && n == tw->cur_line;
+
+        tty_setcolor (on_cursor ? cursor_color : colors.normal);
         tty_draw_hline (r.y + row, r.x, ' ', r.cols);
         tty_gotoyx (r.y + row, r.x);
 
@@ -554,8 +558,10 @@ text_window_draw_text (const WTextWindow *tw)
                 last_color = mcview_ansi_color_of (&st, &colors);
                 last_cell = *cell;
             }
-            tty_setcolor (marked && tw_marked (l1, c1, l2, c2, n, x) ? EDITOR_MARKED_COLOR
-                                                                     : last_color);
+            if (marked && tw_marked (l1, c1, l2, c2, n, x))
+                tty_setcolor (EDITOR_MARKED_COLOR);
+            else
+                tty_setcolor (on_cursor ? cursor_color : last_color);
 
             if (x < tw->text.left || col + cell->width > r.cols)
                 // half of a wide character at an edge of the view
@@ -1232,6 +1238,36 @@ edit_text_window_scroll_to (WEditWindow *win, long line)
     WTextWindow *tw = TEXT_WINDOW (win);
 
     text_window_scroll (tw, line, tw->text.left);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_text_window_set_line_cursor (WEditWindow *win, gboolean on)
+{
+    WTextWindow *tw = TEXT_WINDOW (win);
+
+    tw->line_cursor = on;
+    widget_draw (WIDGET (tw));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_text_window_move_to (WEditWindow *win, long line)
+{
+    WTextWindow *tw = TEXT_WINDOW (win);
+
+    tw->selected = FALSE;
+    text_window_move_cursor (tw, line, 0, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+long
+edit_text_window_cursor_line (const WEditWindow *win)
+{
+    return CONST_TEXT_WINDOW (win)->cur_line;
 }
 
 /* --------------------------------------------------------------------------------------------- */

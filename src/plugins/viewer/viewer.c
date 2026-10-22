@@ -33,14 +33,16 @@
  *
  *  Methods, with their arguments and answers, a{sv}:
  *
- *    open       title, text, place ("right", "bottom", "full"), size (percent), focus -> id
+ *    open       title, text, place ("right", "bottom", "full"), size (percent), focus,
+ *               cursorline (a list: the line of the cursor drawn across the window) -> id
  *    set_text   id, text
  *    set_title  id, title
  *    scroll_to  id, line
+ *    move_to    id, line: the cursor to the line, the view following it
  *    show       id, focus
  *    hide       id
  *    close      id
- *    info       id -> cols, lines, top, total, visible, focused, window
+ *    info       id -> cols, lines, top, total, line (of the cursor), visible, focused, window
  *    add_type   type, suffixes (strings), starts (strings)
  *
  *  Signal "closed", id: the user closed the window.
@@ -451,7 +453,7 @@ viewer_open (viewer_t *v, GVariant *args, GError **error)
     win = viewer_window_new (v, &r, dock, full, title, text, len, focus, &id);
     g_free (title);
     g_free (text);
-    (void) win;
+    edit_text_window_set_line_cursor (win, viewer_arg_bool (args, "cursorline", FALSE));
 
     g_variant_dict_init (&dict, NULL);
     g_variant_dict_insert (&dict, "id", "x", id);
@@ -509,6 +511,17 @@ viewer_call (void *data, const char *method, GVariant *args, GError **error)
         }
         edit_text_window_scroll_to (win, (long) line);
     }
+    else if (strcmp (method, "move_to") == 0)
+    {
+        gint64 line = 0;
+
+        if (!viewer_arg_int (args, "line", &line))
+        {
+            g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_ARGS, "no line");
+            return NULL;
+        }
+        edit_text_window_move_to (win, (long) line);
+    }
     else if (strcmp (method, "show") == 0)
     {
         void *prev = v->host->window_current (v->host);
@@ -535,6 +548,7 @@ viewer_call (void *data, const char *method, GVariant *args, GError **error)
         g_variant_dict_insert (&dict, "lines", "x", (gint64) edit_text_window_text_lines (win));
         g_variant_dict_insert (&dict, "top", "x", (gint64) edit_text_window_top (win));
         g_variant_dict_insert (&dict, "total", "x", (gint64) edit_text_window_lines (win));
+        g_variant_dict_insert (&dict, "line", "x", (gint64) edit_text_window_cursor_line (win));
         // a tab of the bottom not seen is there all the same
         g_variant_dict_insert (
             &dict, "visible", "b",
