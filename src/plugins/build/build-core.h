@@ -63,8 +63,9 @@ gboolean build_elf_read (const char *path, build_elf_t *elf);
    GPtrArray of absolute names */
 GPtrArray *build_find_programs (const char *dir);
 
-/* A line of gcc, clang or rustc: "file:line:col: error: message"; NULL when it is none.  A
-   relative name is taken from @dir, where the compiler ran. */
+/* A line of gcc, clang or rustc: "file:line:col: error: message", or of go, an error with no
+   kind: "file:line:col: message" of a file there; NULL when it is none.  A relative name is
+   taken from @dir, where the compiler ran. */
 build_diagnostic_t *build_parse_diagnostic (const char *line, const char *dir);
 void build_diagnostic_free (build_diagnostic_t *d);
 

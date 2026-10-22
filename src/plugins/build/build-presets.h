@@ -37,6 +37,7 @@ typedef struct
     char *build;       /* the command that builds a project of it, run in the root */
     char **gdb;        /* the gdbs that debug its programs, the first there in PATH */
     char *program;     /* the program to debug, from the root; ${package}: that of Cargo.toml */
+    char *entry;       /* a line of a file that makes its directory a program an adapter runs */
     char **hide;       /* the programs not to choose from: patterns of names from the root */
     char *adapter;     /* the debug adapter of its scripts */
     char *address;     /* host:port the adapter listens on, 0 for a port of its own */

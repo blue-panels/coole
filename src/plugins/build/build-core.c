@@ -588,9 +588,10 @@ build_find_programs (const char *dir)
 build_diagnostic_t *
 build_parse_diagnostic (const char *line, const char *dir)
 {
-    static GRegex *re = NULL;
+    static GRegex *re = NULL, *bare = NULL;
     GMatchInfo *match = NULL;
     build_diagnostic_t *d = NULL;
+    char *file = NULL, *line_text = NULL, *column = NULL, *kind = NULL, *message = NULL;
 
     if (line == NULL)
         return NULL;
@@ -599,26 +600,55 @@ build_parse_diagnostic (const char *line, const char *dir)
                           // the code of rustc: error[E0425]
                           "(?:\\[\\w+\\])?:\\s*(.*)$",
                           G_REGEX_OPTIMIZE, 0, NULL);
+    // go: "./main.go:12:2: undefined: x", with no kind; the context of gcc, "a.cc:5:10:   required
+    // from here", has more than a space before its text
+    if (bare == NULL)
+        bare = g_regex_new ("^([^:\\s][^:]*):(\\d+):(\\d+): (\\S.*)$", G_REGEX_OPTIMIZE, 0, NULL);
     if (re != NULL && g_regex_match (re, line, 0, &match))
     {
-        char *file = g_match_info_fetch (match, 1);
-        char *line_text = g_match_info_fetch (match, 2);
-        char *column = g_match_info_fetch (match, 3);
-        char *kind = g_match_info_fetch (match, 4);
-
-        d = g_new0 (build_diagnostic_t, 1);
-        d->file = g_path_is_absolute (file) || dir == NULL ? g_canonicalize_filename (file, NULL)
-                                                           : g_canonicalize_filename (file, dir);
-        d->line = atol (line_text);
-        d->column = column != NULL && *column != '\0' ? atol (column) : 0;
-        d->error = strstr (kind, "error") != NULL;
-        d->message = g_match_info_fetch (match, 5);
-        g_free (file);
-        g_free (line_text);
-        g_free (column);
-        g_free (kind);
+        file = g_match_info_fetch (match, 1);
+        line_text = g_match_info_fetch (match, 2);
+        column = g_match_info_fetch (match, 3);
+        kind = g_match_info_fetch (match, 4);
+        message = g_match_info_fetch (match, 5);
+    }
+    else if (bare != NULL)
+    {
+        g_match_info_free (match);
+        match = NULL;
+        if (g_regex_match (bare, line, 0, &match))
+        {
+            file = g_match_info_fetch (match, 1);
+            line_text = g_match_info_fetch (match, 2);
+            column = g_match_info_fetch (match, 3);
+            message = g_match_info_fetch (match, 4);
+        }
     }
     g_match_info_free (match);
+    if (file != NULL)
+    {
+        char *path = g_path_is_absolute (file) || dir == NULL ? g_canonicalize_filename (file, NULL)
+                                                              : g_canonicalize_filename (file, dir);
+
+        // a line of no kind is an error only of a file there, not any text with colons
+        if (kind != NULL || g_file_test (path, G_FILE_TEST_IS_REGULAR))
+        {
+            d = g_new0 (build_diagnostic_t, 1);
+            d->file = path;
+            d->line = atol (line_text);
+            d->column = column != NULL && *column != '\0' ? atol (column) : 0;
+            d->error = kind == NULL || strstr (kind, "error") != NULL;
+            d->message = message;
+            path = NULL;
+            message = NULL;
+        }
+        g_free (path);
+    }
+    g_free (file);
+    g_free (line_text);
+    g_free (column);
+    g_free (kind);
+    g_free (message);
     return d;
 }
 

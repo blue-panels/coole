@@ -382,8 +382,15 @@ taken, if the configuration has none, as *presets.ini* has it (*adapter*,
 a program        gdb -i dap
 ```
 
-A new configuration without a program the build has made takes the file in
-front, when it is such a script. An adapter that is not there, or that ends
+A new configuration of a language with an adapter is the adapter's: the
+programs the build has made are not offered to GDB. It runs the *program* of
+the preset, else the file in front, when it is such a script. For Go the
+program is a package, which Delve builds with all of its files, where
+*main.go* alone would miss the rest: a directory with a file of the line
+*package main* (*entry* in *presets.ini*), that of the file in front when it
+is one, else the one the project has, else one chosen from a list, as
+*cmd/server* and *cmd/client*; with none, the root (*program*). An
+adapter that is not there, or that ends
 before the program starts, is told with how to get it; what it says is in
 the console.
 

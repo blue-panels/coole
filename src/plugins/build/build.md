@@ -22,8 +22,10 @@ the project: *meson compile -C* that directory.
 
 *the language*
 : else the command of the language of the project, as *presets.ini* has it:
-*cargo build --message-format=short* for a project with a *Cargo.toml*. Its
-errors are listed as those of gcc are.
+*cargo build --message-format=short* for a project with a *Cargo.toml*,
+*go build ./...* for one with a *go.mod*. Its errors are listed as those of
+gcc are; a line of go, *./main.go:12:2: undefined: x*, has no word *error*,
+and is an error when the file it names is there.
 
 **Presets of the languages**
 

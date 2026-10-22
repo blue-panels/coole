@@ -58,6 +58,7 @@ build_preset_free (gpointer data)
     g_free (p->build);
     g_strfreev (p->gdb);
     g_free (p->program);
+    g_free (p->entry);
     g_strfreev (p->hide);
     g_free (p->adapter);
     g_free (p->address);
@@ -142,6 +143,7 @@ build_presets_add (GPtrArray *presets, const char *text, gboolean project, GErro
         p->build = build_preset_string (keyfile, groups[i], "build");
         p->gdb = build_preset_list (keyfile, groups[i], "gdb");
         p->program = build_preset_string (keyfile, groups[i], "program");
+        p->entry = build_preset_string (keyfile, groups[i], "entry");
         p->hide = build_preset_list (keyfile, groups[i], "hide");
         p->adapter = build_preset_string (keyfile, groups[i], "adapter");
         p->address = build_preset_string (keyfile, groups[i], "address");
@@ -220,6 +222,7 @@ build_presets_project_text (const build_preset_t *preset, gboolean with_build)
     } strings[] = {
         { "build", with_build ? preset->build : NULL },
         { "program", preset->program },
+        { "entry", preset->entry },
         { "adapter", preset->adapter },
         { "address", preset->address },
         { "launch", preset->launch },

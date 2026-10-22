@@ -205,6 +205,29 @@ test_diagnostic (void)
 
     g_assert_null (build_parse_diagnostic ("[12/30] Compiling C object a.o", "/b"));
     g_assert_null (build_parse_diagnostic ("ninja: build stopped: subcommand failed.", "/b"));
+
+    // go build: no kind, an error of a file there
+    {
+        char *go = g_dir_make_tmp ("build_core_XXXXXX", NULL);
+        char *main_go = g_build_filename (go, "main.go", NULL);
+
+        g_assert_true (g_file_set_contents (main_go, "package main\n", -1, NULL));
+        d = build_parse_diagnostic ("./main.go:12:2: undefined: x", go);
+        g_assert_nonnull (d);
+        g_assert_cmpstr (d->file, ==, main_go);
+        g_assert_cmpint (d->line, ==, 12);
+        g_assert_cmpint (d->column, ==, 2);
+        g_assert_true (d->error);
+        g_assert_cmpstr (d->message, ==, "undefined: x");
+        build_diagnostic_free (d);
+        // not a file there, or the context of gcc
+        g_assert_null (build_parse_diagnostic ("./other.go:12:2: undefined: x", go));
+        g_assert_null (build_parse_diagnostic ("./main.go:5:10:   required from here", go));
+        g_unlink (main_go);
+        g_rmdir (go);
+        g_free (main_go);
+        g_free (go);
+    }
 }
 
 static void

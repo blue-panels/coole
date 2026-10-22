@@ -1086,10 +1086,9 @@ build_call (void *data, const char *method, GVariant *args, GError **error)
         if (preset != NULL)
         {
             const char *const strings[][2] = {
-                { "build", preset->build },
-                { "adapter", preset->adapter },
-                { "address", preset->address },
-                { "launch", preset->launch },
+                { "build", preset->build },     { "adapter", preset->adapter },
+                { "address", preset->address }, { "launch", preset->launch },
+                { "entry", preset->entry },
             };
             guint i;
 
@@ -1126,6 +1125,10 @@ build_call (void *data, const char *method, GVariant *args, GError **error)
             if (preset->hide != NULL)
                 g_variant_dict_insert_value (
                     &reply, "hide", g_variant_new_strv ((const gchar *const *) preset->hide, -1));
+            if (preset->extensions != NULL)
+                g_variant_dict_insert_value (
+                    &reply, "extensions",
+                    g_variant_new_strv ((const gchar *const *) preset->extensions, -1));
         }
         g_ptr_array_free (presets, TRUE);
     }
