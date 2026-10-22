@@ -42,6 +42,7 @@ typedef struct
     char *adapter;     /* the debug adapter of its scripts */
     char *address;     /* host:port the adapter listens on, 0 for a port of its own */
     char *launch;      /* what the request launch of the adapter needs, a JSON object */
+    char **keys;       /* the copy of a project: the keys it has, those empty too */
 } build_preset_t;
 
 /*** global variables defined in .c file *********************************************************/
@@ -49,8 +50,9 @@ typedef struct
 /*** declarations of public functions ************************************************************/
 
 /* The copy of the project of @project_text, then the presets of @user_text, then those of
-   @system_text whose name the user has not; any NULL for none.  A wrong @project_text or
-   @user_text is left out, @project_error or @user_error set. */
+   @system_text whose name the user has not; any NULL for none.  A key the copy has not is that
+   of the preset of its language, the user's first; an empty one is none.  A wrong
+   @project_text or @user_text is left out, @project_error or @user_error set. */
 GPtrArray *build_presets_parse (const char *project_text, const char *user_text,
                                 const char *system_text, GError **project_error,
                                 GError **user_error);

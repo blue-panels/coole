@@ -63,6 +63,7 @@ build_preset_free (gpointer data)
     g_free (p->adapter);
     g_free (p->address);
     g_free (p->launch);
+    g_strfreev (p->keys);
     g_free (p);
 }
 
@@ -125,9 +126,14 @@ build_presets_add (GPtrArray *presets, const char *text, gboolean project, GErro
 
         if (project != (strcmp (groups[i], BUILD_PROJECT_GROUP) == 0))
             continue;
+        // the copy of a project is no preset of its language: that one is there besides
         for (j = 0; j < presets->len; j++)
-            if (strcmp (((build_preset_t *) g_ptr_array_index (presets, j))->id, groups[i]) == 0)
+        {
+            const build_preset_t *other = g_ptr_array_index (presets, j);
+
+            if (!other->project && strcmp (other->id, groups[i]) == 0)
                 break;
+        }
         if (j < presets->len)
             continue;
         // the file of a project with no copy, the command of the user alone, has no language
@@ -148,11 +154,37 @@ build_presets_add (GPtrArray *presets, const char *text, gboolean project, GErro
         p->adapter = build_preset_string (keyfile, groups[i], "adapter");
         p->address = build_preset_string (keyfile, groups[i], "address");
         p->launch = build_preset_string (keyfile, groups[i], "launch");
+        if (project)
+            p->keys = g_key_file_get_keys (keyfile, groups[i], NULL, NULL);
         g_ptr_array_add (presets, p);
     }
     g_strfreev (groups);
     g_key_file_free (keyfile);
     return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A key the copy of a project has not is that of @base, the preset of its language: what coole
+   adds to its presets later comes to the projects it has copied before */
+static void
+build_preset_inherit (build_preset_t *copy, const build_preset_t *base)
+{
+#define INHERIT(field, key, dup)                                                                   \
+    if (copy->field == NULL && base->field != NULL                                                 \
+        && !g_strv_contains ((const char *const *) copy->keys, key))                               \
+    copy->field = dup (base->field)
+
+    INHERIT (extensions, "extensions", g_strdupv);
+    INHERIT (build, "build", g_strdup);
+    INHERIT (gdb, "gdb", g_strdupv);
+    INHERIT (program, "program", g_strdup);
+    INHERIT (entry, "entry", g_strdup);
+    INHERIT (hide, "hide", g_strdupv);
+    INHERIT (adapter, "adapter", g_strdup);
+    INHERIT (address, "address", g_strdup);
+    INHERIT (launch, "launch", g_strdup);
+#undef INHERIT
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -171,6 +203,23 @@ build_presets_parse (const char *project_text, const char *user_text, const char
         (void) build_presets_add (presets, user_text, FALSE, user_error);
     if (system_text != NULL)
         (void) build_presets_add (presets, system_text, FALSE, NULL);
+    // the copy, first, takes what it has not from its language, the user's before coole's
+    if (presets->len > 0 && ((build_preset_t *) g_ptr_array_index (presets, 0))->project)
+    {
+        build_preset_t *copy = g_ptr_array_index (presets, 0);
+        guint i;
+
+        for (i = 1; i < presets->len; i++)
+        {
+            const build_preset_t *base = g_ptr_array_index (presets, i);
+
+            if (strcmp (base->id, copy->id) == 0)
+            {
+                build_preset_inherit (copy, base);
+                break;
+            }
+        }
+    }
     return presets;
 }
 
@@ -244,7 +293,8 @@ build_presets_project_text (const build_preset_t *preset, gboolean with_build)
         keyfile, group, NULL,
         " How coole builds and debugs this project: a copy of the preset of its language in\n"
         " presets.ini, made when the project was first opened, the keys of presets.ini.\n"
-        " What is changed here stays; command is the build command given in coole.\n"
+        " What is changed here stays; a key not here is that of presets.ini, an empty one\n"
+        " is none.  command is the build command given in coole.\n"
         " Command > Language defaults of the project copies the preset again.",
         NULL);
     for (i = 0; i < G_N_ELEMENTS (strings); i++)

@@ -318,6 +318,24 @@ test_presets (void)
         g_assert_cmpstr (build_presets_find (presets, "/nowhere", "/x/a.py")->id, ==, "python");
         g_ptr_array_free (presets, TRUE);
 
+        // a copy made before coole had a key: the key of its language, the user's first; one
+        // the copy has, empty too, stays
+        presets = build_presets_parse ("[project]\nlanguage=go\nadapter=my-dlv\nbuild=\n", NULL,
+                                       system, NULL, NULL);
+        p = build_presets_find (presets, "/nowhere", NULL);
+        g_assert_true (p->project);
+        g_assert_cmpstr (p->program, ==, ".");
+        g_assert_cmpstr (p->entry, ==, "package main");
+        g_assert_cmpstr (p->launch, ==, "{\"mode\": \"debug\"}");
+        g_assert_cmpstr (p->adapter, ==, "my-dlv");
+        g_assert_null (p->build);
+        g_ptr_array_free (presets, TRUE);
+        presets = build_presets_parse ("[project]\nlanguage=rust\n", user, system, NULL, NULL);
+        p = build_presets_find (presets, "/nowhere", NULL);
+        g_assert_cmpstr (p->gdb[0], ==, "my-gdb");
+        g_assert_null (p->build);
+        g_ptr_array_free (presets, TRUE);
+
         presets = build_presets_parse ("[project\n", NULL, system, &project_error, NULL);
         g_assert_nonnull (project_error);
         g_clear_error (&project_error);
