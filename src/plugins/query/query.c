@@ -124,6 +124,7 @@ typedef struct
     GString *out, *err;
     gboolean cut;      // mongosh printed more than QUERY_OUTPUT_MAX: the rest is not kept
     gboolean table;    // asked for by "// @table": mongosh --json, its answer in columns too
+    char *use;         // the string of the use () above a part run alone, NULL for none
     long limit;        // asked for by "// @limit N", 0 when not
     gboolean limited;  // and put into the query
     gboolean stopped;
@@ -145,7 +146,7 @@ typedef struct
 /*** forward declarations (file scope functions) *************************************************/
 
 const mc_editor_plugin_t *mc_editor_plugin_register (void);
-static void query_run_text (query_t *q, char *text, char *file, long first);
+static void query_run_text (query_t *q, char *text, char *file, long first, char *use);
 
 /*** file scope variables ************************************************************************/
 
@@ -641,6 +642,8 @@ query_output_done (query_t *q, const char *out, const char *err, int status)
     else
         g_string_append_printf (text, _ ("line %ld"), q->first);
     g_string_append_printf (text, "   %.2f s   %s   %s   ", seconds, when, q->endpoint);
+    if (q->use != NULL)
+        g_string_append_printf (text, "use(%s)   ", q->use);
     if (q->limited)
         g_string_append_printf (text, _ ("limit %ld   "), q->limit);
     else if (q->limit > 0)
@@ -764,12 +767,18 @@ query_output_ready (int fd, void *data)
 static void
 query_start (query_t *q)
 {
+    char *used = query_mongo_use (q->text);
+    // the database of the use () above a part run alone, in the prefix: the lines stay the same
+    char *prefix = q->use != NULL
+        ? g_strdup_printf ("%s db = db.getSiblingDB(%s);", query_mongo_prefix (), q->use)
+        : g_strdup (query_mongo_prefix ());
     char *text =
-        q->limit > 0 ? query_mongo_with_limit (q->text, q->limit, &q->limited) : g_strdup (q->text);
+        q->limit > 0 ? query_mongo_with_limit (used, q->limit, &q->limited) : g_strdup (used);
     const char *argv[10];
     int n = 0, in, out, err, i;
     GError *error = NULL;
 
+    g_free (used);
     if (q->table)
     {
         char *array = query_mongo_for_table (text);
@@ -784,6 +793,7 @@ query_start (query_t *q)
                        _ ("The query is longer than mongosh takes (128 KB).\n"), TRUE);
         query_table_say (q, "");
         g_free (text);
+        g_free (prefix);
         return;
     }
 
@@ -793,7 +803,7 @@ query_start (query_t *q)
     if (q->table)
         argv[n++] = "--json=relaxed";
     argv[n++] = "--eval";
-    argv[n++] = query_mongo_prefix ();
+    argv[n++] = prefix;
     argv[n++] = "--eval";
     argv[n++] = text;
     argv[n] = NULL;
@@ -823,9 +833,11 @@ query_start (query_t *q)
         query_table_say (q, "");
         g_free (message);
         g_free (text);
+        g_free (prefix);
         return;
     }
     g_free (text);
+    g_free (prefix);
     // nothing to read from the terminal of coole
     close (in);
     q->fds[0] = out;
@@ -868,7 +880,7 @@ static void
 query_run (query_t *q, void *edit, gboolean all)
 {
     WEdit *e;
-    char *text, *block = NULL;
+    char *text, *block = NULL, *use = NULL;
     gsize len = 0;
     long first = 0;
     off_t start, end;
@@ -906,6 +918,9 @@ query_run (query_t *q, void *edit, gboolean all)
         if (block == NULL)
             block = g_strdup (text);
     }
+    // a part run alone is in the database of the use ("name") above it
+    if (first > 0)
+        use = query_use_before (text, first);
     g_free (text);
 
     if (query_blank (block))
@@ -916,18 +931,22 @@ query_run (query_t *q, void *edit, gboolean all)
                                                "around the cursor is empty.")
                                           : _ ("The file is empty."));
         g_free (block);
+        g_free (use);
         return;
     }
-    query_run_text (q, block, q->host->get_current_file (q->host, edit), first + 1);
+    query_run_text (q, block, q->host->get_current_file (q->host, edit), first + 1, use);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
 /* Run @text, from the line @first, from 1, of @file; NULL for a query not of the file as it is
-   now, whose errors are not marked in it.  Both are taken. */
+   now, whose errors are not marked in it; in the database of @use, the string of a use () above
+   it, NULL for none.  All are taken. */
 static void
-query_run_text (query_t *q, char *text, char *file, long first)
+query_run_text (query_t *q, char *text, char *file, long first, char *use)
 {
+    g_free (q->use);
+    q->use = use;
     g_free (q->text);
     q->text = text;
     // the history of the file the query is of, when another than that of the last one
@@ -961,7 +980,7 @@ query_history_run (query_t *q, const query_entry_t *e)
         query_run (q, NULL, FALSE);
         return;
     }
-    query_run_text (q, g_strdup (e->text), NULL, e->line);
+    query_run_text (q, g_strdup (e->text), NULL, e->line, NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1181,6 +1200,7 @@ query_close (void *data)
     g_free (q->endpoint);
     g_free (q->text);
     g_free (q->file);
+    g_free (q->use);
     g_free (q);
 }
 

@@ -714,6 +714,142 @@ query_last_code (const char *from, const char *to)
 /* --------------------------------------------------------------------------------------------- */
 
 char *
+query_use_before (const char *text, long line)
+{
+    const char *p = text, *found = NULL;
+    gsize found_len = 0;
+    long at = 0;
+
+    while (*p != '\0' && at < line)
+    {
+        if (p[0] == '/' && p[1] == '/')
+            p = query_line_end (p);
+        else if (p[0] == '/' && p[1] == '*')
+        {
+            const char *c = strstr (p + 2, "*/");
+            const char *e = c != NULL ? c + 2 : p + strlen (p);
+
+            for (; p < e; p++)
+                at += *p == '\n' ? 1 : 0;
+        }
+        else if (*p == '"' || *p == '\'' || *p == '`')
+        {
+            const char quote = *p;
+
+            for (p++; *p != '\0' && *p != quote; p++)
+            {
+                if (*p == '\\' && p[1] != '\0')
+                    p++;
+                at += *p == '\n' ? 1 : 0;
+            }
+            if (*p != '\0')
+                p++;
+        }
+        else if (strncmp (p, "use", 3) == 0
+                 && (p == text
+                     || !(g_ascii_isalnum (p[-1]) || p[-1] == '_' || p[-1] == '$' || p[-1] == '.')))
+        {
+            // use ( "name" ): the string, as it is written
+            const char *q = p + 3, *lit;
+
+            while (*q == ' ' || *q == '\t')
+                q++;
+            if (*q == '(')
+            {
+                for (q++; *q == ' ' || *q == '\t'; q++)
+                    ;
+                lit = q;
+                if (*q == '"' || *q == '\'')
+                {
+                    const char quote = *q;
+
+                    for (q++; *q != '\0' && *q != quote && *q != '\n'; q++)
+                        if (*q == '\\' && q[1] != '\0')
+                            q++;
+                    if (*q == quote)
+                    {
+                        const char *e = q + 1;
+
+                        while (*e == ' ' || *e == '\t')
+                            e++;
+                        if (*e == ')')
+                        {
+                            found = lit;
+                            found_len = (gsize) (q + 1 - lit);
+                        }
+                    }
+                }
+            }
+            p += 3;
+        }
+        else
+        {
+            at += *p == '\n' ? 1 : 0;
+            p++;
+        }
+    }
+    return found != NULL ? g_strndup (found, found_len) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_mongo_use (const char *text)
+{
+    GString *out = g_string_new (NULL);
+    const char *p = text;
+
+    while (*p != '\0')
+    {
+        if (p[0] == '/' && p[1] == '/')
+        {
+            const char *e = query_line_end (p);
+
+            g_string_append_len (out, p, e - p);
+            p = e;
+        }
+        else if (p[0] == '/' && p[1] == '*')
+        {
+            const char *c = strstr (p + 2, "*/");
+            const char *e = c != NULL ? c + 2 : p + strlen (p);
+
+            g_string_append_len (out, p, e - p);
+            p = e;
+        }
+        else if (*p == '"' || *p == '\'' || *p == '`')
+        {
+            const char *e = p + 1;
+
+            while (*e != '\0' && *e != *p)
+                e += e[0] == '\\' && e[1] != '\0' ? 2 : 1;
+            if (*e != '\0')
+                e++;
+            g_string_append_len (out, p, e - p);
+            p = e;
+        }
+        else if (strncmp (p, "use", 3) == 0
+                 && (p == text
+                     || !(g_ascii_isalnum (p[-1]) || p[-1] == '_' || p[-1] == '$' || p[-1] == '.')))
+        {
+            const char *e = p + 3;
+
+            while (*e == ' ' || *e == '\t')
+                e++;
+            if (*e == '(')
+                g_string_append (out, "db = db.getSiblingDB");
+            else
+                g_string_append (out, "use");
+            p += 3;
+        }
+        else
+            g_string_append_c (out, *p++);
+    }
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
 query_mongo_with_limit (const char *text, long limit, gboolean *done)
 {
     const char *end;

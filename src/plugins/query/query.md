@@ -24,6 +24,14 @@ It is not given on the command line, where any user could read it.
 *MC_MONGOSH*
 : The program; without it, *mongosh* of PATH.
 
+A line *use("name")* runs the queries after it in that database, as
+*db = db.getSiblingDB("name")*, a part between lines *// ---* or a selection
+run alone too, the header of Output telling it: mongosh, with no database of its own, takes
+no *use()*, and the language server of the queries, *mongolsp* of lsp.json,
+knows the database of the collections it completes by it. With the server in
+PATH, Ctrl-Space and the dot after *db* complete the collections, their
+fields, the methods, the stages and the operators.
+
 The query itself goes to mongosh on its command line, which any user can
 read while it runs: a secret a query needs, a token or a password, is better
 taken from the environment, *process.env.NAME*, which mongosh inherits too.

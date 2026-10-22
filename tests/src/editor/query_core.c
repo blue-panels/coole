@@ -217,6 +217,34 @@ test_mongo (void)
                  "db.a.aggregate([{$match: {}},{ $limit: 7 }])");
     check_limit ("db.a.aggregate([])", 7, "db.a.aggregate([{ $limit: 7 }])");
     check_limit ("db.a.aggregate(pipeline)", 7, NULL);
+    // use () as getSiblingDB (), not in strings, comments, methods or other names
+    s = query_mongo_use ("use(\"a\");\nuse (\"b\")\nx.use(1); reuse(1); user(1)\n"
+                         "// use(\"c\")\nprint(\"use(d)\") /* use( */");
+    g_assert_cmpstr (
+        s, ==,
+        "db = db.getSiblingDB(\"a\");\ndb = db.getSiblingDB (\"b\")\nx.use(1); reuse(1); "
+        "user(1)\n// use(\"c\")\nprint(\"use(d)\") /* use( */");
+    g_free (s);
+
+    // the use () above a part run alone: the last one, as its string is written
+    {
+        const char *file = "use(\"a\");\n// ---\ndb.x.find()\n/* use(\"c\")\n */\n"
+                           "use ( 'b' )\nprint(\"use(d)\")\n// ---\ndb.y.find()\n";
+
+        g_assert_null (query_use_before (file, 0));
+        s = query_use_before (file, 1);
+        g_assert_cmpstr (s, ==, "\"a\"");
+        g_free (s);
+        // not in a comment or a string, the lines counted through them
+        s = query_use_before (file, 5);
+        g_assert_cmpstr (s, ==, "\"a\"");
+        g_free (s);
+        s = query_use_before (file, 8);
+        g_assert_cmpstr (s, ==, "'b'");
+        g_free (s);
+        g_assert_null (query_use_before ("use(name)\nx\n", 1));
+    }
+
     // what for_table then makes of it
     check_for_table ("db.a.find()\n.limit(100)", "db.a.find()\n.limit(100)\n.toArray()");
 

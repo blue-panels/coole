@@ -54,6 +54,13 @@ long query_wants_limit (const char *text);
    (), a stage $limit at the end of the pipeline of aggregate ([...]); @done FALSE, and @text,
    when it has a limit of its own, or ends with neither */
 char *query_mongo_with_limit (const char *text, long limit, gboolean *done);
+/* The query of @text with its calls use ("name") as db = db.getSiblingDB ("name"): mongosh with
+   no database of its own takes no use (), and a language server takes the database of the
+   queries from it.  The lines stay where they are. */
+char *query_mongo_use (const char *text);
+/* The database of the last use ("name") of @text above its 0-based @line, as the string is
+   written, quotes and all: that of a part of the file run alone; NULL when there is none */
+char *query_use_before (const char *text, long line);
 /* The query of @text for the table: ".toArray()" on a line after it when it ends with a chain of
    a query, find () or aggregate () and what a cursor is sorted and cut with; else @text */
 char *query_mongo_for_table (const char *text);
