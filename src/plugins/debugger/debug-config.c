@@ -826,15 +826,27 @@ debug_python_has_debugpy (const char *python)
 static void
 debug_launch_python (debugger_t *debug, debug_launch_t *launch)
 {
-    char *python, *quoted;
+    char *python;
+    char **argv = NULL;
+    GString *adapter;
+    const char *module = NULL;
+    int argc = 0, i;
 
-    if (launch->executable == NULL
-        || !g_str_has_suffix (launch->executable, ".py")
-        // debugpy of a Python of PATH, as presets.ini has it; a Python by its path is chosen
-        || launch->adapter == NULL || strstr (launch->adapter, "debugpy.adapter") == NULL
-        || strchr (launch->adapter, '/') != NULL
-        || (python = debug_project_python (debug->project_dir)) == NULL)
+    if (launch->executable == NULL || !g_str_has_suffix (launch->executable, ".py")
+        || launch->adapter == NULL || !g_shell_parse_argv (launch->adapter, &argc, &argv, NULL))
         return;
+    // debugpy of a Python of PATH, as presets.ini has it: "python3 -I -m debugpy.adapter
+    // --log-stderr" too, its arguments kept, and -mdebugpy.adapter; a Python by its path is chosen
+    for (i = 1; i < argc && !g_str_has_prefix (argv[i], "-m"); i++)
+        ;
+    if (i < argc)
+        module = argv[i][2] != '\0' ? argv[i] + 2 : argv[i + 1];
+    if (strchr (argv[0], '/') != NULL || module == NULL || strcmp (module, "debugpy.adapter") != 0
+        || (python = debug_project_python (debug->project_dir)) == NULL)
+    {
+        g_strfreev (argv);
+        return;
+    }
     if (!debug_python_has_debugpy (python))
     {
         if (!debug->venv_told)
@@ -851,15 +863,28 @@ debug_launch_python (debugger_t *debug, debug_launch_t *launch)
             g_free (text_value);
         }
         g_free (python);
+        g_strfreev (argv);
         return;
     }
-    // quoted only when the shell would split or change it
-    quoted = strpbrk (python, " \t\n'\"\\$`*?[]{}()<>|&;~#") != NULL ? g_shell_quote (python)
-                                                                     : g_strdup (python);
+    // the Python of the environment for that of PATH, the rest as it was
+    g_free (argv[0]);
+    argv[0] = python;
+    adapter = g_string_new (NULL);
+    for (i = 0; i < argc; i++)
+    {
+        // quoted only when the shell would split or change it
+        const gboolean plain =
+            *argv[i] != '\0' && strpbrk (argv[i], " \t\n'\"\\$`*?[]{}()<>|&;~#") == NULL;
+        char *quoted = plain ? g_strdup (argv[i]) : g_shell_quote (argv[i]);
+
+        if (i > 0)
+            g_string_append_c (adapter, ' ');
+        g_string_append (adapter, quoted);
+        g_free (quoted);
+    }
+    g_strfreev (argv);
     g_free (launch->adapter);
-    launch->adapter = g_strconcat (quoted, " -m debugpy.adapter", (char *) NULL);
-    g_free (quoted);
-    g_free (python);
+    launch->adapter = g_string_free (adapter, FALSE);
 }
 
 /* A configuration has the adapter of its program, what the configuration has not set */

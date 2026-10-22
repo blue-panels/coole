@@ -32,7 +32,9 @@ and is an error when the file it names is there.
 *presets.ini* of coole, in its directory of configuration, has a group for
 each language: the files in the root of a project that tell it (*markers*),
 the endings of its files (*extensions*), the command that builds it
-(*build*), and how it is debugged (see the help of the debugger).
+(*build*), and how it is debugged (see the help of the debugger). The
+language of a project is that of a marker in its root, else that of the file
+in front, by its ending, when the file is in the project.
 *~/.config/coole/presets.ini* has groups of its own: they come first, and a
 group of it replaces that of coole of its name, all of it. A mistake in it
 is told once, with its line.

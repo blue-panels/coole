@@ -402,7 +402,9 @@ and Enter in the form, which has the adapter of Python already.
 
 A project with a virtual environment, *.venv*, *venv*, *.env* or *env* with
 *bin/python* in it, is debugged with its own Python and the packages of the
-project: the adapter becomes *.venv/bin/python -m debugpy.adapter*. debugpy
+project: the adapter becomes *.venv/bin/python -m debugpy.adapter*, the
+arguments of the adapter kept, *-I* or *--log-stderr*. A Python named by its
+path stays as it is. debugpy
 has to be in that environment too, *.venv/bin/python -m pip install
 debugpy*: without it the form says so, and the script runs with the Python
 of the system.
