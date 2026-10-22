@@ -63,6 +63,9 @@ lsp_backend_free (gpointer data)
         json_node_unref (backend->initialization_options);
     if (backend->settings != NULL)
         json_node_unref (backend->settings);
+    g_free (backend->startup);
+    if (backend->requests != NULL)
+        json_node_unref (backend->requests);
     g_free (backend);
 }
 
@@ -238,6 +241,48 @@ lsp_config_backend_parse (JsonNode *node, guint index, GError **error)
     member = json_object_get_member (o, "settings");
     if (member != NULL && !JSON_NODE_HOLDS_NULL (member))
         backend->settings = json_node_copy (member);
+
+    member = json_object_get_member (o, "startup");
+    if (member != NULL && !JSON_NODE_HOLDS_NULL (member))
+    {
+        if (!JSON_NODE_HOLDS_VALUE (member) || json_node_get_value_type (member) != G_TYPE_STRING
+            || *json_node_get_string (member) == '\0')
+        {
+            g_set_error (error, LSP_CONFIG_ERROR, 0, "%s.startup: not the name of an option",
+                         where);
+            goto fail;
+        }
+        backend->startup = g_strdup (json_node_get_string (member));
+    }
+
+    member = json_object_get_member (o, "requests");
+    if (member != NULL && !JSON_NODE_HOLDS_NULL (member))
+    {
+        JsonArray *requests;
+        guint i;
+
+        if (!JSON_NODE_HOLDS_ARRAY (member))
+        {
+            g_set_error (error, LSP_CONFIG_ERROR, 0, "%s.requests: not an array", where);
+            goto fail;
+        }
+        requests = json_node_get_array (member);
+        for (i = 0; i < json_array_get_length (requests); i++)
+        {
+            JsonNode *request = json_array_get_element (requests, i);
+            JsonNode *method = JSON_NODE_HOLDS_OBJECT (request)
+                ? json_object_get_member (json_node_get_object (request), "method")
+                : NULL;
+
+            if (method == NULL || !JSON_NODE_HOLDS_VALUE (method)
+                || json_node_get_value_type (method) != G_TYPE_STRING)
+            {
+                g_set_error (error, LSP_CONFIG_ERROR, 0, "%s.requests[%u]: no method", where, i);
+                goto fail;
+            }
+        }
+        backend->requests = json_node_copy (member);
+    }
 
     g_free (where);
     return backend;
@@ -681,6 +726,124 @@ lsp_command_expand (char *const *command, const char *build_dir)
     }
     g_ptr_array_add (out, NULL);
     return (char **) g_ptr_array_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+lsp_config_for_startup (lsp_config_t *config, gboolean (*started) (const char *option, void *data),
+                        void *data)
+{
+    GPtrArray *first = g_ptr_array_new ();
+    guint i;
+
+    for (i = 0; i < config->backends->len; i++)
+    {
+        lsp_backend_t *backend = g_ptr_array_index (config->backends, i);
+
+        if (backend->startup == NULL)
+            continue;
+        if (started (backend->startup, data))
+            g_ptr_array_add (first, backend);
+        else
+            backend->enabled = FALSE;
+    }
+    // those of the option first, in their order; the array frees what it removes: taken out
+    for (i = first->len; i > 0; i--)
+    {
+        guint at;
+
+        if (g_ptr_array_find (config->backends, g_ptr_array_index (first, i - 1), &at))
+            g_ptr_array_insert (config->backends, 0,
+                                g_ptr_array_steal_index (config->backends, at));
+    }
+    g_ptr_array_free (first, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* @text with its variables put in */
+static char *
+lsp_config_expand_string (const char *text, const char *command_dir)
+{
+    GString *out = g_string_new (NULL);
+    const char *p = text;
+
+    while (*p != '\0')
+    {
+        const char *end;
+
+        if (p[0] != '$' || p[1] != '{' || (end = strchr (p + 2, '}')) == NULL)
+        {
+            g_string_append_c (out, *p++);
+            continue;
+        }
+        if (g_str_has_prefix (p + 2, "env:"))
+        {
+            char *name = g_strndup (p + 6, (gsize) (end - p - 6));
+            const char *value = g_getenv (name);
+
+            g_string_append (out, value != NULL ? value : "");
+            g_free (name);
+        }
+        else if (end - p - 2 == (long) strlen ("command_dir")
+                 && strncmp (p + 2, "command_dir", strlen ("command_dir")) == 0)
+            g_string_append (out, command_dir != NULL ? command_dir : "");
+        else
+            // no variable of ours: as it is
+            g_string_append_len (out, p, end + 1 - p);
+        p = end + 1;
+    }
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+JsonNode *
+lsp_config_expand (JsonNode *node, const char *command_dir)
+{
+    JsonNode *copy;
+
+    if (node == NULL)
+        return NULL;
+    if (JSON_NODE_HOLDS_OBJECT (node))
+    {
+        JsonObject *from = json_node_get_object (node), *to = json_object_new ();
+        GList *names = json_object_get_members (from), *l;
+
+        for (l = names; l != NULL; l = l->next)
+            json_object_set_member (
+                to, l->data,
+                lsp_config_expand (json_object_get_member (from, l->data), command_dir));
+        g_list_free (names);
+        copy = json_node_new (JSON_NODE_OBJECT);
+        json_node_take_object (copy, to);
+        return copy;
+    }
+    if (JSON_NODE_HOLDS_ARRAY (node))
+    {
+        JsonArray *from = json_node_get_array (node), *to = json_array_new ();
+        guint i;
+
+        for (i = 0; i < json_array_get_length (from); i++)
+            json_array_add_element (
+                to, lsp_config_expand (json_array_get_element (from, i), command_dir));
+        copy = json_node_new (JSON_NODE_ARRAY);
+        json_node_take_array (copy, to);
+        return copy;
+    }
+    if (JSON_NODE_HOLDS_VALUE (node) && json_node_get_value_type (node) == G_TYPE_STRING)
+    {
+        char *text = lsp_config_expand_string (json_node_get_string (node), command_dir);
+
+        copy = json_node_new (JSON_NODE_VALUE);
+        json_node_set_string (copy, text);
+        g_free (text);
+        return copy;
+    }
+    return json_node_copy (node);
 }
 
 /* --------------------------------------------------------------------------------------------- */

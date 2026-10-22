@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <stdlib.h>  // realpath()
 #include <string.h>
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -99,6 +100,7 @@ struct lsp_client_t
     JsonObject *environment;
     JsonNode *initialization_options;
     JsonNode *settings;
+    JsonNode *requests;  // after initialized, their variables not put in yet
     char *root;
 
     lsp_client_state_t state;
@@ -135,6 +137,7 @@ struct lsp_client_t
 /*** forward declarations (file scope functions) *************************************************/
 
 static void lsp_client_lost (lsp_client_t *client, const char *why);
+static void lsp_client_send_requests (lsp_client_t *client);
 
 /*** file scope variables ************************************************************************/
 
@@ -1089,6 +1092,7 @@ lsp_client_initialized (lsp_client_t *client, lsp_request_status_t status, JsonN
         (void) lsp_client_send_notification (client, "workspace/didChangeConfiguration",
                                              lsp_object_node (params));
     }
+    lsp_client_send_requests (client);
     client->state = LSP_CLIENT_RUNNING;
     client->state_changed = TRUE;
     lsp_client_log_add (client, "running, positions in %s",
@@ -1096,6 +1100,67 @@ lsp_client_initialized (lsp_client_t *client, lsp_request_status_t status, JsonN
     g_hash_table_iter_init (&iter, client->docs);
     while (g_hash_table_iter_next (&iter, NULL, &doc))
         lsp_client_send_open (client, (lsp_doc_t *) doc);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The answer to a request of lsp.json, in the log: the method and how it went, not the params,
+   which may hold what is private, the password of a connection string */
+static void
+lsp_client_request_answered (lsp_client_t *client, lsp_request_status_t status, JsonNode *result,
+                             JsonObject *error, void *data)
+{
+    const char *method = (const char *) data;
+
+    if (status == LSP_REQUEST_CLOSED)
+        return;
+    if (status == LSP_REQUEST_OK)
+    {
+        char *text = result != NULL ? json_to_string (result, FALSE) : g_strdup ("null");
+
+        lsp_client_log_add (client, "%s: %.200s", method, text);
+        g_free (text);
+    }
+    else
+        lsp_client_log_add (client, "%s: %s", method,
+                            status == LSP_REQUEST_TIMEOUT ? "no answer"
+                                : error != NULL && lsp_member_string (error, "message") != NULL
+                                ? lsp_member_string (error, "message")
+                                : "failed");
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The requests of lsp.json, once the server is initialized: ${env:NAME} and ${command_dir}, the
+   real directory of the program, put in */
+static void
+lsp_client_send_requests (lsp_client_t *client)
+{
+    JsonArray *requests;
+    char *program, *real, *dir = NULL;
+    guint i;
+
+    if (client->requests == NULL)
+        return;
+    program = g_find_program_in_path (client->command[0]);
+    real = program != NULL ? realpath (program, NULL) : NULL;
+    if (real != NULL)
+        dir = g_path_get_dirname (real);
+    requests = json_node_get_array (client->requests);
+    for (i = 0; i < json_array_get_length (requests); i++)
+    {
+        JsonObject *request = json_array_get_object_element (requests, i);
+        const char *method = json_object_get_string_member (request, "method");
+        JsonNode *params = json_object_get_member (request, "params");
+
+        (void) lsp_client_send_request (client, method,
+                                        params != NULL ? lsp_config_expand (params, dir) : NULL,
+                                        LSP_CONFIG_REQUEST_TIMEOUT_MS, TRUE,
+                                        lsp_client_request_answered, g_strdup (method), g_free);
+    }
+    g_free (dir);
+    free (real);
+    g_free (program);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1188,6 +1253,8 @@ lsp_client_new (const lsp_backend_t *backend, const char *root,
         client->initialization_options = json_node_copy (backend->initialization_options);
     if (backend->settings != NULL)
         client->settings = json_node_copy (backend->settings);
+    if (backend->requests != NULL)
+        client->requests = json_node_copy (backend->requests);
     client->root = g_strdup (root);
     client->in = client->out = client->err = -1;
     client->reader = content_frame_reader_new (LSP_MAX_MESSAGE);
@@ -1228,6 +1295,8 @@ lsp_client_free (lsp_client_t *client)
         json_node_unref (client->initialization_options);
     if (client->settings != NULL)
         json_node_unref (client->settings);
+    if (client->requests != NULL)
+        json_node_unref (client->requests);
     g_free (client->root);
     g_free (client->reason);
     g_free (client);

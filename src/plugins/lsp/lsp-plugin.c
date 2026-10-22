@@ -261,6 +261,7 @@ struct lsp_plugin_t
 // the entry of the module
 const mc_editor_plugin_t *mc_editor_plugin_register (void);
 
+static gboolean lsp_started_with (const char *name, void *data);
 static void lsp_on_state (void *owner, lsp_client_t *client);
 static void lsp_on_diagnostics (void *owner, lsp_client_t *client, const char *uri,
                                 JsonArray *diagnostics);
@@ -660,7 +661,8 @@ lsp_server_start (lsp_server_t *server, gboolean manual)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Whether what happens @when happens now: on a project of -D for "ide" */
+/* Whether what happens @when happens now: on a project of -D for "ide", and in the editor of
+   queries of -Q, whose file is the one thing it edits */
 static gboolean
 lsp_now (const lsp_plugin_t *plugin, lsp_when_t when)
 {
@@ -669,7 +671,7 @@ lsp_now (const lsp_plugin_t *plugin, lsp_when_t when)
     case LSP_WHEN_ALWAYS:
         return TRUE;
     case LSP_WHEN_IDE:
-        return plugin->project != NULL;
+        return plugin->project != NULL || lsp_started_with ("query", (void *) plugin);
     default:
         return FALSE;
     }
@@ -3623,6 +3625,17 @@ lsp_config_files (char **system, char **user)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether coole was started with the option @name: "query" for -Q */
+static gboolean
+lsp_started_with (const char *name, void *data)
+{
+    const lsp_plugin_t *plugin = (const lsp_plugin_t *) data;
+
+    return plugin->host->startup_option (plugin->host, name) != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 lsp_load_config (lsp_plugin_t *plugin)
 {
@@ -3631,6 +3644,8 @@ lsp_load_config (lsp_plugin_t *plugin)
 
     lsp_config_files (&system, &user);
     plugin->config = lsp_config_load (system, user, errors);
+    if (plugin->config != NULL)
+        lsp_config_for_startup (plugin->config, lsp_started_with, plugin);
     g_free (plugin->config_errors);
     plugin->config_errors = errors->len > 0 ? g_strdup (errors->str) : NULL;
     g_string_free (errors, TRUE);

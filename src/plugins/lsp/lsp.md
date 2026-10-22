@@ -194,8 +194,9 @@ setting of the file that of the system's. For example
 ```
 
 **autostart**
-: "ide", the default, starts a server by itself on a project of -D only;
-"always" on any file; "never" by LSP Start only. A backend may have its own.
+: "ide", the default, starts a server by itself on a project of -D, and on
+the file of queries of -Q; "always" on any file; "never" by LSP Start only. A
+backend may have its own.
 
 **completion_on_trigger**
 : The list of completion shown by itself after a character the server
@@ -233,6 +234,26 @@ when it starts; and the settings it asks for.
 
 **enabled**
 : false: the server is there and serves nothing; true by default.
+
+**startup**
+: The option coole was started with for the server to serve: "query", for
+-Q. It serves then alone, before the other servers of its files, and not
+otherwise.
+
+**requests**
+: Requests of the server's own, sent once it is initialized, each a
+*method* and its *params*; the log tells how each was answered, not its
+params. In a string of the params ${env:NAME} is the variable of the
+environment of coole, empty when it has none, and ${command_dir} the real
+directory of the program, a link from PATH followed.
+
+The server of MongoDB of lsp.json, *mongolsp*, serves the queries of -Q: the
+methods of *db*, the collections and their fields, the stages and the
+operators. It is the server of the extension of MongoDB for VS Code, run on
+its own (<https://github.com/blue-panels/mongolsp>), and has to be in PATH;
+its requests give it the connection string of *MC_MONGO_URI*, on its input,
+not on a command line. It knows the database of the names after *db.* by a
+line *use("name")* above them.
 
 The file is read when coole starts, and again when the settings dialog writes
 it.

@@ -142,6 +142,9 @@ test_parse (void)
             "{\"backends\":[{\"id\":\"x\",\"command\":[]}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[1]}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"extensions\":{\".c\":1}}]}",
+            "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"startup\":1}]}",
+            "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"requests\":{}}]}",
+            "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"requests\":[{\"params\":1}]}]}",
             // two backends of one id
             ("{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"]},"
              "{\"id\":\"x\",\"command\":[\"y\"]}]}"),
@@ -309,6 +312,80 @@ test_command (void)
     g_strfreev (expanded);
 }
 
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+started_query (const char *option, void *data)
+{
+    (void) data;
+    return strcmp (option, "query") == 0;
+}
+
+static gboolean
+started_none (const char *option, void *data)
+{
+    (void) option;
+    (void) data;
+    return FALSE;
+}
+
+static void
+test_startup (void)
+{
+    static const char *json =
+        "{\"backends\":["
+        "{\"id\":\"ts\",\"command\":[\"sh\"],\"extensions\":{\".js\":\"javascript\"}},"
+        "{\"id\":\"mongo\",\"command\":[\"sh\"],\"extensions\":{\".js\":\"javascript\"},"
+        "\"startup\":\"query\",\"requests\":[{\"method\":\"A\",\"params\":{\"x\":1}},"
+        "{\"method\":\"B\"}]}]}";
+    GError *error = NULL;
+    lsp_config_t *config;
+    const lsp_backend_t *backend;
+
+    // coole -Q: the backend of the option first
+    config = lsp_config_parse (json, -1, &error);
+    g_assert_no_error (error);
+    lsp_config_for_startup (config, started_query, NULL);
+    backend = lsp_config_backend_for (config, "/q/a.js", NULL);
+    g_assert_cmpstr (backend->id, ==, "mongo");
+    g_assert_cmpuint (json_array_get_length (json_node_get_array (backend->requests)), ==, 2);
+    lsp_config_free (config);
+
+    // started otherwise: it serves nothing
+    config = lsp_config_parse (json, -1, &error);
+    g_assert_no_error (error);
+    lsp_config_for_startup (config, started_none, NULL);
+    backend = lsp_config_backend_for (config, "/q/a.js", NULL);
+    g_assert_cmpstr (backend->id, ==, "ts");
+    lsp_config_free (config);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+test_expand (void)
+{
+    JsonNode *node, *expanded;
+    char *text;
+
+    g_setenv ("LSP_TEST_URI", "mongodb://u:p@h/", TRUE);
+    g_unsetenv ("LSP_TEST_NONE");
+    node = json_from_string ("{\"a\":\"${env:LSP_TEST_URI}\",\"b\":[\"${command_dir}/..\",1,null],"
+                             "\"c\":\"<${env:LSP_TEST_NONE}>\",\"d\":\"${other} $x\",\"e\":{}}",
+                             NULL);
+    expanded = lsp_config_expand (node, "/opt/m/bin");
+    text = json_to_string (expanded, FALSE);
+    g_assert_cmpstr (text, ==,
+                     "{\"a\":\"mongodb://u:p@h/\",\"b\":[\"/opt/m/bin/..\",1,null],"
+                     "\"c\":\"<>\",\"d\":\"${other} $x\",\"e\":{}}");
+    g_free (text);
+    json_node_unref (expanded);
+    json_node_unref (node);
+    g_assert_null (lsp_config_expand (NULL, NULL));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (int argc, char **argv)
 {
@@ -321,6 +398,8 @@ main (int argc, char **argv)
     g_test_add_func ("/lsp/config-load", test_load);
     g_test_add_func ("/lsp/config-root", test_root);
     g_test_add_func ("/lsp/config-command", test_command);
+    g_test_add_func ("/lsp/config-startup", test_startup);
+    g_test_add_func ("/lsp/config-expand", test_expand);
     result = g_test_run ();
     remove_tree (top);
     g_free (top);

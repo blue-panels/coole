@@ -39,6 +39,9 @@ typedef struct
     JsonObject *environment;           // the variables to set, a null one taken away; NULL: none
     JsonNode *initialization_options;  // NULL: none
     JsonNode *settings;                // NULL: none
+    char *startup;       // serves only when coole was started with this option, "query" for -Q,
+                         // then before the others; NULL: whatever the option
+    JsonNode *requests;  // sent after initialized, an array of {method, params}; NULL: none
 } lsp_backend_t;
 
 typedef struct
@@ -78,6 +81,13 @@ const lsp_backend_t *lsp_config_backend (const lsp_config_t *config, const char 
 /* Whether the program of @backend can be run */
 gboolean lsp_backend_runnable (const lsp_backend_t *backend);
 lsp_when_t lsp_backend_autostart (const lsp_config_t *config, const lsp_backend_t *backend);
+/* The backends for how coole was started, @started telling whether it was with an option: one
+   with "startup" serves only then, and comes before the others */
+void lsp_config_for_startup (lsp_config_t *config,
+                             gboolean (*started) (const char *option, void *data), void *data);
+/* A copy of @node, its strings with ${env:NAME} as the variable of the environment, empty when
+   it has none, and ${command_dir} as @command_dir */
+JsonNode *lsp_config_expand (JsonNode *node, const char *command_dir);
 
 /* The root the server of @backend has for @path: @project when it holds the file, else the
    nearest directory with .coole, else with a root marker of the backend, else with .git, .hg or
