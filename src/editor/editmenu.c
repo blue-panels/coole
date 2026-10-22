@@ -385,6 +385,9 @@ create_command_menu (void)
     entries = g_list_prepend (entries, menu_entry_new (_ ("Macro e&xplorer..."), CK_MacroExplorer));
     entries = g_list_prepend (
         entries, menu_entry_new (_ ("Record/Repeat &actions"), CK_RepeatStartStopRecord));
+    // those of the plugins, a separator of their own first: the build, git
+    entries =
+        g_list_concat (g_list_reverse (create_plugin_menu_entries (MC_EP_MENU_COMMAND)), entries);
 
     return g_list_reverse (entries);
 }

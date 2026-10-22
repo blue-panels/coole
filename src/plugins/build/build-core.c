@@ -596,7 +596,8 @@ build_parse_diagnostic (const char *line, const char *dir)
         return NULL;
     if (re == NULL)
         re = g_regex_new ("^([^:\\s][^:]*):(\\d+):(?:(\\d+):)?\\s*(fatal error|error|warning|note)"
-                          ":\\s*(.*)$",
+                          // the code of rustc: error[E0425]
+                          "(?:\\[\\w+\\])?:\\s*(.*)$",
                           G_REGEX_OPTIMIZE, 0, NULL);
     if (re != NULL && g_regex_match (re, line, 0, &match))
     {

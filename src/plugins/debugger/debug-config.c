@@ -424,7 +424,8 @@ debug_config_load (debugger_t *debug)
     // the configurations of the project go before the user's own
     shared_path = debug_project_config_path (debug);
     shared = g_key_file_new ();
-    debug->launches_in_project = FALSE;
+    // a project new to the debugger keeps them in it, in .coole/debug.ini
+    debug->launches_in_project = !own_launches && debug->launches->len == 0;
     if (!own_launches && g_key_file_load_from_file (shared, shared_path, G_KEY_FILE_NONE, NULL))
     {
         g_ptr_array_set_size (debug->launches, 0);
@@ -689,36 +690,55 @@ debug_check_program (debugger_t *debug, const char *program, const char *system,
     g_free (text_value);
 }
 
-/* The debug adapter of a program by the name of its file: a program of the machine has none,
-   GDB runs it */
-typedef struct
+/* The language of the project of @root, else of the file @path, as the build plugin has it: the
+   copy of the project, .coole/project.ini, else presets.ini; its id, gdb, program, hide,
+   adapter, address and launch; NULL when it has none */
+static GVariant *
+debug_preset (debugger_t *debug, const char *root, const char *path)
 {
-    const char *suffix;
-    const char *adapter;
-    const char *address;  // the adapter is on a socket
-    const char *extra;    // what its request launch needs
-} debug_adapter_default_t;
+    GVariantDict args;
+    GVariant *reply;
+    const char *id = NULL;
 
-static const debug_adapter_default_t debug_adapter_defaults[] = {
-    { ".py", "python3 -m debugpy.adapter", NULL, NULL },
-    // bash-dap runs the script in the terminal of the program by itself
-    { ".sh", "bash-dap", NULL, NULL },
-    { ".bash", "bash-dap", NULL, NULL },
-    { ".go", "dlv dap --listen=127.0.0.1:0", "127.0.0.1:0", "{\"mode\": \"debug\"}" },
-    { ".js", "js-debug-adapter 0", "127.0.0.1:0", "{\"type\": \"pwa-node\"}" },
-    { ".mjs", "js-debug-adapter 0", "127.0.0.1:0", "{\"type\": \"pwa-node\"}" },
-    { ".ts", "js-debug-adapter 0", "127.0.0.1:0", "{\"type\": \"pwa-node\"}" },
-};
+    if (debug->host->service_call == NULL || (root == NULL && path == NULL))
+        return NULL;
+    g_variant_dict_init (&args, NULL);
+    if (root != NULL)
+        g_variant_dict_insert (&args, "root", "s", root);
+    // a script by its ending, the copy of the project first
+    else if (debug->project_dir != NULL)
+        g_variant_dict_insert (&args, "project", "s", debug->project_dir);
+    if (path != NULL)
+        g_variant_dict_insert (&args, "path", "s", path);
+    reply = debug->host->service_call (debug->host, "build", "preset", g_variant_dict_end (&args),
+                                       NULL);
+    if (reply != NULL && !g_variant_lookup (reply, "id", "&s", &id))
+        g_clear_pointer (&reply, g_variant_unref);
+    return reply;
+}
 
-static const debug_adapter_default_t *
-debug_adapter_for (const char *program)
+/* The preset of a script by the ending of its name: one with a debug adapter, which runs it;
+   NULL for a program of the machine, which GDB runs */
+static GVariant *
+debug_script_preset (debugger_t *debug, const char *path)
 {
-    guint i;
+    GVariant *preset = debug_preset (debug, NULL, path);
+    const char *adapter = NULL;
 
-    for (i = 0; program != NULL && i < G_N_ELEMENTS (debug_adapter_defaults); i++)
-        if (g_str_has_suffix (program, debug_adapter_defaults[i].suffix))
-            return &debug_adapter_defaults[i];
-    return NULL;
+    if (preset != NULL && !g_variant_lookup (preset, "adapter", "&s", &adapter))
+        g_clear_pointer (&preset, g_variant_unref);
+    return preset;
+}
+
+static gboolean
+debug_is_script (debugger_t *debug, const char *path)
+{
+    GVariant *preset = debug_script_preset (debug, path);
+
+    if (preset == NULL)
+        return FALSE;
+    g_variant_unref (preset);
+    return TRUE;
 }
 
 /* How to get an adapter that is not there, NULL when it is not known */
@@ -797,8 +817,11 @@ debug_launch_python (debugger_t *debug, debug_launch_t *launch)
 {
     char *python, *quoted;
 
-    if (launch->executable == NULL || !g_str_has_suffix (launch->executable, ".py")
-        || g_strcmp0 (launch->adapter, "python3 -m debugpy.adapter") != 0
+    if (launch->executable == NULL
+        || !g_str_has_suffix (launch->executable, ".py")
+        // debugpy of a Python of PATH, as presets.ini has it; a Python by its path is chosen
+        || launch->adapter == NULL || strstr (launch->adapter, "debugpy.adapter") == NULL
+        || strchr (launch->adapter, '/') != NULL
         || (python = debug_project_python (debug->project_dir)) == NULL)
         return;
     if (!debug_python_has_debugpy (python))
@@ -832,8 +855,15 @@ debug_launch_python (debugger_t *debug, debug_launch_t *launch)
 static void
 debug_launch_adapter_defaults (debugger_t *debug, debug_launch_t *launch)
 {
-    const debug_adapter_default_t *d = debug_adapter_for (launch->executable);
+    GVariant *preset = debug_script_preset (debug, launch->executable);
+    const char *adapter = NULL, *address = NULL, *extra = NULL;
 
+    if (preset != NULL)
+    {
+        (void) g_variant_lookup (preset, "adapter", "&s", &adapter);
+        (void) g_variant_lookup (preset, "address", "&s", &address);
+        (void) g_variant_lookup (preset, "launch", "&s", &extra);
+    }
     g_free (launch->backend);
     launch->backend = g_strdup ("dap");
     if ((launch->adapter == NULL || *launch->adapter == '\0')
@@ -842,98 +872,66 @@ debug_launch_adapter_defaults (debugger_t *debug, debug_launch_t *launch)
         g_free (launch->adapter);
         g_free (launch->address);
         // a program of the machine: GDB speaks the protocol too
-        launch->adapter = g_strdup (d != NULL ? d->adapter : "gdb -i dap");
-        launch->address = g_strdup (d != NULL ? d->address : NULL);
+        launch->adapter = g_strdup (adapter != NULL ? adapter : "gdb -i dap");
+        launch->address = g_strdup (address);
     }
-    if ((launch->launch_extra == NULL || *launch->launch_extra == '\0') && d != NULL
-        && d->extra != NULL)
+    if ((launch->launch_extra == NULL || *launch->launch_extra == '\0') && extra != NULL)
     {
         g_free (launch->launch_extra);
-        launch->launch_extra = g_strdup (d->extra);
+        launch->launch_extra = g_strdup (extra);
     }
+    if (preset != NULL)
+        g_variant_unref (preset);
     debug_launch_python (debug, launch);
 }
 
-/* The name of the package of the Cargo.toml of @project_dir, the program cargo builds of it;
-   NULL when the project has none */
-static char *
-debug_cargo_package (const char *project_dir)
+/* Whether @program is one the language of the project keeps for itself, by the patterns of
+   @hide from the root: not one to debug */
+static gboolean
+debug_program_hidden (const debugger_t *debug, const char *program, const char *const *hide)
 {
-    char *path = g_build_filename (project_dir, "Cargo.toml", (char *) NULL);
-    char *text = NULL, *name = NULL;
-    char **lines;
-    gboolean package = FALSE;
+    const gsize len = strlen (debug->project_dir);
+    const char *from_root;
     guint i;
 
-    if (!g_file_get_contents (path, &text, NULL, NULL))
-    {
-        g_free (path);
-        return NULL;
-    }
-    g_free (path);
-    lines = g_strsplit (text, "\n", -1);
-    g_free (text);
-    // name = "try-rust", in [package]; a quoted string, the escapes of TOML not minded
-    for (i = 0; lines[i] != NULL && name == NULL; i++)
-    {
-        const char *line = g_strstrip (lines[i]);
-
-        if (*line == '[')
-            package = strcmp (line, "[package]") == 0;
-        else if (package && strncmp (line, "name", 4) == 0)
-        {
-            const char *p = line + 4;
-            const char *end;
-
-            while (*p == ' ' || *p == '\t')
-                p++;
-            if (*p++ != '=')
-                continue;
-            while (*p == ' ' || *p == '\t')
-                p++;
-            if (*p != '"' && *p != '\'')
-                continue;
-            end = strchr (p + 1, *p);
-            if (end != NULL && end > p + 1)
-                name = g_strndup (p + 1, (gsize) (end - p - 1));
-        }
-    }
-    g_strfreev (lines);
-    return name;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* Whether @program is one cargo keeps for itself: a copy with a hash, in deps, a test, a build
-   script, not one to debug */
-static gboolean
-debug_cargo_internal (const char *program)
-{
-    return strstr (program, "/target/") != NULL
-        && (strstr (program, "/deps/") != NULL || strstr (program, "/build/") != NULL
-            || strstr (program, "/incremental/") != NULL);
+    if (hide == NULL || strncmp (program, debug->project_dir, len) != 0 || program[len] != '/')
+        return FALSE;
+    from_root = program + len + 1;
+    for (i = 0; hide[i] != NULL; i++)
+        if (g_pattern_match_simple (hide[i], from_root))
+            return TRUE;
+    return FALSE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
 /* A new configuration as the project suggests it: the program the build has made, the root of
    the project to run it in, and a build before the start when the project can be built; else
-   the file in front, when it is a script an adapter runs.  A project of Cargo has the program of
-   its package, and rust-gdb, which shows the types of Rust as they are, when it is there. */
+   the file in front, when it is a script an adapter runs.  The language of the project, by
+   presets.ini, gives the gdb, the program before it is built and the programs not to choose
+   from: rust-gdb and the program of the package of Cargo.toml for Rust. */
 static void
 debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
 {
     GVariant *reply = debug_build_call (debug, "info", "root", debug->project_dir);
-    const char **programs = NULL;
+    void *file_window = edit != NULL ? edit : debug->host->window_top_file (debug->host);
+    char *file =
+        file_window != NULL ? debug->host->get_current_file (debug->host, file_window) : NULL;
+    GVariant *preset = debug_preset (debug, debug->project_dir, file);
+    const char **programs = NULL, **hide = NULL;
     const char *system = NULL, *command = NULL, *dir = NULL;
+    const char *gdb = NULL, *preset_program = NULL;
     char *program = NULL;
-    char *package = debug_cargo_package (debug->project_dir);
-    char *rust_gdb = package != NULL ? g_find_program_in_path ("rust-gdb") : NULL;
 
+    if (preset != NULL)
+    {
+        (void) g_variant_lookup (preset, "gdb", "&s", &gdb);
+        (void) g_variant_lookup (preset, "program", "&s", &preset_program);
+        (void) g_variant_lookup (preset, "hide", "^a&s", &hide);
+    }
     launch->directory = g_strdup (debug->project_dir);
-    launch->gdb_path = g_strdup (rust_gdb != NULL ? "rust-gdb" : "gdb");
+    launch->gdb_path = g_strdup (gdb != NULL ? gdb : "gdb");
     launch->terminal = TRUE;
-    g_free (rust_gdb);
     if (reply != NULL)
     {
         (void) g_variant_lookup (reply, "programs", "^a&s", &programs);
@@ -942,13 +940,13 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
         (void) g_variant_lookup (reply, "dir", "&s", &dir);
         launch->build = command != NULL;
     }
-    // the copies cargo keeps for itself are none to choose from
-    if (package != NULL && programs != NULL)
+    // those the language keeps for itself are none to choose from: the copies of cargo
+    if (hide != NULL && programs != NULL)
     {
         guint i, kept = 0;
 
         for (i = 0; programs[i] != NULL; i++)
-            if (!debug_cargo_internal (programs[i]))
+            if (!debug_program_hidden (debug, programs[i], hide))
                 programs[kept++] = programs[i];
         programs[kept] = NULL;
     }
@@ -976,26 +974,19 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
         chosen = listbox_run_with_data (selector, NULL);
         program = g_strdup (chosen != NULL ? chosen : programs[0]);
     }
-    // not built yet: the program cargo builds
-    if (program == NULL && package != NULL)
-        program = g_build_filename (debug->project_dir, "target", "debug", package, (char *) NULL);
+    // not built yet: the program the build makes, that of the package of cargo
+    if (program == NULL && preset_program != NULL)
+        program = g_strdup (preset_program);
 
-    if (program == NULL)
+    if (program == NULL && debug_is_script (debug, file))
     {
-        void *file_window = edit != NULL ? edit : debug->host->window_top_file (debug->host);
-        char *file =
-            file_window != NULL ? debug->host->get_current_file (debug->host, file_window) : NULL;
-
-        if (debug_adapter_for (file) != NULL)
-        {
-            launch->executable = file;
-            launch->name = g_path_get_basename (file);
-            launch->build = FALSE;
-            debug_launch_adapter_defaults (debug, launch);
-            file = NULL;
-        }
-        g_free (file);
+        launch->executable = file;
+        launch->name = g_path_get_basename (file);
+        launch->build = FALSE;
+        debug_launch_adapter_defaults (debug, launch);
+        file = NULL;
     }
+    g_free (file);
     if (program != NULL)
     {
         launch->executable = program;
@@ -1004,10 +995,37 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
     }
     else if (launch->name == NULL)
         launch->name = g_strdup (_ ("Debug"));
-    g_free (package);
     g_free (programs);
+    g_free (hide);
+    if (preset != NULL)
+        g_variant_unref (preset);
     if (reply != NULL)
         g_variant_unref (reply);
+}
+
+/* The title of the form, with the language of the project, or of the script it runs */
+static char *
+debug_launch_title (debugger_t *debug, const debug_launch_t *launch)
+{
+    void *file_window = debug->host->window_top_file (debug->host);
+    char *file =
+        file_window != NULL ? debug->host->get_current_file (debug->host, file_window) : NULL;
+    GVariant *preset =
+        debug_preset (debug, debug->project_dir,
+                      launch->executable != NULL && debug_is_script (debug, launch->executable)
+                          ? launch->executable
+                          : file);
+    const char *id = NULL;
+    char *title;
+
+    if (preset != NULL)
+        (void) g_variant_lookup (preset, "id", "&s", &id);
+    title = id != NULL ? g_strdup_printf (_ ("Debug configuration: %s"), id)
+                       : g_strdup (_ ("Debug configuration"));
+    if (preset != NULL)
+        g_variant_unref (preset);
+    g_free (file);
+    return title;
 }
 
 /* All of a configuration in one form; FALSE when it is cancelled */
@@ -1044,6 +1062,8 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
         gboolean build = launch->build, keep = *in_project, terminal = launch->terminal;
         const char *backend_items[] = { _ ("&GDB"), _ ("Debug &adapter") };
         int backend = debug_launch_is_dap (launch) ? 1 : 0;
+        // of what the form had the last round
+        char *title = debug_launch_title (debug, launch);
         const char *problem = NULL;
         guint i;
         int ret;
@@ -1110,7 +1130,7 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
             }
             qdlg = (quick_dialog_t) {
                 .rect = r,
-                .title = _ ("Debug configuration"),
+                .title = title,
                 .help = "[Debugger]",
                 .help_file = "debugger.md",
                 .widgets = widgets,
@@ -1120,6 +1140,7 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
 
             ret = quick_dialog (&qdlg);
         }
+        g_free (title);
         if (ret == B_CANCEL)
         {
             g_free (name);
@@ -1166,7 +1187,7 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
         g_free (address);
         g_free (extra);
         // a script is no program of GDB: its adapter runs it; and an adapter needs a command
-        if (debug_launch_is_dap (launch) || debug_adapter_for (launch->executable) != NULL)
+        if (debug_launch_is_dap (launch) || debug_is_script (debug, launch->executable))
             debug_launch_adapter_defaults (debug, launch);
         *in_project = keep;
 

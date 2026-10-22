@@ -20,9 +20,42 @@ the project: *meson compile -C* that directory.
 *make*
 : a *Makefile* in the project: *make* there.
 
-**Command → Build command...** gives a project a command of its own, which
-then goes before what was found. With nothing found the plugin asks for one
-the first time.
+*the language*
+: else the command of the language of the project, as *presets.ini* has it:
+*cargo build --message-format=short* for a project with a *Cargo.toml*. Its
+errors are listed as those of gcc are.
+
+**Presets of the languages**
+
+*presets.ini* of coole, in its directory of configuration, has a group for
+each language: the files in the root of a project that tell it (*markers*),
+the endings of its files (*extensions*), the command that builds it
+(*build*), and how it is debugged (see the help of the debugger).
+*~/.config/coole/presets.ini* has groups of its own: they come first, and a
+group of it replaces that of coole of its name, all of it. A mistake in it
+is told once, with its line.
+
+**The settings of a project**
+
+A project opened as one, with *coole -D* or **Open project**, takes a copy
+of the preset of its language: *.coole/project.ini* in the project, its
+group *[project]*, with the keys of *presets.ini* and *language*, the name of
+the language. From then on the project has it: what is changed there stays,
+and a later change of *presets.ini* does not reach it. A project with a build
+system of its own, meson, cmake or a *Makefile*, has no *build* in its copy.
+A file opened alone, without a project, leaves no file in its directory. A
+*.coole/project.ini* that cannot be read is told of, with its line, and left
+as it is until it is put right.
+
+**Command → Build command...** gives a project a command of its own,
+*command* in *.coole/project.ini*, which then goes before what was found.
+With nothing found the plugin asks for one the first time. A command given
+before there was this file, kept with the settings of the user, goes into
+it with the copy.
+
+**Command → Language defaults of the project...** makes *.coole/project.ini*
+the preset of the language again, without the command given to the project.
+The debug configurations stay as they are, until they are made anew.
 
 **The keys**
 

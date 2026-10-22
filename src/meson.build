@@ -56,6 +56,7 @@ libinternal_sources = files(
   'plugins/project/project.c',
   'plugins/build/build.c',
   'plugins/build/build-core.c',
+  'plugins/build/build-presets.c',
   'plugins/git/git.c',
   'plugins/git/git-window.c',
   'plugins/git/git-graph.c',
@@ -175,6 +176,8 @@ endif
 # those installed
 devenv = environment()
 devenv.set('COOLE_PLUGINS_DIR', plugin_build_dirs, separator: ':')
+# and the presets of the languages of the source, the build maybe not installed
+devenv.set('COOLE_MISC_DIR', meson.project_source_root() / 'misc')
 meson.add_devenv(devenv)
 
 if lua.found()

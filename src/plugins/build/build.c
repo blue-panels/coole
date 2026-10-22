@@ -45,6 +45,7 @@
 #include "lib/plugin-service.h"
 
 #include "build-core.h"
+#include "build-presets.h"
 #include "build.h"
 
 /*** global variables ****************************************************************************/
@@ -72,7 +73,8 @@ enum
     BUILD_ACT_NEXT,
     BUILD_ACT_PREV,
     BUILD_ACT_CONFIGURE,
-    BUILD_ACT_OUTPUT
+    BUILD_ACT_OUTPUT,
+    BUILD_ACT_DEFAULTS
 };
 
 enum
@@ -101,6 +103,8 @@ typedef struct
     long commands[BUILD_CMD_COUNT];
     int marks[BUILD_MARK_COUNT];
     gboolean service;
+    char *presets_told;  // what was wrong in the presets of the user, said once
+    guint project_signal;
 } build_t;
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -171,9 +175,19 @@ build_config_path (const char *root)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The command the user gave the project, NULL when none */
+/* The file of the project, .coole/project.ini */
 static char *
-build_saved_command (const char *root)
+build_project_path (const char *root)
+{
+    return g_build_filename (root, BUILD_PROJECT_DIR, BUILD_PROJECT_FILE, (char *) NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The command coole kept for the project before it had .coole/project.ini, in the configuration
+   of the user; NULL when none */
+static char *
+build_legacy_command (const char *root)
 {
     GKeyFile *keyfile = g_key_file_new ();
     char *path = build_config_path (root);
@@ -183,39 +197,193 @@ build_saved_command (const char *root)
         command = g_key_file_get_string (keyfile, "Build", "command", NULL);
     g_key_file_free (keyfile);
     g_free (path);
-    if (command != NULL && *command == '\0')
+    if (command != NULL && *g_strstrip (command) == '\0')
         g_clear_pointer (&command, g_free);
     return command;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-build_save_command (const char *root, const char *command)
+/* The command the user gave the project, NULL when none: in the project; without the file of the
+   project, where coole kept it before */
+static char *
+build_saved_command (const char *root)
 {
     GKeyFile *keyfile = g_key_file_new ();
-    char *path = build_config_path (root);
-    char *dir = g_path_get_dirname (path);
-    char *contents;
-    gsize len;
+    char *path = build_project_path (root);
+    char *command = NULL;
 
-    g_key_file_set_string (keyfile, "Build", "root", root);
-    g_key_file_set_string (keyfile, "Build", "command", command != NULL ? command : "");
-    contents = g_key_file_to_data (keyfile, &len, NULL);
-    if (g_mkdir_with_parents (dir, 0700) == 0)
-        (void) g_file_set_contents (path, contents, (gssize) len, NULL);
-    g_free (contents);
-    g_free (dir);
+    if (!g_file_test (path, G_FILE_TEST_EXISTS))
+        command = build_legacy_command (root);
+    else if (g_key_file_load_from_file (keyfile, path, G_KEY_FILE_KEEP_COMMENTS, NULL))
+        command = g_key_file_get_string (keyfile, BUILD_PROJECT_GROUP, "command", NULL);
+    g_key_file_free (keyfile);
     g_free (path);
+    if (command != NULL && *g_strstrip (command) == '\0')
+        g_clear_pointer (&command, g_free);
+    return command;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A mistake said once: told again when it is another, or when it was put right before */
+static void
+build_tell_once (build_t *build, const char *text_value)
+{
+    if (g_strcmp0 (text_value, build->presets_told) == 0)
+        return;
+    g_free (build->presets_told);
+    build->presets_told = g_strdup (text_value);
+    build->host->message (build->host, D_ERROR, _ ("Build"), text_value);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* .coole/project.ini of @root into @keyfile, @there whether it is there; FALSE, the user told,
+   when it is there but cannot be read: what the user wrote in it is not written over */
+static gboolean
+build_project_read (build_t *build, const char *root, GKeyFile *keyfile, gboolean *there)
+{
+    char *path = build_project_path (root);
+    GError *error = NULL;
+    gboolean ok = g_key_file_load_from_file (keyfile, path, G_KEY_FILE_KEEP_COMMENTS, &error);
+
+    *there = ok;
+    if (!ok && g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+        ok = TRUE;
+    else if (!ok)
+    {
+        // as the presets tell it, once for both
+        char *text_value = g_strdup_printf ("%s:\n%s", path, error->message);
+
+        build_tell_once (build, text_value);
+        g_free (text_value);
+    }
+    g_clear_error (&error);
+    g_free (path);
+    return ok;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* .coole/project.ini written as @keyfile has it; FALSE, the user told, when it cannot be */
+static gboolean
+build_project_write (build_t *build, const char *root, GKeyFile *keyfile)
+{
+    char *dir = g_build_filename (root, BUILD_PROJECT_DIR, (char *) NULL);
+    char *path = build_project_path (root);
+    char *contents = g_key_file_to_data (keyfile, NULL, NULL);
+    GError *error = NULL;
+    gboolean done;
+
+    done =
+        g_mkdir_with_parents (dir, 0755) == 0 && g_file_set_contents (path, contents, -1, &error);
+    if (!done)
+    {
+        char *text_value =
+            g_strdup_printf ("%s:\n%s", path, error != NULL ? error->message : g_strerror (errno));
+
+        build->host->message (build->host, D_ERROR, _ ("Build"), text_value);
+        g_free (text_value);
+        g_clear_error (&error);
+    }
+    g_free (contents);
+    g_free (path);
+    g_free (dir);
+    return done;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The command the user gives the project, kept in it */
+static void
+build_save_command (build_t *build, const char *root, const char *command)
+{
+    GKeyFile *keyfile = g_key_file_new ();
+    gboolean there;
+
+    if (build_project_read (build, root, keyfile, &there))
+    {
+        g_key_file_set_string (keyfile, BUILD_PROJECT_GROUP, "command",
+                               command != NULL ? command : "");
+        (void) build_project_write (build, root, keyfile);
+    }
     g_key_file_free (keyfile);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* How the project is built: the command the user gave it, else the one of its build system;
-   the directory the compiler runs in */
+/* What a file of coole of @name has: in the directory of its configuration, else in that of
+   its data; NULL when there is none.  A build run by meson devenv, maybe not installed, has
+   those of its source. */
+static char *
+build_coole_text (const char *name)
+{
+    const char *dirs[] = { g_getenv ("COOLE_MISC_DIR"), mc_global.sysconfig_dir,
+                           mc_global.share_data_dir };
+    char *text = NULL;
+    guint i;
+
+    for (i = 0; i < G_N_ELEMENTS (dirs) && text == NULL; i++)
+        if (dirs[i] != NULL)
+        {
+            char *path = g_build_filename (dirs[i], name, (char *) NULL);
+
+            if (!g_file_get_contents (path, &text, NULL, NULL))
+                text = NULL;
+            g_free (path);
+        }
+    return text;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The copy of the project of @root, when it has one and @root is not NULL, then the presets of
+   the user and of coole, read each time: a change to them is there at once.  A mistake in the
+   copy or in the presets of the user is said once. */
+static GPtrArray *
+build_presets_load (build_t *build, const char *root)
+{
+    char *path =
+        g_build_filename (g_get_user_config_dir (), "coole", BUILD_PRESETS_FILE, (char *) NULL);
+    char *project_path = root != NULL ? build_project_path (root) : NULL;
+    char *user = NULL, *project = NULL, *system = build_coole_text (BUILD_PRESETS_FILE);
+    GError *project_error = NULL, *user_error = NULL;
+    GPtrArray *presets;
+
+    if (project_path != NULL && !g_file_get_contents (project_path, &project, NULL, NULL))
+        project = NULL;
+    if (!g_file_get_contents (path, &user, NULL, NULL))
+        user = NULL;
+    presets = build_presets_parse (project, user, system, &project_error, &user_error);
+    if (project_error == NULL && user_error == NULL)
+        g_clear_pointer (&build->presets_told, g_free);
+    else
+    {
+        // a mistake of the copy first
+        char *text_value =
+            g_strdup_printf ("%s:\n%s", project_error != NULL ? project_path : path,
+                             (project_error != NULL ? project_error : user_error)->message);
+
+        build_tell_once (build, text_value);
+        g_free (text_value);
+        g_clear_error (&project_error);
+        g_clear_error (&user_error);
+    }
+    g_free (user);
+    g_free (project);
+    g_free (system);
+    g_free (project_path);
+    g_free (path);
+    return presets;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* How the project is built: the command the user gave it, else the one of its build system,
+   else that of its language; the directory the compiler runs in */
 static gboolean
-build_plan (const char *root, char **command, char **dir)
+build_plan (build_t *build, const char *root, char **command, char **dir)
 {
     build_info_t *info = build_detect (root);
 
@@ -223,6 +391,15 @@ build_plan (const char *root, char **command, char **dir)
     *dir = info != NULL && info->build_dir != NULL ? g_strdup (info->build_dir) : g_strdup (root);
     if (*command == NULL && info != NULL)
         *command = g_strdup (info->command);
+    if (*command == NULL)
+    {
+        GPtrArray *presets = build_presets_load (build, root);
+        const build_preset_t *preset = build_presets_find (presets, root, NULL);
+
+        if (preset != NULL)
+            *command = g_strdup (preset->build);
+        g_ptr_array_free (presets, TRUE);
+    }
     build_info_free (info);
     return *command != NULL;
 }
@@ -496,7 +673,7 @@ build_start (build_t *build, const char *root)
         build->host->message (build->host, D_NORMAL, _ ("Build"), _ ("The build is running."));
         return FALSE;
     }
-    if (!build_plan (root, &command, &dir))
+    if (!build_plan (build, root, &command, &dir))
     {
         g_free (command);
         command = input_dialog (_ ("Build"), _ ("Command that builds the project:"),
@@ -507,7 +684,7 @@ build_start (build_t *build, const char *root)
             g_free (dir);
             return FALSE;
         }
-        build_save_command (root, command);
+        build_save_command (build, root, command);
     }
     if (build->host->save_modified_files != NULL
         && !build->host->save_modified_files (build->host, root))
@@ -706,16 +883,153 @@ build_act_configure (void *data, void *edit)
     char *root = build_root_of (build, edit);
     char *command = NULL, *dir = NULL, *chosen;
 
-    (void) build_plan (root, &command, &dir);
+    (void) build_plan (build, root, &command, &dir);
     chosen = input_dialog (_ ("Build"), _ ("Command that builds the project:"), "build-command",
                            command != NULL ? command : "make", INPUT_COMPLETE_COMMANDS);
     if (chosen != NULL)
-        build_save_command (root, chosen);
+        build_save_command (build, root, chosen);
     g_free (chosen);
     g_free (command);
     g_free (dir);
     g_free (root);
     return MC_EPR_OK;
+}
+
+/* The project of @root takes a copy of the preset of its language, .coole/project.ini, when it
+   has none, or again when @again; the command the user gave it stays but @again, that coole kept
+   before in the configuration of the user too.  FALSE when no preset fits it, or when the file is
+   there but cannot be read: it is left as it is. */
+static gboolean
+build_project_adopt (build_t *build, const char *root, gboolean again)
+{
+    GKeyFile *keyfile = g_key_file_new ();
+    GPtrArray *presets = NULL;
+    const build_preset_t *preset = NULL;
+    gboolean has = FALSE;
+    const gboolean readable = build_project_read (build, root, keyfile, &has);
+    gboolean done = FALSE;
+
+    if (readable && !again && has
+        && g_key_file_has_key (keyfile, BUILD_PROJECT_GROUP, "language", NULL))
+        done = TRUE;
+    else if (readable)
+    {
+        // the presets alone, not the copy there is
+        presets = build_presets_load (build, NULL);
+        preset = build_presets_find (presets, root, NULL);
+    }
+    if (preset != NULL)
+    {
+        build_info_t *info = build_detect (root);
+        // a build system of its own builds the project, not the command of the language
+        char *text = build_presets_project_text (preset, info == NULL);
+        GKeyFile *copy = g_key_file_new ();
+        char **groups = g_key_file_get_groups (keyfile, NULL);
+        guint i, j;
+
+        (void) g_key_file_load_from_data (copy, text, (gsize) -1, G_KEY_FILE_KEEP_COMMENTS, NULL);
+        // the command the user gave it, and what else the file has, stay
+        for (i = 0; groups[i] != NULL; i++)
+        {
+            char **keys = g_key_file_get_keys (keyfile, groups[i], NULL, NULL);
+            const gboolean own = strcmp (groups[i], BUILD_PROJECT_GROUP) == 0;
+
+            for (j = 0; keys != NULL && keys[j] != NULL; j++)
+                if (!own || (!again && strcmp (keys[j], "command") == 0))
+                {
+                    char *value = g_key_file_get_value (keyfile, groups[i], keys[j], NULL);
+
+                    g_key_file_set_value (copy, groups[i], keys[j], value);
+                    g_free (value);
+                }
+            g_strfreev (keys);
+        }
+        g_strfreev (groups);
+        if (!again && !g_key_file_has_key (copy, BUILD_PROJECT_GROUP, "command", NULL))
+        {
+            char *command = build_legacy_command (root);
+
+            if (command != NULL)
+                g_key_file_set_string (copy, BUILD_PROJECT_GROUP, "command", command);
+            g_free (command);
+        }
+        done = build_project_write (build, root, copy);
+        g_key_file_free (copy);
+        g_free (text);
+        build_info_free (info);
+    }
+    if (presets != NULL)
+        g_ptr_array_free (presets, TRUE);
+    g_key_file_free (keyfile);
+    return done;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The project of the file in front back to the preset of its language */
+static mc_ep_result_t
+build_act_defaults (void *data, void *edit)
+{
+    build_t *build = (build_t *) data;
+    char *root = build_root_of (build, edit);
+    GKeyFile *keyfile = g_key_file_new ();
+    gboolean there;
+    const gboolean readable = build_project_read (build, root, keyfile, &there);
+    char *text_value;
+
+    g_key_file_free (keyfile);
+    // a file that cannot be read is put right by the user, not written over
+    if (!readable)
+    {
+        g_free (root);
+        return MC_EPR_FAILED;
+    }
+    if (query_dialog (_ ("Build"),
+                      _ ("Make .coole/project.ini of the project the preset of its language\n"
+                         "again, as presets.ini has it?  The build command given to the project\n"
+                         "goes; its debug configurations stay, until they are made anew."),
+                      D_NORMAL, 2, _ ("&Yes"), _ ("&No"))
+        != 0)
+    {
+        g_free (root);
+        return MC_EPR_FAILED;
+    }
+    if (build_project_adopt (build, root, TRUE))
+        text_value = g_strdup_printf (_ ("%s/%s/%s\nhas the preset of the language again."), root,
+                                      BUILD_PROJECT_DIR, BUILD_PROJECT_FILE);
+    else
+        text_value = g_strdup_printf (_ ("No preset of presets.ini fits\n%s"), root);
+    build->host->message (build->host, D_NORMAL, _ ("Build"), text_value);
+    g_free (text_value);
+    g_free (root);
+    return MC_EPR_OK;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A project opened as one, not that of a file: it takes the preset of its language */
+static void
+build_project_changed (const char *name, const char *signal, GVariant *args, void *user_data)
+{
+    build_t *build = (build_t *) user_data;
+    const char *root = NULL;
+    gboolean chosen = FALSE;
+
+    (void) name;
+    if (strcmp (signal, "changed") != 0 || args == NULL)
+        return;
+    (void) g_variant_lookup (args, "root", "&s", &root);
+    (void) g_variant_lookup (args, "chosen", "b", &chosen);
+    if (root != NULL && chosen)
+        (void) build_project_adopt (build, root, FALSE);
+}
+
+static void
+build_project_startup (void *data)
+{
+    build_t *build = (build_t *) data;
+
+    (void) build_project_adopt (build, build->host->startup_option (build->host, "debug"), FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -727,12 +1041,13 @@ build_call (void *data, const char *method, GVariant *args, GError **error)
 {
     build_t *build = (build_t *) data;
     GVariantDict reply;
-    const char *root = NULL, *path = NULL;
+    const char *root = NULL, *path = NULL, *project = NULL;
 
     if (args != NULL)
     {
         (void) g_variant_lookup (args, "root", "&s", &root);
         (void) g_variant_lookup (args, "path", "&s", &path);
+        (void) g_variant_lookup (args, "project", "&s", &project);
     }
     g_variant_dict_init (&reply, NULL);
 
@@ -743,7 +1058,7 @@ build_call (void *data, const char *method, GVariant *args, GError **error)
         char *command = NULL, *dir = NULL;
         GPtrArray *programs;
 
-        (void) build_plan (root, &command, &dir);
+        (void) build_plan (build, root, &command, &dir);
         if (command != NULL)
             g_variant_dict_insert (&reply, "command", "s", command);
         g_variant_dict_insert (&reply, "dir", "s", dir);
@@ -760,6 +1075,59 @@ build_call (void *data, const char *method, GVariant *args, GError **error)
         build_info_free (info);
         g_free (command);
         g_free (dir);
+    }
+    else if (strcmp (method, "preset") == 0 && (root != NULL || path != NULL))
+    {
+        // the language of the project of root, else of the file path, as the copy of the project
+        // has it, else presets.ini; project: the project whose copy comes first, root not given
+        GPtrArray *presets = build_presets_load (build, root != NULL ? root : project);
+        const build_preset_t *preset = build_presets_find (presets, root, path);
+
+        if (preset != NULL)
+        {
+            const char *const strings[][2] = {
+                { "build", preset->build },
+                { "adapter", preset->adapter },
+                { "address", preset->address },
+                { "launch", preset->launch },
+            };
+            guint i;
+
+            g_variant_dict_insert (&reply, "id", "s", preset->id);
+            for (i = 0; i < G_N_ELEMENTS (strings); i++)
+                if (strings[i][1] != NULL)
+                    g_variant_dict_insert (&reply, strings[i][0], "s", strings[i][1]);
+            // the first gdb there, else the first named, which the start says is not there
+            for (i = 0; preset->gdb != NULL && preset->gdb[i] != NULL; i++)
+            {
+                char *found = g_find_program_in_path (preset->gdb[i]);
+                const gboolean there = found != NULL;
+
+                g_free (found);
+                if (there)
+                    break;
+            }
+            if (preset->gdb != NULL)
+                g_variant_dict_insert (&reply, "gdb", "s",
+                                       preset->gdb[preset->gdb[i] != NULL ? i : 0]);
+            if (preset->program != NULL && root != NULL)
+            {
+                char *program = build_presets_expand (preset->program, root);
+
+                if (program != NULL)
+                {
+                    char *absolute = g_canonicalize_filename (program, root);
+
+                    g_variant_dict_insert (&reply, "program", "s", absolute);
+                    g_free (absolute);
+                }
+                g_free (program);
+            }
+            if (preset->hide != NULL)
+                g_variant_dict_insert_value (
+                    &reply, "hide", g_variant_new_strv ((const gchar *const *) preset->hide, -1));
+        }
+        g_ptr_array_free (presets, TRUE);
     }
     else if (strcmp (method, "elf") == 0 && path != NULL)
     {
@@ -816,6 +1184,13 @@ build_open (mc_editor_host_t *host, void *editor_dialog)
     for (i = 0; i < BUILD_MARK_COUNT; i++)
         build->marks[i] = host->marker_kind (host, &build_mark_kinds[i]);
     build->service = host->service_register (host, BUILD_SERVICE, build_call, build, NULL);
+    if (host->service_connect != NULL)
+        build->project_signal =
+            host->service_connect (host, "project", build_project_changed, build);
+    // coole -D: the project is there before this plugin hears of it; once the editor runs, which
+    // can tell what is wrong
+    if (host->startup_option (host, "debug") != NULL)
+        host->call_later (host, build_project_startup, build);
     return build;
 }
 
@@ -848,6 +1223,8 @@ build_close (void *data)
     }
     if (build->service)
         build->host->service_unregister (build->host, BUILD_SERVICE);
+    if (build->project_signal != 0)
+        build->host->service_disconnect (build->host, build->project_signal);
     g_ptr_array_free (build->diagnostics, TRUE);
     g_string_free (build->output, TRUE);
     g_string_free (build->pending, TRUE);
@@ -855,6 +1232,7 @@ build_close (void *data)
     g_free (build->root);
     g_free (build->command);
     g_free (build->dir);
+    g_free (build->presets_told);
     g_free (build);
 }
 
@@ -981,7 +1359,7 @@ static const mc_ep_window_kind_t build_output_kind = {
 static const mc_ep_action_t build_actions[] = {
     { "Build", build_act_run },           { "Next error", build_act_next },
     { "Previous error", build_act_prev }, { "Configure", build_act_configure },
-    { "Output", build_act_output },
+    { "Output", build_act_output },       { "Language defaults", build_act_defaults },
 };
 
 static const mc_ep_cmd_menu_entry_t build_menu[] = {
@@ -990,6 +1368,7 @@ static const mc_ep_cmd_menu_entry_t build_menu[] = {
     { MC_EP_MENU_COMMAND, N_ ("Next build error"), BUILD_ACT_NEXT, NULL },
     { MC_EP_MENU_COMMAND, N_ ("Previous build error"), BUILD_ACT_PREV, NULL },
     { MC_EP_MENU_COMMAND, N_ ("Build command..."), BUILD_ACT_CONFIGURE, NULL },
+    { MC_EP_MENU_COMMAND, N_ ("Language defaults of the project..."), BUILD_ACT_DEFAULTS, NULL },
 };
 
 static const mc_editor_plugin_t build_plugin = {

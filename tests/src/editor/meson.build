@@ -78,6 +78,9 @@ test('content_frame', executable('content_frame', 'content_frame.c',
 
 test('build_core', executable('build_core', 'build_core.c',
                               '../../../src/plugins/build/build-core.c',
+                              '../../../src/plugins/build/build-presets.c',
+                              c_args: ['-DPRESETS_INI="@0@"'.format(
+                                meson.project_source_root() / 'misc' / 'presets.ini')],
                               dependencies: [glib_dep]), suite: 'src/editor')
 
 test('git_core', executable('git_core', 'git_core.c',
