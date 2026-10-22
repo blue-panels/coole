@@ -143,7 +143,7 @@ if have_terminal
   install_data('plugins/terminal/terminal.md', install_dir: pkgdatadir / 'help')
 endif
 if have_gmodule and json_glib.found()
-  install_data('plugins/lsp/lsp.md', install_dir: pkgdatadir / 'help')
+  install_data('plugins/lsp/lsp.md', 'plugins/query/query.md', install_dir: pkgdatadir / 'help')
 endif
 # their translations, found by the help as name.lang.md
 if have_nls
@@ -169,6 +169,7 @@ if have_gmodule
   subdir('plugins/debugger')
   if json_glib.found()
     subdir('plugins/lsp')
+    subdir('plugins/query')
   endif
 endif
 

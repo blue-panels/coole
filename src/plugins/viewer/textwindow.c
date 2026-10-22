@@ -30,6 +30,10 @@
  *  The text is what a program prints for a terminal or a pager: overstrikes, the way nroff
  *  marks bold (c\bc) and underlined (_\bc) letters, and ANSI colors (ESC [ ... m). A line of the
  *  text is a line of the window; one wider than the window is scrolled sideways.
+ *
+ *  The text is marked as in the viewer of mc: the mouse drawn over it, a word by a double click,
+ *  a line by a triple one; the keys of marking of the editor, Shift and the arrows, F3, Ctrl-A.
+ *  Ctrl-Ins, or Enter, copies what is marked to the clipboard of the editor and of the system.
  */
 
 #include <config.h>
@@ -37,6 +41,7 @@
 #include <string.h>
 
 #include "lib/global.h"
+#include "lib/event.h"
 #include "lib/tty/tty.h"
 #include "lib/skin.h"
 #include "lib/strutil.h"  // str_term_trim()
@@ -101,7 +106,14 @@ typedef struct
     tw_text_t text;
     long cur_line;  // the cursor: the line of the text, and the column in it
     long cur_col;
-    long want_col;  // the column it goes back to on a line long enough
+    long want_col;         // the column it goes back to on a line long enough
+    gboolean line_cursor;  // a list: the line of the cursor drawn across the window
+    // what is marked: from the mark to the cursor
+    gboolean selected;
+    gboolean marking;   // F3: the cursor takes the selection with it as it moves
+    gboolean dragging;  // a press on the text, the button not let go yet
+    long mark_line;
+    long mark_col;
     void (*on_destroy) (void *data);
     void *on_destroy_data;
 } WTextWindow;
@@ -445,6 +457,41 @@ text_window_bold_color (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* What is marked, its start before its end; FALSE when nothing is */
+static gboolean
+text_window_selection (const WTextWindow *tw, long *l1, long *c1, long *l2, long *c2)
+{
+    if (!tw->selected)
+        return FALSE;
+    if (tw->mark_line < tw->cur_line
+        || (tw->mark_line == tw->cur_line && tw->mark_col <= tw->cur_col))
+    {
+        *l1 = tw->mark_line;
+        *c1 = tw->mark_col;
+        *l2 = tw->cur_line;
+        *c2 = tw->cur_col;
+    }
+    else
+    {
+        *l1 = tw->cur_line;
+        *c1 = tw->cur_col;
+        *l2 = tw->mark_line;
+        *c2 = tw->mark_col;
+    }
+    return *l1 != *l2 || *c1 != *c2;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the column @x of the line @n is marked: from the start, up to the end, not with it */
+static gboolean
+tw_marked (long l1, long c1, long l2, long c2, long n, long x)
+{
+    return (n > l1 || (n == l1 && x >= c1)) && (n < l2 || (n == l2 && x < c2));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 text_window_draw_text (const WTextWindow *tw)
 {
@@ -454,6 +501,9 @@ text_window_draw_text (const WTextWindow *tw)
     mcview_canvas_colors_t colors = colors_init;
     WRect r;
     int row;
+    long l1 = 0, c1 = 0, l2 = 0, c2 = 0;
+    const gboolean marked = text_window_selection (tw, &l1, &c1, &l2, &c2);
+    const int cursor_color = EDITOR_BOOKMARK_COLOR;
 
     colors.normal = EDITOR_NORMAL_COLOR;
     colors.bold = text_window_bold_color ();
@@ -473,7 +523,9 @@ text_window_draw_text (const WTextWindow *tw)
         if (tw->text.lines != NULL && n < (long) tw->text.lines->len)
             line = g_array_index (tw->text.lines, GArray *, n);
 
-        tty_setcolor (colors.normal);
+        const gboolean on_cursor = tw->line_cursor && n == tw->cur_line;
+
+        tty_setcolor (on_cursor ? cursor_color : colors.normal);
         tty_draw_hline (r.y + row, r.x, ' ', r.cols);
         tty_gotoyx (r.y + row, r.x);
 
@@ -506,7 +558,10 @@ text_window_draw_text (const WTextWindow *tw)
                 last_color = mcview_ansi_color_of (&st, &colors);
                 last_cell = *cell;
             }
-            tty_setcolor (last_color);
+            if (marked && tw_marked (l1, c1, l2, c2, n, x))
+                tty_setcolor (EDITOR_MARKED_COLOR);
+            else
+                tty_setcolor (on_cursor ? cursor_color : last_color);
 
             if (x < tw->text.left || col + cell->width > r.cols)
                 // half of a wide character at an edge of the view
@@ -636,14 +691,243 @@ text_window_move_cursor (WTextWindow *tw, long line, long col, gboolean remember
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* What is marked, as text: the characters without their colors, a line of the text a line; the
+   blanks a line ends with, which pad a table, left out */
+static char *
+text_window_selection_text (const WTextWindow *tw)
+{
+    long l1, c1, l2, c2, n;
+    GString *out;
+
+    if (!text_window_selection (tw, &l1, &c1, &l2, &c2) || tw->text.lines == NULL)
+        return NULL;
+    out = g_string_new (NULL);
+    for (n = l1; n <= l2 && n < (long) tw->text.lines->len; n++)
+    {
+        const GArray *line = g_array_index (tw->text.lines, GArray *, n);
+        const gsize start = out->len;
+        long x = 0;
+        guint i;
+
+        for (i = 0; i < line->len; i++)
+        {
+            const tw_cell_t *cell = &g_array_index (line, tw_cell_t, i);
+
+            if (tw_marked (l1, c1, l2, c2, n, x))
+                g_string_append_unichar (out, (cell->attrs & TW_CONCEAL) != 0 ? ' ' : cell->ch);
+            x += cell->width;
+        }
+        while (out->len > start && out->str[out->len - 1] == ' ')
+            g_string_truncate (out, out->len - 1);
+        if (n < l2)
+            g_string_append_c (out, '\n');
+    }
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What is marked to the clipboard of the editor and of the system; then it is marked no more, as
+   in the viewer of mc */
+static void
+text_window_store (WTextWindow *tw)
+{
+    char *text = text_window_selection_text (tw);
+
+    if (text != NULL && *text != '\0')
+    {
+        mc_event_raise (MCEVENT_GROUP_CORE, "clipboard_text_to_file", text);
+        mc_event_raise (MCEVENT_GROUP_CORE, "clipboard_file_to_ext_clip", NULL);
+    }
+    g_free (text);
+    tw->selected = FALSE;
+    tw->marking = FALSE;
+    widget_draw (WIDGET (tw));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+tw_word_char (gunichar ch)
+{
+    return g_unichar_isalnum (ch) || ch == '_';
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Mark the word under the cursor, or all of its line */
+static void
+text_window_select_word (WTextWindow *tw, gboolean line_too)
+{
+    const GArray *line;
+    long x = 0, start = -1, end = -1;
+    guint i;
+
+    if (tw->text.lines == NULL || tw->cur_line >= (long) tw->text.lines->len)
+        return;
+    line = g_array_index (tw->text.lines, GArray *, tw->cur_line);
+    if (line_too)
+    {
+        start = 0;
+        end = tw_line_width (&tw->text, tw->cur_line);
+    }
+    else
+    {
+        guint at, first, last;
+
+        for (at = 0; at < line->len; at++)
+        {
+            const long w = g_array_index (line, tw_cell_t, at).width;
+
+            if (tw->cur_col < x + w)
+                break;
+            x += w;
+        }
+        if (at == line->len || !tw_word_char (g_array_index (line, tw_cell_t, at).ch))
+            return;
+        for (first = at; first > 0 && tw_word_char (g_array_index (line, tw_cell_t, first - 1).ch);
+             first--)
+            ;
+        for (last = at;
+             last + 1 < line->len && tw_word_char (g_array_index (line, tw_cell_t, last + 1).ch);
+             last++)
+            ;
+        for (x = 0, i = 0; i <= last; i++)
+        {
+            if (i == first)
+                start = x;
+            x += g_array_index (line, tw_cell_t, i).width;
+        }
+        end = x;
+    }
+    if (end <= start)
+        return;
+    tw->selected = TRUE;
+    tw->marking = FALSE;
+    tw->mark_line = tw->cur_line;
+    tw->mark_col = start;
+    text_window_move_cursor (tw, tw->cur_line, end, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The move of a command that marks as the cursor moves, CK_IgnoreKey for any other */
+static long
+tw_mark_move (long command)
+{
+    switch (command)
+    {
+    case CK_MarkLeft:
+        return CK_Left;
+    case CK_MarkRight:
+        return CK_Right;
+    case CK_MarkUp:
+        return CK_Up;
+    case CK_MarkDown:
+        return CK_Down;
+    case CK_MarkPageUp:
+        return CK_PageUp;
+    case CK_MarkPageDown:
+        return CK_PageDown;
+    case CK_MarkToHome:
+        return CK_Home;
+    case CK_MarkToEnd:
+        return CK_End;
+    case CK_MarkToFileBegin:
+        return CK_Top;
+    case CK_MarkToFileEnd:
+        return CK_Bottom;
+    case CK_MarkToPageBegin:
+        return CK_TopOnScreen;
+    case CK_MarkToPageEnd:
+        return CK_BottomOnScreen;
+    case CK_MarkToWordBegin:
+        return CK_WordLeft;
+    case CK_MarkToWordEnd:
+        return CK_WordRight;
+    default:
+        return CK_IgnoreKey;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The commands that mark and copy; FALSE for any other */
+static gboolean
+text_window_mark_command (WTextWindow *tw, long command)
+{
+    switch (command)
+    {
+    case CK_Mark:
+        // the first F3 marks from the cursor, the second one leaves what is marked as it is
+        if (tw->marking)
+            tw->marking = FALSE;
+        else
+        {
+            tw->selected = TRUE;
+            tw->marking = TRUE;
+            tw->mark_line = tw->cur_line;
+            tw->mark_col = tw->cur_col;
+        }
+        widget_draw (WIDGET (tw));
+        return TRUE;
+    case CK_MarkAll:
+        tw->selected = TRUE;
+        tw->marking = FALSE;
+        tw->mark_line = 0;
+        tw->mark_col = 0;
+        text_window_move_cursor (tw, G_MAXLONG, G_MAXLONG, TRUE);
+        return TRUE;
+    case CK_Unmark:
+        tw->selected = FALSE;
+        tw->marking = FALSE;
+        widget_draw (WIDGET (tw));
+        return TRUE;
+    case CK_Store:
+        text_window_store (tw);
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 text_window_key (WTextWindow *tw, int key)
 {
     WRect r;
+    long command = keybind_lookup_keymap_command (editor_map, key);
+    const long move = tw_mark_move (command);
+    const gboolean was_selected = tw->selected;
+    long l1, c1, l2, c2;
 
     text_window_text_rect (tw, &r);
 
-    switch (keybind_lookup_keymap_command (editor_map, key))
+    if (text_window_mark_command (tw, command))
+        return MSG_HANDLED;
+    // Enter copies what is marked, as in the viewer of mc
+    if (command == CK_Enter && text_window_selection (tw, &l1, &c1, &l2, &c2))
+    {
+        text_window_store (tw);
+        return MSG_HANDLED;
+    }
+    if (move != CK_IgnoreKey)
+    {
+        // Shift and a move: marked from where the cursor was
+        if (!tw->selected)
+        {
+            tw->selected = TRUE;
+            tw->mark_line = tw->cur_line;
+            tw->mark_col = tw->cur_col;
+        }
+        command = move;
+    }
+    else if (!tw->marking)
+        // a move alone: nothing marked any more
+        tw->selected = FALSE;
+
+    switch (command)
     {
     case CK_Up:
         text_window_move_cursor (tw, tw->cur_line - 1, tw->want_col, FALSE);
@@ -705,6 +989,8 @@ text_window_key (WTextWindow *tw, int key)
         text_window_move_cursor (tw, tw->cur_line, tw->cur_col + TEXT_WINDOW_HSTEP, TRUE);
         break;
     default:
+        // no move: what is marked stays
+        tw->selected = was_selected;
         return MSG_NOT_HANDLED;
     }
 
@@ -773,9 +1059,10 @@ text_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A press on the text puts the cursor there.  FALSE when it is not on the text */
+/* A press on the text puts the cursor there, a drag beyond it to its edge, the view following.
+   FALSE when a press is not on the text */
 static gboolean
-text_window_press_text (WTextWindow *tw, const mouse_event_t *event)
+text_window_press_text (WTextWindow *tw, const mouse_event_t *event, gboolean drag)
 {
     const WRect *w = &WIDGET (tw)->rect;
     WRect r;
@@ -785,10 +1072,11 @@ text_window_press_text (WTextWindow *tw, const mouse_event_t *event)
     // the press in the coordinates of the text
     x = event->x - (r.x - w->x);
     y = event->y - (r.y - w->y);
-    if (x < 0 || x >= r.cols || y < 0 || y >= r.lines)
+    if (!drag && (x < 0 || x >= r.cols || y < 0 || y >= r.lines))
         return FALSE;
 
-    text_window_move_cursor (tw, tw->text.top + y, tw->text.left + x, TRUE);
+    text_window_move_cursor (tw, tw->text.top + CLAMP (y, -1, r.lines),
+                             tw->text.left + CLAMP (x, -1, r.cols), TRUE);
     return TRUE;
 }
 
@@ -803,7 +1091,31 @@ text_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
     {
     case MSG_MOUSE_DOWN:
         // the cursor goes where the text is pressed; the scrollbars take their own presses
-        (void) text_window_press_text (tw, event);
+        tw->selected = FALSE;
+        tw->marking = FALSE;
+        tw->dragging = text_window_press_text (tw, event, FALSE);
+        tw->mark_line = tw->cur_line;
+        tw->mark_col = tw->cur_col;
+        break;
+
+    case MSG_MOUSE_DRAG:
+        // marked from the press to the mouse
+        if (tw->dragging)
+        {
+            tw->selected = TRUE;
+            (void) text_window_press_text (tw, event, TRUE);
+        }
+        break;
+
+    case MSG_MOUSE_UP:
+        tw->dragging = FALSE;
+        break;
+
+    case MSG_MOUSE_CLICK:
+        if ((event->count & GPM_TRIPLE) != 0)
+            text_window_select_word (tw, TRUE);
+        else if ((event->count & GPM_DOUBLE) != 0)
+            text_window_select_word (tw, FALSE);
         break;
 
     case MSG_MOUSE_SCROLL_UP:
@@ -906,6 +1218,10 @@ edit_text_window_set_text (WEditWindow *win, const char *text, gsize len)
     WTextWindow *tw = TEXT_WINDOW (win);
 
     tw_parse (&tw->text, text != NULL ? text : "", text != NULL ? len : 0);
+    // what was marked was of the text before
+    tw->selected = FALSE;
+    tw->marking = FALSE;
+    tw->dragging = FALSE;
     tw->text.top = MIN (tw->text.top, text_window_max_top (tw));
     tw->text.left = MIN (tw->text.left, text_window_max_left (tw));
     // the cursor stays on the text that came
@@ -922,6 +1238,36 @@ edit_text_window_scroll_to (WEditWindow *win, long line)
     WTextWindow *tw = TEXT_WINDOW (win);
 
     text_window_scroll (tw, line, tw->text.left);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_text_window_set_line_cursor (WEditWindow *win, gboolean on)
+{
+    WTextWindow *tw = TEXT_WINDOW (win);
+
+    tw->line_cursor = on;
+    widget_draw (WIDGET (tw));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_text_window_move_to (WEditWindow *win, long line)
+{
+    WTextWindow *tw = TEXT_WINDOW (win);
+
+    tw->selected = FALSE;
+    text_window_move_cursor (tw, line, 0, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+long
+edit_text_window_cursor_line (const WEditWindow *win)
+{
+    return CONST_TEXT_WINDOW (win)->cur_line;
 }
 
 /* --------------------------------------------------------------------------------------------- */

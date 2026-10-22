@@ -33,6 +33,12 @@ void edit_text_window_set_text (WEditWindow *win, const char *text, gsize len);
 /* Make @line, from 0, the top line of the view, as far as the text lets it */
 void edit_text_window_scroll_to (WEditWindow *win, long line);
 
+/* A list: the line of the cursor drawn across the window, in the color of a bookmark */
+void edit_text_window_set_line_cursor (WEditWindow *win, gboolean on);
+/* The cursor to the start of @line, from 0, the view following it */
+void edit_text_window_move_to (WEditWindow *win, long line);
+/* The line of the cursor, from 0 */
+long edit_text_window_cursor_line (const WEditWindow *win);
 long edit_text_window_lines (const WEditWindow *win);
 long edit_text_window_top (const WEditWindow *win);
 /* The columns and lines the text has in the window, inside its frame */

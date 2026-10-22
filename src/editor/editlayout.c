@@ -589,12 +589,12 @@ layout_project_root (WDialog *h)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* coole --git and its --git-*: the editor is there for git alone; the layout of the project is
-   neither shown nor overwritten */
+/* coole --git and its --git-*, coole --query: the editor is there for git, or for the queries of
+   a file, alone; the layout of the project is neither shown nor overwritten */
 static gboolean
 layout_set_aside (void)
 {
-    return edit_startup_option ("git") != NULL;
+    return edit_startup_option ("git") != NULL || edit_startup_option ("query") != NULL;
 }
 
 /* --------------------------------------------------------------------------------------------- */
