@@ -94,7 +94,9 @@ Output, Table and History at the bottom. \fIMC_MONGO_URI\fP and \fIMC_MONGO_DB\f
 in the environment tell what to connect to, \fIMC_MONGOSH\fP the program.
 Without a file named, the file is \fI~/.local/share/coole/queries/\fP, with the
 name of the database and \fI\&.js\fP\&. The windows the project had last time are
-not shown. It needs the query plugin.
+not shown, and the plugins of a project and of code (project, build,
+debugger, ctags, etags, git, terminal, lsp, spell) are not started; the
+scripts stay. It needs the query plugin.
 
 .TP
 \fI\-G, \-\-git=directory\fP
