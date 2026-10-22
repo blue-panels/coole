@@ -56,6 +56,13 @@ db.orders.countDocuments({ status: 1 })
 
 **F5** while a query runs asks whether to stop it.
 
+A line *// @limit 20* in a query limits its documents, to 100 without a
+number: a chain of *find()* gets *.limit(20)* on a line after it, unless it
+has a *.limit()* of its own, and *aggregate([...])* a stage *{ $limit: 20 }*
+at the end of its pipeline, unless it has a *$limit* of its own, or a *$out*
+or a *$merge*, after which no stage may come. The header of Output tells the limit put, or
+that the query has nothing to limit. The file is left as it is.
+
 **The tabs**
 
 *Output*

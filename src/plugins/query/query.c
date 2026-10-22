@@ -122,8 +122,10 @@ typedef struct
     GPid pid;
     int fds[2];  // its stdout and stderr, -1 when ended
     GString *out, *err;
-    gboolean cut;    // mongosh printed more than QUERY_OUTPUT_MAX: the rest is not kept
-    gboolean table;  // asked for by "// @table": mongosh --json, its answer in columns too
+    gboolean cut;      // mongosh printed more than QUERY_OUTPUT_MAX: the rest is not kept
+    gboolean table;    // asked for by "// @table": mongosh --json, its answer in columns too
+    long limit;        // asked for by "// @limit N", 0 when not
+    gboolean limited;  // and put into the query
     gboolean stopped;
     char *text;
     char *file;  // the file of the query, NULL for a file with no name
@@ -345,11 +347,11 @@ query_history_show (query_t *q, const query_entry_t *current)
 
         if (e == current)
             cursor = (long) q->rows->len;
-        // the query, not the "// @table" before it
+        // the query, not the "// @table" and "// @limit" before it
         while ((nl = strchr (start, '\n')) != NULL)
         {
             char *line = g_strndup (start, (gsize) (nl - start));
-            const gboolean mark = query_wants_table (line);
+            const gboolean mark = query_wants_table (line) || query_wants_limit (line) > 0;
 
             g_free (line);
             if (!mark)
@@ -364,7 +366,8 @@ query_history_show (query_t *q, const query_entry_t *current)
         if (e->status != 0)
             g_string_append (text, ANSI_RED);
         g_string_append_len (text, start, nl != NULL ? nl - start : (gssize) strlen (start));
-        if (nl != NULL && e != q->expanded)
+        // more lines, not empty ones alone
+        if (nl != NULL && nl[strspn (nl, " \t\r\n")] != '\0' && e != q->expanded)
             g_string_append (text, " ...");
         if (e->status != 0)
             g_string_append (text, ANSI_RESET);
@@ -638,6 +641,10 @@ query_output_done (query_t *q, const char *out, const char *err, int status)
     else
         g_string_append_printf (text, _ ("line %ld"), q->first);
     g_string_append_printf (text, "   %.2f s   %s   %s   ", seconds, when, q->endpoint);
+    if (q->limited)
+        g_string_append_printf (text, _ ("limit %ld   "), q->limit);
+    else if (q->limit > 0)
+        g_string_append (text, _ ("@limit: no find () or aggregate ([...]) to limit   "));
     if (q->stopped)
         g_string_append (text, _ ("stopped"));
     else if (WIFSIGNALED (status))
@@ -757,11 +764,19 @@ query_output_ready (int fd, void *data)
 static void
 query_start (query_t *q)
 {
-    char *text = q->table ? query_mongo_for_table (q->text) : g_strdup (q->text);
+    char *text =
+        q->limit > 0 ? query_mongo_with_limit (q->text, q->limit, &q->limited) : g_strdup (q->text);
     const char *argv[10];
     int n = 0, in, out, err, i;
     GError *error = NULL;
 
+    if (q->table)
+    {
+        char *array = query_mongo_for_table (text);
+
+        g_free (text);
+        text = array;
+    }
     // what goes to mongosh, ".toArray()" too, and a query of History, which was not looked at
     if (strlen (text) > QUERY_TEXT_MAX)
     {
@@ -922,6 +937,8 @@ query_run_text (query_t *q, char *text, char *file, long first)
     q->file = file;
     q->first = first;
     q->table = query_wants_table (text);
+    q->limit = query_wants_limit (text);
+    q->limited = FALSE;
     q->stopped = FALSE;
     q->started = g_get_monotonic_time ();
     q->host->clear_markers (q->host, NULL, q->mark);

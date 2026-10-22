@@ -45,6 +45,17 @@ check_for_table (const char *text, const char *want)
 }
 
 static void
+check_limit (const char *text, long limit, const char *want)
+{
+    gboolean done = FALSE;
+    char *s = query_mongo_with_limit (text, limit, &done);
+
+    g_assert_cmpstr (s, ==, want != NULL ? want : text);
+    g_assert_true (done == (want != NULL));
+    g_free (s);
+}
+
+static void
 check_section (const char *text, long line, const char *want, long want_first)
 {
     long first = -1;
@@ -171,6 +182,43 @@ test_mongo (void)
     g_assert_false (query_wants_table ("db.a.find() // @tables"));
     g_assert_false (query_wants_table ("db.a.find()"));
     g_assert_false (query_wants_table ("print(\"@table\")"));
+
+    g_assert_cmpint (query_wants_limit ("// @limit 20\ndb.a.find()"), ==, 20);
+    g_assert_cmpint (query_wants_limit ("//@limit\ndb.a.find()"), ==, QUERY_LIMIT_DEFAULT);
+    g_assert_cmpint (query_wants_limit ("// @limit 0"), ==, QUERY_LIMIT_DEFAULT);
+    g_assert_cmpint (query_wants_limit ("// @limits 5"), ==, 0);
+    g_assert_cmpint (query_wants_limit ("db.a.find()"), ==, 0);
+
+    // a chain of find (): .limit () after it, unless it has one
+    check_limit ("db.a.find({}) // recent", 100, "db.a.find({})\n.limit(100)");
+    check_limit ("db.getCollection(\"a\").find().sort({ts: -1});", 5,
+                 "db.getCollection(\"a\").find().sort({ts: -1})\n.limit(5)");
+    check_limit ("db.a.find().limit(3)", 100, NULL);
+    check_limit ("db.a.find().limit(3).sort({x: 1})", 100, NULL);
+    check_limit ("db.a.find().toArray()", 100, NULL);
+    check_limit ("db.a.countDocuments({})", 100, NULL);
+    // the find () of an array is none of a collection
+    check_limit ("db.a.find().toArray().find(d => d.x)", 100, NULL);
+    check_limit ("db.getCollection(\"a\").find()", 5, "db.getCollection(\"a\").find()\n.limit(5)");
+    check_limit ("print(1)", 100, NULL);
+    // aggregate ([...]): a stage $limit at the end of its pipeline, on the same line
+    check_limit ("db.a.aggregate([\n  {$match: {x: 1}}\n])", 7,
+                 "db.a.aggregate([\n  {$match: {x: 1}}\n, { $limit: 7 }])");
+    // a comment after the last stage does not take the stage in
+    check_limit ("db.a.aggregate([\n {$match: {}} // recent\n])", 7,
+                 "db.a.aggregate([\n {$match: {}} // recent\n, { $limit: 7 }])");
+    check_limit ("db.a.aggregate([{$match: {}} /* x, */])", 7,
+                 "db.a.aggregate([{$match: {}} /* x, */, { $limit: 7 }])");
+    // a limit of its own, or a stage no other may follow: as it is
+    check_limit ("db.a.aggregate([{$match: {}}, {$limit: 500}])", 7, NULL);
+    check_limit ("db.a.aggregate([{$match: {}}, {$out: \"x\"}])", 7, NULL);
+    check_limit ("db.a.aggregate([{$merge: {into: \"x\"}}])", 7, NULL);
+    check_limit ("db.a.aggregate([{$match: {}},])", 7,
+                 "db.a.aggregate([{$match: {}},{ $limit: 7 }])");
+    check_limit ("db.a.aggregate([])", 7, "db.a.aggregate([{ $limit: 7 }])");
+    check_limit ("db.a.aggregate(pipeline)", 7, NULL);
+    // what for_table then makes of it
+    check_for_table ("db.a.find()\n.limit(100)", "db.a.find()\n.limit(100)\n.toArray()");
 
     s = query_mongo_clean ("DeprecationWarning: DBQuery.shellBatchSize is deprecated, please use "
                            "config.set(\"displayBatchSize\") instead\n23\n");

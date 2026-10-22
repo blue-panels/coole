@@ -13,8 +13,11 @@
    mongosh by --eval */
 #define QUERY_TEXT_MAX (128 * 1024 - 1)
 
-/* The comment that asks for the table of a query: "// @table" */
-#define QUERY_TABLE_MARK "@table"
+/* The comments that ask for the table of a query, "// @table", and for a limit to the documents
+   of its cursor, "// @limit 20", 100 without a number */
+#define QUERY_TABLE_MARK    "table"
+#define QUERY_LIMIT_MARK    "limit"
+#define QUERY_LIMIT_DEFAULT 100
 
 /*** enums ***************************************************************************************/
 
@@ -44,6 +47,13 @@ char *query_put_section (const char *text, long line, const char *query, gsize *
 const char *query_mongo_prefix (void);
 /* Whether @text asks for the table: a line of it is the comment "// @table" */
 gboolean query_wants_table (const char *text);
+/* The number of a line "// @limit N" of @text, QUERY_LIMIT_DEFAULT without one; 0 when there is
+   no such line */
+long query_wants_limit (const char *text);
+/* The query of @text with a limit to its documents: ".limit(N)" on a line after a chain of find
+   (), a stage $limit at the end of the pipeline of aggregate ([...]); @done FALSE, and @text,
+   when it has a limit of its own, or ends with neither */
+char *query_mongo_with_limit (const char *text, long limit, gboolean *done);
 /* The query of @text for the table: ".toArray()" on a line after it when it ends with a chain of
    a query, find () or aggregate () and what a cursor is sorted and cut with; else @text */
 char *query_mongo_for_table (const char *text);

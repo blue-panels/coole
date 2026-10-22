@@ -51,6 +51,15 @@
 
 /*** file scope type declarations ****************************************************************/
 
+/* A call of a chain: its name, and its parentheses */
+typedef struct
+{
+    const char *name;
+    gsize len;
+    const char *open;
+    const char *close;
+} query_call_t;
+
 /*** forward declarations (file scope functions) *************************************************/
 
 /*** file scope variables ************************************************************************/
@@ -439,8 +448,9 @@ query_mongo_prefix (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
-gboolean
-query_wants_table (const char *text)
+/* The line "// @name" of @text: what follows the name on it; NULL when there is none */
+static const char *
+query_annotation (const char *text, const char *name)
 {
     const char *p = text;
 
@@ -454,40 +464,96 @@ query_wants_table (const char *text)
         {
             for (q += 2; *q == ' ' || *q == '\t'; q++)
                 ;
-            if (g_str_has_prefix (q, QUERY_TABLE_MARK)
-                && !g_ascii_isalnum (q[strlen (QUERY_TABLE_MARK)]))
-                return TRUE;
+            if (*q == '@' && strncmp (q + 1, name, strlen (name)) == 0
+                && !g_ascii_isalnum (q[1 + strlen (name)]))
+                return q + 1 + strlen (name);
         }
         p = query_line_end (p);
         if (*p == '\n')
             p++;
     }
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+query_wants_table (const char *text)
+{
+    return query_annotation (text, QUERY_TABLE_MARK) != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+long
+query_wants_limit (const char *text)
+{
+    const char *p = query_annotation (text, QUERY_LIMIT_MARK);
+    long n;
+
+    if (p == NULL)
+        return 0;
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (!g_ascii_isdigit (*p))
+        return QUERY_LIMIT_DEFAULT;
+    n = strtol (p, NULL, 10);
+    return n > 0 ? n : QUERY_LIMIT_DEFAULT;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What a cursor is made with and sorted, cut and told with: a call of them a query ends with is
+   of a cursor */
+static const char *const query_cursor_calls[] = {
+    "find",         "aggregate",
+    "sort",         "limit",
+    "skip",         "project",
+    "batchSize",    "hint",
+    "collation",    "maxTimeMS",
+    "allowDiskUse", "comment",
+    "readPref",     "min",
+    "max",          "returnKey",
+    "showRecordId", "noCursorTimeout",
+    "readConcern",  "allowPartialResults",
+};
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+query_is_cursor_call (const query_call_t *call)
+{
+    guint i;
+
+    for (i = 0; i < G_N_ELEMENTS (query_cursor_calls); i++)
+        if (call->len == strlen (query_cursor_calls[i])
+            && strncmp (call->name, query_cursor_calls[i], call->len) == 0)
+            return TRUE;
     return FALSE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-char *
-query_mongo_for_table (const char *text)
+static gboolean
+query_call_is (const query_call_t *call, const char *name)
 {
-    static const char *const cursor[] = {
-        "find",         "aggregate",
-        "sort",         "limit",
-        "skip",         "project",
-        "batchSize",    "hint",
-        "collation",    "maxTimeMS",
-        "allowDiskUse", "comment",
-        "readPref",     "min",
-        "max",          "returnKey",
-        "showRecordId", "noCursorTimeout",
-        "readConcern",  "allowPartialResults",
-    };
-    GArray *opens = g_array_new (FALSE, FALSE, sizeof (const char *));
-    const char *p, *name_end;
-    const char *end = NULL;   // past the last character of the code, not of a comment
-    const char *open = NULL;  // the '(' of the ')' the code ends with
-    guint i;
+    return call->len == strlen (name) && strncmp (call->name, name, call->len) == 0;
+}
 
+/* --------------------------------------------------------------------------------------------- */
+
+/* The chain of calls @text ends with, the last one first: "a.find(x).sort(y)" is sort, find.
+   @end is past the last character of the code: a comment and a ';' after it are no part of it.
+   An empty chain when the code ends with no call. */
+static GArray *
+query_chain (const char *text, const char **end)
+{
+    GArray *chain = g_array_new (FALSE, FALSE, sizeof (query_call_t));
+    GArray *opens = g_array_new (FALSE, FALSE, sizeof (const char *));
+    GArray *pairs = g_array_new (FALSE, FALSE, sizeof (const char *));  // '(' and ')', by two
+    const char *p, *open = NULL, *close = NULL;
+
+    *end = text;
     /* Through the text as JavaScript is read: the parentheses of strings and of comments are no
        part of the code, nor what follows the end of it, a comment or a ';' */
     for (p = text; *p != '\0'; p++)
@@ -500,11 +566,11 @@ query_mongo_for_table (const char *text)
         }
         else if (p[0] == '/' && p[1] == '*')
         {
-            const char *close = strstr (p + 2, "*/");
+            const char *c = strstr (p + 2, "*/");
 
-            if (close == NULL)
+            if (c == NULL)
                 break;
-            p = close + 1;
+            p = c + 1;
         }
         else if (*p == '"' || *p == '\'' || *p == '`')
         {
@@ -515,43 +581,197 @@ query_mongo_for_table (const char *text)
                     p++;
             if (*p == '\0')
                 break;
-            end = p + 1;
+            *end = p + 1;
             open = NULL;
         }
         else if (!g_ascii_isspace (*p) && *p != ';')
         {
-            end = p + 1;
+            *end = p + 1;
             open = NULL;
             if (*p == '(')
                 g_array_append_val (opens, p);
             else if (*p == ')' && opens->len > 0)
             {
                 open = g_array_index (opens, const char *, opens->len - 1);
+                close = p;
                 g_array_set_size (opens, opens->len - 1);
+                g_array_append_val (pairs, open);
+                g_array_append_val (pairs, close);
             }
         }
     }
+
+    // back through the chain: the name before the '(', and a '.' and a call before the name
+    while (open != NULL)
+    {
+        query_call_t call;
+        guint i;
+
+        for (p = open; p > text && g_ascii_isspace (p[-1]); p--)
+            ;
+        call.len = 0;
+        for (; p > text && (g_ascii_isalnum (p[-1]) || p[-1] == '_' || p[-1] == '$'); p--)
+            call.len++;
+        if (call.len == 0)
+            break;
+        call.name = p;
+        call.open = open;
+        call.close = close;
+        g_array_append_val (chain, call);
+
+        for (; p > text && g_ascii_isspace (p[-1]); p--)
+            ;
+        if (p == text || p[-1] != '.')
+            break;
+        for (p--; p > text && g_ascii_isspace (p[-1]); p--)
+            ;
+        open = NULL;
+        for (i = 0; p > text && p[-1] == ')' && i < pairs->len; i += 2)
+            if (g_array_index (pairs, const char *, i + 1) == p - 1)
+            {
+                open = g_array_index (pairs, const char *, i);
+                close = p - 1;
+            }
+    }
     g_array_free (opens, TRUE);
-    if (open == NULL)
-        return g_strdup (text);
+    g_array_free (pairs, TRUE);
+    return chain;
+}
 
-    // the name before the '(', blanks maybe between
-    for (p = open; p > text && g_ascii_isspace (p[-1]); p--)
-        ;
-    for (name_end = p; p > text && (g_ascii_isalnum (p[-1]) || p[-1] == '_'); p--)
-        ;
-    for (i = 0; i < G_N_ELEMENTS (cursor); i++)
-        if ((gsize) (name_end - p) == strlen (cursor[i])
-            && strncmp (p, cursor[i], (gsize) (name_end - p)) == 0)
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_mongo_for_table (const char *text)
+{
+    const char *end;
+    GArray *chain = query_chain (text, &end);
+    char *array = NULL;
+
+    if (chain->len > 0 && query_is_cursor_call (&g_array_index (chain, query_call_t, 0)))
+    {
+        char *body = g_strndup (text, (gsize) (end - text));
+
+        // on a line of its own, the comment and the ';' after the call left out
+        array = g_strconcat (body, "\n.toArray()", (char *) NULL);
+        g_free (body);
+    }
+    g_array_free (chain, TRUE);
+    return array != NULL ? array : g_strdup (text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the text from @from up to @to has @word */
+static gboolean
+query_text_has (const char *from, const char *to, const char *word)
+{
+    const gsize len = strlen (word);
+    const char *p;
+
+    for (p = from; p + len <= to; p++)
+        if (strncmp (p, word, len) == 0)
+            return TRUE;
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The last character of code from @from up to @to, not of a comment, not a blank: the quote
+   that ends a string is one; NULL when there is none */
+static const char *
+query_last_code (const char *from, const char *to)
+{
+    const char *p, *last = NULL;
+
+    for (p = from; p < to; p++)
+    {
+        if (p[0] == '/' && p + 1 < to && p[1] == '/')
         {
-            char *body = g_strndup (text, (gsize) (end - text));
-            // on a line of its own, the comment and the ';' after the call left out
-            char *array = g_strconcat (body, "\n.toArray()", (char *) NULL);
-
-            g_free (body);
-            return array;
+            while (p < to && *p != '\n')
+                p++;
         }
-    return g_strdup (text);
+        else if (p[0] == '/' && p + 1 < to && p[1] == '*')
+        {
+            for (p += 2; p + 1 < to && !(p[0] == '*' && p[1] == '/'); p++)
+                ;
+            p++;
+        }
+        else if (*p == '"' || *p == '\'' || *p == '`')
+        {
+            const char quote = *p;
+
+            for (p++; p < to && *p != quote; p++)
+                if (*p == '\\' && p + 1 < to)
+                    p++;
+            last = p < to ? p : last;
+        }
+        else if (!g_ascii_isspace (*p))
+            last = p;
+    }
+    return last;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_mongo_with_limit (const char *text, long limit, gboolean *done)
+{
+    const char *end;
+    GArray *chain = query_chain (text, &end);
+    gboolean find = FALSE;
+    char *limited = NULL;
+    guint i;
+
+    // back to the find (): what the cursor is made with after it, a limit of its own not
+    for (i = 0; i < chain->len; i++)
+    {
+        const query_call_t *call = &g_array_index (chain, query_call_t, i);
+
+        if (query_call_is (call, "find"))
+        {
+            /* the find () of a collection, db.c.find () or db.getCollection (...).find (), not
+               that of an array, db.c.find ().toArray ().find (...), which takes no limit */
+            find = i + 1 == chain->len
+                || query_call_is (&g_array_index (chain, query_call_t, i + 1), "getCollection");
+            break;
+        }
+        if (query_call_is (call, "limit") || !query_is_cursor_call (call))
+            break;
+    }
+
+    if (find)
+    {
+        char *body = g_strndup (text, (gsize) (end - text));
+
+        limited = g_strdup_printf ("%s\n.limit(%ld)", body, limit);
+        g_free (body);
+    }
+    else if (chain->len > 0 && query_call_is (&g_array_index (chain, query_call_t, 0), "aggregate"))
+    {
+        // aggregate ([...]): a stage $limit at the end of the pipeline
+        const query_call_t *call = &g_array_index (chain, query_call_t, 0);
+        const char *close = call->close, *open = call->open + 1, *last;
+
+        while (close > call->open && g_ascii_isspace (close[-1]))
+            close--;
+        while (open < close && g_ascii_isspace (*open))
+            open++;
+        close--;
+        /* a pipeline of its own: [ and ]; one with its own $limit, or that ends with $out or
+           $merge, after which no stage may come, is left as it is */
+        if (open < close && *open == '[' && *close == ']' && !query_text_has (open, close, "$limit")
+            && !query_text_has (open, close, "$out") && !query_text_has (open, close, "$merge"))
+        {
+            last = query_last_code (open + 1, close);
+            /* just before the ], after a comment at the end of the last stage too; the lines of
+               the query stay where they were */
+            limited = g_strdup_printf ("%.*s%s{ $limit: %ld }%s", (int) (close - text), text,
+                                       last == NULL || *last == ',' ? "" : ", ", limit, close);
+        }
+    }
+    g_array_free (chain, TRUE);
+    *done = limited != NULL;
+    return limited != NULL ? limited : g_strdup (text);
 }
 
 /* --------------------------------------------------------------------------------------------- */
