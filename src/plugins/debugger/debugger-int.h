@@ -335,6 +335,7 @@ mc_ep_result_t debug_toggle_breakpoint (void *data, void *edit);
 
 /* debug-program.c */
 void debug_output_show (debugger_t *debug);
+void debug_output_front (debugger_t *debug);
 void debug_output_append (debugger_t *debug, const char *text_value);
 void debug_output_console (debugger_t *debug, const char *text_value, gboolean line);
 void debug_pty_close (debugger_t *debug);

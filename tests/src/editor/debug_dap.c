@@ -418,6 +418,10 @@ test_session (gconstpointer address)
     (void) seen.backend->ops->evaluate (seen.backend, "bad", on_reply, MINE);
     wait_answer ();
     g_assert_cmpstr (seen.error, ==, "no symbol bad");
+    // the reason is in the error of the body, the message a word of it
+    (void) seen.backend->ops->evaluate (seen.backend, "worse", on_reply, MINE);
+    wait_answer ();
+    g_assert_cmpstr (seen.error, ==, "Unable to eval: no symbol worse");
     // a value with members: its reference, then the members by it
     g_clear_pointer (&seen.variables, g_ptr_array_unref);
     (void) seen.backend->ops->inspect (seen.backend, "obj", on_reply, MINE);

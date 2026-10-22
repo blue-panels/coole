@@ -183,6 +183,11 @@ class Adapter:
             expression = args.get("expression", "")
             if expression == "bad":
                 self.respond(request, success=False, message="no symbol bad")
+            elif expression == "worse":
+                # the reason in the error of the body, as Delve has it
+                self.respond(request, {"error": {"id": 3000, "format": "Unable to eval: {why}",
+                                                 "variables": {"why": "no symbol worse"}}},
+                             success=False, message="Unable to eval")
             elif expression == "obj":
                 self.respond(request, {"result": "<object>", "variablesReference": 3,
                                        "type": "Thing"})

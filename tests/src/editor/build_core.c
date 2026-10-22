@@ -205,6 +205,29 @@ test_diagnostic (void)
 
     g_assert_null (build_parse_diagnostic ("[12/30] Compiling C object a.o", "/b"));
     g_assert_null (build_parse_diagnostic ("ninja: build stopped: subcommand failed.", "/b"));
+
+    // go build: no kind, an error of a file there
+    {
+        char *go = g_dir_make_tmp ("build_core_XXXXXX", NULL);
+        char *main_go = g_build_filename (go, "main.go", NULL);
+
+        g_assert_true (g_file_set_contents (main_go, "package main\n", -1, NULL));
+        d = build_parse_diagnostic ("./main.go:12:2: undefined: x", go);
+        g_assert_nonnull (d);
+        g_assert_cmpstr (d->file, ==, main_go);
+        g_assert_cmpint (d->line, ==, 12);
+        g_assert_cmpint (d->column, ==, 2);
+        g_assert_true (d->error);
+        g_assert_cmpstr (d->message, ==, "undefined: x");
+        build_diagnostic_free (d);
+        // not a file there, or the context of gcc
+        g_assert_null (build_parse_diagnostic ("./other.go:12:2: undefined: x", go));
+        g_assert_null (build_parse_diagnostic ("./main.go:5:10:   required from here", go));
+        g_unlink (main_go);
+        g_rmdir (go);
+        g_free (main_go);
+        g_free (go);
+    }
 }
 
 static void
@@ -293,6 +316,24 @@ test_presets (void)
         // a file of the project with the command alone is no copy
         presets = build_presets_parse ("[project]\ncommand=make\n", NULL, system, NULL, NULL);
         g_assert_cmpstr (build_presets_find (presets, "/nowhere", "/x/a.py")->id, ==, "python");
+        g_ptr_array_free (presets, TRUE);
+
+        // a copy made before coole had a key: the key of its language, the user's first; one
+        // the copy has, empty too, stays
+        presets = build_presets_parse ("[project]\nlanguage=go\nadapter=my-dlv\nbuild=\n", NULL,
+                                       system, NULL, NULL);
+        p = build_presets_find (presets, "/nowhere", NULL);
+        g_assert_true (p->project);
+        g_assert_cmpstr (p->program, ==, ".");
+        g_assert_cmpstr (p->entry, ==, "package main");
+        g_assert_cmpstr (p->launch, ==, "{\"mode\": \"debug\"}");
+        g_assert_cmpstr (p->adapter, ==, "my-dlv");
+        g_assert_null (p->build);
+        g_ptr_array_free (presets, TRUE);
+        presets = build_presets_parse ("[project]\nlanguage=rust\n", user, system, NULL, NULL);
+        p = build_presets_find (presets, "/nowhere", NULL);
+        g_assert_cmpstr (p->gdb[0], ==, "my-gdb");
+        g_assert_null (p->build);
         g_ptr_array_free (presets, TRUE);
 
         presets = build_presets_parse ("[project\n", NULL, system, &project_error, NULL);

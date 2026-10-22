@@ -22,8 +22,10 @@ the project: *meson compile -C* that directory.
 
 *the language*
 : else the command of the language of the project, as *presets.ini* has it:
-*cargo build --message-format=short* for a project with a *Cargo.toml*. Its
-errors are listed as those of gcc are.
+*cargo build --message-format=short* for a project with a *Cargo.toml*,
+*go build ./...* for one with a *go.mod*. Its errors are listed as those of
+gcc are; a line of go, *./main.go:12:2: undefined: x*, has no word *error*,
+and is an error when the file it names is there.
 
 **Presets of the languages**
 
@@ -40,8 +42,10 @@ is told once, with its line.
 A project opened as one, with *coole -D* or **Open project**, takes a copy
 of the preset of its language: *.coole/project.ini* in the project, its
 group *[project]*, with the keys of *presets.ini* and *language*, the name of
-the language. From then on the project has it: what is changed there stays,
-and a later change of *presets.ini* does not reach it. A project with a build
+the language. From then on the project has it: what is changed there stays.
+A key the copy has not is that of the language in *presets.ini*, of the user
+first, so that what coole adds to a preset later reaches the projects copied
+before; a key left empty, *build=*, has none. A project with a build
 system of its own, meson, cmake or a *Makefile*, has no *build* in its copy.
 A file opened alone, without a project, leaves no file in its directory. A
 *.coole/project.ini* that cannot be read is told of, with its line, and left

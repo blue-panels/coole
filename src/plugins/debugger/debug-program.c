@@ -139,7 +139,7 @@ debug_output_show (debugger_t *debug)
 }
 
 static void
-debug_text_raise (debugger_t *debug, gint64 window_id)
+debug_text_raise (debugger_t *debug, gint64 window_id, gboolean focus)
 {
     GVariantDict dict;
     GVariant *reply;
@@ -148,10 +148,19 @@ debug_text_raise (debugger_t *debug, gint64 window_id)
         return;
     g_variant_dict_init (&dict, NULL);
     g_variant_dict_insert (&dict, "id", "x", window_id);
-    g_variant_dict_insert (&dict, "focus", "b", TRUE);
+    g_variant_dict_insert (&dict, "focus", "b", focus);
     reply = debug_viewer_call (debug, "show", g_variant_dict_end (&dict));
     if (reply != NULL)
         g_variant_unref (reply);
+}
+
+/* The console over the tab of the program, its last lines in sight, the focus where it is but
+   on that tab, which the console takes: what went wrong is told there */
+void
+debug_output_front (debugger_t *debug)
+{
+    debug_output_show (debug);
+    debug_text_raise (debug, debug->console_window, FALSE);
 }
 
 void
@@ -421,7 +430,7 @@ debug_show_output (void *data, void *edit)
 
     (void) edit;
     debug_output_show (debug);
-    debug_text_raise (debug, debug->console_window);
+    debug_text_raise (debug, debug->console_window, TRUE);
     return MC_EPR_OK;
 }
 

@@ -717,12 +717,23 @@ debug_preset (debugger_t *debug, const char *root, const char *path)
     return reply;
 }
 
-/* The preset of a script by the ending of its name: one with a debug adapter, which runs it;
-   NULL for a program of the machine, which GDB runs */
+/* The preset of a script by the ending of its name, or of a directory, a package, by its
+   markers: one with a debug adapter, which runs it; NULL for a program of the machine, which
+   GDB runs */
 static GVariant *
 debug_script_preset (debugger_t *debug, const char *path)
 {
-    GVariant *preset = debug_preset (debug, NULL, path);
+    const gsize len = debug->project_dir != NULL ? strlen (debug->project_dir) : 0;
+    GVariant *preset;
+
+    if (path == NULL || !g_file_test (path, G_FILE_TEST_IS_DIR))
+        preset = debug_preset (debug, NULL, path);
+    // a package in the project, cmd/server, is of the language of the project
+    else if (len != 0 && strncmp (path, debug->project_dir, len) == 0
+             && (path[len] == '\0' || path[len] == '/'))
+        preset = debug_preset (debug, debug->project_dir, NULL);
+    else
+        preset = debug_preset (debug, path, NULL);
     const char *adapter = NULL;
 
     if (preset != NULL && !g_variant_lookup (preset, "adapter", "&s", &adapter))
@@ -905,6 +916,138 @@ debug_program_hidden (const debugger_t *debug, const char *program, const char *
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* One of @items, absolute names, to choose from in a list, shown from the root; NULL when it is
+   cancelled */
+static char *
+debug_choose (debugger_t *debug, const char *title, const char *const *items)
+{
+    const guint count = g_strv_length ((char **) items);
+    const gsize len = strlen (debug->project_dir);
+    Listbox *selector;
+    const char *chosen;
+    guint i;
+
+    selector = listbox_window_new (MIN ((int) count, 16), MIN (COLS - 8, 76), title, NULL);
+    for (i = 0; i < count; i++)
+    {
+        const char *p = items[i];
+        const char *shown = strncmp (p, debug->project_dir, len) == 0 && p[len] == '/' ? p + len + 1
+            : strcmp (p, debug->project_dir) == 0                                      ? "."
+                                                                                       : p;
+
+        LISTBOX_APPEND_TEXT (selector, 0, shown, (void *) p, FALSE);
+    }
+    chosen = listbox_run_with_data (selector, NULL);
+    return chosen != NULL ? g_strdup (chosen) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the file @path has the line @entry, spaces around it aside */
+static gboolean
+debug_file_has_line (const char *path, const char *entry)
+{
+    char *text = NULL;
+    char **lines;
+    gboolean has = FALSE;
+    guint i;
+
+    if (!g_file_get_contents (path, &text, NULL, NULL))
+        return FALSE;
+    lines = g_strsplit (text, "\n", -1);
+    g_free (text);
+    for (i = 0; lines[i] != NULL && !has; i++)
+        has = strcmp (g_strstrip (lines[i]), entry) == 0;
+    g_strfreev (lines);
+    return has;
+}
+
+/* The directories under @dir, @depth levels down, with a file of one of @extensions that has the
+   line @entry, added to @found: the packages main of go.  Hidden ones, vendor, testdata and
+   node_modules are passed by. */
+static void
+debug_entry_walk (const char *dir, int depth, const char *const *extensions, const char *entry,
+                  GPtrArray *found)
+{
+    GDir *d = g_dir_open (dir, 0, NULL);
+    GPtrArray *subdirs;
+    const char *name;
+    gboolean has = FALSE;
+    guint i;
+
+    if (d == NULL)
+        return;
+    subdirs = g_ptr_array_new_with_free_func (g_free);
+    while ((name = g_dir_read_name (d)) != NULL)
+    {
+        char *path;
+
+        if (*name == '.')
+            continue;
+        path = g_build_filename (dir, name, (char *) NULL);
+        if (g_file_test (path, G_FILE_TEST_IS_DIR))
+        {
+            if (depth > 0 && strcmp (name, "vendor") != 0 && strcmp (name, "testdata") != 0
+                && strcmp (name, "node_modules") != 0)
+                g_ptr_array_add (subdirs, g_steal_pointer (&path));
+        }
+        else if (!has)
+            for (i = 0; extensions[i] != NULL && !has; i++)
+                has = g_str_has_suffix (name, extensions[i]) && debug_file_has_line (path, entry);
+        g_free (path);
+    }
+    g_dir_close (d);
+    if (has)
+        g_ptr_array_add (found, g_strdup (dir));
+    for (i = 0; i < subdirs->len; i++)
+        debug_entry_walk (g_ptr_array_index (subdirs, i), depth - 1, extensions, entry, found);
+    g_ptr_array_free (subdirs, TRUE);
+}
+
+static int
+debug_entry_compare (gconstpointer a, gconstpointer b)
+{
+    return strcmp (*(const char *const *) a, *(const char *const *) b);
+}
+
+/* What the adapter runs of a language with entry in its preset, the line of a program, package
+   main of go: the directory of @file when it is one, else the one there is in the project, else
+   one chosen of them; NULL when there is none, or the choice is cancelled */
+static char *
+debug_entry_program (debugger_t *debug, GVariant *preset, const char *file)
+{
+    const char *entry = NULL;
+    const char **extensions = NULL;
+    GPtrArray *found;
+    char *dir, *program = NULL;
+    guint i;
+
+    if (!g_variant_lookup (preset, "entry", "&s", &entry)
+        || !g_variant_lookup (preset, "extensions", "^a&s", &extensions))
+        return NULL;
+    found = g_ptr_array_new_with_free_func (g_free);
+    debug_entry_walk (debug->project_dir, 4, extensions, entry, found);
+    g_ptr_array_sort (found, debug_entry_compare);
+    dir = file != NULL ? g_path_get_dirname (file) : NULL;
+    for (i = 0; dir != NULL && i < found->len && program == NULL; i++)
+        if (strcmp (g_ptr_array_index (found, i), dir) == 0)
+            program = g_strdup (dir);
+    if (program == NULL && found->len == 1)
+        program = g_strdup (g_ptr_array_index (found, 0));
+    else if (program == NULL && found->len > 1)
+    {
+        g_ptr_array_add (found, NULL);
+        program =
+            debug_choose (debug, _ ("The package to debug"), (const char *const *) found->pdata);
+    }
+    g_free (dir);
+    g_free (extensions);
+    g_ptr_array_free (found, TRUE);
+    return program;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A new configuration as the project suggests it: the program the build has made, the root of
    the project to run it in, and a build before the start when the project can be built; else
    the file in front, when it is a script an adapter runs.  The language of the project, by
@@ -920,11 +1063,12 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
     GVariant *preset = debug_preset (debug, debug->project_dir, file);
     const char **programs = NULL, **hide = NULL;
     const char *system = NULL, *command = NULL, *dir = NULL;
-    const char *gdb = NULL, *preset_program = NULL;
+    const char *gdb = NULL, *preset_program = NULL, *adapter = NULL;
     char *program = NULL;
 
     if (preset != NULL)
     {
+        (void) g_variant_lookup (preset, "adapter", "&s", &adapter);
         (void) g_variant_lookup (preset, "gdb", "&s", &gdb);
         (void) g_variant_lookup (preset, "program", "&s", &preset_program);
         (void) g_variant_lookup (preset, "hide", "^a&s", &hide);
@@ -934,7 +1078,9 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
     launch->terminal = TRUE;
     if (reply != NULL)
     {
-        (void) g_variant_lookup (reply, "programs", "^a&s", &programs);
+        // a language of an adapter: the adapter runs it, none of the programs built is for GDB
+        if (adapter == NULL)
+            (void) g_variant_lookup (reply, "programs", "^a&s", &programs);
         (void) g_variant_lookup (reply, "system", "&s", &system);
         (void) g_variant_lookup (reply, "command", "&s", &command);
         (void) g_variant_lookup (reply, "dir", "&s", &dir);
@@ -955,36 +1101,33 @@ debug_launch_guess (debugger_t *debug, debug_launch_t *launch, void *edit)
     else if (programs != NULL && programs[0] != NULL)
     {
         // several: the newest first, to choose from
-        const guint count = g_strv_length ((char **) programs);
-        Listbox *selector;
-        const char *chosen;
-        guint i;
-
-        selector = listbox_window_new (MIN ((int) count, 16), MIN (COLS - 8, 76),
-                                       _ ("The program to debug"), NULL);
-        for (i = 0; i < count; i++)
-        {
-            const char *p = programs[i];
-            const gsize len = strlen (debug->project_dir);
-            const char *shown =
-                strncmp (p, debug->project_dir, len) == 0 && p[len] == '/' ? p + len + 1 : p;
-
-            LISTBOX_APPEND_TEXT (selector, 0, shown, (void *) p, FALSE);
-        }
-        chosen = listbox_run_with_data (selector, NULL);
-        program = g_strdup (chosen != NULL ? chosen : programs[0]);
+        program = debug_choose (debug, _ ("The program to debug"), programs);
+        if (program == NULL)
+            program = g_strdup (programs[0]);
     }
     // not built yet: the program the build makes, that of the package of cargo
-    if (program == NULL && preset_program != NULL)
+    if (program == NULL && preset_program != NULL && adapter == NULL)
         program = g_strdup (preset_program);
 
-    if (program == NULL && debug_is_script (debug, file))
+    // what the adapter runs: the program of the preset, the package of go, else the script
+    if (adapter != NULL && preset_program != NULL)
+    {
+        // the package main of the file in front, cmd/server, else the root
+        char *entry = debug_entry_program (debug, preset, file);
+
+        launch->executable = entry != NULL ? entry : g_strdup (preset_program);
+        launch->name = g_path_get_basename (launch->executable);
+    }
+    else if (program == NULL && debug_is_script (debug, file))
     {
         launch->executable = file;
         launch->name = g_path_get_basename (file);
+        file = NULL;
+    }
+    if (launch->executable != NULL)
+    {
         launch->build = FALSE;
         debug_launch_adapter_defaults (debug, launch);
-        file = NULL;
     }
     g_free (file);
     if (program != NULL)
