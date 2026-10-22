@@ -27,10 +27,10 @@
  *  \brief Source: the query plugin
  *
  *  A module the editor loads from its directory of plugins; it works in coole -Q alone.  F5 gives
- *  the block of lines under the cursor, or the selection, to mongosh, and its answer comes in the
- *  tabs at the bottom: Output, what mongosh printed; Table, the documents in columns; History,
- *  the queries run.  The table is a second run of the query with --json, for a query that does
- *  not change the data.
+ *  the selection, else the part of the file between lines "// ---", else the whole file, to
+ *  mongosh, and its answer comes in the tabs at the
+ *  bottom: Output, what mongosh printed; Table, the documents in columns; History, the queries
+ *  run.  A query with a line "// @table" is run with --json, its value made the table.
  *
  *  mongosh is given what to connect to by the environment of coole, which it inherits:
  *  MC_MONGO_URI, MC_MONGO_DB; MC_MONGOSH is the program, else mongosh of PATH.  Neither the URI
@@ -149,8 +149,8 @@ static void query_run_text (query_t *q, char *text, char *file, long first);
 
 static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { "Help", NULL, "f1" },
-    { "QueryRun", N_ ("Run the query under the cursor, or the selection"), "f5" },
-    { "QueryRunAll", N_ ("Run the whole file as a query"), "ctrl-f5" },
+    { "QueryRun", N_ ("Run the selection, else the part between \"// ---\", else the file"), "f5" },
+    { "QueryRunAll", N_ ("Run the whole file, even with a selection"), "ctrl-f5" },
     { "QueryStop", N_ ("Stop the query"), NULL },
     { "QueryHistoryInsert", N_ ("Put the query of History under the cursor into the file"),
       "enter" },
@@ -847,7 +847,8 @@ query_blank (const char *text)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Run the selection of @edit, else the block of lines under its cursor, else all of it */
+/* Run the selection of @edit, else the section of its cursor between lines "// ---", else all of
+   it; all of it when @all */
 static void
 query_run (query_t *q, void *edit, gboolean all)
 {
@@ -856,6 +857,7 @@ query_run (query_t *q, void *edit, gboolean all)
     gsize len = 0;
     long first = 0;
     off_t start, end;
+    gboolean selected = FALSE, sectioned = FALSE;
 
     if (q->pid != 0)
     {
@@ -879,17 +881,25 @@ query_run (query_t *q, void *edit, gboolean all)
     {
         block = g_strndup (text + start, (gsize) (end - start));
         first = query_line_of (text, (gsize) start);
+        selected = TRUE;
     }
     else
-        block = query_block (text, e->buffer.curs_line, &first);
+    {
+        // a script is run as a whole, its lines using what those before made; "// ---" parts it
+        block = query_section (text, e->buffer.curs_line, &first);
+        sectioned = block != NULL;
+        if (block == NULL)
+            block = g_strdup (text);
+    }
     g_free (text);
 
-    if (block == NULL || query_blank (block))
+    if (query_blank (block))
     {
         q->host->message (q->host, D_NORMAL, _ ("Query"),
-                          all ? _ ("The file is empty.")
-                              : _ ("The cursor is on an empty line: F5 runs the lines around\n"
-                                   "it up to an empty line, or the selection."));
+                          selected        ? _ ("The selection is empty.")
+                              : sectioned ? _ ("The part of the file between the lines \"// ---\"\n"
+                                               "around the cursor is empty.")
+                                          : _ ("The file is empty."));
         g_free (block);
         return;
     }
@@ -950,17 +960,16 @@ query_history_expand (query_t *q, const query_entry_t *e)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Enter in History: its query put into the file, a block of its own after the block of the
+/* Enter in History: its query put into the file, a section of its own after the section of the
    cursor, the cursor on it, the file in front to run it with F5 */
 static void
 query_history_insert (query_t *q, const query_entry_t *e)
 {
     void *edit = q->host->window_top_file (q->host);
     WEdit *ed;
-    GString *put;
-    char *text, *file;
-    gsize len = 0;
-    long end, last, line, n;
+    char *text, *put, *file;
+    gsize len = 0, offset = 0;
+    long n = 0;
 
     if (edit == NULL)
         return;
@@ -968,42 +977,12 @@ query_history_insert (query_t *q, const query_entry_t *e)
     text = q->host->get_text (q->host, edit, &len);
     if (text == NULL)
         return;
-
-    put = g_string_new (NULL);
-    line = ed->buffer.curs_line;
-    end = query_line_of (text, len);
-    if (query_line_blank (text, line))
-    {
-        // on an empty line: the query there, an empty line before it unless there is one
-        n = line;
-        if (line > 0 && !query_line_blank (text, line - 1))
-        {
-            g_string_append_c (put, '\n');
-            n++;
-        }
-        g_string_append (put, e->text);
-        if (put->len == 0 || put->str[put->len - 1] != '\n')
-            g_string_append_c (put, '\n');
-        edit_move_to_line (ed, line);
-        edit_cursor_move (ed, edit_buffer_get_current_bol (&ed->buffer) - ed->buffer.curs1);
-    }
-    else
-    {
-        // after the last line of the block, an empty line between
-        for (last = line; last < end && !query_line_blank (text, last + 1); last++)
-            ;
-        g_string_append (put, "\n\n");
-        g_string_append (put, e->text);
-        while (put->len > 0 && put->str[put->len - 1] == '\n')
-            g_string_truncate (put, put->len - 1);
-        n = last + 2;
-        edit_move_to_line (ed, last);
-        edit_cursor_move (ed, edit_buffer_get_current_eol (&ed->buffer) - ed->buffer.curs1);
-    }
+    put = query_put_section (text, ed->buffer.curs_line, e->text, &offset, &n);
     g_free (text);
 
-    q->host->insert_text (q->host, edit, put->str, 0);
-    g_string_free (put, TRUE);
+    edit_cursor_move (ed, (off_t) offset - ed->buffer.curs1);
+    q->host->insert_text (q->host, edit, put, 0);
+    g_free (put);
 
     file = q->host->get_current_file (q->host, edit);
     if (file == NULL || !q->host->go_to (q->host, edit, file, n + 1, 0))
@@ -1124,9 +1103,10 @@ query_startup (void *data)
         g_string_append_printf (text, ANSI_RED "%s\n\n" ANSI_RESET,
                                 _ ("mongosh is not found: MC_MONGOSH or PATH should have it."));
     g_string_append (text,
-                     _ ("F5 runs the lines under the cursor, up to an empty line, or the\n"
-                        "selection; Ctrl-F5 the whole file.  The tab Table shows the\n"
-                        "documents of a query that does not change the data.\n"));
+                     _ ("F5 runs the selection, else the part between the lines \"// ---\"\n"
+                        "around the cursor, else the whole file; Ctrl-F5 the whole file.\n"
+                        "A line \"// @table\" in the query makes the tab Table of the\n"
+                        "documents it ends with.\n"));
     // the tabs in their order, the first one seen
     query_tab_set (q, QUERY_TAB_OUTPUT, text->str, FALSE);
     query_table_say (q, _ ("No query run yet.\n"));

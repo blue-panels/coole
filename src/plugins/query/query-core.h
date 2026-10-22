@@ -24,13 +24,20 @@
 
 /*** declarations of public functions ************************************************************/
 
-/* The block of the 0-based @line of @text: the lines around it up to an empty line, or the start
-   or the end of the text; @first its first line, 0-based.  NULL when @line is empty. */
-char *query_block (const char *text, long line, long *first);
 /* The 0-based line of the byte @offset of @text */
 long query_line_of (const char *text, gsize offset);
 /* Whether the 0-based @line of @text has nothing but blanks, or is past its end */
 gboolean query_line_blank (const char *text, long line);
+/* Whether the line that starts at @p is a separator of the queries of a file: "// ---" */
+gboolean query_line_separator (const char *p);
+/* The section of the 0-based @line of @text: the lines between the separators around it, the
+   separator before it being of it; @first its first line, 0-based.  NULL when the text has no
+   separator, the whole text being the query. */
+char *query_section (const char *text, long line, long *first);
+/* A query put into @text as a section of its own: what to insert at the byte @offset, after the
+   last line of the section of @line that is not empty, with a separator; the section itself
+   when it has nothing in it.  @at is the 0-based line of the query once it is there. */
+char *query_put_section (const char *text, long line, const char *query, gsize *offset, long *at);
 
 /* What mongosh runs before the query: db is the database of MC_MONGO_URI, MC_MONGO_DB when given,
    and a cursor is shown to its 1000th document, not to its 20th */

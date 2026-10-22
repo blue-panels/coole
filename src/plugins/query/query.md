@@ -34,18 +34,24 @@ These are the default keys; they can be changed in **Options → Key
 bindings → Editor → Query**, or in the *[query]* section of the keymap.
 
 **F5**
-: Run the selection, else the lines around the cursor up to an empty line
-before and after them: a file holds many queries, one after another, and a
-chain *.sort()* on a line of its own belongs to the query above it.
+: Run the selection, else the part of the file the cursor is in between
+lines *// ---*, else the whole file. A script is run as a whole, its lines
+using what the lines before them made, empty lines between them or not;
+a file of many queries has a line *// ---* before each, words after the
+dashes naming it if need be. The separator heads the part after it.
 
 **Ctrl-F5**
-: Run the whole file.
+: Run the whole file, even with a selection or separators.
 
 ```
+// --- the last orders
 // @table
 db.orders.find({ status: 1 })
   .sort({ ts: -1 })
   .limit(20)
+
+// --- how many
+db.orders.countDocuments({ status: 1 })
 ```
 
 **F5** while a query runs asks whether to stop it.
@@ -78,9 +84,9 @@ string left out. A query of it is there as it was run, though the file has
 changed since; the line of the cursor chooses one:
 
 **Enter**
-: Put the query into the file: after the lines of the cursor of the file, an
-empty line between, or on the empty line of the cursor. The cursor goes to
-it, to be changed and run with **F5**.
+: Put the query into the file as a part of its own, a line *// ---* before
+it, after the part the cursor of the file is in; into that part when it is
+empty. The cursor goes to it, to be changed and run with **F5**.
 
 **F3**
 : Show all the lines of the query under its line, or no more.

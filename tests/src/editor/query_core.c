@@ -36,18 +36,6 @@
 #include "src/plugins/query/query-core.h"
 
 static void
-check_block (const char *text, long line, const char *want, long want_first)
-{
-    long first = -1;
-    char *block = query_block (text, line, &first);
-
-    g_assert_cmpstr (block, ==, want);
-    if (want != NULL)
-        g_assert_cmpint (first, ==, want_first);
-    g_free (block);
-}
-
-static void
 check_for_table (const char *text, const char *want)
 {
     char *s = query_mongo_for_table (text);
@@ -57,7 +45,75 @@ check_for_table (const char *text, const char *want)
 }
 
 static void
-test_block (void)
+check_section (const char *text, long line, const char *want, long want_first)
+{
+    long first = -1;
+    char *s = query_section (text, line, &first);
+
+    g_assert_cmpstr (s, ==, want);
+    if (want != NULL)
+        g_assert_cmpint (first, ==, want_first);
+    g_free (s);
+}
+
+static void
+check_put (const char *text, long line, const char *query, const char *want, long want_at)
+{
+    gsize offset = 0;
+    long at = -1;
+    char *put = query_put_section (text, line, query, &offset, &at);
+    GString *s = g_string_new (text);
+
+    g_string_insert (s, (gssize) offset, put);
+    g_assert_cmpstr (s->str, ==, want);
+    g_assert_cmpint (at, ==, want_at);
+    g_string_free (s, TRUE);
+    g_free (put);
+}
+
+static void
+test_sections (void)
+{
+    const char *script = "const a = 1;\n\nprint(a)\n";
+    const char *text = "db.a.find()\n"
+                       "\n"
+                       "// --- second\n"
+                       "const x = 1;\n"
+                       "\n"
+                       "print(x)\n"
+                       "  //---\n"
+                       "db.c.count()\n";
+
+    g_assert_true (query_line_separator ("// ---"));
+    g_assert_true (query_line_separator ("  //------ users\n"));
+    g_assert_false (query_line_separator ("// -- x"));
+    g_assert_false (query_line_separator ("x // ---"));
+
+    // no separator: the whole text is the query, empty lines in it or not
+    check_section (script, 2, NULL, 0);
+    check_section (text, 0, "db.a.find()\n\n", 0);
+    check_section (text, 1, "db.a.find()\n\n", 0);
+    // the separator heads the section after it
+    check_section (text, 2, "const x = 1;\n\nprint(x)\n", 3);
+    check_section (text, 4, "const x = 1;\n\nprint(x)\n", 3);
+    check_section (text, 7, "db.c.count()\n", 7);
+    check_section (text, 8, "db.c.count()\n", 7);
+    check_section ("// ---\n", 0, "", 1);
+
+    // after the last line of the section, a section of its own
+    check_put (script, 0, "db.q.find()\n", "const a = 1;\n\nprint(a)\n\n// ---\ndb.q.find()\n", 5);
+    check_put (text, 4, "db.q.find()",
+               "db.a.find()\n\n// --- second\nconst x = 1;\n\nprint(x)\n\n// ---\ndb.q.find()\n"
+               "  //---\ndb.c.count()\n",
+               8);
+    // a section of nothing, an empty file: the query is it
+    check_put ("", 0, "db.q.find()", "db.q.find()\n", 0);
+    check_put ("// ---\n", 0, "db.q.find()", "// ---\ndb.q.find()\n", 1);
+    check_put ("x\n// ---", 1, "q", "x\n// ---\nq\n", 2);
+}
+
+static void
+test_lines (void)
 {
     const char *text = "db.a.find()\n"
                        "\n"
@@ -65,17 +121,6 @@ test_block (void)
                        "  .sort({ts: -1})\n"
                        "   \n"
                        "db.c.count()";
-
-    check_block (text, 0, "db.a.find()", 0);
-    check_block (text, 1, NULL, 0);
-    check_block (text, 2, "db.b.find({x: 1})\n  .sort({ts: -1})", 2);
-    check_block (text, 3, "db.b.find({x: 1})\n  .sort({ts: -1})", 2);
-    // a line of blanks is empty
-    check_block (text, 4, NULL, 0);
-    check_block (text, 5, "db.c.count()", 5);
-    check_block (text, 6, NULL, 0);
-    check_block ("db.x.find()\n", 0, "db.x.find()", 0);
-    check_block ("", 0, NULL, 0);
 
     g_assert_cmpint (query_line_of (text, 0), ==, 0);
     g_assert_cmpint (query_line_of (text, 12), ==, 1);
@@ -264,7 +309,8 @@ int
 main (int argc, char **argv)
 {
     g_test_init (&argc, &argv, NULL);
-    g_test_add_func ("/query/block", test_block);
+    g_test_add_func ("/query/lines", test_lines);
+    g_test_add_func ("/query/sections", test_sections);
     g_test_add_func ("/query/mongo", test_mongo);
     g_test_add_func ("/query/table", test_table);
     return g_test_run ();

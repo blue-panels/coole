@@ -87,8 +87,9 @@ and ctags for F3.
 
 .TP
 \fI\-Q, \-\-query\fP
-Run the queries of the file with mongosh: F5 the lines around the cursor
-or the selection, Ctrl\-F5 the whole file; the answer comes in the tabs
+Run the queries of the file with mongosh: F5 the selection, else the
+part between lines \fI// \-\-\-\fP around the cursor, else the whole file, Ctrl\-F5
+the whole file; the answer comes in the tabs
 Output, Table and History at the bottom. \fIMC_MONGO_URI\fP and \fIMC_MONGO_DB\fP
 in the environment tell what to connect to, \fIMC_MONGOSH\fP the program.
 Without a file named, the file is \fI~/.local/share/coole/queries/\fP, with the

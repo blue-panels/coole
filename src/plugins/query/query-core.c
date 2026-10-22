@@ -59,17 +59,6 @@
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
-static gboolean
-query_line_empty (const char *start, const char *end)
-{
-    for (; start < end; start++)
-        if (!g_ascii_isspace (*start))
-            return FALSE;
-    return TRUE;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 /* The end of the line that starts at @p: its '\n', or the end of the text */
 static const char *
 query_line_end (const char *p)
@@ -268,58 +257,6 @@ query_append_padded (GString *out, const char *cell, int width)
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
-char *
-query_block (const char *text, long line, long *first)
-{
-    const char *p = text, *start, *end;
-    long n;
-    GPtrArray *starts = g_ptr_array_new ();
-    guint at, i;
-
-    // the starts of the lines
-    while (TRUE)
-    {
-        g_ptr_array_add (starts, (gpointer) p);
-        p = query_line_end (p);
-        if (*p == '\0')
-            break;
-        p++;
-    }
-    if (line < 0 || line >= (long) starts->len)
-    {
-        g_ptr_array_free (starts, TRUE);
-        return NULL;
-    }
-    at = (guint) line;
-    start = g_ptr_array_index (starts, at);
-    if (query_line_empty (start, query_line_end (start)))
-    {
-        g_ptr_array_free (starts, TRUE);
-        return NULL;
-    }
-    for (i = at; i > 0; i--)
-    {
-        const char *s = g_ptr_array_index (starts, i - 1);
-
-        if (query_line_empty (s, query_line_end (s)))
-            break;
-    }
-    *first = i;
-    start = g_ptr_array_index (starts, i);
-    for (n = at; n + 1 < (long) starts->len; n++)
-    {
-        const char *s = g_ptr_array_index (starts, n + 1);
-
-        if (query_line_empty (s, query_line_end (s)))
-            break;
-    }
-    end = query_line_end (g_ptr_array_index (starts, n));
-    g_ptr_array_free (starts, TRUE);
-    return g_strndup (start, (gsize) (end - start));
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 long
 query_line_of (const char *text, gsize offset)
 {
@@ -349,6 +286,146 @@ query_line_blank (const char *text, long line)
         if (!g_ascii_isspace (*p))
             return FALSE;
     return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+query_line_separator (const char *p)
+{
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (p[0] != '/' || p[1] != '/')
+        return FALSE;
+    for (p += 2; *p == ' ' || *p == '\t'; p++)
+        ;
+    return strncmp (p, "---", 3) == 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the line that starts at @p has nothing but blanks */
+static gboolean
+query_blank_line_at (const char *p)
+{
+    for (; *p != '\0' && *p != '\n'; p++)
+        if (!g_ascii_isspace (*p))
+            return FALSE;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The starts of the lines of @text; the end of the text after a '\n' at its end is one too */
+static GPtrArray *
+query_line_starts (const char *text)
+{
+    GPtrArray *starts = g_ptr_array_new ();
+    const char *p = text;
+
+    while (TRUE)
+    {
+        g_ptr_array_add (starts, (gpointer) p);
+        p = query_line_end (p);
+        if (*p == '\0')
+            break;
+        p++;
+    }
+    return starts;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The section of the 0-based @line: its lines from @start up to @end, not with it; FALSE when
+   the text has no separator, the whole text being one */
+static gboolean
+query_section_of (GPtrArray *starts, long line, guint *start, guint *end)
+{
+    gboolean any = FALSE;
+    guint i;
+
+    line = CLAMP (line, 0, (long) starts->len - 1);
+    *start = 0;
+    *end = starts->len;
+    for (i = 0; i < starts->len; i++)
+        if (query_line_separator (g_ptr_array_index (starts, i)))
+        {
+            any = TRUE;
+            // the separator heads the section after it
+            if ((long) i <= line)
+                *start = i + 1;
+            else if (*end == starts->len)
+                *end = i;
+        }
+    return any;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_section (const char *text, long line, long *first)
+{
+    GPtrArray *starts = query_line_starts (text);
+    guint start, end;
+    char *section = NULL;
+
+    *first = 0;
+    if (query_section_of (starts, line, &start, &end))
+    {
+        const char *from =
+            start < starts->len ? g_ptr_array_index (starts, start) : text + strlen (text);
+        const char *to = end < starts->len ? (const char *) g_ptr_array_index (starts, end)
+                                           : text + strlen (text);
+
+        section = g_strndup (from, (gsize) MAX (0, to - from));
+        *first = (long) start;
+    }
+    g_ptr_array_free (starts, TRUE);
+    return section;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_put_section (const char *text, long line, const char *query, gsize *offset, long *at)
+{
+    GPtrArray *starts = query_line_starts (text);
+    const gsize len = strlen (text);
+    GString *put = g_string_new (NULL);
+    gsize qlen = strlen (query);
+    guint start, end, i, last = G_MAXUINT;
+
+    (void) query_section_of (starts, line, &start, &end);
+    // from the starts of the lines known: the text is not gone through again for each
+    for (i = start; i < end; i++)
+        if (!query_blank_line_at (g_ptr_array_index (starts, i)))
+            last = i;
+    // the query without the newlines it ends with: the text after it has its own
+    while (qlen > 0 && query[qlen - 1] == '\n')
+        qlen--;
+
+    if (last == G_MAXUINT)
+    {
+        // a section of nothing: the query is it
+        *offset = start < starts->len
+            ? (gsize) ((const char *) g_ptr_array_index (starts, start) - text)
+            : len;
+        if (*offset == len && len > 0 && text[len - 1] != '\n')
+            g_string_append_c (put, '\n');
+        *at = query_line_of (text, *offset) + (long) put->len;
+        g_string_append_len (put, query, (gssize) qlen);
+        g_string_append_c (put, '\n');
+    }
+    else
+    {
+        // a section of its own after the last line of the section, an empty line between
+        *offset = (gsize) (query_line_end (g_ptr_array_index (starts, last)) - text);
+        *at = (long) last + 3;
+        g_string_append (put, "\n\n// ---\n");
+        g_string_append_len (put, query, (gssize) qlen);
+    }
+    g_ptr_array_free (starts, TRUE);
+    return g_string_free (put, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
