@@ -380,8 +380,28 @@ build_presets_load (build_t *build, const char *root)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The file in front when it is in the project of @root, by whose ending a project with no
+   marker of a language has one; NULL for none */
+static char *
+build_front_file (build_t *build, const char *root)
+{
+    void *edit = build->host->window_top_file (build->host);
+    char *file = edit != NULL ? build->host->get_current_file (build->host, edit) : NULL;
+    const size_t len = root != NULL ? strlen (root) : 0;
+
+    // a file of another project says nothing of this one; a root of "/" has a file of "/x"
+    if (file != NULL
+        && (len == 0 || strncmp (file, root, len) != 0
+            || (root[len - 1] != '/' && file[len] != '/')))
+        g_clear_pointer (&file, g_free);
+    return file;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* How the project is built: the command the user gave it, else the one of its build system,
-   else that of its language; the directory the compiler runs in */
+   else that of its language, by its markers or the file in front; the directory the compiler
+   runs in */
 static gboolean
 build_plan (build_t *build, const char *root, char **command, char **dir)
 {
@@ -394,11 +414,13 @@ build_plan (build_t *build, const char *root, char **command, char **dir)
     if (*command == NULL)
     {
         GPtrArray *presets = build_presets_load (build, root);
-        const build_preset_t *preset = build_presets_find (presets, root, NULL);
+        char *file = build_front_file (build, root);
+        const build_preset_t *preset = build_presets_find (presets, root, file);
 
         if (preset != NULL)
             *command = g_strdup (preset->build);
         g_ptr_array_free (presets, TRUE);
+        g_free (file);
     }
     build_info_free (info);
     return *command != NULL;
@@ -914,9 +936,12 @@ build_project_adopt (build_t *build, const char *root, gboolean again)
         done = TRUE;
     else if (readable)
     {
-        // the presets alone, not the copy there is
+        // the presets alone, not the copy there is; by the markers, else by the file in front
+        char *file = build_front_file (build, root);
+
         presets = build_presets_load (build, NULL);
-        preset = build_presets_find (presets, root, NULL);
+        preset = build_presets_find (presets, root, file);
+        g_free (file);
     }
     if (preset != NULL)
     {
