@@ -341,8 +341,10 @@ viewer_place (viewer_t *v, WEditWindow *win, int dock)
 static void
 viewer_show (viewer_t *v, WEditWindow *win, gboolean focus, void *prev)
 {
-    // a window on the screen has its room already; a hidden one goes back to its dock
-    const gboolean hidden = !widget_get_state (CONST_WIDGET (win), WST_VISIBLE);
+    /* a window on the screen has its room already, a tab of the bottom not seen its place among
+       the tabs; a hidden one goes back to its dock */
+    const gboolean hidden = !widget_get_state (CONST_WIDGET (win), WST_VISIBLE)
+        && (v->host->window_docked == NULL || !v->host->window_docked (v->host, win));
     const gpointer stands = g_hash_table_lookup (v->docks, win);
     const int dock = GPOINTER_TO_INT (stands);
 
