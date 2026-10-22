@@ -53,6 +53,19 @@
       "command": ["lua-language-server"],
       "extensions": {".lua": "lua"},
       "root_markers": [".luarc.json"]
+    },
+    {
+      "id": "mongodb",
+      "command": ["mongolsp"],
+      "extensions": {".js": "javascript", ".mongodb": "javascript"},
+      "startup": "query",
+      "requests": [
+        {"method": "INITIALIZE_MONGODB_SERVICE",
+         "params": {"extensionPath": "${command_dir}/..", "connectionId": null}},
+        {"method": "ACTIVE_CONNECTION_CHANGED",
+         "params": {"connectionId": "coole", "connectionString": "${env:MC_MONGO_URI}",
+                    "connectionOptions": {}}}
+      ]
     }
   ]
 }

@@ -3513,11 +3513,11 @@ edit_plugin_off_for_session (const char *name)
     // the terminal stays: the git plugin pushes and pulls in its shell
     static const char *const project_plugins[] = { "project", "build", "debugger",
                                                    "ctags",   "etags", NULL };
-    /* mongosh runs the queries; a language server of JavaScript knows nothing of db and print ();
-       the scripts of the user stay */
-    static const char *const query_plugins[] = { "project", "build", "debugger", "ctags",
-                                                 "etags",   "git",   "terminal", "lsp",
-                                                 "spell",   NULL };
+    /* mongosh runs the queries; the language server of the queries, mongolsp of lsp.json, and the
+       scripts of the user stay */
+    static const char *const query_plugins[] = { "project",  "build", "debugger",
+                                                 "ctags",    "etags", "git",
+                                                 "terminal", "spell", NULL };
 
     if (name == NULL)
         return FALSE;

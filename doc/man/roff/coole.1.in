@@ -95,8 +95,9 @@ in the environment tell what to connect to, \fIMC_MONGOSH\fP the program.
 Without a file named, the file is \fI~/.local/share/coole/queries/\fP, with the
 name of the database and \fI\&.js\fP\&. The windows the project had last time are
 not shown, and the plugins of a project and of code (project, build,
-debugger, ctags, etags, git, terminal, lsp, spell) are not started; the
-scripts stay. It needs the query plugin.
+debugger, ctags, etags, git, terminal, spell) are not started; the
+scripts stay, and the language server of the queries when lsp.json has one.
+It needs the query plugin.
 
 .TP
 \fI\-G, \-\-git=directory\fP

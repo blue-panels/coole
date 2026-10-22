@@ -84,8 +84,9 @@ in the environment tell what to connect to, *MC_MONGOSH* the program.
 Without a file named, the file is *~/.local/share/coole/queries/*, with the
 name of the database and *.js*. The windows the project had last time are
 not shown, and the plugins of a project and of code (project, build,
-debugger, ctags, etags, git, terminal, lsp, spell) are not started; the
-scripts stay. It needs the query plugin.
+debugger, ctags, etags, git, terminal, spell) are not started; the
+scripts stay, and the language server of the queries when lsp.json has one.
+It needs the query plugin.
 
 *-G, --git=directory*
 : Open the window Git of the git plugin on the work tree of that
