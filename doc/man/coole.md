@@ -75,6 +75,15 @@ project; F2, F9 and F10 stay Save, the menu and Quit, and Alt-F5 goes
 to the panel and back. It needs the project, build and debugger plugins,
 and ctags for F3.
 
+*-Q, --query*
+: Run the queries of the file with mongosh: F5 the lines around the cursor
+or the selection, Ctrl-F5 the whole file; the answer comes in the tabs
+Output, Table and History at the bottom. *MC_MONGO_URI* and *MC_MONGO_DB*
+in the environment tell what to connect to, *MC_MONGOSH* the program.
+Without a file named, the file is *~/.local/share/coole/queries/*, with the
+name of the database and *.js*. The windows the project had last time are
+not shown. It needs the query plugin.
+
 *-G, --git=directory*
 : Open the window Git of the git plugin on the work tree of that
 directory; closing it ends the editor. The windows the project had last
@@ -1444,8 +1453,9 @@ on the text puts the cursor there.
 Text is marked as in a file: the mouse drawn over it, a word by a double
 click, a line by a triple one, Shift and the arrows, F3 at the start and
 again at the end, Ctrl-A all of it. Ctrl-Ins, or Enter, copies what is
-marked to the clipboard, without the colors. The windows of the build are
-such windows too.
+marked to the clipboard, without the colors. The windows of the build and
+of the query plugin are such windows too; in History, a list of queries,
+Enter and F3 are its own, and Ctrl-Ins copies.
 The mouse wheel scrolls it without the focus, sideways when it is tilted or
 turned with Shift. Its frame has a scrollbar on the right and one at the
 bottom: an arrow scrolls a step, the bar beside the thumb a page, and the

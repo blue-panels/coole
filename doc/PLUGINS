@@ -108,7 +108,7 @@ program exports; what the program itself does not call it links whole
 that the program gives every function a module calls.
 
 The help of a plugin (build.md, ctags.md, debugger.md, etags.md, git.md, project.md,
-spell.md, terminal.md) is installed into $(pkgdatadir)/help next to the help of the
+query.md, spell.md, terminal.md) is installed into $(pkgdatadir)/help next to the help of the
 program.
 
 

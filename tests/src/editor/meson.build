@@ -60,6 +60,9 @@ if json_glib.found()
   test('lsp_setup', executable('lsp_setup', 'lsp_setup.c',
                                '../../../src/plugins/lsp/lsp-setup-core.c',
                                dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  test('query_core', executable('query_core', 'query_core.c',
+                                '../../../src/plugins/query/query-core.c',
+                                dependencies: [glib_dep, json_glib]), suite: 'src/editor')
   test('lsp_client', executable('lsp_client', 'lsp_client.c', lsp_test_sources,
                                 '../../../src/plugins/lsp/lsp-client.c',
                                 '../../../src/content-frame.c',
@@ -95,5 +98,7 @@ if have_gmodule and module_symbols_sh.found()
        suite: 'src/editor')
   if json_glib.found()
     test('lsp_module_symbols', module_symbols_sh, args: [coole, lsp_module], suite: 'src/editor')
+    test('query_module_symbols', module_symbols_sh, args: [coole, query_module],
+         suite: 'src/editor')
   endif
 endif

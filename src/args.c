@@ -96,6 +96,9 @@ static gboolean mc_args__git_amend = FALSE;
 static char *mc_args__git_show = NULL;
 static char *mc_args__git_reword = NULL;
 
+/* --query */
+static gboolean mc_args__query = FALSE;
+
 static GOptionGroup *main_group;
 
 static const GOptionEntry argument_main_table[] = {
@@ -163,6 +166,18 @@ static const GOptionEntry argument_main_table[] = {
         &mc_args__debug_project,
         N_ ("Opens the project of that directory to debug it"),
         N_ ("<directory>"),
+    },
+
+    // the query plugin: the queries of the file run by the shell of a database
+    {
+        "query",
+        'Q',
+        G_OPTION_FLAG_IN_MAIN,
+        G_OPTION_ARG_NONE,
+        &mc_args__query,
+        N_ ("Runs the queries of the file with mongosh, MC_MONGO_URI and MC_MONGO_DB telling "
+            "what to connect to"),
+        NULL,
     },
 
     // the git plugin, for a panel of git in mc: the window Git and the editor gone with it
@@ -593,6 +608,42 @@ mc_setup_git_by_args (GError **mcerror)
     return TRUE;
 }
 
+/* --------------------------------------------------------------------------------------------- */
+
+/* --query: the database is what the environment has to connect to, mongo by MC_MONGO_URI; the
+   file, when none is named, ~/.local/share/coole/queries/<database>.js */
+static gboolean
+mc_setup_query_by_args (GError **mcerror)
+{
+    if (!mc_args__query)
+        return TRUE;
+    if (g_getenv ("MC_MONGO_URI") == NULL)
+    {
+        mc_propagate_error (mcerror, 0, "%s", _ ("--query: MC_MONGO_URI is not set\n"));
+        return FALSE;
+    }
+    edit_set_startup_option ("query", "mongo");
+
+    // no file named: that of the queries of the database, in the data of the user
+    if (mc_args__edit_files != NULL && mc_args__edit_files->next == NULL
+        && ((edit_arg_t *) mc_args__edit_files->data)->file_name == NULL)
+    {
+        const char *db = g_getenv ("MC_MONGO_DB");
+        char *name = g_strconcat (db != NULL && *db != '\0' ? db : "queries", ".js", (char *) NULL);
+        char *dir = g_build_filename (g_get_user_data_dir (), "coole", "queries", (char *) NULL);
+        char *path = g_build_filename (dir, name, (char *) NULL);
+
+        // the queries may name what is private: the directory is the user's alone
+        (void) g_mkdir_with_parents (dir, 0700);
+        edit_arg_free ((edit_arg_t *) mc_args__edit_files->data);
+        mc_args__edit_files->data = edit_arg_new (path, 0);
+        g_free (path);
+        g_free (dir);
+        g_free (name);
+    }
+    return TRUE;
+}
+
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -737,6 +788,9 @@ mc_setup_by_args (int argc, char **argv, GError **mcerror)
     }
 
     if (!mc_setup_git_by_args (mcerror))
+        return FALSE;
+
+    if (!mc_setup_query_by_args (mcerror))
         return FALSE;
 
     return TRUE;
