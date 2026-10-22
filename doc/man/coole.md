@@ -1441,6 +1441,11 @@ arrows, Home and End, the pages, the top and the bottom of the text; the keys
 of the words, Ctrl-Left and Ctrl-Right, move it eight columns. The view
 follows it, sideways too for what is wider than it. A click
 on the text puts the cursor there.
+Text is marked as in a file: the mouse drawn over it, a word by a double
+click, a line by a triple one, Shift and the arrows, F3 at the start and
+again at the end, Ctrl-A all of it. Ctrl-Ins, or Enter, copies what is
+marked to the clipboard, without the colors. The windows of the build are
+such windows too.
 The mouse wheel scrolls it without the focus, sideways when it is tilted or
 turned with Shift. Its frame has a scrollbar on the right and one at the
 bottom: an arrow scrolls a step, the bar beside the thumb a page, and the
