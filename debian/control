@@ -25,7 +25,7 @@ Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: coole-lua
-Suggests: libx11-6, libaspell15 | libhunspell-1.7-0, universal-ctags
+Suggests: libx11-6, libaspell15 | libhunspell-1.7-0, universal-ctags, mongodb-mongosh, mongolsp
 Description: console text editor, a continuation of cooledit
  coole is a console text editor that continues cooledit by Paul Sheer.  It
  has syntax highlighting, code folding, an

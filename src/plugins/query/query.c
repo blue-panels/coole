@@ -75,9 +75,13 @@
 // the height of the tabs, percent of the screen
 #define QUERY_TABS_SIZE 40
 
-#define ANSI_BOLD       "\033[1m"
-#define ANSI_RED        "\033[31m"
-#define ANSI_RESET      "\033[0m"
+// the language server of the queries lsp.json has, and where it comes from
+#define QUERY_LANGUAGE_SERVER     "mongolsp"
+#define QUERY_LANGUAGE_SERVER_URL "https://github.com/blue-panels/mongolsp"
+
+#define ANSI_BOLD                 "\033[1m"
+#define ANSI_RED                  "\033[31m"
+#define ANSI_RESET                "\033[0m"
 
 /*** file scope type declarations ****************************************************************/
 
@@ -1127,6 +1131,8 @@ query_startup (void *data)
     void *edit = q->host->window_top_file (q->host);
     char *file = edit != NULL ? q->host->get_current_file (q->host, edit) : NULL;
     char *found = g_find_program_in_path (q->mongosh);
+    // the language server of the queries, of lsp.json
+    char *server = g_find_program_in_path (QUERY_LANGUAGE_SERVER);
     GString *text = g_string_new (NULL);
 
     query_history_load (q, file);
@@ -1134,10 +1140,15 @@ query_startup (void *data)
 
     g_string_append_printf (text, _ ("Database: %s\n"), q->endpoint);
     if (found != NULL)
-        g_string_append_printf (text, "mongosh: %s\n\n", found);
+        g_string_append_printf (text, "mongosh: %s\n", found);
     else
-        g_string_append_printf (text, ANSI_RED "%s\n\n" ANSI_RESET,
+        g_string_append_printf (text, ANSI_RED "%s\n" ANSI_RESET,
                                 _ ("mongosh is not found: MC_MONGOSH or PATH should have it."));
+    if (server != NULL)
+        g_string_append_printf (text, "%s: %s\n\n", QUERY_LANGUAGE_SERVER, server);
+    else
+        g_string_append_printf (text, _ ("%s is not found: no completion of the queries (%s)\n\n"),
+                                QUERY_LANGUAGE_SERVER, QUERY_LANGUAGE_SERVER_URL);
     g_string_append (text,
                      _ ("F5 runs the selection, else the part between the lines \"// ---\"\n"
                         "around the cursor, else the whole file; Ctrl-F5 the whole file.\n"
@@ -1150,6 +1161,7 @@ query_startup (void *data)
     query_viewer_id (q, "show", q->tabs[QUERY_TAB_OUTPUT], FALSE);
     g_string_free (text, TRUE);
     g_free (found);
+    g_free (server);
     query_redraw (q);
 }
 

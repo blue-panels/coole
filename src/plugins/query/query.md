@@ -9,6 +9,19 @@ the file of queries is that of the database, *~/.local/share/coole/queries/*
 with the name of *MC_MONGO_DB* and *.js*: the queries of a database stay
 for the next time.
 
+**What it needs**
+
+*mongosh*
+: The shell of MongoDB, which runs the queries: the package mongodb-mongosh
+of the repository of MongoDB, or its archive.
+
+*mongolsp*
+: The language server of the queries, for their completion; without it the
+queries run all the same. The package *mongolsp* of its releases,
+<https://github.com/blue-panels/mongolsp/releases>, put in with apt, or
+*install.sh* of its archive, with Node.js 18 or later. The first lines of
+Output tell whether both are found.
+
 **What it connects to**
 
 mongosh is told by the environment of coole, which it inherits; coole reads
