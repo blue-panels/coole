@@ -1123,6 +1123,46 @@ query_handle_action (void *data, long command, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The file of queries of @edit without a use ("name"): use("db") put at its top, the database
+   of -Q, for the language server, which knows the database of the collections it completes by
+   it alone; the file is changed, to be saved or not.  The name of the database when it was put
+   there, else NULL. */
+static char *
+query_use_put (query_t *q, void *edit)
+{
+    char *db = query_mongo_db (g_getenv ("MC_MONGO_URI"), g_getenv ("MC_MONGO_DB"));
+    char *text, *line;
+    gsize len = 0;
+    WEdit *e;
+    off_t at;
+
+    if (edit == NULL || db == NULL)
+    {
+        g_free (db);
+        return NULL;
+    }
+    text = q->host->get_text (q->host, edit, &len);
+    if (text == NULL || query_has_use (text))
+    {
+        g_free (text);
+        g_free (db);
+        return NULL;
+    }
+    g_free (text);
+
+    // at the top, the cursor staying on the text it was on
+    e = EDIT (edit);
+    at = e->buffer.curs1;
+    line = query_use_line (db);
+    edit_cursor_move (e, -e->buffer.curs1);
+    q->host->insert_text (q->host, edit, line, 0);
+    edit_cursor_move (e, at);
+    g_free (line);
+    return db;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* coole -Q, once the editor runs: the tabs at the bottom, the history of the file */
 static void
 query_startup (void *data)
@@ -1134,9 +1174,11 @@ query_startup (void *data)
     // the language server of the queries, of lsp.json
     char *server = g_find_program_in_path (QUERY_LANGUAGE_SERVER);
     GString *text = g_string_new (NULL);
+    char *used;
 
     query_history_load (q, file);
     g_free (file);
+    used = query_use_put (q, edit);
 
     g_string_append_printf (text, _ ("Database: %s\n"), q->endpoint);
     if (found != NULL)
@@ -1149,6 +1191,12 @@ query_startup (void *data)
     else
         g_string_append_printf (text, _ ("%s is not found: no completion of the queries (%s)\n\n"),
                                 QUERY_LANGUAGE_SERVER, QUERY_LANGUAGE_SERVER_URL);
+    if (used != NULL)
+        g_string_append_printf (
+            text,
+            _ ("use(\"%s\") is put at the top of the file: the language server\n"
+               "completes the collections of that database.\n\n"),
+            used);
     g_string_append (text,
                      _ ("F5 runs the selection, else the part between the lines \"// ---\"\n"
                         "around the cursor, else the whole file; Ctrl-F5 the whole file.\n"
@@ -1162,6 +1210,7 @@ query_startup (void *data)
     g_string_free (text, TRUE);
     g_free (found);
     g_free (server);
+    g_free (used);
     query_redraw (q);
 }
 

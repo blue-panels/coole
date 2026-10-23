@@ -245,6 +245,15 @@ test_mongo (void)
         g_assert_null (query_use_before ("use(name)\nx\n", 1));
     }
 
+    g_assert_true (query_has_use ("// x\nuse(\"a\");\ndb.c.find()"));
+    g_assert_false (query_has_use ("db.c.find() // use(\"a\")\nx.use(1); print(\"use(b)\")"));
+    s = query_use_line ("cvmenginev2");
+    g_assert_cmpstr (s, ==, "use(\"cvmenginev2\");\n\n");
+    g_free (s);
+    s = query_use_line ("a\"b\\c");
+    g_assert_cmpstr (s, ==, "use(\"a\\\"b\\\\c\");\n\n");
+    g_free (s);
+
     // what for_table then makes of it
     check_for_table ("db.a.find()\n.limit(100)", "db.a.find()\n.limit(100)\n.toArray()");
 
@@ -290,6 +299,17 @@ test_mongo (void)
     g_free (s);
     g_assert_null (query_mongo_json_error ("[1, 2]"));
     g_assert_null (query_mongo_json_error (NULL));
+
+    // the database: the one named, else that of the path of the URI
+    s = query_mongo_db ("mongodb://u:p@h:1/fromuri?x=1", NULL);
+    g_assert_cmpstr (s, ==, "fromuri");
+    g_free (s);
+    s = query_mongo_db ("mongodb://u:p@h:1/fromuri", "named");
+    g_assert_cmpstr (s, ==, "named");
+    g_free (s);
+    g_assert_null (query_mongo_db ("mongodb://u:p@h:1/?directConnection=true", NULL));
+    g_assert_null (query_mongo_db ("mongodb://h:1", ""));
+    g_assert_null (query_mongo_db (NULL, NULL));
 
     s = query_mongo_endpoint ("mongodb://noop:noop@127.0.0.1:27018/?directConnection=true",
                               "cvmenginev2");

@@ -80,6 +80,12 @@ char *query_mongo_json_error (const char *json);
 /* The server of a mongodb:// URI and the database, "host:port/db", without the user and the
    password */
 char *query_mongo_endpoint (const char *uri, const char *db);
+/* The database: @db when given, else that of the path of the URI; NULL when there is none */
+char *query_mongo_db (const char *uri, const char *db);
+/* Whether @text has a call use ("name"), not in a string or a comment */
+gboolean query_has_use (const char *text);
+/* What the file of queries of the database @db starts with: use("db"); and an empty line */
+char *query_use_line (const char *db);
 
 /* The table of Markdown of the documents of the Extended JSON @json, the tail of what mongosh
    --json printed: a column for each key, the rows the documents of an array; @rows their

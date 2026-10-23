@@ -1027,32 +1027,86 @@ query_mongo_json_error (const char *json)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The hosts of a mongodb:// URI: from after the scheme up to the path or the options */
+static const char *
+query_uri_hosts (const char *uri, const char **end)
+{
+    const char *hosts = strstr (uri, "://");
+
+    hosts = hosts != NULL ? hosts + 3 : uri;
+    *end = hosts + strcspn (hosts, "/?");
+    return hosts;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_mongo_db (const char *uri, const char *db)
+{
+    const char *end;
+
+    if (db != NULL && *db != '\0')
+        return g_strdup (db);
+    if (uri == NULL)
+        return NULL;
+    (void) query_uri_hosts (uri, &end);
+    if (*end != '/' || end[1] == '\0' || end[1] == '?')
+        return NULL;
+    return g_strndup (end + 1, strcspn (end + 1, "?"));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 char *
 query_mongo_endpoint (const char *uri, const char *db)
 {
     const char *hosts, *at, *end;
-    char *server, *path = NULL, *endpoint;
+    char *server, *name, *endpoint;
 
     if (uri == NULL)
         return g_strdup (db != NULL ? db : "");
-    hosts = strstr (uri, "://");
-    hosts = hosts != NULL ? hosts + 3 : uri;
-    end = hosts + strcspn (hosts, "/?");
+    hosts = query_uri_hosts (uri, &end);
     // the user and the password: before the last '@' of the hosts
     for (at = end; at > hosts && at[-1] != '@'; at--)
         ;
     server = g_strndup (at, (gsize) (end - at));
-    if (db == NULL || *db == '\0')
-    {
-        if (*end == '/')
-            path = g_strndup (end + 1, strcspn (end + 1, "?"));
-        db = path;
-    }
-    endpoint =
-        db != NULL && *db != '\0' ? g_strdup_printf ("%s/%s", server, db) : g_strdup (server);
-    g_free (path);
+    name = query_mongo_db (uri, db);
+    endpoint = name != NULL ? g_strdup_printf ("%s/%s", server, name) : g_strdup (server);
+    g_free (name);
     g_free (server);
     return endpoint;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+query_has_use (const char *text)
+{
+    char *used = query_mongo_use (text);
+    // a use () there is made getSiblingDB (): the text changes
+    const gboolean has = strcmp (used, text) != 0;
+
+    g_free (used);
+    return has;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_use_line (const char *db)
+{
+    GString *line = g_string_new ("use(\"");
+    const char *p;
+
+    // a string of JavaScript: its quote and backslash escaped
+    for (p = db; *p != '\0'; p++)
+    {
+        if (*p == '"' || *p == '\\')
+            g_string_append_c (line, '\\');
+        g_string_append_c (line, *p);
+    }
+    g_string_append (line, "\");\n\n");
+    return g_string_free (line, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
