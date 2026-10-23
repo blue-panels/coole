@@ -29,18 +29,12 @@
 
 /* The 0-based line of the byte @offset of @text */
 long query_line_of (const char *text, gsize offset);
-/* Whether the 0-based @line of @text has nothing but blanks, or is past its end */
-gboolean query_line_blank (const char *text, long line);
 /* Whether the line that starts at @p is a separator of the queries of a file: "// ---" */
 gboolean query_line_separator (const char *p);
 /* The section of the 0-based @line of @text: the lines between the separators around it, the
    separator before it being of it; @first its first line, 0-based.  NULL when the text has no
    separator, the whole text being the query. */
 char *query_section (const char *text, long line, long *first);
-/* A query put into @text as a section of its own: what to insert at the byte @offset, after the
-   last line of the section of @line that is not empty, with a separator; the section itself
-   when it has nothing in it.  @at is the 0-based line of the query once it is there. */
-char *query_put_section (const char *text, long line, const char *query, gsize *offset, long *at);
 
 /* What mongosh runs before the query: db is the database of MC_MONGO_URI, MC_MONGO_DB when given,
    and a cursor is shown to its 1000th document, not to its 20th */
@@ -86,6 +80,27 @@ char *query_mongo_db (const char *uri, const char *db);
 gboolean query_has_use (const char *text);
 /* What the file of queries of the database @db starts with: use("db"); and an empty line */
 char *query_use_line (const char *db);
+
+/* The directory of the versions of the file of queries @file, under @versions: the name of
+   the file in @queries, the folder of the files of queries of -Q, else the name and 8 letters of
+   the hash of its path, for two q.js of two places not to mix */
+char *query_versions_dir (const char *versions, const char *queries, const char *file);
+/* The name of the version of the time @now, "20261024-173750.js"; "...-2.js" and on when
+   @taken says that one is there */
+char *query_version_name (GDateTime *now, gboolean (*taken) (const char *name, void *data),
+                          void *data);
+/* The names of @names, sorted, that go for the newest @keep to stay: those of the oldest;
+   NULL ended, freed with g_strfreev () */
+char **query_versions_over (char **names, guint keep);
+/* The order of the versions @a and @b by their time, those of a second by their number:
+   "...-173750.js", "...-173750-2.js", "...-173750-10.js" */
+int query_version_cmp (const char *a, const char *b);
+/* The time of the version @name, "20261024-173750-2.js", as History shows it: "24.10 17:37:50";
+   @name itself when it is no such name */
+char *query_version_label (const char *name);
+/* The lines of @now that @before has not, @added, and those of @before that @now has not,
+   @removed, each line counted as often as it is there; @before NULL has none */
+void query_line_changes (const char *before, const char *now, int *added, int *removed);
 
 /* The table of Markdown of the documents of the Extended JSON @json, the tail of what mongosh
    --json printed: a column for each key, the rows the documents of an array; @rows their

@@ -68,21 +68,6 @@ check_section (const char *text, long line, const char *want, long want_first)
 }
 
 static void
-check_put (const char *text, long line, const char *query, const char *want, long want_at)
-{
-    gsize offset = 0;
-    long at = -1;
-    char *put = query_put_section (text, line, query, &offset, &at);
-    GString *s = g_string_new (text);
-
-    g_string_insert (s, (gssize) offset, put);
-    g_assert_cmpstr (s->str, ==, want);
-    g_assert_cmpint (at, ==, want_at);
-    g_string_free (s, TRUE);
-    g_free (put);
-}
-
-static void
 test_sections (void)
 {
     const char *script = "const a = 1;\n\nprint(a)\n";
@@ -110,17 +95,81 @@ test_sections (void)
     check_section (text, 7, "db.c.count()\n", 7);
     check_section (text, 8, "db.c.count()\n", 7);
     check_section ("// ---\n", 0, "", 1);
+}
 
-    // after the last line of the section, a section of its own
-    check_put (script, 0, "db.q.find()\n", "const a = 1;\n\nprint(a)\n\n// ---\ndb.q.find()\n", 5);
-    check_put (text, 4, "db.q.find()",
-               "db.a.find()\n\n// --- second\nconst x = 1;\n\nprint(x)\n\n// ---\ndb.q.find()\n"
-               "  //---\ndb.c.count()\n",
-               8);
-    // a section of nothing, an empty file: the query is it
-    check_put ("", 0, "db.q.find()", "db.q.find()\n", 0);
-    check_put ("// ---\n", 0, "db.q.find()", "// ---\ndb.q.find()\n", 1);
-    check_put ("x\n// ---", 1, "q", "x\n// ---\nq\n", 2);
+static gboolean
+taken_first_two (const char *name, void *data)
+{
+    (void) data;
+    return strcmp (name, "20261024-173750.js") == 0 || strcmp (name, "20261024-173750-2.js") == 0;
+}
+
+static void
+test_versions (void)
+{
+    GTimeZone *utc = g_time_zone_new_utc ();
+    GDateTime *now = g_date_time_new (utc, 2026, 10, 24, 17, 37, 50);
+    char *names_in[] = { (char *) "a", (char *) "b", (char *) "c", (char *) "d", NULL };
+    char **over;
+    char *s;
+
+    // a file of the folder of queries by its name; another by its name and its path
+    s = query_versions_dir ("/d/q/.history", "/d/q", "/d/q/cvm.js");
+    g_assert_cmpstr (s, ==, "/d/q/.history/cvm.js");
+    g_free (s);
+    s = query_versions_dir ("/d/q/.history", "/d/q", "/home/u/q.js");
+    g_assert_true (g_str_has_prefix (s, "/d/q/.history/q.js-"));
+    g_assert_cmpuint (strlen (s), ==, strlen ("/d/q/.history/q.js-") + 8);
+    g_free (s);
+
+    s = query_version_name (now, NULL, NULL);
+    g_assert_cmpstr (s, ==, "20261024-173750.js");
+    g_free (s);
+    // two in a second: numbered
+    s = query_version_name (now, taken_first_two, NULL);
+    g_assert_cmpstr (s, ==, "20261024-173750-3.js");
+    g_free (s);
+
+    // those of a second by their number, not by the letters of it
+    g_assert_cmpint (query_version_cmp ("20261024-173750.js", "20261024-173750-2.js"), <, 0);
+    g_assert_cmpint (query_version_cmp ("20261024-173750-2.js", "20261024-173750-10.js"), <, 0);
+    g_assert_cmpint (query_version_cmp ("20261024-173750-10.js", "20261024-173751.js"), <, 0);
+    g_assert_cmpint (query_version_cmp ("20261024-173750.js", "20261024-173750.js"), ==, 0);
+
+    // the oldest beyond those kept
+    over = query_versions_over (names_in, 2);
+    g_assert_cmpuint (g_strv_length (over), ==, 2);
+    g_assert_cmpstr (over[0], ==, "a");
+    g_assert_cmpstr (over[1], ==, "b");
+    g_strfreev (over);
+    over = query_versions_over (names_in, 10);
+    g_assert_cmpuint (g_strv_length (over), ==, 0);
+    g_strfreev (over);
+
+    s = query_version_label ("20261024-173750-2.js");
+    g_assert_cmpstr (s, ==, "24.10 17:37:50");
+    g_free (s);
+    s = query_version_label ("odd.js");
+    g_assert_cmpstr (s, ==, "odd.js");
+    g_free (s);
+
+    {
+        int added = -1, removed = -1;
+
+        query_line_changes ("a\nb\nc\n", "a\nc\nd\ne\n", &added, &removed);
+        g_assert_cmpint (added, ==, 2);
+        g_assert_cmpint (removed, ==, 1);
+        // a line twice counts twice
+        query_line_changes ("x\n", "x\nx\n", &added, &removed);
+        g_assert_cmpint (added, ==, 1);
+        g_assert_cmpint (removed, ==, 0);
+        query_line_changes (NULL, "a\nb", &added, &removed);
+        g_assert_cmpint (added, ==, 2);
+        g_assert_cmpint (removed, ==, 0);
+    }
+
+    g_date_time_unref (now);
+    g_time_zone_unref (utc);
 }
 
 static void
@@ -136,15 +185,6 @@ test_lines (void)
     g_assert_cmpint (query_line_of (text, 0), ==, 0);
     g_assert_cmpint (query_line_of (text, 12), ==, 1);
     g_assert_cmpint (query_line_of (text, 13), ==, 2);
-
-    g_assert_false (query_line_blank (text, 0));
-    g_assert_true (query_line_blank (text, 1));
-    g_assert_false (query_line_blank (text, 3));
-    g_assert_true (query_line_blank (text, 4));
-    g_assert_false (query_line_blank (text, 5));
-    // past the end
-    g_assert_true (query_line_blank (text, 6));
-    g_assert_true (query_line_blank ("", 0));
 }
 
 static void
@@ -406,6 +446,7 @@ main (int argc, char **argv)
 {
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/query/lines", test_lines);
+    g_test_add_func ("/query/versions", test_versions);
     g_test_add_func ("/query/sections", test_sections);
     g_test_add_func ("/query/mongo", test_mongo);
     g_test_add_func ("/query/table", test_table);

@@ -108,25 +108,32 @@ value it ends with. A query that ends with a chain of *find()* or
 on a line after it.
 
 *History*
-: The queries run, the last one first: the time, how long it took, the exit
-code, the line of the file, the first line of the query. It is kept for the
-file in the data of the user, *~/.local/share/coole/query*, the connection
-string left out. A query of it is there as it was run, though the file has
-changed since; the line of the cursor chooses one:
+: The versions of the file of queries in front, its name in the title of
+the tab, the newest first, a line each: the time of the version, how often
+it was run and how its last run ended, the lines it put and took away since
+the version before, the first line of the query it ran last. Each run keeps
+the file, saved or not, as a version, unless it is as at the run before:
+another run of it counts on its line. They are in the data of the user,
+*~/.local/share/coole/queries/.history/*, a directory for each file, a
+version named by its time, *20261024-173750.js*; the newest 200 stay. The
+line of the cursor chooses a version:
 
-**Enter**
-: Put the query into the file as a part of its own, a line *// ---* before
-it, after the part the cursor of the file is in; into that part when it is
-empty. The cursor goes to it, to be changed and run with **F5**.
+**Enter**, a double click
+: The file of queries as it was at that run: its text is that of the version,
+in its own window, one change **Undo** takes back, the cursor on the query.
+What it had, unless it is a version already, as when one goes from version
+to version, is kept first as the one line *current*, in place of the one
+before that was never run: **Enter** on it brings back the work of before. The versions are a store: they are
+not opened, and a file of the store run gets no versions.
 
 **F3**
-: Show all the lines of the query under its line, or no more.
+: What has changed in the file since that version, *diff -u*, in Output.
 
 **F5**
-: Run the query again as it was, the file left as it is; its errors are not
-marked in the file.
+: Run the query the version ran last again as it was, the file left as it
+is; its errors are not marked in the file.
 
 Text marked in History is copied with **Ctrl-Ins**: Enter and F3 are those
-of the list. A query run from another file goes into the History of that file.
+of the list. Another file in front shows its own History.
 
 **Ctrl-Alt-PgDn** and **Ctrl-Alt-PgUp** go from tab to tab.

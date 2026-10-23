@@ -72,6 +72,14 @@
 // what mongosh prints that is shown; the rest is cut
 #define QUERY_OUTPUT_MAX  (8 * 1024 * 1024)
 #define QUERY_HISTORY_MAX 100
+// the versions of a file of queries, as it was run, in the data of the user; the newest kept
+#define QUERY_VERSIONS_DIR ".history"
+#define QUERY_VERSIONS_MAX 200
+/* the text Undo takes back whole when a version takes the place of the file, a character an
+   action of it: a part of its 32768 actions */
+#define QUERY_UNDO_TEXT 8000
+// the status of an entry of History that is no run: the file kept before a version took its place
+#define QUERY_SAVED (-2)
 // the height of the tabs, percent of the screen
 #define QUERY_TABS_SIZE 40
 
@@ -81,6 +89,8 @@
 
 #define ANSI_BOLD                 "\033[1m"
 #define ANSI_RED                  "\033[31m"
+#define ANSI_GREEN                "\033[32m"
+#define ANSI_CYAN                 "\033[36m"
 #define ANSI_RESET                "\033[0m"
 
 /*** file scope type declarations ****************************************************************/
@@ -110,9 +120,11 @@ typedef struct
 {
     char *when;  // "14:02:11"
     double seconds;
-    int status;  // the exit code of mongosh, -1 when it was stopped
+    int status;  // the exit code of mongosh, -1 when it was stopped, QUERY_SAVED for no run
     long line;   // the first line of the query in the file, from 1
     char *text;
+    char *version;  // the file as it was run, a name in the directory of its versions; NULL none
+    char *use;      // the string of the use () above a part run alone, NULL for none
 } query_entry_t;
 
 typedef struct
@@ -142,15 +154,21 @@ typedef struct
     int mark;
     GPtrArray *history;  // query_entry_t, the last one last
     char *history_path;
-    char *history_file;             // the file whose history it is
-    GArray *rows;                   // the entry of each line of the tab History, an index
-    const query_entry_t *expanded;  // the one shown there with all its text, F3
+    char *history_file;  // the file whose history it is
+    GPtrArray *rows;     // the version of each line of the tab History, a name
+    char *version;       // the version of the file of the run of the moment, NULL for none
+    guint viewer_signal;
 } query_t;
 
 /*** forward declarations (file scope functions) *************************************************/
 
 const mc_editor_plugin_t *mc_editor_plugin_register (void);
-static void query_run_text (query_t *q, char *text, char *file, long first, char *use);
+static void query_run_text (query_t *q, char *text, char *file, long first, char *use,
+                            char *version);
+static gboolean query_blank (const char *text);
+static void query_current_one (query_t *q);
+static char *query_history_file_text (query_t *q);
+static char *query_version_of_text (const char *file, const char *text);
 
 /*** file scope variables ************************************************************************/
 
@@ -159,9 +177,8 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { "QueryRun", N_ ("Run the selection, else the part between \"// ---\", else the file"), "f5" },
     { "QueryRunAll", N_ ("Run the whole file, even with a selection"), "ctrl-f5" },
     { "QueryStop", N_ ("Stop the query"), NULL },
-    { "QueryHistoryInsert", N_ ("Put the query of History under the cursor into the file"),
-      "enter" },
-    { "QueryHistoryShow", N_ ("Show all the text of the query of History under the cursor"), "f3" },
+    { "QueryHistoryInsert", N_ ("Put the version of the query of History into the file"), "enter" },
+    { "QueryHistoryShow", N_ ("Compare the version of the query of History with the file"), "f3" },
     { NULL, NULL, NULL },
 };
 
@@ -186,6 +203,8 @@ query_entry_free (gpointer p)
 
     g_free (e->when);
     g_free (e->text);
+    g_free (e->version);
+    g_free (e->use);
     g_free (e);
 }
 
@@ -291,6 +310,136 @@ query_history_path_of (const char *file)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The versions */
+/* --------------------------------------------------------------------------------------------- */
+
+/* The order of two names of versions in a GPtrArray, by their time and number */
+static int
+query_version_cmp_ptr (const void *a, const void *b)
+{
+    return query_version_cmp (*(char *const *) a, *(char *const *) b);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The directory of the versions of @file: ~/.local/share/coole/queries/.history/<its name> */
+static char *
+query_versions_dir_of (const char *file)
+{
+    char *queries = g_build_filename (g_get_user_data_dir (), "coole", "queries", (char *) NULL);
+    char *versions = g_build_filename (queries, QUERY_VERSIONS_DIR, (char *) NULL);
+    char *dir = query_versions_dir (versions, queries, file);
+
+    g_free (versions);
+    g_free (queries);
+    return dir;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether @file is of the store of the versions: a version run has no versions of its own */
+static gboolean
+query_in_versions (const char *file)
+{
+    char *root = g_build_filename (g_get_user_data_dir (), "coole", "queries", QUERY_VERSIONS_DIR,
+                                   (char *) NULL);
+    char *prefix = g_strconcat (root, G_DIR_SEPARATOR_S, (char *) NULL);
+    const gboolean in = g_str_has_prefix (file, prefix);
+
+    g_free (prefix);
+    g_free (root);
+    return in;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+query_version_taken (const char *name, void *data)
+{
+    char *path = g_build_filename ((const char *) data, name, (char *) NULL);
+    const gboolean taken = g_file_test (path, G_FILE_TEST_EXISTS);
+
+    g_free (path);
+    return taken;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The names of the versions in @dir, the oldest first */
+static char **
+query_version_names (const char *dir)
+{
+    GPtrArray *names = g_ptr_array_new ();
+    GDir *d = g_dir_open (dir, 0, NULL);
+    const char *name;
+
+    while (d != NULL && (name = g_dir_read_name (d)) != NULL)
+        if (g_str_has_suffix (name, ".js"))
+            g_ptr_array_add (names, g_strdup (name));
+    if (d != NULL)
+        g_dir_close (d);
+    g_ptr_array_sort (names, (GCompareFunc) query_version_cmp_ptr);
+    g_ptr_array_add (names, NULL);
+    return (char **) g_ptr_array_free (names, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The version of @file whose text is @text: the newest when it has that text, else a new one,
+   the oldest beyond QUERY_VERSIONS_MAX taken away; its name, NULL when it cannot be kept */
+static char *
+query_version_save (const char *file, const char *text)
+{
+    char *dir = query_versions_dir_of (file);
+    char **names = query_version_names (dir);
+    const guint n = g_strv_length (names);
+    char *name = NULL, *path, *last = NULL;
+    GDateTime *now;
+
+    // a run of the file as the run before: the same version
+    if (n > 0)
+    {
+        char *path_last = g_build_filename (dir, names[n - 1], (char *) NULL);
+
+        if (g_file_get_contents (path_last, &last, NULL, NULL) && strcmp (last, text) == 0)
+            name = g_strdup (names[n - 1]);
+        g_free (path_last);
+        g_free (last);
+    }
+    // the queries may name what is private: the directory is the user's alone
+    if (name == NULL && g_mkdir_with_parents (dir, 0700) == 0)
+    {
+        now = g_date_time_new_now_local ();
+        name = query_version_name (now, query_version_taken, dir);
+        g_date_time_unref (now);
+        path = g_build_filename (dir, name, (char *) NULL);
+        if (g_file_set_contents (path, text, -1, NULL))
+        {
+            char **all = query_version_names (dir);
+            char **over = query_versions_over (all, QUERY_VERSIONS_MAX);
+            char **o;
+
+            for (o = over; *o != NULL; o++)
+            {
+                char *old = g_build_filename (dir, *o, (char *) NULL);
+
+                (void) unlink (old);
+                g_free (old);
+            }
+            g_strfreev (over);
+            g_strfreev (all);
+        }
+        else
+            g_clear_pointer (&name, g_free);
+        g_free (path);
+    }
+    g_strfreev (names);
+    g_free (dir);
+    return name;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The line of the tab History where its cursor is, from 0; -1 when the tab is not there, or
    not the window with the focus and @focused */
 static long
@@ -317,85 +466,147 @@ query_history_cursor (query_t *q, gboolean focused)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The entry of the line of the cursor of History; NULL when there is none, or History has not
+/* The version of the line of the cursor of History; NULL when there is none, or History has not
    the focus and @focused */
-static const query_entry_t *
+static const char *
 query_history_current (query_t *q, gboolean focused)
 {
     const long line = query_history_cursor (q, focused);
 
     if (line < 0 || line >= (long) q->rows->len)
         return NULL;
-    return g_ptr_array_index (q->history, g_array_index (q->rows, guint, line));
+    return g_ptr_array_index (q->rows, line);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The queries run, the last one first, a line each; the one expanded with all its text under its
-   line.  The cursor goes to the line of @current, else to the first one. */
+/* The last entry of the history of the version @version: a run, or the text kept as it when
+   @runs is FALSE; NULL when there is none.  @count: the runs of it. */
+static const query_entry_t *
+query_history_last (const query_t *q, const char *version, gboolean runs, guint *count)
+{
+    const query_entry_t *last = NULL;
+    guint i;
+
+    if (count != NULL)
+        *count = 0;
+    for (i = 0; i < q->history->len; i++)
+    {
+        const query_entry_t *e = g_ptr_array_index (q->history, i);
+
+        if (g_strcmp0 (e->version, version) != 0 || (runs && e->status == QUERY_SAVED))
+            continue;
+        last = e;
+        if (count != NULL && e->status != QUERY_SAVED)
+            (*count)++;
+    }
+    return last;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The first line of @text that tells it: not "// @table", "// @limit", use () or empty; @more
+   whether other lines follow it */
+static char *
+query_summary (const char *text, gboolean *more)
+{
+    const char *start = text, *nl;
+
+    while ((nl = strchr (start, '\n')) != NULL)
+    {
+        char *line = g_strndup (start, (gsize) (nl - start));
+        const gboolean mark = query_wants_table (line) || query_wants_limit (line) > 0
+            || query_has_use (line) || query_blank (line);
+
+        g_free (line);
+        if (!mark)
+            break;
+        start = nl + 1;
+    }
+    // more lines, not empty ones alone
+    *more = nl != NULL && nl[strspn (nl, " \t\r\n")] != '\0';
+    return g_strndup (start, nl != NULL ? (gsize) (nl - start) : strlen (start));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The versions of the file of the history, the newest first, a line each: their time, the runs
+   of each and how the last one ended, the lines put and taken away since the version before,
+   the first line of the query of the last run.  The cursor goes to the line of @current, else to
+   the first one; the title of the tab names the file. */
 static void
-query_history_show (query_t *q, const query_entry_t *current)
+query_history_show (query_t *q, const char *current)
 {
     GString *text = g_string_new (NULL);
+    char *dir = q->history_file != NULL ? query_versions_dir_of (q->history_file) : NULL;
+    char **names = dir != NULL ? query_version_names (dir) : g_new0 (char *, 1);
+    const guint n = g_strv_length (names);
+    GPtrArray *lines = g_ptr_array_new_with_free_func (g_free);
+    char *before = NULL, *title, *base;
     long cursor = 0;
     guint i;
 
-    g_array_set_size (q->rows, 0);
-    if (q->history->len == 0)
-        g_string_append (text, _ ("No query run yet.\n"));
-    // the last one first
-    for (i = q->history->len; i > 0; i--)
+    // @current may be a line of the list it makes again
+    char *here = g_strdup (current);
+
+    g_ptr_array_set_size (q->rows, 0);
+    // the oldest first, each against the one before; shown the other way
+    for (i = 0; i < n; i++)
     {
-        const guint index = i - 1;
-        const query_entry_t *e = g_ptr_array_index (q->history, index);
-        const char *start = e->text, *nl;
+        char *path = g_build_filename (dir, names[i], (char *) NULL);
+        char *now = NULL, *label = query_version_label (names[i]), *changes, *summary, *runs;
+        char *status;
+        guint count = 0;
+        const query_entry_t *last = query_history_last (q, names[i], FALSE, &count);
+        gboolean more = FALSE, failed;
+        int added = 0, removed = 0;
 
-        if (e == current)
-            cursor = (long) q->rows->len;
-        // the query, not the "// @table" and "// @limit" before it
-        while ((nl = strchr (start, '\n')) != NULL)
-        {
-            char *line = g_strndup (start, (gsize) (nl - start));
-            const gboolean mark = query_wants_table (line) || query_wants_limit (line) > 0;
-
-            g_free (line);
-            if (!mark)
-                break;
-            start = nl + 1;
-        }
-        char *status =
-            e->status < 0 ? g_strdup (_ ("stopped")) : g_strdup_printf (_ ("exit %d"), e->status);
-
-        g_string_append_printf (text, "%s  %6.2f s  %-8s  %5ld  ", e->when, e->seconds, status,
-                                e->line);
-        if (e->status != 0)
-            g_string_append (text, ANSI_RED);
-        g_string_append_len (text, start, nl != NULL ? nl - start : (gssize) strlen (start));
-        // more lines, not empty ones alone
-        if (nl != NULL && nl[strspn (nl, " \t\r\n")] != '\0' && e != q->expanded)
-            g_string_append (text, " ...");
-        if (e->status != 0)
-            g_string_append (text, ANSI_RESET);
-        g_string_append_c (text, '\n');
-        g_array_append_val (q->rows, index);
+        (void) g_file_get_contents (path, &now, NULL, NULL);
+        query_line_changes (before, now, &added, &removed);
+        changes = added + removed == 0 ? g_strdup ("")
+            : removed == 0             ? g_strdup_printf ("+%d", added)
+            : added == 0               ? g_strdup_printf ("-%d", removed)
+                                       : g_strdup_printf ("+%d -%d", added, removed);
+        summary = query_summary (last != NULL ? last->text : now != NULL ? now : "", &more);
+        runs = count > 0   ? g_strdup_printf (ngettext ("%u run", "%u runs", count), count)
+            : last != NULL ? g_strdup (_ ("current"))
+                           : g_strdup ("");
+        last = query_history_last (q, names[i], TRUE, NULL);
+        failed = last != NULL && last->status != 0;
+        status = last == NULL  ? g_strdup ("")
+            : last->status < 0 ? g_strdup (_ ("stopped"))
+                               : g_strdup_printf (_ ("exit %d"), last->status);
+        g_ptr_array_add (lines,
+                         g_strdup_printf ("%s  %-8s  %-10s  %-9s  %s%s%s%s\n", label, runs, status,
+                                          changes, failed ? ANSI_RED : "", summary,
+                                          more ? " ..." : "", failed ? ANSI_RESET : ""));
         g_free (status);
-
-        // all of its text, a line under the other, each a line of History of that entry
-        if (e == q->expanded)
-        {
-            char **lines = g_strsplit (e->text, "\n", -1);
-            char **l;
-
-            for (l = lines; *l != NULL; l++)
-            {
-                if (l[1] == NULL && **l == '\0')
-                    break;
-                g_string_append_printf (text, "    %s\n", *l);
-                g_array_append_val (q->rows, index);
-            }
-            g_strfreev (lines);
-        }
+        g_free (runs);
+        g_free (summary);
+        g_free (changes);
+        g_free (label);
+        g_free (path);
+        g_free (before);
+        before = now;
     }
+    g_free (before);
+
+    if (q->history_file == NULL)
+        g_string_append (text, _ ("No file of queries in front.\n"));
+    else if (n == 0)
+        g_string_append (text, _ ("No version yet: a run keeps the file as it is.\n"));
+    for (i = n; i > 0; i--)
+    {
+        if (g_strcmp0 (names[i - 1], here) == 0)
+            cursor = (long) q->rows->len;
+        g_string_append (text, g_ptr_array_index (lines, i - 1));
+        g_ptr_array_add (q->rows, g_strdup (names[i - 1]));
+    }
+    g_ptr_array_free (lines, TRUE);
+    g_strfreev (names);
+    g_free (dir);
+    g_free (here);
+
     query_tab_set (q, QUERY_TAB_HISTORY, text->str, FALSE);
     g_string_free (text, TRUE);
 
@@ -411,6 +622,23 @@ query_history_show (query_t *q, const query_entry_t *current)
         if (reply != NULL)
             g_variant_unref (reply);
     }
+    // the file whose versions they are, in the title of the tab
+    base = q->history_file != NULL ? g_path_get_basename (q->history_file) : NULL;
+    title = base != NULL ? g_strdup_printf (_ ("History: %s"), base) : g_strdup (_ ("History"));
+    if (q->tabs[QUERY_TAB_HISTORY] != 0)
+    {
+        GVariantDict dict;
+        GVariant *reply;
+
+        g_variant_dict_init (&dict, NULL);
+        g_variant_dict_insert (&dict, "id", "x", q->tabs[QUERY_TAB_HISTORY]);
+        g_variant_dict_insert (&dict, "title", "s", title);
+        reply = query_viewer (q, "set_title", &dict);
+        if (reply != NULL)
+            g_variant_unref (reply);
+    }
+    g_free (title);
+    g_free (base);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -432,9 +660,13 @@ query_history_save (query_t *q)
         char *text = g_strescape (e->text, NULL);
         char seconds[G_ASCII_DTOSTR_BUF_SIZE];
 
-        g_string_append_printf (data, "%s\t%s\t%d\t%ld\t%s\n", e->when,
+        char *use = e->use != NULL ? g_strescape (e->use, NULL) : g_strdup ("-");
+
+        // the version and the use () before the text, which is the last; "-" for none
+        g_string_append_printf (data, "%s\t%s\t%d\t%ld\t%s\t%s\t%s\n", e->when,
                                 g_ascii_dtostr (seconds, sizeof (seconds), e->seconds), e->status,
-                                e->line, text);
+                                e->line, e->version != NULL ? e->version : "-", use, text);
+        g_free (use);
         g_free (text);
     }
     dir = g_path_get_dirname (q->history_path);
@@ -458,16 +690,17 @@ query_history_load (query_t *q, const char *file)
     q->history_path = file != NULL ? query_history_path_of (file) : NULL;
     g_free (q->history_file);
     q->history_file = g_strdup (file);
-    q->expanded = NULL;
     g_ptr_array_set_size (q->history, 0);
     if (q->history_path == NULL || !g_file_get_contents (q->history_path, &data, NULL, NULL))
         return;
     lines = g_strsplit (data, "\n", -1);
     for (i = 0; lines[i] != NULL; i++)
     {
-        char **f = g_strsplit (lines[i], "\t", 5);
+        char **f = g_strsplit (lines[i], "\t", 7);
+        const guint n = g_strv_length (f);
 
-        if (g_strv_length (f) == 5)
+        // five fields, of before the versions: no version; six, no use ()
+        if (n >= 5 && n <= 7)
         {
             query_entry_t *e = g_new0 (query_entry_t, 1);
 
@@ -475,7 +708,11 @@ query_history_load (query_t *q, const char *file)
             e->seconds = g_ascii_strtod (f[1], NULL);
             e->status = (int) g_ascii_strtoll (f[2], NULL, 10);
             e->line = (long) g_ascii_strtoll (f[3], NULL, 10);
-            e->text = g_strcompress (f[4]);
+            if (n >= 6 && strcmp (f[4], "-") != 0 && strchr (f[4], G_DIR_SEPARATOR) == NULL)
+                e->version = g_strdup (f[4]);
+            if (n == 7 && strcmp (f[5], "-") != 0)
+                e->use = g_strcompress (f[5]);
+            e->text = g_strcompress (f[n - 1]);
             g_ptr_array_add (q->history, e);
         }
         g_strfreev (f);
@@ -484,6 +721,7 @@ query_history_load (query_t *q, const char *file)
     g_free (data);
     if (q->history->len > QUERY_HISTORY_MAX)
         g_ptr_array_remove_range (q->history, 0, q->history->len - QUERY_HISTORY_MAX);
+    query_current_one (q);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -498,15 +736,35 @@ query_history_add (query_t *q, const char *when, double seconds, int status)
     e->status = status;
     e->line = q->first;
     e->text = g_strdup (q->text);
+    e->version = g_strdup (q->version);
+    e->use = g_strdup (q->use);
+    // another file came to the front while it ran: the run goes to the history of its own
+    if (q->file != NULL && g_strcmp0 (q->file, q->history_file) != 0)
+    {
+        GPtrArray *front = q->history;
+        char *front_path = q->history_path, *front_file = q->history_file;
+
+        q->history = g_ptr_array_new_with_free_func (query_entry_free);
+        q->history_path = NULL;
+        q->history_file = NULL;
+        query_history_load (q, q->file);
+        g_ptr_array_add (q->history, e);
+        if (q->history->len > QUERY_HISTORY_MAX)
+            g_ptr_array_remove_index (q->history, 0);
+        query_history_save (q);
+        g_ptr_array_free (q->history, TRUE);
+        g_free (q->history_path);
+        g_free (q->history_file);
+        q->history = front;
+        q->history_path = front_path;
+        q->history_file = front_file;
+        return;
+    }
     g_ptr_array_add (q->history, e);
     if (q->history->len > QUERY_HISTORY_MAX)
-    {
-        if (q->expanded == g_ptr_array_index (q->history, 0))
-            q->expanded = NULL;
         g_ptr_array_remove_index (q->history, 0);
-    }
     query_history_save (q);
-    query_history_show (q, e);
+    query_history_show (q, e->version);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -884,7 +1142,7 @@ static void
 query_run (query_t *q, void *edit, gboolean all)
 {
     WEdit *e;
-    char *text, *block = NULL, *use = NULL;
+    char *text, *block = NULL, *use = NULL, *file, *version;
     gsize len = 0;
     long first = 0;
     off_t start, end;
@@ -922,11 +1180,6 @@ query_run (query_t *q, void *edit, gboolean all)
         if (block == NULL)
             block = g_strdup (text);
     }
-    // a part run alone is in the database of the use ("name") above it
-    if (first > 0)
-        use = query_use_before (text, first);
-    g_free (text);
-
     if (query_blank (block))
     {
         q->host->message (q->host, D_NORMAL, _ ("Query"),
@@ -935,20 +1188,29 @@ query_run (query_t *q, void *edit, gboolean all)
                                                "around the cursor is empty.")
                                           : _ ("The file is empty."));
         g_free (block);
-        g_free (use);
+        g_free (text);
         return;
     }
-    query_run_text (q, block, q->host->get_current_file (q->host, edit), first + 1, use);
+    // a part run alone is in the database of the use ("name") above it
+    if (first > 0)
+        use = query_use_before (text, first);
+    file = q->host->get_current_file (q->host, edit);
+    // the file as it is run, unless it is that of the run before; nothing run, no version
+    version = file != NULL && !query_in_versions (file) ? query_version_save (file, text) : NULL;
+    g_free (text);
+    query_run_text (q, block, file, first + 1, use, version);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
 /* Run @text, from the line @first, from 1, of @file; NULL for a query not of the file as it is
    now, whose errors are not marked in it; in the database of @use, the string of a use () above
-   it, NULL for none.  All are taken. */
+   it, NULL for none; @version the version of the file it is of, NULL for none.  All are taken. */
 static void
-query_run_text (query_t *q, char *text, char *file, long first, char *use)
+query_run_text (query_t *q, char *text, char *file, long first, char *use, char *version)
 {
+    g_free (q->version);
+    q->version = version;
     g_free (q->use);
     q->use = use;
     g_free (q->text);
@@ -975,62 +1237,413 @@ query_run_text (query_t *q, char *text, char *file, long first, char *use)
 /* What History does */
 /* --------------------------------------------------------------------------------------------- */
 
-/* F5 in History: its query run again as it was, the file left as it is now */
+/* F5 in History: the query of the last run of the version run again as it was, the file left as
+   it is now */
 static void
-query_history_run (query_t *q, const query_entry_t *e)
+query_history_run (query_t *q, const char *version)
 {
+    const query_entry_t *e = query_history_last (q, version, TRUE, NULL);
+
     if (q->pid != 0)
     {
         query_run (q, NULL, FALSE);
         return;
     }
-    query_run_text (q, g_strdup (e->text), NULL, e->line, NULL);
+    if (e == NULL)
+    {
+        query_tab_set (q, QUERY_TAB_OUTPUT,
+                       _ ("The version was kept, not run: Enter puts it in "
+                          "the file, to run it there.\n"),
+                       TRUE);
+        return;
+    }
+    // in the database it ran in: the use () above a part run alone
+    query_run_text (q, g_strdup (e->text), NULL, e->line, g_strdup (e->use), g_strdup (e->version));
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* F3 in History: all the text of its query under its line, or no more */
-static void
-query_history_expand (query_t *q, const query_entry_t *e)
+/* The path of the version @name of the file of the history, NULL when there is none */
+static char *
+query_version_path (const query_t *q, const char *name)
 {
-    q->expanded = q->expanded == e ? NULL : e;
-    query_history_show (q, e);
+    char *dir, *path;
+
+    if (name == NULL || q->history_file == NULL)
+        return NULL;
+    dir = query_versions_dir_of (q->history_file);
+    path = g_build_filename (dir, name, (char *) NULL);
+    g_free (dir);
+    if (!g_file_test (path, G_FILE_TEST_IS_REGULAR))
+    {
+        g_free (path);
+        return NULL;
+    }
+    return path;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The version of @file whose text is @text, any of them; NULL when there is none */
+static char *
+query_version_of_text (const char *file, const char *text)
+{
+    char *dir = query_versions_dir_of (file);
+    char **names = query_version_names (dir);
+    char *found = NULL;
+    guint i;
+
+    // the newest first: the one gone to last is likely
+    for (i = g_strv_length (names); found == NULL && i > 0; i--)
+    {
+        char *path = g_build_filename (dir, names[i - 1], (char *) NULL);
+        char *version = NULL;
+
+        if (g_file_get_contents (path, &version, NULL, NULL) && strcmp (version, text) == 0)
+            found = g_strdup (names[i - 1]);
+        g_free (version);
+        g_free (path);
+    }
+    g_strfreev (names);
+    g_free (dir);
+    return found;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The texts kept as "current" and never run taken away, their versions and their entries, but
+   those of the versions @keep and @also, NULL for none: one "current" stays */
+static void
+query_current_drop (query_t *q, const char *keep, const char *also)
+{
+    guint i;
+
+    for (i = q->history->len; i > 0; i--)
+    {
+        const query_entry_t *e = g_ptr_array_index (q->history, i - 1);
+
+        if (e->status != QUERY_SAVED || e->version == NULL || g_strcmp0 (e->version, keep) == 0
+            || g_strcmp0 (e->version, also) == 0
+            || query_history_last (q, e->version, TRUE, NULL) != NULL)
+            continue;
+        {
+            char *path = query_version_path (q, e->version);
+
+            if (path != NULL)
+                (void) unlink (path);
+            g_free (path);
+        }
+        g_ptr_array_remove_index (q->history, i - 1);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* One "current" of the history: the newest of those never run, the others taken away, as an
+   older coole left them, one at each going from version to version */
+static void
+query_current_one (query_t *q)
+{
+    const char *newest = NULL;
+    guint i;
+
+    for (i = 0; i < q->history->len; i++)
+    {
+        const query_entry_t *e = g_ptr_array_index (q->history, i);
+
+        if (e->status == QUERY_SAVED && e->version != NULL
+            && query_history_last (q, e->version, TRUE, NULL) == NULL
+            && (newest == NULL || strcmp (e->version, newest) > 0))
+            newest = e->version;
+    }
+    if (newest != NULL)
+    {
+        char *keep = g_strdup (newest);
+        // the text the file has now stays, one of them or not
+        char *now = query_history_file_text (q);
+        char *here = now != NULL ? query_version_of_text (q->history_file, now) : NULL;
+        const guint before = q->history->len;
+
+        query_current_drop (q, keep, here);
+        if (q->history->len != before)
+            query_history_save (q);
+        g_free (here);
+        g_free (now);
+        g_free (keep);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* An entry of History that is no run: the text of the file, @text, kept as the version @version
+   before another took its place, the cursor at @line, from 1; Enter on it brings it back */
+static void
+query_history_saved (query_t *q, const char *version, const char *text, long line)
+{
+    query_entry_t *e = g_new0 (query_entry_t, 1);
+    char when[16];
+    const time_t now = time (NULL);
+
+    (void) strftime (when, sizeof (when), "%H:%M:%S", localtime (&now));
+    e->when = g_strdup (when);
+    e->status = QUERY_SAVED;
+    e->line = line;
+    e->text = g_strdup (text);
+    e->version = g_strdup (version);
+    g_ptr_array_add (q->history, e);
+    if (q->history->len > QUERY_HISTORY_MAX)
+        g_ptr_array_remove_index (q->history, 0);
+    query_history_save (q);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The window of @file among the windows, NULL when it has none */
+static void *
+query_file_window (query_t *q, const char *file)
+{
+    GList *item;
+
+    for (item = GROUP (q->host->host_data)->widgets; file != NULL && item != NULL;
+         item = g_list_next (item))
+        if (edit_widget_is_editor (CONST_WIDGET (item->data)))
+        {
+            char *path = q->host->get_current_file (q->host, item->data);
+            const gboolean same = g_strcmp0 (path, file) == 0;
+
+            g_free (path);
+            if (same)
+                return item->data;
+        }
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Enter and a double click in History: the text of the file of queries made that of the version
+   of the run, in its window, one change that Undo takes back, the cursor on the query.  What the
+   file had is kept as a version first, unless it is one already.  The store of the versions is
+   never shown.  A run of before the versions shows its query alone. */
+static void
+query_history_open (query_t *q, const char *version)
+{
+    const query_entry_t *e = query_history_last (q, version, FALSE, NULL);
+    char *path = query_version_path (q, version);
+    char *label = query_version_label (version);
+    char *was = NULL, *then = NULL, *kept = NULL, *message;
+    void *edit;
+    WEdit *ed;
+    gsize len = 0;
+    long kept_line = 1;
+    const long line = e != NULL ? MAX (e->line, 1) : 1;
+
+    if (path == NULL || !g_file_get_contents (path, &then, NULL, NULL))
+    {
+        query_tab_set (q, QUERY_TAB_OUTPUT, _ ("The version is gone from the store.\n"), TRUE);
+        g_free (label);
+        g_free (path);
+        return;
+    }
+
+    edit = query_file_window (q, q->history_file);
+    if (edit == NULL && q->history_file != NULL && q->host->open_file (q->host, q->history_file))
+        edit = query_file_window (q, q->history_file);
+    if (edit != NULL)
+        was = q->host->get_text (q->host, edit, &len);
+    if (edit == NULL || was == NULL)
+    {
+        query_tab_set (q, QUERY_TAB_OUTPUT, _ ("The file of queries is not open.\n"), TRUE);
+        g_free (then);
+        g_free (label);
+        g_free (path);
+        return;
+    }
+
+    ed = EDIT (edit);
+    if (strcmp (was, then) != 0)
+    {
+        /* what the file had is not lost: in History to come back to, and Undo.  A text that is a
+           version already, as when one goes from version to version, is not kept again; a text
+           of none is the one "current", in place of the one before that was never run */
+        kept = query_version_of_text (q->history_file, was);
+        if (kept == NULL)
+        {
+            // the version gone to stays, a "current" of before too
+            query_current_drop (q, version, NULL);
+            kept = query_version_save (q->history_file, was);
+        }
+        // what it had could not be kept: it stays
+        if (kept == NULL)
+        {
+            query_tab_set (q, QUERY_TAB_OUTPUT,
+                           _ ("What the file has cannot be kept as a version: it stays as it "
+                              "is.\n"),
+                           TRUE);
+            g_free (was);
+            g_free (then);
+            g_free (label);
+            g_free (path);
+            return;
+        }
+        kept_line = ed->buffer.curs_line + 1;
+        edit_push_key_press (ed);
+        edit_cursor_move (ed, -ed->buffer.curs1);
+        while (ed->buffer.size > 0)
+            (void) edit_delete (ed, TRUE);
+        q->host->insert_text (q->host, edit, then, 0);
+        /* the text goes a character at a time, and Undo keeps so many of them: a big file is
+           not all taken back, the version is */
+        message = strlen (was) + strlen (then) < QUERY_UNDO_TEXT
+            ? g_strdup_printf (_ ("The file is as it was at %s; what it had is the version "
+                                  "\"current\" of History.\nUndo takes it back.\n"),
+                               label)
+            : g_strdup_printf (_ ("The file is as it was at %s; what it had is the version "
+                                  "\"current\" of History, Enter on it brings it back.\n"),
+                               label);
+    }
+    else
+        message = g_strdup_printf (_ ("The file is as it was at %s already.\n"), label);
+    query_tab_set (q, QUERY_TAB_OUTPUT, message, FALSE);
+    g_free (message);
+
+    edit_move_to_line (ed, line - 1);
+    ed->force |= REDRAW_COMPLETELY;
+    q->host->window_show (q->host, edit);
+    /* in History last: an entry may go for it, @e too, the oldest one; the cursor on the version
+       of what the file had, Enter brings it back */
+    if (kept != NULL)
+    {
+        // a text the store had already is shown where it is
+        if (query_history_last (q, kept, FALSE, NULL) == NULL)
+            query_history_saved (q, kept, was, kept_line);
+        // the cursor on the version the file has now
+        query_history_show (q, version);
+    }
+    g_free (kept);
+    g_free (label);
+    g_free (was);
+    g_free (then);
+    g_free (path);
     query_redraw (q);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Enter in History: its query put into the file, a section of its own after the section of the
-   cursor, the cursor on it, the file in front to run it with F5 */
-static void
-query_history_insert (query_t *q, const query_entry_t *e)
+/* The text of the file of the history now: that of its window, saved or not, else of the disk */
+static char *
+query_history_file_text (query_t *q)
 {
-    void *edit = q->host->window_top_file (q->host);
-    WEdit *ed;
-    char *text, *put, *file;
-    gsize len = 0, offset = 0;
-    long n = 0;
+    void *edit = query_file_window (q, q->history_file);
+    char *text = NULL;
+    gsize len = 0;
 
-    if (edit == NULL)
-        return;
-    ed = EDIT (edit);
-    text = q->host->get_text (q->host, edit, &len);
-    if (text == NULL)
-        return;
-    put = query_put_section (text, ed->buffer.curs_line, e->text, &offset, &n);
-    g_free (text);
+    if (edit != NULL)
+        text = q->host->get_text (q->host, edit, &len);
+    if (text == NULL && q->history_file != NULL)
+        (void) g_file_get_contents (q->history_file, &text, NULL, NULL);
+    return text;
+}
 
-    edit_cursor_move (ed, (off_t) offset - ed->buffer.curs1);
-    q->host->insert_text (q->host, edit, put, 0);
-    g_free (put);
+/* --------------------------------------------------------------------------------------------- */
 
-    file = q->host->get_current_file (q->host, edit);
-    if (file == NULL || !q->host->go_to (q->host, edit, file, n + 1, 0))
+/* History shown, the cursor on the version the file has now, when it is one */
+static void
+query_history_show_here (query_t *q)
+{
+    char *now = query_history_file_text (q);
+    char *version = now != NULL ? query_version_of_text (q->history_file, now) : NULL;
+
+    query_history_show (q, version);
+    g_free (version);
+    g_free (now);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* F3 in History: what has changed in the file since that version, diff -u, in Output */
+static void
+query_history_diff (query_t *q, const char *version)
+{
+    char *path = query_version_path (q, version);
+    char *label = query_version_label (version);
+    char *now = query_history_file_text (q);
+    GString *text = g_string_new (NULL);
+    char *tmp = NULL, *out = NULL, *err = NULL, *label_old, *label_new;
+    int fd;
+
+    if (path == NULL || now == NULL)
     {
-        edit_move_to_line (ed, n);
-        q->host->window_show (q->host, edit);
+        g_string_append (text, _ ("The query has no version of the file to compare.\n"));
+        goto done;
     }
-    g_free (file);
+    // the text of the window, saved or not, in a file of the user's alone
+    fd = g_file_open_tmp ("coole-query-XXXXXX.js", &tmp, NULL);
+    if (fd < 0 || write (fd, now, strlen (now)) != (ssize_t) strlen (now))
+    {
+        if (fd >= 0)
+            close (fd);
+        g_string_append (text, _ ("The file cannot be compared now.\n"));
+        goto done;
+    }
+    close (fd);
+    label_old = g_strdup_printf ("%s, %s", label, version);
+    {
+        char *base = g_path_get_basename (q->history_file);
+
+        label_new = g_strdup_printf (_ ("%s, now"), base);
+        g_free (base);
+    }
+    {
+        const char *argv[] = { "diff",    "-u", "--label", label_old, "--label",
+                               label_new, path, tmp,       NULL };
+        int status = 0;
+
+        if (!g_spawn_sync (NULL, (char **) argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, &out, &err,
+                           &status, NULL))
+            g_string_append (text, _ ("diff is not found.\n"));
+        else if (out == NULL || *out == '\0')
+            g_string_append_printf (text, _ ("The file is as it was at %s.\n"), label);
+        else
+        {
+            char **lines = g_strsplit (out, "\n", -1);
+            char **l;
+
+            // what is taken away red, what is put green, the places cyan
+            for (l = lines; *l != NULL; l++)
+            {
+                const char *color = g_str_has_prefix (*l, "---") || g_str_has_prefix (*l, "+++")
+                    ? ANSI_BOLD
+                    : **l == '-'                  ? ANSI_RED
+                    : **l == '+'                  ? ANSI_GREEN
+                    : g_str_has_prefix (*l, "@@") ? ANSI_CYAN
+                                                  : NULL;
+
+                if (l[1] == NULL && **l == '\0')
+                    break;
+                if (color != NULL)
+                    g_string_append_printf (text, "%s%s" ANSI_RESET "\n", color, *l);
+                else
+                    g_string_append_printf (text, "%s\n", *l);
+            }
+            g_strfreev (lines);
+        }
+    }
+    g_free (label_old);
+    g_free (label_new);
+
+done:
+    if (tmp != NULL)
+    {
+        (void) unlink (tmp);
+        g_free (tmp);
+    }
+    query_tab_set (q, QUERY_TAB_OUTPUT, text->str, TRUE);
+    g_string_free (text, TRUE);
+    g_free (out);
+    g_free (err);
+    g_free (now);
+    g_free (path);
+    g_free (label);
     query_redraw (q);
 }
 
@@ -1055,7 +1668,7 @@ query_command (const query_t *q, long command)
 static gboolean
 query_run_command (query_t *q, int cmd, void *edit, gboolean key)
 {
-    const query_entry_t *e;
+    const char *version;
 
     // the editor's F5, Copy, but in coole -Q
     if (!q->on)
@@ -1071,9 +1684,9 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
         return TRUE;
     }
     case QUERY_CMD_RUN:
-        e = edit == NULL ? query_history_current (q, TRUE) : NULL;
-        if (e != NULL)
-            query_history_run (q, e);
+        version = edit == NULL ? query_history_current (q, TRUE) : NULL;
+        if (version != NULL)
+            query_history_run (q, version);
         else
             query_run (q, edit, FALSE);
         return TRUE;
@@ -1086,13 +1699,13 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
     case QUERY_CMD_HISTORY_INSERT:
     case QUERY_CMD_HISTORY_SHOW:
         // Enter and F3 of a file are those of the editor
-        e = !key || edit == NULL ? query_history_current (q, key) : NULL;
-        if (e == NULL)
+        version = !key || edit == NULL ? query_history_current (q, key) : NULL;
+        if (version == NULL)
             return FALSE;
         if (cmd == QUERY_CMD_HISTORY_INSERT)
-            query_history_insert (q, e);
+            query_history_open (q, version);
         else
-            query_history_expand (q, e);
+            query_history_diff (q, version);
         return TRUE;
     default:
         return FALSE;
@@ -1108,6 +1721,30 @@ query_handle_key (void *data, int key, void *edit)
     const int cmd = query_command (q, q->host->command_lookup (q->host, QUERY_KEYMAP_SECTION, key));
 
     return query_run_command (q, cmd, edit, TRUE) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A file window in front: History is of its file, unless it is of the store of versions */
+static mc_ep_result_t
+query_handle_event (void *data, void *edit, int event_id, void *payload)
+{
+    query_t *q = (query_t *) data;
+    char *file;
+
+    (void) payload;
+    // before the tabs are made, at the start, the start loads the history itself
+    if (!q->on || event_id != MC_EP_EVENT_FOCUS_IN || edit == NULL
+        || q->tabs[QUERY_TAB_HISTORY] == 0)
+        return MC_EPR_NOT_SUPPORTED;
+    file = q->host->get_current_file (q->host, edit);
+    if (file != NULL && g_strcmp0 (file, q->history_file) != 0 && !query_in_versions (file))
+    {
+        query_history_load (q, file);
+        query_history_show_here (q);
+    }
+    g_free (file);
+    return MC_EPR_NOT_SUPPORTED;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1163,6 +1800,24 @@ query_use_put (query_t *q, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A double click on a line of History, "activate" of the viewer: the version of its query open */
+static void
+query_viewer_signal (const char *name, const char *signal, GVariant *args, void *data)
+{
+    query_t *q = (query_t *) data;
+    gint64 id = 0, line = -1;
+
+    (void) name;
+    if (strcmp (signal, "activate") != 0 || q->tabs[QUERY_TAB_HISTORY] == 0
+        || !g_variant_lookup (args, "id", "x", &id) || id != q->tabs[QUERY_TAB_HISTORY]
+        || !g_variant_lookup (args, "line", "x", &line) || line < 0
+        || line >= (gint64) q->rows->len)
+        return;
+    query_history_open (q, g_ptr_array_index (q->rows, (guint) line));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* coole -Q, once the editor runs: the tabs at the bottom, the history of the file */
 static void
 query_startup (void *data)
@@ -1205,7 +1860,7 @@ query_startup (void *data)
     // the tabs in their order, the first one seen
     query_tab_set (q, QUERY_TAB_OUTPUT, text->str, FALSE);
     query_table_say (q, _ ("No query run yet.\n"));
-    query_history_show (q, NULL);
+    query_history_show_here (q);
     query_viewer_id (q, "show", q->tabs[QUERY_TAB_OUTPUT], FALSE);
     g_string_free (text, TRUE);
     g_free (found);
@@ -1230,7 +1885,7 @@ query_open (mc_editor_host_t *host, void *editor_dialog)
     q->out = g_string_new (NULL);
     q->err = g_string_new (NULL);
     q->history = g_ptr_array_new_with_free_func (query_entry_free);
-    q->rows = g_array_new (FALSE, FALSE, sizeof (guint));
+    q->rows = g_ptr_array_new_with_free_func (g_free);
     q->mongosh = g_strdup (mongosh != NULL && *mongosh != '\0' ? mongosh : "mongosh");
     q->endpoint = query_mongo_endpoint (g_getenv ("MC_MONGO_URI"), g_getenv ("MC_MONGO_DB"));
     host->commands_register (host, QUERY_KEYMAP_SECTION, N_ ("&Query"), query_commands);
@@ -1239,7 +1894,10 @@ query_open (mc_editor_host_t *host, void *editor_dialog)
     q->mark = host->marker_kind (host, &query_mark_kind);
     q->on = kind != NULL && strcmp (kind, "mongo") == 0;
     if (q->on)
+    {
+        q->viewer_signal = host->service_connect (host, "viewer", query_viewer_signal, q);
         host->call_later (host, query_startup, q);
+    }
     return q;
 }
 
@@ -1251,8 +1909,10 @@ query_close (void *data)
     query_t *q = (query_t *) data;
 
     query_kill (q);
+    if (q->viewer_signal != 0)
+        q->host->service_disconnect (q->host, q->viewer_signal);
     g_ptr_array_free (q->history, TRUE);
-    g_array_free (q->rows, TRUE);
+    g_ptr_array_free (q->rows, TRUE);
     g_string_free (q->out, TRUE);
     g_string_free (q->err, TRUE);
     g_free (q->history_path);
@@ -1262,6 +1922,7 @@ query_close (void *data)
     g_free (q->text);
     g_free (q->file);
     g_free (q->use);
+    g_free (q->version);
     g_free (q);
 }
 
@@ -1288,6 +1949,7 @@ static const mc_editor_plugin_t query_plugin = {
     .open = query_open,
     .close = query_close,
     .handle_key = query_handle_key,
+    .handle_event = query_handle_event,
     .handle_action = query_handle_action,
     .ok_to_quit = query_ok_to_quit,
 };

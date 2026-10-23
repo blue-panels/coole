@@ -281,25 +281,6 @@ query_line_of (const char *text, gsize offset)
 /* --------------------------------------------------------------------------------------------- */
 
 gboolean
-query_line_blank (const char *text, long line)
-{
-    const char *p = text;
-
-    for (; line > 0 && p != NULL; line--)
-    {
-        p = strchr (p, '\n');
-        if (p != NULL)
-            p++;
-    }
-    for (; p != NULL && *p != '\0' && *p != '\n'; p++)
-        if (!g_ascii_isspace (*p))
-            return FALSE;
-    return TRUE;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-gboolean
 query_line_separator (const char *p)
 {
     while (*p == ' ' || *p == '\t')
@@ -309,18 +290,6 @@ query_line_separator (const char *p)
     for (p += 2; *p == ' ' || *p == '\t'; p++)
         ;
     return strncmp (p, "---", 3) == 0;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* Whether the line that starts at @p has nothing but blanks */
-static gboolean
-query_blank_line_at (const char *p)
-{
-    for (; *p != '\0' && *p != '\n'; p++)
-        if (!g_ascii_isspace (*p))
-            return FALSE;
-    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -391,50 +360,6 @@ query_section (const char *text, long line, long *first)
     }
     g_ptr_array_free (starts, TRUE);
     return section;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-char *
-query_put_section (const char *text, long line, const char *query, gsize *offset, long *at)
-{
-    GPtrArray *starts = query_line_starts (text);
-    const gsize len = strlen (text);
-    GString *put = g_string_new (NULL);
-    gsize qlen = strlen (query);
-    guint start, end, i, last = G_MAXUINT;
-
-    (void) query_section_of (starts, line, &start, &end);
-    // from the starts of the lines known: the text is not gone through again for each
-    for (i = start; i < end; i++)
-        if (!query_blank_line_at (g_ptr_array_index (starts, i)))
-            last = i;
-    // the query without the newlines it ends with: the text after it has its own
-    while (qlen > 0 && query[qlen - 1] == '\n')
-        qlen--;
-
-    if (last == G_MAXUINT)
-    {
-        // a section of nothing: the query is it
-        *offset = start < starts->len
-            ? (gsize) ((const char *) g_ptr_array_index (starts, start) - text)
-            : len;
-        if (*offset == len && len > 0 && text[len - 1] != '\n')
-            g_string_append_c (put, '\n');
-        *at = query_line_of (text, *offset) + (long) put->len;
-        g_string_append_len (put, query, (gssize) qlen);
-        g_string_append_c (put, '\n');
-    }
-    else
-    {
-        // a section of its own after the last line of the section, an empty line between
-        *offset = (gsize) (query_line_end (g_ptr_array_index (starts, last)) - text);
-        *at = (long) last + 3;
-        g_string_append (put, "\n\n// ---\n");
-        g_string_append_len (put, query, (gssize) qlen);
-    }
-    g_ptr_array_free (starts, TRUE);
-    return g_string_free (put, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1208,6 +1133,153 @@ query_table (const char *json, guint *rows, GError **error)
     g_ptr_array_free (nodes, TRUE);
     g_object_unref (parser);
     return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_versions_dir (const char *versions, const char *queries, const char *file)
+{
+    char *base = g_path_get_basename (file);
+    char *dir = g_path_get_dirname (file);
+    char *name, *path;
+
+    if (queries != NULL && strcmp (dir, queries) == 0)
+        name = g_strdup (base);
+    else
+    {
+        char *hash = g_compute_checksum_for_string (G_CHECKSUM_SHA256, file, -1);
+
+        name = g_strdup_printf ("%s-%.8s", base, hash);
+        g_free (hash);
+    }
+    path = g_build_filename (versions, name, (char *) NULL);
+    g_free (name);
+    g_free (dir);
+    g_free (base);
+    return path;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_version_name (GDateTime *now, gboolean (*taken) (const char *name, void *data), void *data)
+{
+    char *stamp = g_date_time_format (now, "%Y%m%d-%H%M%S");
+    char *name = g_strconcat (stamp, ".js", (char *) NULL);
+    int n;
+
+    // two runs in a second: the second one numbered
+    for (n = 2; taken != NULL && taken (name, data); n++)
+    {
+        g_free (name);
+        name = g_strdup_printf ("%s-%d.js", stamp, n);
+    }
+    g_free (stamp);
+    return name;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char **
+query_versions_over (char **names, guint keep)
+{
+    const guint len = names != NULL ? g_strv_length (names) : 0;
+    GPtrArray *over = g_ptr_array_new ();
+    guint i;
+
+    for (i = 0; len > keep && i < len - keep; i++)
+        g_ptr_array_add (over, g_strdup (names[i]));
+    g_ptr_array_add (over, NULL);
+    return (char **) g_ptr_array_free (over, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_version_label (const char *name)
+{
+    // YYYYMMDD-HHMMSS
+    if (strlen (name) < 15 || name[8] != '-')
+        return g_strdup (name);
+    return g_strdup_printf ("%.2s.%.2s %.2s:%.2s:%.2s", name + 6, name + 4, name + 9, name + 11,
+                            name + 13);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The lines of @text, each with how many times it is there */
+static GHashTable *
+query_line_counts (const char *text)
+{
+    GHashTable *counts = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    char **lines = g_strsplit (text != NULL ? text : "", "\n", -1);
+    char **l;
+
+    for (l = lines; *l != NULL; l++)
+    {
+        gpointer n;
+
+        // the empty piece after a last newline is no line
+        if (l[1] == NULL && **l == '\0')
+            break;
+        n = g_hash_table_lookup (counts, *l);
+        g_hash_table_replace (counts, g_strdup (*l), GINT_TO_POINTER (GPOINTER_TO_INT (n) + 1));
+    }
+    g_strfreev (lines);
+    return counts;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_line_changes (const char *before, const char *now, int *added, int *removed)
+{
+    GHashTable *a = query_line_counts (before), *b = query_line_counts (now);
+    GHashTableIter iter;
+    gpointer key, value;
+
+    *added = *removed = 0;
+    g_hash_table_iter_init (&iter, b);
+    while (g_hash_table_iter_next (&iter, &key, &value))
+    {
+        const gpointer was = g_hash_table_lookup (a, key);
+
+        *added += MAX (0, GPOINTER_TO_INT (value) - GPOINTER_TO_INT (was));
+    }
+    g_hash_table_iter_init (&iter, a);
+    while (g_hash_table_iter_next (&iter, &key, &value))
+    {
+        const gpointer is = g_hash_table_lookup (b, key);
+
+        *removed += MAX (0, GPOINTER_TO_INT (value) - GPOINTER_TO_INT (is));
+    }
+    g_hash_table_destroy (a);
+    g_hash_table_destroy (b);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The number of a version among those of its second: "20261024-173750.js" 1, "...-2.js" 2 */
+static long
+query_version_number (const char *name)
+{
+    return strlen (name) > 16 && name[15] == '-' ? strtol (name + 16, NULL, 10) : 1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+int
+query_version_cmp (const char *a, const char *b)
+{
+    const int time = strncmp (a, b, 15);
+    const long na = query_version_number (a), nb = query_version_number (b);
+
+    if (time != 0)
+        return time;
+    return na < nb ? -1 : na > nb ? 1 : strcmp (a, b);
 }
 
 /* --------------------------------------------------------------------------------------------- */
