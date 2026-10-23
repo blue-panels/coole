@@ -42,6 +42,7 @@ typedef struct
     char *startup;       // serves only when coole was started with this option, "query" for -Q,
                          // then before the others; NULL: whatever the option
     JsonNode *requests;  // sent after initialized, an array of {method, params}; NULL: none
+    char **words;        // completed with what the server says, not after a dot; NULL: none
 } lsp_backend_t;
 
 typedef struct

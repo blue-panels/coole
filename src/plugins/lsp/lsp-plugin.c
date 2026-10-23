@@ -79,6 +79,11 @@
 #define LSP_TICK_FAST_MS 5
 #define LSP_TICK_MS      100
 
+// the CompletionItemKind of a word of lsp.json
+#define LSP_KIND_KEYWORD 14
+// the member that marks such a word among the items of the server
+#define LSP_WORD_MEMBER "coole-word"
+
 /* the lines of the source of a definition Hover shows at most */
 #define LSP_HOVER_SOURCE_LINES 10
 /* the lines the help of a call shows at once: the code typed under it stays in sight */
@@ -3018,6 +3023,60 @@ lsp_session_update (lsp_plugin_t *plugin, WEdit *edit, gboolean asked_for, const
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The items of the server and the words of its backend, those not after a dot: the keywords of
+   the language and its names the server does not complete itself; a word the server says is not
+   said twice.  A new array. */
+static JsonArray *
+lsp_session_with_words (lsp_plugin_t *plugin, lsp_window_t *w, JsonArray *items)
+{
+    const lsp_backend_t *backend =
+        w->server != NULL ? lsp_config_backend (plugin->config, w->server->backend_id) : NULL;
+    const lsp_session_t *s = plugin->session;
+    JsonArray *all;
+    GHashTable *said;
+    guint i;
+
+    // no words to add: the items of the server as they are, not copied
+    if (backend == NULL || backend->words == NULL
+        || (s->start > 0 && edit_buffer_get_byte (&w->edit->buffer, s->start - 1) == '.'))
+        return items != NULL ? json_array_ref (items) : json_array_new ();
+
+    all = json_array_new ();
+    said = g_hash_table_new (g_str_hash, g_str_equal);
+    for (i = 0; items != NULL && i < json_array_get_length (items); i++)
+    {
+        JsonNode *node = json_array_get_element (items, i);
+
+        json_array_add_element (all, json_node_copy (node));
+        if (JSON_NODE_HOLDS_OBJECT (node)
+            && lsp_member_string (json_node_get_object (node), "label") != NULL)
+            g_hash_table_add (said,
+                              (gpointer) lsp_member_string (json_node_get_object (node), "label"));
+    }
+    for (i = 0; backend->words[i] != NULL; i++)
+    {
+        JsonObject *item;
+        char *sort;
+
+        if (g_hash_table_contains (said, backend->words[i]))
+            continue;
+        item = json_object_new ();
+        json_object_set_string_member (item, "label", backend->words[i]);
+        json_object_set_int_member (item, "kind", LSP_KIND_KEYWORD);
+        // after what the server says
+        sort = g_strconcat ("~", backend->words[i], (char *) NULL);
+        json_object_set_string_member (item, "sortText", sort);
+        g_free (sort);
+        // a word of lsp.json, not of the server: a dot does not take it for another word
+        json_object_set_boolean_member (item, LSP_WORD_MEMBER, TRUE);
+        json_array_add_object_element (all, item);
+    }
+    g_hash_table_destroy (said);
+    return all;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The answer of the server: the items of the session */
 static void
 lsp_session_answer (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
@@ -3049,11 +3108,11 @@ lsp_session_answer (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
     }
     if (s->items != NULL)
         json_array_unref (s->items);
-    s->items = items != NULL ? json_array_ref (items) : json_array_new ();
     /* nothing is no list: the server may know nothing at a dot alone, where the line is no code
        yet, "item." in "sum(item. for item in items)" for pylsp, and all after a letter */
-    if (json_array_get_length (s->items) == 0)
+    if (items == NULL || json_array_get_length (items) == 0)
         s->incomplete = TRUE;
+    s->items = lsp_session_with_words (plugin, w, items);
     if (s->text != NULL)
         g_bytes_unref (s->text);
     s->text = g_bytes_ref (ask->text);

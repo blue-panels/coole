@@ -64,6 +64,7 @@ lsp_backend_free (gpointer data)
     if (backend->settings != NULL)
         json_node_unref (backend->settings);
     g_free (backend->startup);
+    g_strfreev (backend->words);
     if (backend->requests != NULL)
         json_node_unref (backend->requests);
     g_free (backend);
@@ -282,6 +283,14 @@ lsp_config_backend_parse (JsonNode *node, guint index, GError **error)
             }
         }
         backend->requests = json_node_copy (member);
+    }
+
+    member = json_object_get_member (o, "words");
+    if (member != NULL && !JSON_NODE_HOLDS_NULL (member))
+    {
+        backend->words = lsp_config_strings (member, where, error);
+        if (backend->words == NULL)
+            goto fail;
     }
 
     g_free (where);

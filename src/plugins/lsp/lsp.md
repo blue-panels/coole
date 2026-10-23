@@ -247,13 +247,20 @@ params. In a string of the params ${env:NAME} is the variable of the
 environment of coole, empty when it has none, and ${command_dir} the real
 directory of the program, a link from PATH followed.
 
+**words**
+: Words the list of completion has beside what the server says, but after a
+dot: the keywords of the language and the names a server does not complete
+itself; a word the server says is not there twice.
+
 The server of MongoDB of lsp.json, *mongolsp*, serves the queries of -Q: the
 methods of *db*, the collections and their fields, the stages and the
 operators. It is the server of the extension of MongoDB for VS Code, run on
 its own (<https://github.com/blue-panels/mongolsp>), and has to be in PATH;
 its requests give it the connection string of *MC_MONGO_URI*, on its input,
 not on a command line. It knows the database of the names after *db.* by a
-line *use("name")* above them.
+line *use("name")* above them. Out of *db.* it completes *db*, *sp* and *use*
+alone: its words are the keywords of JavaScript and the names of mongosh,
+*print*, *ObjectId*, *ISODate* and the like.
 
 The file is read when coole starts, and again when the settings dialog writes
 it.

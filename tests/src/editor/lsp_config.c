@@ -143,6 +143,7 @@ test_parse (void)
             "{\"backends\":[{\"id\":\"x\",\"command\":[1]}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"extensions\":{\".c\":1}}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"startup\":1}]}",
+            "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"words\":\"const\"}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"requests\":{}}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"requests\":[{\"params\":1}]}]}",
             // two backends of one id
@@ -336,7 +337,8 @@ test_startup (void)
         "{\"backends\":["
         "{\"id\":\"ts\",\"command\":[\"sh\"],\"extensions\":{\".js\":\"javascript\"}},"
         "{\"id\":\"mongo\",\"command\":[\"sh\"],\"extensions\":{\".js\":\"javascript\"},"
-        "\"startup\":\"query\",\"requests\":[{\"method\":\"A\",\"params\":{\"x\":1}},"
+        "\"startup\":\"query\",\"words\":[\"const\",\"print\"],"
+        "\"requests\":[{\"method\":\"A\",\"params\":{\"x\":1}},"
         "{\"method\":\"B\"}]}]}";
     GError *error = NULL;
     lsp_config_t *config;
@@ -349,6 +351,8 @@ test_startup (void)
     backend = lsp_config_backend_for (config, "/q/a.js", NULL);
     g_assert_cmpstr (backend->id, ==, "mongo");
     g_assert_cmpuint (json_array_get_length (json_node_get_array (backend->requests)), ==, 2);
+    g_assert_cmpuint (g_strv_length (backend->words), ==, 2);
+    g_assert_cmpstr (backend->words[1], ==, "print");
     lsp_config_free (config);
 
     // started otherwise: it serves nothing
