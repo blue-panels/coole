@@ -59,7 +59,7 @@
       "command": ["mongolsp"],
       "extensions": {".js": "javascript", ".mongodb": "javascript"},
       "startup": "query",
-      "words": ["async", "await", "break", "case", "catch", "class", "const", "continue",
+      "words": ["db", "sp", "use", "async", "await", "break", "case", "catch", "class", "const", "continue",
                 "default", "delete", "do", "else", "false", "finally", "for", "function", "if",
                 "in", "instanceof", "let", "new", "null", "of", "return", "switch", "this",
                 "throw", "true", "try", "typeof", "undefined", "var", "while",

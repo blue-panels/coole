@@ -2806,6 +2806,7 @@ lsp_kind_letter (gint64 kind)
 typedef struct
 {
     JsonObject *item;
+    gboolean exact;  // the word typed itself
     gboolean typed;  // of the type of the parameter the cursor is in: first
     int score;
     const char *sort;
@@ -2821,6 +2822,10 @@ lsp_choice_cmp (gconstpointer a, gconstpointer b)
 
     if (x->typed != y->typed)
         return x->typed ? -1 : 1;
+    /* then the word typed itself: "db" is no DBRef, which the letters of the word fit better,
+       and a dot takes the first; the rest as the server ranks it */
+    if (x->exact != y->exact)
+        return x->exact ? -1 : 1;
     if (x->score != y->score)
         return x->score > y->score ? -1 : 1;
     c = strcmp (x->sort, y->sort);
@@ -2890,6 +2895,7 @@ lsp_session_show (lsp_plugin_t *plugin, lsp_window_t *w, const char *word)
         choice = g_new0 (lsp_choice_t, 1);
         choice->item = item;
         choice->score = score;
+        choice->exact = *word != '\0' && strcmp (filter, word) == 0;
         choice->sort = lsp_member_string (item, "sortText");
         if (choice->sort == NULL)
             choice->sort = label;
@@ -3160,6 +3166,37 @@ lsp_session_take (lsp_plugin_t *plugin, WEdit *edit, off_t end)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether the item of the list the cursor is on may be taken by a dot: one of the server, or a
+   word of lsp.json that starts with the word typed, its case kept */
+static gboolean
+lsp_session_dot_takes (lsp_plugin_t *plugin, WEdit *edit)
+{
+    lsp_popup_item_t *item = lsp_popup_current (plugin->popup);
+    const lsp_session_t *s = plugin->session;
+    const char *filter;
+    GString *word;
+    off_t i;
+    gboolean starts;
+
+    if (item == NULL || s == NULL)
+        return FALSE;
+    if (!json_object_has_member ((JsonObject *) item->data, LSP_WORD_MEMBER))
+        return TRUE;
+    filter = lsp_member_string ((JsonObject *) item->data, "filterText");
+    if (filter == NULL)
+        filter = lsp_member_string ((JsonObject *) item->data, "label");
+    if (filter == NULL)
+        return FALSE;
+    word = g_string_new (NULL);
+    for (i = s->start; i < edit->buffer.curs1; i++)
+        g_string_append_c (word, (char) edit_buffer_get_byte (&edit->buffer, i));
+    starts = g_str_has_prefix (filter, word->str);
+    g_string_free (word, TRUE);
+    return starts;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A double click on an item */
 static void
 lsp_session_take_cb (void *data)
@@ -3231,7 +3268,13 @@ lsp_session_key (lsp_plugin_t *plugin, WEdit *edit, int key)
             lsp_session_end (plugin);
             return TRUE;
         case '.':
-            // the item, then the members of it
+            // the item, then the members of it; a word of lsp.json that is not the word typed and
+            // more, as DBRef for "db", is not put for it: the dot is the editor's
+            if (!lsp_session_dot_takes (plugin, edit))
+            {
+                lsp_session_end (plugin);
+                return FALSE;
+            }
             lsp_session_take (plugin, edit, edit->buffer.curs1);
             g_free (plugin->trigger);
             plugin->trigger = g_strdup (".");
