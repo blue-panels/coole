@@ -384,21 +384,16 @@ test_table (void)
     g_assert_no_error (error);
     g_assert_cmpuint (rows, ==, 3);
     g_assert_cmpstr (s, ==,
-                     "| _id                      | status | ts                   | user     | "
-                     "items | name       "
-                     "| n                |\n"
-                     "|--------------------------|--------|----------------------|----------|------"
-                     "-|------------"
-                     "|------------------|\n"
-                     "| 6650a1000000000000000000 | 1      | 2026-10-21T10:02:11Z | {2 keys} | [3]  "
-                     " |            "
-                     "|                  |\n"
-                     "| 6650a1000000000000000001 | 2      |                      |          |      "
-                     " | two\\nlines "
-                     "| 9007199254740993 |\n"
-                     "| 3                        | null   |                      |          |      "
-                     " |            "
-                     "|                  |\n");
+                     "| _id                      | status | ts                   | user         "
+                     "| items     | name       | n                |\n"
+                     "|--------------------------|--------|----------------------|--------------"
+                     "|-----------|------------|------------------|\n"
+                     "| 6650a1000000000000000000 | 1      | 2026-10-21T10:02:11Z | {a: 1, b: 2} "
+                     "| [1, 2, 3] |            |                  |\n"
+                     "| 6650a1000000000000000001 | 2      |                      |              "
+                     "|           | two\\nlines | 9007199254740993 |\n"
+                     "| 3                        | null   |                      |              "
+                     "|           |            |                  |\n");
     g_free (s);
 
     // not documents: a column of values
@@ -440,6 +435,20 @@ test_table (void)
     g_assert_null (query_table ("DeprecationWarning: x", 0, &rows, &error));
     g_assert_nonnull (error);
     g_clear_error (&error);
+
+    // an object inside as mongosh shows it, a string of it in quotes: the keys of indexes; cut
+    // as any value longer than 40 columns
+    s = query_table (
+        "[{\"v\": 2, \"key\": {\"ClientUuid\": \"hashed\"}},"
+        " {\"key\": {\"ClientUuid\": 1, \"At\": {\"$date\": \"2026-01-01T00:00:00Z\"}}}]",
+        0, &rows, &error);
+    g_assert_no_error (error);
+    g_assert_cmpstr (s, ==,
+                     "| v   | key                                      |\n"
+                     "|-----|------------------------------------------|\n"
+                     "| 2   | {ClientUuid: \"hashed\"}                   |\n"
+                     "|     | {ClientUuid: 1, At: 2026-01-01T00:00:... |\n");
+    g_free (s);
 
     // the first rows of a big one, all of them counted
     s = query_table ("[{\"a\": 1}, {\"a\": 2}, {\"a\": 3}]", 2, &rows, &error);

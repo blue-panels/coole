@@ -144,31 +144,80 @@ query_append_string (GString *out, const char *s)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The value of a cell: a scalar as it is, the types of Extended JSON by their value, another
-   object or an array by its size */
-static char *
-query_cell (JsonNode *node)
+/* The value of a type of Extended JSON, {"$oid": "..."} and the like, into @out; FALSE when
+   @o is none */
+static gboolean
+query_ejson_scalar (JsonObject *o, GString *out)
 {
-    GString *out = g_string_new (NULL);
+    static const char *const scalars[] = { "$oid",           "$date",         "$numberLong",
+                                           "$numberDecimal", "$numberDouble", "$numberInt",
+                                           "$symbol" };
+    guint i;
 
+    if (json_object_get_size (o) != 1)
+        return FALSE;
+    for (i = 0; i < G_N_ELEMENTS (scalars); i++)
+        if (json_object_has_member (o, scalars[i]))
+        {
+            JsonNode *value = json_object_get_member (o, scalars[i]);
+
+            if (JSON_NODE_HOLDS_VALUE (value) && json_node_get_value_type (value) == G_TYPE_STRING)
+                g_string_append (out, json_node_get_string (value));
+            else if (JSON_NODE_HOLDS_VALUE (value)
+                     && json_node_get_value_type (value) == G_TYPE_INT64)
+                g_string_append_printf (out, "%" G_GINT64_FORMAT, json_node_get_int (value));
+            else if (JSON_NODE_HOLDS_VALUE (value))
+                g_string_append_printf (out, "%.15g", json_node_get_double (value));
+            else
+                return FALSE;
+            return TRUE;
+        }
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* @node as text into @out, as mongosh shows it, the keys without quotes: a string inside an
+   object or an array in quotes, the types of Extended JSON by their value; no more than a cell
+   shows of it */
+static void
+query_value_text (JsonNode *node, gboolean inside, GString *out)
+{
+    // a cell is cut at QUERY_COLUMN_MAX: more of a big value is no use
+    if (out->len > 4 * QUERY_COLUMN_MAX)
+        return;
     switch (JSON_NODE_TYPE (node))
     {
     case JSON_NODE_NULL:
         g_string_append (out, "null");
         break;
     case JSON_NODE_ARRAY:
-        g_string_printf (out, "[%u]", json_array_get_length (json_node_get_array (node)));
+    {
+        JsonArray *a = json_node_get_array (node);
+        guint i;
+
+        g_string_append_c (out, '[');
+        for (i = 0; i < json_array_get_length (a) && out->len <= 4 * QUERY_COLUMN_MAX; i++)
+        {
+            if (i > 0)
+                g_string_append (out, ", ");
+            query_value_text (json_array_get_element (a, i), TRUE, out);
+        }
+        g_string_append_c (out, ']');
         break;
+    }
     case JSON_NODE_VALUE:
     {
         const GType type = json_node_get_value_type (node);
 
-        if (type == G_TYPE_STRING)
-            query_append_string (out, json_node_get_string (node));
+        if (type == G_TYPE_STRING && inside)
+            g_string_append_printf (out, "\"%s\"", json_node_get_string (node));
+        else if (type == G_TYPE_STRING)
+            g_string_append (out, json_node_get_string (node));
         else if (type == G_TYPE_INT64)
-            g_string_printf (out, "%" G_GINT64_FORMAT, json_node_get_int (node));
+            g_string_append_printf (out, "%" G_GINT64_FORMAT, json_node_get_int (node));
         else if (type == G_TYPE_DOUBLE)
-            g_string_printf (out, "%.15g", json_node_get_double (node));
+            g_string_append_printf (out, "%.15g", json_node_get_double (node));
         else if (type == G_TYPE_BOOLEAN)
             g_string_append (out, json_node_get_boolean (node) ? "true" : "false");
         break;
@@ -176,29 +225,42 @@ query_cell (JsonNode *node)
     case JSON_NODE_OBJECT:
     {
         JsonObject *o = json_node_get_object (node);
-        const guint size = json_object_get_size (o);
-        static const char *const scalars[] = { "$oid",           "$date",         "$numberLong",
-                                               "$numberDecimal", "$numberDouble", "$numberInt",
-                                               "$symbol" };
-        guint i;
+        GList *names, *l;
 
-        for (i = 0; size == 1 && i < G_N_ELEMENTS (scalars); i++)
-            if (json_object_has_member (o, scalars[i]))
-            {
-                JsonNode *value = json_object_get_member (o, scalars[i]);
-                char *text = query_cell (value);
-
-                g_string_append (out, text);
-                g_free (text);
-                break;
-            }
-        if (out->len == 0 && (size != 1 || i == G_N_ELEMENTS (scalars)))
-            g_string_printf (out, size == 1 ? "{%u key}" : "{%u keys}", size);
+        if (query_ejson_scalar (o, out))
+            break;
+        g_string_append_c (out, '{');
+        names = json_object_get_members (o);
+        for (l = names; l != NULL && out->len <= 4 * QUERY_COLUMN_MAX; l = l->next)
+        {
+            if (l != names)
+                g_string_append (out, ", ");
+            g_string_append_printf (out, "%s: ", (const char *) l->data);
+            query_value_text (json_object_get_member (o, l->data), TRUE, out);
+        }
+        g_list_free (names);
+        g_string_append_c (out, '}');
         break;
     }
     default:
         break;
     }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The value of a cell: a scalar as it is, the types of Extended JSON by their value, an object
+   or an array as mongosh shows it, { ClientUuid: "hashed" } */
+static char *
+query_cell (JsonNode *node)
+{
+    GString *raw = g_string_new (NULL);
+    GString *out = g_string_new (NULL);
+
+    query_value_text (node, FALSE, raw);
+    // a | of it is no end of the cell, a newline no end of the row
+    query_append_string (out, raw->str);
+    g_string_free (raw, TRUE);
     return g_string_free (out, FALSE);
 }
 

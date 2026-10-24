@@ -101,8 +101,8 @@ their order, numbered, whether the query has a line *// @table* or not;
 Output shows what they printed as it is. A cursor is read into the array of
 its documents. A table is of Markdown, its columns lined up: a column for
 each key of the documents, *_id* first; a document without that key has the
-cell empty; an object inside is *{2 keys}*, an array *[3]*; a *|* of a value
-is *\|*; a value longer than 40 columns is cut; the first 100 documents of
+cell empty; an object or an array inside is shown as mongosh shows it,
+*{ClientUuid: "hashed"}*, *[1, 2, 3]*; a *|* of a value is *\|*; a value longer than 40 columns is cut; the first 100 documents of
 an array are shown, all of them counted. The tab comes in front when there
 are documents. A number or a single document stays in Output.
 
