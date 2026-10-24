@@ -367,8 +367,19 @@ query_section (const char *text, long line, long *first)
 const char *
 query_mongo_prefix (void)
 {
+    /* printjson () and print () of an array or a cursor also print a copy of it as Extended JSON
+       on a line of its own, QUERY_TABLE_LINE before it, for the tab Table: what they show is as
+       it was; a cursor is made the array of its documents first, which it is read as once */
     return "DBQuery.shellBatchSize = 1000; db = connect(process.env.MC_MONGO_URI); "
-           "if (process.env.MC_MONGO_DB) db = db.getSiblingDB(process.env.MC_MONGO_DB);";
+           "if (process.env.MC_MONGO_DB) db = db.getSiblingDB(process.env.MC_MONGO_DB); "
+           "{ const __p = print, __pj = printjson; "
+           "const __t = (v) => (v && !Array.isArray(v) && typeof v.toArray === 'function') "
+           "? v.toArray() : v; "
+           "const __e = (v) => { if (Array.isArray(v)) "
+           "__p('\\x1e" QUERY_TABLE_TAG " ' + EJSON.stringify(v, { relaxed: true })); }; "
+           "globalThis.printjson = (x, ...r) => { const v = __t(x); __pj(v, ...r); __e(v); }; "
+           "globalThis.print = (...a) => { if (a.length === 1) { const v = __t(a[0]); "
+           "if (Array.isArray(v)) { __p(v); __e(v); return; } } __p(...a); }; }";
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1037,7 +1048,7 @@ query_use_line (const char *db)
 /* --------------------------------------------------------------------------------------------- */
 
 char *
-query_table (const char *json, guint *rows, GError **error)
+query_table (const char *json, guint max, guint *rows, GError **error)
 {
     JsonParser *parser = json_parser_new ();
     JsonNode *root;
@@ -1045,7 +1056,7 @@ query_table (const char *json, guint *rows, GError **error)
     GHashTable *seen;
     GString *out;
     int *widths;
-    guint r, c;
+    guint r, c, total = 0;
 
     *rows = 0;
     if (!json_parser_load_from_data (parser, json, -1, error))
@@ -1061,11 +1072,16 @@ query_table (const char *json, guint *rows, GError **error)
     {
         JsonArray *a = json_node_get_array (root);
 
-        for (r = 0; r < json_array_get_length (a); r++)
+        // the first @max of them in the table, all of them counted
+        for (r = 0; r < json_array_get_length (a) && (max == 0 || r < max); r++)
             g_ptr_array_add (nodes, json_array_get_element (a, r));
+        total = json_array_get_length (a);
     }
     else
+    {
         g_ptr_array_add (nodes, root);
+        total = 1;
+    }
 
     columns = g_ptr_array_new_with_free_func (g_free);
     seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
@@ -1125,7 +1141,7 @@ query_table (const char *json, guint *rows, GError **error)
             g_string_append (out, "|\n");
         }
     }
-    *rows = nodes->len;
+    *rows = total;
 
     g_free (widths);
     g_ptr_array_free (cells, TRUE);
@@ -1280,6 +1296,28 @@ query_version_cmp (const char *a, const char *b)
     if (time != 0)
         return time;
     return na < nb ? -1 : na > nb ? 1 : strcmp (a, b);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_take_tables (const char *out, GPtrArray *tables)
+{
+    GString *rest = g_string_new (NULL);
+    const char *p = out;
+
+    while (*p != '\0')
+    {
+        const char *end = query_line_end (p);
+        const gsize tag = strlen (QUERY_TABLE_LINE);
+
+        if (strncmp (p, QUERY_TABLE_LINE, tag) == 0)
+            g_ptr_array_add (tables, g_strndup (p + tag, (gsize) (end - p - tag)));
+        else
+            g_string_append_len (rest, p, end - p + (*end == '\n' ? 1 : 0));
+        p = *end == '\n' ? end + 1 : end;
+    }
+    return g_string_free (rest, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */

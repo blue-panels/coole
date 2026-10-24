@@ -75,6 +75,8 @@
 // the versions of a file of queries, as it was run, in the data of the user; the newest kept
 #define QUERY_VERSIONS_DIR ".history"
 #define QUERY_VERSIONS_MAX 200
+// the rows of a table of the tab Table at most, the rest counted
+#define QUERY_TABLE_ROWS 100u
 /* the text Undo takes back whole when a version takes the place of the file, a character an
    action of it: a part of its 32768 actions */
 #define QUERY_UNDO_TEXT 8000
@@ -853,32 +855,58 @@ query_table_say (query_t *q, const char *text)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The documents of the value mongosh --json printed in the tab Table */
-static void
-query_table_show (query_t *q, const char *json)
+/* One table of the tab Table: its number, what it is, how many documents, the first
+   QUERY_TABLE_ROWS of them; FALSE when @json is no JSON, said so */
+static gboolean
+query_table_add (GString *text, guint n, const char *what, const char *json)
 {
     GError *error = NULL;
     guint rows = 0;
-    char *table = query_table (json, &rows, &error);
-    char *text;
+    char *table = query_table (json, QUERY_TABLE_ROWS, &rows, &error);
 
+    g_string_append_printf (text, ANSI_BOLD "%u. %s: " ANSI_RESET, n, what);
     if (table == NULL)
     {
-        text = g_strdup_printf (_ ("mongosh did not answer with JSON: %s\n"), error->message);
+        g_string_append_printf (text, _ ("no JSON: %s\n\n"), error->message);
         g_error_free (error);
-        query_table_say (q, text);
-        g_free (text);
-        return;
+        return FALSE;
     }
     if (rows == 0)
-        text = g_strdup (_ ("No documents.\n"));
+        g_string_append (text, _ ("no documents\n\n"));
+    else if (rows > QUERY_TABLE_ROWS)
+        g_string_append_printf (text, _ ("the first %u of %u documents\n\n%s\n"), QUERY_TABLE_ROWS,
+                                rows, table);
     else
-        text = g_strdup_printf (ngettext ("%s%u document%s\n\n%s", "%s%u documents%s\n\n%s", rows),
-                                ANSI_BOLD, rows, ANSI_RESET, table);
-    // documents to be read in columns, not a number counted
-    query_tab_set (q, QUERY_TAB_TABLE, text, *json == '[' && rows > 0);
-    g_free (text);
+        g_string_append_printf (
+            text, ngettext ("%u document\n\n%s\n", "%u documents\n\n%s\n", rows), rows, table);
     g_free (table);
+    return rows > 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The tab Table: a table of each array printjson () and print () printed, in their order, then of
+   the value the query ends with, @json, for "// @table"; @why when that value is none.  In front
+   when it has documents. */
+static void
+query_tables_show (query_t *q, GPtrArray *tables, const char *json, const char *why)
+{
+    GString *text = g_string_new (NULL);
+    gboolean rows = FALSE;
+    guint i;
+
+    for (i = 0; i < tables->len; i++)
+        rows = query_table_add (text, i + 1, _ ("printed"), g_ptr_array_index (tables, i)) || rows;
+    if (json != NULL)
+        rows = query_table_add (text, tables->len + 1, _ ("the value at the end"), json) || rows;
+    else if (why != NULL)
+        g_string_append (text, why);
+    if (text->len == 0)
+        g_string_append (text,
+                         _ ("No table: printjson () of an array or a cursor makes one, and "
+                            "a line \"// @table\" one of the value the query ends with.\n"));
+    query_tab_set (q, QUERY_TAB_TABLE, text->str, rows);
+    g_string_free (text, TRUE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -952,7 +980,10 @@ query_output_done (query_t *q, const char *out, const char *err, int status)
 static void
 query_done (query_t *q, int status)
 {
-    char *raw = query_take (q->out), *out = query_mongo_clean (raw);
+    char *raw = query_take (q->out), *clean = query_mongo_clean (raw);
+    // the copies of the arrays printed, for the tab Table, not shown in Output
+    GPtrArray *tables = g_ptr_array_new_with_free_func (g_free);
+    char *out = query_take_tables (clean, tables);
     char *err = query_take (q->err);
     const int code = WIFEXITED (status) ? WEXITSTATUS (status) : -1;
     // the value mongosh --json printed, after what print () printed; an error is such a value
@@ -961,6 +992,7 @@ query_done (query_t *q, int status)
     char *json = NULL;
 
     g_free (raw);
+    g_free (clean);
     if (message != NULL)
     {
         char *both = g_strconcat (err, message, "\n", (char *) NULL);
@@ -972,20 +1004,29 @@ query_done (query_t *q, int status)
     else if (tail != NULL)
         json = g_strdup (tail);
     query_output_done (q, out, err, status);
+    if (q->cut)
+        // copies cut too: none of them
+        g_ptr_array_set_size (tables, 0);
     if (!q->table)
-        query_table_say (q, _ ("A line \"// @table\" in the query asks for its table.\n"));
+        query_tables_show (q, tables, NULL, NULL);
     else if (q->stopped)
-        query_table_say (q, _ ("The query was stopped.\n"));
+        query_tables_show (q, tables, NULL, _ ("The query was stopped.\n"));
     else if (message != NULL && query_mongo_is_cursor (message))
-        query_table_say (q,
-                         _ ("The query ends with a cursor: .toArray() after it makes the "
-                            "table.\n"));
+        query_tables_show (q, tables, NULL,
+                           _ ("The query ends with a cursor: .toArray() after it makes the "
+                              "table.\n"));
     else if (message != NULL || code != 0)
-        query_table_say (q, _ ("The query failed: Output tells why.\n"));
+        query_tables_show (q, tables, NULL, _ ("The query failed: Output tells why.\n"));
     else if (q->cut)
-        query_table_say (q, _ ("mongosh printed more than 8 MB: no table of a part of it.\n"));
+        query_tables_show (q, tables, NULL,
+                           _ ("mongosh printed more than 8 MB: no table of a part of it.\n"));
+    else if (json == NULL)
+        query_tables_show (q, tables, NULL,
+                           _ ("The query ends with no value for the table: printjson () and "
+                              "print () print, and have none.\n"));
     else
-        query_table_show (q, json != NULL ? json : out);
+        query_tables_show (q, tables, json, NULL);
+    g_ptr_array_free (tables, TRUE);
     g_free (json);
     g_free (message);
     g_free (out);

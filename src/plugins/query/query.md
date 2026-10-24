@@ -96,16 +96,21 @@ query, the time it took, the server and the exit code; an error is red. A
 syntax error marks its line in the file, and the cursor goes there.
 
 *Table*
-: The documents of a query with the line *// @table* in it, as a table of
-Markdown, its columns lined up: a column for each key of them, *_id*
-first; a document without that key has the cell empty; an object inside
-is *{2 keys}*, an array *[3]*; a *|* of a value is *\|*; a value longer
-than 40 columns is cut. The table comes in front when there are documents.
-Such a query is run once, with *--json=relaxed*: Output shows its answer as
-JSON, what *print()* printed before it too, and the table is made of the
-value it ends with. A query that ends with a chain of *find()* or
-*aggregate()*, its *.sort()*, *.limit()* and the like, has *.toArray()* put
-on a line after it.
+: A table of each array or cursor *printjson()* or *print()* printed, in
+their order, numbered, whether the query has a line *// @table* or not;
+Output shows what they printed as it is. A cursor is read into the array of
+its documents. A table is of Markdown, its columns lined up: a column for
+each key of the documents, *_id* first; a document without that key has the
+cell empty; an object inside is *{2 keys}*, an array *[3]*; a *|* of a value
+is *\|*; a value longer than 40 columns is cut; the first 100 documents of
+an array are shown, all of them counted. The tab comes in front when there
+are documents. A number or a single document stays in Output.
+
+A query with a line *// @table* in it has a table of the value it ends with
+too, the last one: it is run with *--json=relaxed*, and Output shows that
+value as JSON. A query that ends with a chain of *find()* or *aggregate()*,
+its *.sort()*, *.limit()* and the like, has *.toArray()* put on a line after
+it.
 
 *History*
 : The versions of the file of queries in front, its name in the title of

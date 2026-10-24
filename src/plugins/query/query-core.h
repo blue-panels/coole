@@ -19,6 +19,10 @@
 #define QUERY_LIMIT_MARK    "limit"
 #define QUERY_LIMIT_DEFAULT 100
 
+/* The line printjson () prints with a copy of an array for the tab Table: "\x1e" and the tag */
+#define QUERY_TABLE_TAG  "coole-table"
+#define QUERY_TABLE_LINE "\x1e" QUERY_TABLE_TAG " "
+
 /*** enums ***************************************************************************************/
 
 /*** structures declarations (and typedefs of structures)*****************************************/
@@ -102,10 +106,13 @@ char *query_version_label (const char *name);
    @removed, each line counted as often as it is there; @before NULL has none */
 void query_line_changes (const char *before, const char *now, int *added, int *removed);
 
-/* The table of Markdown of the documents of the Extended JSON @json, the tail of what mongosh
-   --json printed: a column for each key, the rows the documents of an array; @rows their
-   number.  NULL with @error when it is no JSON. */
-char *query_table (const char *json, guint *rows, GError **error);
+/* The table of Markdown of the documents of the Extended JSON @json: a column for each key, the
+   rows the first @max documents of an array, all of them when @max is 0; @rows the number of
+   all of them.  NULL with @error when it is no JSON. */
+char *query_table (const char *json, guint max, guint *rows, GError **error);
+/* What mongosh printed without the copies of the arrays printjson () and print () printed, the
+   lines that start with QUERY_TABLE_LINE; their Extended JSON added to @tables, in their order */
+char *query_take_tables (const char *out, GPtrArray *tables);
 
 /*** inline functions ****************************************************************************/
 

@@ -380,7 +380,7 @@ test_table (void)
         "   \"name\": \"two\\nlines\", \"n\": {\"$numberLong\": \"9007199254740993\"}},\n"
         "  {\"_id\": 3, \"status\": null}\n"
         "]",
-        &rows, &error);
+        0, &rows, &error);
     g_assert_no_error (error);
     g_assert_cmpuint (rows, ==, 3);
     g_assert_cmpstr (s, ==,
@@ -402,18 +402,19 @@ test_table (void)
     g_free (s);
 
     // not documents: a column of values
-    s = query_table ("23", &rows, &error);
+    s = query_table ("23", 0, &rows, &error);
     g_assert_cmpuint (rows, ==, 1);
     g_assert_cmpstr (s, ==, "| value |\n|-------|\n| 23    |\n");
     g_free (s);
 
-    s = query_table ("[]", &rows, &error);
+    s = query_table ("[]", 0, &rows, &error);
     g_assert_cmpuint (rows, ==, 0);
     g_assert_cmpstr (s, ==, "");
     g_free (s);
 
     // a value longer than a column is cut
-    s = query_table ("[{\"k\": \"0123456789012345678901234567890123456789XYZ\"}]", &rows, &error);
+    s = query_table ("[{\"k\": \"0123456789012345678901234567890123456789XYZ\"}]", 0, &rows,
+                     &error);
     g_assert_cmpstr (s, ==,
                      "| k                                        |\n"
                      "|------------------------------------------|\n"
@@ -421,14 +422,14 @@ test_table (void)
     g_free (s);
 
     // a '|' of the data ends no cell
-    s = query_table ("[{\"a|b\": \"x | y\"}]", &rows, &error);
+    s = query_table ("[{\"a|b\": \"x | y\"}]", 0, &rows, &error);
     g_assert_cmpstr (s, ==, "| a\\|b   |\n|--------|\n| x \\| y |\n");
     g_free (s);
 
     // what print () printed before the value
     s = query_table (
-        query_mongo_json_tail ("collection: x\n[odd\n[\n  {\n    \"id\": \"a\"\n  }\n]\n"), &rows,
-        &error);
+        query_mongo_json_tail ("collection: x\n[odd\n[\n  {\n    \"id\": \"a\"\n  }\n]\n"), 0,
+        &rows, &error);
     g_assert_no_error (error);
     g_assert_cmpuint (rows, ==, 1);
     g_assert_cmpstr (s, ==, "| id  |\n|-----|\n| a   |\n");
@@ -436,9 +437,30 @@ test_table (void)
     g_assert_cmpstr (query_mongo_json_tail ("a\n23\n"), ==, "23\n");
     g_assert_null (query_mongo_json_tail ("collection: x\n"));
 
-    g_assert_null (query_table ("DeprecationWarning: x", &rows, &error));
+    g_assert_null (query_table ("DeprecationWarning: x", 0, &rows, &error));
     g_assert_nonnull (error);
     g_clear_error (&error);
+
+    // the first rows of a big one, all of them counted
+    s = query_table ("[{\"a\": 1}, {\"a\": 2}, {\"a\": 3}]", 2, &rows, &error);
+    g_assert_no_error (error);
+    g_assert_cmpuint (rows, ==, 3);
+    g_assert_cmpstr (s, ==, "| a   |\n|-----|\n| 1   |\n| 2   |\n");
+    g_free (s);
+
+    // the copies printjson () printed taken out of what is shown
+    {
+        GPtrArray *tables = g_ptr_array_new_with_free_func (g_free);
+        char *rest = query_take_tables (
+            "5\n[ 1, 2 ]\n" QUERY_TABLE_LINE "[1,2]\nx\n" QUERY_TABLE_LINE "[{\"a\":1}]", tables);
+
+        g_assert_cmpstr (rest, ==, "5\n[ 1, 2 ]\nx\n");
+        g_assert_cmpuint (tables->len, ==, 2);
+        g_assert_cmpstr (g_ptr_array_index (tables, 0), ==, "[1,2]");
+        g_assert_cmpstr (g_ptr_array_index (tables, 1), ==, "[{\"a\":1}]");
+        g_free (rest);
+        g_ptr_array_free (tables, TRUE);
+    }
 }
 
 int
