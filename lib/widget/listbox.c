@@ -111,11 +111,8 @@ listbox_draw_bar (WListbox *l, int color)
     const WRect *w = &CONST_WIDGET (l)->rect;
     WRect r = { w->y, w->x + w->cols, w->lines, 1 };
 
-    widget_set_size_rect (WIDGET (l->bar), &r);
-    scrollbar_set_range (l->bar, (long) g_queue_get_length (l->list), listbox_visible_lines (l),
-                         l->top);
-    scrollbar_set_color (l->bar, color);
-    send_message (WIDGET (l->bar), NULL, MSG_DRAW, 0, NULL);
+    scrollbar_show (l->bar, &r, (long) g_queue_get_length (l->list), listbox_visible_lines (l),
+                    l->top, color);
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -340,10 +340,8 @@ lsp_note_draw_rows (lsp_note_t *note)
     {
         WRect bar = { w->rect.y + 1, w->rect.x + w->rect.cols - 1, rows, 1 };
 
-        widget_set_size_rect (WIDGET (note->bar), &bar);
-        scrollbar_set_range (note->bar, (long) note->lines->len, rows, note->top);
-        scrollbar_set_color (note->bar, dialog_colors[DLG_COLOR_FRAME]);
-        send_message (WIDGET (note->bar), NULL, MSG_DRAW, 0, NULL);
+        scrollbar_show (note->bar, &bar, (long) note->lines->len, rows, note->top,
+                        dialog_colors[DLG_COLOR_FRAME]);
     }
 }
 

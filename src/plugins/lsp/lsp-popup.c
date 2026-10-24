@@ -203,10 +203,8 @@ lsp_popup_draw_rows (lsp_popup_t *popup)
     {
         WRect bar = { w->rect.y + 1, w->rect.x + w->rect.cols - 1, rows, 1 };
 
-        widget_set_size_rect (WIDGET (popup->bar), &bar);
-        scrollbar_set_range (popup->bar, (long) popup->items->len, rows, popup->top);
-        scrollbar_set_color (popup->bar, dialog_colors[DLG_COLOR_FRAME]);
-        send_message (WIDGET (popup->bar), NULL, MSG_DRAW, 0, NULL);
+        scrollbar_show (popup->bar, &bar, (long) popup->items->len, rows, popup->top,
+                        dialog_colors[DLG_COLOR_FRAME]);
     }
 }
 
