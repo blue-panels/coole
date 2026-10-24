@@ -881,11 +881,30 @@ keybind_save_changes (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The height of the dialog: the screen but a margin, the table at least 4 rows, the least a
+   scrollbar is drawn in */
+static int
+keybind_dlg_height (void)
+{
+    return MAX (LINES - 4, 12);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 keybind_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
     switch (msg)
     {
+    case MSG_RESIZE:
+    {
+        // as tall as the screen lets it be; the table goes with it, the buttons keep to the bottom
+        WRect r = w->rect;
+
+        r.lines = keybind_dlg_height ();
+        return dlg_default_callback (w, NULL, MSG_RESIZE, 0, &r);
+    }
+
     case MSG_KEY:
         if (kbd_table != NULL && widget_get_state (WIDGET (kbd_table), WST_FOCUSED))
         {
@@ -1079,9 +1098,7 @@ keybind_show_page (void)
     col_defs[2].align = J_LEFT;
     col_defs[2].type = TABLE_COL_TEXT;
 
-    dlg_height = LINES - 4;
-    if (dlg_height < 16)
-        dlg_height = 16;
+    dlg_height = keybind_dlg_height ();
 
     table_height = dlg_height - 8;
 
@@ -1129,19 +1146,20 @@ keybind_show_page (void)
     group_add_widget (g, hline_new (y + 1, -1, -1));
     y += 2;
 
-    /* table */
-    kbd_table = table_new (y, 2, table_height, kbd_dlg_width - 5, KBD_TABLE_COLS, col_defs);
+    /* table: its last column lands on the right frame, that is where the scrollbar goes */
+    kbd_table = table_new (y, 2, table_height, kbd_dlg_width - 4, KBD_TABLE_COLS, col_defs);
     kbd_table->scrollbar = TRUE;
+    kbd_table->scrollbar_on_frame = TRUE;
     {
         table_datasource_t ds = { kbd_table_get_nrows, kbd_table_get_text, NULL, NULL, NULL, NULL };
 
         table_set_datasource (kbd_table, ds);
     }
-    group_add_widget (g, kbd_table);
+    group_add_widget_autopos (g, kbd_table, WPOS_KEEP_ALL, NULL);
     y += table_height;
 
     /* hline before buttons */
-    group_add_widget (g, hline_new (y, -1, -1));
+    group_add_widget_autopos (g, hline_new (y, -1, -1), WPOS_KEEP_BOTTOM, NULL);
     y++;
 
     /* buttons */
@@ -1154,15 +1172,20 @@ keybind_show_page (void)
         int total_w = save_w + gap + edit_w + gap + term_w + gap + close_w;
         int bx = (kbd_dlg_width - total_w) / 2;
 
-        group_add_widget (g, button_new (y, bx, B_ENTER, NORMAL_BUTTON, _ ("&Save"), NULL));
+        group_add_widget_autopos (g, button_new (y, bx, B_ENTER, NORMAL_BUTTON, _ ("&Save"), NULL),
+                                  WPOS_KEEP_BOTTOM, NULL);
         bx += save_w + gap;
-        group_add_widget (
-            g, button_new (y, bx, KBD_EDIT_FILE, NORMAL_BUTTON, _ ("Edit &keymap file"), NULL));
+        group_add_widget_autopos (
+            g, button_new (y, bx, KBD_EDIT_FILE, NORMAL_BUTTON, _ ("Edit &keymap file"), NULL),
+            WPOS_KEEP_BOTTOM, NULL);
         bx += edit_w + gap;
-        group_add_widget (
-            g, button_new (y, bx, KBD_EDIT_TERM, NORMAL_BUTTON, _ ("Edit &term file"), NULL));
+        group_add_widget_autopos (
+            g, button_new (y, bx, KBD_EDIT_TERM, NORMAL_BUTTON, _ ("Edit &term file"), NULL),
+            WPOS_KEEP_BOTTOM, NULL);
         bx += term_w + gap;
-        group_add_widget (g, button_new (y, bx, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL));
+        group_add_widget_autopos (g,
+                                  button_new (y, bx, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL),
+                                  WPOS_KEEP_BOTTOM, NULL);
     }
 
     keybind_table_fill ();

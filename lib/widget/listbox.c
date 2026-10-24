@@ -653,6 +653,20 @@ listbox_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *d
         listbox_search_stop (l);
         return widget_default_callback (w, sender, msg, parm, data);
 
+    case MSG_RESIZE:
+    {
+        // as many entries in sight as fit, the current one among them
+        cb_ret_t ret = widget_default_callback (w, sender, msg, parm, data);
+        const int lines = listbox_visible_lines (l);
+
+        l->top = MIN (l->top, MAX (0, listbox_get_length (l) - lines));
+        if (l->current < l->top)
+            l->top = l->current;
+        else if (l->current >= l->top + lines)
+            l->top = l->current - lines + 1;
+        return ret;
+    }
+
     case MSG_DESTROY:
         listbox_destroy (l);
         return MSG_HANDLED;

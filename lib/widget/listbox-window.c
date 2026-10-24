@@ -52,6 +52,30 @@
 /*** file scope functions ************************************************************************/
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* The screen has changed its size: the list takes as much of what it asked for as fits, and
+   scrolls the rest */
+static cb_ret_t
+listbox_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    const int space = 4;
+    const Listbox *listbox = (const Listbox *) DIALOG (w)->data.p;
+
+    if (msg == MSG_RESIZE && listbox != NULL)
+    {
+        WRect r = w->rect;
+
+        r.lines = MIN (listbox->lines, LINES - 6) + space;
+        r.cols = MIN (listbox->cols, COLS - 6) + space;
+        r.y = MAX (0, MIN (r.y, LINES - r.lines));
+        r.x = MAX (0, MIN (r.x, COLS - r.cols));
+        return dlg_default_callback (w, NULL, MSG_RESIZE, 0, &r);
+    }
+
+    return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -65,8 +89,7 @@ listbox_window_centered_new (int center_y, int center_x, int lines, int cols, co
     Listbox *listbox;
     widget_pos_flags_t pos_flags = WPOS_TRYUP;
 
-    // Adjust sizes
-    lines = MIN (lines, LINES - 6);
+    int want_lines, want_cols;
 
     if (title != NULL)
     {
@@ -76,6 +99,10 @@ listbox_window_centered_new (int center_y, int center_x, int lines, int cols, co
         cols = MAX (cols, len);
     }
 
+    // Adjust sizes
+    want_lines = lines;
+    want_cols = cols;
+    lines = MIN (lines, LINES - 6);
     cols = MIN (cols, COLS - 6);
 
     // adjust position
@@ -104,11 +131,15 @@ listbox_window_centered_new (int center_y, int center_x, int lines, int cols, co
 
     listbox = g_new (Listbox, 1);
 
+    listbox->lines = want_lines;
+    listbox->cols = want_cols;
     listbox->dlg = dlg_create (TRUE, ypos, xpos, lines + space, cols + space, pos_flags, FALSE,
-                               listbox_colors, NULL, NULL, help, title);
+                               listbox_colors, listbox_window_callback, NULL, help, title);
+    listbox->dlg->data.p = listbox;
 
     listbox->list = listbox_new (2, 2, lines, cols, FALSE, NULL);
-    group_add_widget (GROUP (listbox->dlg), listbox->list);
+    // it goes with the frame when the screen changes its size
+    group_add_widget_autopos (GROUP (listbox->dlg), listbox->list, WPOS_KEEP_ALL, NULL);
 
     return listbox;
 }
