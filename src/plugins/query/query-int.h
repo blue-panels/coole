@@ -60,6 +60,7 @@ enum
     QUERY_CMD_STOP,
     QUERY_CMD_HISTORY_INSERT,
     QUERY_CMD_HISTORY_SHOW,
+    QUERY_CMD_ROLLBACK,
     QUERY_CMD_COUNT
 };
 
@@ -78,8 +79,9 @@ typedef struct query_t query_t;
 /* What runs the queries of a kind of database */
 typedef struct
 {
-    const char *id;     // the value of the startup option "query"
-    gboolean sections;  // F5 without a selection: the part between lines "// ---", not the file
+    const char *id;         // the value of the startup option "query"
+    const char *extension;  // of its files of queries, ".js": that of the versions of one
+    gboolean sections;      // F5 without a selection: the part between lines "// ---", not the file
     void *(*open) (query_t *q);
     void (*close) (void *data);  // a run going on is ended at once
     // the lines of the head of Output at the start; @edit the file of queries, NULL for none
@@ -91,6 +93,7 @@ typedef struct
     // run q->text; the backend fills Output and Table, marks an error and adds the run to History
     void (*start) (void *data);
     void (*stop) (void *data);
+    const char *rollback;  // the query QueryRollback runs, "ROLLBACK"; NULL for none
 } query_backend_t;
 
 /* The plugin */
@@ -105,9 +108,11 @@ struct query_t
     // the run going on, or the last one
     gboolean stopped;
     char *text;
-    char *file;  // the file of the query, NULL for a file with no name
-    long first;  // the first line of the query in it, from 1
-    char *use;   // the context of a part run alone, of query_backend_t.context; NULL for none
+    char *file;         // the file of the query, NULL for a file with no name
+    long first;         // the first line of the query in it, from 1
+    long first_column;  // the characters before the query on that line: a selection from the
+                        // middle of a line
+    char *use;  // the context of a part run alone, of query_backend_t.context; NULL for none
     gint64 started;
 
     gint64 tabs[QUERY_TAB_COUNT];  // the windows of the viewer, 0 when none
@@ -124,21 +129,28 @@ struct query_t
 /*** global variables defined in .c file *********************************************************/
 
 extern const query_backend_t query_mongo_backend;
+extern const query_backend_t query_postgres_backend;
 
 /*** declarations of public functions ************************************************************/
 
 /* The text of a tab, the tab made again when the user has closed it; the one seen when @front */
 void query_tab_set (query_t *q, int tab, const char *text, gboolean front);
+/* The title of a tab, its own when @title is NULL */
+void query_tab_title (query_t *q, int tab, const char *title);
 void query_table_say (query_t *q, const char *text);
 void query_redraw (query_t *q);
 
+/* Run @text, a query of no file, as QueryRollback does: an error of it is marked nowhere */
+void query_run_alone (query_t *q, const char *text);
 /* The start of the head of the output of a run, bold: its lines, the time it took, when it ended
    (@when, "14:02:11"), what it ran in; what a backend adds goes after it, then ANSI_RESET */
 void query_output_head (query_t *q, GString *text, double seconds, const char *when);
 /* The error at the 1-based @line of the query, @column of it, marked in the file and gone to */
 void query_mark_error (query_t *q, long line, long column);
-/* The run ended at @when, after @seconds, with @status: 0 is done, -1 stopped */
-void query_history_add (query_t *q, const char *when, double seconds, int status);
+/* The run ended at @when, after @seconds, with @status: 0 is done, -1 stopped; @summary how it
+   ended, shown in place of the exit code, "SELECT 12", NULL for none */
+void query_history_add (query_t *q, const char *when, double seconds, int status,
+                        const char *summary);
 
 /*** inline functions ****************************************************************************/
 

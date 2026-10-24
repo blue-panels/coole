@@ -263,7 +263,8 @@ query_output_done (query_mongo_t *m, const char *out, const char *err, int statu
     query_history_add (q, when, seconds,
                        q->stopped                 ? -1
                            : WIFSIGNALED (status) ? 128 + WTERMSIG (status)
-                                                  : WEXITSTATUS (status));
+                                                  : WEXITSTATUS (status),
+                       NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -591,6 +592,7 @@ query_mongo_stop (void *data)
 
 const query_backend_t query_mongo_backend = {
     .id = "mongo",
+    .extension = ".js",
     .sections = TRUE,
     .open = query_mongo_open,
     .close = query_mongo_close,

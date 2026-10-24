@@ -1116,8 +1116,7 @@ query_table (const char *json, guint max, guint *rows, GError **error)
     JsonNode *root;
     GPtrArray *nodes, *columns, *cells;
     GHashTable *seen;
-    GString *out;
-    int *widths;
+    char *out;
     guint r, c, total = 0;
 
     *rows = 0;
@@ -1151,9 +1150,37 @@ query_table (const char *json, guint max, guint *rows, GError **error)
         query_add_columns (g_ptr_array_index (nodes, r), columns, seen);
     g_hash_table_destroy (seen);
 
+    cells = g_ptr_array_new_with_free_func (g_free);
+    for (r = 0; r < nodes->len; r++)
+        for (c = 0; c < columns->len; c++)
+            g_ptr_array_add (
+                cells,
+                query_row_cell (g_ptr_array_index (nodes, r), g_ptr_array_index (columns, c)));
+    out = query_grid (columns, cells);
+    *rows = total;
+
+    g_ptr_array_free (cells, TRUE);
+    g_ptr_array_free (columns, TRUE);
+    g_ptr_array_free (nodes, TRUE);
+    g_object_unref (parser);
+    return out;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_grid (GPtrArray *columns, GPtrArray *cells)
+{
+    const guint rows = columns->len > 0 ? cells->len / columns->len : 0;
+    GPtrArray *cut = g_ptr_array_new_with_free_func (g_free);
+    GString *out;
+    int *widths;
+    guint r, c;
+
     // the cells, cut, and the width of each column
     widths = g_new0 (int, columns->len);
-    cells = g_ptr_array_new_with_free_func (g_free);
     for (c = 0; c < columns->len; c++)
     {
         GString *key = g_string_new (NULL);
@@ -1164,28 +1191,26 @@ query_table (const char *json, guint max, guint *rows, GError **error)
         g_string_free (key, TRUE);
         // a column of Markdown is three dashes at least
         widths[c] = MAX (3, query_width (name));
-        g_ptr_array_add (cells, name);
+        g_ptr_array_add (cut, name);
     }
-    for (r = 0; r < nodes->len; r++)
+    for (r = 0; r < rows; r++)
         for (c = 0; c < columns->len; c++)
         {
             char *cell =
-                query_row_cell (g_ptr_array_index (nodes, r), g_ptr_array_index (columns, c));
-            char *cut = query_cut (cell, QUERY_COLUMN_MAX);
+                query_cut (g_ptr_array_index (cells, r * columns->len + c), QUERY_COLUMN_MAX);
 
-            widths[c] = MAX (widths[c], query_width (cut));
-            g_ptr_array_add (cells, cut);
-            g_free (cell);
+            widths[c] = MAX (widths[c], query_width (cell));
+            g_ptr_array_add (cut, cell);
         }
 
     out = g_string_new (NULL);
     // a table of Markdown, its columns lined up to be read as they are
-    for (r = 0; r <= nodes->len && columns->len > 0; r++)
+    for (r = 0; r <= rows && columns->len > 0; r++)
     {
         for (c = 0; c < columns->len; c++)
         {
             g_string_append (out, "| ");
-            query_append_padded (out, g_ptr_array_index (cells, r * columns->len + c), widths[c]);
+            query_append_padded (out, g_ptr_array_index (cut, r * columns->len + c), widths[c]);
             g_string_append_c (out, ' ');
         }
         g_string_append (out, "|\n");
@@ -1203,17 +1228,95 @@ query_table (const char *json, guint max, guint *rows, GError **error)
             g_string_append (out, "|\n");
         }
     }
-    *rows = total;
-
     g_free (widths);
-    g_ptr_array_free (cells, TRUE);
-    g_ptr_array_free (columns, TRUE);
-    g_ptr_array_free (nodes, TRUE);
-    g_object_unref (parser);
+    g_ptr_array_free (cut, TRUE);
     return g_string_free (out, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+char *
+query_cell_text (const char *s)
+{
+    GString *out = g_string_new (NULL);
+
+    query_append_string (out, s);
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gsize
+query_utf8_offset (const char *text, gsize len, long chars)
+{
+    const char *p = text, *end = text + len;
+
+    for (; chars > 0 && p < end; chars--)
+        p = g_utf8_find_next_char (p, end) != NULL ? g_utf8_find_next_char (p, end) : end;
+    return (gsize) (p - text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_pg_ident (const char *name)
+{
+    /* the keywords that cannot be the name of a table unquoted, the reserved ones and those of
+       types and functions: pg_get_keywords () of PostgreSQL 16, catcode R and T; a blank around
+       each */
+    static const char keywords[] =
+        " all analyse analyze and any array as asc asymmetric authorization binary both case "
+        "cast check collate collation column concurrently constraint create cross "
+        "current_catalog current_date current_role current_schema current_time "
+        "current_timestamp current_user default deferrable desc distinct do else end except "
+        "false fetch for foreign freeze from full grant group having ilike in initially "
+        "inner intersect into is isnull join lateral leading left like limit localtime "
+        "localtimestamp natural not notnull null offset on only or order outer overlaps "
+        "placing primary references returning right select session_user similar some "
+        "symmetric system_user table tablesample then to trailing true union unique user "
+        "using variadic verbose when where window with ";
+    gboolean plain = (*name >= 'a' && *name <= 'z') || *name == '_';
+    const char *c;
+    GString *quoted;
+
+    for (c = name; plain && *c != '\0'; c++)
+        plain = (*c >= 'a' && *c <= 'z') || (*c >= '0' && *c <= '9') || *c == '_';
+    if (plain)
+    {
+        // a word of the list, with a blank before and after it there
+        char *word = g_strconcat (" ", name, " ", (char *) NULL);
+
+        plain = strstr (keywords, word) == NULL;
+        g_free (word);
+    }
+    if (plain)
+        return g_strdup (name);
+    quoted = g_string_new ("\"");
+    for (c = name; *c != '\0'; c++)
+    {
+        if (*c == '"')
+            g_string_append_c (quoted, '"');
+        g_string_append_c (quoted, *c);
+    }
+    g_string_append_c (quoted, '"');
+    return g_string_free (quoted, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_pg_relation_query (const char *schema, const char *relation)
+{
+    char *rel = query_pg_ident (relation);
+    char *nsp = schema != NULL && *schema != '\0' ? query_pg_ident (schema) : NULL;
+    char *query;
+
+    query = nsp != NULL ? g_strdup_printf ("SELECT * FROM %s.%s LIMIT 100;", nsp, rel)
+                        : g_strdup_printf ("SELECT * FROM %s LIMIT 100;", rel);
+    g_free (nsp);
+    g_free (rel);
+    return query;
+}
 
 /* --------------------------------------------------------------------------------------------- */
 
@@ -1243,17 +1346,18 @@ query_versions_dir (const char *versions, const char *queries, const char *file)
 /* --------------------------------------------------------------------------------------------- */
 
 char *
-query_version_name (GDateTime *now, gboolean (*taken) (const char *name, void *data), void *data)
+query_version_name (GDateTime *now, const char *extension,
+                    gboolean (*taken) (const char *name, void *data), void *data)
 {
     char *stamp = g_date_time_format (now, "%Y%m%d-%H%M%S");
-    char *name = g_strconcat (stamp, ".js", (char *) NULL);
+    char *name = g_strconcat (stamp, extension, (char *) NULL);
     int n;
 
     // two runs in a second: the second one numbered
     for (n = 2; taken != NULL && taken (name, data); n++)
     {
         g_free (name);
-        name = g_strdup_printf ("%s-%d.js", stamp, n);
+        name = g_strdup_printf ("%s-%d%s", stamp, n, extension);
     }
     g_free (stamp);
     return name;

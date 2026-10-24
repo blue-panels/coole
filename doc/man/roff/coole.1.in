@@ -87,13 +87,19 @@ and ctags for F3.
 
 .TP
 \fI\-Q, \-\-query\fP
-Run the queries of the file with mongosh: F5 the selection, else the
-part between lines \fI// \-\-\-\fP around the cursor, else the whole file, Ctrl\-F5
-the whole file; the answer comes in the tabs
-Output, Table and History at the bottom. \fIMC_MONGO_URI\fP and \fIMC_MONGO_DB\fP
-in the environment tell what to connect to, \fIMC_MONGOSH\fP the program.
-Without a file named, the file is \fI~/.local/share/coole/queries/\fP, with the
-name of the database and \fI\&.js\fP\&. The windows the project had last time are
+Run the queries of the file in a database, MongoDB by mongosh or
+PostgreSQL by libpq; the answer comes in the tabs Output, Table and History
+at the bottom. \fIMC_QUERY_KIND\fP is \fImongo\fP or \fIpostgres\fP; without it,
+\fIMC_MONGO_URI\fP means MongoDB and a file \fI\&.sql\fP PostgreSQL. For MongoDB
+\fIMC_MONGO_URI\fP and \fIMC_MONGO_DB\fP tell what to connect to, \fIMC_MONGOSH\fP the
+program; F5 runs the selection, else the part between lines \fI// \-\-\-\fP
+around the cursor, else the whole file. For PostgreSQL libpq takes the
+connection from \fIPGHOST\fP, \fIPGDATABASE\fP, \fIPGSERVICE\fP and the like, the
+password from \fI~/.pgpass\fP; F5 runs the selection, else the whole file.
+Ctrl\-F5 runs the whole file. Without a file named, the file is
+\fI~/.local/share/coole/queries/\fP, with the name of the database and \fI\&.js\fP,
+or \fIpostgres/\fP, the name of the connection, and that of the database and
+\fI\&.sql\fP\&. The windows the project had last time are
 not shown, and the plugins of a project and of code (project, build,
 debugger, ctags, etags, git, terminal, spell) are not started; the
 scripts stay, and the language server of the queries when lsp.json has one.

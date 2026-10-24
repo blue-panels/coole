@@ -2,12 +2,15 @@
 
 **Query plugin of the editor**
 
-Runs the queries of a file with *mongosh*, the shell of MongoDB, and shows
-its answer at the bottom of the screen: what mongosh printed, and the
-documents in columns. It works in *coole -Q* alone. Without a file named,
-the file of queries is that of the database, *~/.local/share/coole/queries/*
-with the name of *MC_MONGO_DB* and *.js*: the queries of a database stay
-for the next time.
+Runs the queries of a file in a database and shows its answer at the bottom
+of the screen: what the database said, and the documents or the rows in
+columns. MongoDB is run by *mongosh*, its shell; PostgreSQL by *libpq*, its
+client library, as the part **PostgreSQL** at the end tells. It works in
+*coole -Q* alone. *MC_QUERY_KIND*, *mongo* or *postgres*, tells which;
+without it *MC_MONGO_URI* means MongoDB, and a file *.sql* PostgreSQL.
+Without a file named, the file of queries is that of the database,
+*~/.local/share/coole/queries/* with the name of *MC_MONGO_DB* and *.js*:
+the queries of a database stay for the next time.
 
 **What it needs**
 
@@ -142,3 +145,86 @@ Text marked in History is copied with **Ctrl-Ins**: Enter and F3 are those
 of the list. Another file in front shows its own History.
 
 **Ctrl-Alt-PgDn** and **Ctrl-Alt-PgUp** go from tab to tab.
+
+**PostgreSQL**
+
+*coole -Q* with *MC_QUERY_KIND=postgres*, or a file *.sql*, runs the queries
+in PostgreSQL. It keeps one connection while it runs: a transaction, the
+temporary tables and what *SET* sets stay from one F5 to the next.
+
+*libpq5*
+: The client library of PostgreSQL. coole loads it as -Q starts, and needs
+it for PostgreSQL alone; libpq 17 or later gives the rows by chunks and a
+cancel of its own, an older one gives them one by one.
+
+*postgres-language-server*
+: The language server of SQL, for the completion of the tables and the
+columns, hover and the errors as they are typed; without it the queries run
+all the same. Its releases are at
+<https://github.com/supabase-community/postgres-language-server/releases>.
+The first lines of Output tell whether both are found.
+
+libpq takes what to connect to from the environment, as *psql* does:
+*PGHOST*, *PGPORT*, *PGUSER*, *PGDATABASE*, *PGSERVICE* and
+*~/.pg_service.conf*, *PGSSLMODE*. The password is better in *~/.pgpass*,
+which libpq and the language server read, than in *PGPASSWORD*. coole adds
+to the connection its encoding, UTF8, and with *MC_QUERY_READ_ONLY=1*
+transactions that write nothing, *[RO]* in the header: a guard against a
+slip, not a right, a *SET* undoing it; what may be written is the role's.
+
+Without a file named, the file of queries is
+*~/.local/share/coole/queries/postgres/*, the name of the connection,
+*MC_PG_CONNECTION* or *PGSERVICE*, and that of the database with *.sql*.
+
+With *MC_PG_RELATION*, a table or a view, and *MC_PG_SCHEMA* its schema,
+as the panel of PostgreSQL starts coole, a *SELECT* of its first 100 rows
+runs once connected, the file left as it is; a file with nothing in it gets
+that query, changed, not saved.
+
+**F5**
+: Run the selection, else the whole file, as it is, in one query: its
+commands are one transaction unless it has its own *BEGIN*, an error
+undoing those before it and the rest not run. *CREATE DATABASE*, *VACUUM*
+and the like take no other command with them: select them alone. The
+commands of psql, *\d*, *\copy*, are none of PostgreSQL.
+
+**Ctrl-F5**
+: Run the whole file, even with a selection.
+
+**F5** while a query runs asks whether to stop it: the server is asked to
+cancel it, and Output tells how it ended. A connection that does not come
+is stopped so too.
+
+*Output*
+: Its first line tells the lines of the query, the time it took, the
+server, how it ended and the transaction: *[TX]* while one is open,
+*[TX FAILED: ROLLBACK required]* when a command of it failed, the server
+taking no other query until *ROLLBACK*; the title of the tab tells it too.
+Then what each command did, *SELECT 12*, *UPDATE 4*, the notices of the
+server among them, a notice at times before the command it follows; an
+error with its code, *ERROR [23505]*, its *DETAIL* and *HINT*, its line marked
+in the file and the cursor there. *COPY ... TO STDOUT* prints its rows here;
+*COPY ... FROM STDIN* is ended, coole having nothing to send.
+
+*Table*
+: A table of the rows of each command that has some, *SELECT* and
+*... RETURNING*, numbered: the first 100 rows, all of them counted, the
+memory the same for millions of them. *NULL* is told, a *bytea* by its
+length and its start, a long value by its start. Rows of a command that
+failed after them are told as incomplete.
+
+*History*
+: As for MongoDB; a run tells how it ended, *SELECT 12* or *ERROR 42P01*,
+and its versions are *.sql*.
+
+**QueryRollback**
+: In the menu Query, with no key of its own: run *ROLLBACK*.
+
+A connection lost while a query runs is told so, with the transaction,
+the temporary tables and *SET* of the session gone with it; F5 connects
+again and tells it once more.
+
+The language server has a connection of its own: it knows the tables of
+the database, not the temporary tables of the session of F5 nor a schema a
+*SET search_path* put in front; *MC_PG_SCHEMA* is the schema it knows first,
+else *public*. It runs no statement: queries run by F5 alone.
