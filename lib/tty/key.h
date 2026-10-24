@@ -94,6 +94,9 @@ typedef int (*select_fn) (int fd, void *info);
 
 /* Channel manipulation */
 void add_select_channel (int fd, select_fn callback, void *info);
+/* Whether the channel of @fd waits for its file to take a write too: the callback is called when
+   it can be written, as when it can be read, until it no longer @want it */
+void select_channel_want_write (int fd, gboolean want);
 /* KEY_M_SHIFT, KEY_M_ALT and KEY_M_CTRL held with the button of the last event of the mouse of
    the terminal: Ctrl with a click for one */
 int tty_mouse_modifiers (void);
