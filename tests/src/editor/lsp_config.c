@@ -143,6 +143,7 @@ test_parse (void)
             "{\"backends\":[{\"id\":\"x\",\"command\":[1]}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"extensions\":{\".c\":1}}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"startup\":1}]}",
+            "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"ascii_text\":\"js\"}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"words\":\"const\"}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"requests\":{}}]}",
             "{\"backends\":[{\"id\":\"x\",\"command\":[\"x\"],\"requests\":[{\"params\":1}]}]}",
@@ -337,7 +338,7 @@ test_startup (void)
         "{\"backends\":["
         "{\"id\":\"ts\",\"command\":[\"sh\"],\"extensions\":{\".js\":\"javascript\"}},"
         "{\"id\":\"mongo\",\"command\":[\"sh\"],\"extensions\":{\".js\":\"javascript\"},"
-        "\"startup\":\"query\",\"words\":[\"const\",\"print\"],"
+        "\"startup\":\"query\",\"words\":[\"const\",\"print\"],\"ascii_text\":\"sql\","
         "\"requests\":[{\"method\":\"A\",\"params\":{\"x\":1}},"
         "{\"method\":\"B\"}]}]}";
     GError *error = NULL;
@@ -353,6 +354,7 @@ test_startup (void)
     g_assert_cmpuint (json_array_get_length (json_node_get_array (backend->requests)), ==, 2);
     g_assert_cmpuint (g_strv_length (backend->words), ==, 2);
     g_assert_cmpstr (backend->words[1], ==, "print");
+    g_assert_cmpstr (backend->ascii_text, ==, "sql");
     lsp_config_free (config);
 
     // started otherwise: it serves nothing

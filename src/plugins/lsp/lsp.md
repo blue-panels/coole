@@ -57,8 +57,11 @@ parts, is put as it is, the cursor at its first part. Before a "(" already
 there the name alone is put.
 
 **., ->, ::**
-: Put the item chosen in place of the word, then the dot, and show the list
-of its members.
+: Put the item chosen by the arrows in place of the word, then the dot, and
+show the list of its members. With no item chosen, the list only shown as
+the word is typed, the dot takes the item when it is the word itself, and
+else is put as it is, the list of the members of the word coming after it:
+"u." of an alias of SQL stays "u.".
 
 **Esc**
 : Close the list. Any other key that is no part of a word closes it too, and
@@ -251,6 +254,15 @@ directory of the program, a link from PATH followed.
 : Words the list of completion has beside what the server says, but after a
 dot: the keywords of the language and the names a server does not complete
 itself; a word the server says is not there twice.
+
+**ascii_text**
+: "sql": the text the server gets has each character not of ASCII of its
+comments and its strings, those of quotes and of dollars, made an
+underscore, a word of Cyrillic letters as many underscores; the names,
+quoted or not, stay as they are. The positions are then in UTF-16, which
+the underscores keep where they were. It is for a server that loses its
+place in a statement with such characters before the cursor:
+*postgres-language-server* 0.28 does, and has it in lsp.json.
 
 The server of MongoDB of lsp.json, *mongolsp*, serves the queries of -Q: the
 methods of *db*, the collections and their fields, the stages and the

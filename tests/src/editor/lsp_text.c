@@ -204,6 +204,38 @@ test_snippets (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+check_sql (const char *text, const char *expected)
+{
+    char *ascii = lsp_text_sql_ascii (text, strlen (text));
+
+    g_assert_cmpstr (ascii, ==, expected);
+    g_free (ascii);
+}
+
+static void
+test_sql_ascii (void)
+{
+    // the comments and the strings: a '_' for a letter, in UTF-16
+    check_sql ("select '\xd0\x9c\xd0\xbe' -- \xd0\xb4\xd0\xb0\n", "select '__' -- __\n");
+    check_sql ("/* \xd0\xb0 /* \xd0\xb1 */ \xd0\xb2 */ x", "/* _ /* _ */ _ */ x");
+    check_sql ("select 'it''s \xd0\xb0', 1", "select 'it''s _', 1");
+    check_sql ("select E'\\' \xd0\xb0', 2", "select E'\\' _', 2");
+    check_sql ("$$\xd0\xb0$$ $f$ '$$\xd0\xb1' $f$", "$$_$$ $f$ '$$_' $f$");
+    // an emoji is two units of UTF-16
+    check_sql ("'\xf0\x9f\x98\x80'", "'__'");
+    // the names stay, quoted or not; $1 is a parameter, a ' after it starts a string
+    check_sql ("select \"\xd0\xb0\"\"b\", \xd1\x8f from t where x = $1 and y = '\xd0\xb0'",
+               "select \"\xd0\xb0\"\"b\", \xd1\x8f from t where x = $1 and y = '_'");
+    // a line comment ends with its line
+    check_sql ("-- \xd0\xb0\nselect \xd0\xb1", "-- _\nselect \xd0\xb1");
+    // a byte not of UTF-8 in a string is one '_'
+    check_sql ("'\xff'", "'_'");
+    check_sql ("", "");
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (int argc, char **argv)
 {
@@ -211,5 +243,6 @@ main (int argc, char **argv)
     g_test_add_func ("/lsp/text-positions", test_positions);
     g_test_add_func ("/lsp/text-uri", test_uri);
     g_test_add_func ("/lsp/text-snippets", test_snippets);
+    g_test_add_func ("/lsp/text-sql-ascii", test_sql_ascii);
     return g_test_run ();
 }

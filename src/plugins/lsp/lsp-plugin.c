@@ -210,7 +210,8 @@ typedef struct lsp_session_t
     GBytes *text;         // the text of the answer: its ranges are of it
     off_t asked_at;       // the cursor in it
     lsp_encoding_t encoding;
-    char pending;  // '-' or ':' typed, "->" or "::" if the next is '>' or ':'
+    char pending;     // '-' or ':' typed, "->" or "::" if the next is '>' or ':'
+    gboolean chosen;  // the item of the list chosen by the keys, not the first one shown
 } lsp_session_t;
 
 struct lsp_plugin_t
@@ -2952,6 +2953,9 @@ lsp_session_show (lsp_plugin_t *plugin, lsp_window_t *w, const char *word)
     }
     g_ptr_array_free (choices, TRUE);
     lsp_popup_set_items (plugin->popup, items);
+    // a new list: what was chosen in the one before is not there
+    if (plugin->session != NULL)
+        plugin->session->chosen = FALSE;
 
     // under the start of the word
     edit_update_curs_col (edit);
@@ -3166,8 +3170,10 @@ lsp_session_take (lsp_plugin_t *plugin, WEdit *edit, off_t end)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Whether the item of the list the cursor is on may be taken by a dot: one of the server, or a
-   word of lsp.json that starts with the word typed, its case kept */
+/* Whether the item of the list the cursor is on may be taken by a dot: one of the server chosen
+   by the keys or that is the word typed, a word of lsp.json that starts with it, its case kept.
+   The list of a server shown as the word is typed is not of it: the alias "u" of SQL is none of
+   the list, whose first item, udt_catalog, the dot would put in its place. */
 static gboolean
 lsp_session_dot_takes (lsp_plugin_t *plugin, WEdit *edit)
 {
@@ -3180,7 +3186,7 @@ lsp_session_dot_takes (lsp_plugin_t *plugin, WEdit *edit)
 
     if (item == NULL || s == NULL)
         return FALSE;
-    if (!json_object_has_member ((JsonObject *) item->data, LSP_WORD_MEMBER))
+    if (s->chosen)
         return TRUE;
     filter = lsp_member_string ((JsonObject *) item->data, "filterText");
     if (filter == NULL)
@@ -3190,7 +3196,9 @@ lsp_session_dot_takes (lsp_plugin_t *plugin, WEdit *edit)
     word = g_string_new (NULL);
     for (i = s->start; i < edit->buffer.curs1; i++)
         g_string_append_c (word, (char) edit_buffer_get_byte (&edit->buffer, i));
-    starts = g_str_has_prefix (filter, word->str);
+    starts = json_object_has_member ((JsonObject *) item->data, LSP_WORD_MEMBER)
+        ? g_str_has_prefix (filter, word->str)
+        : strcmp (filter, word->str) == 0;
     g_string_free (word, TRUE);
     return starts;
 }
@@ -3249,15 +3257,19 @@ lsp_session_key (lsp_plugin_t *plugin, WEdit *edit, int key)
         {
         case KEY_UP:
             lsp_popup_move (plugin->popup, -1);
+            s->chosen = TRUE;
             return TRUE;
         case KEY_DOWN:
             lsp_popup_move (plugin->popup, 1);
+            s->chosen = TRUE;
             return TRUE;
         case KEY_PPAGE:
             lsp_popup_move (plugin->popup, -LSP_POPUP_LINES);
+            s->chosen = TRUE;
             return TRUE;
         case KEY_NPAGE:
             lsp_popup_move (plugin->popup, LSP_POPUP_LINES);
+            s->chosen = TRUE;
             return TRUE;
         case '\n':
         case KEY_ENTER:

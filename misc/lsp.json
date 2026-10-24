@@ -82,6 +82,7 @@
       "command": ["postgres-language-server", "lsp-proxy"],
       "extensions": {".sql": "sql"},
       "startup": "query",
+      "ascii_text": "sql",
       "requests": [
         {"method": "pgls/set_configuration_overrides",
          "params": {"overrides": {

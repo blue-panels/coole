@@ -101,6 +101,8 @@ struct lsp_client_t
     JsonNode *initialization_options;
     JsonNode *settings;
     JsonNode *requests;  // after initialized, their variables not put in yet
+    gboolean ascii_sql;  // the text of SQL it gets without letters not of ASCII in its comments and
+                         // strings, the positions in UTF-16 alone
     char *root;
 
     lsp_client_state_t state;
@@ -651,12 +653,15 @@ lsp_doc_free (gpointer data)
 /* --------------------------------------------------------------------------------------------- */
 
 static JsonNode *
-lsp_text_node (GBytes *text)
+lsp_text_node (const lsp_client_t *client, GBytes *text)
 {
     gsize len;
     const char *data = g_bytes_get_data (text, &len);
-    // an empty file has no data: NULL, which g_strndup () gives back
-    char *copy = data != NULL ? g_strndup (data, len) : g_strdup ("");
+    /* an empty file has no data: NULL, which g_strndup () gives back; a server that loses its
+       place in a text of SQL with letters not of ASCII, before the cursor, gets them as '_' */
+    char *copy = data == NULL ? g_strdup ("")
+        : client->ascii_sql   ? lsp_text_sql_ascii (data, len)
+                              : g_strndup (data, len);
     JsonNode *node = json_node_new (JSON_NODE_VALUE);
 
     json_node_set_string (node, copy);
@@ -691,7 +696,7 @@ lsp_client_send_open (lsp_client_t *client, lsp_doc_t *doc)
     json_object_set_string_member (item, "uri", doc->uri);
     json_object_set_string_member (item, "languageId", doc->language);
     json_object_set_int_member (item, "version", doc->version);
-    json_object_set_member (item, "text", lsp_text_node (doc->text));
+    json_object_set_member (item, "text", lsp_text_node (client, doc->text));
     params = json_object_new ();
     json_object_set_object_member (params, "textDocument", item);
     doc->opened =
@@ -1080,6 +1085,13 @@ lsp_client_initialized (lsp_client_t *client, lsp_request_status_t status, JsonN
         g_free (why);
         return;
     }
+    /* a server that counts in UTF-8 all the same gets the text as it is: an '_' for a letter of
+       two bytes would move what it says after it */
+    if (client->ascii_sql && client->encoding == LSP_ENCODING_UTF8)
+    {
+        client->ascii_sql = FALSE;
+        lsp_client_log_add (client, "positions in UTF-8: the text of SQL is sent as it is");
+    }
     lsp_client_sync_options (client);
 
     (void) lsp_client_send_notification (client, "initialized",
@@ -1171,6 +1183,7 @@ lsp_client_initialize_params (const lsp_client_t *client)
     JsonObject *params = json_object_new ();
     JsonObject *info = json_object_new ();
     char *uri = lsp_uri_from_path (client->root);
+    JsonNode *capabilities;
 
     json_object_set_int_member (params, "processId", (gint64) getpid ());
     json_object_set_string_member (info, "name", PACKAGE);
@@ -1182,8 +1195,18 @@ lsp_client_initialize_params (const lsp_client_t *client)
     else
         json_object_set_null_member (params, "rootUri");
     json_object_set_member (params, "workspaceFolders", lsp_client_folders (client));
-    json_object_set_member (params, "capabilities",
-                            json_from_string (lsp_client_capabilities_json, NULL));
+    capabilities = json_from_string (lsp_client_capabilities_json, NULL);
+    // a '_' for a letter keeps the characters of UTF-16 where they were, not the bytes of UTF-8
+    if (client->ascii_sql)
+    {
+        JsonArray *utf16 = json_array_new ();
+
+        json_array_add_string_element (utf16, "utf-16");
+        json_object_set_array_member (
+            json_object_get_object_member (json_node_get_object (capabilities), "general"),
+            "positionEncodings", utf16);
+    }
+    json_object_set_member (params, "capabilities", capabilities);
     if (client->initialization_options != NULL)
         json_object_set_member (params, "initializationOptions",
                                 json_node_copy (client->initialization_options));
@@ -1255,6 +1278,7 @@ lsp_client_new (const lsp_backend_t *backend, const char *root,
         client->settings = json_node_copy (backend->settings);
     if (backend->requests != NULL)
         client->requests = json_node_copy (backend->requests);
+    client->ascii_sql = g_strcmp0 (backend->ascii_text, "sql") == 0;
     client->root = g_strdup (root);
     client->in = client->out = client->err = -1;
     client->reader = content_frame_reader_new (LSP_MAX_MESSAGE);
@@ -1750,7 +1774,7 @@ lsp_client_doc_change (lsp_client_t *client, const char *uri, const char *text, 
     json_object_set_string_member (item, "uri", uri);
     json_object_set_int_member (item, "version", doc->version);
     change = json_object_new ();
-    json_object_set_member (change, "text", lsp_text_node (doc->text));
+    json_object_set_member (change, "text", lsp_text_node (client, doc->text));
     changes = json_array_new ();
     json_array_add_object_element (changes, change);
     params = json_object_new ();
@@ -1778,7 +1802,7 @@ lsp_client_doc_save (lsp_client_t *client, const char *uri, const char *text, gs
     params = json_object_new ();
     json_object_set_object_member (params, "textDocument", item);
     if (client->sync_save_text)
-        json_object_set_member (params, "text", lsp_text_node (doc->text));
+        json_object_set_member (params, "text", lsp_text_node (client, doc->text));
     (void) lsp_client_send_notification (client, "textDocument/didSave", lsp_object_node (params));
 }
 
