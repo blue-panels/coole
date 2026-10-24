@@ -172,27 +172,41 @@ debug_disasm_rows (debugger_t *debug)
     return rows;
 }
 
-/* The cursor on an instruction, the nearest one in that direction */
+/* The rows that fit in the window */
+static int
+debug_disasm_lines (const debug_disasm_window_t *disasm)
+{
+    return MAX (1, CONST_WIDGET (disasm)->rect.lines - 2);
+}
+
+/* The cursor on an instruction, the nearest one in that direction, and in sight when there is
+   one */
 static void
 debug_disasm_cursor (debug_disasm_window_t *disasm, const GPtrArray *rows, int to, int step)
 {
     const int last = (int) rows->len - 1;
+    const int lines = debug_disasm_lines (disasm);
     int i;
 
     to = CLAMP (to, 0, MAX (last, 0));
     for (i = to; i >= 0 && i <= last; i += step)
         if (!((debug_disasm_row_t *) g_ptr_array_index (rows, i))->source)
-        {
-            disasm->cursor = i;
-            return;
-        }
-    for (i = to; i >= 0 && i <= last; i -= step)
-        if (!((debug_disasm_row_t *) g_ptr_array_index (rows, i))->source)
-        {
-            disasm->cursor = i;
-            return;
-        }
-    disasm->cursor = 0;
+            break;
+    if (i < 0 || i > last)
+        for (i = to; i >= 0 && i <= last; i -= step)
+            if (!((debug_disasm_row_t *) g_ptr_array_index (rows, i))->source)
+                break;
+    if (i < 0 || i > last)
+    {
+        disasm->cursor = 0;
+        return;
+    }
+
+    disasm->cursor = i;
+    if (disasm->cursor < disasm->top)
+        disasm->top = disasm->cursor;
+    else if (disasm->cursor >= disasm->top + lines)
+        disasm->top = disasm->cursor - lines + 1;
 }
 
 /* The row of the program counter, -1 when it is not among them */
@@ -251,10 +265,8 @@ debug_disasm_draw (debug_disasm_window_t *disasm)
         || (rows->len > 0
             && ((debug_disasm_row_t *) g_ptr_array_index (rows, disasm->cursor))->source))
         debug_disasm_cursor (disasm, rows, disasm->cursor, 1);
-    if (disasm->cursor < disasm->top)
-        disasm->top = disasm->cursor;
-    else if (disasm->cursor >= disasm->top + lines)
-        disasm->top = disasm->cursor - lines + 1;
+    // the wheel and the scrollbar move the rows without the cursor, as far as there are rows
+    disasm->top = CLAMP (disasm->top, 0, MAX (0, (int) rows->len - lines));
 
     for (row = 0; row < lines; row++)
     {
@@ -281,7 +293,49 @@ debug_disasm_draw (debug_disasm_window_t *disasm)
         widget_gotoyx (w, row + 1, 1);
         tty_print_string (str_fit_to_term (text, width, J_LEFT_FIT));
     }
+
+    // the scrollbar on the frame: where the rows are, of how many
+    if (win->fullscreen == 0)
+    {
+        edit_window_set_scroll (win, TRUE, (long) rows->len, lines, disasm->top);
+        edit_window_draw_bars (win, color);
+    }
     g_ptr_array_free (rows, TRUE);
+}
+
+/* The scrollbar of the frame has moved: the rows go with it, the cursor kept among them when
+   there is an instruction there */
+static void
+debug_disasm_scrolled (WEditWindow *win, gboolean vertical, long pos)
+{
+    debug_disasm_window_t *disasm = (debug_disasm_window_t *) win;
+    const int lines = debug_disasm_lines (disasm);
+    GPtrArray *rows;
+    int i, end;
+
+    if (!vertical || disasm->debug == NULL)
+        return;
+    rows = debug_disasm_rows (disasm->debug);
+    disasm->top = (int) CLAMP (pos, 0, MAX (0, (int) rows->len - lines));
+    end = MIN ((int) rows->len, disasm->top + lines);
+    if (disasm->cursor < disasm->top)
+    {
+        for (i = disasm->top; i < end; i++)
+            if (!((debug_disasm_row_t *) g_ptr_array_index (rows, i))->source)
+                break;
+        if (i < end)
+            disasm->cursor = i;
+    }
+    else if (disasm->cursor >= end)
+    {
+        for (i = end - 1; i >= disasm->top; i--)
+            if (!((debug_disasm_row_t *) g_ptr_array_index (rows, i))->source)
+                break;
+        if (i >= disasm->top)
+            disasm->cursor = i;
+    }
+    g_ptr_array_free (rows, TRUE);
+    widget_draw (WIDGET (disasm));
 }
 
 /* The instruction under the cursor, NULL when there is none */
@@ -472,6 +526,8 @@ static const edit_window_class_t debug_disasm_class = {
     .close = debug_session_close_window,
     .min_lines = 4,
     .min_cols = 24,
+    .vbar = TRUE,
+    .scrolled = debug_disasm_scrolled,
 };
 
 /* The instructions the window shows came */
