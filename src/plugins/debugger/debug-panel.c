@@ -404,27 +404,41 @@ debug_panel_rows (const debugger_t *debug)
     return rows;
 }
 
-/* The cursor on a row that can be chosen, the nearest one in that direction */
+/* The rows that fit in the panel */
+static int
+debug_panel_lines (const debug_session_window_t *session)
+{
+    return MAX (1, CONST_WIDGET (session)->rect.lines - 2);
+}
+
+/* The cursor on a row that can be chosen, the nearest one in that direction, and in sight when
+   there is one */
 static void
 debug_panel_cursor (debug_session_window_t *session, const GPtrArray *rows, int to, int step)
 {
     const int last = (int) rows->len - 1;
+    const int lines = debug_panel_lines (session);
     int i;
 
     to = CLAMP (to, 0, MAX (last, 0));
     for (i = to; i >= 0 && i <= last; i += step)
         if (debug_panel_selectable (g_ptr_array_index (rows, i)))
-        {
-            session->cursor = i;
-            return;
-        }
-    for (i = to; i >= 0 && i <= last; i -= step)
-        if (debug_panel_selectable (g_ptr_array_index (rows, i)))
-        {
-            session->cursor = i;
-            return;
-        }
-    session->cursor = 0;
+            break;
+    if (i < 0 || i > last)
+        for (i = to; i >= 0 && i <= last; i -= step)
+            if (debug_panel_selectable (g_ptr_array_index (rows, i)))
+                break;
+    if (i < 0 || i > last)
+    {
+        session->cursor = 0;
+        return;
+    }
+
+    session->cursor = i;
+    if (session->cursor < session->top)
+        session->top = session->cursor;
+    else if (session->cursor >= session->top + lines)
+        session->top = session->cursor - lines + 1;
 }
 
 static void
@@ -457,10 +471,8 @@ debug_session_draw (debug_session_window_t *session)
     if (session->cursor >= (int) rows->len
         || !debug_panel_selectable (g_ptr_array_index (rows, session->cursor)))
         debug_panel_cursor (session, rows, session->cursor, 1);
-    if (session->cursor < session->top)
-        session->top = session->cursor;
-    else if (session->cursor >= session->top + lines)
-        session->top = session->cursor - lines + 1;
+    // the wheel and the scrollbar move the rows without the cursor, as far as there are rows
+    session->top = CLAMP (session->top, 0, MAX (0, (int) rows->len - lines));
 
     for (row = 0; row < lines; row++)
     {
@@ -489,7 +501,49 @@ debug_session_draw (debug_session_window_t *session)
         tty_print_string (str_fit_to_term (text, width, J_LEFT_FIT));
         g_free (indented);
     }
+
+    // the scrollbar on the frame: where the rows are, of how many
+    if (win->fullscreen == 0)
+    {
+        edit_window_set_scroll (win, TRUE, (long) rows->len, lines, session->top);
+        edit_window_draw_bars (win, color);
+    }
     g_ptr_array_free (rows, TRUE);
+}
+
+/* The scrollbar of the frame has moved: the rows go with it, the cursor kept among them when
+   there is one to choose there */
+static void
+debug_session_scrolled (WEditWindow *win, gboolean vertical, long pos)
+{
+    debug_session_window_t *session = (debug_session_window_t *) win;
+    const int lines = debug_panel_lines (session);
+    GPtrArray *rows;
+    int i, end;
+
+    if (!vertical || session->debug == NULL)
+        return;
+    rows = debug_panel_rows (session->debug);
+    session->top = (int) CLAMP (pos, 0, MAX (0, (int) rows->len - lines));
+    end = MIN ((int) rows->len, session->top + lines);
+    if (session->cursor < session->top)
+    {
+        for (i = session->top; i < end; i++)
+            if (debug_panel_selectable (g_ptr_array_index (rows, i)))
+                break;
+        if (i < end)
+            session->cursor = i;
+    }
+    else if (session->cursor >= end)
+    {
+        for (i = end - 1; i >= session->top; i--)
+            if (debug_panel_selectable (g_ptr_array_index (rows, i)))
+                break;
+        if (i >= session->top)
+            session->cursor = i;
+    }
+    g_ptr_array_free (rows, TRUE);
+    widget_draw (WIDGET (session));
 }
 
 /* Enter, Del, Ins, Space and the moves in the panel; FALSE for a key that is none of them */
@@ -721,6 +775,8 @@ static const edit_window_class_t debug_session_class = {
     .close = debug_session_close_window,
     .min_lines = 6,
     .min_cols = 24,
+    .vbar = TRUE,
+    .scrolled = debug_session_scrolled,
 };
 
 void

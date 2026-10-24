@@ -1993,6 +1993,37 @@ edit_plugin_info_header_get_text (const void *data, int row, int column)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The rows of the plugin info table the screen has room for; the table scrolls the rest */
+static int
+edit_plugins_info_lines (int n_rows)
+{
+    return MAX (4, MIN (MIN (n_rows, 16), LINES - 6));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The screen has changed its size: the dialog takes as much of it as fits, in the middle */
+static cb_ret_t
+edit_plugins_info_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    const GPtrArray *rows = (const GPtrArray *) DIALOG (w)->data.p;
+
+    if (msg == MSG_RESIZE && rows != NULL)
+    {
+        WRect r = w->rect;
+
+        // border(1) + header(1) + hline(1) + table(N) + border(1)
+        r.lines = edit_plugins_info_lines ((int) rows->len) + 4;
+        r.y = MAX (0, (LINES - r.lines) / 2);
+        r.x = MAX (0, (COLS - r.cols) / 2);
+        return dlg_default_callback (w, NULL, MSG_RESIZE, 0, &r);
+    }
+
+    return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 edit_plugins_info (WDialog *h)
 {
@@ -2064,12 +2095,13 @@ edit_plugins_info (WDialog *h)
     columns[6] = (table_column_def_t) { capabilities_width, J_LEFT_FIT, TABLE_COL_TEXT };
     memcpy (header_columns, columns, sizeof (columns));
     header_columns[0].type = TABLE_COL_TEXT;
-    table_height = MAX (4, MIN ((int) rows->len, 16));
+    table_height = edit_plugins_info_lines ((int) rows->len);
     dialog_height = table_height + 4;
     dlg = dlg_create (TRUE, (LINES - dialog_height) / 2, (COLS - dialog_width) / 2, dialog_height,
-                      dialog_width, WPOS_KEEP_DEFAULT, TRUE, dialog_colors, NULL, NULL,
-                      "[Plugin info]", _ ("Plugin info"));
+                      dialog_width, WPOS_KEEP_DEFAULT, TRUE, dialog_colors,
+                      edit_plugins_info_callback, NULL, "[Plugin info]", _ ("Plugin info"));
     dlg->help_file = MCEDIT_HELP_FILE;
+    dlg->data.p = rows;
     header = table_new (1, 1, 1, table_width, 7, header_columns);
     header->scrollbar = FALSE;
     header->scrollbar_on_frame = FALSE;
@@ -2080,15 +2112,17 @@ edit_plugins_info (WDialog *h)
     header->current = -1;
     group_add_widget (GROUP (dlg), header);
     group_add_widget (GROUP (dlg), hline_new (2, -1, -1));
-    table = table_new (3, 1, table_height, table_width, 7, columns);
+    // its last column lands on the frame, that is where the scrollbar goes
+    table = table_new (3, 1, table_height, table_width + 1, 7, columns);
     table->scrollbar = TRUE;
-    table->scrollbar_on_frame = FALSE;
+    table->scrollbar_on_frame = TRUE;
     datasource.get_nrows = edit_plugin_info_get_nrows;
     datasource.get_text = edit_plugin_info_get_text;
     datasource.get_checked = edit_plugin_info_get_checked;
     datasource.data = rows;
     table_set_datasource (table, datasource);
-    group_add_widget (GROUP (dlg), table);
+    // it goes with the dialog when the screen changes its size
+    group_add_widget_autopos (GROUP (dlg), table, WPOS_KEEP_ALL, NULL);
     widget_select (WIDGET (table));
 
     action = dlg_run (dlg);

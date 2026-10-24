@@ -50,6 +50,12 @@
 #define CTAGS_PREVIEW_BEFORE  3 /* context lines above the symbol */
 #define CTAGS_PREVIEW_AFTER   5 /* context lines below the symbol */
 #define CTAGS_PREVIEW_HEIGHT  (CTAGS_PREVIEW_BEFORE + 1 + CTAGS_PREVIEW_AFTER) /* 7 */
+/* the lines of the dialogs besides their list */
+#define CTAGS_SEL_EXTRA     (CTAGS_PREVIEW_HEIGHT + 7)
+#define CTAGS_REFS_EXTRA    4
+#define CTAGS_MEMBERS_EXTRA 5
+#define CTAGS_REPOS_EXTRA   4
+#define CTAGS_REPOS_MAX     16
 
 /*** file scope type declarations ****************************************************************/
 
@@ -263,6 +269,33 @@ ctags_sel_list_activate (WListbox *l)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The rows of a list of n rows, at most max, in a dialog of extra lines more than the list: as
+   many as the screen has room for, at least 4, the least a scrollbar is drawn in; the list
+   scrolls the rest */
+static int
+ctags_list_lines (int n, int max, int extra)
+{
+    return MAX (4, MIN (MIN (n, max), LINES - 2 - extra));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The screen has changed its size: the dialog of a list of the rows it keeps in data.i takes as
+   much of it as fits, in the middle; the list goes with it, what is under the list keeps to the
+   bottom */
+static cb_ret_t
+ctags_dlg_resize (Widget *w, int max, int extra)
+{
+    WRect r = w->rect;
+
+    r.lines = ctags_list_lines (DIALOG (w)->data.i, max, extra) + extra;
+    r.y = MAX (0, (LINES - r.lines) / 2);
+    r.x = MAX (0, (COLS - r.cols) / 2);
+    return dlg_default_callback (w, NULL, MSG_RESIZE, 0, &r);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 ctags_sel_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
@@ -271,6 +304,9 @@ ctags_sel_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, v
 
     switch (msg)
     {
+    case MSG_RESIZE:
+        return ctags_dlg_resize (w, CTAGS_LIST_MAX_HEIGHT, CTAGS_SEL_EXTRA);
+
     case MSG_INIT:
     {
         cb_ret_t ret = dlg_default_callback (w, sender, msg, parm, data);
@@ -328,14 +364,8 @@ ctags_ui_select (const char *title, GPtrArray *entries, const char *initial_filt
     }
 
     /* border(1)+input(1)+gap(1)+list(N)+hline(1)+preview(P)+hline(1)+buttons(1)+border(1) */
-    {
-        int max_list_h = MAX (3, LINES - 4 - CTAGS_PREVIEW_HEIGHT - 7);
-
-        list_h = (int) MIN ((guint) CTAGS_LIST_MAX_HEIGHT, (guint) max_list_h);
-        list_h = MIN ((int) entries->len, list_h);
-        list_h = MAX (list_h, 3);
-    }
-    dlg_h = list_h + CTAGS_PREVIEW_HEIGHT + 7;
+    list_h = ctags_list_lines ((int) entries->len, CTAGS_LIST_MAX_HEIGHT, CTAGS_SEL_EXTRA);
+    dlg_h = list_h + CTAGS_SEL_EXTRA;
     dlg_w = COLS - 4;
     dlg_y = (LINES - dlg_h) / 2;
     dlg_x = 2;
@@ -344,6 +374,7 @@ ctags_ui_select (const char *title, GPtrArray *entries, const char *initial_filt
                       ctags_sel_dlg_callback, NULL, "[Ctags]",
                       title != NULL ? title : _ ("Select symbol"));
     dlg->help_file = "ctags.md";
+    dlg->data.i = (int) entries->len;
 
     /* Filter input on row 1.  Clear the "first keystroke" flag so the pre-filled
      * symbol can be appended to (rather than wiped) by the user's next char. */
@@ -355,10 +386,10 @@ ctags_ui_select (const char *title, GPtrArray *entries, const char *initial_filt
 
     /* Listbox on row 3; row 2 is an empty gap after the input */
     lst = listbox_new (3, 1, list_h, dlg_w - 2, FALSE, ctags_sel_list_activate);
-    group_add_widget (GROUP (dlg), lst);
+    group_add_widget_autopos (GROUP (dlg), lst, WPOS_KEEP_ALL, NULL);
 
     /* Separator before preview */
-    group_add_widget (GROUP (dlg), hline_new (list_h + 3, -1, -1));
+    group_add_widget_autopos (GROUP (dlg), hline_new (list_h + 3, -1, -1), WPOS_KEEP_BOTTOM, NULL);
 
     /* Preview panel */
     {
@@ -366,20 +397,21 @@ ctags_ui_select (const char *title, GPtrArray *entries, const char *initial_filt
 
         prev = listbox_new (list_h + 4, 1, CTAGS_PREVIEW_HEIGHT, dlg_w - 2, FALSE, NULL);
         widget_set_options (WIDGET (prev), WOP_SELECTABLE, FALSE);
-        group_add_widget (GROUP (dlg), prev);
+        group_add_widget_autopos (GROUP (dlg), prev, WPOS_KEEP_BOTTOM, NULL);
         ctags_sel_preview = prev;
     }
 
     /* Separator + OK / Cancel */
-    group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+    group_add_widget_autopos (GROUP (dlg), hline_new (dlg_h - 3, -1, -1), WPOS_KEEP_BOTTOM, NULL);
 
     x_ok = (dlg_w - 20) / 2;
     x_cancel = x_ok + 10;
-    group_add_widget (GROUP (dlg),
-                      button_new (dlg_h - 2, x_ok, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL));
-    group_add_widget (
-        GROUP (dlg),
-        button_new (dlg_h - 2, x_cancel, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL));
+    group_add_widget_autopos (
+        GROUP (dlg), button_new (dlg_h - 2, x_ok, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL),
+        WPOS_KEEP_BOTTOM, NULL);
+    group_add_widget_autopos (
+        GROUP (dlg), button_new (dlg_h - 2, x_cancel, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL),
+        WPOS_KEEP_BOTTOM, NULL);
 
     /* Wire up static state (must be before dlg_run so MSG_INIT sees them) */
     ctags_sel_input = inp;
@@ -459,6 +491,17 @@ ctags_ui_prompt_tags_path (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The screen has changed its size: the list of the repositories takes as much of it as fits */
+static cb_ret_t
+ctags_repos_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    if (msg == MSG_RESIZE)
+        return ctags_dlg_resize (w, CTAGS_REPOS_MAX, CTAGS_REPOS_EXTRA);
+    return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 gboolean
 ctags_ui_manage_repos (GSList **repos)
 {
@@ -471,14 +514,15 @@ ctags_ui_manage_repos (GSList **repos)
         return FALSE;
 
     n_repos = (int) g_slist_length (*repos);
-    list_h = CLAMP (n_repos, 3, MIN (LINES - 9, 16));
-    dlg_h = list_h + 4; /* border + list + hline + button + border */
+    list_h = ctags_list_lines (n_repos, CTAGS_REPOS_MAX, CTAGS_REPOS_EXTRA);
+    dlg_h = list_h + CTAGS_REPOS_EXTRA; /* border + list + hline + button + border */
     dlg_w = MIN (COLS - 4, 72);
 
     dlg = dlg_create (TRUE, (LINES - dlg_h) / 2, (COLS - dlg_w) / 2, dlg_h, dlg_w,
-                      WPOS_KEEP_DEFAULT, TRUE, dialog_colors, dlg_default_callback, NULL, "[Ctags]",
-                      _ ("Manage Tag Repositories"));
+                      WPOS_KEEP_DEFAULT, TRUE, dialog_colors, ctags_repos_dlg_callback, NULL,
+                      "[Ctags]", _ ("Manage Tag Repositories"));
     dlg->help_file = "ctags.md";
+    dlg->data.i = n_repos;
 
     lst = listbox_new (1, 1, list_h, dlg_w - 2, TRUE, NULL);
 
@@ -495,11 +539,12 @@ ctags_ui_manage_repos (GSList **repos)
         }
     }
 
-    group_add_widget (GROUP (dlg), lst);
-    group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
-    group_add_widget (
+    group_add_widget_autopos (GROUP (dlg), lst, WPOS_KEEP_ALL, NULL);
+    group_add_widget_autopos (GROUP (dlg), hline_new (dlg_h - 3, -1, -1), WPOS_KEEP_BOTTOM, NULL);
+    group_add_widget_autopos (
         GROUP (dlg),
-        button_new (dlg_h - 2, (dlg_w - 10) / 2, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL));
+        button_new (dlg_h - 2, (dlg_w - 10) / 2, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL),
+        WPOS_KEEP_BOTTOM, NULL);
 
     ctags_ui_run (dlg);
 
@@ -689,6 +734,11 @@ ctags_refs_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, 
 
     switch (msg)
     {
+    case MSG_RESIZE:
+        // the members have a line of their own over the table
+        return ctags_dlg_resize (w, CTAGS_LIST_MAX_HEIGHT,
+                                 ctags_members_rows != NULL ? CTAGS_MEMBERS_EXTRA
+                                                            : CTAGS_REFS_EXTRA);
     case MSG_NOTIFY:
         if (ctags_refs_table != NULL && sender == WIDGET (ctags_refs_table) && parm == CK_Enter)
         {
@@ -723,11 +773,10 @@ ctags_ui_select_refs (const char *title, GPtrArray *entries)
     }
 
     n_entries = (int) entries->len;
-    table_h = MIN (n_entries, CTAGS_LIST_MAX_HEIGHT);
-    table_h = MAX (table_h, 3);
+    table_h = ctags_list_lines (n_entries, CTAGS_LIST_MAX_HEIGHT, CTAGS_REFS_EXTRA);
 
     /* border(1) + table(N) + hline(1) + buttons(1) + border(1) */
-    dlg_h = table_h + 4;
+    dlg_h = table_h + CTAGS_REFS_EXTRA;
     dlg_w = COLS - 4;
 
     /* table: x=2, width=dlg_w-2; columns: code | filename(24) | line(6)
@@ -753,6 +802,7 @@ ctags_ui_select_refs (const char *title, GPtrArray *entries)
                       WPOS_KEEP_DEFAULT, TRUE, dialog_colors, ctags_refs_dlg_callback, NULL,
                       "[Ctags]", title != NULL ? title : _ ("Find References"));
     dlg->help_file = "ctags.md";
+    dlg->data.i = n_entries;
 
     tbl = table_new (1, 2, table_h, table_w, 3, col_defs);
     tbl->scrollbar = TRUE;
@@ -765,16 +815,17 @@ ctags_ui_select_refs (const char *title, GPtrArray *entries)
     ds.cycle_choice = NULL;
     table_set_datasource (tbl, ds);
 
-    group_add_widget (GROUP (dlg), tbl);
-    group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+    group_add_widget_autopos (GROUP (dlg), tbl, WPOS_KEEP_ALL, NULL);
+    group_add_widget_autopos (GROUP (dlg), hline_new (dlg_h - 3, -1, -1), WPOS_KEEP_BOTTOM, NULL);
 
     x_ok = (dlg_w - 20) / 2;
     x_cancel = x_ok + 10;
-    group_add_widget (GROUP (dlg),
-                      button_new (dlg_h - 2, x_ok, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL));
-    group_add_widget (
-        GROUP (dlg),
-        button_new (dlg_h - 2, x_cancel, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL));
+    group_add_widget_autopos (
+        GROUP (dlg), button_new (dlg_h - 2, x_ok, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL),
+        WPOS_KEEP_BOTTOM, NULL);
+    group_add_widget_autopos (
+        GROUP (dlg), button_new (dlg_h - 2, x_cancel, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL),
+        WPOS_KEEP_BOTTOM, NULL);
 
     ctags_refs_table = tbl;
     ctags_refs_entries = entries;
@@ -842,11 +893,10 @@ ctags_ui_select_members (const char *scope, GPtrArray *rows)
         subtitle = g_strdup (scope != NULL ? scope : "");
 
     n_rows = (int) rows->len;
-    table_h = MIN (n_rows, CTAGS_LIST_MAX_HEIGHT);
-    table_h = MAX (table_h, 3);
+    table_h = ctags_list_lines (n_rows, CTAGS_LIST_MAX_HEIGHT, CTAGS_MEMBERS_EXTRA);
 
     /* border(1) + subtitle(1) + table(N) + hline(1) + buttons(1) + border(1) */
-    dlg_h = table_h + 5;
+    dlg_h = table_h + CTAGS_MEMBERS_EXTRA;
     dlg_w = COLS - 4;
 
     /* columns: kind(7) | name(30) | type(22) | note(rest)
@@ -877,6 +927,7 @@ ctags_ui_select_members (const char *scope, GPtrArray *rows)
         dlg_create (TRUE, (LINES - dlg_h) / 2, (COLS - dlg_w) / 2, dlg_h, dlg_w, WPOS_KEEP_DEFAULT,
                     TRUE, dialog_colors, ctags_refs_dlg_callback, NULL, "[Ctags]", _ ("Members"));
     dlg->help_file = "ctags.md";
+    dlg->data.i = n_rows;
 
     group_add_widget (GROUP (dlg), label_new (1, 2, subtitle));
     g_free (subtitle);
@@ -892,16 +943,17 @@ ctags_ui_select_members (const char *scope, GPtrArray *rows)
     ds.cycle_choice = NULL;
     table_set_datasource (tbl, ds);
 
-    group_add_widget (GROUP (dlg), tbl);
-    group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+    group_add_widget_autopos (GROUP (dlg), tbl, WPOS_KEEP_ALL, NULL);
+    group_add_widget_autopos (GROUP (dlg), hline_new (dlg_h - 3, -1, -1), WPOS_KEEP_BOTTOM, NULL);
 
     x_ok = (dlg_w - 20) / 2;
     x_cancel = x_ok + 10;
-    group_add_widget (GROUP (dlg),
-                      button_new (dlg_h - 2, x_ok, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL));
-    group_add_widget (
-        GROUP (dlg),
-        button_new (dlg_h - 2, x_cancel, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL));
+    group_add_widget_autopos (
+        GROUP (dlg), button_new (dlg_h - 2, x_ok, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL),
+        WPOS_KEEP_BOTTOM, NULL);
+    group_add_widget_autopos (
+        GROUP (dlg), button_new (dlg_h - 2, x_cancel, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL),
+        WPOS_KEEP_BOTTOM, NULL);
 
     ctags_members_table = tbl;
     ctags_members_rows = rows;

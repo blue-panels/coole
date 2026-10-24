@@ -18,6 +18,7 @@ typedef struct
 {
     WDialog *dlg;
     WListbox *list;
+    int lines, cols;  // the size asked for: the list is as big as the screen lets it be
 } Listbox;
 
 /*** global variables defined in .c file *********************************************************/

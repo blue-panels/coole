@@ -55,6 +55,7 @@ typedef struct
 /* A bar len cells long at y, x, drawn as the skin has it for its orientation */
 WScrollBar *scrollbar_new (int y, int x, int len, scrollbar_orientation_t orientation);
 void scrollbar_set_look (WScrollBar *b, const scrollbar_look_t *look);
+void scrollbar_show (WScrollBar *b, const WRect *r, long total, long visible, long pos, int color);
 void scrollbar_set_color (WScrollBar *b, int color);
 void scrollbar_set_client (WScrollBar *b, Widget *client);
 /* The view of visible of total at pos; the bar is drawn again when it changes */

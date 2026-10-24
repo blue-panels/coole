@@ -221,14 +221,23 @@ table_draw_cells (WTable *t, int y, int row_idx, int nrows, int row_color, gbool
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The scrollbar of the table down its last column, beside the rows: placed there and given the
-   range of the rows */
+/* Where the scrollbar of the table is: down its last column, beside the rows */
+static WRect
+table_bar_rect (const WTable *t)
+{
+    const WRect *w = &CONST_WIDGET (t)->rect;
+    WRect r = { w->y + table_row_y (t, 0), w->x + w->cols - 1, MAX (1, table_data_lines (t)), 1 };
+
+    return r;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The scrollbar placed and given the range of the rows, for the mouse */
 static void
 table_place_bar (WTable *t)
 {
-    const WRect *w = &CONST_WIDGET (t)->rect;
-    const int first = table_row_y (t, 0);
-    WRect r = { w->y + first, w->x + w->cols - 1, MAX (1, table_data_lines (t)), 1 };
+    WRect r = table_bar_rect (t);
 
     widget_set_size_rect (WIDGET (t->bar), &r);
     scrollbar_set_range (t->bar, table_get_nrows (t), table_data_lines (t), t->top);
@@ -345,9 +354,9 @@ table_draw (WTable *t, gboolean focused)
 
     if (t->scrollbar && nrows > lines)
     {
-        table_place_bar (t);
-        scrollbar_set_color (t->bar, scrollbarc);
-        send_message (WIDGET (t->bar), NULL, MSG_DRAW, 0, NULL);
+        const WRect r = table_bar_rect (t);
+
+        scrollbar_show (t->bar, &r, nrows, lines, t->top, scrollbarc);
         /* the header row above the scrollbar and the search line below it are still the frame */
         if (t->scrollbar_on_frame)
         {

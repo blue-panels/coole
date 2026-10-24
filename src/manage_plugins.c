@@ -112,6 +112,32 @@ mp_row_exists (const GArray *rows, mc_plugin_kind_t kind_id, const char *name)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The rows of a list of n_rows the screen has room for, at least 4, the least a scrollbar is
+   drawn in; the table scrolls the rest */
+static int
+mp_list_lines (int n_rows)
+{
+    return MAX (4, MIN (MIN (n_rows, MP_LIST_MAX_H), LINES - 6));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The screen has changed its size: the dialog of a list of n_rows takes as much of it as fits,
+   in the middle */
+static cb_ret_t
+mp_dlg_resize (Widget *w, int n_rows)
+{
+    WRect r = w->rect;
+
+    // border(1) + table(N) + hline(1) + button(1) + border(1)
+    r.lines = mp_list_lines (n_rows) + 4;
+    r.y = MAX (0, (LINES - r.lines) / 2);
+    r.x = MAX (0, (COLS - r.cols) / 2);
+    return dlg_default_callback (w, NULL, MSG_RESIZE, 0, &r);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 #ifdef ENABLE_LUA_PLUGIN
 
 static void mp_lua_editor_actions_dialog (const char *package_id);
@@ -371,8 +397,10 @@ mp_lua_script_edit (const mp_lua_scripts_ctx_t *ctx)
 static cb_ret_t
 mp_lua_scripts_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
-    (void) sender;
-    (void) data;
+    const mp_lua_scripts_ctx_t *ctx = (const mp_lua_scripts_ctx_t *) DIALOG (w)->data.p;
+
+    if (msg == MSG_RESIZE && ctx != NULL)
+        return mp_dlg_resize (w, (int) ctx->scripts->len);
 
     if (msg == MSG_UNHANDLED_KEY && parm == KEY_F (4))
     {
@@ -446,7 +474,7 @@ mp_lua_scripts_dialog (void)
     }
 
     n_rows = (int) scripts->len;
-    table_h = MAX (3, MIN (n_rows, MP_LIST_MAX_H));
+    table_h = mp_list_lines (n_rows);
     dlg_h = table_h + 4;
     dlg_w = MIN (COLS - 4, 78);
     table_w = dlg_w - 1;
@@ -496,20 +524,23 @@ mp_lua_scripts_dialog (void)
     ds.cycle_choice = NULL;
     table_set_datasource (tbl, ds);
 
-    group_add_widget (GROUP (dlg), tbl);
-    group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+    // the table goes with the dialog when the screen changes its size, the rest keeps to the bottom
+    group_add_widget_autopos (GROUP (dlg), tbl, WPOS_KEEP_ALL, NULL);
+    group_add_widget_autopos (GROUP (dlg), hline_new (dlg_h - 3, -1, -1), WPOS_KEEP_BOTTOM, NULL);
     {
         /* "[< Settings >]" and "[ Close ]", with one column between them */
         const int settings_w = 14;
         const int close_w = 9;
         const int left = (dlg_w - (settings_w + 1 + close_w)) / 2;
 
-        group_add_widget (GROUP (dlg),
-                          button_new (dlg_h - 2, left, MP_LUA_RUN_SCRIPT, DEFPUSH_BUTTON,
-                                      _ ("&Settings"), mp_lua_script_run));
-        group_add_widget (GROUP (dlg),
-                          button_new (dlg_h - 2, left + settings_w + 1, B_CANCEL, NORMAL_BUTTON,
-                                      _ ("&Close"), NULL));
+        group_add_widget_autopos (GROUP (dlg),
+                                  button_new (dlg_h - 2, left, MP_LUA_RUN_SCRIPT, DEFPUSH_BUTTON,
+                                              _ ("&Settings"), mp_lua_script_run),
+                                  WPOS_KEEP_BOTTOM, NULL);
+        group_add_widget_autopos (GROUP (dlg),
+                                  button_new (dlg_h - 2, left + settings_w + 1, B_CANCEL,
+                                              NORMAL_BUTTON, _ ("&Close"), NULL),
+                                  WPOS_KEEP_BOTTOM, NULL);
     }
     widget_select (WIDGET (tbl));
 
@@ -871,6 +902,11 @@ mp_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *da
 
     switch (msg)
     {
+    case MSG_RESIZE:
+        if (ctx == NULL)
+            return dlg_default_callback (w, sender, msg, parm, data);
+        return mp_dlg_resize (w, (int) ctx->rows->len);
+
     case MSG_NOTIFY:
         if (ctx != NULL && sender == WIDGET (ctx->tbl) && parm == CK_Enter)
         {
@@ -923,8 +959,7 @@ manage_plugins_dialog (void)
         return;
     }
 
-    table_h = MIN (n_rows, MP_LIST_MAX_H);
-    table_h = MAX (table_h, 3);
+    table_h = mp_list_lines (n_rows);
 
     /* border(1) + table(N) + hline(1) + button(1) + border(1) */
     dlg_h = table_h + 4;
@@ -973,19 +1008,22 @@ manage_plugins_dialog (void)
     ds.cycle_choice = NULL;
     table_set_datasource (tbl, ds);
 
-    group_add_widget (GROUP (dlg), tbl);
-    group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+    // the table goes with the dialog when the screen changes its size, the rest keeps to the bottom
+    group_add_widget_autopos (GROUP (dlg), tbl, WPOS_KEEP_ALL, NULL);
+    group_add_widget_autopos (GROUP (dlg), hline_new (dlg_h - 3, -1, -1), WPOS_KEEP_BOTTOM, NULL);
     {
         const char *ide_label = _ ("&IDE: project, build, debugger");
         const int ide_w = str_term_width1 (ide_label) + 3;
         const int left = (dlg_w - ide_w - 10 - 1) / 2;
 
-        group_add_widget (
+        group_add_widget_autopos (
             GROUP (dlg),
-            button_new (dlg_h - 2, left, B_USER, NORMAL_BUTTON, ide_label, mp_ide_toggle));
-        group_add_widget (
+            button_new (dlg_h - 2, left, B_USER, NORMAL_BUTTON, ide_label, mp_ide_toggle),
+            WPOS_KEEP_BOTTOM, NULL);
+        group_add_widget_autopos (
             GROUP (dlg),
-            button_new (dlg_h - 2, left + ide_w + 1, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL));
+            button_new (dlg_h - 2, left + ide_w + 1, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL),
+            WPOS_KEEP_BOTTOM, NULL);
     }
 
     /* without this the button takes the focus and the table ignores the keys */

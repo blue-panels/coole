@@ -1021,6 +1021,13 @@ project_tree_draw (project_tree_t *tree)
         g_string_free (line, TRUE);
     }
     g_free (current);
+
+    // the scrollbar on the frame: where the rows are, of how many
+    if (win->fullscreen == 0)
+    {
+        edit_window_set_scroll (win, TRUE, (long) tree->rows->len, lines, tree->top);
+        edit_window_draw_bars (win, color);
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1277,6 +1284,22 @@ project_tree_title (const WEditWindow *win)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The scrollbar of the frame has moved: the rows go with it, the selection stays where it is */
+static void
+project_tree_scrolled (WEditWindow *win, gboolean vertical, long pos)
+{
+    project_tree_t *tree = (project_tree_t *) win;
+
+    if (!vertical)
+        return;
+    tree->top =
+        (int) CLAMP (pos, 0, MAX (0, (int) tree->rows->len - project_tree_body_lines (tree)));
+    widget_draw (WIDGET (tree));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* a scrollbar down the right side */
 static const edit_window_class_t project_tree_class = {
     .callback = project_tree_callback,
     .mouse_callback = project_tree_mouse,
@@ -1284,6 +1307,8 @@ static const edit_window_class_t project_tree_class = {
     .close = project_tree_close,
     .min_lines = 5,
     .min_cols = 16,
+    .vbar = TRUE,
+    .scrolled = project_tree_scrolled,
 };
 
 /* --------------------------------------------------------------------------------------------- */
