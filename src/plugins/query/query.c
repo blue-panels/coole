@@ -27,24 +27,16 @@
  *  \brief Source: the query plugin
  *
  *  A module the editor loads from its directory of plugins; it works in coole -Q alone.  F5 gives
- *  the selection, else the part of the file between lines "// ---", else the whole file, to
- *  mongosh, and its answer comes in the tabs at the
- *  bottom: Output, what mongosh printed; Table, the documents in columns; History, the queries
- *  run.  A query with a line "// @table" is run with --json, its value made the table.
- *
- *  mongosh is given what to connect to by the environment of coole, which it inherits:
- *  MC_MONGO_URI, MC_MONGO_DB; MC_MONGOSH is the program, else mongosh of PATH.  Neither the URI
- *  nor the password in it goes anywhere else: not to the screen, not to the history.
+ *  the selection, else the part of the file between lines "// ---", else the whole file, to the
+ *  backend of the database, and its answer comes in the tabs at the bottom: Output, what it
+ *  printed; Table, the documents or the rows in columns; History, the queries run.  The backend
+ *  is chosen by the value of -Q, mongo for mongosh (query-mongo.c).
  */
 
 #include <config.h>
 
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -61,6 +53,7 @@
 #include "src/editor/editwidget.h"
 
 #include "query-core.h"
+#include "query-int.h"
 
 /*** global variables ****************************************************************************/
 
@@ -69,14 +62,10 @@
 #define QUERY_KEYMAP_SECTION "query"
 #define QUERY_HELP_FILE      "query.md"
 #define QUERY_HELP_NODE      "[Query]"
-// what mongosh prints that is shown; the rest is cut
-#define QUERY_OUTPUT_MAX  (8 * 1024 * 1024)
-#define QUERY_HISTORY_MAX 100
+#define QUERY_HISTORY_MAX    100
 // the versions of a file of queries, as it was run, in the data of the user; the newest kept
 #define QUERY_VERSIONS_DIR ".history"
 #define QUERY_VERSIONS_MAX 200
-// the rows of a table of the tab Table at most, the rest counted
-#define QUERY_TABLE_ROWS 100u
 /* the text Undo takes back whole when a version takes the place of the file, a character an
    action of it: a part of its 32768 actions */
 #define QUERY_UNDO_TEXT 8000
@@ -85,82 +74,19 @@
 // the height of the tabs, percent of the screen
 #define QUERY_TABS_SIZE 40
 
-// the language server of the queries lsp.json has, and where it comes from
-#define QUERY_LANGUAGE_SERVER     "mongolsp"
-#define QUERY_LANGUAGE_SERVER_URL "https://github.com/blue-panels/mongolsp"
-
-#define ANSI_BOLD                 "\033[1m"
-#define ANSI_RED                  "\033[31m"
-#define ANSI_GREEN                "\033[32m"
-#define ANSI_CYAN                 "\033[36m"
-#define ANSI_RESET                "\033[0m"
-
 /*** file scope type declarations ****************************************************************/
-
-enum
-{
-    QUERY_CMD_NONE = -1,
-    QUERY_CMD_HELP,
-    QUERY_CMD_RUN,
-    QUERY_CMD_RUN_ALL,
-    QUERY_CMD_STOP,
-    QUERY_CMD_HISTORY_INSERT,
-    QUERY_CMD_HISTORY_SHOW,
-    QUERY_CMD_COUNT
-};
-
-enum
-{
-    QUERY_TAB_OUTPUT,
-    QUERY_TAB_TABLE,
-    QUERY_TAB_HISTORY,
-    QUERY_TAB_COUNT
-};
 
 /* A query run, in the history */
 typedef struct
 {
     char *when;  // "14:02:11"
     double seconds;
-    int status;  // the exit code of mongosh, -1 when it was stopped, QUERY_SAVED for no run
+    int status;  // the exit code of the run, -1 when it was stopped, QUERY_SAVED for no run
     long line;   // the first line of the query in the file, from 1
     char *text;
     char *version;  // the file as it was run, a name in the directory of its versions; NULL none
-    char *use;      // the string of the use () above a part run alone, NULL for none
+    char *use;      // the context of a part run alone, a use () for mongo; NULL for none
 } query_entry_t;
-
-typedef struct
-{
-    mc_editor_host_t *host;
-    gboolean on;  // coole -Q
-    char *mongosh;
-    char *endpoint;  // "host:port/db", for the header of the output
-
-    // the run going on, or the last one
-    GPid pid;
-    int fds[2];  // its stdout and stderr, -1 when ended
-    GString *out, *err;
-    gboolean cut;      // mongosh printed more than QUERY_OUTPUT_MAX: the rest is not kept
-    gboolean table;    // asked for by "// @table": mongosh --json, its answer in columns too
-    char *use;         // the string of the use () above a part run alone, NULL for none
-    long limit;        // asked for by "// @limit N", 0 when not
-    gboolean limited;  // and put into the query
-    gboolean stopped;
-    char *text;
-    char *file;  // the file of the query, NULL for a file with no name
-    long first;  // the first line of the query in it, from 1
-    gint64 started;
-
-    gint64 tabs[QUERY_TAB_COUNT];  // the windows of the viewer, 0 when none
-    long commands[QUERY_CMD_COUNT];
-    int mark;
-    GPtrArray *history;  // query_entry_t, the last one last
-    char *history_path;
-    char *history_file;  // the file whose history it is
-    GPtrArray *rows;     // the version of each line of the tab History, a name
-    char *version;       // the version of the file of the run of the moment, NULL for none
-    guint viewer_signal;
-} query_t;
 
 /*** forward declarations (file scope functions) *************************************************/
 
@@ -186,6 +112,11 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
 
 static const mc_ep_marker_kind_t query_mark_kind = {
     "query.error", "query-error-char", "\u00d7", "E", "builderror", NULL, NULL, 6, "brightred",
+};
+
+// the backends, by the value of -Q
+static const query_backend_t *const query_backends[] = {
+    &query_mongo_backend,
 };
 
 static const char *const query_tab_titles[QUERY_TAB_COUNT] = {
@@ -237,7 +168,7 @@ query_viewer_id (query_t *q, const char *method, gint64 id, gboolean focus)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The text of a tab, the tab made again when the user has closed it; the one seen when @front */
-static void
+void
 query_tab_set (query_t *q, int tab, const char *text, gboolean front)
 {
     GVariantDict dict;
@@ -286,7 +217,7 @@ query_tab_set (query_t *q, int tab, const char *text, gboolean front)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
+void
 query_redraw (query_t *q)
 {
     widget_draw (WIDGET (q->host->host_data));
@@ -728,7 +659,7 @@ query_history_load (query_t *q, const char *file)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
+void
 query_history_add (query_t *q, const char *when, double seconds, int status)
 {
     query_entry_t *e = g_new0 (query_entry_t, 1);
@@ -773,81 +704,7 @@ query_history_add (query_t *q, const char *when, double seconds, int status)
 /* The run */
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-query_child_setup (gpointer data)
-{
-    (void) data;
-    // a session of its own: stopped as a whole, with what mongosh starts
-    (void) setsid ();
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-query_close_fds (query_t *q)
-{
-    int i;
-
-    for (i = 0; i < 2; i++)
-        if (q->fds[i] >= 0)
-        {
-            delete_select_channel (q->fds[i]);
-            close (q->fds[i]);
-            q->fds[i] = -1;
-        }
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The status of mongosh, waited for a while after its output has ended, then killed */
-static int
-query_reap (query_t *q)
-{
-    int status = 0, i;
-
-    for (i = 0; i < 200 && waitpid (q->pid, &status, WNOHANG) == 0; i++)
-        g_usleep (10000);
-    if (i == 200)
-    {
-        (void) kill (-q->pid, SIGKILL);
-        (void) waitpid (q->pid, &status, 0);
-    }
-    g_spawn_close_pid (q->pid);
-    q->pid = 0;
-    return status;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The run of mongosh ended at once, whatever it was doing */
-static void
-query_kill (query_t *q)
-{
-    if (q->pid == 0)
-        return;
-    query_close_fds (q);
-    // nobody waits for its answer: no time given to end by itself
-    (void) kill (-q->pid, SIGKILL);
-    (void) waitpid (q->pid, NULL, 0);
-    g_spawn_close_pid (q->pid);
-    q->pid = 0;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* What mongosh printed, valid UTF-8 */
-static char *
-query_take (GString *s)
-{
-    char *text = g_utf8_make_valid (s->str, (gssize) s->len);
-
-    g_string_truncate (s, 0);
-    return text;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
+void
 query_table_say (query_t *q, const char *text)
 {
     query_tab_set (q, QUERY_TAB_TABLE, text, FALSE);
@@ -855,301 +712,39 @@ query_table_say (query_t *q, const char *text)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* One table of the tab Table: its number, what it is, how many documents, the first
-   QUERY_TABLE_ROWS of them; FALSE when @json is no JSON, said so */
-static gboolean
-query_table_add (GString *text, guint n, const char *what, const char *json)
+/* The start of the head of the output of a run */
+void
+query_output_head (query_t *q, GString *text, double seconds, const char *when)
 {
-    GError *error = NULL;
-    guint rows = 0;
-    char *table = query_table (json, QUERY_TABLE_ROWS, &rows, &error);
-
-    g_string_append_printf (text, ANSI_BOLD "%u. %s: " ANSI_RESET, n, what);
-    if (table == NULL)
-    {
-        g_string_append_printf (text, _ ("no JSON: %s\n\n"), error->message);
-        g_error_free (error);
-        return FALSE;
-    }
-    if (rows == 0)
-        g_string_append (text, _ ("no documents\n\n"));
-    else if (rows > QUERY_TABLE_ROWS)
-        g_string_append_printf (text, _ ("the first %u of %u documents\n\n%s\n"), QUERY_TABLE_ROWS,
-                                rows, table);
-    else
-        g_string_append_printf (
-            text, ngettext ("%u document\n\n%s\n", "%u documents\n\n%s\n", rows), rows, table);
-    g_free (table);
-    return rows > 0;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The tab Table: a table of each array printjson () and print () printed, in their order, then of
-   the value the query ends with, @json, for "// @table"; @why when that value is none.  In front
-   when it has documents. */
-static void
-query_tables_show (query_t *q, GPtrArray *tables, const char *json, const char *why)
-{
-    GString *text = g_string_new (NULL);
-    gboolean rows = FALSE;
-    guint i;
-
-    for (i = 0; i < tables->len; i++)
-        rows = query_table_add (text, i + 1, _ ("printed"), g_ptr_array_index (tables, i)) || rows;
-    if (json != NULL)
-        rows = query_table_add (text, tables->len + 1, _ ("the value at the end"), json) || rows;
-    else if (why != NULL)
-        g_string_append (text, why);
-    if (text->len == 0)
-        g_string_append (text,
-                         _ ("No table: printjson () of an array or a cursor makes one, and "
-                            "a line \"// @table\" one of the value the query ends with.\n"));
-    query_tab_set (q, QUERY_TAB_TABLE, text->str, rows);
-    g_string_free (text, TRUE);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The output of the query, and the line of a SyntaxError marked and gone to */
-static void
-query_output_done (query_t *q, const char *out, const char *err, int status)
-{
-    const double seconds = (double) (g_get_monotonic_time () - q->started) / G_USEC_PER_SEC;
     const size_t len = strlen (q->text);
     // the newline the last line ends with starts no line of the query
     const long last =
         q->first + query_line_of (q->text, len > 0 && q->text[len - 1] == '\n' ? len - 1 : len);
-    char when[16];
-    const time_t now = time (NULL);
-    GString *text = g_string_new (NULL);
-    long line, column;
 
-    (void) strftime (when, sizeof (when), "%H:%M:%S", localtime (&now));
     g_string_append (text, ANSI_BOLD);
     if (last > q->first)
         g_string_append_printf (text, _ ("lines %ld-%ld"), q->first, last);
     else
         g_string_append_printf (text, _ ("line %ld"), q->first);
     g_string_append_printf (text, "   %.2f s   %s   %s   ", seconds, when, q->endpoint);
-    if (q->use != NULL)
-        g_string_append_printf (text, "use(%s)   ", q->use);
-    if (q->limited)
-        g_string_append_printf (text, _ ("limit %ld   "), q->limit);
-    else if (q->limit > 0)
-        g_string_append (text, _ ("@limit: no find () or aggregate ([...]) to limit   "));
-    if (q->stopped)
-        g_string_append (text, _ ("stopped"));
-    else if (WIFSIGNALED (status))
-        g_string_append_printf (text, _ ("killed by signal %d"), WTERMSIG (status));
-    else
-        g_string_append_printf (text, _ ("exit %d"), WEXITSTATUS (status));
-    g_string_append (text, ANSI_RESET "\n\n");
-    g_string_append (text, out);
-    if (q->cut)
-        g_string_append_printf (text, ANSI_RED "\n%s\n" ANSI_RESET,
-                                _ ("... mongosh printed more than 8 MB: the rest is cut."));
-    if (*err != '\0')
-    {
-        if (*out != '\0' && text->str[text->len - 1] != '\n')
-            g_string_append_c (text, '\n');
-        g_string_append_printf (text, ANSI_RED "%s" ANSI_RESET, err);
-    }
-    query_tab_set (q, QUERY_TAB_OUTPUT, text->str, TRUE);
-    g_string_free (text, TRUE);
-
-    if (q->file != NULL && query_mongo_error_position (err, &line, &column))
-    {
-        void *edit = q->host->window_top_file (q->host);
-
-        line += q->first - 1;
-        q->host->set_marker (q->host, q->file, line, q->mark, TRUE);
-        if (edit != NULL)
-            (void) q->host->go_to (q->host, edit, q->file, line, column);
-    }
-    // killed by a signal, not stopped: the code a shell tells for it
-    query_history_add (q, when, seconds,
-                       q->stopped                 ? -1
-                           : WIFSIGNALED (status) ? 128 + WTERMSIG (status)
-                                                  : WEXITSTATUS (status));
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* mongosh has ended: what it printed shown, and the documents in the table when asked for */
-static void
-query_done (query_t *q, int status)
+/* The error marked in the file of the query and gone to; not in a query not of the file as it is
+   now, run again from History */
+void
+query_mark_error (query_t *q, long line, long column)
 {
-    char *raw = query_take (q->out), *clean = query_mongo_clean (raw);
-    // the copies of the arrays printed, for the tab Table, not shown in Output
-    GPtrArray *tables = g_ptr_array_new_with_free_func (g_free);
-    char *out = query_take_tables (clean, tables);
-    char *err = query_take (q->err);
-    const int code = WIFEXITED (status) ? WEXITSTATUS (status) : -1;
-    // the value mongosh --json printed, after what print () printed; an error is such a value
-    const char *tail = q->table ? query_mongo_json_tail (out) : NULL;
-    char *message = query_mongo_json_error (tail);
-    char *json = NULL;
+    void *edit;
 
-    g_free (raw);
-    g_free (clean);
-    if (message != NULL)
-    {
-        char *both = g_strconcat (err, message, "\n", (char *) NULL);
-
-        out[tail - out] = '\0';
-        g_free (err);
-        err = both;
-    }
-    else if (tail != NULL)
-        json = g_strdup (tail);
-    query_output_done (q, out, err, status);
-    if (q->cut)
-        // copies cut too: none of them
-        g_ptr_array_set_size (tables, 0);
-    if (!q->table)
-        query_tables_show (q, tables, NULL, NULL);
-    else if (q->stopped)
-        query_tables_show (q, tables, NULL, _ ("The query was stopped.\n"));
-    else if (message != NULL && query_mongo_is_cursor (message))
-        query_tables_show (q, tables, NULL,
-                           _ ("The query ends with a cursor: .toArray() after it makes the "
-                              "table.\n"));
-    else if (message != NULL || code != 0)
-        query_tables_show (q, tables, NULL, _ ("The query failed: Output tells why.\n"));
-    else if (q->cut)
-        query_tables_show (q, tables, NULL,
-                           _ ("mongosh printed more than 8 MB: no table of a part of it.\n"));
-    else if (json == NULL)
-        query_tables_show (q, tables, NULL,
-                           _ ("The query ends with no value for the table: printjson () and "
-                              "print () print, and have none.\n"));
-    else
-        query_tables_show (q, tables, json, NULL);
-    g_ptr_array_free (tables, TRUE);
-    g_free (json);
-    g_free (message);
-    g_free (out);
-    g_free (err);
-    query_redraw (q);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static int
-query_output_ready (int fd, void *data)
-{
-    query_t *q = (query_t *) data;
-    const int which = fd == q->fds[0] ? 0 : 1;
-    GString *s = which == 0 ? q->out : q->err;
-    char buf[8192];
-    const ssize_t n = read (fd, buf, sizeof (buf));
-
-    if (n > 0)
-    {
-        if (s->len + (gsize) n > QUERY_OUTPUT_MAX)
-            q->cut = TRUE;
-        if (s->len < QUERY_OUTPUT_MAX)
-            g_string_append_len (s, buf, MIN (n, (ssize_t) (QUERY_OUTPUT_MAX - s->len)));
-    }
-    else if (n == 0 || (errno != EAGAIN && errno != EINTR))
-    {
-        delete_select_channel (fd);
-        close (fd);
-        q->fds[which] = -1;
-        if (q->fds[0] < 0 && q->fds[1] < 0)
-            query_done (q, query_reap (q));
-    }
-    return 0;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* mongosh run on the query, in an --eval of its own after the prefix, so that the lines of a
-   SyntaxError are those of the query; --json for the table */
-static void
-query_start (query_t *q)
-{
-    char *used = query_mongo_use (q->text);
-    // the database of the use () above a part run alone, in the prefix: the lines stay the same
-    char *prefix = q->use != NULL
-        ? g_strdup_printf ("%s db = db.getSiblingDB(%s);", query_mongo_prefix (), q->use)
-        : g_strdup (query_mongo_prefix ());
-    char *text =
-        q->limit > 0 ? query_mongo_with_limit (used, q->limit, &q->limited) : g_strdup (used);
-    const char *argv[10];
-    int n = 0, in, out, err, i;
-    GError *error = NULL;
-
-    g_free (used);
-    if (q->table)
-    {
-        char *array = query_mongo_for_table (text);
-
-        g_free (text);
-        text = array;
-    }
-    // what goes to mongosh, ".toArray()" too, and a query of History, which was not looked at
-    if (strlen (text) > QUERY_TEXT_MAX)
-    {
-        query_tab_set (q, QUERY_TAB_OUTPUT,
-                       _ ("The query is longer than mongosh takes (128 KB).\n"), TRUE);
-        query_table_say (q, "");
-        g_free (text);
-        g_free (prefix);
+    if (q->file == NULL)
         return;
-    }
-
-    argv[n++] = q->mongosh;
-    argv[n++] = "--nodb";
-    argv[n++] = "--quiet";
-    if (q->table)
-        argv[n++] = "--json=relaxed";
-    argv[n++] = "--eval";
-    argv[n++] = prefix;
-    argv[n++] = "--eval";
-    argv[n++] = text;
-    argv[n] = NULL;
-
-    // the memory of a big answer not kept for this one
-    for (i = 0; i < 2; i++)
-    {
-        GString **s = i == 0 ? &q->out : &q->err;
-
-        if ((*s)->allocated_len > 64 * 1024)
-        {
-            g_string_free (*s, TRUE);
-            *s = g_string_new (NULL);
-        }
-        g_string_truncate (*s, 0);
-    }
-    q->cut = FALSE;
-    if (!g_spawn_async_with_pipes (NULL, (char **) argv, NULL,
-                                   G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH,
-                                   query_child_setup, NULL, &q->pid, &in, &out, &err, &error))
-    {
-        char *message = g_strdup_printf ("%s: %s\n", q->mongosh, error->message);
-
-        g_clear_error (&error);
-        q->pid = 0;
-        query_tab_set (q, QUERY_TAB_OUTPUT, message, TRUE);
-        query_table_say (q, "");
-        g_free (message);
-        g_free (text);
-        g_free (prefix);
-        return;
-    }
-    g_free (text);
-    g_free (prefix);
-    // nothing to read from the terminal of coole
-    close (in);
-    q->fds[0] = out;
-    q->fds[1] = err;
-    for (i = 0; i < 2; i++)
-    {
-        (void) fcntl (q->fds[i], F_SETFL, fcntl (q->fds[i], F_GETFL) | O_NONBLOCK);
-        add_select_channel (q->fds[i], query_output_ready, q);
-    }
+    edit = q->host->window_top_file (q->host);
+    line += q->first - 1;
+    q->host->set_marker (q->host, q->file, line, q->mark, TRUE);
+    if (edit != NULL)
+        (void) q->host->go_to (q->host, edit, q->file, line, column);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1158,10 +753,7 @@ query_start (query_t *q)
 static void
 query_stop (query_t *q)
 {
-    if (q->pid == 0)
-        return;
-    q->stopped = TRUE;
-    (void) kill (-q->pid, SIGTERM);
+    q->backend->stop (q->backend_data);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1189,7 +781,7 @@ query_run (query_t *q, void *edit, gboolean all)
     off_t start, end;
     gboolean selected = FALSE, sectioned = FALSE;
 
-    if (q->pid != 0)
+    if (q->backend->running (q->backend_data))
     {
         if (query_dialog (_ ("Query"), _ ("A query is running. Stop it?"), D_NORMAL, 2, _ ("&Stop"),
                           _ ("&Cancel"))
@@ -1216,7 +808,7 @@ query_run (query_t *q, void *edit, gboolean all)
     else
     {
         // a script is run as a whole, its lines using what those before made; "// ---" parts it
-        block = query_section (text, e->buffer.curs_line, &first);
+        block = q->backend->sections ? query_section (text, e->buffer.curs_line, &first) : NULL;
         sectioned = block != NULL;
         if (block == NULL)
             block = g_strdup (text);
@@ -1233,8 +825,8 @@ query_run (query_t *q, void *edit, gboolean all)
         return;
     }
     // a part run alone is in the database of the use ("name") above it
-    if (first > 0)
-        use = query_use_before (text, first);
+    if (first > 0 && q->backend->context != NULL)
+        use = q->backend->context (text, first);
     file = q->host->get_current_file (q->host, edit);
     // the file as it is run, unless it is that of the run before; nothing run, no version
     version = file != NULL && !query_in_versions (file) ? query_version_save (file, text) : NULL;
@@ -1262,15 +854,12 @@ query_run_text (query_t *q, char *text, char *file, long first, char *use, char 
     g_free (q->file);
     q->file = file;
     q->first = first;
-    q->table = query_wants_table (text);
-    q->limit = query_wants_limit (text);
-    q->limited = FALSE;
     q->stopped = FALSE;
     q->started = g_get_monotonic_time ();
     q->host->clear_markers (q->host, NULL, q->mark);
     query_tab_set (q, QUERY_TAB_OUTPUT, _ ("Running...\n"), TRUE);
     query_table_say (q, _ ("Running...\n"));
-    query_start (q);
+    q->backend->start (q->backend_data);
     query_redraw (q);
 }
 
@@ -1285,7 +874,7 @@ query_history_run (query_t *q, const char *version)
 {
     const query_entry_t *e = query_history_last (q, version, TRUE, NULL);
 
-    if (q->pid != 0)
+    if (q->backend->running (q->backend_data))
     {
         query_run (q, NULL, FALSE);
         return;
@@ -1801,46 +1390,6 @@ query_handle_action (void *data, long command, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The file of queries of @edit without a use ("name"): use("db") put at its top, the database
-   of -Q, for the language server, which knows the database of the collections it completes by
-   it alone; the file is changed, to be saved or not.  The name of the database when it was put
-   there, else NULL. */
-static char *
-query_use_put (query_t *q, void *edit)
-{
-    char *db = query_mongo_db (g_getenv ("MC_MONGO_URI"), g_getenv ("MC_MONGO_DB"));
-    char *text, *line;
-    gsize len = 0;
-    WEdit *e;
-    off_t at;
-
-    if (edit == NULL || db == NULL)
-    {
-        g_free (db);
-        return NULL;
-    }
-    text = q->host->get_text (q->host, edit, &len);
-    if (text == NULL || query_has_use (text))
-    {
-        g_free (text);
-        g_free (db);
-        return NULL;
-    }
-    g_free (text);
-
-    // at the top, the cursor staying on the text it was on
-    e = EDIT (edit);
-    at = e->buffer.curs1;
-    line = query_use_line (db);
-    edit_cursor_move (e, -e->buffer.curs1);
-    q->host->insert_text (q->host, edit, line, 0);
-    edit_cursor_move (e, at);
-    g_free (line);
-    return db;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 /* A double click on a line of History, "activate" of the viewer: the version of its query open */
 static void
 query_viewer_signal (const char *name, const char *signal, GVariant *args, void *data)
@@ -1866,47 +1415,17 @@ query_startup (void *data)
     query_t *q = (query_t *) data;
     void *edit = q->host->window_top_file (q->host);
     char *file = edit != NULL ? q->host->get_current_file (q->host, edit) : NULL;
-    char *found = g_find_program_in_path (q->mongosh);
-    // the language server of the queries, of lsp.json
-    char *server = g_find_program_in_path (QUERY_LANGUAGE_SERVER);
     GString *text = g_string_new (NULL);
-    char *used;
 
     query_history_load (q, file);
     g_free (file);
-    used = query_use_put (q, edit);
-
-    g_string_append_printf (text, _ ("Database: %s\n"), q->endpoint);
-    if (found != NULL)
-        g_string_append_printf (text, "mongosh: %s\n", found);
-    else
-        g_string_append_printf (text, ANSI_RED "%s\n" ANSI_RESET,
-                                _ ("mongosh is not found: MC_MONGOSH or PATH should have it."));
-    if (server != NULL)
-        g_string_append_printf (text, "%s: %s\n\n", QUERY_LANGUAGE_SERVER, server);
-    else
-        g_string_append_printf (text, _ ("%s is not found: no completion of the queries (%s)\n\n"),
-                                QUERY_LANGUAGE_SERVER, QUERY_LANGUAGE_SERVER_URL);
-    if (used != NULL)
-        g_string_append_printf (
-            text,
-            _ ("use(\"%s\") is put at the top of the file: the language server\n"
-               "completes the collections of that database.\n\n"),
-            used);
-    g_string_append (text,
-                     _ ("F5 runs the selection, else the part between the lines \"// ---\"\n"
-                        "around the cursor, else the whole file; Ctrl-F5 the whole file.\n"
-                        "A line \"// @table\" in the query makes the tab Table of the\n"
-                        "documents it ends with.\n"));
+    q->backend->startup (q->backend_data, edit, text);
     // the tabs in their order, the first one seen
     query_tab_set (q, QUERY_TAB_OUTPUT, text->str, FALSE);
     query_table_say (q, _ ("No query run yet.\n"));
     query_history_show_here (q);
     query_viewer_id (q, "show", q->tabs[QUERY_TAB_OUTPUT], FALSE);
     g_string_free (text, TRUE);
-    g_free (found);
-    g_free (server);
-    g_free (used);
     query_redraw (q);
 }
 
@@ -1917,25 +1436,23 @@ query_open (mc_editor_host_t *host, void *editor_dialog)
 {
     query_t *q = g_new0 (query_t, 1);
     const char *kind = host->startup_option (host, "query");
-    const char *mongosh = g_getenv ("MC_MONGOSH");
-    int i;
+    guint i;
 
     (void) editor_dialog;
     q->host = host;
-    q->fds[0] = q->fds[1] = -1;
-    q->out = g_string_new (NULL);
-    q->err = g_string_new (NULL);
     q->history = g_ptr_array_new_with_free_func (query_entry_free);
     q->rows = g_ptr_array_new_with_free_func (g_free);
-    q->mongosh = g_strdup (mongosh != NULL && *mongosh != '\0' ? mongosh : "mongosh");
-    q->endpoint = query_mongo_endpoint (g_getenv ("MC_MONGO_URI"), g_getenv ("MC_MONGO_DB"));
     host->commands_register (host, QUERY_KEYMAP_SECTION, N_ ("&Query"), query_commands);
     for (i = 0; i < QUERY_CMD_COUNT; i++)
         q->commands[i] = host->command_id (host, query_commands[i].name);
     q->mark = host->marker_kind (host, &query_mark_kind);
-    q->on = kind != NULL && strcmp (kind, "mongo") == 0;
+    for (i = 0; kind != NULL && q->backend == NULL && i < G_N_ELEMENTS (query_backends); i++)
+        if (strcmp (kind, query_backends[i]->id) == 0)
+            q->backend = query_backends[i];
+    q->on = q->backend != NULL;
     if (q->on)
     {
+        q->backend_data = q->backend->open (q);
         q->viewer_signal = host->service_connect (host, "viewer", query_viewer_signal, q);
         host->call_later (host, query_startup, q);
     }
@@ -1949,16 +1466,14 @@ query_close (void *data)
 {
     query_t *q = (query_t *) data;
 
-    query_kill (q);
+    if (q->backend != NULL)
+        q->backend->close (q->backend_data);
     if (q->viewer_signal != 0)
         q->host->service_disconnect (q->host, q->viewer_signal);
     g_ptr_array_free (q->history, TRUE);
     g_ptr_array_free (q->rows, TRUE);
-    g_string_free (q->out, TRUE);
-    g_string_free (q->err, TRUE);
     g_free (q->history_path);
     g_free (q->history_file);
-    g_free (q->mongosh);
     g_free (q->endpoint);
     g_free (q->text);
     g_free (q->file);
@@ -1974,7 +1489,7 @@ query_ok_to_quit (void *data)
 {
     query_t *q = (query_t *) data;
 
-    return q->pid == 0
+    return q->backend == NULL || !q->backend->running (q->backend_data)
         || query_dialog (_ ("Query"), _ ("Stop the query and quit?"), D_NORMAL, 2, _ ("&Stop"),
                          _ ("&Cancel"))
         == 0;
