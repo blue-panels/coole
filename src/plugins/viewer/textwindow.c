@@ -116,6 +116,8 @@ typedef struct
     long mark_col;
     void (*on_destroy) (void *data);
     void *on_destroy_data;
+    void (*on_activate) (void *data, long line);  // a double click on a line of a list
+    void *on_activate_data;
 } WTextWindow;
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -503,7 +505,9 @@ text_window_draw_text (const WTextWindow *tw)
     int row;
     long l1 = 0, c1 = 0, l2 = 0, c2 = 0;
     const gboolean marked = text_window_selection (tw, &l1, &c1, &l2, &c2);
-    const int cursor_color = EDITOR_BOOKMARK_COLOR;
+    /* the green of a bookmark found: the red of a bookmark is that of a line that failed too, and
+       what is marked is of another color */
+    const int cursor_color = EDITOR_BOOKMARK_FOUND_COLOR;
 
     colors.normal = EDITOR_NORMAL_COLOR;
     colors.bold = text_window_bold_color ();
@@ -1114,6 +1118,9 @@ text_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
     case MSG_MOUSE_CLICK:
         if ((event->count & GPM_TRIPLE) != 0)
             text_window_select_word (tw, TRUE);
+        else if ((event->count & GPM_DOUBLE) != 0 && tw->line_cursor && tw->on_activate != NULL)
+            // a list: the line is chosen, as with Enter
+            tw->on_activate (tw->on_activate_data, tw->cur_line);
         else if ((event->count & GPM_DOUBLE) != 0)
             text_window_select_word (tw, FALSE);
         break;
@@ -1308,6 +1315,17 @@ edit_text_window_text_lines (const WEditWindow *win)
 
     text_window_text_rect (CONST_TEXT_WINDOW (win), &r);
     return MAX (0, r.lines);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_text_window_on_activate (WEditWindow *win, void (*fn) (void *data, long line), void *data)
+{
+    WTextWindow *tw = TEXT_WINDOW (win);
+
+    tw->on_activate = fn;
+    tw->on_activate_data = data;
 }
 
 /* --------------------------------------------------------------------------------------------- */

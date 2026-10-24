@@ -34,7 +34,8 @@
  *  Methods, with their arguments and answers, a{sv}:
  *
  *    open       title, text, place ("right", "bottom", "full"), size (percent), focus,
- *               cursorline (a list: the line of the cursor drawn across the window) -> id
+ *               cursorline (a list: the line of the cursor drawn across the window, in the
+ *               color of a bookmark found) -> id
  *    set_text   id, text
  *    set_title  id, title
  *    scroll_to  id, line
@@ -46,6 +47,7 @@
  *    add_type   type, suffixes (strings), starts (strings)
  *
  *  Signal "closed", id: the user closed the window.
+ *  Signal "activate", id, line (from 0): a double click on a line of a window of cursorline.
  *
  *  Preview: Ctrl-Alt-P, or Window > Preview, shows a window "Preview" at the right of the file,
  *  whatever the file is, and follows it: its text as it changes, its cursor, the file window that
@@ -298,6 +300,22 @@ viewer_window (viewer_t *v, GVariant *args, gint64 *id, GError **error)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A line of a list chosen by a double click: those who listen are told, "activate" */
+static void
+viewer_window_activated (void *data, long line)
+{
+    viewer_window_t *vw = (viewer_window_t *) data;
+    GVariantDict dict;
+
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", vw->id);
+    g_variant_dict_insert (&dict, "line", "x", (gint64) line);
+    vw->viewer->host->service_emit (vw->viewer->host, VIEWER_SERVICE, "activate",
+                                    g_variant_dict_end (&dict));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A window is destroyed, by the user or with the editor: it is forgotten, and those who listen
    are told */
 static void
@@ -387,6 +405,7 @@ viewer_window_new (viewer_t *v, const WRect *r, int dock, gboolean full, const c
     *key = vw->id;
     g_hash_table_insert (v->windows, key, win);
     edit_text_window_on_destroy (win, viewer_window_destroyed, vw);
+    edit_text_window_on_activate (win, viewer_window_activated, vw);
 
     prev = v->host->window_current (v->host);
     v->host->window_add (v->host, win);

@@ -87,13 +87,17 @@ and ctags for F3.
 
 .TP
 \fI\-Q, \-\-query\fP
-Run the queries of the file with mongosh: F5 the lines around the cursor
-or the selection, Ctrl\-F5 the whole file; the answer comes in the tabs
+Run the queries of the file with mongosh: F5 the selection, else the
+part between lines \fI// \-\-\-\fP around the cursor, else the whole file, Ctrl\-F5
+the whole file; the answer comes in the tabs
 Output, Table and History at the bottom. \fIMC_MONGO_URI\fP and \fIMC_MONGO_DB\fP
 in the environment tell what to connect to, \fIMC_MONGOSH\fP the program.
 Without a file named, the file is \fI~/.local/share/coole/queries/\fP, with the
 name of the database and \fI\&.js\fP\&. The windows the project had last time are
-not shown. It needs the query plugin.
+not shown, and the plugins of a project and of code (project, build,
+debugger, ctags, etags, git, terminal, spell) are not started; the
+scripts stay, and the language server of the queries when lsp.json has one.
+It needs the query plugin.
 
 .TP
 \fI\-G, \-\-git=directory\fP

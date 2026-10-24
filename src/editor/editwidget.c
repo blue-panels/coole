@@ -3505,15 +3505,23 @@ edit_startup_option (const char *name)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* coole -G is there for git: the plugins of a project are not started, their menus and windows
-   not shown; Manage plugins is not touched */
+/* coole -G is there for git, coole -Q for the queries of a database: the plugins of a project are
+   not started, their menus and windows not shown; Manage plugins is not touched */
 gboolean
 edit_plugin_off_for_session (const char *name)
 {
     // the terminal stays: the git plugin pushes and pulls in its shell
     static const char *const project_plugins[] = { "project", "build", "debugger",
                                                    "ctags",   "etags", NULL };
+    /* mongosh runs the queries; the language server of the queries, mongolsp of lsp.json, and the
+       scripts of the user stay */
+    static const char *const query_plugins[] = { "project",  "build", "debugger",
+                                                 "ctags",    "etags", "git",
+                                                 "terminal", "spell", NULL };
 
-    return name != NULL && edit_startup_option ("git") != NULL
-        && g_strv_contains (project_plugins, name);
+    if (name == NULL)
+        return FALSE;
+    if (edit_startup_option ("query") != NULL)
+        return g_strv_contains (query_plugins, name);
+    return edit_startup_option ("git") != NULL && g_strv_contains (project_plugins, name);
 }

@@ -25,6 +25,8 @@
 /* a request not answered in that time is given up */
 #define LSP_REQUEST_TIMEOUT_MS    10000
 #define LSP_INITIALIZE_TIMEOUT_MS 15000
+/* a request of lsp.json after initialized: a connection to a database may take a while */
+#define LSP_CONFIG_REQUEST_TIMEOUT_MS 60000
 /* a stop: the time for the server to say goodbye, then to end after SIGTERM */
 #define LSP_STOP_TIMEOUT_MS 3000
 /* the requests of a client not answered yet */

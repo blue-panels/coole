@@ -79,6 +79,11 @@
 #define LSP_TICK_FAST_MS 5
 #define LSP_TICK_MS      100
 
+// the CompletionItemKind of a word of lsp.json
+#define LSP_KIND_KEYWORD 14
+// the member that marks such a word among the items of the server
+#define LSP_WORD_MEMBER "coole-word"
+
 /* the lines of the source of a definition Hover shows at most */
 #define LSP_HOVER_SOURCE_LINES 10
 /* the lines the help of a call shows at once: the code typed under it stays in sight */
@@ -261,6 +266,7 @@ struct lsp_plugin_t
 // the entry of the module
 const mc_editor_plugin_t *mc_editor_plugin_register (void);
 
+static gboolean lsp_started_with (const char *name, void *data);
 static void lsp_on_state (void *owner, lsp_client_t *client);
 static void lsp_on_diagnostics (void *owner, lsp_client_t *client, const char *uri,
                                 JsonArray *diagnostics);
@@ -660,7 +666,8 @@ lsp_server_start (lsp_server_t *server, gboolean manual)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Whether what happens @when happens now: on a project of -D for "ide" */
+/* Whether what happens @when happens now: on a project of -D for "ide", and in the editor of
+   queries of -Q, whose file is the one thing it edits */
 static gboolean
 lsp_now (const lsp_plugin_t *plugin, lsp_when_t when)
 {
@@ -669,7 +676,7 @@ lsp_now (const lsp_plugin_t *plugin, lsp_when_t when)
     case LSP_WHEN_ALWAYS:
         return TRUE;
     case LSP_WHEN_IDE:
-        return plugin->project != NULL;
+        return plugin->project != NULL || lsp_started_with ("query", (void *) plugin);
     default:
         return FALSE;
     }
@@ -2799,6 +2806,7 @@ lsp_kind_letter (gint64 kind)
 typedef struct
 {
     JsonObject *item;
+    gboolean exact;  // the word typed itself
     gboolean typed;  // of the type of the parameter the cursor is in: first
     int score;
     const char *sort;
@@ -2814,6 +2822,10 @@ lsp_choice_cmp (gconstpointer a, gconstpointer b)
 
     if (x->typed != y->typed)
         return x->typed ? -1 : 1;
+    /* then the word typed itself: "db" is no DBRef, which the letters of the word fit better,
+       and a dot takes the first; the rest as the server ranks it */
+    if (x->exact != y->exact)
+        return x->exact ? -1 : 1;
     if (x->score != y->score)
         return x->score > y->score ? -1 : 1;
     c = strcmp (x->sort, y->sort);
@@ -2883,6 +2895,7 @@ lsp_session_show (lsp_plugin_t *plugin, lsp_window_t *w, const char *word)
         choice = g_new0 (lsp_choice_t, 1);
         choice->item = item;
         choice->score = score;
+        choice->exact = *word != '\0' && strcmp (filter, word) == 0;
         choice->sort = lsp_member_string (item, "sortText");
         if (choice->sort == NULL)
             choice->sort = label;
@@ -3016,6 +3029,60 @@ lsp_session_update (lsp_plugin_t *plugin, WEdit *edit, gboolean asked_for, const
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The items of the server and the words of its backend, those not after a dot: the keywords of
+   the language and its names the server does not complete itself; a word the server says is not
+   said twice.  A new array. */
+static JsonArray *
+lsp_session_with_words (lsp_plugin_t *plugin, lsp_window_t *w, JsonArray *items)
+{
+    const lsp_backend_t *backend =
+        w->server != NULL ? lsp_config_backend (plugin->config, w->server->backend_id) : NULL;
+    const lsp_session_t *s = plugin->session;
+    JsonArray *all;
+    GHashTable *said;
+    guint i;
+
+    // no words to add: the items of the server as they are, not copied
+    if (backend == NULL || backend->words == NULL
+        || (s->start > 0 && edit_buffer_get_byte (&w->edit->buffer, s->start - 1) == '.'))
+        return items != NULL ? json_array_ref (items) : json_array_new ();
+
+    all = json_array_new ();
+    said = g_hash_table_new (g_str_hash, g_str_equal);
+    for (i = 0; items != NULL && i < json_array_get_length (items); i++)
+    {
+        JsonNode *node = json_array_get_element (items, i);
+
+        json_array_add_element (all, json_node_copy (node));
+        if (JSON_NODE_HOLDS_OBJECT (node)
+            && lsp_member_string (json_node_get_object (node), "label") != NULL)
+            g_hash_table_add (said,
+                              (gpointer) lsp_member_string (json_node_get_object (node), "label"));
+    }
+    for (i = 0; backend->words[i] != NULL; i++)
+    {
+        JsonObject *item;
+        char *sort;
+
+        if (g_hash_table_contains (said, backend->words[i]))
+            continue;
+        item = json_object_new ();
+        json_object_set_string_member (item, "label", backend->words[i]);
+        json_object_set_int_member (item, "kind", LSP_KIND_KEYWORD);
+        // after what the server says
+        sort = g_strconcat ("~", backend->words[i], (char *) NULL);
+        json_object_set_string_member (item, "sortText", sort);
+        g_free (sort);
+        // a word of lsp.json, not of the server: a dot does not take it for another word
+        json_object_set_boolean_member (item, LSP_WORD_MEMBER, TRUE);
+        json_array_add_object_element (all, item);
+    }
+    g_hash_table_destroy (said);
+    return all;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The answer of the server: the items of the session */
 static void
 lsp_session_answer (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
@@ -3047,11 +3114,11 @@ lsp_session_answer (lsp_plugin_t *plugin, lsp_window_t *w, lsp_ask_t *ask)
     }
     if (s->items != NULL)
         json_array_unref (s->items);
-    s->items = items != NULL ? json_array_ref (items) : json_array_new ();
     /* nothing is no list: the server may know nothing at a dot alone, where the line is no code
        yet, "item." in "sum(item. for item in items)" for pylsp, and all after a letter */
-    if (json_array_get_length (s->items) == 0)
+    if (items == NULL || json_array_get_length (items) == 0)
         s->incomplete = TRUE;
+    s->items = lsp_session_with_words (plugin, w, items);
     if (s->text != NULL)
         g_bytes_unref (s->text);
     s->text = g_bytes_ref (ask->text);
@@ -3095,6 +3162,37 @@ lsp_session_take (lsp_plugin_t *plugin, WEdit *edit, off_t end)
         lsp_session_free (s);
     }
     lsp_session_end (plugin);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the item of the list the cursor is on may be taken by a dot: one of the server, or a
+   word of lsp.json that starts with the word typed, its case kept */
+static gboolean
+lsp_session_dot_takes (lsp_plugin_t *plugin, WEdit *edit)
+{
+    lsp_popup_item_t *item = lsp_popup_current (plugin->popup);
+    const lsp_session_t *s = plugin->session;
+    const char *filter;
+    GString *word;
+    off_t i;
+    gboolean starts;
+
+    if (item == NULL || s == NULL)
+        return FALSE;
+    if (!json_object_has_member ((JsonObject *) item->data, LSP_WORD_MEMBER))
+        return TRUE;
+    filter = lsp_member_string ((JsonObject *) item->data, "filterText");
+    if (filter == NULL)
+        filter = lsp_member_string ((JsonObject *) item->data, "label");
+    if (filter == NULL)
+        return FALSE;
+    word = g_string_new (NULL);
+    for (i = s->start; i < edit->buffer.curs1; i++)
+        g_string_append_c (word, (char) edit_buffer_get_byte (&edit->buffer, i));
+    starts = g_str_has_prefix (filter, word->str);
+    g_string_free (word, TRUE);
+    return starts;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -3170,7 +3268,13 @@ lsp_session_key (lsp_plugin_t *plugin, WEdit *edit, int key)
             lsp_session_end (plugin);
             return TRUE;
         case '.':
-            // the item, then the members of it
+            // the item, then the members of it; a word of lsp.json that is not the word typed and
+            // more, as DBRef for "db", is not put for it: the dot is the editor's
+            if (!lsp_session_dot_takes (plugin, edit))
+            {
+                lsp_session_end (plugin);
+                return FALSE;
+            }
             lsp_session_take (plugin, edit, edit->buffer.curs1);
             g_free (plugin->trigger);
             plugin->trigger = g_strdup (".");
@@ -3623,6 +3727,17 @@ lsp_config_files (char **system, char **user)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether coole was started with the option @name: "query" for -Q */
+static gboolean
+lsp_started_with (const char *name, void *data)
+{
+    const lsp_plugin_t *plugin = (const lsp_plugin_t *) data;
+
+    return plugin->host->startup_option (plugin->host, name) != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 lsp_load_config (lsp_plugin_t *plugin)
 {
@@ -3631,6 +3746,8 @@ lsp_load_config (lsp_plugin_t *plugin)
 
     lsp_config_files (&system, &user);
     plugin->config = lsp_config_load (system, user, errors);
+    if (plugin->config != NULL)
+        lsp_config_for_startup (plugin->config, lsp_started_with, plugin);
     g_free (plugin->config_errors);
     plugin->config_errors = errors->len > 0 ? g_strdup (errors->str) : NULL;
     g_string_free (errors, TRUE);

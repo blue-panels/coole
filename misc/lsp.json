@@ -53,6 +53,29 @@
       "command": ["lua-language-server"],
       "extensions": {".lua": "lua"},
       "root_markers": [".luarc.json"]
+    },
+    {
+      "id": "mongodb",
+      "command": ["mongolsp"],
+      "extensions": {".js": "javascript", ".mongodb": "javascript"},
+      "startup": "query",
+      "words": ["db", "sp", "use", "async", "await", "break", "case", "catch", "class", "const", "continue",
+                "default", "delete", "do", "else", "false", "finally", "for", "function", "if",
+                "in", "instanceof", "let", "new", "null", "of", "return", "switch", "this",
+                "throw", "true", "try", "typeof", "undefined", "var", "while",
+                "Array", "Boolean", "Date", "Error", "JSON", "Map", "Math", "Number", "Object",
+                "Promise", "RegExp", "Set", "String", "console", "isNaN", "parseFloat", "parseInt",
+                "print", "printjson", "connect", "load", "sleep", "quit", "Mongo",
+                "ObjectId", "ISODate", "UUID", "NumberInt", "NumberLong", "NumberDecimal",
+                "Timestamp", "BinData", "MinKey", "MaxKey", "BSONRegExp", "Code", "DBRef", "EJSON",
+                "rs", "sh"],
+      "requests": [
+        {"method": "INITIALIZE_MONGODB_SERVICE",
+         "params": {"extensionPath": "${command_dir}/..", "connectionId": null}},
+        {"method": "ACTIVE_CONNECTION_CHANGED",
+         "params": {"connectionId": "coole", "connectionString": "${env:MC_MONGO_URI}",
+                    "connectionOptions": {}}}
+      ]
     }
   ]
 }
