@@ -35,6 +35,7 @@ typedef struct WMenuBar
     guint current;                  // Current menu on the top bar
     unsigned long previous_widget;  // Selected widget ID before activating menu
     int remade;                     // the menu made again for this drop, -1 for none
+    WScrollBar *bar;                // The scrollbar of a dropped menu taller than the screen
 } WMenuBar;
 
 /*** global variables defined in .c file *********************************************************/

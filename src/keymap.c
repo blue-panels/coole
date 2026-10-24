@@ -118,6 +118,8 @@ static const global_keymap_ini_t default_menu_keymap[] = {
     { "Right", "right; ctrl-f" },
     { "Up", "up; ctrl-p" },
     { "Down", "down; ctrl-n" },
+    { "PageUp", "pgup" },
+    { "PageDown", "pgdn" },
     { "Home", "home; alt-lt; ctrl-a" },
     { "End", "end; alt-gt; ctrl-e" },
     { "Enter", "enter" },

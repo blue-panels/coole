@@ -218,6 +218,22 @@ scrollbar_set_look (WScrollBar *b, const scrollbar_look_t *look)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Put the bar at r, give it the range and the color and draw it: what a widget that keeps a bar
+   to itself does when it draws */
+
+void
+scrollbar_show (WScrollBar *b, const WRect *r, long total, long visible, long pos, int color)
+{
+    WRect place = *r;
+
+    widget_set_size_rect (WIDGET (b), &place);
+    scrollbar_set_range (b, total, visible, pos);
+    scrollbar_set_color (b, color);
+    send_message (WIDGET (b), NULL, MSG_DRAW, 0, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 void
 scrollbar_set_color (WScrollBar *b, int color)
 {
