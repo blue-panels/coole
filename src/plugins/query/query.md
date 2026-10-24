@@ -218,7 +218,41 @@ failed after them are told as incomplete.
 and its versions are *.sql*.
 
 **QueryRollback**
-: In the menu Query, with no key of its own: run *ROLLBACK*.
+: Run *ROLLBACK*. It has no key of its own: one is given it in
+*~/.config/coole/keymap.ini*, section *[query]*.
+
+**Ctrl-Alt-S**
+: The window Schema at the right, QuerySchema: shown when it is not, given
+the focus when it has it not, hidden when it has. It is shown once
+connected: the schemas of the database, that of *MC_PG_SCHEMA* first and
+unfolded, else *public*, those of the system left out; their tables *t*,
+partitioned tables *p*, views *v*, materialized views *m*, foreign tables
+*f* and sequences *S*, with the rows the server reckons, *~50000*.
+
+In Schema:
+
+**Enter**
+: Fold or unfold a schema; unfold a relation, its columns under it with
+their types, *not null*, the default, *identity*, *generated*. A double
+click does so too.
+
+**F5**
+: The first 100 rows of the relation, or of that of the column, in Table:
+a query of no file, QuerySchemaRows.
+
+**Insert**
+: Put the name at the cursor of the file of queries, as SQL takes it:
+*sales."Orders"* for a relation, the name of a column or of a schema;
+QuerySchemaInsert.
+
+**QuerySchemaRefresh**
+: Read the schemas again, with no key of its own. They are read again by
+themselves after a query whose *CREATE*, *ALTER* or *DROP* is committed.
+
+Schema reads the catalog by a connection of its own, of the same
+environment, read-only as the other is: a query running or a transaction
+that failed leaves it read all the same, and it sees what is committed
+alone.
 
 A connection lost while a query runs is told so, with the transaction,
 the temporary tables and *SET* of the session gone with it; F5 connects

@@ -42,12 +42,14 @@
 #define QUERY_OUTPUT_MAX (8 * 1024 * 1024)
 // the rows of a table of the tab Table at most, the rest counted
 #define QUERY_TABLE_ROWS 100u
+// the width of the window Schema, percent of the screen
+#define QUERY_SCHEMA_SIZE 30
 
-#define ANSI_BOLD        "\033[1m"
-#define ANSI_RED         "\033[31m"
-#define ANSI_GREEN       "\033[32m"
-#define ANSI_CYAN        "\033[36m"
-#define ANSI_RESET       "\033[0m"
+#define ANSI_BOLD         "\033[1m"
+#define ANSI_RED          "\033[31m"
+#define ANSI_GREEN        "\033[32m"
+#define ANSI_CYAN         "\033[36m"
+#define ANSI_RESET        "\033[0m"
 
 /*** enums ***************************************************************************************/
 
@@ -61,8 +63,22 @@ enum
     QUERY_CMD_HISTORY_INSERT,
     QUERY_CMD_HISTORY_SHOW,
     QUERY_CMD_ROLLBACK,
+    QUERY_CMD_SCHEMA,
+    QUERY_CMD_SCHEMA_ROWS,
+    QUERY_CMD_SCHEMA_INSERT,
+    QUERY_CMD_SCHEMA_REFRESH,
     QUERY_CMD_COUNT
 };
+
+/* What is done in the window Schema, at a line of it */
+typedef enum
+{
+    QUERY_SCHEMA_SHOW,     // made, its text read the first time
+    QUERY_SCHEMA_REFRESH,  // read again
+    QUERY_SCHEMA_ENTER,    // a schema folded or unfolded, the columns of a relation
+    QUERY_SCHEMA_ROWS,     // the rows of the relation in Table
+    QUERY_SCHEMA_INSERT    // the name put in the file
+} query_schema_action_t;
 
 enum
 {
@@ -94,6 +110,8 @@ typedef struct
     void (*start) (void *data);
     void (*stop) (void *data);
     const char *rollback;  // the query QueryRollback runs, "ROLLBACK"; NULL for none
+    // the window Schema: @action at its 0-based @line, -1 for none; NULL for a backend with none
+    void (*schema) (void *data, query_schema_action_t action, long line);
 } query_backend_t;
 
 /* The plugin */
@@ -116,6 +134,7 @@ struct query_t
     gint64 started;
 
     gint64 tabs[QUERY_TAB_COUNT];  // the windows of the viewer, 0 when none
+    gint64 schema;                 // the window Schema at the right, 0 when none
     long commands[QUERY_CMD_COUNT];
     int mark;
     GPtrArray *history;  // query_entry_t, the last one last
@@ -140,6 +159,10 @@ void query_tab_title (query_t *q, int tab, const char *title);
 void query_table_say (query_t *q, const char *text);
 void query_redraw (query_t *q);
 
+/* The text of the window Schema, made again when the user has closed it, the cursor on @line */
+void query_schema_set (query_t *q, const char *text, long line);
+/* The line of the cursor of the window Schema, from 0; -1 when there is none */
+long query_schema_line (query_t *q);
 /* Run @text, a query of no file, as QueryRollback does: an error of it is marked nowhere */
 void query_run_alone (query_t *q, const char *text);
 /* The start of the head of the output of a run, bold: its lines, the time it took, when it ended

@@ -160,6 +160,10 @@ const query_pq_t *query_pq_load (char **error);
 /* Whether the libpq loaded has what libpq 17 has: rows by chunks, a cancel that does not block */
 gboolean query_pq_chunks (const query_pq_t *pq);
 gboolean query_pq_async_cancel (const query_pq_t *pq);
+/* A connection started as coole makes them, of what the environment tells libpq: UTF8, the name
+   coole, with @read_only transactions that write nothing; NULL with no memory.  The name of the
+   host is looked up here, and that blocks: libpq does it so. */
+PGconn *query_pq_start (const query_pq_t *pq, gboolean read_only);
 
 /*** inline functions ****************************************************************************/
 

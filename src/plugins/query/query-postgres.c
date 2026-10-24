@@ -49,6 +49,7 @@
 #include "query-core.h"
 #include "query-int.h"
 #include "query-pq.h"
+#include "query-pg-schema.h"
 
 /*** global variables ****************************************************************************/
 
@@ -110,6 +111,8 @@ typedef struct
     char *name;          // of the connection for the user: MC_PG_CONNECTION, else PGSERVICE
     char *head;          // what Output tells at the start, before a query is run
     char *relation;      // of MC_PG_RELATION, the query of its rows run once connected; or NULL
+    query_pg_schema_t *schema;  // the window Schema, NULL without libpq
+    gboolean ddl;  // a command changed the schemas: Schema is read again once committed
 
     // the query running, or the last one
     GString *out;       // Output after its head: notices, what each command did, the errors
@@ -276,7 +279,10 @@ query_pg_connected (query_pg_t *p, gboolean ok)
         query_pg_say (p, what, FALSE);
     p->reconnect = FALSE;
     g_free (what);
-    // the rows of the relation the panel was on, the file of queries as it is
+    // the window Schema the first time, then the rows of the relation the panel was on, the
+    // file of queries as it is
+    if (first && p->schema != NULL)
+        query_pg_schema_do (p->schema, QUERY_SCHEMA_SHOW, -1);
     if (first && p->relation != NULL && p->state == QUERY_PG_READY)
         query_run_alone (p->q, p->relation);
 }
@@ -353,18 +359,8 @@ query_pg_watch (query_pg_t *p, int fd, gboolean write)
 static void
 query_pg_connect (query_pg_t *p)
 {
-    const char *keywords[4] = { "client_encoding", "application_name", NULL, NULL };
-    const char *values[4] = { "UTF8", "coole", NULL, NULL };
-
-    if (p->read_only)
-    {
-        // a parameter of the connection, made again with it, no query after it
-        keywords[2] = "options";
-        values[2] = "-c default_transaction_read_only=on";
-    }
     query_pg_close_conn (p);
-    // the name of the host is looked up here, and that blocks: libpq does it so
-    p->conn = p->pq->PQconnectStartParams (keywords, values, 0);
+    p->conn = query_pq_start (p->pq, p->read_only);
     if (p->conn == NULL)
     {
         p->state = QUERY_PG_BROKEN;
@@ -703,6 +699,10 @@ query_pg_result (query_pg_t *p, PGresult *res)
         break;
     }
     case QUERY_PG_COMMAND_OK:
+        if (g_str_has_prefix (pq->PQcmdStatus (res), "CREATE ")
+            || g_str_has_prefix (pq->PQcmdStatus (res), "ALTER ")
+            || g_str_has_prefix (pq->PQcmdStatus (res), "DROP "))
+            p->ddl = TRUE;
         query_pg_summary (p, pq->PQcmdStatus (res));
         line = g_strdup_printf ("%s\n", pq->PQcmdStatus (res));
         query_pg_out (p, line, -1);
@@ -783,6 +783,14 @@ query_pg_done (query_pg_t *p)
     // in front when it has rows, Output with an error
     query_tab_set (q, QUERY_TAB_TABLE, p->tables->str, p->rows && !p->failed);
     query_history_add (q, when, seconds, q->stopped ? -1 : p->failed ? 1 : 0, p->summary);
+    // the other connection of Schema sees what is committed alone
+    if (p->ddl && p->schema != NULL
+        && (p->state != QUERY_PG_READY
+            || p->pq->PQtransactionStatus (p->conn) == QUERY_PG_TRANS_IDLE))
+    {
+        p->ddl = FALSE;
+        query_pg_schema_changed (p->schema);
+    }
     query_redraw (q);
 }
 
@@ -1117,7 +1125,10 @@ query_pg_open (query_t *q)
     query_pg_set_endpoint (p);
     // before the language server starts, with the file of queries
     if (p->pq != NULL)
+    {
         query_pg_lsp_context (p);
+        p->schema = query_pg_schema_new (q, p->pq, p->read_only, g_getenv ("MC_PG_SCHEMA"));
+    }
     return p;
 }
 
@@ -1143,6 +1154,7 @@ query_pg_close (void *data)
     g_free (p->name);
     g_free (p->head);
     g_free (p->relation);
+    query_pg_schema_free (p->schema);
     g_string_free (p->out, TRUE);
     g_string_free (p->tables, TRUE);
     g_free (p->status);
@@ -1293,6 +1305,19 @@ query_pg_stop (void *data)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+static void
+query_pg_schema (void *data, query_schema_action_t action, long line)
+{
+    query_pg_t *p = (query_pg_t *) data;
+
+    if (p->schema == NULL)
+        query_pg_say (p, p->pq_error, TRUE);
+    else
+        query_pg_schema_do (p->schema, action, line);
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -1308,6 +1333,7 @@ const query_backend_t query_postgres_backend = {
     .start = query_pg_start,
     .stop = query_pg_stop,
     .rollback = "ROLLBACK",
+    .schema = query_pg_schema,
 };
 
 /* --------------------------------------------------------------------------------------------- */

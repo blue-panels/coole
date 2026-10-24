@@ -152,3 +152,20 @@ query_pq_async_cancel (const query_pq_t *pq)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+PGconn *
+query_pq_start (const query_pq_t *pq, gboolean read_only)
+{
+    const char *keywords[4] = { "client_encoding", "application_name", NULL, NULL };
+    const char *values[4] = { "UTF8", "coole", NULL, NULL };
+
+    if (read_only)
+    {
+        // a parameter of the connection, made again with it, no query after it
+        keywords[2] = "options";
+        values[2] = "-c default_transaction_read_only=on";
+    }
+    return pq->PQconnectStartParams (keywords, values, 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
