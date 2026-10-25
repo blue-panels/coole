@@ -174,8 +174,9 @@ void query_tab_title (query_t *q, int tab, const char *title);
 void query_table_say (query_t *q, const char *text);
 void query_redraw (query_t *q);
 
-/* The text of the window Schema, made again when the user has closed it, the cursor on @line */
-void query_schema_set (query_t *q, const char *text, long line);
+/* The text of the window Schema, the cursor on @line; with @make the window is made when there
+   is none, the user having closed it or not, else nothing is when there is none */
+void query_schema_set (query_t *q, const char *text, long line, gboolean make);
 /* The line of the cursor of the window Schema, from 0; -1 when there is none */
 long query_schema_line (query_t *q);
 /* The window of the file @file, NULL when none has it */

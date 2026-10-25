@@ -100,9 +100,8 @@ typedef struct
     const query_pq_t *pq;  // NULL when libpq is not there
     char *pq_error;        // why it is not
 
-    PGconn *conn;
+    query_pq_link_t link;
     query_pg_state_t state;
-    int fd;              // the socket that is a select channel, -1 for none
     gboolean made;       // a connection was made once
     gboolean reconnect;  // a connection made again: what the one before had is gone
     gboolean pending;    // F5 while it connected: the query runs once it is made
@@ -121,7 +120,6 @@ typedef struct
     guint ntables;      // the tables in it
     gboolean rows;      // whether one of them has a row
     gboolean failed;    // an error came
-    gboolean flushing;  // libpq has more of the query to send
     gboolean copy_out;  // COPY ... TO STDOUT: its rows read into Output
     gboolean copy_in;   // COPY ... FROM STDIN: told there is nothing to read, not taken yet
     gboolean lost;      // the connection was lost while it ran
@@ -130,6 +128,7 @@ typedef struct
 
     // the cancel of the query, sent while it runs
     gboolean canceling;
+    gboolean canceled;          // the query was ended by it, 57014: not by itself before it came
     query_pg_cancel_t *cancel;  // by a thread, libpq older than 17
     PGcancelConn *cancel_conn;  // libpq 17
     int cancel_fd;              // its socket, or the pipe of the thread, watched; -1 for none
@@ -143,8 +142,6 @@ typedef struct
 
 /*** forward declarations (file scope functions) *************************************************/
 
-/* The socket of the connection watched for a read, and for a write when @write; none for -1 */
-static void query_pg_watch (query_pg_t *p, int fd, gboolean write);
 static void query_pg_read (query_pg_t *p);
 static void query_pg_notice (void *arg, const PGresult *res);
 static void query_pg_summary (query_pg_t *p, const char *status);
@@ -163,9 +160,10 @@ query_pg_endpoint (const query_pg_t *p)
     const char *service = g_getenv ("PGSERVICE");
     const char *host, *port, *db;
 
-    if (p->conn != NULL && p->state == QUERY_PG_READY)
-        return g_strdup_printf ("%s@%s:%s/%s", p->pq->PQuser (p->conn), p->pq->PQhost (p->conn),
-                                p->pq->PQport (p->conn), p->pq->PQdb (p->conn));
+    if (p->link.conn != NULL && p->state == QUERY_PG_READY)
+        return g_strdup_printf ("%s@%s:%s/%s", p->pq->PQuser (p->link.conn),
+                                p->pq->PQhost (p->link.conn), p->pq->PQport (p->link.conn),
+                                p->pq->PQdb (p->link.conn));
     if (service != NULL && *service != '\0')
         return g_strdup_printf ("service %s", service);
     host = g_getenv ("PGHOST");
@@ -195,10 +193,7 @@ query_pg_set_endpoint (query_pg_t *p)
 static void
 query_pg_close_conn (query_pg_t *p)
 {
-    query_pg_watch (p, -1, FALSE);
-    if (p->conn != NULL)
-        p->pq->PQfinish (p->conn);
-    p->conn = NULL;
+    query_pq_link_close (&p->link);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -219,6 +214,28 @@ query_pg_say (query_pg_t *p, const char *what, gboolean error)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The query waiting for the connection is not run, it failed or was stopped, @status as History
+   has it: Table and History tell it as they tell a run */
+static void
+query_pg_not_run (query_pg_t *p, int status, const char *summary)
+{
+    query_t *q = p->q;
+    const double seconds = (double) (g_get_monotonic_time () - q->started) / G_USEC_PER_SEC;
+    const time_t now = time (NULL);
+    char when[16];
+
+    if (!p->pending)
+        return;
+    p->pending = FALSE;
+    query_table_say (q,
+                     status < 0 ? _ ("The query was stopped before it ran.\n")
+                                : _ ("The query was not run: there is no connection.\n"));
+    (void) strftime (when, sizeof (when), "%H:%M:%S", localtime (&now));
+    query_history_add (q, when, seconds, status, summary);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The connection is made, or failed: the state, Output, and a query waiting for it run */
 static void
 query_pg_connected (query_pg_t *p, gboolean ok)
@@ -227,14 +244,14 @@ query_pg_connected (query_pg_t *p, gboolean ok)
     gboolean first = !p->made;
     char *what;
 
-    if (ok && strcmp (pq->pg_encoding_to_char (pq->PQclientEncoding (p->conn)), "UTF8") != 0)
+    if (ok && strcmp (pq->pg_encoding_to_char (pq->PQclientEncoding (p->link.conn)), "UTF8") != 0)
     {
         // the editor and the screen are UTF-8: the text of another encoding would be wrong
         what = g_strdup_printf (_ ("The connection is not in UTF8 but in %s: it is closed."),
-                                pq->pg_encoding_to_char (pq->PQclientEncoding (p->conn)));
+                                pq->pg_encoding_to_char (pq->PQclientEncoding (p->link.conn)));
         query_pg_close_conn (p);
         p->state = QUERY_PG_BROKEN;
-        p->pending = FALSE;
+        query_pg_not_run (p, 1, _ ("no connection"));
         query_pg_say (p, what, TRUE);
         g_free (what);
         return;
@@ -242,23 +259,21 @@ query_pg_connected (query_pg_t *p, gboolean ok)
     if (!ok)
     {
         what = g_strdup_printf (_ ("No connection to %s: %s"), p->q->endpoint,
-                                pq->PQerrorMessage (p->conn));
+                                pq->PQerrorMessage (p->link.conn));
         query_pg_close_conn (p);
         p->state = QUERY_PG_BROKEN;
-        p->pending = FALSE;
+        query_pg_not_run (p, 1, _ ("no connection"));
         query_pg_say (p, g_strchomp (what), TRUE);
         g_free (what);
         return;
     }
-    (void) pq->PQsetnonblocking (p->conn, 1);
-    (void) pq->PQsetNoticeReceiver (p->conn, query_pg_notice, p);
+    (void) pq->PQsetNoticeReceiver (p->link.conn, query_pg_notice, p);
     p->state = QUERY_PG_READY;
     p->made = TRUE;
-    query_pg_watch (p, -1, FALSE);
     query_pg_set_endpoint (p);
     what = g_strdup_printf (_ ("Connected to %s, PostgreSQL %d.%d."), p->q->endpoint,
-                            pq->PQserverVersion (p->conn) / 10000,
-                            pq->PQserverVersion (p->conn) % 10000);
+                            pq->PQserverVersion (p->link.conn) / 10000,
+                            pq->PQserverVersion (p->link.conn) % 10000);
     if (p->reconnect)
     {
         char *also = g_strconcat (what, "\n",
@@ -289,94 +304,38 @@ query_pg_connected (query_pg_t *p, gboolean ok)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The connection on its way: PQconnectPoll () each time its socket is ready */
+/* The connection is made, or failed: query_pq_link_t.connected */
 static void
-query_pg_poll (query_pg_t *p)
+query_pg_link_connected (void *data, gboolean ok)
 {
-    int status, i;
-
-    // no socket to wait for: a connection refused at once, and libpq goes on to the next address
-    for (i = 0; i < 64; i++)
-    {
-        status = p->pq->PQconnectPoll (p->conn);
-        if ((status != QUERY_PG_POLLING_READING && status != QUERY_PG_POLLING_WRITING)
-            || p->pq->PQsocket (p->conn) >= 0)
-            break;
-    }
-    if (p->pq->PQsocket (p->conn) < 0 && status != QUERY_PG_POLLING_OK)
-        status = QUERY_PG_POLLING_FAILED;
-    switch (status)
-    {
-    case QUERY_PG_POLLING_READING:
-        query_pg_watch (p, p->pq->PQsocket (p->conn), FALSE);
-        break;
-    case QUERY_PG_POLLING_WRITING:
-        query_pg_watch (p, p->pq->PQsocket (p->conn), TRUE);
-        break;
-    case QUERY_PG_POLLING_OK:
-        query_pg_connected (p, TRUE);
-        break;
-    default:
-        query_pg_connected (p, FALSE);
-        break;
-    }
+    query_pg_connected ((query_pg_t *) data, ok);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The socket is ready */
-static int
-query_pg_ready (int fd, void *data)
+/* The socket is ready while a query runs: query_pq_link_t.ready */
+static void
+query_pg_link_ready (void *data)
 {
     query_pg_t *p = (query_pg_t *) data;
 
-    (void) fd;
-    if (p->state == QUERY_PG_CONNECTING)
-        query_pg_poll (p);
-    else if (p->state == QUERY_PG_BUSY)
+    if (p->state == QUERY_PG_BUSY)
         query_pg_read (p);
-    return 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-query_pg_watch (query_pg_t *p, int fd, gboolean write)
-{
-    // the socket of another address tried, or of a connection made again
-    if (p->fd != fd && p->fd >= 0)
-        delete_select_channel (p->fd);
-    if (fd >= 0 && p->fd != fd)
-        add_select_channel (fd, query_pg_ready, p);
-    p->fd = fd;
-    if (fd >= 0)
-        select_channel_want_write (fd, write);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* A connection started; its state comes by query_pg_poll () */
+/* A connection started; its state comes by query_pg_connected () */
 static void
 query_pg_connect (query_pg_t *p)
 {
-    query_pg_close_conn (p);
-    p->conn = query_pq_start (p->pq, p->read_only);
-    if (p->conn == NULL)
+    p->state = QUERY_PG_CONNECTING;
+    if (!query_pq_link_open (&p->link, p->read_only))
     {
         p->state = QUERY_PG_BROKEN;
+        query_pg_not_run (p, 1, _ ("no connection"));
         query_pg_say (p, _ ("libpq has no memory for a connection."), TRUE);
-        return;
     }
-    p->state = QUERY_PG_CONNECTING;
-    if (p->pq->PQstatus (p->conn) == QUERY_PG_CONNECTION_BAD)
-    {
-        query_pg_connected (p, FALSE);
-        return;
-    }
-    if (p->pq->PQsocket (p->conn) < 0)
-        query_pg_poll (p);
-    else
-        query_pg_watch (p, p->pq->PQsocket (p->conn), TRUE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -550,6 +509,8 @@ query_pg_error (query_pg_t *p, const PGresult *res)
         p->summary = state != NULL ? g_strdup_printf ("ERROR %s", state) : g_strdup ("ERROR");
     }
     p->failed = TRUE;
+    if (state != NULL && strcmp (state, "57014") == 0)
+        p->canceled = TRUE;
     if (primary == NULL && p->told)
     {
         g_string_free (text, TRUE);
@@ -610,7 +571,7 @@ query_pg_copy_out (query_pg_t *p)
     char *buf = NULL;
     int n;
 
-    while ((n = p->pq->PQgetCopyData (p->conn, &buf, 1)) > 0)
+    while ((n = p->pq->PQgetCopyData (p->link.conn, &buf, 1)) > 0)
     {
         query_pg_out (p, buf, n);
         p->pq->PQfreemem (buf);
@@ -643,7 +604,8 @@ query_pg_summary (query_pg_t *p, const char *status)
 static char *
 query_pg_transaction (query_pg_t *p, GString *head)
 {
-    const int state = p->conn != NULL ? p->pq->PQtransactionStatus (p->conn) : QUERY_PG_TRANS_IDLE;
+    const int state =
+        p->link.conn != NULL ? p->pq->PQtransactionStatus (p->link.conn) : QUERY_PG_TRANS_IDLE;
     char *title;
 
     if (state == QUERY_PG_TRANS_INTRANS)
@@ -699,9 +661,13 @@ query_pg_result (query_pg_t *p, PGresult *res)
         break;
     }
     case QUERY_PG_COMMAND_OK:
+        /* what changes the schemas; CREATE TABLE AS and SELECT INTO tell "SELECT 5", a SELECT
+           that has no rows to give: a SELECT that does is TUPLES_OK */
         if (g_str_has_prefix (pq->PQcmdStatus (res), "CREATE ")
             || g_str_has_prefix (pq->PQcmdStatus (res), "ALTER ")
-            || g_str_has_prefix (pq->PQcmdStatus (res), "DROP "))
+            || g_str_has_prefix (pq->PQcmdStatus (res), "DROP ")
+            || g_str_has_prefix (pq->PQcmdStatus (res), "SELECT ")
+            || g_str_has_prefix (pq->PQcmdStatus (res), "IMPORT FOREIGN SCHEMA"))
             p->ddl = TRUE;
         query_pg_summary (p, pq->PQcmdStatus (res));
         line = g_strdup_printf ("%s\n", pq->PQcmdStatus (res));
@@ -741,9 +707,15 @@ query_pg_done (query_pg_t *p)
     GString *text = g_string_new (NULL);
     char *title;
 
-    query_pg_watch (p, -1, FALSE);
+    // a query that ended by itself before the cancel came is no query stopped
+    if (q->stopped && !p->canceled && !p->lost)
+    {
+        q->stopped = FALSE;
+        query_pg_out (p, _ ("The query ended before the cancel came.\n"), -1);
+    }
+    query_pq_link_unwatch (&p->link);
     query_pg_table (p, NULL);
-    if (p->lost || p->pq->PQstatus (p->conn) == QUERY_PG_CONNECTION_BAD)
+    if (p->lost || p->pq->PQstatus (p->link.conn) == QUERY_PG_CONNECTION_BAD)
     {
         query_pg_close_conn (p);
         p->state = QUERY_PG_BROKEN;
@@ -786,7 +758,7 @@ query_pg_done (query_pg_t *p)
     // the other connection of Schema sees what is committed alone
     if (p->ddl && p->schema != NULL
         && (p->state != QUERY_PG_READY
-            || p->pq->PQtransactionStatus (p->conn) == QUERY_PG_TRANS_IDLE))
+            || p->pq->PQtransactionStatus (p->link.conn) == QUERY_PG_TRANS_IDLE))
     {
         p->ddl = FALSE;
         query_pg_schema_changed (p->schema);
@@ -800,12 +772,8 @@ query_pg_done (query_pg_t *p)
 static void
 query_pg_flush (query_pg_t *p)
 {
-    const int r = p->pq->PQflush (p->conn);
-
-    if (r < 0)
+    if (!query_pq_link_flush (&p->link))
         p->lost = TRUE;
-    p->flushing = r > 0;
-    query_pg_watch (p, p->pq->PQsocket (p->conn), p->flushing);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -818,12 +786,12 @@ query_pg_read (query_pg_t *p)
     const query_pq_t *pq = p->pq;
 
     // what came read first: the server may wait for its own output to be read to read more
-    if (!pq->PQconsumeInput (p->conn))
+    if (!pq->PQconsumeInput (p->link.conn))
         p->lost = TRUE;
-    if (p->flushing && !p->lost)
+    if (p->link.flushing && !p->lost)
         query_pg_flush (p);
     if (p->copy_in
-        && pq->PQputCopyEnd (p->conn,
+        && pq->PQputCopyEnd (p->link.conn,
                              _ ("COPY FROM STDIN: coole -Q has nothing to "
                                 "send"))
             != 0)
@@ -833,9 +801,9 @@ query_pg_read (query_pg_t *p)
     }
     if (p->copy_out && !query_pg_copy_out (p))
         return;
-    while (!p->copy_out && !p->copy_in && !pq->PQisBusy (p->conn))
+    while (!p->copy_out && !p->copy_in && !pq->PQisBusy (p->link.conn))
     {
-        PGresult *res = pq->PQgetResult (p->conn);
+        PGresult *res = pq->PQgetResult (p->link.conn);
 
         if (res == NULL)
         {
@@ -851,7 +819,7 @@ query_pg_read (query_pg_t *p)
             return;
         }
     }
-    if (p->lost && pq->PQisBusy (p->conn))
+    if (p->lost && pq->PQisBusy (p->link.conn))
         query_pg_done (p);
 }
 
@@ -867,8 +835,8 @@ query_pg_send (query_pg_t *p)
     g_string_truncate (p->out, 0);
     g_string_truncate (p->tables, 0);
     p->ntables = 0;
-    p->rows = p->failed = p->cut = p->flushing = p->copy_out = p->copy_in = p->lost = p->told =
-        FALSE;
+    p->rows = p->failed = p->cut = p->link.flushing = p->copy_out = p->copy_in = p->lost = p->told =
+        p->canceled = FALSE;
     g_clear_pointer (&p->summary, g_free);
     if (p->reconnect)
     {
@@ -879,9 +847,9 @@ query_pg_send (query_pg_t *p)
         p->reconnect = FALSE;
     }
     p->state = QUERY_PG_BUSY;
-    if (!pq->PQsendQuery (p->conn, p->q->text))
+    if (!pq->PQsendQuery (p->link.conn, p->q->text))
     {
-        char *line = g_strdup_printf (ANSI_RED "%s" ANSI_RESET, pq->PQerrorMessage (p->conn));
+        char *line = g_strdup_printf (ANSI_RED "%s" ANSI_RESET, pq->PQerrorMessage (p->link.conn));
 
         query_pg_out (p, line, -1);
         g_free (line);
@@ -890,8 +858,8 @@ query_pg_send (query_pg_t *p)
         return;
     }
     // the rows as they come, not all of them in the memory of libpq first
-    if (!query_pq_chunks (pq) || !pq->PQsetChunkedRowsMode (p->conn, QUERY_PG_CHUNK))
-        (void) pq->PQsetSingleRowMode (p->conn);
+    if (!query_pq_chunks (pq) || !pq->PQsetChunkedRowsMode (p->link.conn, QUERY_PG_CHUNK))
+        (void) pq->PQsetSingleRowMode (p->link.conn);
     query_pg_flush (p);
 }
 
@@ -910,11 +878,18 @@ query_pg_cancel_done (query_pg_t *p, const char *error)
         delete_select_channel (p->cancel_fd);
     p->cancel_fd = -1;
     p->canceling = FALSE;
-    if (error == NULL)
-        return;
-    line = g_strdup_printf (_ ("The cancel could not be sent: %s"), error);
-    query_pg_red (p, g_strchomp (line));
-    g_free (line);
+    if (error != NULL)
+    {
+        line = g_strdup_printf (_ ("The cancel could not be sent: %s"), error);
+        query_pg_red (p, g_strchomp (line));
+        g_free (line);
+    }
+    // the next query waited for the cancel to be sent, which would end it else
+    if (p->pending && p->state == QUERY_PG_READY)
+    {
+        p->pending = FALSE;
+        query_pg_send (p);
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -999,7 +974,7 @@ query_pg_cancel (query_pg_t *p)
     p->canceling = TRUE;
     if (query_pq_async_cancel (pq))
     {
-        p->cancel_conn = pq->PQcancelCreate (p->conn);
+        p->cancel_conn = pq->PQcancelCreate (p->link.conn);
         if (p->cancel_conn == NULL || !pq->PQcancelStart (p->cancel_conn))
         {
             query_pg_cancel_done (p,
@@ -1028,7 +1003,7 @@ query_pg_cancel (query_pg_t *p)
 
         c->pq = pq;
         // the thread's own: the connection may be gone before it is done
-        c->cancel = pq->PQgetCancel (p->conn);
+        c->cancel = pq->PQgetCancel (p->link.conn);
         if (c->cancel == NULL || pipe (c->fds) != 0)
         {
             if (c->cancel != NULL)
@@ -1111,11 +1086,11 @@ query_pg_open (query_t *q)
     const char *relation = g_getenv ("MC_PG_RELATION");
 
     p->q = q;
-    p->fd = -1;
     p->cancel_fd = -1;
     p->out = g_string_new (NULL);
     p->tables = g_string_new (NULL);
     p->pq = query_pq_load (&p->pq_error);
+    query_pq_link_init (&p->link, p->pq, query_pg_link_connected, query_pg_link_ready, p);
     p->read_only = read_only != NULL && strcmp (read_only, "1") == 0;
     if (name == NULL || *name == '\0')
         name = g_getenv ("PGSERVICE");
@@ -1246,7 +1221,8 @@ query_pg_running (void *data)
 {
     const query_pg_t *p = (const query_pg_t *) data;
 
-    return p->state == QUERY_PG_CONNECTING || p->state == QUERY_PG_BUSY;
+    // a query waiting for the cancel before it to be sent runs too
+    return p->state == QUERY_PG_CONNECTING || p->state == QUERY_PG_BUSY || p->pending;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1258,6 +1234,8 @@ query_pg_start (void *data)
 
     if (p->pq == NULL)
     {
+        p->pending = TRUE;
+        query_pg_not_run (p, 1, _ ("no libpq"));
         query_pg_say (p, p->pq_error, TRUE);
         return;
     }
@@ -1278,6 +1256,14 @@ query_pg_start (void *data)
     default:
         break;
     }
+    // the cancel of the query before is on its way: it would end this one
+    if (p->canceling)
+    {
+        p->pending = TRUE;
+        query_tab_set (p->q, QUERY_TAB_OUTPUT, _ ("Running... once the cancel before is sent.\n"),
+                       TRUE);
+        return;
+    }
     query_pg_send (p);
 }
 
@@ -1292,9 +1278,15 @@ query_pg_stop (void *data)
     {
         query_pg_close_conn (p);
         p->state = QUERY_PG_BROKEN;
-        p->pending = FALSE;
         p->q->stopped = TRUE;
+        query_pg_not_run (p, -1, NULL);
         query_pg_say (p, _ ("The connection was stopped: F5 connects again."), TRUE);
+    }
+    else if (p->state == QUERY_PG_READY && p->pending)
+    {
+        p->q->stopped = TRUE;
+        query_pg_not_run (p, -1, NULL);
+        query_pg_say (p, _ ("The query was stopped before it ran."), TRUE);
     }
     else if (p->state == QUERY_PG_BUSY && !p->canceling)
     {

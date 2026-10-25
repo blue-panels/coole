@@ -253,7 +253,7 @@ query_tab_title (query_t *q, int tab, const char *title)
 /* --------------------------------------------------------------------------------------------- */
 
 void
-query_schema_set (query_t *q, const char *text, long line)
+query_schema_set (query_t *q, const char *text, long line, gboolean make)
 {
     GVariantDict dict;
     GVariant *reply = NULL;
@@ -269,6 +269,9 @@ query_schema_set (query_t *q, const char *text, long line)
         else
             g_variant_unref (reply);
     }
+    // closed by the user: an answer of the server does not bring it back, QuerySchema does
+    if (q->schema == 0 && !make)
+        return;
     if (q->schema == 0)
     {
         g_variant_dict_init (&dict, NULL);

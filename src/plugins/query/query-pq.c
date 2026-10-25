@@ -29,9 +29,12 @@
 
 #include <config.h>
 
+#include <string.h>
+
 #include <gmodule.h>
 
 #include "lib/global.h"
+#include "lib/tty/key.h"  // add_select_channel ()
 
 #include "query-pq.h"
 
@@ -166,6 +169,150 @@ query_pq_start (const query_pq_t *pq, gboolean read_only)
         values[2] = "-c default_transaction_read_only=on";
     }
     return pq->PQconnectStartParams (keywords, values, 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The connection on its way: PQconnectPoll () each time its socket is ready */
+static void
+query_pq_link_poll (query_pq_link_t *link)
+{
+    const query_pq_t *pq = link->pq;
+    int status = QUERY_PG_POLLING_FAILED, i;
+
+    // no socket to wait for: a connection refused at once, and libpq goes on to the next address
+    for (i = 0; i < 64; i++)
+    {
+        status = pq->PQconnectPoll (link->conn);
+        if ((status != QUERY_PG_POLLING_READING && status != QUERY_PG_POLLING_WRITING)
+            || pq->PQsocket (link->conn) >= 0)
+            break;
+    }
+    if (pq->PQsocket (link->conn) < 0 && status != QUERY_PG_POLLING_OK)
+        status = QUERY_PG_POLLING_FAILED;
+    switch (status)
+    {
+    case QUERY_PG_POLLING_READING:
+        query_pq_link_watch (link, FALSE);
+        break;
+    case QUERY_PG_POLLING_WRITING:
+        query_pq_link_watch (link, TRUE);
+        break;
+    default:
+        link->connecting = FALSE;
+        query_pq_link_unwatch (link);
+        if (status == QUERY_PG_POLLING_OK)
+            (void) pq->PQsetnonblocking (link->conn, 1);
+        link->connected (link->data, status == QUERY_PG_POLLING_OK);
+        break;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+query_pq_link_ready (int fd, void *data)
+{
+    query_pq_link_t *link = (query_pq_link_t *) data;
+
+    (void) fd;
+    if (link->connecting)
+        query_pq_link_poll (link);
+    else
+        link->ready (link->data);
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_pq_link_set_fd (query_pq_link_t *link, int fd, gboolean write)
+{
+    // the socket of another address tried, or of a connection made again
+    if (link->fd != fd && link->fd >= 0)
+        delete_select_channel (link->fd);
+    if (fd >= 0 && link->fd != fd)
+        add_select_channel (fd, query_pq_link_ready, link);
+    link->fd = fd;
+    if (fd >= 0)
+        select_channel_want_write (fd, write);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_pq_link_init (query_pq_link_t *link, const query_pq_t *pq,
+                    void (*connected) (void *data, gboolean ok), void (*ready) (void *data),
+                    void *data)
+{
+    memset (link, 0, sizeof (*link));
+    link->pq = pq;
+    link->fd = -1;
+    link->connected = connected;
+    link->ready = ready;
+    link->data = data;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+query_pq_link_open (query_pq_link_t *link, gboolean read_only)
+{
+    query_pq_link_close (link);
+    link->conn = query_pq_start (link->pq, read_only);
+    if (link->conn == NULL)
+        return FALSE;
+    link->connecting = TRUE;
+    if (link->pq->PQstatus (link->conn) == QUERY_PG_CONNECTION_BAD)
+    {
+        link->connecting = FALSE;
+        link->connected (link->data, FALSE);
+    }
+    else if (link->pq->PQsocket (link->conn) < 0)
+        query_pq_link_poll (link);
+    else
+        query_pq_link_watch (link, TRUE);
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_pq_link_close (query_pq_link_t *link)
+{
+    query_pq_link_unwatch (link);
+    if (link->conn != NULL)
+        link->pq->PQfinish (link->conn);
+    link->conn = NULL;
+    link->connecting = link->flushing = FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_pq_link_watch (query_pq_link_t *link, gboolean write)
+{
+    query_pq_link_set_fd (link, link->pq->PQsocket (link->conn), write);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_pq_link_unwatch (query_pq_link_t *link)
+{
+    query_pq_link_set_fd (link, -1, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+query_pq_link_flush (query_pq_link_t *link)
+{
+    const int r = link->pq->PQflush (link->conn);
+
+    link->flushing = r > 0;
+    query_pq_link_watch (link, link->flushing);
+    return r >= 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */

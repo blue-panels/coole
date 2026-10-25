@@ -264,29 +264,38 @@ and its versions are *.sql*.
 : The window Schema at the right, QuerySchema: shown when it is not, given
 the focus when it has it not, hidden when it has. It is shown once
 connected: the schemas of the database, that of *MC_PG_SCHEMA* first and
-unfolded, else *public*, those of the system left out; their tables *t*,
-partitioned tables *p*, views *v*, materialized views *m*, foreign tables
-*f* and sequences *S*, with the rows the server reckons, *~50000*.
+unfolded, else *public*, those of the system left out. A schema has its
+groups, those with something in them: Tables, Views, Materialized views,
+Foreign tables, Sequences, Functions, those of extensions left out. A table
+shows the rows the server reckons, *~50000*; a partitioned table its
+partitions under it, in its section Partitions.
+
+A relation unfolded has its sections, read then: Columns, their types,
+*not null*, the default, *identity*, *generated*; Keys, the primary key and
+the unique ones; Foreign keys; Indexes; References, the foreign keys of the
+other tables to it; Triggers. A table has all of them, the empty ones too,
+a view and the like those with something.
 
 In Schema:
 
 **Enter**
-: Fold or unfold a schema; unfold a relation, its columns under it with
-their types, *not null*, the default, *identity*, *generated*. A double
-click does so too.
+: Fold or unfold the line: a schema, a group, a relation, a section. A
+double click does so too.
 
 **F5**
-: The first 100 rows of the relation, or of that of the column, in Table:
-a query of no file, QuerySchemaRows.
+: The first 100 rows of the relation of the line, or of that it is of, in
+Table: a query of no file, QuerySchemaRows.
 
 **Insert**
-: Put the name at the cursor of the file of queries, as SQL takes it:
-*sales."Orders"* for a relation, the name of a column or of a schema;
-QuerySchemaInsert.
+: Put what the line names at the cursor of the file of queries, as SQL
+takes it, QuerySchemaInsert: *sales."Orders"* for a relation, the name of a
+schema, a column, an index, a trigger; the columns of a key, all those of
+the line Columns; the table of a reference; *sales.total(* for a function.
 
 **QuerySchemaRefresh**
-: Read the schemas again, with no key of its own. They are read again by
-themselves after a query whose *CREATE*, *ALTER* or *DROP* is committed.
+: Read the schemas again, with no key of its own, what is unfolded staying
+so. They are read again by themselves after a query whose *CREATE*,
+*ALTER* or *DROP* is committed.
 
 Schema reads the catalog by a connection of its own, of the same
 environment, read-only as the other is: a query running or a transaction

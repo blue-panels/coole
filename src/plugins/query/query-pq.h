@@ -151,6 +151,23 @@ typedef struct
     void (*PQcancelFinish) (PGcancelConn *cancel_conn);
 } query_pq_t;
 
+/* A connection that does not block, its socket a select channel: what the connection of the
+   queries and that of Schema share */
+typedef struct
+{
+    const query_pq_t *pq;
+    PGconn *conn;  // NULL for none
+    int fd;        // the socket watched, -1 for none
+    gboolean connecting;
+    gboolean flushing;  // libpq has more of a query to send
+    // the connection is made, @ok, or failed, PQerrorMessage () telling why; the socket is not
+    // watched then
+    void (*connected) (void *data, gboolean ok);
+    // the socket is ready, the connection made
+    void (*ready) (void *data);
+    void *data;
+} query_pq_link_t;
+
 /*** global variables defined in .c file *********************************************************/
 
 /*** declarations of public functions ************************************************************/
@@ -164,6 +181,21 @@ gboolean query_pq_async_cancel (const query_pq_t *pq);
    coole, with @read_only transactions that write nothing; NULL with no memory.  The name of the
    host is looked up here, and that blocks: libpq does it so. */
 PGconn *query_pq_start (const query_pq_t *pq, gboolean read_only);
+
+void query_pq_link_init (query_pq_link_t *link, const query_pq_t *pq,
+                         void (*connected) (void *data, gboolean ok), void (*ready) (void *data),
+                         void *data);
+/* A connection started as query_pq_start () starts them, the one before closed: @connected is
+   called once it is made or has failed, at once when it fails at once.  FALSE with no memory for
+   it, @connected not called. */
+gboolean query_pq_link_open (query_pq_link_t *link, gboolean read_only);
+void query_pq_link_close (query_pq_link_t *link);
+/* The socket watched for a read, and for a write when @write */
+void query_pq_link_watch (query_pq_link_t *link, gboolean write);
+void query_pq_link_unwatch (query_pq_link_t *link);
+/* What libpq has to send of a query sent, the socket watched for a write while some is left;
+   FALSE when the connection failed */
+gboolean query_pq_link_flush (query_pq_link_t *link);
 
 /*** inline functions ****************************************************************************/
 
