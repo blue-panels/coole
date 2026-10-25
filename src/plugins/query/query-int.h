@@ -67,6 +67,7 @@ enum
     QUERY_CMD_SCHEMA_ROWS,
     QUERY_CMD_SCHEMA_INSERT,
     QUERY_CMD_SCHEMA_REFRESH,
+    QUERY_CMD_AI,
     QUERY_CMD_COUNT
 };
 
@@ -91,6 +92,13 @@ enum
 /*** structures declarations (and typedefs of structures)*****************************************/
 
 typedef struct query_t query_t;
+typedef struct query_ai_t query_ai_t;
+typedef struct query_proc_t query_proc_t;
+
+/* A program of query_proc_start () has ended, with what it printed, valid UTF-8, @cut when it
+   printed more than QUERY_OUTPUT_MAX on stdout, the rest not kept, and its @status of waitpid ();
+   @out and @err are taken */
+typedef void (*query_proc_done_fn) (char *out, char *err, int status, gboolean cut, void *data);
 
 /* What runs the queries of a kind of database */
 typedef struct
@@ -112,6 +120,12 @@ typedef struct
     const char *rollback;  // the query QueryRollback runs, "ROLLBACK"; NULL for none
     // the window Schema: @action at its 0-based @line, -1 for none; NULL for a backend with none
     void (*schema) (void *data, query_schema_action_t action, long line);
+    // F6, a query written by AI: the language it is told to write, the start of a line comment
+    const char *language;
+    const char *comment;
+    // what AI is told of the database, given to query_ai_context () when read; @use the context
+    // of the line of the request, as query_backend_t.context; NULL for a backend with no AI
+    void (*ai_context) (void *data, const char *use);
 } query_backend_t;
 
 /* The plugin */
@@ -135,6 +149,7 @@ struct query_t
 
     gint64 tabs[QUERY_TAB_COUNT];  // the windows of the viewer, 0 when none
     gint64 schema;                 // the window Schema at the right, 0 when none
+    query_ai_t *ai;                // F6
     long commands[QUERY_CMD_COUNT];
     int mark;
     GPtrArray *history;  // query_entry_t, the last one last
@@ -163,6 +178,29 @@ void query_redraw (query_t *q);
 void query_schema_set (query_t *q, const char *text, long line);
 /* The line of the cursor of the window Schema, from 0; -1 when there is none */
 long query_schema_line (query_t *q);
+/* The window of the file @file, NULL when none has it */
+void *query_file_window (query_t *q, const char *file);
+
+/* F6 in @edit: the query of the request of the selection, else of the paragraph of the cursor,
+   written by AI under it; asked to stop when AI is writing one */
+void query_ai_ask (query_t *q, void *edit);
+/* What the backend tells AI of the database, @context, read for query_ai_ask (); @error why it
+   could not be, NULL for none */
+void query_ai_context (query_t *q, const char *context, const char *error);
+/* The line of the head of Output on the program of AI, F6, which the backend puts in its startup */
+void query_ai_startup (query_t *q, GString *text);
+void query_ai_free (query_t *q);
+
+/* Run @argv in @dir with @envp, NULL for that of coole, @input on its stdin: @done is called
+   when it ends, unless it is killed first; NULL with @error when it does not start */
+query_proc_t *query_proc_start (const char *const *argv, char **envp, const char *dir,
+                                const char *input, query_proc_done_fn done, void *data,
+                                GError **error);
+/* Ask it to end: @done is called once it has */
+void query_proc_stop (query_proc_t *p);
+/* End it at once, @done not called */
+void query_proc_kill (query_proc_t *p);
+
 /* Run @text, a query of no file, as QueryRollback does: an error of it is marked nowhere */
 void query_run_alone (query_t *q, const char *text);
 /* The start of the head of the output of a run, bold: its lines, the time it took, when it ended

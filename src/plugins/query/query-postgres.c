@@ -1228,6 +1228,7 @@ query_pg_startup (void *data, void *edit, GString *text)
                                     QUERY_PG_LANGUAGE_SERVER, QUERY_PG_LANGUAGE_SERVER_URL);
         g_free (server);
     }
+    query_ai_startup (p->q, text);
     g_string_append (text,
                      _ ("F5 runs the selection, else the whole file; Ctrl-F5 the whole "
                         "file.\n\n"));
@@ -1318,6 +1319,20 @@ query_pg_schema (void *data, query_schema_action_t action, long line)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+static void
+query_pg_ai_context (void *data, const char *use)
+{
+    query_pg_t *p = (query_pg_t *) data;
+
+    (void) use;
+    if (p->schema == NULL)
+        query_ai_context (p->q, NULL, p->pq_error);
+    else
+        query_pg_schema_ai (p->schema);
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -1334,6 +1349,9 @@ const query_backend_t query_postgres_backend = {
     .stop = query_pg_stop,
     .rollback = "ROLLBACK",
     .schema = query_pg_schema,
+    .language = "SQL of PostgreSQL, run by libpq as it is: no command of psql",
+    .comment = "-- ",
+    .ai_context = query_pg_ai_context,
 };
 
 /* --------------------------------------------------------------------------------------------- */

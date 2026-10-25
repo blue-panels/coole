@@ -548,6 +548,98 @@ test_pg_ident (void)
     g_free (s);
 }
 
+static void
+test_ai (void)
+{
+    const char *text = "SELECT 1;\n\norders of a week\nwith the email\n\n"
+                       "-- the users\n--   by name\nSELECT * FROM users;\nSELECT 2;\n\n"
+                       "-- all comments\n";
+    gsize start = 0, asked = 0, end = 0;
+    char *s, *notes, **argv;
+
+    // a paragraph of text: the request, its place itself
+    s = query_ai_part (text, 3, 3, TRUE, "-- ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "orders of a week\nwith the email");
+    g_assert_cmpuint (start, ==, 11);
+    g_assert_cmpuint (asked, ==, end);
+    g_assert_cmpuint (end, ==, 42);
+    g_free (s);
+    s = query_ai_commented (text + start, asked - start, "-- ");
+    g_assert_cmpstr (s, ==, "-- orders of a week\n-- with the email");
+    g_free (s);
+
+    // comments over a query: the query is the answer of before, its place
+    s = query_ai_part (text, 8, 8, TRUE, "-- ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "the users\n  by name");
+    g_free (s);
+    g_assert_cmpstr (text + asked, ==, "\nSELECT * FROM users;\nSELECT 2;\n\n-- all comments\n");
+    g_assert_cmpstr (text + end, ==, "\n\n-- all comments\n");
+    s = query_ai_commented (text + start, asked - start, "-- ");
+    g_assert_cmpstr (s, ==, "-- the users\n--   by name");
+    g_free (s);
+
+    // comments alone are the request
+    s = query_ai_part (text, 10, 10, TRUE, "-- ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "all comments");
+    g_assert_cmpuint (asked, ==, end);
+    g_free (s);
+
+    // an empty line, past the end of the text
+    g_assert_null (query_ai_part (text, 1, 1, TRUE, "-- ", &start, &asked, &end));
+    g_assert_null (query_ai_part (text, 40, 40, TRUE, "-- ", &start, &asked, &end));
+
+    // a selection: its lines alone, its empty lines left out
+    s = query_ai_part (text, 1, 2, FALSE, "-- ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "orders of a week");
+    g_assert_cmpuint (start, ==, 11);
+    g_assert_cmpuint (end, ==, 27);
+    g_free (s);
+    g_assert_null (query_ai_part (text, 1, 1, FALSE, "-- ", &start, &asked, &end));
+
+    // the comments of mongo
+    s = query_ai_part ("//orders\n", 0, 0, TRUE, "// ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "orders");
+    g_free (s);
+
+    // the answer: its blocks, the rest notes
+    s = query_ai_answer ("```sql\nSELECT 1;\n```\n", &notes);
+    g_assert_cmpstr (s, ==, "SELECT 1;");
+    g_assert_null (notes);
+    g_free (s);
+    s = query_ai_answer ("Here:\n```\n  SELECT 1\n  FROM t;\n```\nIt counts.\n", &notes);
+    g_assert_cmpstr (s, ==, "  SELECT 1\n  FROM t;");
+    g_assert_cmpstr (notes, ==, "Here:\nIt counts.");
+    g_free (notes);
+    g_free (s);
+    s = query_ai_answer ("\nSELECT 2;\n\n", &notes);
+    g_assert_cmpstr (s, ==, "SELECT 2;");
+    g_assert_null (notes);
+    g_free (s);
+    g_assert_null (query_ai_answer ("```sql\n```\n", &notes));
+    g_assert_null (notes);
+    g_assert_null (query_ai_answer ("  \n", &notes));
+
+    argv = query_ai_argv (NULL, NULL);
+    g_assert_cmpstr (argv[0], ==, "claude");
+    g_assert_cmpstr (argv[1], ==, "-p");
+    g_strfreev (argv);
+    argv = query_ai_argv ("codex", NULL);
+    g_assert_cmpstr (argv[1], ==, "exec");
+    g_assert_cmpstr (argv[g_strv_length (argv) - 1], ==, "-");
+    g_strfreev (argv);
+    argv = query_ai_argv ("claude --model 'opus x'", NULL);
+    g_assert_cmpuint (g_strv_length (argv), ==, 3);
+    g_assert_cmpstr (argv[2], ==, "opus x");
+    g_strfreev (argv);
+    g_assert_null (query_ai_argv ("claude 'x", NULL));
+
+    s = query_ai_prompt ("SQL", "The database.", "orders");
+    g_assert_nonnull (strstr (s, "in SQL for"));
+    g_assert_nonnull (strstr (s, "no comment in it"));
+    g_assert_nonnull (strstr (s, "The database.\n\nThe request:\norders\n"));
+    g_free (s);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -559,5 +651,6 @@ main (int argc, char **argv)
     g_test_add_func ("/query/table", test_table);
     g_test_add_func ("/query/grid", test_grid);
     g_test_add_func ("/query/pg-ident", test_pg_ident);
+    g_test_add_func ("/query/ai", test_ai);
     return g_test_run ();
 }

@@ -66,6 +66,26 @@
     "ON d.adrelid = a.attrelid AND d.adnum = a.attnum "                                            \
     "WHERE a.attrelid = %u AND a.attnum > 0 AND NOT a.attisdropped ORDER BY a.attnum"
 
+/* What AI is told of a relation, a row each, partitions left out: its columns and keys, the names
+   as SQL takes them; of PostgreSQL 12 and later as the columns */
+#define QUERY_SCHEMA_AI                                                                            \
+    "SELECT n.nspname, c.relname, c.relkind, "                                                     \
+    "(SELECT string_agg (pg_catalog.quote_ident (a.attname) || ' ' || "                            \
+    "pg_catalog.format_type (a.atttypid, a.atttypmod) || "                                         \
+    "CASE WHEN a.attnotnull THEN ' not null' ELSE '' END, ', ' ORDER BY a.attnum) "                \
+    "FROM pg_catalog.pg_attribute a "                                                              \
+    "WHERE a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped), "                          \
+    "(SELECT string_agg (pg_catalog.pg_get_constraintdef (o.oid), ', ' "                           \
+    "ORDER BY o.contype <> 'p', o.conname) FROM pg_catalog.pg_constraint o "                       \
+    "WHERE o.conrelid = c.oid AND o.contype IN ('p', 'u', 'f')) "                                  \
+    "FROM pg_catalog.pg_namespace n JOIN pg_catalog.pg_class c ON c.relnamespace = n.oid "         \
+    "WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f') AND NOT c.relispartition "                       \
+    "AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' "                               \
+    "ORDER BY n.nspname, c.relname LIMIT 5000"
+
+// the relations AI is told of at most, those of MC_PG_SCHEMA first
+#define QUERY_SCHEMA_AI_MAX 300
+
 // the characters of a default shown at most
 #define QUERY_SCHEMA_DEFAULT 24
 
@@ -83,7 +103,8 @@ typedef enum
 typedef enum
 {
     QUERY_SCHEMA_ASK_LIST,
-    QUERY_SCHEMA_ASK_COLUMNS
+    QUERY_SCHEMA_ASK_COLUMNS,
+    QUERY_SCHEMA_ASK_AI
 } query_schema_ask_t;
 
 typedef struct
@@ -132,6 +153,8 @@ struct query_pg_schema_t
     char *res_error;  // its error
 
     gboolean want_list;
+    gboolean want_ai;      // what AI is told, to be sent
+    gboolean ai_sent;      // and sent
     GArray *want_columns;  // Oid of the relations whose columns are to be read
 
     gboolean shown;   // the window is made
@@ -416,6 +439,11 @@ query_schema_broken (query_pg_schema_t *s, const char *why)
     s->error = g_strchomp (error);
     query_schema_mark (s);
     query_schema_render (s);
+    if (s->want_ai || s->ai_sent)
+    {
+        s->want_ai = s->ai_sent = FALSE;
+        query_ai_context (s->q, NULL, s->error);
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -627,6 +655,67 @@ query_schema_take_columns (query_pg_schema_t *s, Oid oid, PGresult *res)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* What AI is told of the database, of the rows of QUERY_SCHEMA_AI in @res, NULL for none */
+static char *
+query_schema_ai_text (query_pg_schema_t *s, PGresult *res)
+{
+    const query_pq_t *pq = s->pq;
+    const int version = pq->PQserverVersion (s->conn);
+    const int rows = res != NULL ? pq->PQntuples (res) : 0;
+    GString *text = g_string_new (NULL);
+    int told = 0, pass, i;
+
+    g_string_append_printf (text, "The database \"%s\" of PostgreSQL %d.%d.\n", pq->PQdb (s->conn),
+                            version / 10000, version % 10000);
+    if (s->first != NULL)
+        g_string_append_printf (text,
+                                "The schema of the user is %s; write the names with their "
+                                "schema.\n",
+                                s->first);
+    if (s->read_only)
+        g_string_append (text, "The connection is read-only: write SELECT, no change.\n");
+    g_string_append (text,
+                     "Its relations, a line each: schema.name (kind): the columns; the keys.\n");
+    // those of the schema of the user first
+    for (pass = 0; pass < 2; pass++)
+        for (i = 0; i < rows; i++)
+        {
+            const char *nsp = pq->PQgetvalue (res, i, 0);
+            const gboolean of_first = s->first != NULL && strcmp (nsp, s->first) == 0;
+            const char kind = pq->PQgetvalue (res, i, 2)[0];
+            char *n, *r;
+
+            if ((pass == 0) != of_first && s->first != NULL)
+                continue;
+            if (pass == 1 && s->first == NULL)
+                break;
+            if (told++ >= QUERY_SCHEMA_AI_MAX)
+                continue;
+            n = query_pg_ident (nsp);
+            r = query_pg_ident (pq->PQgetvalue (res, i, 1));
+            g_string_append_printf (text, "%s.%s (%s): %s", n, r,
+                                    kind == 'p'       ? "partitioned table"
+                                        : kind == 'v' ? "view"
+                                        : kind == 'm' ? "materialized view"
+                                        : kind == 'f' ? "foreign table"
+                                                      : "table",
+                                    pq->PQgetvalue (res, i, 3));
+            if (!pq->PQgetisnull (res, i, 4))
+                g_string_append_printf (text, "; %s", pq->PQgetvalue (res, i, 4));
+            g_string_append_c (text, '\n');
+            g_free (n);
+            g_free (r);
+        }
+    if (told == 0)
+        g_string_append (text, "None: the database has no relation yet.\n");
+    else if (told > QUERY_SCHEMA_AI_MAX)
+        g_string_append_printf (text, "And %d relations more, not told.\n",
+                                told - QUERY_SCHEMA_AI_MAX);
+    return g_string_free (text, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The query of now has ended: what it read taken, the window made again, the next one sent */
 static void
 query_schema_done (query_pg_schema_t *s)
@@ -634,7 +723,15 @@ query_schema_done (query_pg_schema_t *s)
     query_schema_watch (s, -1, FALSE);
     s->state = QUERY_SCHEMA_READY;
     query_schema_mark (s);
-    if (s->asked == QUERY_SCHEMA_ASK_LIST)
+    if (s->asked == QUERY_SCHEMA_ASK_AI)
+    {
+        char *text = s->res_error == NULL ? query_schema_ai_text (s, s->res) : NULL;
+
+        s->ai_sent = FALSE;
+        query_ai_context (s->q, text, s->res_error);
+        g_free (text);
+    }
+    else if (s->asked == QUERY_SCHEMA_ASK_LIST)
     {
         if (s->res_error != NULL)
         {
@@ -703,7 +800,7 @@ query_schema_read_input (query_pg_schema_t *s)
 static void
 query_schema_next (query_pg_schema_t *s)
 {
-    const gboolean wanted = s->want_list || s->want_columns->len > 0;
+    const gboolean wanted = s->want_list || s->want_ai || s->want_columns->len > 0;
 
     if (!wanted)
         return;
@@ -718,6 +815,12 @@ query_schema_next (query_pg_schema_t *s)
     {
         s->want_list = FALSE;
         query_schema_send (s, QUERY_SCHEMA_LIST, QUERY_SCHEMA_ASK_LIST);
+    }
+    else if (s->want_ai)
+    {
+        s->want_ai = FALSE;
+        s->ai_sent = TRUE;
+        query_schema_send (s, QUERY_SCHEMA_AI, QUERY_SCHEMA_ASK_AI);
     }
     else
     {
@@ -900,6 +1003,17 @@ query_pg_schema_do (query_pg_schema_t *s, query_schema_action_t action, long lin
     default:
         break;
     }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_pg_schema_ai (query_pg_schema_t *s)
+{
+    if (s->want_ai || s->ai_sent)
+        return;
+    s->want_ai = TRUE;
+    query_schema_next (s);
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -33,6 +33,9 @@ void query_pg_schema_free (query_pg_schema_t *s);
 void query_pg_schema_do (query_pg_schema_t *s, query_schema_action_t action, long line);
 /* A command that changes the schemas is committed: they are read again when they were read */
 void query_pg_schema_changed (query_pg_schema_t *s);
+/* What AI is told of the database read, for query_ai_context (): the relations of its schemas,
+   their columns and keys */
+void query_pg_schema_ai (query_pg_schema_t *s);
 
 /*** inline functions ****************************************************************************/
 

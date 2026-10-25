@@ -1487,3 +1487,236 @@ query_take_tables (const char *out, GPtrArray *tables)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the line at @p, up to @end, has nothing but blanks */
+static gboolean
+query_ai_blank (const char *p, const char *end)
+{
+    for (; p < end; p++)
+        if (!g_ascii_isspace (*p))
+            return FALSE;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The comment that starts the line at @p after its blanks, @mark ("--") of @len bytes: past it
+   and one space after it; NULL when the line is no comment */
+static const char *
+query_ai_comment_of (const char *p, const char *mark, gsize len)
+{
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (len == 0 || strncmp (p, mark, len) != 0)
+        return NULL;
+    p += len;
+    return *p == ' ' ? p + 1 : p;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_ai_part (const char *text, long first, long last, gboolean paragraph, const char *comment,
+               gsize *start, gsize *asked, gsize *end)
+{
+    GArray *lines = g_array_new (FALSE, FALSE, sizeof (const char *));
+    char *mark = g_strstrip (g_strdup (comment));
+    const gsize mark_len = strlen (mark);
+    GString *question = g_string_new (NULL);
+    const char *p = text;
+    long n, i, k, asked_last;
+
+#define LINE(i)  g_array_index (lines, const char *, (i))
+#define BLANK(i) query_ai_blank (LINE (i), query_line_end (LINE (i)))
+
+    for (;;)
+    {
+        g_array_append_val (lines, p);
+        p = query_line_end (p);
+        if (*p == '\0')
+            break;
+        p++;
+    }
+    n = (long) lines->len;
+    first = MAX (first, 0);
+    last = MIN (MAX (last, first), n - 1);
+    if (paragraph)
+    {
+        if (first >= n || BLANK (first))
+            last = -1;
+        else
+        {
+            while (first > 0 && !BLANK (first - 1))
+                first--;
+            for (last = first; last + 1 < n && !BLANK (last + 1); last++)
+                ;
+        }
+    }
+    else
+    {
+        // a selection: its empty lines at its ends are none of the request
+        while (first <= last && BLANK (first))
+            first++;
+        while (last >= first && BLANK (last))
+            last--;
+    }
+
+    asked_last = last;
+    if (first <= last)
+    {
+        // comments over a query: the query is the answer of before, its place
+        for (k = first; k <= last && query_ai_comment_of (LINE (k), mark, mark_len) != NULL; k++)
+            ;
+        if (k > first && k <= last)
+            asked_last = k - 1;
+        for (i = first; i <= asked_last; i++)
+        {
+            const char *from = query_ai_comment_of (LINE (i), mark, mark_len);
+            const char *to = query_line_end (LINE (i));
+
+            if (from == NULL)
+                from = LINE (i);
+            if (question->len > 0)
+                g_string_append_c (question, '\n');
+            g_string_append_len (question, from, to - from);
+        }
+        *start = (gsize) (LINE (first) - text);
+        *asked = (gsize) (query_line_end (LINE (asked_last)) - text);
+        *end = (gsize) (query_line_end (LINE (last)) - text);
+    }
+
+#undef BLANK
+#undef LINE
+
+    g_array_free (lines, TRUE);
+    g_free (mark);
+    g_strstrip (question->str);
+    if (question->str[0] == '\0')
+    {
+        g_string_free (question, TRUE);
+        return NULL;
+    }
+    return g_string_free (question, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_ai_commented (const char *lines, gsize len, const char *comment)
+{
+    char *mark = g_strstrip (g_strdup (comment));
+    GString *text = g_string_new (NULL);
+    const char *p = lines, *stop = lines + len;
+
+    while (p < stop)
+    {
+        const char *end = query_line_end (p);
+
+        if (end > stop)
+            end = stop;
+        if (!query_ai_blank (p, end) && query_ai_comment_of (p, mark, strlen (mark)) == NULL)
+            g_string_append (text, comment);
+        g_string_append_len (text, p, end - p);
+        if (end < stop)
+            g_string_append_c (text, '\n');
+        p = end + 1;
+    }
+    g_free (mark);
+    return g_string_free (text, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_ai_answer (const char *out, char **notes)
+{
+    GString *code = g_string_new (NULL), *rest = g_string_new (NULL);
+    gboolean fenced = FALSE, in = FALSE;
+    const char *p = out;
+
+    while (*p != '\0')
+    {
+        const char *end = query_line_end (p);
+        const char *s = p;
+
+        while (*s == ' ' || *s == '\t')
+            s++;
+        if (strncmp (s, "```", 3) == 0)
+        {
+            // "```sql" opens a block, "```" ends it; the blocks are one query
+            fenced = TRUE;
+            in = !in;
+            if (in && code->len > 0)
+                g_string_append_c (code, '\n');
+        }
+        else
+            g_string_append_len (in ? code : rest, p, end - p + (*end == '\n' ? 1 : 0));
+        p = *end == '\n' ? end + 1 : end;
+    }
+    if (!fenced)
+    {
+        g_string_assign (code, rest->str);
+        g_string_truncate (rest, 0);
+    }
+    g_strstrip (rest->str);
+    *notes = rest->str[0] != '\0' ? g_strdup (rest->str) : NULL;
+    g_string_free (rest, TRUE);
+    // the end of the query is no blank: the line after it is that of the file
+    g_strchomp (code->str);
+    // its first line keeps its indent, no empty line above it
+    while (code->str[0] == '\n' || code->str[0] == '\r')
+        g_string_erase (code, 0, 1);
+    if (query_ai_blank (code->str, code->str + strlen (code->str)))
+    {
+        g_string_free (code, TRUE);
+        return NULL;
+    }
+    return g_string_free (code, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char **
+query_ai_argv (const char *value, GError **error)
+{
+    static const char *const claude[] = {
+        QUERY_AI_CLAUDE, "-p", "--tools", "", "--no-session-persistence", NULL,
+    };
+    static const char *const codex[] = {
+        QUERY_AI_CODEX, "exec",      "--skip-git-repo-check",
+        "--ephemeral",  "--sandbox", "read-only",
+        "--color",      "never",     "-",
+        NULL,
+    };
+    char **argv = NULL;
+
+    if (value == NULL || *value == '\0' || strcmp (value, QUERY_AI_CLAUDE) == 0)
+        return g_strdupv ((char **) claude);
+    if (strcmp (value, QUERY_AI_CODEX) == 0)
+        return g_strdupv ((char **) codex);
+    return g_shell_parse_argv (value, NULL, &argv, error) ? argv : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_ai_prompt (const char *language, const char *context, const char *question)
+{
+    /* no comment in the query: a language server of SQL may lose its place in a statement with
+       letters not of ASCII before the cursor */
+    return g_strdup_printf (
+        "Write a query in %s for the request below.\n"
+        "Answer with the query, ready to run, in one block ```, with no comment in it; a note of "
+        "yours goes after the block, as plain text in the language of the request: it is shown "
+        "to the user apart from the query.\n"
+        "Use the names the database below has; when the request needs one it has not, say so in "
+        "that note.\n"
+        "\n"
+        "%s\n"
+        "\n"
+        "The request:\n"
+        "%s\n",
+        language, context, question);
+}

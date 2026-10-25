@@ -146,6 +146,45 @@ of the list. Another file in front shows its own History.
 
 **Ctrl-Alt-PgDn** and **Ctrl-Alt-PgUp** go from tab to tab.
 
+**A query written by AI**
+
+**F6**
+: The query of the request written in the file, by AI: the request is the
+paragraph of the cursor, its lines between empty lines, or the selection,
+in the words of the user, *orders of the last week by user*. The program
+of AI writes the query, which is put under the request, the request made a
+comment, *//* or *--*: one change, which Undo takes back. The query is
+not run: F5 runs it. **F6** on a request that is a comment over a query
+writes it again, in the place of that query. **F6** while AI writes asks
+whether to stop it. Output tells the time it took, and what AI said beside
+the query.
+
+AI is told the names of the database, never a row: of MongoDB the
+collections, and the fields of a document of each with their types, in the
+database of the *use()* above the request; of PostgreSQL the relations of
+its schemas, their columns with their types and their keys, those of
+*MC_PG_SCHEMA* first; with *MC_QUERY_READ_ONLY=1*, that it is to change
+nothing.
+
+*MC_QUERY_AI*
+: The program of AI, else the key *ai* of the section *[Query]* of
+*~/.config/coole/ini*, the environment choosing another than the
+configuration for a run:
+
+```
+[Query]
+ai=codex
+```
+
+*claude*, without either, is run as *claude -p --tools ""
+--no-session-persistence*, *codex* as *codex exec --skip-git-repo-check
+--ephemeral --sandbox read-only --color never -*: the request on stdin, no
+tool of theirs run. Another value is a command line run as it is, which
+reads the request on stdin and prints the query, in a code block of
+Markdown or alone. It runs in the directory of the temporary files, without
+*PGPASSWORD* and *MC_MONGO_URI* in its environment. The first lines of
+Output tell whether it is found.
+
 **PostgreSQL**
 
 *coole -Q* with *MC_QUERY_KIND=postgres*, or a file *.sql*, runs the queries

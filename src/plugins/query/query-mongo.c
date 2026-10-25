@@ -37,17 +37,12 @@
 
 #include <config.h>
 
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
-#include <unistd.h>
 
 #include "lib/global.h"
-#include "lib/tty/key.h"
 
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
@@ -63,6 +58,25 @@
 #define QUERY_LANGUAGE_SERVER     "mongolsp"
 #define QUERY_LANGUAGE_SERVER_URL "https://github.com/blue-panels/mongolsp"
 
+/* What AI is told of the database: its collections, the fields of a document of each with their
+   types, never a value; the database of the use () of the request, @1 */
+#define QUERY_AI_SCRIPT                                                                            \
+    "db = connect(process.env.MC_MONGO_URI); "                                                     \
+    "if (process.env.MC_MONGO_DB) db = db.getSiblingDB(process.env.MC_MONGO_DB); %s"               \
+    "{ const __t = (v) => v === null ? 'null' : Array.isArray(v) ? 'array' "                       \
+    ": (v && v.constructor && v.constructor.name) || typeof v; "                                   \
+    "const __n = db.getCollectionNames().filter((n) => !n.startsWith('system.')).sort(); "         \
+    "print('The database \"' + db.getName() + '\" of MongoDB ' + db.version() + '.'); "            \
+    "print('Its collections, a line each: the name: the fields of a document of it, "              \
+    "with their types.'); "                                                                        \
+    "for (const n of __n.slice(0, %d)) { const d = db.getCollection(n).findOne(); "                \
+    "print(n + ': ' + (d ? Object.keys(d).map((k) => k + ' ' + __t(d[k])).join(', ') "             \
+    ": 'no document')); } "                                                                        \
+    "if (__n.length > %d) print('And ' + (__n.length - %d) + ' collections more, not told.'); }"
+
+// the collections AI is told of at most
+#define QUERY_AI_COLLECTIONS 300
+
 /*** file scope type declarations ****************************************************************/
 
 typedef struct
@@ -71,13 +85,13 @@ typedef struct
     char *mongosh;
 
     // the run going on, or the last one
-    GPid pid;
-    int fds[2];  // its stdout and stderr, -1 when ended
-    GString *out, *err;
-    gboolean cut;      // mongosh printed more than QUERY_OUTPUT_MAX: the rest is not kept
-    gboolean table;    // asked for by "// @table": mongosh --json, its answer in columns too
-    long limit;        // asked for by "// @limit N", 0 when not
-    gboolean limited;  // and put into the query
+    query_proc_t *proc;  // mongosh, NULL when none runs
+    gboolean cut;        // mongosh printed more than QUERY_OUTPUT_MAX: the rest is not kept
+    gboolean table;      // asked for by "// @table": mongosh --json, its answer in columns too
+    long limit;          // asked for by "// @limit N", 0 when not
+    gboolean limited;    // and put into the query
+
+    query_proc_t *ai;  // mongosh reading what AI is told of the database, NULL when none
 } query_mongo_t;
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -86,80 +100,6 @@ typedef struct
 
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-query_child_setup (gpointer data)
-{
-    (void) data;
-    // a session of its own: stopped as a whole, with what mongosh starts
-    (void) setsid ();
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-query_close_fds (query_mongo_t *m)
-{
-    int i;
-
-    for (i = 0; i < 2; i++)
-        if (m->fds[i] >= 0)
-        {
-            delete_select_channel (m->fds[i]);
-            close (m->fds[i]);
-            m->fds[i] = -1;
-        }
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The status of mongosh, waited for a while after its output has ended, then killed */
-static int
-query_reap (query_mongo_t *m)
-{
-    int status = 0, i;
-
-    for (i = 0; i < 200 && waitpid (m->pid, &status, WNOHANG) == 0; i++)
-        g_usleep (10000);
-    if (i == 200)
-    {
-        (void) kill (-m->pid, SIGKILL);
-        (void) waitpid (m->pid, &status, 0);
-    }
-    g_spawn_close_pid (m->pid);
-    m->pid = 0;
-    return status;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The run of mongosh ended at once, whatever it was doing */
-static void
-query_kill (query_mongo_t *m)
-{
-    if (m->pid == 0)
-        return;
-    query_close_fds (m);
-    // nobody waits for its answer: no time given to end by itself
-    (void) kill (-m->pid, SIGKILL);
-    (void) waitpid (m->pid, NULL, 0);
-    g_spawn_close_pid (m->pid);
-    m->pid = 0;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* What mongosh printed, valid UTF-8 */
-static char *
-query_take (GString *s)
-{
-    char *text = g_utf8_make_valid (s->str, (gssize) s->len);
-
-    g_string_truncate (s, 0);
-    return text;
-}
-
 /* --------------------------------------------------------------------------------------------- */
 
 /* One table of the tab Table: its number, what it is, how many documents, the first
@@ -271,14 +211,13 @@ query_output_done (query_mongo_t *m, const char *out, const char *err, int statu
 
 /* mongosh has ended: what it printed shown, and the documents in the table when asked for */
 static void
-query_done (query_mongo_t *m, int status)
+query_done (query_mongo_t *m, char *raw, char *err, int status)
 {
     query_t *q = m->q;
-    char *raw = query_take (m->out), *clean = query_mongo_clean (raw);
+    char *clean = query_mongo_clean (raw);
     // the copies of the arrays printed, for the tab Table, not shown in Output
     GPtrArray *tables = g_ptr_array_new_with_free_func (g_free);
     char *out = query_take_tables (clean, tables);
-    char *err = query_take (m->err);
     const int code = WIFEXITED (status) ? WEXITSTATUS (status) : -1;
     // the value mongosh --json printed, after what print () printed; an error is such a value
     const char *tail = m->table ? query_mongo_json_tail (out) : NULL;
@@ -330,31 +269,15 @@ query_done (query_mongo_t *m, int status)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static int
-query_output_ready (int fd, void *data)
+/* mongosh has ended: query_proc_done_fn */
+static void
+query_mongo_proc_done (char *out, char *err, int status, gboolean cut, void *data)
 {
     query_mongo_t *m = (query_mongo_t *) data;
-    const int which = fd == m->fds[0] ? 0 : 1;
-    GString *s = which == 0 ? m->out : m->err;
-    char buf[8192];
-    const ssize_t n = read (fd, buf, sizeof (buf));
 
-    if (n > 0)
-    {
-        if (s->len + (gsize) n > QUERY_OUTPUT_MAX)
-            m->cut = TRUE;
-        if (s->len < QUERY_OUTPUT_MAX)
-            g_string_append_len (s, buf, MIN (n, (ssize_t) (QUERY_OUTPUT_MAX - s->len)));
-    }
-    else if (n == 0 || (errno != EAGAIN && errno != EINTR))
-    {
-        delete_select_channel (fd);
-        close (fd);
-        m->fds[which] = -1;
-        if (m->fds[0] < 0 && m->fds[1] < 0)
-            query_done (m, query_reap (m));
-    }
-    return 0;
+    m->proc = NULL;
+    m->cut = cut;
+    query_done (m, out, err, status);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -408,9 +331,6 @@ query_mongo_open (query_t *q)
     const char *mongosh = g_getenv ("MC_MONGOSH");
 
     m->q = q;
-    m->fds[0] = m->fds[1] = -1;
-    m->out = g_string_new (NULL);
-    m->err = g_string_new (NULL);
     m->mongosh = g_strdup (mongosh != NULL && *mongosh != '\0' ? mongosh : "mongosh");
     q->endpoint = query_mongo_endpoint (g_getenv ("MC_MONGO_URI"), g_getenv ("MC_MONGO_DB"));
     return m;
@@ -423,9 +343,10 @@ query_mongo_close (void *data)
 {
     query_mongo_t *m = (query_mongo_t *) data;
 
-    query_kill (m);
-    g_string_free (m->out, TRUE);
-    g_string_free (m->err, TRUE);
+    if (m->proc != NULL)
+        query_proc_kill (m->proc);
+    if (m->ai != NULL)
+        query_proc_kill (m->ai);
     g_free (m->mongosh);
     g_free (m);
 }
@@ -450,10 +371,12 @@ query_mongo_startup (void *data, void *edit, GString *text)
         g_string_append_printf (text, ANSI_RED "%s\n" ANSI_RESET,
                                 _ ("mongosh is not found: MC_MONGOSH or PATH should have it."));
     if (server != NULL)
-        g_string_append_printf (text, "%s: %s\n\n", QUERY_LANGUAGE_SERVER, server);
+        g_string_append_printf (text, "%s: %s\n", QUERY_LANGUAGE_SERVER, server);
     else
-        g_string_append_printf (text, _ ("%s is not found: no completion of the queries (%s)\n\n"),
+        g_string_append_printf (text, _ ("%s is not found: no completion of the queries (%s)\n"),
                                 QUERY_LANGUAGE_SERVER, QUERY_LANGUAGE_SERVER_URL);
+    query_ai_startup (q, text);
+    g_string_append_c (text, '\n');
     if (used != NULL)
         g_string_append_printf (
             text,
@@ -475,7 +398,7 @@ query_mongo_startup (void *data, void *edit, GString *text)
 static gboolean
 query_mongo_running (void *data)
 {
-    return ((query_mongo_t *) data)->pid != 0;
+    return ((query_mongo_t *) data)->proc != NULL;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -494,7 +417,7 @@ query_mongo_start (void *data)
         : g_strdup (query_mongo_prefix ());
     char *text;
     const char *argv[10];
-    int n = 0, in, out, err, i;
+    int n = 0;
     GError *error = NULL;
 
     m->table = query_wants_table (q->text);
@@ -531,45 +454,20 @@ query_mongo_start (void *data)
     argv[n++] = text;
     argv[n] = NULL;
 
-    // the memory of a big answer not kept for this one
-    for (i = 0; i < 2; i++)
-    {
-        GString **s = i == 0 ? &m->out : &m->err;
-
-        if ((*s)->allocated_len > 64 * 1024)
-        {
-            g_string_free (*s, TRUE);
-            *s = g_string_new (NULL);
-        }
-        g_string_truncate (*s, 0);
-    }
     m->cut = FALSE;
-    if (!g_spawn_async_with_pipes (NULL, (char **) argv, NULL,
-                                   G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH,
-                                   query_child_setup, NULL, &m->pid, &in, &out, &err, &error))
+    // nothing to read from the terminal of coole
+    m->proc = query_proc_start (argv, NULL, NULL, "", query_mongo_proc_done, m, &error);
+    if (m->proc == NULL)
     {
         char *message = g_strdup_printf ("%s: %s\n", m->mongosh, error->message);
 
         g_clear_error (&error);
-        m->pid = 0;
         query_tab_set (q, QUERY_TAB_OUTPUT, message, TRUE);
         query_table_say (q, "");
         g_free (message);
-        g_free (text);
-        g_free (prefix);
-        return;
     }
     g_free (text);
     g_free (prefix);
-    // nothing to read from the terminal of coole
-    close (in);
-    m->fds[0] = out;
-    m->fds[1] = err;
-    for (i = 0; i < 2; i++)
-    {
-        (void) fcntl (m->fds[i], F_SETFL, fcntl (m->fds[i], F_GETFL) | O_NONBLOCK);
-        add_select_channel (m->fds[i], query_output_ready, m);
-    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -580,10 +478,66 @@ query_mongo_stop (void *data)
 {
     query_mongo_t *m = (query_mongo_t *) data;
 
-    if (m->pid == 0)
+    if (m->proc == NULL)
         return;
     m->q->stopped = TRUE;
-    (void) kill (-m->pid, SIGTERM);
+    query_proc_stop (m->proc);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_mongo_ai_done (char *out, char *err, int status, gboolean cut, void *data)
+{
+    query_mongo_t *m = (query_mongo_t *) data;
+    char *clean = query_mongo_clean (out);
+
+    (void) cut;
+    m->ai = NULL;
+    g_strstrip (clean);
+    if (!WIFEXITED (status) || WEXITSTATUS (status) != 0 || *clean == '\0')
+        query_ai_context (m->q, NULL, g_strstrip (err));
+    else
+    {
+        const char *read_only = g_getenv ("MC_QUERY_READ_ONLY");
+        char *context = read_only != NULL && strcmp (read_only, "1") == 0
+            ? g_strconcat (clean, "\nThe user reads only: write no change.", (char *) NULL)
+            : g_strdup (clean);
+
+        query_ai_context (m->q, context, NULL);
+        g_free (context);
+    }
+    g_free (clean);
+    g_free (out);
+    g_free (err);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* mongosh run on the script that reads what AI is told, in the database of the request */
+static void
+query_mongo_ai_context (void *data, const char *use)
+{
+    query_mongo_t *m = (query_mongo_t *) data;
+    char *used = use != NULL ? g_strdup_printf ("db = db.getSiblingDB(%s); ", use) : g_strdup ("");
+    char *script = g_strdup_printf (QUERY_AI_SCRIPT, used, QUERY_AI_COLLECTIONS,
+                                    QUERY_AI_COLLECTIONS, QUERY_AI_COLLECTIONS);
+    const char *argv[] = { m->mongosh, "--nodb", "--quiet", "--eval", script, NULL };
+    GError *error = NULL;
+
+    if (m->ai != NULL)
+        query_proc_kill (m->ai);
+    m->ai = query_proc_start (argv, NULL, NULL, "", query_mongo_ai_done, m, &error);
+    if (m->ai == NULL)
+    {
+        char *message = g_strdup_printf ("%s: %s", m->mongosh, error->message);
+
+        g_clear_error (&error);
+        query_ai_context (m->q, NULL, message);
+        g_free (message);
+    }
+    g_free (script);
+    g_free (used);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -601,6 +555,10 @@ const query_backend_t query_mongo_backend = {
     .running = query_mongo_running,
     .start = query_mongo_start,
     .stop = query_mongo_stop,
+    .language = "JavaScript of mongosh, db being the database below: db.name.find (), "
+                ".aggregate ([...]) and the like, no use ()",
+    .comment = "// ",
+    .ai_context = query_mongo_ai_context,
 };
 
 /* --------------------------------------------------------------------------------------------- */

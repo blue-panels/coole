@@ -23,6 +23,11 @@
 #define QUERY_TABLE_TAG  "coole-table"
 #define QUERY_TABLE_LINE "\x1e" QUERY_TABLE_TAG " "
 
+/* The programs of AI MC_QUERY_AI names by a word, with what they are run with: the request on
+   stdin, the answer alone on stdout, no tool of theirs run */
+#define QUERY_AI_CLAUDE "claude"
+#define QUERY_AI_CODEX  "codex"
+
 /*** enums ***************************************************************************************/
 
 /*** structures declarations (and typedefs of structures)*****************************************/
@@ -100,6 +105,27 @@ char *query_pg_ident (const char *name);
 /* The query of the rows of the relation @relation of the schema @schema, NULL or "" for none:
    "SELECT * FROM sales.orders LIMIT 100;" */
 char *query_pg_relation_query (const char *schema, const char *relation);
+
+/* The request to AI of the lines @first to @last, 0-based, of @text; with @paragraph the lines
+   around @first that are not empty.  Lines that start with @comment, "-- ", over a query below
+   them are the request alone, the query being the answer of before: those lines are the request,
+   from the byte @start to @asked, and the part up to @end, the end of the last line, is the place
+   of the answer.  The text of the request, the comments taken off; NULL when it has none. */
+char *query_ai_part (const char *text, long first, long last, gboolean paragraph,
+                     const char *comment, gsize *start, gsize *asked, gsize *end);
+/* The @len bytes of the lines of a request, @lines, as they stay over the answer: each line
+   that is not empty a comment, @comment before it when it is no comment yet */
+char *query_ai_commented (const char *lines, gsize len, const char *comment);
+/* The query of what AI answered, @out: what its blocks ```...``` have, else all of it; @notes
+   what it wrote around those blocks, NULL for nothing.  NULL when it has no query. */
+char *query_ai_answer (const char *out, char **notes);
+/* The command of MC_QUERY_AI, @value: claude without one, QUERY_AI_CLAUDE and QUERY_AI_CODEX
+   with what they are run with, else a command line of the shell; NULL with @error when it is
+   none.  Freed with g_strfreev (). */
+char **query_ai_argv (const char *value, GError **error);
+/* What AI is told: to write the query of @question in @language, with no comment in it, its
+   notes after it, what it knows of the database being @context */
+char *query_ai_prompt (const char *language, const char *context, const char *question);
 
 /* The directory of the versions of the file of queries @file, under @versions: the name of
    the file in @queries, the folder of the files of queries of -Q, else the name and 8 letters of

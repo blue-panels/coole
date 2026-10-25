@@ -117,6 +117,8 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { "QuerySchemaRows", N_ ("The rows of the relation of the line of Schema in Table"), NULL },
     { "QuerySchemaInsert", N_ ("Put the name of the line of Schema into the file"), "insert" },
     { "QuerySchemaRefresh", N_ ("Read the schemas again"), NULL },
+    { "QueryAi", N_ ("Write the query of the request of the paragraph or the selection by AI"),
+      "f6" },
     { NULL, NULL, NULL },
 };
 
@@ -1213,7 +1215,7 @@ query_history_saved (query_t *q, const char *version, const char *text, long lin
 /* --------------------------------------------------------------------------------------------- */
 
 /* The window of @file among the windows, NULL when it has none */
-static void *
+void *
 query_file_window (query_t *q, const char *file)
 {
     GList *item;
@@ -1550,6 +1552,10 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
                                                                      : QUERY_SCHEMA_REFRESH,
                                 query_schema_line (q));
         return TRUE;
+    case QUERY_CMD_AI:
+        // the request is in a file: the file in front, from the tabs and Schema too
+        query_ai_ask (q, edit);
+        return TRUE;
     case QUERY_CMD_HISTORY_INSERT:
         // Enter in Schema: a schema folded or unfolded, the columns of a relation
         if (key && edit == NULL && q->backend->schema != NULL && query_schema_focused (q))
@@ -1708,6 +1714,7 @@ query_close (void *data)
 {
     query_t *q = (query_t *) data;
 
+    query_ai_free (q);
     if (q->backend != NULL)
         q->backend->close (q->backend_data);
     if (q->viewer_signal != 0)
