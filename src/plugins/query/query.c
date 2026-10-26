@@ -117,6 +117,8 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { "QuerySchemaRows", N_ ("The rows of the relation of the line of Schema in Table"), NULL },
     { "QuerySchemaInsert", N_ ("Put the name of the line of Schema into the file"), "insert" },
     { "QuerySchemaRefresh", N_ ("Read the schemas again"), NULL },
+    { "QuerySchemaQuery",
+      N_ ("Put the query of the rows of the relation of the line of Schema into the file"), NULL },
     { "QueryAi", N_ ("Write the query of the request of the paragraph or the selection by AI"),
       "f6" },
     { NULL, NULL, NULL },
@@ -1238,6 +1240,92 @@ query_history_saved (query_t *q, const char *version, const char *text, long lin
 
 /* --------------------------------------------------------------------------------------------- */
 
+gboolean
+query_edit_put (query_t *q, void *edit, gsize from, gsize to, const char *text)
+{
+    WEdit *e = EDIT (edit);
+    const char *p;
+    gsize n;
+
+    // one change: an edit of another going on, the plugin's or the editor's, is not mixed in
+    if (!edit_runtime_begin (e))
+        return FALSE;
+    edit_cursor_move (e, (off_t) from - e->buffer.curs1);
+    for (n = from; n < to; n++)
+        (void) edit_delete (e, TRUE);
+    for (p = text; *p != '\0'; p++)
+        edit_insert (e, (unsigned char) *p);
+    edit_runtime_end (e);
+    e->force |= REDRAW_PAGE;
+    edit_scroll_screen_over_cursor (e);
+    q->host->window_show (q->host, edit);
+    query_redraw (q);
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+query_put_query (query_t *q, void *edit, const char *text)
+{
+    char *all, *put;
+    const char *bol, *eol;
+    gsize len = 0, at;
+    gboolean done;
+
+    all = edit != NULL ? q->host->get_text (q->host, edit, &len) : NULL;
+    if (all == NULL)
+        return FALSE;
+    // the line of the cursor
+    for (bol = all + MIN ((gsize) EDIT (edit)->buffer.curs1, len); bol > all && bol[-1] != '\n';
+         bol--)
+        ;
+    eol = strchr (bol, '\n');
+    if (eol == NULL)
+        eol = all + len;
+    if (query_blank_line (bol, eol))
+    {
+        /* an empty line: the query on it, a paragraph of its own, an empty line between it and
+           the lines around it that are not */
+        const char *next = *eol == '\n' ? eol + 1 : NULL;
+        const char *prev = bol > all ? bol - 1 : NULL;
+        const char *pbol;
+
+        for (pbol = prev; pbol != NULL && pbol > all && pbol[-1] != '\n'; pbol--)
+            ;
+        at = (gsize) (bol - all);
+        put = g_strconcat (prev != NULL && !query_blank_line (pbol, prev) ? "\n" : "", text,
+                           next != NULL && !query_blank_line (next, query_line_end (next)) ? "\n"
+                                                                                           : "",
+                           (char *) NULL);
+    }
+    else
+    {
+        // after the paragraph of the cursor, an empty line between
+        for (;;)
+        {
+            const char *next = *eol == '\n' ? eol + 1 : eol, *n_eol;
+
+            if (next >= all + len)
+                break;
+            n_eol = strchr (next, '\n');
+            if (n_eol == NULL)
+                n_eol = all + len;
+            if (query_blank_line (next, n_eol))
+                break;
+            eol = n_eol;
+        }
+        at = (gsize) (eol - all);
+        put = g_strconcat ("\n\n", text, (char *) NULL);
+    }
+    done = query_edit_put (q, edit, at, at, put);
+    g_free (put);
+    g_free (all);
+    return done;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The window of @file among the windows, NULL when it has none */
 void *
 query_file_window (query_t *q, const char *file)
@@ -1560,6 +1648,7 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
     case QUERY_CMD_SCHEMA_ROWS:
     case QUERY_CMD_SCHEMA_INSERT:
     case QUERY_CMD_SCHEMA_REFRESH:
+    case QUERY_CMD_SCHEMA_QUERY:
         // the keys of the lines of Schema are its own there alone: Insert of a file is that of
         // the editor
         if (key && cmd != QUERY_CMD_SCHEMA && (edit != NULL || !query_schema_focused (q)))
@@ -1573,6 +1662,7 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
             q->backend->schema (q->backend_data,
                                 cmd == QUERY_CMD_SCHEMA_ROWS         ? QUERY_SCHEMA_ROWS
                                     : cmd == QUERY_CMD_SCHEMA_INSERT ? QUERY_SCHEMA_INSERT
+                                    : cmd == QUERY_CMD_SCHEMA_QUERY  ? QUERY_SCHEMA_QUERY
                                                                      : QUERY_SCHEMA_REFRESH,
                                 query_schema_line (q));
         return TRUE;
@@ -1589,6 +1679,13 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
         }
         MC_FALLTHROUGH;
     case QUERY_CMD_HISTORY_SHOW:
+        // F3 in Schema: the query of the rows of the relation of its line in the file
+        if (cmd == QUERY_CMD_HISTORY_SHOW && key && edit == NULL && q->backend->schema != NULL
+            && query_schema_focused (q))
+        {
+            q->backend->schema (q->backend_data, QUERY_SCHEMA_QUERY, query_schema_line (q));
+            return TRUE;
+        }
         // Enter and F3 of a file are those of the editor
         version = !key || edit == NULL ? query_history_current (q, key) : NULL;
         if (version == NULL)

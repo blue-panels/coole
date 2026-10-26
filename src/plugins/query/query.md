@@ -155,8 +155,12 @@ A collection unfolded is read then: its Fields, of a sample of 100 of its
 documents, never a value, with their types and, when not all of them have
 the field, how many do, *50%*; its Indexes and their keys, *unique*,
 *sparse*, *ttl*; its Validator, the Pipeline of a view. Enter folds and
-unfolds, F5 puts the first 100 documents of the collection in Table,
-Insert puts *db.orders*, a field, the key of an index. mongosh reads it,
+unfolds, F5 puts the first 100 documents of the collection in Table, F3
+puts the query of them in the file of queries, *// @table* and
+*db.getSiblingDB("shop").getCollection("orders").find({}, { _id: 1, total:
+1 }).limit(100)*, of its database whatever the *use()* of the file, of the
+field of the line alone when it is one, Insert puts *db.orders*, a field, the key of an
+index. mongosh reads it,
 a run of its own each time: a query that makes or drops a collection, a
 view or an index, or inserts, reads it again.
 

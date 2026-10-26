@@ -51,6 +51,8 @@
 
 /*** forward declarations (file scope functions) *************************************************/
 
+static void query_tree_drop_pending (query_tree_t *t);
+
 /*** file scope variables ************************************************************************/
 
 /* --------------------------------------------------------------------------------------------- */
@@ -259,6 +261,7 @@ query_tree_done (query_tree_t *t)
         g_hash_table_destroy (t->seen);
     g_free (t->error);
     g_free (t->keep);
+    query_tree_drop_pending (t);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -395,6 +398,9 @@ query_tree_unask (query_tree_t *t)
 {
     guint i;
 
+    // what was asked is lost: a query of F3 waiting for it with it
+    query_tree_drop_pending (t);
+
     for (i = 0; i < t->roots->len; i++)
         query_node_unask (g_ptr_array_index (t->roots, i));
 }
@@ -435,7 +441,7 @@ query_tree_render (query_tree_t *t)
     guint i;
 
     g_ptr_array_set_size (t->lines, 0);
-    query_tree_add_line (t, text, NULL, _ ("Enter, F5 rows, Ins name"));
+    query_tree_add_line (t, text, NULL, _ ("Enter, F3 query, F5 rows, Ins name"));
     if (t->error != NULL)
         query_tree_add_lines (t, text, t->error);
     else if (!t->read)
@@ -501,6 +507,138 @@ query_tree_rows (query_tree_t *t, query_node_t *n)
         return;
     }
     query_run_alone (t->q, o->rows);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What F3 tells in Output: @what, and the query @text when it is not in the file */
+static void
+query_tree_say (query_tree_t *t, const char *what, const char *text)
+{
+    char *say =
+        text != NULL ? g_strdup_printf ("%s\n\n%s\n", what, text) : g_strdup_printf ("%s\n", what);
+
+    query_tab_set (t->q, QUERY_TAB_OUTPUT, say, TRUE);
+    g_free (say);
+    query_redraw (t->q);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The query of @o of the field @field, of all of them when NULL, put in the file window @edit,
+   NULL when it is gone */
+static void
+query_tree_put (query_tree_t *t, const query_node_t *o, const char *field, void *edit)
+{
+    const query_node_t *first =
+        o->children != NULL && o->children->len > 0 ? g_ptr_array_index (o->children, 0) : NULL;
+    GPtrArray *fields = g_ptr_array_new ();
+    char *text;
+    guint i;
+
+    for (i = 0; first != NULL && i < first->children->len; i++)
+    {
+        const query_node_t *f = g_ptr_array_index (first->children, i);
+
+        if (f->insert != NULL && (field == NULL || strcmp (f->name, field) == 0))
+            g_ptr_array_add (fields, f->insert);
+    }
+    text = t->query (o, fields);
+    g_ptr_array_free (fields, TRUE);
+    if (text == NULL)
+        return;
+    if (edit == NULL)
+        query_tree_say (
+            t, _ ("The file of queries F3 was pressed in is no more: the query is here."), text);
+    else if (!query_put_query (t->q, edit, text))
+        query_tree_say (t, _ ("The file of queries is being changed: the query is here."), text);
+    g_free (text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_tree_drop_pending (query_tree_t *t)
+{
+    g_clear_pointer (&t->pending, g_free);
+    g_clear_pointer (&t->pending_field, g_free);
+    g_clear_pointer (&t->pending_file, g_free);
+    t->pending_edit = NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+query_node_t *
+query_tree_query (query_tree_t *t, query_node_t *n)
+{
+    query_node_t *o = query_node_object (n);
+    // a field, an item of the first section of its object, alone
+    const char *field = n != NULL && n->kind == QUERY_NODE_ITEM && o != NULL && o->children != NULL
+            && o->children->len > 0 && n->parent == g_ptr_array_index (o->children, 0)
+        ? n->name
+        : NULL;
+    // the file of queries in front now: the query goes there, whatever is in front once it is read
+    void *edit = t->q->host->window_top_file (t->q->host);
+
+    if (o == NULL || t->query == NULL || o->rows == NULL)
+        return NULL;
+    // the last F3 is the one: a query of before waiting for its fields is put no more
+    if (t->pending != NULL)
+    {
+        query_tree_drop_pending (t);
+        query_tree_say (t, _ ("The query of F3 of before is put no more: that of this one is."),
+                        NULL);
+    }
+    if (o->read || o->leaf)
+    {
+        query_tree_put (t, o, field, edit);
+        return NULL;
+    }
+    // its fields are read first, the query put once they are
+    t->pending = query_node_path (o);
+    t->pending_field = g_strdup (field);
+    t->pending_edit = edit;
+    t->pending_file = edit != NULL ? t->q->host->get_current_file (t->q->host, edit) : NULL;
+    if (o->asked)
+        return NULL;
+    o->asked = TRUE;
+    return o;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_tree_read (query_tree_t *t, query_node_t *o, gboolean ok)
+{
+    char *path;
+
+    if (t->pending == NULL)
+        return;
+    path = query_node_path (o);
+    if (strcmp (path, t->pending) == 0)
+    {
+        char *field = g_strdup (t->pending_field);
+        // the window of F3, by its file; one with no name while it is in front
+        void *edit = t->pending_file != NULL ? query_file_window (t->q, t->pending_file)
+            : t->q->host->window_top_file (t->q->host) == t->pending_edit ? t->pending_edit
+                                                                          : NULL;
+
+        query_tree_drop_pending (t);
+        if (ok)
+            query_tree_put (t, o, field, edit);
+        else
+            query_tree_say (t, _ ("The columns could not be read: F3 puts no query."), NULL);
+        g_free (field);
+    }
+    g_free (path);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_tree_cancel (query_tree_t *t)
+{
+    query_tree_drop_pending (t);
 }
 
 /* --------------------------------------------------------------------------------------------- */
