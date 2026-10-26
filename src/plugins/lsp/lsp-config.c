@@ -64,6 +64,7 @@ lsp_backend_free (gpointer data)
     if (backend->settings != NULL)
         json_node_unref (backend->settings);
     g_free (backend->startup);
+    g_free (backend->ascii_text);
     g_strfreev (backend->words);
     if (backend->requests != NULL)
         json_node_unref (backend->requests);
@@ -254,6 +255,19 @@ lsp_config_backend_parse (JsonNode *node, guint index, GError **error)
             goto fail;
         }
         backend->startup = g_strdup (json_node_get_string (member));
+    }
+
+    member = json_object_get_member (o, "ascii_text");
+    if (member != NULL && !JSON_NODE_HOLDS_NULL (member))
+    {
+        // the only text known to be cut so far, that of SQL
+        if (!JSON_NODE_HOLDS_VALUE (member) || json_node_get_value_type (member) != G_TYPE_STRING
+            || strcmp (json_node_get_string (member), "sql") != 0)
+        {
+            g_set_error (error, LSP_CONFIG_ERROR, 0, "%s.ascii_text: not \"sql\"", where);
+            goto fail;
+        }
+        backend->ascii_text = g_strdup (json_node_get_string (member));
     }
 
     member = json_object_get_member (o, "requests");

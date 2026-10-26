@@ -122,11 +122,14 @@ test_versions (void)
     g_assert_cmpuint (strlen (s), ==, strlen ("/d/q/.history/q.js-") + 8);
     g_free (s);
 
-    s = query_version_name (now, NULL, NULL);
+    s = query_version_name (now, ".js", NULL, NULL);
     g_assert_cmpstr (s, ==, "20261024-173750.js");
     g_free (s);
+    s = query_version_name (now, ".sql", NULL, NULL);
+    g_assert_cmpstr (s, ==, "20261024-173750.sql");
+    g_free (s);
     // two in a second: numbered
-    s = query_version_name (now, taken_first_two, NULL);
+    s = query_version_name (now, ".js", taken_first_two, NULL);
     g_assert_cmpstr (s, ==, "20261024-173750-3.js");
     g_free (s);
 
@@ -472,6 +475,171 @@ test_table (void)
     }
 }
 
+/* The table of the rows of PostgreSQL, and where an error is in characters */
+static void
+test_grid (void)
+{
+    GPtrArray *columns = g_ptr_array_new_with_free_func (g_free);
+    GPtrArray *cells = g_ptr_array_new_with_free_func (g_free);
+    const char *text = "-- \xd0\xba\xd0\xbe\xd0\xbc\n  SELECT x";
+    char *s;
+
+    g_ptr_array_add (columns, g_strdup ("id"));
+    g_ptr_array_add (columns, g_strdup ("a|b"));
+    g_ptr_array_add (cells, g_strdup ("1"));
+    g_ptr_array_add (cells, query_cell_text ("x|y\nz"));
+    g_ptr_array_add (cells, g_strdup ("22"));
+    g_ptr_array_add (cells, g_strdup ("NULL"));
+    s = query_grid (columns, cells);
+    g_assert_cmpstr (s, ==,
+                     "| id  | a\\|b    |\n|-----|---------|\n| 1   | x\\|y\\nz |\n"
+                     "| 22  | NULL    |\n");
+    g_free (s);
+
+    // no rows: the names alone
+    g_ptr_array_set_size (cells, 0);
+    s = query_grid (columns, cells);
+    g_assert_cmpstr (s, ==, "| id  | a\\|b |\n|-----|------|\n");
+    g_free (s);
+    g_ptr_array_free (cells, TRUE);
+    g_ptr_array_free (columns, TRUE);
+
+    // "-- " and three letters of two bytes each, a newline, two blanks: the 9th character is S
+    g_assert_cmpuint (query_utf8_offset (text, strlen (text), 0), ==, 0);
+    g_assert_cmpuint (query_utf8_offset (text, strlen (text), 9), ==, 12);
+    g_assert_cmpuint (text[query_utf8_offset (text, strlen (text), 9)], ==, 'S');
+    // past the end: the end
+    g_assert_cmpuint (query_utf8_offset (text, strlen (text), 100), ==, strlen (text));
+    // a selection: the characters of its own bytes alone
+    g_assert_cmpuint (query_utf8_offset (text + 3, 4, 5), ==, 4);
+}
+
+/* The names of a relation as SQL has them: in quotes when quote_ident () would quote them */
+static void
+test_pg_ident (void)
+{
+    // the letters of "\xd0\xa1\xd1\x87" are not of ASCII: quoted, as quote_ident () does
+    static const char *const cases[][2] = {
+        { "users", "users" },     { "_a1", "_a1" },
+        { "Users", "\"Users\"" }, { "1a", "\"1a\"" },
+        { "a$b", "\"a$b\"" },     { "user", "\"user\"" },
+        { "order", "\"order\"" }, { "all", "\"all\"" },
+        { "with", "\"with\"" },   { "withx", "withx" },
+        { "a\"b", "\"a\"\"b\"" }, { "\xd0\xa1\xd1\x87", "\"\xd0\xa1\xd1\x87\"" },
+        { "", "\"\"" },
+    };
+    size_t i;
+    char *s;
+
+    for (i = 0; i < G_N_ELEMENTS (cases); i++)
+    {
+        s = query_pg_ident (cases[i][0]);
+        g_assert_cmpstr (s, ==, cases[i][1]);
+        g_free (s);
+    }
+    s = query_pg_relation_query ("sales", "Orders");
+    g_assert_cmpstr (s, ==, "SELECT * FROM sales.\"Orders\" LIMIT 100;");
+    g_free (s);
+    s = query_pg_relation_query (NULL, "orders");
+    g_assert_cmpstr (s, ==, "SELECT * FROM orders LIMIT 100;");
+    g_free (s);
+    s = query_pg_relation_query ("", "orders");
+    g_assert_cmpstr (s, ==, "SELECT * FROM orders LIMIT 100;");
+    g_free (s);
+}
+
+static void
+test_ai (void)
+{
+    const char *text = "SELECT 1;\n\norders of a week\nwith the email\n\n"
+                       "-- the users\n--   by name\nSELECT * FROM users;\nSELECT 2;\n\n"
+                       "-- all comments\n";
+    gsize start = 0, asked = 0, end = 0;
+    char *s, *notes, **argv;
+
+    // a paragraph of text: the request, its place itself
+    s = query_ai_part (text, 3, 3, TRUE, "-- ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "orders of a week\nwith the email");
+    g_assert_cmpuint (start, ==, 11);
+    g_assert_cmpuint (asked, ==, end);
+    g_assert_cmpuint (end, ==, 42);
+    g_free (s);
+    s = query_ai_commented (text + start, asked - start, "-- ");
+    g_assert_cmpstr (s, ==, "-- orders of a week\n-- with the email");
+    g_free (s);
+
+    // comments over a query: the query is the answer of before, its place
+    s = query_ai_part (text, 8, 8, TRUE, "-- ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "the users\n  by name");
+    g_free (s);
+    g_assert_cmpstr (text + asked, ==, "\nSELECT * FROM users;\nSELECT 2;\n\n-- all comments\n");
+    g_assert_cmpstr (text + end, ==, "\n\n-- all comments\n");
+    s = query_ai_commented (text + start, asked - start, "-- ");
+    g_assert_cmpstr (s, ==, "-- the users\n--   by name");
+    g_free (s);
+
+    // comments alone are the request
+    s = query_ai_part (text, 10, 10, TRUE, "-- ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "all comments");
+    g_assert_cmpuint (asked, ==, end);
+    g_free (s);
+
+    // an empty line, past the end of the text
+    g_assert_null (query_ai_part (text, 1, 1, TRUE, "-- ", &start, &asked, &end));
+    g_assert_null (query_ai_part (text, 40, 40, TRUE, "-- ", &start, &asked, &end));
+
+    // a selection: its lines alone, its empty lines left out
+    s = query_ai_part (text, 1, 2, FALSE, "-- ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "orders of a week");
+    g_assert_cmpuint (start, ==, 11);
+    g_assert_cmpuint (end, ==, 27);
+    g_free (s);
+    g_assert_null (query_ai_part (text, 1, 1, FALSE, "-- ", &start, &asked, &end));
+
+    // the comments of mongo
+    s = query_ai_part ("//orders\n", 0, 0, TRUE, "// ", &start, &asked, &end);
+    g_assert_cmpstr (s, ==, "orders");
+    g_free (s);
+
+    // the answer: its blocks, the rest notes
+    s = query_ai_answer ("```sql\nSELECT 1;\n```\n", &notes);
+    g_assert_cmpstr (s, ==, "SELECT 1;");
+    g_assert_null (notes);
+    g_free (s);
+    s = query_ai_answer ("Here:\n```\n  SELECT 1\n  FROM t;\n```\nIt counts.\n", &notes);
+    g_assert_cmpstr (s, ==, "  SELECT 1\n  FROM t;");
+    g_assert_cmpstr (notes, ==, "Here:\nIt counts.");
+    g_free (notes);
+    g_free (s);
+    s = query_ai_answer ("\nSELECT 2;\n\n", &notes);
+    g_assert_cmpstr (s, ==, "SELECT 2;");
+    g_assert_null (notes);
+    g_free (s);
+    g_assert_null (query_ai_answer ("```sql\n```\n", &notes));
+    g_assert_null (notes);
+    g_assert_null (query_ai_answer ("  \n", &notes));
+
+    argv = query_ai_argv (NULL, NULL);
+    g_assert_cmpstr (argv[0], ==, "claude");
+    g_assert_cmpstr (argv[1], ==, "-p");
+    g_strfreev (argv);
+    argv = query_ai_argv ("codex", NULL);
+    g_assert_cmpstr (argv[1], ==, "exec");
+    g_assert_cmpstr (argv[g_strv_length (argv) - 1], ==, "-");
+    g_strfreev (argv);
+    argv = query_ai_argv ("claude --model 'opus x'", NULL);
+    g_assert_cmpuint (g_strv_length (argv), ==, 3);
+    g_assert_cmpstr (argv[2], ==, "opus x");
+    g_strfreev (argv);
+    g_assert_null (query_ai_argv ("claude 'x", NULL));
+
+    s = query_ai_prompt ("SQL", "The database.", "orders");
+    g_assert_nonnull (strstr (s, "in SQL for"));
+    g_assert_nonnull (strstr (s, "no comment in it"));
+    g_assert_nonnull (strstr (s, "The database.\n\nThe request:\norders\n"));
+    g_free (s);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -481,5 +649,8 @@ main (int argc, char **argv)
     g_test_add_func ("/query/sections", test_sections);
     g_test_add_func ("/query/mongo", test_mongo);
     g_test_add_func ("/query/table", test_table);
+    g_test_add_func ("/query/grid", test_grid);
+    g_test_add_func ("/query/pg-ident", test_pg_ident);
+    g_test_add_func ("/query/ai", test_ai);
     return g_test_run ();
 }

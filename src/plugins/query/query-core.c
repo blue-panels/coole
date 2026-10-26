@@ -1116,8 +1116,7 @@ query_table (const char *json, guint max, guint *rows, GError **error)
     JsonNode *root;
     GPtrArray *nodes, *columns, *cells;
     GHashTable *seen;
-    GString *out;
-    int *widths;
+    char *out;
     guint r, c, total = 0;
 
     *rows = 0;
@@ -1151,9 +1150,37 @@ query_table (const char *json, guint max, guint *rows, GError **error)
         query_add_columns (g_ptr_array_index (nodes, r), columns, seen);
     g_hash_table_destroy (seen);
 
+    cells = g_ptr_array_new_with_free_func (g_free);
+    for (r = 0; r < nodes->len; r++)
+        for (c = 0; c < columns->len; c++)
+            g_ptr_array_add (
+                cells,
+                query_row_cell (g_ptr_array_index (nodes, r), g_ptr_array_index (columns, c)));
+    out = query_grid (columns, cells);
+    *rows = total;
+
+    g_ptr_array_free (cells, TRUE);
+    g_ptr_array_free (columns, TRUE);
+    g_ptr_array_free (nodes, TRUE);
+    g_object_unref (parser);
+    return out;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_grid (GPtrArray *columns, GPtrArray *cells)
+{
+    const guint rows = columns->len > 0 ? cells->len / columns->len : 0;
+    GPtrArray *cut = g_ptr_array_new_with_free_func (g_free);
+    GString *out;
+    int *widths;
+    guint r, c;
+
     // the cells, cut, and the width of each column
     widths = g_new0 (int, columns->len);
-    cells = g_ptr_array_new_with_free_func (g_free);
     for (c = 0; c < columns->len; c++)
     {
         GString *key = g_string_new (NULL);
@@ -1164,28 +1191,26 @@ query_table (const char *json, guint max, guint *rows, GError **error)
         g_string_free (key, TRUE);
         // a column of Markdown is three dashes at least
         widths[c] = MAX (3, query_width (name));
-        g_ptr_array_add (cells, name);
+        g_ptr_array_add (cut, name);
     }
-    for (r = 0; r < nodes->len; r++)
+    for (r = 0; r < rows; r++)
         for (c = 0; c < columns->len; c++)
         {
             char *cell =
-                query_row_cell (g_ptr_array_index (nodes, r), g_ptr_array_index (columns, c));
-            char *cut = query_cut (cell, QUERY_COLUMN_MAX);
+                query_cut (g_ptr_array_index (cells, r * columns->len + c), QUERY_COLUMN_MAX);
 
-            widths[c] = MAX (widths[c], query_width (cut));
-            g_ptr_array_add (cells, cut);
-            g_free (cell);
+            widths[c] = MAX (widths[c], query_width (cell));
+            g_ptr_array_add (cut, cell);
         }
 
     out = g_string_new (NULL);
     // a table of Markdown, its columns lined up to be read as they are
-    for (r = 0; r <= nodes->len && columns->len > 0; r++)
+    for (r = 0; r <= rows && columns->len > 0; r++)
     {
         for (c = 0; c < columns->len; c++)
         {
             g_string_append (out, "| ");
-            query_append_padded (out, g_ptr_array_index (cells, r * columns->len + c), widths[c]);
+            query_append_padded (out, g_ptr_array_index (cut, r * columns->len + c), widths[c]);
             g_string_append_c (out, ' ');
         }
         g_string_append (out, "|\n");
@@ -1203,17 +1228,95 @@ query_table (const char *json, guint max, guint *rows, GError **error)
             g_string_append (out, "|\n");
         }
     }
-    *rows = total;
-
     g_free (widths);
-    g_ptr_array_free (cells, TRUE);
-    g_ptr_array_free (columns, TRUE);
-    g_ptr_array_free (nodes, TRUE);
-    g_object_unref (parser);
+    g_ptr_array_free (cut, TRUE);
     return g_string_free (out, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+char *
+query_cell_text (const char *s)
+{
+    GString *out = g_string_new (NULL);
+
+    query_append_string (out, s);
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gsize
+query_utf8_offset (const char *text, gsize len, long chars)
+{
+    const char *p = text, *end = text + len;
+
+    for (; chars > 0 && p < end; chars--)
+        p = g_utf8_find_next_char (p, end) != NULL ? g_utf8_find_next_char (p, end) : end;
+    return (gsize) (p - text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_pg_ident (const char *name)
+{
+    /* the keywords that cannot be the name of a table unquoted, the reserved ones and those of
+       types and functions: pg_get_keywords () of PostgreSQL 16, catcode R and T; a blank around
+       each */
+    static const char keywords[] =
+        " all analyse analyze and any array as asc asymmetric authorization binary both case "
+        "cast check collate collation column concurrently constraint create cross "
+        "current_catalog current_date current_role current_schema current_time "
+        "current_timestamp current_user default deferrable desc distinct do else end except "
+        "false fetch for foreign freeze from full grant group having ilike in initially "
+        "inner intersect into is isnull join lateral leading left like limit localtime "
+        "localtimestamp natural not notnull null offset on only or order outer overlaps "
+        "placing primary references returning right select session_user similar some "
+        "symmetric system_user table tablesample then to trailing true union unique user "
+        "using variadic verbose when where window with ";
+    gboolean plain = (*name >= 'a' && *name <= 'z') || *name == '_';
+    const char *c;
+    GString *quoted;
+
+    for (c = name; plain && *c != '\0'; c++)
+        plain = (*c >= 'a' && *c <= 'z') || (*c >= '0' && *c <= '9') || *c == '_';
+    if (plain)
+    {
+        // a word of the list, with a blank before and after it there
+        char *word = g_strconcat (" ", name, " ", (char *) NULL);
+
+        plain = strstr (keywords, word) == NULL;
+        g_free (word);
+    }
+    if (plain)
+        return g_strdup (name);
+    quoted = g_string_new ("\"");
+    for (c = name; *c != '\0'; c++)
+    {
+        if (*c == '"')
+            g_string_append_c (quoted, '"');
+        g_string_append_c (quoted, *c);
+    }
+    g_string_append_c (quoted, '"');
+    return g_string_free (quoted, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_pg_relation_query (const char *schema, const char *relation)
+{
+    char *rel = query_pg_ident (relation);
+    char *nsp = schema != NULL && *schema != '\0' ? query_pg_ident (schema) : NULL;
+    char *query;
+
+    query = nsp != NULL ? g_strdup_printf ("SELECT * FROM %s.%s LIMIT 100;", nsp, rel)
+                        : g_strdup_printf ("SELECT * FROM %s LIMIT 100;", rel);
+    g_free (nsp);
+    g_free (rel);
+    return query;
+}
 
 /* --------------------------------------------------------------------------------------------- */
 
@@ -1243,17 +1346,18 @@ query_versions_dir (const char *versions, const char *queries, const char *file)
 /* --------------------------------------------------------------------------------------------- */
 
 char *
-query_version_name (GDateTime *now, gboolean (*taken) (const char *name, void *data), void *data)
+query_version_name (GDateTime *now, const char *extension,
+                    gboolean (*taken) (const char *name, void *data), void *data)
 {
     char *stamp = g_date_time_format (now, "%Y%m%d-%H%M%S");
-    char *name = g_strconcat (stamp, ".js", (char *) NULL);
+    char *name = g_strconcat (stamp, extension, (char *) NULL);
     int n;
 
     // two runs in a second: the second one numbered
     for (n = 2; taken != NULL && taken (name, data); n++)
     {
         g_free (name);
-        name = g_strdup_printf ("%s-%d.js", stamp, n);
+        name = g_strdup_printf ("%s-%d%s", stamp, n, extension);
     }
     g_free (stamp);
     return name;
@@ -1383,3 +1487,236 @@ query_take_tables (const char *out, GPtrArray *tables)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the line at @p, up to @end, has nothing but blanks */
+static gboolean
+query_ai_blank (const char *p, const char *end)
+{
+    for (; p < end; p++)
+        if (!g_ascii_isspace (*p))
+            return FALSE;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The comment that starts the line at @p after its blanks, @mark ("--") of @len bytes: past it
+   and one space after it; NULL when the line is no comment */
+static const char *
+query_ai_comment_of (const char *p, const char *mark, gsize len)
+{
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (len == 0 || strncmp (p, mark, len) != 0)
+        return NULL;
+    p += len;
+    return *p == ' ' ? p + 1 : p;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_ai_part (const char *text, long first, long last, gboolean paragraph, const char *comment,
+               gsize *start, gsize *asked, gsize *end)
+{
+    GArray *lines = g_array_new (FALSE, FALSE, sizeof (const char *));
+    char *mark = g_strstrip (g_strdup (comment));
+    const gsize mark_len = strlen (mark);
+    GString *question = g_string_new (NULL);
+    const char *p = text;
+    long n, i, k, asked_last;
+
+#define LINE(i)  g_array_index (lines, const char *, (i))
+#define BLANK(i) query_ai_blank (LINE (i), query_line_end (LINE (i)))
+
+    for (;;)
+    {
+        g_array_append_val (lines, p);
+        p = query_line_end (p);
+        if (*p == '\0')
+            break;
+        p++;
+    }
+    n = (long) lines->len;
+    first = MAX (first, 0);
+    last = MIN (MAX (last, first), n - 1);
+    if (paragraph)
+    {
+        if (first >= n || BLANK (first))
+            last = -1;
+        else
+        {
+            while (first > 0 && !BLANK (first - 1))
+                first--;
+            for (last = first; last + 1 < n && !BLANK (last + 1); last++)
+                ;
+        }
+    }
+    else
+    {
+        // a selection: its empty lines at its ends are none of the request
+        while (first <= last && BLANK (first))
+            first++;
+        while (last >= first && BLANK (last))
+            last--;
+    }
+
+    asked_last = last;
+    if (first <= last)
+    {
+        // comments over a query: the query is the answer of before, its place
+        for (k = first; k <= last && query_ai_comment_of (LINE (k), mark, mark_len) != NULL; k++)
+            ;
+        if (k > first && k <= last)
+            asked_last = k - 1;
+        for (i = first; i <= asked_last; i++)
+        {
+            const char *from = query_ai_comment_of (LINE (i), mark, mark_len);
+            const char *to = query_line_end (LINE (i));
+
+            if (from == NULL)
+                from = LINE (i);
+            if (question->len > 0)
+                g_string_append_c (question, '\n');
+            g_string_append_len (question, from, to - from);
+        }
+        *start = (gsize) (LINE (first) - text);
+        *asked = (gsize) (query_line_end (LINE (asked_last)) - text);
+        *end = (gsize) (query_line_end (LINE (last)) - text);
+    }
+
+#undef BLANK
+#undef LINE
+
+    g_array_free (lines, TRUE);
+    g_free (mark);
+    g_strstrip (question->str);
+    if (question->str[0] == '\0')
+    {
+        g_string_free (question, TRUE);
+        return NULL;
+    }
+    return g_string_free (question, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_ai_commented (const char *lines, gsize len, const char *comment)
+{
+    char *mark = g_strstrip (g_strdup (comment));
+    GString *text = g_string_new (NULL);
+    const char *p = lines, *stop = lines + len;
+
+    while (p < stop)
+    {
+        const char *end = query_line_end (p);
+
+        if (end > stop)
+            end = stop;
+        if (!query_ai_blank (p, end) && query_ai_comment_of (p, mark, strlen (mark)) == NULL)
+            g_string_append (text, comment);
+        g_string_append_len (text, p, end - p);
+        if (end < stop)
+            g_string_append_c (text, '\n');
+        p = end + 1;
+    }
+    g_free (mark);
+    return g_string_free (text, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_ai_answer (const char *out, char **notes)
+{
+    GString *code = g_string_new (NULL), *rest = g_string_new (NULL);
+    gboolean fenced = FALSE, in = FALSE;
+    const char *p = out;
+
+    while (*p != '\0')
+    {
+        const char *end = query_line_end (p);
+        const char *s = p;
+
+        while (*s == ' ' || *s == '\t')
+            s++;
+        if (strncmp (s, "```", 3) == 0)
+        {
+            // "```sql" opens a block, "```" ends it; the blocks are one query
+            fenced = TRUE;
+            in = !in;
+            if (in && code->len > 0)
+                g_string_append_c (code, '\n');
+        }
+        else
+            g_string_append_len (in ? code : rest, p, end - p + (*end == '\n' ? 1 : 0));
+        p = *end == '\n' ? end + 1 : end;
+    }
+    if (!fenced)
+    {
+        g_string_assign (code, rest->str);
+        g_string_truncate (rest, 0);
+    }
+    g_strstrip (rest->str);
+    *notes = rest->str[0] != '\0' ? g_strdup (rest->str) : NULL;
+    g_string_free (rest, TRUE);
+    // the end of the query is no blank: the line after it is that of the file
+    g_strchomp (code->str);
+    // its first line keeps its indent, no empty line above it
+    while (code->str[0] == '\n' || code->str[0] == '\r')
+        g_string_erase (code, 0, 1);
+    if (query_ai_blank (code->str, code->str + strlen (code->str)))
+    {
+        g_string_free (code, TRUE);
+        return NULL;
+    }
+    return g_string_free (code, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char **
+query_ai_argv (const char *value, GError **error)
+{
+    static const char *const claude[] = {
+        QUERY_AI_CLAUDE, "-p", "--tools", "", "--no-session-persistence", NULL,
+    };
+    static const char *const codex[] = {
+        QUERY_AI_CODEX, "exec",      "--skip-git-repo-check",
+        "--ephemeral",  "--sandbox", "read-only",
+        "--color",      "never",     "-",
+        NULL,
+    };
+    char **argv = NULL;
+
+    if (value == NULL || *value == '\0' || strcmp (value, QUERY_AI_CLAUDE) == 0)
+        return g_strdupv ((char **) claude);
+    if (strcmp (value, QUERY_AI_CODEX) == 0)
+        return g_strdupv ((char **) codex);
+    return g_shell_parse_argv (value, NULL, &argv, error) ? argv : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_ai_prompt (const char *language, const char *context, const char *question)
+{
+    /* no comment in the query: a language server of SQL may lose its place in a statement with
+       letters not of ASCII before the cursor */
+    return g_strdup_printf (
+        "Write a query in %s for the request below.\n"
+        "Answer with the query, ready to run, in one block ```, with no comment in it; a note of "
+        "yours goes after the block, as plain text in the language of the request: it is shown "
+        "to the user apart from the query.\n"
+        "Use the names the database below has; when the request needs one it has not, say so in "
+        "that note.\n"
+        "\n"
+        "%s\n"
+        "\n"
+        "The request:\n"
+        "%s\n",
+        language, context, question);
+}

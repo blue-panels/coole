@@ -471,3 +471,152 @@ lsp_snippet_plain (const char *snippet, gboolean drop, gsize *cursor)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* Whether @c can be of a name of SQL, a letter not of ASCII too */
+static gboolean
+lsp_sql_name_char (char c)
+{
+    return g_ascii_isalnum (c) || c == '_' || (unsigned char) c >= 0x80;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+lsp_text_sql_ascii (const char *text, gsize len)
+{
+    // where the text is: code, a comment of a line, a comment of a block, a string, a string with
+    // escapes, E'...', a quoted name, a string of dollars
+    enum
+    {
+        SQL_CODE,
+        SQL_LINE,
+        SQL_BLOCK,
+        SQL_STRING,
+        SQL_ESCAPED,
+        SQL_NAME,
+        SQL_DOLLAR
+    } state = SQL_CODE;
+    GString *out = g_string_sized_new (len);
+    const char *p = text, *end = text + len, *tag = NULL;
+    gsize tag_len = 0;
+    int depth = 0;
+
+    while (p < end)
+    {
+        const char c = *p;
+        const char next = p + 1 < end ? p[1] : '\0';
+
+        if ((unsigned char) c >= 0x80)
+        {
+            const gunichar u = g_utf8_get_char_validated (p, end - p);
+            const gsize n =
+                (u == (gunichar) -1 || u == (gunichar) -2) ? 1 : (gsize) g_utf8_skip[(guchar) c];
+
+            if (state == SQL_CODE || state == SQL_NAME)
+                g_string_append_len (out, p, (gssize) n);
+            else
+                g_string_append (out, n == 4 ? "__" : "_");
+            p += n;
+            continue;
+        }
+
+        // an escape of E'...': the quote or the backslash after it is none of its end
+        if (state == SQL_ESCAPED && c == '\\' && (next == '\\' || next == '\''))
+        {
+            g_string_append_c (out, c);
+            g_string_append_c (out, next);
+            p += 2;
+            continue;
+        }
+
+        switch (state)
+        {
+        case SQL_CODE:
+            if (c == '-' && next == '-')
+                state = SQL_LINE;
+            else if (c == '/' && next == '*')
+            {
+                state = SQL_BLOCK;
+                depth = 1;
+                g_string_append (out, "/*");
+                p += 2;
+                continue;
+            }
+            else if (c == '\'')
+                state = p > text && (p[-1] == 'E' || p[-1] == 'e')
+                        && (p - 1 == text || !lsp_sql_name_char (p[-2]))
+                    ? SQL_ESCAPED
+                    : SQL_STRING;
+            else if (c == '"')
+                state = SQL_NAME;
+            else if (c == '$' && (p == text || !lsp_sql_name_char (p[-1]))
+                     && !g_ascii_isdigit (next))
+            {
+                // $tag$ or $$; $1 is a parameter
+                const char *q = p + 1;
+
+                while (q < end && (g_ascii_isalnum (*q) || *q == '_'))
+                    q++;
+                if (q < end && *q == '$')
+                {
+                    tag = p;
+                    tag_len = (gsize) (q + 1 - p);
+                    g_string_append_len (out, p, (gssize) tag_len);
+                    p += tag_len;
+                    state = SQL_DOLLAR;
+                    continue;
+                }
+            }
+            break;
+        case SQL_LINE:
+            if (c == '\n')
+                state = SQL_CODE;
+            break;
+        case SQL_BLOCK:
+            // the comments of a block nest in PostgreSQL
+            if ((c == '/' && next == '*') || (c == '*' && next == '/'))
+            {
+                depth += c == '/' ? 1 : -1;
+                if (depth == 0)
+                    state = SQL_CODE;
+                g_string_append_c (out, c);
+                g_string_append_c (out, next);
+                p += 2;
+                continue;
+            }
+            break;
+        case SQL_ESCAPED:
+        case SQL_STRING:
+        case SQL_NAME:
+            // '' in a string, "" in a name, is one of them, not its end
+            if (c == (state == SQL_NAME ? '"' : '\''))
+            {
+                if (next == c)
+                {
+                    g_string_append_c (out, c);
+                    g_string_append_c (out, next);
+                    p += 2;
+                    continue;
+                }
+                state = SQL_CODE;
+            }
+            break;
+        case SQL_DOLLAR:
+            if (c == '$' && (gsize) (end - p) >= tag_len && strncmp (p, tag, tag_len) == 0)
+            {
+                g_string_append_len (out, p, (gssize) tag_len);
+                p += tag_len;
+                state = SQL_CODE;
+                continue;
+            }
+            break;
+        default:
+            break;
+        }
+        g_string_append_c (out, c);
+        p++;
+    }
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */

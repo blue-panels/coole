@@ -76,13 +76,19 @@ to the panel and back. It needs the project, build and debugger plugins,
 and ctags for F3.
 
 *-Q, --query*
-: Run the queries of the file with mongosh: F5 the selection, else the
-part between lines *// ---* around the cursor, else the whole file, Ctrl-F5
-the whole file; the answer comes in the tabs
-Output, Table and History at the bottom. *MC_MONGO_URI* and *MC_MONGO_DB*
-in the environment tell what to connect to, *MC_MONGOSH* the program.
-Without a file named, the file is *~/.local/share/coole/queries/*, with the
-name of the database and *.js*. The windows the project had last time are
+: Run the queries of the file in a database, MongoDB by mongosh or
+PostgreSQL by libpq; the answer comes in the tabs Output, Table and History
+at the bottom. *MC_QUERY_KIND* is *mongo* or *postgres*; without it,
+*MC_MONGO_URI* means MongoDB and a file *.sql* PostgreSQL. For MongoDB
+*MC_MONGO_URI* and *MC_MONGO_DB* tell what to connect to, *MC_MONGOSH* the
+program; F5 runs the selection, else the part between lines *// ---*
+around the cursor, else the whole file. For PostgreSQL libpq takes the
+connection from *PGHOST*, *PGDATABASE*, *PGSERVICE* and the like, the
+password from *~/.pgpass*; F5 runs the selection, else the whole file.
+Ctrl-F5 runs the whole file. Without a file named, the file is
+*~/.local/share/coole/queries/*, with the name of the database and *.js*,
+or *postgres/*, the name of the connection, and that of the database and
+*.sql*. The windows the project had last time are
 not shown, and the plugins of a project and of code (project, build,
 debugger, ctags, etags, git, terminal, spell) are not started; the
 scripts stay, and the language server of the queries when lsp.json has one.

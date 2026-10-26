@@ -25,7 +25,7 @@ Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: coole-lua
-Suggests: libx11-6, libaspell15 | libhunspell-1.7-0, universal-ctags, mongodb-mongosh, mongolsp
+Suggests: libx11-6, libaspell15 | libhunspell-1.7-0, universal-ctags, mongodb-mongosh, mongolsp, libpq5
 Description: console text editor, a continuation of cooledit
  coole is a console text editor that continues cooledit by Paul Sheer.  It
  has syntax highlighting, code folding, an
@@ -35,6 +35,9 @@ Description: console text editor, a continuation of cooledit
  .
  Spell checking uses aspell or hunspell, whichever is installed; the
  library is loaded at run time.
+ .
+ coole -Q runs the queries of a file in MongoDB, by mongosh, or in
+ PostgreSQL, by libpq, which is loaded at run time too.
  .
  The coole-lua package adds the Lua runtime, which runs editor scripts.
 

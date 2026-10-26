@@ -2,12 +2,15 @@
 
 **Query plugin of the editor**
 
-Runs the queries of a file with *mongosh*, the shell of MongoDB, and shows
-its answer at the bottom of the screen: what mongosh printed, and the
-documents in columns. It works in *coole -Q* alone. Without a file named,
-the file of queries is that of the database, *~/.local/share/coole/queries/*
-with the name of *MC_MONGO_DB* and *.js*: the queries of a database stay
-for the next time.
+Runs the queries of a file in a database and shows its answer at the bottom
+of the screen: what the database said, and the documents or the rows in
+columns. MongoDB is run by *mongosh*, its shell; PostgreSQL by *libpq*, its
+client library, as the part **PostgreSQL** at the end tells. It works in
+*coole -Q* alone. *MC_QUERY_KIND*, *mongo* or *postgres*, tells which;
+without it *MC_MONGO_URI* means MongoDB, and a file *.sql* PostgreSQL.
+Without a file named, the file of queries is that of the database,
+*~/.local/share/coole/queries/* with the name of *MC_MONGO_DB* and *.js*:
+the queries of a database stay for the next time.
 
 **What it needs**
 
@@ -142,3 +145,168 @@ Text marked in History is copied with **Ctrl-Ins**: Enter and F3 are those
 of the list. Another file in front shows its own History.
 
 **Ctrl-Alt-PgDn** and **Ctrl-Alt-PgUp** go from tab to tab.
+
+**A query written by AI**
+
+**F6**
+: The query of the request written in the file, by AI: the request is the
+paragraph of the cursor, its lines between empty lines, or the selection,
+in the words of the user, *orders of the last week by user*. The program
+of AI writes the query, which is put under the request, the request made a
+comment, *//* or *--*: one change, which Undo takes back. The query is
+not run: F5 runs it. **F6** on a request that is a comment over a query
+writes it again, in the place of that query. **F6** while AI writes asks
+whether to stop it. Output tells the time it took, and what AI said beside
+the query.
+
+AI is told the names of the database, never a row: of MongoDB the
+collections, and the fields of a document of each with their types, in the
+database of the *use()* above the request; of PostgreSQL the relations of
+its schemas, their columns with their types and their keys, those of
+*MC_PG_SCHEMA* first; with *MC_QUERY_READ_ONLY=1*, that it is to change
+nothing.
+
+*MC_QUERY_AI*
+: The program of AI, else the key *ai* of the section *[Query]* of
+*~/.config/coole/ini*, the environment choosing another than the
+configuration for a run:
+
+```
+[Query]
+ai=codex
+```
+
+*claude*, without either, is run as *claude -p --tools ""
+--no-session-persistence*, *codex* as *codex exec --skip-git-repo-check
+--ephemeral --sandbox read-only --color never -*: the request on stdin, no
+tool of theirs run. Another value is a command line run as it is, which
+reads the request on stdin and prints the query, in a code block of
+Markdown or alone. It runs in the directory of the temporary files, without
+*PGPASSWORD* and *MC_MONGO_URI* in its environment. The first lines of
+Output tell whether it is found.
+
+**PostgreSQL**
+
+*coole -Q* with *MC_QUERY_KIND=postgres*, or a file *.sql*, runs the queries
+in PostgreSQL. It keeps one connection while it runs: a transaction, the
+temporary tables and what *SET* sets stay from one F5 to the next.
+
+*libpq5*
+: The client library of PostgreSQL. coole loads it as -Q starts, and needs
+it for PostgreSQL alone; libpq 17 or later gives the rows by chunks and a
+cancel of its own, an older one gives them one by one.
+
+*postgres-language-server*
+: The language server of SQL, for the completion of the tables and the
+columns, hover and the errors as they are typed; without it the queries run
+all the same. Its releases are at
+<https://github.com/supabase-community/postgres-language-server/releases>.
+The first lines of Output tell whether both are found.
+
+libpq takes what to connect to from the environment, as *psql* does:
+*PGHOST*, *PGPORT*, *PGUSER*, *PGDATABASE*, *PGSERVICE* and
+*~/.pg_service.conf*, *PGSSLMODE*. The password is better in *~/.pgpass*,
+which libpq and the language server read, than in *PGPASSWORD*. coole adds
+to the connection its encoding, UTF8, and with *MC_QUERY_READ_ONLY=1*
+transactions that write nothing, *[RO]* in the header: a guard against a
+slip, not a right, a *SET* undoing it; what may be written is the role's.
+
+Without a file named, the file of queries is
+*~/.local/share/coole/queries/postgres/*, the name of the connection,
+*MC_PG_CONNECTION* or *PGSERVICE*, and that of the database with *.sql*.
+
+With *MC_PG_RELATION*, a table or a view, and *MC_PG_SCHEMA* its schema,
+as the panel of PostgreSQL starts coole, a *SELECT* of its first 100 rows
+runs once connected, the file left as it is; a file with nothing in it gets
+that query, changed, not saved.
+
+**F5**
+: Run the selection, else the whole file, as it is, in one query: its
+commands are one transaction unless it has its own *BEGIN*, an error
+undoing those before it and the rest not run. *CREATE DATABASE*, *VACUUM*
+and the like take no other command with them: select them alone. The
+commands of psql, *\d*, *\copy*, are none of PostgreSQL.
+
+**Ctrl-F5**
+: Run the whole file, even with a selection.
+
+**F5** while a query runs asks whether to stop it: the server is asked to
+cancel it, and Output tells how it ended. A connection that does not come
+is stopped so too.
+
+*Output*
+: Its first line tells the lines of the query, the time it took, the
+server, how it ended and the transaction: *[TX]* while one is open,
+*[TX FAILED: ROLLBACK required]* when a command of it failed, the server
+taking no other query until *ROLLBACK*; the title of the tab tells it too.
+Then what each command did, *SELECT 12*, *UPDATE 4*, the notices of the
+server among them, a notice at times before the command it follows; an
+error with its code, *ERROR [23505]*, its *DETAIL* and *HINT*, its line marked
+in the file and the cursor there. *COPY ... TO STDOUT* prints its rows here;
+*COPY ... FROM STDIN* is ended, coole having nothing to send.
+
+*Table*
+: A table of the rows of each command that has some, *SELECT* and
+*... RETURNING*, numbered: the first 100 rows, all of them counted, the
+memory the same for millions of them. *NULL* is told, a *bytea* by its
+length and its start, a long value by its start. Rows of a command that
+failed after them are told as incomplete.
+
+*History*
+: As for MongoDB; a run tells how it ended, *SELECT 12* or *ERROR 42P01*,
+and its versions are *.sql*.
+
+**QueryRollback**
+: Run *ROLLBACK*. It has no key of its own: one is given it in
+*~/.config/coole/keymap.ini*, section *[query]*.
+
+**Ctrl-Alt-S**
+: The window Schema at the right, QuerySchema: shown when it is not, given
+the focus when it has it not, hidden when it has. It is shown once
+connected: the schemas of the database, that of *MC_PG_SCHEMA* first and
+unfolded, else *public*, those of the system left out. A schema has its
+groups, those with something in them: Tables, Views, Materialized views,
+Foreign tables, Sequences, Functions, those of extensions left out. A table
+shows the rows the server reckons, *~50000*; a partitioned table its
+partitions under it, in its section Partitions.
+
+A relation unfolded has its sections, read then: Columns, their types,
+*not null*, the default, *identity*, *generated*; Keys, the primary key and
+the unique ones; Foreign keys; Indexes; References, the foreign keys of the
+other tables to it; Triggers. A table has all of them, the empty ones too,
+a view and the like those with something.
+
+In Schema:
+
+**Enter**
+: Fold or unfold the line: a schema, a group, a relation, a section. A
+double click does so too.
+
+**F5**
+: The first 100 rows of the relation of the line, or of that it is of, in
+Table: a query of no file, QuerySchemaRows.
+
+**Insert**
+: Put what the line names at the cursor of the file of queries, as SQL
+takes it, QuerySchemaInsert: *sales."Orders"* for a relation, the name of a
+schema, a column, an index, a trigger; the columns of a key, all those of
+the line Columns; the table of a reference; *sales.total(* for a function.
+
+**QuerySchemaRefresh**
+: Read the schemas again, with no key of its own, what is unfolded staying
+so. They are read again by themselves after a query whose *CREATE*,
+*ALTER* or *DROP* is committed.
+
+Schema reads the catalog by a connection of its own, of the same
+environment, read-only as the other is: a query running or a transaction
+that failed leaves it read all the same, and it sees what is committed
+alone.
+
+A connection lost while a query runs is told so, with the transaction,
+the temporary tables and *SET* of the session gone with it; F5 connects
+again and tells it once more.
+
+The language server has a connection of its own: it knows the tables of
+the database, not the temporary tables of the session of F5 nor a schema a
+*SET search_path* put in front; *MC_PG_SCHEMA* is the schema it knows first,
+else *public*. It runs no statement: queries run by F5 alone.

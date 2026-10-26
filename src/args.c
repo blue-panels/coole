@@ -175,8 +175,9 @@ static const GOptionEntry argument_main_table[] = {
         G_OPTION_FLAG_IN_MAIN,
         G_OPTION_ARG_NONE,
         &mc_args__query,
-        N_ ("Runs the queries of the file with mongosh, MC_MONGO_URI and MC_MONGO_DB telling "
-            "what to connect to"),
+        N_ ("Runs the queries of the file in a database: MongoDB by mongosh, MC_MONGO_URI telling "
+            "what to connect to, or PostgreSQL by libpq, MC_QUERY_KIND=postgres and PGHOST, "
+            "PGDATABASE, PGSERVICE and the like"),
         NULL,
     },
 
@@ -610,28 +611,88 @@ mc_setup_git_by_args (GError **mcerror)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* --query: the database is what the environment has to connect to, mongo by MC_MONGO_URI; the
-   file, when none is named, ~/.local/share/coole/queries/<database>.js */
+/* A name of the environment, @name, that is one name of a file: no "/", not "." or ".."; else
+   @fallback */
+static const char *
+mc_query_name (const char *name, const char *fallback)
+{
+    if (name == NULL || *name == '\0' || strchr (name, '/') != NULL || strcmp (name, ".") == 0
+        || strcmp (name, "..") == 0)
+        return fallback;
+    return name;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --query: the database is what the environment has to connect to: MC_QUERY_KIND, else mongo by
+   MC_MONGO_URI, else postgres by a file .sql; the file, when none is named, that of the queries
+   of the database, ~/.local/share/coole/queries/<database>.js for mongo,
+   queries/postgres/<connection>/<database>.sql for postgres */
 static gboolean
 mc_setup_query_by_args (GError **mcerror)
 {
+    const char *kind = g_getenv ("MC_QUERY_KIND");
+    const edit_arg_t *first = NULL;
+    gboolean named;
+
     if (!mc_args__query)
         return TRUE;
-    if (g_getenv ("MC_MONGO_URI") == NULL)
+    if (mc_args__edit_files != NULL)
+        first = (const edit_arg_t *) mc_args__edit_files->data;
+    named = first != NULL && first->file_name != NULL;
+    if (kind == NULL || *kind == '\0')
+    {
+        if (g_getenv ("MC_MONGO_URI") != NULL)
+            kind = "mongo";
+        else if (named && g_str_has_suffix (first->file_name, ".sql"))
+            kind = "postgres";
+        else
+        {
+            mc_propagate_error (mcerror, 0, "%s",
+                                _ ("--query: MC_QUERY_KIND is not set, nor MC_MONGO_URI\n"));
+            return FALSE;
+        }
+    }
+    else if (strcmp (kind, "mongo") != 0 && strcmp (kind, "postgres") != 0)
+    {
+        mc_propagate_error (mcerror, 0, _ ("--query: MC_QUERY_KIND is %s, not mongo or postgres\n"),
+                            kind);
+        return FALSE;
+    }
+    else if (strcmp (kind, "mongo") == 0 && g_getenv ("MC_MONGO_URI") == NULL)
     {
         mc_propagate_error (mcerror, 0, "%s", _ ("--query: MC_MONGO_URI is not set\n"));
         return FALSE;
     }
-    edit_set_startup_option ("query", "mongo");
+    edit_set_startup_option ("query", kind);
 
     // no file named: that of the queries of the database, in the data of the user
-    if (mc_args__edit_files != NULL && mc_args__edit_files->next == NULL
-        && ((edit_arg_t *) mc_args__edit_files->data)->file_name == NULL)
+    if (mc_args__edit_files != NULL && mc_args__edit_files->next == NULL && !named)
     {
-        const char *db = g_getenv ("MC_MONGO_DB");
-        char *name = g_strconcat (db != NULL && *db != '\0' ? db : "queries", ".js", (char *) NULL);
-        char *dir = g_build_filename (g_get_user_data_dir (), "coole", "queries", (char *) NULL);
-        char *path = g_build_filename (dir, name, (char *) NULL);
+        char *dir, *name, *path;
+
+        if (strcmp (kind, "mongo") == 0)
+        {
+            const char *db = g_getenv ("MC_MONGO_DB");
+
+            name = g_strconcat (db != NULL && *db != '\0' ? db : "queries", ".js", (char *) NULL);
+            dir = g_build_filename (g_get_user_data_dir (), "coole", "queries", (char *) NULL);
+        }
+        else
+        {
+            // the names libpq takes the connection by; the password is in none of them
+            const char *connection = mc_query_name (
+                g_getenv ("MC_PG_CONNECTION"), mc_query_name (g_getenv ("PGSERVICE"), "default"));
+            const char *db =
+                mc_query_name (g_getenv ("PGDATABASE"),
+                               mc_query_name (g_getenv ("PGUSER"),
+                                              mc_query_name (g_get_user_name (), "postgres")));
+
+            name = g_strconcat (db, ".sql", (char *) NULL);
+            dir = g_build_filename (g_get_user_data_dir (), "coole", "queries", "postgres",
+                                    connection, (char *) NULL);
+        }
+        path = g_build_filename (dir, name, (char *) NULL);
 
         // the queries may name what is private: the directory is the user's alone
         (void) g_mkdir_with_parents (dir, 0700);
@@ -643,6 +704,8 @@ mc_setup_query_by_args (GError **mcerror)
     }
     return TRUE;
 }
+
+/* --------------------------------------------------------------------------------------------- */
 
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */

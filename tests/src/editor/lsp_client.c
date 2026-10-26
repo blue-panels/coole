@@ -547,6 +547,39 @@ test_utf8 (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* "ascii_text": "sql": the letters not of ASCII of the comments and the strings sent as '_', the
+   positions in UTF-16 alone; a server that counts in UTF-8 all the same gets the text as it is */
+static void
+test_ascii_sql (gconstpointer mode)
+{
+    const char *uri = "file:///tmp/a.sql";
+    const char *text = "select '\xd1\x89' -- \xd1\x8f\n";
+    const gboolean utf8 = strcmp (mode, "utf8") == 0;
+    answer_t answer = { 0 };
+    char *log = NULL;
+
+    new_client (mode, "null,\"ascii_text\":\"sql\"");
+    lsp_client_doc_open (client, uri, "sql", text, strlen (text));
+    g_assert_true (lsp_client_start (client, NULL));
+    run_until (is_running);
+    waited = &answer;
+    g_assert_cmpuint (lsp_client_request (client, "textDocument/hover", document_params (uri), 0,
+                                          on_answer, &answer, on_answer_destroyed),
+                      >, 0);
+    run_until (is_answered);
+    g_assert_cmpint (answer.status, ==, LSP_REQUEST_OK);
+    // the text the server has, in JSON: its newline escaped
+    g_assert_nonnull (
+        strstr (answer.result, utf8 ? "select '\xd1\x89' -- \xd1\x8f" : "select '_' -- _"));
+    answer_clear (&answer);
+    g_assert_true (g_file_get_contents (log_path, &log, NULL, NULL));
+    g_assert_nonnull (strstr (log, "\"positionEncodings\": [\"utf-16\"]"));
+    g_free (log);
+    free_client ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The server goes: the client fails with a reason, its requests closed, its documents kept */
 static void
 test_failures (gconstpointer mode)
@@ -702,6 +735,8 @@ main (int argc, char **argv)
         g_test_add_data_func ("/lsp/client-session", "normal", test_session);
         g_test_add_data_func ("/lsp/client-session-split", "split", test_session);
         g_test_add_func ("/lsp/client-utf8", test_utf8);
+        g_test_add_data_func ("/lsp/client-ascii-sql", "normal", test_ascii_sql);
+        g_test_add_data_func ("/lsp/client-ascii-sql-utf8", "utf8", test_ascii_sql);
         g_test_add_data_func ("/lsp/client-crash", "crash", test_failures);
         g_test_add_data_func ("/lsp/client-garbage", "garbage", test_failures);
         g_test_add_func ("/lsp/client-too-deep", test_too_deep);

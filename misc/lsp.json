@@ -76,6 +76,19 @@
          "params": {"connectionId": "coole", "connectionString": "${env:MC_MONGO_URI}",
                     "connectionOptions": {}}}
       ]
+    },
+    {
+      "id": "pgls",
+      "command": ["postgres-language-server", "lsp-proxy"],
+      "extensions": {".sql": "sql"},
+      "startup": "query",
+      "ascii_text": "sql",
+      "requests": [
+        {"method": "pgls/set_configuration_overrides",
+         "params": {"overrides": {
+           "db": {"connectionString": "${env:COOLE_PG_URI}", "allowStatementExecutionsAgainst": []},
+           "typecheck": {"searchPath": ["${env:COOLE_PG_SCHEMA}"]}}}}
+      ]
     }
   ]
 }

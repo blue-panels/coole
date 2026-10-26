@@ -43,6 +43,8 @@ typedef struct
                          // then before the others; NULL: whatever the option
     JsonNode *requests;  // sent after initialized, an array of {method, params}; NULL: none
     char **words;        // completed with what the server says, not after a dot; NULL: none
+    char *ascii_text;    // "sql": the characters not of ASCII of the comments and the strings of
+                         // the text it gets made '_', the positions in UTF-16; NULL: as it is
 } lsp_backend_t;
 
 typedef struct

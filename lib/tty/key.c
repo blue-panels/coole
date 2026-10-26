@@ -262,6 +262,7 @@ typedef struct
     int fd;
     select_fn callback;
     void *info;
+    gboolean write;  // called when the file takes a write too, not only when it has to be read
 } select_t;
 
 typedef enum KeySortType
@@ -574,9 +575,9 @@ static int
 select_cmp_by_fd_set (gconstpointer a, gconstpointer b)
 {
     const select_t *s = (const select_t *) a;
-    const fd_set *f = (const fd_set *) b;
+    fd_set *const *f = (fd_set *const *) b;
 
-    return (FD_ISSET (s->fd, f) ? 0 : 1);
+    return (FD_ISSET (s->fd, f[0]) || (f[1] != NULL && FD_ISSET (s->fd, f[1])) ? 0 : 1);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -592,8 +593,10 @@ select_cmp_by_fd (gconstpointer a, gconstpointer b)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The channels in @select_set, and in @write_set those that wait for a write too; @write_set
+   NULL for none */
 static int
-add_selects (fd_set *select_set)
+add_selects (fd_set *select_set, fd_set *write_set)
 {
     int top_fd = 0;
 
@@ -606,6 +609,8 @@ add_selects (fd_set *select_set)
             select_t *p = (select_t *) s->data;
 
             FD_SET (p->fd, select_set);
+            if (p->write && write_set != NULL)
+                FD_SET (p->fd, write_set);
             if (p->fd > top_fd)
                 top_fd = p->fd;
         }
@@ -616,22 +621,26 @@ add_selects (fd_set *select_set)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The callback of each channel ready in @select_set or in @write_set, NULL for none: once */
 static gboolean
-check_selects (fd_set *select_set)
+check_selects (fd_set *select_set, fd_set *write_set)
 {
     gboolean ui_update_requested = FALSE;
+    fd_set *sets[2] = { select_set, write_set };
 
     while (disabled_channels == 0)
     {
         GSList *s;
         select_t *p;
 
-        s = g_slist_find_custom (select_list, select_set, select_cmp_by_fd_set);
+        s = g_slist_find_custom (select_list, sets, select_cmp_by_fd_set);
         if (s == NULL)
             break;
 
         p = (select_t *) s->data;
         FD_CLR (p->fd, select_set);
+        if (write_set != NULL)
+            FD_CLR (p->fd, write_set);
 
         if (p->callback (p->fd, p->info) != 0)
             ui_update_requested = TRUE;
@@ -647,7 +656,7 @@ static void
 try_channels (gboolean set_timeout)
 {
     struct timeval time_out;
-    static fd_set select_set;
+    static fd_set select_set, write_set;
 
     while (TRUE)
     {
@@ -655,8 +664,9 @@ try_channels (gboolean set_timeout)
         int maxfdp, v;
 
         FD_ZERO (&select_set);
+        FD_ZERO (&write_set);
         FD_SET (input_fd, &select_set);  // Add stdin
-        maxfdp = MAX (add_selects (&select_set), input_fd);
+        maxfdp = MAX (add_selects (&select_set, &write_set), input_fd);
 
         if (set_timeout)
         {
@@ -665,10 +675,10 @@ try_channels (gboolean set_timeout)
             timeptr = &time_out;
         }
 
-        v = select (maxfdp + 1, &select_set, NULL, NULL, timeptr);
+        v = select (maxfdp + 1, &select_set, &write_set, NULL, timeptr);
         if (v > 0)
         {
-            check_selects (&select_set);
+            check_selects (&select_set, &write_set);
             if (FD_ISSET (input_fd, &select_set))
                 break;
         }
@@ -1609,8 +1619,21 @@ add_select_channel (int fd, select_fn callback, void *info)
     new->fd = fd;
     new->callback = callback;
     new->info = info;
+    new->write = FALSE;
 
     select_list = g_slist_prepend (select_list, new);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+select_channel_want_write (int fd, gboolean want)
+{
+    GSList *p;
+
+    p = g_slist_find_custom (select_list, GINT_TO_POINTER (fd), select_cmp_by_fd);
+    if (p != NULL)
+        ((select_t *) p->data)->write = want;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2319,11 +2342,12 @@ tty_get_event (struct Gpm_Event *event, gboolean redo_event, gboolean block)
     while (pending_keys == NULL)
     {
         int nfd;
-        fd_set select_set;
+        fd_set select_set, write_set;
 
         FD_ZERO (&select_set);
+        FD_ZERO (&write_set);
         FD_SET (input_fd, &select_set);
-        nfd = MAX (add_selects (&select_set), MAX (0, input_fd)) + 1;
+        nfd = MAX (add_selects (&select_set, &write_set), MAX (0, input_fd)) + 1;
 
 #ifdef HAVE_LIBGPM
         if (mouse_enabled && (use_mouse_p == MOUSE_GPM))
@@ -2374,7 +2398,7 @@ tty_get_event (struct Gpm_Event *event, gboolean redo_event, gboolean block)
             break;
 
         tty_enable_interrupt_key ();
-        flag = select (nfd, &select_set, NULL, NULL, time_addr);
+        flag = select (nfd, &select_set, &write_set, NULL, time_addr);
         tty_disable_interrupt_key ();
 
         /* select timed out: it could be for any of the following reasons:
@@ -2392,7 +2416,7 @@ tty_get_event (struct Gpm_Event *event, gboolean redo_event, gboolean block)
             return EV_NONE;
 
         {
-            gboolean ui_update = check_selects (&select_set);
+            gboolean ui_update = check_selects (&select_set, &write_set);
 
             if (FD_ISSET (input_fd, &select_set))
                 break; /* keyboard input takes priority */

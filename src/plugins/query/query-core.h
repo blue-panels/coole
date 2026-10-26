@@ -23,6 +23,11 @@
 #define QUERY_TABLE_TAG  "coole-table"
 #define QUERY_TABLE_LINE "\x1e" QUERY_TABLE_TAG " "
 
+/* The programs of AI MC_QUERY_AI names by a word, with what they are run with: the request on
+   stdin, the answer alone on stdout, no tool of theirs run */
+#define QUERY_AI_CLAUDE "claude"
+#define QUERY_AI_CODEX  "codex"
+
 /*** enums ***************************************************************************************/
 
 /*** structures declarations (and typedefs of structures)*****************************************/
@@ -85,14 +90,51 @@ gboolean query_has_use (const char *text);
 /* What the file of queries of the database @db starts with: use("db"); and an empty line */
 char *query_use_line (const char *db);
 
+/* The table of Markdown of the names @columns and of @cells, row after row, columns->len cells
+   each, made one line each by query_cell_text (): a column for each name, a cell cut to 40
+   columns of the terminal, the columns lined up */
+char *query_grid (GPtrArray *columns, GPtrArray *cells);
+/* @s as a cell of query_grid (): on one line, its '|' no end of the cell */
+char *query_cell_text (const char *s);
+/* The byte of the character @chars, from 0, of the UTF-8 @text of @len bytes, PostgreSQL telling
+   where an error is in characters; @len for one past its end */
+gsize query_utf8_offset (const char *text, gsize len, long chars);
+/* @name as an identifier of SQL: as it is when it is one already, lower case letters of ASCII,
+   digits and '_' and no keyword, else in double quotes, those in it doubled */
+char *query_pg_ident (const char *name);
+/* The query of the rows of the relation @relation of the schema @schema, NULL or "" for none:
+   "SELECT * FROM sales.orders LIMIT 100;" */
+char *query_pg_relation_query (const char *schema, const char *relation);
+
+/* The request to AI of the lines @first to @last, 0-based, of @text; with @paragraph the lines
+   around @first that are not empty.  Lines that start with @comment, "-- ", over a query below
+   them are the request alone, the query being the answer of before: those lines are the request,
+   from the byte @start to @asked, and the part up to @end, the end of the last line, is the place
+   of the answer.  The text of the request, the comments taken off; NULL when it has none. */
+char *query_ai_part (const char *text, long first, long last, gboolean paragraph,
+                     const char *comment, gsize *start, gsize *asked, gsize *end);
+/* The @len bytes of the lines of a request, @lines, as they stay over the answer: each line
+   that is not empty a comment, @comment before it when it is no comment yet */
+char *query_ai_commented (const char *lines, gsize len, const char *comment);
+/* The query of what AI answered, @out: what its blocks ```...``` have, else all of it; @notes
+   what it wrote around those blocks, NULL for nothing.  NULL when it has no query. */
+char *query_ai_answer (const char *out, char **notes);
+/* The command of MC_QUERY_AI, @value: claude without one, QUERY_AI_CLAUDE and QUERY_AI_CODEX
+   with what they are run with, else a command line of the shell; NULL with @error when it is
+   none.  Freed with g_strfreev (). */
+char **query_ai_argv (const char *value, GError **error);
+/* What AI is told: to write the query of @question in @language, with no comment in it, its
+   notes after it, what it knows of the database being @context */
+char *query_ai_prompt (const char *language, const char *context, const char *question);
+
 /* The directory of the versions of the file of queries @file, under @versions: the name of
    the file in @queries, the folder of the files of queries of -Q, else the name and 8 letters of
    the hash of its path, for two q.js of two places not to mix */
 char *query_versions_dir (const char *versions, const char *queries, const char *file);
-/* The name of the version of the time @now, "20261024-173750.js"; "...-2.js" and on when
-   @taken says that one is there */
-char *query_version_name (GDateTime *now, gboolean (*taken) (const char *name, void *data),
-                          void *data);
+/* The name of the version of the time @now, "20261024-173750.js", @extension that of the file of
+   queries; "...-2.js" and on when @taken says that one is there */
+char *query_version_name (GDateTime *now, const char *extension,
+                          gboolean (*taken) (const char *name, void *data), void *data);
 /* The names of @names, sorted, that go for the newest @keep to stay: those of the oldest;
    NULL ended, freed with g_strfreev () */
 char **query_versions_over (char **names, guint keep);

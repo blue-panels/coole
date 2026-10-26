@@ -44,6 +44,12 @@ gboolean lsp_text_offset (const char *text, gsize len, gint64 line, gint64 chara
    then where they were: "f()" with the cursor in it. */
 char *lsp_snippet_plain (const char *snippet, gboolean drop, gsize *cursor);
 
+/* @text, @len bytes of SQL, with each character not of ASCII of its comments and strings, those
+   of "--", "/ * * /", '...', E'...' and $tag$...$tag$, made '_', two of them for one that is two
+   units of UTF-16: its lines and their characters in UTF-16 stay those of @text.  The names, of
+   "..." too, stay as they are. */
+char *lsp_text_sql_ascii (const char *text, gsize len);
+
 /* The absolute path of a file with its links resolved, as far as the file is there: a new file
    in a directory that is there gets the directory's path.  NULL for a relative @path. */
 char *lsp_canonical_path (const char *path);
