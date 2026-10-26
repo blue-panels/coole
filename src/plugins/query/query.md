@@ -312,6 +312,16 @@ double click does so too.
 Table: a query of no file, QuerySchemaRows, its text at the top of Table and
 in the head of Output.
 
+**F3**
+: The query of the rows of the relation put in the file of queries, its
+columns one a line, of the column of the line alone when it is one, read
+first when they are not yet: *SELECT id, name FROM public.users LIMIT 100;*,
+in the file F3 was pressed in, on the line of the cursor when it is empty, a
+paragraph of its own, else after its paragraph; the cursor goes there, F5
+runs it. A query that waits for its columns is put no more when Schema is
+read again or another F3 comes; Output tells it, and when the columns could
+not be read. QuerySchemaQuery.
+
 **Insert**
 : Put what the line names at the cursor of the file of queries, as SQL
 takes it, QuerySchemaInsert: *sales."Orders"* for a relation, the name of a

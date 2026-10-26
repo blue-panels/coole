@@ -720,6 +720,7 @@ query_schema_take_details (query_pg_schema_t *s, Oid oid, GPtrArray *results)
         // the columns open the first time
         section->open = query_tree_was_open (&s->tree, section, k == QUERY_SECTION_COLUMNS);
     }
+    query_tree_read (&s->tree, r, results != NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -924,12 +925,32 @@ query_schema_refresh (query_pg_schema_t *s)
     s->want_list = TRUE;
     // the sections asked for come with the list
     g_array_set_size (s->want_details, 0);
+    query_tree_cancel (&s->tree);
     if (!s->tree.shown || s->tree.error == NULL)
     {
         query_tree_mark (&s->tree);
         query_tree_render (&s->tree);
     }
     query_schema_next (s);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The query of F3 of the relation @o: its @fields, the names of its columns as SQL takes them,
+   one a line, all of them when there is none */
+static char *
+query_schema_query (const query_node_t *o, GPtrArray *fields)
+{
+    GString *text = g_string_new ("SELECT ");
+    guint i;
+
+    if (fields->len == 0)
+        g_string_append_c (text, '*');
+    for (i = 0; i < fields->len; i++)
+        g_string_append_printf (text, "%s%s", i > 0 ? ",\n       " : "",
+                                (const char *) g_ptr_array_index (fields, i));
+    g_string_append_printf (text, "\nFROM %s\nLIMIT %u;", o->insert, QUERY_TABLE_ROWS);
+    return g_string_free (text, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -969,6 +990,7 @@ query_pg_schema_new (query_t *q, const query_pq_t *pq, gboolean read_only, const
     s->results = g_ptr_array_new_with_free_func ((GDestroyNotify) pq->PQclear);
     s->want_details = g_array_new (FALSE, FALSE, sizeof (Oid));
     query_tree_init (&s->tree, q);
+    s->tree.query = query_schema_query;
     return s;
 }
 
@@ -1018,6 +1040,19 @@ query_pg_schema_do (query_pg_schema_t *s, query_schema_action_t action, long lin
     case QUERY_SCHEMA_INSERT:
         query_tree_insert (&s->tree, n);
         break;
+    case QUERY_SCHEMA_QUERY:
+    {
+        const query_node_t *r = query_tree_query (&s->tree, n);
+
+        if (r != NULL)
+        {
+            const Oid oid = (Oid) r->id;
+
+            g_array_append_val (s->want_details, oid);
+            query_schema_next (s);
+        }
+        break;
+    }
     default:
         break;
     }
