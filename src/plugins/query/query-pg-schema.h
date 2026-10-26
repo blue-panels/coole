@@ -30,7 +30,9 @@ typedef struct query_pg_schema_t query_pg_schema_t;
 query_pg_schema_t *query_pg_schema_new (query_t *q, const query_pq_t *pq, gboolean read_only,
                                         const char *schema);
 void query_pg_schema_free (query_pg_schema_t *s);
-void query_pg_schema_do (query_pg_schema_t *s, query_schema_action_t action, long line);
+/* @action of Schema, by a key when @key: then only when its window has the focus; TRUE when it
+   is done */
+gboolean query_pg_schema_do (query_pg_schema_t *s, query_schema_action_t action, gboolean key);
 /* A command that changes the schemas is committed: they are read again when they were read */
 void query_pg_schema_changed (query_pg_schema_t *s);
 /* What AI is told of the database read, for query_ai_context (): the relations of its schemas,

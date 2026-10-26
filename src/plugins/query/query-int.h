@@ -72,12 +72,12 @@ enum
     QUERY_CMD_COUNT
 };
 
-/* What is done in the window Schema, at a line of it */
+/* What is done in the window Schema, on the node of its cursor */
 typedef enum
 {
-    QUERY_SCHEMA_SHOW,     // made, its text read the first time
+    QUERY_SCHEMA_SHOW,     // made, its tree read the first time
+    QUERY_SCHEMA_TOGGLE,   // QuerySchema: made and given the focus, given it, or hidden
     QUERY_SCHEMA_REFRESH,  // read again
-    QUERY_SCHEMA_ENTER,    // a schema folded or unfolded, the columns of a relation
     QUERY_SCHEMA_ROWS,     // the rows of the relation in Table
     QUERY_SCHEMA_INSERT,   // the name put in the file
     QUERY_SCHEMA_QUERY     // the query of the rows of the relation, of its columns, in the file
@@ -120,8 +120,9 @@ typedef struct
     void (*start) (void *data);
     void (*stop) (void *data);
     const char *rollback;  // the query QueryRollback runs, "ROLLBACK"; NULL for none
-    // the window Schema: @action at its 0-based @line, -1 for none; NULL for a backend with none
-    void (*schema) (void *data, query_schema_action_t action, long line);
+    /* the window Schema: @action on the node of its cursor, by a key when @key, then only when the
+       window has the focus; TRUE when it is done.  NULL for a backend with none */
+    gboolean (*schema) (void *data, query_schema_action_t action, gboolean key);
     // F6, a query written by AI: the language it is told to write, the start of a line comment
     const char *language;
     const char *comment;
@@ -150,7 +151,6 @@ struct query_t
     gint64 started;
 
     gint64 tabs[QUERY_TAB_COUNT];  // the windows of the viewer, 0 when none
-    gint64 schema;                 // the window Schema at the right, 0 when none
     query_ai_t *ai;                // F6
     long commands[QUERY_CMD_COUNT];
     int mark;
@@ -176,11 +176,6 @@ void query_tab_title (query_t *q, int tab, const char *title);
 void query_table_say (query_t *q, const char *text);
 void query_redraw (query_t *q);
 
-/* The text of the window Schema, the cursor on @line; with @make the window is made when there
-   is none, the user having closed it or not, else nothing is when there is none */
-void query_schema_set (query_t *q, const char *text, long line, gboolean make);
-/* The line of the cursor of the window Schema, from 0; -1 when there is none */
-long query_schema_line (query_t *q);
 /* The bytes @from to @to of the text of the file window @edit made @text, one change Undo
    takes back, the cursor after it and the window in front; FALSE when an edit of another goes on */
 gboolean query_edit_put (query_t *q, void *edit, gsize from, gsize to, const char *text);

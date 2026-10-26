@@ -2,19 +2,28 @@
  *  \brief Header: the tree of the window Schema, whatever the database
  *
  *  The schemas or the databases, the groups of their objects, the objects, their sections and
- *  the items of those: a line of the window each, folded or unfolded.  What is unfolded, and the
- *  line of the cursor, stay by the path of their names when the backend reads the tree again.
- *  The backend fills the tree; this draws it and does what the keys of the window do.
+ *  the items of those, nodes of an mctree shown by a tree window of the editor.  What is
+ *  unfolded, and the node of the cursor, stay by the path of their names when the backend reads
+ *  the tree again.  The backend fills the tree; this shows it and does what F3, F5 and Insert do.
  */
 
 #ifndef MC__QUERY_TREE_H
 #define MC__QUERY_TREE_H
 
 #include "lib/global.h"
+#include "lib/mctree/mctree-model.h"
+
+#include "src/editor/edittree.h"
 
 #include "query-int.h"
 
 /*** typedefs(not structures) and defined constants **********************************************/
+
+/* A node of the tree: an mctree node, its key the name, its value the text after it, its data a
+   query_item_t */
+typedef mctree_node_t query_node_t;
+
+#define QUERY_ITEM(n) ((query_item_t *) (n)->data)
 
 /*** enums ***************************************************************************************/
 
@@ -29,38 +38,36 @@ typedef enum
 
 /*** structures declarations (and typedefs of structures)*****************************************/
 
-typedef struct query_node_t
+/* What a node is to Schema */
+typedef struct
 {
     query_node_kind_t kind;
-    char *name;    // what is shown, and its key among those beside it
-    char *text;    // shown after the name, NULL for nothing
     char *insert;  // what Insert puts in the file, NULL for nothing
-    gboolean open;
 
     // an object
-    char *rows;      // F5: the query of its rows, NULL for none
-    guint64 id;      // the backend's: the Oid of a relation
-    char tag;        // the backend's: the relkind of a relation
-    gboolean leaf;   // nothing under it: a sequence
-    gboolean read;   // its sections are read
-    gboolean asked;  // and are asked for
-
-    GPtrArray *children;         // query_node_t; of an object its sections once read
-    struct query_node_t *parts;  // of an object, a section after its sections: the partitions
-    struct query_node_t *parent;
-} query_node_t;
+    char *rows;           // F5: the query of its rows, NULL for none
+    guint64 id;           // the backend's: the Oid of a relation
+    char tag;             // the backend's: the relkind of a relation
+    gboolean read;        // its sections are read
+    gboolean asked;       // and are asked for
+    query_node_t *parts;  // a section after its sections: the partitions, NULL for none
+} query_item_t;
 
 typedef struct
 {
     query_t *q;
-    GPtrArray *roots;  // query_node_t
-    GPtrArray *lines;  // query_node_t of each line of the window, NULL for one of none
-    char *keep;        // the path of what the cursor is on, for it to stay there
-    GHashTable *seen;  // the paths of the nodes before the tree was read again, TRUE when open
-    gboolean shown;    // the window is made
-    gboolean make;     // and is made again when the user has closed it: QuerySchema
-    gboolean read;     // the tree was read once
-    char *error;       // why it could not be, NULL for none
+    mctree_model_t *model;  // the tree read, its root of no name holding the roots shown
+    edit_tree_t *window;    // the window Schema, NULL when there is none
+    GHashTable *paths;      // the paths open before the tree was read again, NULL the first time
+    char *keep;             // the path of the node of the cursor then
+    gboolean shown;         // the window was made once
+    gboolean make;          // and is made again when the user has closed it: QuerySchema
+    gboolean read;          // the tree was read once
+    char *error;            // why it could not be, NULL for none
+
+    // an object opened whose sections are to be read: the backend asks for them
+    void (*details) (query_node_t *o, void *data);
+    void *data;
 
     // F3: the query of the rows of @o of its @fields, the inserts of its first section, all of
     // them or one, an array of none for none known; of the backend
@@ -75,25 +82,34 @@ typedef struct
 
 /*** declarations of public functions ************************************************************/
 
-void query_tree_init (query_tree_t *t, query_t *q);
+/* @details asks for the sections of an object opened, with @data */
+void query_tree_init (query_tree_t *t, query_t *q, void (*details) (query_node_t *o, void *data),
+                      void *data);
 void query_tree_done (query_tree_t *t);
 
-/* A node of @kind under @parent, NULL for none; an object's section of its partitions is put
-   in its parts by the backend.  @name, @text and @insert are taken. */
-query_node_t *query_node_new (query_node_t *parent, query_node_kind_t kind, char *name, char *text,
-                              char *insert);
-void query_node_free (gpointer data);
-/* Whether @n has lines under it to unfold */
-gboolean query_node_folds (const query_node_t *n);
+/* A node of @kind under @parent, NULL for a root; an object is lazy, its sections read when it
+   opens.  @name, @text and @insert are taken. */
+query_node_t *query_node_new (query_tree_t *t, query_node_t *parent, query_node_kind_t kind,
+                              char *name, char *text, char *insert);
 /* The object @n is of, itself or what is under it; NULL for none */
 query_node_t *query_node_object (query_node_t *n);
 /* The group @name of @root, made when it has none, open or not as before, else @open */
 query_node_t *query_node_group (query_tree_t *t, query_node_t *root, const char *name,
                                 gboolean open);
+/* The section of the partitions of @o, made when it has none, after its sections */
+query_node_t *query_node_parts (query_tree_t *t, query_node_t *o, const char *name);
+/* The sections of @o read: @o is lazy no more, and its section of partitions goes after them */
+void query_node_read (query_node_t *o);
 
-/* The roots read again: what was open remembered by the paths, the roots of before gone */
+/* About @n rows or documents, the server's reckoning: *~950*, *~50k*, *~3M* */
+char *query_tree_about (gint64 n);
+
+/* The tree read again from nothing: what was open, and the node of the cursor, remembered by
+   their paths */
 void query_tree_forget (query_tree_t *t);
-/* Whether @n was open before the tree was read again; @fallback when it was not there */
+/* The roots of the tree: the children of its root of no name, NULL for none */
+GPtrArray *query_tree_roots (const query_tree_t *t);
+/* Whether @n was open before the tree was read again; @fallback the first time */
 gboolean query_tree_was_open (const query_tree_t *t, const query_node_t *n, gboolean fallback);
 /* The object for which @match is true, of @data, NULL for none */
 query_node_t *query_tree_find (const query_tree_t *t,
@@ -102,16 +118,14 @@ query_node_t *query_tree_find (const query_tree_t *t,
 /* No object is asked for, nor a query of F3: the backend lost what it asked */
 void query_tree_unask (query_tree_t *t);
 
-/* The node of the 0-based @line of the window; NULL for none */
-query_node_t *query_tree_node_at (const query_tree_t *t, long line);
-/* What the cursor of the window is on, kept by its path before the text is made again */
-void query_tree_mark (query_tree_t *t);
-/* The text of the window made again from the tree, the cursor on what it was on */
+/* The window made again from the tree, made itself when it is to be */
 void query_tree_render (query_tree_t *t);
+/* QuerySchema: the window hidden when it has the focus, else shown with it; FALSE when there is
+   none, to be made */
+gboolean query_tree_toggle (query_tree_t *t);
+/* Whether the window has the focus: its keys are its own, nodes or none */
+gboolean query_tree_has_focus (const query_tree_t *t);
 
-/* Enter on @n: it is folded or unfolded; the object whose sections are to be read, NULL for
-   none */
-query_node_t *query_tree_enter (query_tree_t *t, query_node_t *n);
 /* Insert on @n: what it names put at the cursor of the file of queries */
 void query_tree_insert (query_tree_t *t, const query_node_t *n);
 /* F5 on @n: the rows of its object in Table, a query of no file */

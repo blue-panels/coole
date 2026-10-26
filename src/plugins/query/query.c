@@ -114,11 +114,11 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { "QueryRollback", N_ ("Roll the transaction of the session back"), NULL },
     { "QuerySchema", N_ ("Show or hide the schemas, the relations and their columns"),
       "ctrl-alt-s" },
-    { "QuerySchemaRows", N_ ("The rows of the relation of the line of Schema in Table"), NULL },
-    { "QuerySchemaInsert", N_ ("Put the name of the line of Schema into the file"), "insert" },
+    { "QuerySchemaRows", N_ ("The rows of the relation of the node of Schema in Table"), NULL },
+    { "QuerySchemaInsert", N_ ("Put the name of the node of Schema into the file"), "insert" },
     { "QuerySchemaRefresh", N_ ("Read the schemas again"), NULL },
     { "QuerySchemaQuery",
-      N_ ("Put the query of the rows of the relation of the line of Schema into the file"), NULL },
+      N_ ("Put the query of the rows of the relation of the node of Schema into the file"), NULL },
     { "QueryAi", N_ ("Write the query of the request of the paragraph or the selection by AI"),
       "f6" },
     { NULL, NULL, NULL },
@@ -271,127 +271,6 @@ query_tab_title (query_t *q, int tab, const char *title)
     reply = query_viewer (q, "set_title", &dict);
     if (reply != NULL)
         g_variant_unref (reply);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-void
-query_schema_set (query_t *q, const char *text, long line, gboolean make)
-{
-    GVariantDict dict;
-    GVariant *reply = NULL;
-
-    if (q->schema != 0)
-    {
-        g_variant_dict_init (&dict, NULL);
-        g_variant_dict_insert (&dict, "id", "x", q->schema);
-        g_variant_dict_insert (&dict, "text", "s", text);
-        reply = query_viewer (q, "set_text", &dict);
-        if (reply == NULL)
-            q->schema = 0;
-        else
-            g_variant_unref (reply);
-    }
-    // closed by the user: an answer of the server does not bring it back, QuerySchema does
-    if (q->schema == 0 && !make)
-        return;
-    if (q->schema == 0)
-    {
-        g_variant_dict_init (&dict, NULL);
-        g_variant_dict_insert (&dict, "text", "s", text);
-        g_variant_dict_insert (&dict, "title", "s", _ ("Schema"));
-        g_variant_dict_insert (&dict, "place", "s", "right");
-        g_variant_dict_insert (&dict, "size", "i", QUERY_SCHEMA_SIZE);
-        g_variant_dict_insert (&dict, "focus", "b", FALSE);
-        g_variant_dict_insert (&dict, "cursorline", "b", TRUE);
-        reply = query_viewer (q, "open", &dict);
-        if (reply == NULL)
-            return;
-        (void) g_variant_lookup (reply, "id", "x", &q->schema);
-        g_variant_unref (reply);
-    }
-    g_variant_dict_init (&dict, NULL);
-    g_variant_dict_insert (&dict, "id", "x", q->schema);
-    g_variant_dict_insert (&dict, "line", "x", (gint64) MAX (line, 0));
-    reply = query_viewer (q, "move_to", &dict);
-    if (reply != NULL)
-        g_variant_unref (reply);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* What the viewer tells of the window Schema: whether it is seen, has the focus, the line of its
-   cursor; FALSE when there is none */
-static gboolean
-query_schema_info (query_t *q, gboolean *visible, gboolean *focused, long *line)
-{
-    GVariantDict dict;
-    GVariant *reply;
-    gint64 at = -1;
-
-    if (q->schema == 0)
-        return FALSE;
-    g_variant_dict_init (&dict, NULL);
-    g_variant_dict_insert (&dict, "id", "x", q->schema);
-    reply = query_viewer (q, "info", &dict);
-    if (reply == NULL)
-    {
-        q->schema = 0;
-        return FALSE;
-    }
-    *visible = FALSE;
-    *focused = FALSE;
-    (void) g_variant_lookup (reply, "visible", "b", visible);
-    (void) g_variant_lookup (reply, "focused", "b", focused);
-    (void) g_variant_lookup (reply, "line", "x", &at);
-    *line = (long) at;
-    g_variant_unref (reply);
-    return TRUE;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-long
-query_schema_line (query_t *q)
-{
-    gboolean visible, focused;
-    long line = -1;
-
-    return query_schema_info (q, &visible, &focused, &line) ? line : -1;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* Whether the window Schema has the focus: its keys are its own */
-static gboolean
-query_schema_focused (query_t *q)
-{
-    gboolean visible, focused = FALSE;
-    long line;
-
-    return query_schema_info (q, &visible, &focused, &line) && focused;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* QuerySchema: the window made the first time, hidden when it has the focus, else shown with
-   it */
-static void
-query_schema_toggle (query_t *q)
-{
-    gboolean visible = FALSE, focused = FALSE;
-    long line;
-
-    if (!query_schema_info (q, &visible, &focused, &line))
-    {
-        q->backend->schema (q->backend_data, QUERY_SCHEMA_SHOW, -1);
-        if (q->schema != 0)
-            query_viewer_id (q, "show", q->schema, TRUE);
-    }
-    else if (visible && focused)
-        query_viewer_id (q, "hide", q->schema, FALSE);
-    else
-        query_viewer_id (q, "show", q->schema, TRUE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1617,12 +1496,10 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
         return TRUE;
     }
     case QUERY_CMD_RUN:
-        // F5 in Schema: the rows of the relation of its line
-        if (edit == NULL && q->backend->schema != NULL && query_schema_focused (q))
-        {
-            q->backend->schema (q->backend_data, QUERY_SCHEMA_ROWS, query_schema_line (q));
+        // F5 in Schema: the rows of the relation of the node of its cursor
+        if (edit == NULL && q->backend->schema != NULL
+            && q->backend->schema (q->backend_data, QUERY_SCHEMA_ROWS, TRUE))
             return TRUE;
-        }
         version = edit == NULL ? query_history_current (q, TRUE) : NULL;
         if (version != NULL)
             query_history_run (q, version);
@@ -1649,43 +1526,34 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
     case QUERY_CMD_SCHEMA_INSERT:
     case QUERY_CMD_SCHEMA_REFRESH:
     case QUERY_CMD_SCHEMA_QUERY:
-        // the keys of the lines of Schema are its own there alone: Insert of a file is that of
+        // the keys of the nodes of Schema are its own there alone: Insert of a file is that of
         // the editor
-        if (key && cmd != QUERY_CMD_SCHEMA && (edit != NULL || !query_schema_focused (q)))
+        if (key && cmd != QUERY_CMD_SCHEMA && edit != NULL)
             return FALSE;
         if (q->backend->schema == NULL)
+        {
             q->host->message (q->host, D_NORMAL, _ ("Query"),
                               _ ("The queries of this database have no schema shown."));
-        else if (cmd == QUERY_CMD_SCHEMA)
-            query_schema_toggle (q);
-        else
-            q->backend->schema (q->backend_data,
-                                cmd == QUERY_CMD_SCHEMA_ROWS         ? QUERY_SCHEMA_ROWS
-                                    : cmd == QUERY_CMD_SCHEMA_INSERT ? QUERY_SCHEMA_INSERT
-                                    : cmd == QUERY_CMD_SCHEMA_QUERY  ? QUERY_SCHEMA_QUERY
-                                                                     : QUERY_SCHEMA_REFRESH,
-                                query_schema_line (q));
-        return TRUE;
+            return TRUE;
+        }
+        return q->backend->schema (q->backend_data,
+                                   cmd == QUERY_CMD_SCHEMA              ? QUERY_SCHEMA_TOGGLE
+                                       : cmd == QUERY_CMD_SCHEMA_ROWS   ? QUERY_SCHEMA_ROWS
+                                       : cmd == QUERY_CMD_SCHEMA_INSERT ? QUERY_SCHEMA_INSERT
+                                       : cmd == QUERY_CMD_SCHEMA_QUERY  ? QUERY_SCHEMA_QUERY
+                                                                        : QUERY_SCHEMA_REFRESH,
+                                   key && cmd != QUERY_CMD_SCHEMA);
     case QUERY_CMD_AI:
         // the request is in a file: the file in front, from the tabs and Schema too
         query_ai_ask (q, edit);
         return TRUE;
     case QUERY_CMD_HISTORY_INSERT:
-        // Enter in Schema: a schema folded or unfolded, the columns of a relation
-        if (key && edit == NULL && q->backend->schema != NULL && query_schema_focused (q))
-        {
-            q->backend->schema (q->backend_data, QUERY_SCHEMA_ENTER, query_schema_line (q));
-            return TRUE;
-        }
-        MC_FALLTHROUGH;
     case QUERY_CMD_HISTORY_SHOW:
-        // F3 in Schema: the query of the rows of the relation of its line in the file
+        // F3 in Schema: the query of the rows of the relation of its node in the file; Enter
+        // there is that of its window, which opens and closes the node
         if (cmd == QUERY_CMD_HISTORY_SHOW && key && edit == NULL && q->backend->schema != NULL
-            && query_schema_focused (q))
-        {
-            q->backend->schema (q->backend_data, QUERY_SCHEMA_QUERY, query_schema_line (q));
+            && q->backend->schema (q->backend_data, QUERY_SCHEMA_QUERY, TRUE))
             return TRUE;
-        }
         // Enter and F3 of a file are those of the editor
         version = !key || edit == NULL ? query_history_current (q, key) : NULL;
         if (version == NULL)
@@ -1748,8 +1616,7 @@ query_handle_action (void *data, long command, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A double click on a line of History, "activate" of the viewer: the version of its query open;
-   on a line of Schema, what Enter does there */
+/* A double click on a line of History, "activate" of the viewer: the version of its query open */
 static void
 query_viewer_signal (const char *name, const char *signal, GVariant *args, void *data)
 {
@@ -1759,14 +1626,6 @@ query_viewer_signal (const char *name, const char *signal, GVariant *args, void 
     (void) name;
     if (!g_variant_lookup (args, "id", "x", &id))
         return;
-    if (q->schema != 0 && id == q->schema)
-    {
-        if (strcmp (signal, "closed") == 0)
-            q->schema = 0;
-        else if (strcmp (signal, "activate") == 0 && g_variant_lookup (args, "line", "x", &line))
-            q->backend->schema (q->backend_data, QUERY_SCHEMA_ENTER, (long) line);
-        return;
-    }
     if (strcmp (signal, "activate") != 0 || q->tabs[QUERY_TAB_HISTORY] == 0
         || id != q->tabs[QUERY_TAB_HISTORY] || !g_variant_lookup (args, "line", "x", &line)
         || line < 0 || line >= (gint64) q->rows->len)

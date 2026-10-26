@@ -28,7 +28,10 @@ typedef struct query_mongo_schema_t query_mongo_schema_t;
 /* @mongosh the program that reads them */
 query_mongo_schema_t *query_mongo_schema_new (query_t *q, const char *mongosh);
 void query_mongo_schema_free (query_mongo_schema_t *s);
-void query_mongo_schema_do (query_mongo_schema_t *s, query_schema_action_t action, long line);
+/* @action of Schema, by a key when @key: then only when its window has the focus; TRUE when it
+   is done */
+gboolean query_mongo_schema_do (query_mongo_schema_t *s, query_schema_action_t action,
+                                gboolean key);
 /* A query that may have made or dropped a collection or an index has ended: the tree is read
    again when it was read */
 void query_mongo_schema_changed (query_mongo_schema_t *s);
