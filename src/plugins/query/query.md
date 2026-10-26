@@ -169,9 +169,15 @@ in the words of the user, *orders of the last week by user*. The program
 of AI writes the query, which is put under the request, the request made a
 comment, *//* or *--*: one change, which Undo takes back. The query is
 not run: F5 runs it. **F6** on a request that is a comment over a query
-writes it again, in the place of that query. **F6** while AI writes asks
-whether to stop it. Output tells the time it took, and what AI said beside
-the query.
+writes it again, in the place of that query. A paragraph with a query of
+the user and words, *count the average of ttl* under a *find()*, is all of
+it the request: AI writes the query the words ask for from that one, the
+words alone made a comment, and the query of AI goes after the paragraph,
+an empty line between, the query of the user left as it is. *// @table*
+and *// @limit* are of the query, never words of the request. An answer
+with no query, a question of AI, leaves the file as it is and is told in
+Output. **F6** while AI writes asks whether to stop it. Output tells the
+time it took, and what AI said beside the query.
 
 AI is told the names of the database, never a row: of MongoDB the
 collections, the fields of a sample of the documents of each with their

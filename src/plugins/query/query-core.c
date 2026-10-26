@@ -1502,11 +1502,29 @@ query_ai_blank (const char *p, const char *end)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether the line at @p, after its blanks, is a directive of coole, @mark of @len bytes and "@":
+   "// @table", "// @limit 20", which is of the query */
+static gboolean
+query_ai_directive (const char *p, const char *mark, gsize len)
+{
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (len == 0 || strncmp (p, mark, len) != 0)
+        return FALSE;
+    for (p += len; *p == ' ' || *p == '\t'; p++)
+        ;
+    return *p == '@';
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The comment that starts the line at @p after its blanks, @mark ("--") of @len bytes: past it
-   and one space after it; NULL when the line is no comment */
+   and one space after it; NULL when the line is no comment, or a directive */
 static const char *
 query_ai_comment_of (const char *p, const char *mark, gsize len)
 {
+    if (query_ai_directive (p, mark, len))
+        return NULL;
     while (*p == ' ' || *p == '\t')
         p++;
     if (len == 0 || strncmp (p, mark, len) != 0)
@@ -1517,20 +1535,101 @@ query_ai_comment_of (const char *p, const char *mark, gsize len)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether the line at @p, up to @end, is words of the user rather than code: letters not of
+   ASCII out of quotes and no braces, or none of what code has, ( ) { } [ ] ; = < > $ : + * | & %
+   a quoted string, a dot inside a word, a comma at its end, a keyword of SQL or of mongosh first.
+   A comment, a directive with it, is no words. */
+static gboolean
+query_ai_is_text (const char *p, const char *end)
+{
+    // words that start a line of code; with, and, on, as start words of the user as often
+    static const char *const keywords[] = {
+        "select", "from",   "where",  "join",      "inner",  "left",      "right",    "limit",
+        "offset", "insert", "update", "delete",    "create", "alter",     "drop",     "union",
+        "having", "values", "into",   "returning", "begin",  "commit",    "rollback", "explain",
+        "db",     "const",  "let",    "var",       "print",  "printjson", "return",
+    };
+    const char *q, *w;
+    gboolean foreign = FALSE, braces = FALSE, signs = FALSE;
+    gsize i, len;
+
+    while (p < end && g_ascii_isspace (*p))
+        p++;
+    if (p == end || strncmp (p, "--", 2) == 0 || strncmp (p, "//", 2) == 0)
+        return FALSE;
+    for (q = p; q < end; q++)
+    {
+        if (*q == '\'' || *q == '"' || *q == '`')
+        {
+            // a string of code; an apostrophe of words, "user's", has no end
+            const char *close = memchr (q + 1, *q, (gsize) (end - q - 1));
+
+            if (close != NULL)
+            {
+                signs = TRUE;
+                q = close;
+            }
+        }
+        else if ((unsigned char) *q >= 0x80)
+            foreign = TRUE;
+        else if (strchr ("{}();", *q) != NULL)
+            braces = TRUE;
+        else if (strchr ("[]=<>$:+*|&%", *q) != NULL)
+            signs = TRUE;
+        else if (*q == ',' && query_ai_blank (q + 1, end))
+            // a line that goes on: a member of an object, an item of a list
+            signs = TRUE;
+        else if (*q == '.' && q > p && q + 1 < end && g_ascii_isalnum (q[-1])
+                 && (g_ascii_isalnum (q[1]) || q[1] == '_'))
+            signs = TRUE;
+    }
+    if (braces)
+        return FALSE;
+    if (foreign)
+        return TRUE;
+    if (signs)
+        return FALSE;
+    for (w = p; w < end && (g_ascii_isalnum (*w) || *w == '_'); w++)
+        ;
+    len = (gsize) (w - p);
+    for (i = 0; i < G_N_ELEMENTS (keywords); i++)
+        if (len == strlen (keywords[i]) && g_ascii_strncasecmp (p, keywords[i], len) == 0)
+            return FALSE;
+    // ORDER BY, GROUP BY; an order of the user is a word
+    if (len == 5
+        && (g_ascii_strncasecmp (p, "order", 5) == 0 || g_ascii_strncasecmp (p, "group", 5) == 0))
+    {
+        for (q = w; q < end && *q == ' '; q++)
+            ;
+        if (end - q >= 2 && g_ascii_strncasecmp (q, "by", 2) == 0
+            && (q + 2 == end || !g_ascii_isalnum (q[2])))
+            return FALSE;
+    }
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 char *
 query_ai_part (const char *text, long first, long last, gboolean paragraph, const char *comment,
-               gsize *start, gsize *asked, gsize *end)
+               gsize *start, gsize *end, char **kept, gboolean *below)
 {
     GArray *lines = g_array_new (FALSE, FALSE, sizeof (const char *));
     char *mark = g_strstrip (g_strdup (comment));
     const gsize mark_len = strlen (mark);
-    GString *question = g_string_new (NULL);
+    GString *question = g_string_new (NULL), *keep = g_string_new (NULL);
     const char *p = text;
-    long n, i, k, asked_last;
+    long n, i, k, head, tail, asked_last;
+    gboolean all = FALSE;
 
-#define LINE(i)  g_array_index (lines, const char *, (i))
-#define BLANK(i) query_ai_blank (LINE (i), query_line_end (LINE (i)))
+#define LINE(i)    g_array_index (lines, const char *, (i))
+#define EOL(i)     query_line_end (LINE (i))
+#define BLANK(i)   query_ai_blank (LINE (i), EOL (i))
+#define COMMENT(i) query_ai_comment_of (LINE (i), mark, mark_len)
+#define WORDS(i)   (BLANK (i) || query_ai_is_text (LINE (i), EOL (i)))
 
+    *below = FALSE;
+    *kept = NULL;
     for (;;)
     {
         g_array_append_val (lines, p);
@@ -1563,31 +1662,64 @@ query_ai_part (const char *text, long first, long last, gboolean paragraph, cons
             last--;
     }
 
-    asked_last = last;
-    if (first <= last)
+    if (first > last)
     {
-        // comments over a query: the query is the answer of before, its place
-        for (k = first; k <= last && query_ai_comment_of (LINE (k), mark, mark_len) != NULL; k++)
-            ;
-        if (k > first && k <= last)
-            asked_last = k - 1;
-        for (i = first; i <= asked_last; i++)
-        {
-            const char *from = query_ai_comment_of (LINE (i), mark, mark_len);
-            const char *to = query_line_end (LINE (i));
-
-            if (from == NULL)
-                from = LINE (i);
-            if (question->len > 0)
-                g_string_append_c (question, '\n');
-            g_string_append_len (question, from, to - from);
-        }
-        *start = (gsize) (LINE (first) - text);
-        *asked = (gsize) (query_line_end (LINE (asked_last)) - text);
-        *end = (gsize) (query_line_end (LINE (last)) - text);
+        g_array_free (lines, TRUE);
+        g_free (mark);
+        g_string_free (question, TRUE);
+        g_string_free (keep, TRUE);
+        return NULL;
     }
 
+    /* the words of the user are at the ends of the paragraph, the comments over it and the
+       lines of words after it or before it; what is between is a query, whatever its lines */
+    for (k = first; k <= last && COMMENT (k) != NULL; k++)
+        ;
+    for (tail = last; tail >= k && WORDS (tail); tail--)
+        ;
+    head = k;
+    if (k == first)
+        for (; head <= tail && WORDS (head); head++)
+            ;
+    asked_last = last;
+    if (head > tail || (k == first && head == first && tail == last))
+        // no query, or no words found and no comment: all of it is the request, as words
+        all = TRUE;
+    else if (k > first && tail == last)
+        // comments over a query: the query is the answer of before, its place
+        asked_last = k - 1;
+    else
+        // words with a query of the user: all of it asked, the answer a query after it
+        *below = TRUE;
+
+    for (i = first; i <= last; i++)
+    {
+        const char *from = COMMENT (i);
+
+        if (i <= asked_last)
+        {
+            if (question->len > 0)
+                g_string_append_c (question, '\n');
+            g_string_append_len (question, from != NULL ? from : LINE (i),
+                                 EOL (i) - (from != NULL ? from : LINE (i)));
+        }
+        // what stays of the request over the answer: its words made comments, its query as it is
+        if (i > asked_last)
+            continue;
+        if (keep->len > 0)
+            g_string_append_c (keep, '\n');
+        if (from == NULL && !BLANK (i) && !query_ai_directive (LINE (i), mark, mark_len)
+            && (all || i < head || i > tail))
+            g_string_append (keep, comment);
+        g_string_append_len (keep, LINE (i), EOL (i) - LINE (i));
+    }
+    *start = (gsize) (LINE (first) - text);
+    *end = (gsize) (EOL (last) - text);
+
+#undef WORDS
+#undef COMMENT
 #undef BLANK
+#undef EOL
 #undef LINE
 
     g_array_free (lines, TRUE);
@@ -1596,35 +1728,11 @@ query_ai_part (const char *text, long first, long last, gboolean paragraph, cons
     if (question->str[0] == '\0')
     {
         g_string_free (question, TRUE);
+        g_string_free (keep, TRUE);
         return NULL;
     }
+    *kept = g_string_free (keep, FALSE);
     return g_string_free (question, FALSE);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-char *
-query_ai_commented (const char *lines, gsize len, const char *comment)
-{
-    char *mark = g_strstrip (g_strdup (comment));
-    GString *text = g_string_new (NULL);
-    const char *p = lines, *stop = lines + len;
-
-    while (p < stop)
-    {
-        const char *end = query_line_end (p);
-
-        if (end > stop)
-            end = stop;
-        if (!query_ai_blank (p, end) && query_ai_comment_of (p, mark, strlen (mark)) == NULL)
-            g_string_append (text, comment);
-        g_string_append_len (text, p, end - p);
-        if (end < stop)
-            g_string_append_c (text, '\n');
-        p = end + 1;
-    }
-    g_free (mark);
-    return g_string_free (text, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1633,7 +1741,7 @@ char *
 query_ai_answer (const char *out, char **notes)
 {
     GString *code = g_string_new (NULL), *rest = g_string_new (NULL);
-    gboolean fenced = FALSE, in = FALSE;
+    gboolean in = FALSE;
     const char *p = out;
 
     while (*p != '\0')
@@ -1646,7 +1754,6 @@ query_ai_answer (const char *out, char **notes)
         if (strncmp (s, "```", 3) == 0)
         {
             // "```sql" opens a block, "```" ends it; the blocks are one query
-            fenced = TRUE;
             in = !in;
             if (in && code->len > 0)
                 g_string_append_c (code, '\n');
@@ -1655,10 +1762,25 @@ query_ai_answer (const char *out, char **notes)
             g_string_append_len (in ? code : rest, p, end - p + (*end == '\n' ? 1 : 0));
         p = *end == '\n' ? end + 1 : end;
     }
-    if (!fenced)
+    /* no block: a query alone when no line of it is words, as a command of MC_QUERY_AI may
+       print it; else words, a question of AI, not to put in the file */
+    if (code->len == 0 && rest->len > 0)
     {
-        g_string_assign (code, rest->str);
-        g_string_truncate (rest, 0);
+        const char *l = rest->str;
+        gboolean words = FALSE;
+
+        while (*l != '\0' && !words)
+        {
+            const char *e = query_line_end (l);
+
+            words = query_ai_is_text (l, e);
+            l = *e == '\n' ? e + 1 : e;
+        }
+        if (!words)
+        {
+            g_string_assign (code, rest->str);
+            g_string_truncate (rest, 0);
+        }
     }
     g_strstrip (rest->str);
     *notes = rest->str[0] != '\0' ? g_strdup (rest->str) : NULL;
@@ -1708,9 +1830,16 @@ query_ai_prompt (const char *language, const char *context, const char *question
        letters not of ASCII before the cursor */
     return g_strdup_printf (
         "Write a query in %s for the request below.\n"
-        "Answer with the query, ready to run, in one block ```, with no comment in it; a note of "
-        "yours goes after the block, as plain text in the language of the request: it is shown "
-        "to the user apart from the query.\n"
+        "Answer with the query, ready to run, in one block ```, with no comment in it but the "
+        "directives of the editor; a note of yours goes after the block, as plain text in the "
+        "language of the request: it is shown to the user apart from the query.\n"
+        "The request may hold a query of the user before or after its words: write the query "
+        "the words ask for from that one, keeping its collection or tables and its filters, "
+        "changed as the words say.\n"
+        "A comment that starts with @, \"// @table\" or \"// @limit 20\", is a directive of the "
+        "editor: keep it in the query when the query of the user has it.\n"
+        "Never answer with a question: when the request is not clear, write the query most "
+        "likely meant, and tell in the note what you took it to mean.\n"
         "Use the names the database below has; when the request needs one it has not, say so in "
         "that note.\n"
         "\n"

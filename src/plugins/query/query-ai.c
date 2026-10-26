@@ -96,7 +96,9 @@ struct query_ai_t
     char *file;
     guint64 revision;
     char *place;  // the text from the start of the request to the end of the answer of before
-    gsize start, asked, end;
+    gsize start, end;
+    char *kept;      // what stays of the request in its place, the answer after it
+    gboolean below;  // a query of the user in the request: the answer a query of its own after it
     char *question;
 };
 
@@ -217,6 +219,7 @@ query_ai_forget (query_ai_t *ai)
     ai->edit = NULL;
     g_clear_pointer (&ai->file, g_free);
     g_clear_pointer (&ai->place, g_free);
+    g_clear_pointer (&ai->kept, g_free);
     g_clear_pointer (&ai->question, g_free);
 }
 
@@ -295,7 +298,7 @@ query_ai_put (query_t *q, query_ai_t *ai, const char *sql)
 {
     gsize start = 0, n;
     void *edit = query_ai_place (q, ai, &start);
-    char *lines, *text;
+    char *text;
     const char *p;
     WEdit *e;
 
@@ -304,8 +307,7 @@ query_ai_put (query_t *q, query_ai_t *ai, const char *sql)
     e = EDIT (edit);
     if (!edit_runtime_begin (e))
         return FALSE;
-    lines = query_ai_commented (ai->place, ai->asked - ai->start, q->backend->comment);
-    text = g_strconcat (lines, "\n", sql, (char *) NULL);
+    text = g_strconcat (ai->kept, ai->below ? "\n\n" : "\n", sql, (char *) NULL);
     // as the edits of a language server: a change at a place, the cursor at the end of the query
     edit_cursor_move (e, (off_t) start - e->buffer.curs1);
     for (n = ai->start; n < ai->end; n++)
@@ -317,7 +319,6 @@ query_ai_put (query_t *q, query_ai_t *ai, const char *sql)
     edit_scroll_screen_over_cursor (e);
     q->host->window_show (q->host, edit);
     g_free (text);
-    g_free (lines);
     return TRUE;
 }
 
@@ -349,15 +350,22 @@ query_ai_done (char *out, char *err, int status, gboolean cut, void *data)
     {
         const gsize len = strlen (err);
 
+        // words alone, a question at times: the file is left as it is, what it said below
         if (code == 0)
-            g_string_append_printf (text, _ ("%s wrote no query:\n%s\n"), ai->name, out);
+            g_string_append_printf (text,
+                                    _ ("%s answered with no query, in no block ```: the file is "
+                                       "left as it is.\n"),
+                                    ai->name);
         // the end of its errors, the start of what it says being the request itself at times
         g_string_append (text, len > QUERY_AI_ERR_MAX ? err + len - QUERY_AI_ERR_MAX : err);
     }
     else if (query_ai_put (q, ai, sql))
         g_string_append (text,
-                         _ ("The query is put in the file under the request, not run: F5 "
-                            "runs it, Undo takes it back.\n"));
+                         ai->below ? _ ("The query is put in the file after the request "
+                                        "and its query, not run: F5 runs it, Undo takes "
+                                        "it back.\n")
+                                   : _ ("The query is put in the file under the request, "
+                                        "not run: F5 runs it, Undo takes it back.\n"));
     else
         g_string_append_printf (text,
                                 _ ("The request is no more where it was in the file: the query "
@@ -524,7 +532,7 @@ query_ai_ask (query_t *q, void *edit)
     last = selected ? query_line_of (text, (gsize) end - 1) : first;
     query_ai_forget (ai);
     ai->question = query_ai_part (text, first, last, !selected, q->backend->comment, &ai->start,
-                                  &ai->asked, &ai->end);
+                                  &ai->end, &ai->kept, &ai->below);
     if (ai->question == NULL)
     {
         q->host->message (q->host, D_NORMAL, _ ("Query"),

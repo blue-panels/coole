@@ -554,52 +554,114 @@ test_ai (void)
     const char *text = "SELECT 1;\n\norders of a week\nwith the email\n\n"
                        "-- the users\n--   by name\nSELECT * FROM users;\nSELECT 2;\n\n"
                        "-- all comments\n";
-    gsize start = 0, asked = 0, end = 0;
-    char *s, *notes, **argv;
+    gsize start = 0, end = 0;
+    gboolean below = TRUE;
+    char *s, *kept = NULL, *notes, **argv;
 
-    // a paragraph of text: the request, its place itself
-    s = query_ai_part (text, 3, 3, TRUE, "-- ", &start, &asked, &end);
+#define PART(t, f, l, para, mark)                                                                  \
+    query_ai_part ((t), (f), (l), (para), (mark), &start, &end, &kept, &below)
+#define DONE()                                                                                     \
+    do                                                                                             \
+    {                                                                                              \
+        g_free (s);                                                                                \
+        g_clear_pointer (&kept, g_free);                                                           \
+    }                                                                                              \
+    while (0)
+
+    // a paragraph of words: the request, made comments, the answer under it
+    s = PART (text, 3, 3, TRUE, "-- ");
     g_assert_cmpstr (s, ==, "orders of a week\nwith the email");
+    g_assert_cmpstr (kept, ==, "-- orders of a week\n-- with the email");
+    g_assert_false (below);
     g_assert_cmpuint (start, ==, 11);
-    g_assert_cmpuint (asked, ==, end);
     g_assert_cmpuint (end, ==, 42);
-    g_free (s);
-    s = query_ai_commented (text + start, asked - start, "-- ");
-    g_assert_cmpstr (s, ==, "-- orders of a week\n-- with the email");
-    g_free (s);
+    DONE ();
 
-    // comments over a query: the query is the answer of before, its place
-    s = query_ai_part (text, 8, 8, TRUE, "-- ", &start, &asked, &end);
+    // comments over a query: the query is the answer of before, it goes
+    s = PART (text, 8, 8, TRUE, "-- ");
     g_assert_cmpstr (s, ==, "the users\n  by name");
-    g_free (s);
-    g_assert_cmpstr (text + asked, ==, "\nSELECT * FROM users;\nSELECT 2;\n\n-- all comments\n");
+    g_assert_cmpstr (kept, ==, "-- the users\n--   by name");
+    g_assert_false (below);
     g_assert_cmpstr (text + end, ==, "\n\n-- all comments\n");
-    s = query_ai_commented (text + start, asked - start, "-- ");
-    g_assert_cmpstr (s, ==, "-- the users\n--   by name");
-    g_free (s);
+    DONE ();
+
+    // a column of a line of its own in the answer of before is of it, no words
+    s = PART ("-- users by name\nSELECT\n  id,\n  name\nFROM users;\n", 0, 0, TRUE, "-- ");
+    g_assert_cmpstr (s, ==, "users by name");
+    g_assert_cmpstr (kept, ==, "-- users by name");
+    g_assert_false (below);
+    DONE ();
 
     // comments alone are the request
-    s = query_ai_part (text, 10, 10, TRUE, "-- ", &start, &asked, &end);
+    s = PART (text, 10, 10, TRUE, "-- ");
     g_assert_cmpstr (s, ==, "all comments");
-    g_assert_cmpuint (asked, ==, end);
-    g_free (s);
+    g_assert_cmpstr (kept, ==, "-- all comments");
+    DONE ();
 
     // an empty line, past the end of the text
-    g_assert_null (query_ai_part (text, 1, 1, TRUE, "-- ", &start, &asked, &end));
-    g_assert_null (query_ai_part (text, 40, 40, TRUE, "-- ", &start, &asked, &end));
+    g_assert_null (PART (text, 1, 1, TRUE, "-- "));
+    g_assert_null (PART (text, 40, 40, TRUE, "-- "));
 
     // a selection: its lines alone, its empty lines left out
-    s = query_ai_part (text, 1, 2, FALSE, "-- ", &start, &asked, &end);
+    s = PART (text, 1, 2, FALSE, "-- ");
     g_assert_cmpstr (s, ==, "orders of a week");
     g_assert_cmpuint (start, ==, 11);
     g_assert_cmpuint (end, ==, 27);
-    g_free (s);
-    g_assert_null (query_ai_part (text, 1, 1, FALSE, "-- ", &start, &asked, &end));
+    DONE ();
+    g_assert_null (PART (text, 1, 1, FALSE, "-- "));
 
     // the comments of mongo
-    s = query_ai_part ("//orders\n", 0, 0, TRUE, "// ", &start, &asked, &end);
+    s = PART ("//orders\n", 0, 0, TRUE, "// ");
     g_assert_cmpstr (s, ==, "orders");
-    g_free (s);
+    DONE ();
+
+    /* a query of the user and words after it: all of it asked, the answer after it; the words
+       alone made comments, "// @table" and the members "_id: 1," of the query */
+    {
+        const char *mongo =
+            "// @table\ndb.points\n    .find({}, {\n      _id: 1,\n      ttl: 1 })\n"
+            "    .limit(5)\n\xd0\xbf\xd0\xbe ttl\n";
+
+        s = PART (mongo, 1, 1, TRUE, "// ");
+        g_assert_cmpstr (s, ==,
+                         "// @table\ndb.points\n    .find({}, {\n      _id: 1,\n      ttl: 1 })\n"
+                         "    .limit(5)\n\xd0\xbf\xd0\xbe ttl");
+        g_assert_cmpstr (kept, ==,
+                         "// @table\ndb.points\n    .find({}, {\n      _id: 1,\n      ttl: 1 })\n"
+                         "    .limit(5)\n// \xd0\xbf\xd0\xbe ttl");
+        g_assert_true (below);
+        g_assert_cmpuint (start, ==, 0);
+        DONE ();
+    }
+
+    // a request over an answer with a directive: the directive is of the answer, which goes
+    s = PART ("// by ttl\n// @table\ndb.x.find()\n", 0, 0, TRUE, "// ");
+    g_assert_cmpstr (s, ==, "by ttl");
+    g_assert_cmpstr (kept, ==, "// by ttl");
+    g_assert_false (below);
+    DONE ();
+
+    // words in English after SQL, a column alone in it of the query
+    s = PART ("SELECT id,\n  name\nFROM users\nonly the last week\n", 0, 0, TRUE, "-- ");
+    g_assert_true (below);
+    g_assert_cmpstr (kept, ==, "SELECT id,\n  name\nFROM users\n-- only the last week");
+    DONE ();
+
+    // words that look like code alone, an apostrophe of words: all of it the request
+    s = PART ("orders with total > 100\n", 0, 0, TRUE, "-- ");
+    g_assert_cmpstr (kept, ==, "-- orders with total > 100");
+    g_assert_false (below);
+    DONE ();
+    s = PART ("Select users who signed up in 2024\n", 0, 0, TRUE, "-- ");
+    g_assert_cmpstr (kept, ==, "-- Select users who signed up in 2024");
+    DONE ();
+    s = PART ("SELECT 1;\ncount each user's orders\n", 0, 0, TRUE, "-- ");
+    g_assert_true (below);
+    g_assert_cmpstr (kept, ==, "SELECT 1;\n-- count each user's orders");
+    DONE ();
+
+#undef DONE
+#undef PART
 
     // the answer: its blocks, the rest notes
     s = query_ai_answer ("```sql\nSELECT 1;\n```\n", &notes);
@@ -611,10 +673,14 @@ test_ai (void)
     g_assert_cmpstr (notes, ==, "Here:\nIt counts.");
     g_free (notes);
     g_free (s);
+    // no block: a query alone, of a command of MC_QUERY_AI; words, a question, are none
     s = query_ai_answer ("\nSELECT 2;\n\n", &notes);
     g_assert_cmpstr (s, ==, "SELECT 2;");
     g_assert_null (notes);
     g_free (s);
+    g_assert_null (query_ai_answer ("What should the table show?\n", &notes));
+    g_assert_cmpstr (notes, ==, "What should the table show?");
+    g_free (notes);
     g_assert_null (query_ai_answer ("```sql\n```\n", &notes));
     g_assert_null (notes);
     g_assert_null (query_ai_answer ("  \n", &notes));
@@ -636,6 +702,7 @@ test_ai (void)
     s = query_ai_prompt ("SQL", "The database.", "orders");
     g_assert_nonnull (strstr (s, "in SQL for"));
     g_assert_nonnull (strstr (s, "no comment in it"));
+    g_assert_nonnull (strstr (s, "Never answer with a question"));
     g_assert_nonnull (strstr (s, "The database.\n\nThe request:\norders\n"));
     g_free (s);
 }
