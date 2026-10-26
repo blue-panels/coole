@@ -368,6 +368,37 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+START_TEST (test_goto_path_falls_back_to_the_nearest_parent)
+{
+    mctree_model_t *model;
+    mctree_view_t *view;
+    mctree_node_t *root, *nsp, *table;
+
+    model = mctree_model_new (0);
+    root = mctree_model_add_node (model, NULL, MCTREE_NODE_ROOT, "db", NULL);
+    nsp = mctree_model_add_node (model, root, MCTREE_NODE_OBJECT, "public", NULL);
+    mctree_model_add_node (model, root, MCTREE_NODE_OBJECT, "sales", NULL);
+    table = mctree_model_add_node (model, nsp, MCTREE_NODE_OBJECT, "users", NULL);
+    root->expanded = TRUE;
+    nsp->expanded = TRUE;
+
+    view = mctree_view_new ();
+    mctree_view_set_page_rows (view, 10);
+    mctree_view_set_model (view, model);
+    ck_assert (mctree_view_goto_path (view, "public" MCTREE_PATH_SEP "users"));
+    ck_assert_ptr_eq (mctree_view_current_node (view), table);
+    // a node gone: its parent
+    ck_assert (mctree_view_goto_path (view, "public" MCTREE_PATH_SEP "gone"));
+    ck_assert_ptr_eq (mctree_view_current_node (view), nsp);
+    ck_assert (!mctree_view_goto_path (view, "nowhere"));
+
+    mctree_view_free (view);
+    mctree_model_free (model);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (void)
 {
@@ -386,6 +417,8 @@ main (void)
     tcase_add_test (tc_core, test_filter_nav_walks_matches_only);
     tcase_add_test (tc_core, test_filter_nav_reaches_a_match_under_a_collapsed_node);
     tcase_add_test (tc_core, test_filter_keeps_the_cursor_on_a_matching_first_row);
+
+    tcase_add_test (tc_core, test_goto_path_falls_back_to_the_nearest_parent);
 
     return mctest_run_all (tc_core);
 }

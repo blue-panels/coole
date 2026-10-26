@@ -356,10 +356,10 @@ mctree_view_expand_current (mctree_view_t *view)
     mctree_node_t *node;
 
     node = mctree_view_current_node (view);
-    if (node == NULL || mctree_node_child_count (node) == 0 || node->expanded)
+    if (node == NULL || !mctree_node_expandable (node) || node->expanded)
         return FALSE;
 
-    node->expanded = TRUE;
+    mctree_node_expand (view->model, node);
     mctree_view_rebuild (view);
     return TRUE;
 }
@@ -376,7 +376,7 @@ mctree_view_collapse_current (mctree_view_t *view)
     if (node == NULL)
         return FALSE;
 
-    if (node->expanded && mctree_node_child_count (node) > 0)
+    if (node->expanded && mctree_node_expandable (node))
     {
         node->expanded = FALSE;
         mctree_view_rebuild (view);
@@ -400,7 +400,7 @@ mctree_view_toggle_current (mctree_view_t *view)
     mctree_node_t *node;
 
     node = mctree_view_current_node (view);
-    if (node == NULL || mctree_node_child_count (node) == 0)
+    if (node == NULL || !mctree_node_expandable (node))
         return FALSE;
 
     if (!node->expanded)
@@ -659,6 +659,42 @@ mctree_view_filter_nav (mctree_view_t *view, gboolean backwards)
 
     mctree_view_goto_node (view, found);
     return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Put the cursor on the node of the path, or on the nearest of its parents there is, after the
+   model was read anew; FALSE when none of them is */
+gboolean
+mctree_view_goto_path (mctree_view_t *view, const char *path)
+{
+    char *p;
+
+    if (view == NULL || view->model == NULL || path == NULL)
+        return FALSE;
+
+    p = g_strdup (path);
+    while (*p != '\0')
+    {
+        mctree_node_t *node = mctree_model_find_path (view->model, p);
+        char *sep;
+
+        if (node != NULL)
+        {
+            mctree_view_rebuild (view);
+            mctree_view_cursor_to_node (view, node);
+            g_free (p);
+            return TRUE;
+        }
+        sep = g_strrstr (p, MCTREE_PATH_SEP);
+        if (sep == NULL)
+            break;
+        *sep = '\0';
+    }
+    g_free (p);
+    return FALSE;
 }
 
 /* --------------------------------------------------------------------------------------------- */

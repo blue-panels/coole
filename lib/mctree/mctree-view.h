@@ -45,6 +45,7 @@ gboolean mctree_view_expand_subtree_current (mctree_view_t *view);
 void mctree_view_expand_all (mctree_view_t *view);
 void mctree_view_collapse_all (mctree_view_t *view);
 void mctree_view_expand_to_depth (mctree_view_t *view, int depth);
+gboolean mctree_view_goto_path (mctree_view_t *view, const char *path);
 gboolean mctree_view_search (mctree_view_t *view, const char *text);
 gboolean mctree_view_search_model (mctree_view_t *view, const char *text);
 

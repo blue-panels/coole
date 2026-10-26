@@ -221,6 +221,158 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+static int children_calls = 0;
+static int data_freed = 0;
+
+static void
+test_children (mctree_model_t *model, mctree_node_t *node, void *user_data)
+{
+    (void) user_data;
+    children_calls++;
+    mctree_model_add_node (model, node, MCTREE_NODE_FIELD, "id", "integer");
+    mctree_node_set_lazy (node, FALSE);
+}
+
+static void
+test_data_free (gpointer data)
+{
+    (void) data;
+    data_freed++;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_lazy_node_reads_its_children_when_opened)
+{
+    mctree_model_t *model;
+    mctree_node_t *root, *table;
+    GArray *rows;
+
+    children_calls = 0;
+    model = mctree_model_new (0);
+    model->children = test_children;
+    root = mctree_model_add_node (model, NULL, MCTREE_NODE_ROOT, "db", NULL);
+    table = mctree_model_add_node (model, root, MCTREE_NODE_OBJECT, "users", NULL);
+    mctree_node_set_lazy (table, TRUE);
+    root->expanded = TRUE;
+
+    // a lazy node opens though it has no children
+    ck_assert (mctree_node_expandable (table));
+    ck_assert_uint_eq (mctree_node_child_count (table), 0);
+
+    mctree_node_expand (model, table);
+    ck_assert_int_eq (children_calls, 1);
+    ck_assert (!table->lazy);
+    rows = mctree_model_build_visible_rows (model);
+    ck_assert_uint_eq (rows->len, 2);
+    g_array_free (rows, TRUE);
+
+    // read once: opened again, it asks nothing
+    table->expanded = FALSE;
+    mctree_node_expand (model, table);
+    ck_assert_int_eq (children_calls, 1);
+
+    mctree_model_free (model);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_data_is_freed_with_its_node)
+{
+    mctree_model_t *model;
+    mctree_node_t *root, *node;
+
+    data_freed = 0;
+    model = mctree_model_new (0);
+    root = mctree_model_add_node (model, NULL, MCTREE_NODE_ROOT, "db", NULL);
+    node = mctree_model_add_node (model, root, MCTREE_NODE_OBJECT, "users", NULL);
+    mctree_node_set_data (node, g_strdup ("x"), test_data_free);
+    // set again: the data of before is freed
+    mctree_node_set_data (node, g_strdup ("y"), test_data_free);
+    ck_assert_int_eq (data_freed, 1);
+    mctree_model_free (model);
+    ck_assert_int_eq (data_freed, 2);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_kept_paths_keep_those_of_nodes_not_read)
+{
+    mctree_model_t *model;
+    mctree_node_t *root, *src, *doc;
+    GHashTable *before, *paths;
+
+    before = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    g_hash_table_add (before, g_strdup ("src" MCTREE_PATH_SEP "editor"));
+    g_hash_table_add (before, g_strdup ("doc"));
+
+    // src is lazy and not read: its editor stays open; doc is read and closed: it is so no more
+    model = mctree_model_new (0);
+    root = mctree_model_add_node (model, NULL, MCTREE_NODE_ROOT, "", NULL);
+    src = mctree_model_add_node (model, root, MCTREE_NODE_FIELD, "src", NULL);
+    mctree_node_set_lazy (src, TRUE);
+    doc = mctree_model_add_node (model, root, MCTREE_NODE_FIELD, "doc", NULL);
+    (void) doc;
+
+    paths = mctree_model_kept_paths (model, before);
+    ck_assert_uint_eq (g_hash_table_size (paths), 1);
+    ck_assert (g_hash_table_contains (paths, "src" MCTREE_PATH_SEP "editor"));
+
+    g_hash_table_destroy (paths);
+    g_hash_table_destroy (before);
+    mctree_model_free (model);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_expanded_paths_are_restored_in_a_new_model)
+{
+    mctree_model_t *model, *again;
+    mctree_node_t *root, *nsp, *table, *found;
+    GHashTable *paths;
+    char *path;
+
+    model = mctree_model_new (0);
+    root = mctree_model_add_node (model, NULL, MCTREE_NODE_ROOT, "db", NULL);
+    nsp = mctree_model_add_node (model, root, MCTREE_NODE_OBJECT, "public", NULL);
+    table = mctree_model_add_node (model, nsp, MCTREE_NODE_OBJECT, "users", NULL);
+    mctree_model_add_node (model, table, MCTREE_NODE_FIELD, "id", NULL);
+    nsp->expanded = TRUE;
+    table->expanded = TRUE;
+
+    path = mctree_node_path (table);
+    ck_assert_str_eq (path, "public" MCTREE_PATH_SEP "users");
+    ck_assert_ptr_eq (mctree_model_find_path (model, path), table);
+    g_free (path);
+    paths = mctree_model_expanded_paths (model);
+    ck_assert_uint_eq (g_hash_table_size (paths), 2);
+    mctree_model_free (model);
+
+    // read anew: what was open is open, the lazy node asking for its children
+    children_calls = 0;
+    again = mctree_model_new (0);
+    again->children = test_children;
+    root = mctree_model_add_node (again, NULL, MCTREE_NODE_ROOT, "db", NULL);
+    nsp = mctree_model_add_node (again, root, MCTREE_NODE_OBJECT, "public", NULL);
+    table = mctree_model_add_node (again, nsp, MCTREE_NODE_OBJECT, "users", NULL);
+    mctree_node_set_lazy (table, TRUE);
+    found = mctree_model_add_node (again, nsp, MCTREE_NODE_OBJECT, "orders", NULL);
+    mctree_node_restore_expanded (again, again->root, paths);
+    ck_assert (nsp->expanded);
+    ck_assert (table->expanded);
+    ck_assert (!found->expanded);
+    ck_assert_int_eq (children_calls, 1);
+
+    g_hash_table_destroy (paths);
+    mctree_model_free (again);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (void)
 {
@@ -234,6 +386,10 @@ main (void)
     tcase_add_test (tc_core, test_child_and_descendant_counts);
     tcase_add_test (tc_core, test_filter_keeps_matches_with_path_and_subtree);
     tcase_add_test (tc_core, test_filter_without_matches_leaves_no_rows);
+    tcase_add_test (tc_core, test_lazy_node_reads_its_children_when_opened);
+    tcase_add_test (tc_core, test_data_is_freed_with_its_node);
+    tcase_add_test (tc_core, test_expanded_paths_are_restored_in_a_new_model);
+    tcase_add_test (tc_core, test_kept_paths_keep_those_of_nodes_not_read);
 
     return mctest_run_all (tc_core);
 }

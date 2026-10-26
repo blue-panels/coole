@@ -40,6 +40,8 @@ mctree_node_free (mctree_node_t *node)
 
     g_free (node->key);
     g_free (node->value);
+    if (node->data_free != NULL)
+        node->data_free (node->data);
     if (node->children != NULL)
         g_ptr_array_free (node->children, TRUE);
     g_free (node);
@@ -418,3 +420,181 @@ mctree_node_type_name (mctree_node_type_t type)
         return "unknown";
     }
 }
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+mctree_node_expandable (const mctree_node_t *node)
+{
+    return node != NULL && (node->lazy || mctree_node_child_count (node) > 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+mctree_node_set_lazy (mctree_node_t *node, gboolean lazy)
+{
+    if (node != NULL)
+        node->lazy = lazy;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+mctree_node_set_data (mctree_node_t *node, void *data, GDestroyNotify data_free)
+{
+    if (node == NULL)
+        return;
+
+    if (node->data_free != NULL)
+        node->data_free (node->data);
+    node->data = data;
+    node->data_free = data_free;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+mctree_node_expand (mctree_model_t *model, mctree_node_t *node)
+{
+    if (node == NULL)
+        return;
+
+    node->expanded = TRUE;
+    // a lazy node may have children of its own already: it is the owner that tells it is read
+    if (node->lazy && model != NULL && model->children != NULL)
+        model->children (model, node, model->children_data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+mctree_node_path (const mctree_node_t *node)
+{
+    GString *path;
+
+    path = g_string_new (NULL);
+
+    for (; node != NULL && node->parent != NULL; node = node->parent)
+    {
+        const char *key = node->key != NULL ? node->key : mctree_node_type_name (node->type);
+
+        if (path->len > 0)
+            g_string_prepend (path, MCTREE_PATH_SEP);
+        g_string_prepend (path, key);
+    }
+
+    return g_string_free (path, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+mctree_node_t *
+mctree_model_find_path (const mctree_model_t *model, const char *path)
+{
+    guint i;
+
+    if (model == NULL || path == NULL)
+        return NULL;
+
+    for (i = 0; i < model->nodes->len; i++)
+    {
+        mctree_node_t *node = g_ptr_array_index (model->nodes, i);
+        char *p = mctree_node_path (node);
+        const gboolean same = strcmp (p, path) == 0;
+
+        g_free (p);
+        if (same)
+            return node;
+    }
+
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+GHashTable *
+mctree_model_expanded_paths (const mctree_model_t *model)
+{
+    GHashTable *paths;
+    guint i;
+
+    paths = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    if (model == NULL)
+        return paths;
+
+    for (i = 0; i < model->nodes->len; i++)
+    {
+        const mctree_node_t *node = g_ptr_array_index (model->nodes, i);
+
+        if (node->expanded && node->parent != NULL)
+            g_hash_table_add (paths, mctree_node_path (node));
+    }
+
+    return paths;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+GHashTable *
+mctree_model_kept_paths (const mctree_model_t *model, GHashTable *before)
+{
+    GHashTable *paths, *read;
+    GHashTableIter iter;
+    gpointer path;
+    guint i;
+
+    paths = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    if (model == NULL)
+        return paths;
+
+    // the paths of all the nodes read, made once: those open are kept, the others known
+    read = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    for (i = 0; i < model->nodes->len; i++)
+    {
+        const mctree_node_t *node = g_ptr_array_index (model->nodes, i);
+
+        if (node->parent == NULL)
+            continue;
+        if (node->expanded)
+            g_hash_table_add (paths, mctree_node_path (node));
+        if (before != NULL)
+            g_hash_table_add (read, mctree_node_path (node));
+    }
+
+    if (before != NULL)
+    {
+        g_hash_table_iter_init (&iter, before);
+        while (g_hash_table_iter_next (&iter, &path, NULL))
+            if (!g_hash_table_contains (read, path))
+                g_hash_table_add (paths, g_strdup ((const char *) path));
+    }
+    g_hash_table_destroy (read);
+
+    return paths;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+mctree_node_restore_expanded (mctree_model_t *model, mctree_node_t *node, GHashTable *paths)
+{
+    guint i;
+
+    if (node == NULL || paths == NULL)
+        return;
+
+    if (node->parent != NULL)
+    {
+        char *path = mctree_node_path (node);
+
+        if (g_hash_table_contains (paths, path))
+            mctree_node_expand (model, node);
+        g_free (path);
+    }
+
+    for (i = 0; node->children != NULL && i < node->children->len; i++)
+        mctree_node_restore_expanded (model, g_ptr_array_index (node->children, i), paths);
+}
+
+/* --------------------------------------------------------------------------------------------- */
