@@ -67,6 +67,7 @@ enum
     QUERY_CMD_SCHEMA_ROWS,
     QUERY_CMD_SCHEMA_INSERT,
     QUERY_CMD_SCHEMA_REFRESH,
+    QUERY_CMD_SCHEMA_QUERY,
     QUERY_CMD_AI,
     QUERY_CMD_COUNT
 };
@@ -78,7 +79,8 @@ typedef enum
     QUERY_SCHEMA_REFRESH,  // read again
     QUERY_SCHEMA_ENTER,    // a schema folded or unfolded, the columns of a relation
     QUERY_SCHEMA_ROWS,     // the rows of the relation in Table
-    QUERY_SCHEMA_INSERT    // the name put in the file
+    QUERY_SCHEMA_INSERT,   // the name put in the file
+    QUERY_SCHEMA_QUERY     // the query of the rows of the relation, of its columns, in the file
 } query_schema_action_t;
 
 enum
@@ -179,6 +181,12 @@ void query_redraw (query_t *q);
 void query_schema_set (query_t *q, const char *text, long line, gboolean make);
 /* The line of the cursor of the window Schema, from 0; -1 when there is none */
 long query_schema_line (query_t *q);
+/* The bytes @from to @to of the text of the file window @edit made @text, one change Undo
+   takes back, the cursor after it and the window in front; FALSE when an edit of another goes on */
+gboolean query_edit_put (query_t *q, void *edit, gsize from, gsize to, const char *text);
+/* @text, a query, put in the file window @edit: on the line of its cursor when it is empty, a
+   paragraph of its own, else after the paragraph of the cursor; FALSE when it could not be */
+gboolean query_put_query (query_t *q, void *edit, const char *text);
 /* The window of the file @file, NULL when none has it */
 void *query_file_window (query_t *q, const char *file);
 

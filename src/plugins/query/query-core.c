@@ -69,7 +69,7 @@ typedef struct
 /* --------------------------------------------------------------------------------------------- */
 
 /* The end of the line that starts at @p: its '\n', or the end of the text */
-static const char *
+const char *
 query_line_end (const char *p)
 {
     const char *nl = strchr (p, '\n');
@@ -1490,9 +1490,8 @@ query_take_tables (const char *out, GPtrArray *tables)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Whether the line at @p, up to @end, has nothing but blanks */
-static gboolean
-query_ai_blank (const char *p, const char *end)
+gboolean
+query_blank_line (const char *p, const char *end)
 {
     for (; p < end; p++)
         if (!g_ascii_isspace (*p))
@@ -1576,7 +1575,7 @@ query_ai_is_text (const char *p, const char *end)
             braces = TRUE;
         else if (strchr ("[]=<>$:+*|&%", *q) != NULL)
             signs = TRUE;
-        else if (*q == ',' && query_ai_blank (q + 1, end))
+        else if (*q == ',' && query_blank_line (q + 1, end))
             // a line that goes on: a member of an object, an item of a list
             signs = TRUE;
         else if (*q == '.' && q > p && q + 1 < end && g_ascii_isalnum (q[-1])
@@ -1624,7 +1623,7 @@ query_ai_part (const char *text, long first, long last, gboolean paragraph, cons
 
 #define LINE(i)    g_array_index (lines, const char *, (i))
 #define EOL(i)     query_line_end (LINE (i))
-#define BLANK(i)   query_ai_blank (LINE (i), EOL (i))
+#define BLANK(i)   query_blank_line (LINE (i), EOL (i))
 #define COMMENT(i) query_ai_comment_of (LINE (i), mark, mark_len)
 #define WORDS(i)   (BLANK (i) || query_ai_is_text (LINE (i), EOL (i)))
 
@@ -1790,7 +1789,7 @@ query_ai_answer (const char *out, char **notes)
     // its first line keeps its indent, no empty line above it
     while (code->str[0] == '\n' || code->str[0] == '\r')
         g_string_erase (code, 0, 1);
-    if (query_ai_blank (code->str, code->str + strlen (code->str)))
+    if (query_blank_line (code->str, code->str + strlen (code->str)))
     {
         g_string_free (code, TRUE);
         return NULL;

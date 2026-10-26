@@ -274,6 +274,34 @@ query_ms_collection (const query_mongo_schema_t *s, const char *dbname, const ch
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* What reaches the collection @coll of the database @dbname whatever the use () of the file:
+   db.getSiblingDB ("shop").getCollection ("orders") */
+static char *
+query_ms_reach (const char *dbname, const char *coll)
+{
+    char *d = query_ms_string (dbname), *c = query_ms_string (coll);
+    char *text = g_strdup_printf ("db.getSiblingDB(%s).getCollection(%s)", d, c);
+
+    g_free (d);
+    g_free (c);
+    return text;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The key of the collection @o in want_details: "db\x1fcollection" */
+static char *
+query_ms_key (const query_node_t *o)
+{
+    const query_node_t *root;
+
+    for (root = o; root->parent != NULL; root = root->parent)
+        ;
+    return g_strconcat (root->name, "\x1f", o->name, (char *) NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* What mongosh printed after QUERY_MS_TAG, as JSON; NULL with @error when it is none */
 static JsonNode *
 query_ms_json (const char *out, char **error)
@@ -400,19 +428,14 @@ query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
                 o->text = g_strdup_printf ("~%" G_GINT64_FORMAT, count);
             o->insert = query_ms_collection (s, dbname, name);
             // the rows of F5 in the database of the collection, whatever the use () of the file
-            quoted = query_ms_string (dbname);
-            reach = query_ms_string (name);
-            o->rows = g_strdup_printf ("// @table\ndb.getSiblingDB(%s).getCollection(%s).find({})"
-                                       ".limit(%u)",
-                                       quoted, reach, QUERY_TABLE_ROWS);
-            g_free (quoted);
+            reach = query_ms_reach (dbname, name);
+            o->rows = g_strdup_printf ("// @table\n%s.find({}).limit(%u)", reach, QUERY_TABLE_ROWS);
             g_free (reach);
             o->open = query_tree_was_open (&s->tree, o, FALSE);
             if (o->open)
             {
                 o->asked = TRUE;
-                g_ptr_array_add (s->want_details,
-                                 g_strconcat (dbname, "\x1f", name, (char *) NULL));
+                g_ptr_array_add (s->want_details, query_ms_key (o));
             }
         }
         // the groups in their order
@@ -546,6 +569,7 @@ query_ms_take_details (query_mongo_schema_t *s, const char *key, JsonObject *det
         // the fields open the first time
         section->open = query_tree_was_open (&s->tree, section, i == QUERY_MS_SECTION_FIELDS);
     }
+    query_tree_read (&s->tree, o, details != NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -700,6 +724,37 @@ query_ms_next (query_mongo_schema_t *s)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The query of F3 of the collection @o: find () of its @fields, the names of the fields, all of
+   them when there is none; its documents in Table */
+static char *
+query_ms_query (const query_node_t *o, GPtrArray *fields)
+{
+    GString *text = g_string_new ("// @table\n");
+    char *dbname = query_ms_key (o), *reach;
+    guint i;
+
+    // whatever the use () of the file, as F5 of Schema
+    *strchr (dbname, '\x1f') = '\0';
+    reach = query_ms_reach (dbname, o->name);
+    g_string_append_printf (text, "%s.find({}", reach);
+    g_free (reach);
+    g_free (dbname);
+    for (i = 0; i < fields->len; i++)
+    {
+        const char *name = g_ptr_array_index (fields, i);
+        char *key = query_ms_js_name (name) ? g_strdup (name) : query_ms_string (name);
+
+        g_string_append_printf (text, "%s%s: 1", i == 0 ? ", { " : ", ", key);
+        g_free (key);
+    }
+    if (fields->len > 0)
+        g_string_append (text, " }");
+    g_string_append_printf (text, ").limit(%u)", QUERY_TABLE_ROWS);
+    return g_string_free (text, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The list read again, the window made when it is not there yet */
 static void
 query_ms_refresh (query_mongo_schema_t *s)
@@ -708,6 +763,7 @@ query_ms_refresh (query_mongo_schema_t *s)
     s->want_list = TRUE;
     // the details asked for come with the list
     g_ptr_array_set_size (s->want_details, 0);
+    query_tree_cancel (&s->tree);
     query_tree_mark (&s->tree);
     query_tree_render (&s->tree);
     query_ms_next (s);
@@ -726,6 +782,7 @@ query_mongo_schema_new (query_t *q, const char *mongosh)
     s->mongosh = g_strdup (mongosh);
     s->want_details = g_ptr_array_new_with_free_func (g_free);
     query_tree_init (&s->tree, q);
+    s->tree.query = query_ms_query;
     return s;
 }
 
@@ -773,14 +830,7 @@ query_mongo_schema_do (query_mongo_schema_t *s, query_schema_action_t action, lo
     case QUERY_SCHEMA_ENTER:
         o = query_tree_enter (&s->tree, n);
         if (o != NULL)
-        {
-            const query_node_t *root;
-
-            for (root = o; root->parent != NULL; root = root->parent)
-                ;
-            g_ptr_array_add (s->want_details,
-                             g_strconcat (root->name, "\x1f", o->name, (char *) NULL));
-        }
+            g_ptr_array_add (s->want_details, query_ms_key (o));
         if (n != NULL)
             query_tree_render (&s->tree);
         query_ms_next (s);
@@ -790,6 +840,14 @@ query_mongo_schema_do (query_mongo_schema_t *s, query_schema_action_t action, lo
         break;
     case QUERY_SCHEMA_INSERT:
         query_tree_insert (&s->tree, n);
+        break;
+    case QUERY_SCHEMA_QUERY:
+        o = query_tree_query (&s->tree, n);
+        if (o != NULL)
+        {
+            g_ptr_array_add (s->want_details, query_ms_key (o));
+            query_ms_next (s);
+        }
         break;
     default:
         break;

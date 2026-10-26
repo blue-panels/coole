@@ -296,30 +296,17 @@ query_ai_place (query_t *q, query_ai_t *ai, gsize *start)
 static gboolean
 query_ai_put (query_t *q, query_ai_t *ai, const char *sql)
 {
-    gsize start = 0, n;
+    gsize start = 0;
     void *edit = query_ai_place (q, ai, &start);
     char *text;
-    const char *p;
-    WEdit *e;
+    gboolean done;
 
     if (edit == NULL)
         return FALSE;
-    e = EDIT (edit);
-    if (!edit_runtime_begin (e))
-        return FALSE;
     text = g_strconcat (ai->kept, ai->below ? "\n\n" : "\n", sql, (char *) NULL);
-    // as the edits of a language server: a change at a place, the cursor at the end of the query
-    edit_cursor_move (e, (off_t) start - e->buffer.curs1);
-    for (n = ai->start; n < ai->end; n++)
-        (void) edit_delete (e, TRUE);
-    for (p = text; *p != '\0'; p++)
-        edit_insert (e, (unsigned char) *p);
-    edit_runtime_end (e);
-    e->force |= REDRAW_PAGE;
-    edit_scroll_screen_over_cursor (e);
-    q->host->window_show (q->host, edit);
+    done = query_edit_put (q, edit, start, start + (ai->end - ai->start), text);
     g_free (text);
-    return TRUE;
+    return done;
 }
 
 /* --------------------------------------------------------------------------------------------- */

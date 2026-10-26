@@ -36,6 +36,10 @@
 
 /*** declarations of public functions ************************************************************/
 
+/* The end of the line at @p: its newline, or the end of the text */
+const char *query_line_end (const char *p);
+/* Whether the line at @p, up to @end, has nothing but blanks */
+gboolean query_blank_line (const char *p, const char *end);
 /* The 0-based line of the byte @offset of @text */
 long query_line_of (const char *text, gsize offset);
 /* Whether the line that starts at @p is a separator of the queries of a file: "// ---" */

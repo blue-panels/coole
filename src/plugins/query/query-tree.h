@@ -61,6 +61,14 @@ typedef struct
     gboolean make;     // and is made again when the user has closed it: QuerySchema
     gboolean read;     // the tree was read once
     char *error;       // why it could not be, NULL for none
+
+    // F3: the query of the rows of @o of its @fields, the inserts of its first section, all of
+    // them or one, an array of none for none known; of the backend
+    char *(*query) (const query_node_t *o, GPtrArray *fields);
+    char *pending;  // the path of the object whose query waits for its sections, NULL for none
+    char *pending_field;  // and the field it is of, NULL for all of them
+    char *pending_file;   // the file of queries F3 was pressed in, NULL for one with no name
+    void *pending_edit;   // its window then
 } query_tree_t;
 
 /*** global variables defined in .c file *********************************************************/
@@ -91,7 +99,7 @@ gboolean query_tree_was_open (const query_tree_t *t, const query_node_t *n, gboo
 query_node_t *query_tree_find (const query_tree_t *t,
                                gboolean (*match) (const query_node_t *n, const void *data),
                                const void *data);
-/* No object is asked for: the backend lost what it asked */
+/* No object is asked for, nor a query of F3: the backend lost what it asked */
 void query_tree_unask (query_tree_t *t);
 
 /* The node of the 0-based @line of the window; NULL for none */
@@ -108,6 +116,14 @@ query_node_t *query_tree_enter (query_tree_t *t, query_node_t *n);
 void query_tree_insert (query_tree_t *t, const query_node_t *n);
 /* F5 on @n: the rows of its object in Table, a query of no file */
 void query_tree_rows (query_tree_t *t, query_node_t *n);
+/* F3 on @n: the query of the rows of its object put in the file of queries, of all its fields,
+   or of the field @n alone; the object whose sections are to be read first, NULL for none */
+query_node_t *query_tree_query (query_tree_t *t, query_node_t *n);
+/* The sections of @o are read, @ok, or could not be: the query that waited for them put, or not
+   and told */
+void query_tree_read (query_tree_t *t, query_node_t *o, gboolean ok);
+/* What was asked is asked no more, the tree read again: no query of F3 waits */
+void query_tree_cancel (query_tree_t *t);
 
 /*** inline functions ****************************************************************************/
 

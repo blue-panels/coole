@@ -155,8 +155,12 @@ A collection unfolded is read then: its Fields, of a sample of 100 of its
 documents, never a value, with their types and, when not all of them have
 the field, how many do, *50%*; its Indexes and their keys, *unique*,
 *sparse*, *ttl*; its Validator, the Pipeline of a view. Enter folds and
-unfolds, F5 puts the first 100 documents of the collection in Table,
-Insert puts *db.orders*, a field, the key of an index. mongosh reads it,
+unfolds, F5 puts the first 100 documents of the collection in Table, F3
+puts the query of them in the file of queries, *// @table* and
+*db.getSiblingDB("shop").getCollection("orders").find({}, { _id: 1, total:
+1 }).limit(100)*, of its database whatever the *use()* of the file, of the
+field of the line alone when it is one, Insert puts *db.orders*, a field, the key of an
+index. mongosh reads it,
 a run of its own each time: a query that makes or drops a collection, a
 view or an index, or inserts, reads it again.
 
@@ -307,6 +311,16 @@ double click does so too.
 : The first 100 rows of the relation of the line, or of that it is of, in
 Table: a query of no file, QuerySchemaRows, its text at the top of Table and
 in the head of Output.
+
+**F3**
+: The query of the rows of the relation put in the file of queries, its
+columns one a line, of the column of the line alone when it is one, read
+first when they are not yet: *SELECT id, name FROM public.users LIMIT 100;*,
+in the file F3 was pressed in, on the line of the cursor when it is empty, a
+paragraph of its own, else after its paragraph; the cursor goes there, F5
+runs it. A query that waits for its columns is put no more when Schema is
+read again or another F3 comes; Output tells it, and when the columns could
+not be read. QuerySchemaQuery.
 
 **Insert**
 : Put what the line names at the cursor of the file of queries, as SQL
