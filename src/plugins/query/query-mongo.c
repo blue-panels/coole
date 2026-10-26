@@ -49,6 +49,7 @@
 
 #include "query-core.h"
 #include "query-int.h"
+#include "query-mongo-schema.h"
 
 /*** global variables ****************************************************************************/
 
@@ -57,25 +58,6 @@
 // the language server of the queries lsp.json has, and where it comes from
 #define QUERY_LANGUAGE_SERVER     "mongolsp"
 #define QUERY_LANGUAGE_SERVER_URL "https://github.com/blue-panels/mongolsp"
-
-/* What AI is told of the database: its collections, the fields of a document of each with their
-   types, never a value; the database of the use () of the request, @1 */
-#define QUERY_AI_SCRIPT                                                                            \
-    "db = connect(process.env.MC_MONGO_URI); "                                                     \
-    "if (process.env.MC_MONGO_DB) db = db.getSiblingDB(process.env.MC_MONGO_DB); %s"               \
-    "{ const __t = (v) => v === null ? 'null' : Array.isArray(v) ? 'array' "                       \
-    ": (v && v.constructor && v.constructor.name) || typeof v; "                                   \
-    "const __n = db.getCollectionNames().filter((n) => !n.startsWith('system.')).sort(); "         \
-    "print('The database \"' + db.getName() + '\" of MongoDB ' + db.version() + '.'); "            \
-    "print('Its collections, a line each: the name: the fields of a document of it, "              \
-    "with their types.'); "                                                                        \
-    "for (const n of __n.slice(0, %d)) { const d = db.getCollection(n).findOne(); "                \
-    "print(n + ': ' + (d ? Object.keys(d).map((k) => k + ' ' + __t(d[k])).join(', ') "             \
-    ": 'no document')); } "                                                                        \
-    "if (__n.length > %d) print('And ' + (__n.length - %d) + ' collections more, not told.'); }"
-
-// the collections AI is told of at most
-#define QUERY_AI_COLLECTIONS 300
 
 /*** file scope type declarations ****************************************************************/
 
@@ -91,7 +73,7 @@ typedef struct
     long limit;          // asked for by "// @limit N", 0 when not
     gboolean limited;    // and put into the query
 
-    query_proc_t *ai;  // mongosh reading what AI is told of the database, NULL when none
+    query_mongo_schema_t *schema;  // the window Schema, and what AI is told
 } query_mongo_t;
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -264,6 +246,9 @@ query_done (query_mongo_t *m, char *raw, char *err, int status)
     g_free (message);
     g_free (out);
     g_free (err);
+    // a collection, a view or an index made or dropped: Schema read again
+    if (!q->stopped && query_mongo_changes_schema (q->text))
+        query_mongo_schema_changed (m->schema);
     query_redraw (q);
 }
 
@@ -333,6 +318,7 @@ query_mongo_open (query_t *q)
     m->q = q;
     m->mongosh = g_strdup (mongosh != NULL && *mongosh != '\0' ? mongosh : "mongosh");
     q->endpoint = query_mongo_endpoint (g_getenv ("MC_MONGO_URI"), g_getenv ("MC_MONGO_DB"));
+    m->schema = query_mongo_schema_new (q, m->mongosh);
     return m;
 }
 
@@ -345,10 +331,18 @@ query_mongo_close (void *data)
 
     if (m->proc != NULL)
         query_proc_kill (m->proc);
-    if (m->ai != NULL)
-        query_proc_kill (m->ai);
+    query_mongo_schema_free (m->schema);
     g_free (m->mongosh);
     g_free (m);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The window Schema, once the tabs are there */
+static void
+query_mongo_schema_later (void *data)
+{
+    query_mongo_schema_do (((query_mongo_t *) data)->schema, QUERY_SCHEMA_SHOW, -1);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -391,6 +385,7 @@ query_mongo_startup (void *data, void *edit, GString *text)
     g_free (found);
     g_free (server);
     g_free (used);
+    q->host->call_later (q->host, query_mongo_schema_later, m);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -486,59 +481,22 @@ query_mongo_stop (void *data)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* What AI is told of the database of the use () of the request, read by Schema */
 static void
-query_mongo_ai_done (char *out, char *err, int status, gboolean cut, void *data)
+query_mongo_ai_context (void *data, const char *use)
 {
-    query_mongo_t *m = (query_mongo_t *) data;
-    char *clean = query_mongo_clean (out);
-
-    (void) cut;
-    m->ai = NULL;
-    g_strstrip (clean);
-    if (!WIFEXITED (status) || WEXITSTATUS (status) != 0 || *clean == '\0')
-        query_ai_context (m->q, NULL, g_strstrip (err));
-    else
-    {
-        const char *read_only = g_getenv ("MC_QUERY_READ_ONLY");
-        char *context = read_only != NULL && strcmp (read_only, "1") == 0
-            ? g_strconcat (clean, "\nThe user reads only: write no change.", (char *) NULL)
-            : g_strdup (clean);
-
-        query_ai_context (m->q, context, NULL);
-        g_free (context);
-    }
-    g_free (clean);
-    g_free (out);
-    g_free (err);
+    query_mongo_schema_ai (((query_mongo_t *) data)->schema, use);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* mongosh run on the script that reads what AI is told, in the database of the request */
 static void
-query_mongo_ai_context (void *data, const char *use)
+query_mongo_schema (void *data, query_schema_action_t action, long line)
 {
-    query_mongo_t *m = (query_mongo_t *) data;
-    char *used = use != NULL ? g_strdup_printf ("db = db.getSiblingDB(%s); ", use) : g_strdup ("");
-    char *script = g_strdup_printf (QUERY_AI_SCRIPT, used, QUERY_AI_COLLECTIONS,
-                                    QUERY_AI_COLLECTIONS, QUERY_AI_COLLECTIONS);
-    const char *argv[] = { m->mongosh, "--nodb", "--quiet", "--eval", script, NULL };
-    GError *error = NULL;
-
-    if (m->ai != NULL)
-        query_proc_kill (m->ai);
-    m->ai = query_proc_start (argv, NULL, NULL, "", query_mongo_ai_done, m, &error);
-    if (m->ai == NULL)
-    {
-        char *message = g_strdup_printf ("%s: %s", m->mongosh, error->message);
-
-        g_clear_error (&error);
-        query_ai_context (m->q, NULL, message);
-        g_free (message);
-    }
-    g_free (script);
-    g_free (used);
+    query_mongo_schema_do (((query_mongo_t *) data)->schema, action, line);
 }
+
+/* --------------------------------------------------------------------------------------------- */
 
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
@@ -559,6 +517,7 @@ const query_backend_t query_mongo_backend = {
                 ".aggregate ([...]) and the like, no use ()",
     .comment = "// ",
     .ai_context = query_mongo_ai_context,
+    .schema = query_mongo_schema,
 };
 
 /* --------------------------------------------------------------------------------------------- */

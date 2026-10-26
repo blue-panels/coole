@@ -1720,3 +1720,42 @@ query_ai_prompt (const char *language, const char *context, const char *question
         "%s\n",
         language, context, question);
 }
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+query_mongo_changes_schema (const char *text)
+{
+    static const char *const calls[] = {
+        "createCollection", "createView",    "drop",      "dropDatabase", "renameCollection",
+        "createIndex",      "createIndexes", "dropIndex", "dropIndexes",  "insert",
+        "insertOne",        "insertMany",    "bulkWrite", "aggregate",
+    };
+    const char *p;
+
+    // a method called: ".name (", whatever the blanks; aggregate for its $out and $merge
+    for (p = strchr (text, '.'); p != NULL; p = strchr (p + 1, '.'))
+    {
+        const char *name = p + 1, *end;
+        gsize i;
+
+        while (*name == ' ' || *name == '\t' || *name == '\n')
+            name++;
+        for (end = name; g_ascii_isalnum (*end) || *end == '_'; end++)
+            ;
+        for (p = end; *p == ' ' || *p == '\t' || *p == '\n'; p++)
+            ;
+        if (*p != '(')
+        {
+            p = end > name ? end - 1 : name;
+            continue;
+        }
+        for (i = 0; i < G_N_ELEMENTS (calls); i++)
+            if ((gsize) (end - name) == strlen (calls[i])
+                && strncmp (name, calls[i], strlen (calls[i])) == 0)
+                return strcmp (calls[i], "aggregate") != 0 || strstr (text, "$out") != NULL
+                    || strstr (text, "$merge") != NULL;
+        p = end > name ? end - 1 : name;
+    }
+    return FALSE;
+}
