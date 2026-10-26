@@ -110,17 +110,18 @@ char *query_pg_ident (const char *name);
 char *query_pg_relation_query (const char *schema, const char *relation);
 
 /* The request to AI of the lines @first to @last, 0-based, of @text; with @paragraph the lines
-   around @first that are not empty.  Lines that start with @comment, "-- ", over a query below
-   them are the request alone, the query being the answer of before: those lines are the request,
-   from the byte @start to @asked, and the part up to @end, the end of the last line, is the place
-   of the answer.  The text of the request, the comments taken off; NULL when it has none. */
+   around @first that are not empty; the place of the answer from the byte @start to @end, what
+   is to stay of the request there @kept, the answer after it.  Comments, @comment "-- ", over a
+   query are the request alone, the query being the answer of before, which goes.  Else all the
+   lines are the request: the words of the user at their ends made comments, a query between them
+   that of the user, kept, the answer a query of its own after it, @below; with no query all its
+   words made comments, the answer under them.  A directive, "// @table", is of the query.  The
+   text of the request, the comments taken off; NULL when it has none. */
 char *query_ai_part (const char *text, long first, long last, gboolean paragraph,
-                     const char *comment, gsize *start, gsize *asked, gsize *end);
-/* The @len bytes of the lines of a request, @lines, as they stay over the answer: each line
-   that is not empty a comment, @comment before it when it is no comment yet */
-char *query_ai_commented (const char *lines, gsize len, const char *comment);
-/* The query of what AI answered, @out: what its blocks ```...``` have, else all of it; @notes
-   what it wrote around those blocks, NULL for nothing.  NULL when it has no query. */
+                     const char *comment, gsize *start, gsize *end, char **kept, gboolean *below);
+/* The query of what AI answered, @out: what its blocks ```...``` have, else all of it when no
+   line of it is words; @notes what it wrote around those blocks, NULL for nothing.  NULL when it
+   has no query: it asked something, or answered in words. */
 char *query_ai_answer (const char *out, char **notes);
 /* The command of MC_QUERY_AI, @value: claude without one, QUERY_AI_CLAUDE and QUERY_AI_CODEX
    with what they are run with, else a command line of the shell; NULL with @error when it is
