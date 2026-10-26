@@ -305,7 +305,8 @@ double click does so too.
 
 **F5**
 : The first 100 rows of the relation of the line, or of that it is of, in
-Table: a query of no file, QuerySchemaRows.
+Table: a query of no file, QuerySchemaRows, its text at the top of Table and
+in the head of Output.
 
 **Insert**
 : Put what the line names at the cursor of the file of queries, as SQL

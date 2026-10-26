@@ -72,10 +72,10 @@
 #define QUERY_UNDO_TEXT 8000
 // the status of an entry of History that is no run: the file kept before a version took its place
 #define QUERY_SAVED (-2)
+// the characters of a query of no file the head of Output tells at most: Table has all of it
+#define QUERY_HEAD_QUERY 60
 // the height of the tabs, percent of the screen
 #define QUERY_TABS_SIZE 40
-// the characters of a query of no file the head of Output tells at most
-#define QUERY_HEAD_QUERY 60
 
 /*** file scope type declarations ****************************************************************/
 
@@ -184,12 +184,32 @@ query_viewer_id (query_t *q, const char *method, gint64 id, gboolean focus)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether the query run is of no file, of Schema, of History, QueryRollback: no file shows it */
+static gboolean
+query_of_no_file (const query_t *q)
+{
+    return q->file == NULL && q->text != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The text of a tab, the tab made again when the user has closed it; the one seen when @front */
 void
 query_tab_set (query_t *q, int tab, const char *text, gboolean front)
 {
     GVariantDict dict;
     GVariant *reply = NULL;
+    char *with = NULL;
+
+    // a query of no file, of Schema or of History: its text over its table, no file showing it
+    if (tab == QUERY_TAB_TABLE && query_of_no_file (q))
+    {
+        char *query = g_strstrip (g_strdup (q->text));
+
+        with = g_strdup_printf ("%s\n\n%s", query, text);
+        g_free (query);
+        text = with;
+    }
 
     if (q->tabs[tab] != 0)
     {
@@ -230,6 +250,7 @@ query_tab_set (query_t *q, int tab, const char *text, gboolean front)
     }
     if (front && q->tabs[tab] != 0)
         query_viewer_id (q, "show", q->tabs[tab], FALSE);
+    g_free (with);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -873,8 +894,8 @@ query_output_head (query_t *q, GString *text, double seconds, const char *when)
         q->first + query_line_of (q->text, len > 0 && q->text[len - 1] == '\n' ? len - 1 : len);
 
     g_string_append (text, ANSI_BOLD);
-    // a query of no file is told itself, on one line, cut
-    if (q->first == 0)
+    // a query of no file is told itself, on one line, cut: Table has all of it
+    if (query_of_no_file (q))
     {
         char *query = g_strstrip (g_strdup (q->text));
         char *c;
