@@ -21,6 +21,9 @@ libmc_sources = files(
   'event/manage.c',
   'event/raise.c',
 
+  'mctree/mctree-model.c',
+  'mctree/mctree-view.c',
+
   'mcconfig/common.c',
   'mcconfig/get.c',
   'mcconfig/history.c',
