@@ -21,9 +21,6 @@ libmc_sources = files(
   'event/manage.c',
   'event/raise.c',
 
-  'mctree/mctree-model.c',
-  'mctree/mctree-view.c',
-
   'mcconfig/common.c',
   'mcconfig/get.c',
   'mcconfig/history.c',
@@ -118,4 +115,12 @@ libmc = static_library('mc',
   dependencies: libmc_deps,
 )
 
-libmc_dep = declare_dependency(link_with: libmc, dependencies: libmc_deps)
+# The tree of mc: the program calls little of it, the plugins the rest, so the program links it
+# whole
+libmctree = static_library('mctree',
+  'mctree/mctree-model.c',
+  'mctree/mctree-view.c',
+  dependencies: [glib_dep],
+)
+
+libmc_dep = declare_dependency(link_with: [libmc, libmctree], dependencies: libmc_deps)

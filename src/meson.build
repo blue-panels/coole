@@ -108,6 +108,8 @@ libforplugins = static_library('forplugins',
   'viewer/ansi_color.c',
   # the messages of the debug adapters and of the language servers
   'content-frame.c',
+  # the tree windows: Schema of the queries
+  'editor/edittree.c',
   c_args: src_c_args,
   dependencies: [libmc_dep, intl],
   implicit_include_directories: false,
@@ -121,7 +123,7 @@ coole = executable('coole',
   c_args: src_c_args,
   dependencies: libinternal_dep,
   implicit_include_directories: false,
-  link_whole: libforplugins,
+  link_whole: [libforplugins, libmctree],
   # the runtime plugins call back into the program
   export_dynamic: have_gmodule,
   install: true,
