@@ -45,6 +45,7 @@
 
 #include "query-core.h"
 #include "query-pg-schema.h"
+#include "query-tree.h"
 
 /*** global variables ****************************************************************************/
 
@@ -117,9 +118,6 @@
 // the characters of a default shown at most
 #define QUERY_SCHEMA_DEFAULT 24
 
-// what joins the keys of the nodes of a path, which no name of the catalog has
-#define QUERY_SCHEMA_PATH_SEP "\x1f"
-
 /*** file scope type declarations ****************************************************************/
 
 typedef enum
@@ -137,15 +135,6 @@ typedef enum
     QUERY_SCHEMA_ASK_DETAILS,
     QUERY_SCHEMA_ASK_AI
 } query_schema_ask_t;
-
-typedef enum
-{
-    QUERY_NODE_NSP,
-    QUERY_NODE_GROUP,    // the relations of a kind of a schema, its functions
-    QUERY_NODE_REL,      // a relation; a sequence has nothing under it
-    QUERY_NODE_SECTION,  // the columns of a relation, its keys...
-    QUERY_NODE_ITEM
-} query_node_kind_t;
 
 /* The groups of a schema, in their order */
 enum
@@ -172,26 +161,6 @@ enum
     QUERY_SECTION_COUNT
 };
 
-typedef struct query_node_t
-{
-    query_node_kind_t kind;
-    char *name;    // what is shown, and its key among those beside it
-    char *text;    // shown after the name, NULL for nothing
-    char *insert;  // what Insert puts in the file, NULL for nothing
-    gboolean open;
-
-    // a relation
-    Oid oid;
-    char relkind;
-    gint64 rows;     // reltuples, -1 for none known
-    gboolean read;   // its sections are read
-    gboolean asked;  // and are asked for
-
-    GPtrArray *children;         // query_node_t; of a relation its sections once read
-    struct query_node_t *parts;  // of a partitioned table, the section of its partitions
-    struct query_node_t *parent;
-} query_node_t;
-
 struct query_pg_schema_t
 {
     query_t *q;
@@ -211,14 +180,7 @@ struct query_pg_schema_t
     gboolean ai_sent;      // and sent
     GArray *want_details;  // Oid of the relations whose sections are to be read
 
-    gboolean shown;    // the window is made
-    gboolean make;     // and is made again when the user has closed it: QuerySchema
-    gboolean read;     // the list was read once
-    char *error;       // why it could not be, NULL for none
-    GPtrArray *nsps;   // query_node_t of the schemas
-    GPtrArray *lines;  // query_node_t of each line of the window, NULL for one of none
-    char *keep;        // the path of what the cursor is on, for it to stay there
-    GHashTable *seen;  // the paths of the nodes before the list was read again, TRUE when open
+    query_tree_t tree;
 };
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -241,318 +203,6 @@ static const char *const query_section_names[QUERY_SECTION_COUNT] = {
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
-
-static void
-query_node_free (gpointer data)
-{
-    query_node_t *n = (query_node_t *) data;
-
-    g_free (n->name);
-    g_free (n->text);
-    g_free (n->insert);
-    if (n->children != NULL)
-        g_ptr_array_free (n->children, TRUE);
-    if (n->parts != NULL)
-        query_node_free (n->parts);
-    g_free (n);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* A node of @kind under @parent, NULL for none, put in its children unless it is the section of
-   its partitions; @name, @text and @insert are taken */
-static query_node_t *
-query_node_new (query_node_t *parent, query_node_kind_t kind, char *name, char *text, char *insert)
-{
-    query_node_t *n = g_new0 (query_node_t, 1);
-
-    n->kind = kind;
-    n->name = name;
-    n->text = text;
-    n->insert = insert;
-    n->rows = -1;
-    n->parent = parent;
-    if (kind != QUERY_NODE_ITEM && kind != QUERY_NODE_REL)
-        n->children = g_ptr_array_new_with_free_func (query_node_free);
-    if (parent != NULL && parent->children != NULL)
-        g_ptr_array_add (parent->children, n);
-    return n;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* Whether @n has lines under it to unfold: a sequence and an item have none */
-static gboolean
-query_node_folds (const query_node_t *n)
-{
-    switch (n->kind)
-    {
-    case QUERY_NODE_REL:
-        return n->relkind != 'S';
-    case QUERY_NODE_SECTION:
-        return n->children->len > 0;
-    case QUERY_NODE_ITEM:
-        return FALSE;
-    default:
-        return TRUE;
-    }
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The path of @n, the keys of the nodes from its schema to it: their kind and name */
-static char *
-query_node_path (const query_node_t *n)
-{
-    GString *path = g_string_new (NULL);
-
-    for (; n != NULL; n = n->parent)
-    {
-        char *key = g_strdup_printf ("%d%s%s", (int) n->kind, n->name,
-                                     path->len > 0 ? QUERY_SCHEMA_PATH_SEP : "");
-
-        g_string_prepend (path, key);
-        g_free (key);
-    }
-    return g_string_free (path, FALSE);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* Whether @n was open before the list was read again; @fallback when it was not there */
-static gboolean
-query_node_was_open (const query_pg_schema_t *s, const query_node_t *n, gboolean fallback)
-{
-    char *path = query_node_path (n);
-    gpointer open = NULL;
-    const gboolean known =
-        s->seen != NULL && g_hash_table_lookup_extended (s->seen, path, NULL, &open);
-
-    g_free (path);
-    return known ? GPOINTER_TO_INT (open) : fallback;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The path of @n and those of the nodes under it, open or not, in @seen */
-static void
-query_node_remember (const query_node_t *n, GHashTable *seen)
-{
-    guint i;
-
-    g_hash_table_insert (seen, query_node_path (n), GINT_TO_POINTER (n->open));
-    for (i = 0; n->children != NULL && i < n->children->len; i++)
-        query_node_remember (g_ptr_array_index (n->children, i), seen);
-    if (n->parts != NULL)
-        query_node_remember (n->parts, seen);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The relation of @oid, @n or under it, NULL for none */
-static query_node_t *
-query_node_find (query_node_t *n, Oid oid)
-{
-    query_node_t *found = NULL;
-    guint i;
-
-    if (n->kind == QUERY_NODE_REL && n->oid == oid)
-        return n;
-    for (i = 0; found == NULL && n->children != NULL && i < n->children->len; i++)
-        found = query_node_find (g_ptr_array_index (n->children, i), oid);
-    if (found == NULL && n->parts != NULL)
-        found = query_node_find (n->parts, oid);
-    return found;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The node of the 0-based @line of the window; NULL for none */
-static query_node_t *
-query_schema_node_at (const query_pg_schema_t *s, long line)
-{
-    if (line < 0 || (guint) line >= s->lines->len)
-        return NULL;
-    return g_ptr_array_index (s->lines, line);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The relation @n is of, itself or what is under it; NULL for none */
-static query_node_t *
-query_node_rel (query_node_t *n)
-{
-    for (; n != NULL && n->kind != QUERY_NODE_REL; n = n->parent)
-        ;
-    return n;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* What the cursor of the window is on, kept by its path before the text is made again */
-static void
-query_schema_mark (query_pg_schema_t *s)
-{
-    const query_node_t *n = query_schema_node_at (s, query_schema_line (s->q));
-
-    // a line of none keeps the path of before: the one of "Reading..." is gone a moment after
-    if (n != NULL)
-    {
-        g_free (s->keep);
-        s->keep = query_node_path (n);
-    }
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-query_schema_add_line (query_pg_schema_t *s, GString *text, query_node_t *n, const char *line)
-{
-    g_string_append (text, line);
-    g_string_append_c (text, '\n');
-    g_ptr_array_add (s->lines, n);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The lines of @what, each a line of the window that is of nothing, cut at the blanks to the
-   width of the window: an error of libpq is a long line */
-static void
-query_schema_add_lines (query_pg_schema_t *s, GString *text, const char *what)
-{
-    const long width = MAX (20, (long) COLS * QUERY_SCHEMA_SIZE / 100 - 4);
-    char **lines = g_strsplit (what, "\n", -1);
-    char **l;
-
-    for (l = lines; *l != NULL; l++)
-    {
-        const char *rest = *l;
-
-        while (*rest != '\0')
-        {
-            const char *end = rest, *cut = NULL;
-            long n;
-            char *part;
-
-            for (n = 0; *end != '\0' && n < width; n++, end = g_utf8_next_char (end))
-                if (*end == ' ')
-                    cut = end;
-            if (*end == '\0' || cut == NULL)
-                cut = end;
-            part = g_strndup (rest, (gsize) (cut - rest));
-            query_schema_add_line (s, text, NULL, part);
-            g_free (part);
-            rest = cut;
-            while (*rest == ' ')
-                rest++;
-        }
-    }
-    g_strfreev (lines);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The number a schema shows: what its groups have */
-static guint
-query_node_count (const query_node_t *n)
-{
-    guint count = 0, i;
-
-    if (n->kind != QUERY_NODE_NSP)
-        return n->children != NULL ? n->children->len : 0;
-    for (i = 0; i < n->children->len; i++)
-        count += ((query_node_t *) g_ptr_array_index (n->children, i))->children->len;
-    return count;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The lines of @n at @depth, and those under it when it is open; @at the line of the path kept,
-   @near that of the nearest of its parents shown, of @near_len bytes of path */
-static void
-query_schema_render_node (query_pg_schema_t *s, GString *text, query_node_t *n, int depth, long *at,
-                          long *near, gsize *near_len)
-{
-    const gboolean folds = query_node_folds (n);
-    char *path = query_node_path (n);
-    const gsize len = strlen (path);
-    GString *line = g_string_new (NULL);
-    guint i;
-
-    if (s->keep != NULL && strcmp (path, s->keep) == 0)
-        *at = (long) s->lines->len;
-    else if (s->keep != NULL && len > *near_len && strncmp (path, s->keep, len) == 0
-             && strncmp (s->keep + len, QUERY_SCHEMA_PATH_SEP, 1) == 0)
-    {
-        *near = (long) s->lines->len;
-        *near_len = len;
-    }
-    g_free (path);
-
-    g_string_append_printf (line, "%*s%c %s", depth * 2, "",
-                            !folds        ? ' '
-                                : n->open ? '-'
-                                          : '+',
-                            n->name);
-    if (n->kind == QUERY_NODE_NSP || n->kind == QUERY_NODE_GROUP || n->kind == QUERY_NODE_SECTION)
-        g_string_append_printf (line, " (%u)", query_node_count (n));
-    if (n->kind == QUERY_NODE_REL && n->rows >= 0 && (n->relkind == 'r' || n->relkind == 'm'))
-        g_string_append_printf (line, " ~%" G_GINT64_FORMAT, n->rows);
-    if (n->kind == QUERY_NODE_REL && n->relkind == 'p')
-        g_string_append (line, _ (" [partitioned]"));
-    if (n->text != NULL)
-        g_string_append_printf (line, " %s", n->text);
-    query_schema_add_line (s, text, n, line->str);
-    g_string_free (line, TRUE);
-
-    if (!folds || !n->open)
-        return;
-    if (n->kind == QUERY_NODE_REL && !n->read)
-    {
-        char *reading = g_strdup_printf ("%*s%s", depth * 2 + 4, "", _ ("Reading..."));
-
-        query_schema_add_line (s, text, n, reading);
-        g_free (reading);
-    }
-    for (i = 0; n->children != NULL && i < n->children->len; i++)
-        query_schema_render_node (s, text, g_ptr_array_index (n->children, i), depth + 1, at, near,
-                                  near_len);
-    if (n->parts != NULL)
-        query_schema_render_node (s, text, n->parts, depth + 1, at, near, near_len);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The text of the window made again from the tree, the cursor on what it was on */
-static void
-query_schema_render (query_pg_schema_t *s)
-{
-    GString *text = g_string_new (NULL);
-    long at = -1, near = -1;
-    gsize near_len = 0;
-    guint i;
-
-    g_ptr_array_set_size (s->lines, 0);
-    query_schema_add_line (s, text, NULL, _ ("Enter, F5 rows, Ins name"));
-    if (s->error != NULL)
-        query_schema_add_lines (s, text, s->error);
-    else if (!s->read)
-        query_schema_add_line (s, text, NULL, _ ("Reading..."));
-    for (i = 0; i < s->nsps->len; i++)
-        query_schema_render_node (s, text, g_ptr_array_index (s->nsps, i), 0, &at, &near,
-                                  &near_len);
-    // what the cursor was on is gone: the nearest of its parents, the first schema at the start
-    if (at < 0)
-        at = near;
-    if (at < 0)
-        at = s->keep != NULL || s->lines->len < 2 ? MAX (query_schema_line (s->q), 0) : 1;
-    query_schema_set (s->q, text->str, at, s->make || !s->shown);
-    s->make = FALSE;
-    s->shown = TRUE;
-    g_string_free (text, TRUE);
-    // an answer of the server comes with no key: the screen is drawn again for it
-    query_redraw (s->q);
-}
 
 /* --------------------------------------------------------------------------------------------- */
 /* The connection */
@@ -580,21 +230,6 @@ query_schema_close_conn (query_pg_schema_t *s)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The relations whose sections were asked for, @n and under it, are asked for no more */
-static void
-query_schema_unask (query_node_t *n)
-{
-    guint i;
-
-    n->asked = FALSE;
-    for (i = 0; n->children != NULL && i < n->children->len; i++)
-        query_schema_unask (g_ptr_array_index (n->children, i));
-    if (n->parts != NULL)
-        query_schema_unask (n->parts);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 /* The connection failed or was lost, @why: the window tells it, what is asked for next connects
    again */
 static void
@@ -606,16 +241,15 @@ query_schema_broken (query_pg_schema_t *s, const char *why)
     s->state = QUERY_SCHEMA_BROKEN;
     s->want_list = FALSE;
     g_array_set_size (s->want_details, 0);
-    for (guint i = 0; i < s->nsps->len; i++)
-        query_schema_unask (g_ptr_array_index (s->nsps, i));
-    g_free (s->error);
-    s->error = g_strchomp (error);
-    query_schema_mark (s);
-    query_schema_render (s);
+    query_tree_unask (&s->tree);
+    g_free (s->tree.error);
+    s->tree.error = g_strchomp (error);
+    query_tree_mark (&s->tree);
+    query_tree_render (&s->tree);
     if (s->want_ai || s->ai_sent)
     {
         s->want_ai = s->ai_sent = FALSE;
-        query_ai_context (s->q, NULL, s->error);
+        query_ai_context (s->q, NULL, s->tree.error);
     }
 }
 
@@ -689,7 +323,7 @@ static void
 query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
 {
     const query_pq_t *pq = s->pq;
-    const gboolean again = s->read;
+    const gboolean again = s->tree.read;
     GHashTable *by_oid = g_hash_table_new (g_direct_hash, g_direct_equal);
     GHashTable *by_name = g_hash_table_new (g_str_hash, g_str_equal);
     GPtrArray *parts = g_ptr_array_new ();  // the rows of partitions, as int
@@ -700,12 +334,7 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
     gboolean placed;
 
     // what was open, by the paths of the nodes
-    if (s->seen != NULL)
-        g_hash_table_destroy (s->seen);
-    s->seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-    for (j = 0; j < s->nsps->len; j++)
-        query_node_remember (g_ptr_array_index (s->nsps, j), s->seen);
-    g_ptr_array_set_size (s->nsps, 0);
+    query_tree_forget (&s->tree);
 
     rows = rels != NULL ? pq->PQntuples (rels) : 0;
     for (i = 0; i < rows; i++)
@@ -717,12 +346,12 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
 
         if (n == NULL || strcmp (n->name, nsp) != 0)
         {
-            n = query_node_new (NULL, QUERY_NODE_NSP, g_strdup (nsp), NULL, query_pg_ident (nsp));
-            g_ptr_array_add (s->nsps, n);
+            n = query_node_new (NULL, QUERY_NODE_ROOT, g_strdup (nsp), NULL, query_pg_ident (nsp));
+            g_ptr_array_add (s->tree.roots, n);
             g_hash_table_insert (by_name, n->name, n);
             // the first time, that of MC_PG_SCHEMA open, else public
-            n->open = query_node_was_open (
-                s, n, strcmp (nsp, s->first != NULL ? s->first : "public") == 0);
+            n->open = query_tree_was_open (
+                &s->tree, n, strcmp (nsp, s->first != NULL ? s->first : "public") == 0);
             memset (groups, 0, sizeof (groups));
         }
         if (pq->PQgetisnull (rels, i, 1))
@@ -742,10 +371,10 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
         {
             groups[g] = query_node_new (n, QUERY_NODE_GROUP, g_strdup (_ (query_group_names[g])),
                                         NULL, NULL);
-            groups[g]->open = query_node_was_open (s, groups[g], g == QUERY_GROUP_TABLES);
+            groups[g]->open = query_tree_was_open (&s->tree, groups[g], g == QUERY_GROUP_TABLES);
         }
-        r = query_node_new (groups[g], QUERY_NODE_REL, g_strdup (pq->PQgetvalue (rels, i, 2)), NULL,
-                            NULL);
+        r = query_node_new (groups[g], QUERY_NODE_OBJECT, g_strdup (pq->PQgetvalue (rels, i, 2)),
+                            NULL, NULL);
         g_hash_table_insert (by_oid, GUINT_TO_POINTER (query_schema_oid (pq, rels, i, 1)), r);
     }
     /* the partitions under their table, those of a partition under it, in a section of its own:
@@ -768,9 +397,9 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
             {
                 table->parts = query_node_new (table, QUERY_NODE_SECTION,
                                                g_strdup (_ ("Partitions")), NULL, NULL);
-                table->parts->open = query_node_was_open (s, table->parts, FALSE);
+                table->parts->open = query_tree_was_open (&s->tree, table->parts, FALSE);
             }
-            r = query_node_new (table->parts, QUERY_NODE_REL,
+            r = query_node_new (table->parts, QUERY_NODE_OBJECT,
                                 g_strdup (pq->PQgetvalue (rels, row, 2)), NULL, NULL);
             g_hash_table_insert (by_oid, GUINT_TO_POINTER (query_schema_oid (pq, rels, row, 1)), r);
             g_ptr_array_index (parts, j) = GINT_TO_POINTER (-1);
@@ -799,10 +428,10 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
             tables =
                 query_node_new (ns, QUERY_NODE_GROUP,
                                 g_strdup (_ (query_group_names[QUERY_GROUP_TABLES])), NULL, NULL);
-            tables->open = query_node_was_open (s, tables, TRUE);
+            tables->open = query_tree_was_open (&s->tree, tables, TRUE);
         }
-        r = query_node_new (tables, QUERY_NODE_REL, g_strdup (pq->PQgetvalue (rels, row, 2)), NULL,
-                            NULL);
+        r = query_node_new (tables, QUERY_NODE_OBJECT, g_strdup (pq->PQgetvalue (rels, row, 2)),
+                            NULL, NULL);
         g_hash_table_insert (by_oid, GUINT_TO_POINTER (query_schema_oid (pq, rels, row, 1)), r);
     }
     // what each relation is, now that its node is where it stays
@@ -814,23 +443,31 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
             : g_hash_table_lookup (by_oid, GUINT_TO_POINTER (oid));
         const char *nsp = pq->PQgetvalue (rels, i, 0);
         char *qn, *qr;
+        gint64 reltuples;
 
         if (r == NULL)
             continue;
-        r->oid = oid;
-        r->relkind = pq->PQgetvalue (rels, i, 3)[0];
-        r->rows = g_ascii_strtoll (pq->PQgetvalue (rels, i, 4), NULL, 10);
+        r->id = oid;
+        r->tag = pq->PQgetvalue (rels, i, 3)[0];
+        r->leaf = r->tag == 'S';
+        reltuples = g_ascii_strtoll (pq->PQgetvalue (rels, i, 4), NULL, 10);
+        // the rows the server reckons, those of a table that was never analyzed none
+        if (reltuples >= 0 && (r->tag == 'r' || r->tag == 'm'))
+            r->text = g_strdup_printf ("~%" G_GINT64_FORMAT, reltuples);
+        else if (r->tag == 'p')
+            r->text = g_strdup (_ ("[partitioned]"));
         qn = query_pg_ident (nsp);
         qr = query_pg_ident (r->name);
         r->insert = g_strconcat (qn, ".", qr, (char *) NULL);
+        r->rows = g_strdup_printf ("SELECT * FROM %s LIMIT %u;", r->insert, QUERY_TABLE_ROWS);
         g_free (qn);
         g_free (qr);
         // a relation unfolded before is read again
-        r->open = query_node_was_open (s, r, FALSE);
-        if (r->open && r->relkind != 'S')
+        r->open = query_tree_was_open (&s->tree, r, FALSE);
+        if (r->open && r->tag != 'S')
         {
             r->asked = TRUE;
-            g_array_append_val (s->want_details, r->oid);
+            g_array_append_val (s->want_details, r->id);
         }
     }
 
@@ -856,7 +493,7 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
             group = query_node_new (ns, QUERY_NODE_GROUP,
                                     g_strdup (_ (query_group_names[QUERY_GROUP_FUNCTIONS])), NULL,
                                     NULL);
-            group->open = query_node_was_open (s, group, FALSE);
+            group->open = query_tree_was_open (&s->tree, group, FALSE);
         }
         qn = query_pg_ident (nsp);
         qf = query_pg_ident (name);
@@ -872,9 +509,9 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
     }
 
     // the groups of a schema in their order
-    for (j = 0; j < s->nsps->len; j++)
+    for (j = 0; j < s->tree.roots->len; j++)
     {
-        query_node_t *ns = g_ptr_array_index (s->nsps, j);
+        query_node_t *ns = g_ptr_array_index (s->tree.roots, j);
         GPtrArray *sorted = g_ptr_array_new_with_free_func (query_node_free);
         int g;
 
@@ -893,23 +530,23 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
     }
 
     // that of MC_PG_SCHEMA first; the only one open
-    for (j = 0; s->first != NULL && j < s->nsps->len; j++)
-        if (strcmp (((query_node_t *) g_ptr_array_index (s->nsps, j))->name, s->first) == 0)
+    for (j = 0; s->first != NULL && j < s->tree.roots->len; j++)
+        if (strcmp (((query_node_t *) g_ptr_array_index (s->tree.roots, j))->name, s->first) == 0)
             first = j;
     if (first > 0)
     {
-        gpointer f = g_ptr_array_steal_index (s->nsps, first);
+        gpointer f = g_ptr_array_steal_index (s->tree.roots, first);
 
-        g_ptr_array_insert (s->nsps, 0, f);
+        g_ptr_array_insert (s->tree.roots, 0, f);
     }
-    if (s->nsps->len == 1 && !again)
-        ((query_node_t *) g_ptr_array_index (s->nsps, 0))->open = TRUE;
+    if (s->tree.roots->len == 1 && !again)
+        ((query_node_t *) g_ptr_array_index (s->tree.roots, 0))->open = TRUE;
 
     g_ptr_array_free (parts, TRUE);
     g_hash_table_destroy (by_name);
     g_hash_table_destroy (by_oid);
-    s->read = TRUE;
-    g_clear_pointer (&s->error, g_free);
+    s->tree.read = TRUE;
+    g_clear_pointer (&s->tree.error, g_free);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -990,6 +627,15 @@ query_schema_trigger_text (const char *def, const char *name)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether @n is the relation of the Oid at @data */
+static gboolean
+query_schema_is_oid (const query_node_t *n, const void *data)
+{
+    return n->id == *(const Oid *) data;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The sections of the relation of @oid, wherever it is now, of the @results of
    QUERY_SCHEMA_DETAILS; none of them on an error */
 static void
@@ -1001,8 +647,7 @@ query_schema_take_details (query_pg_schema_t *s, Oid oid, GPtrArray *results)
     GString *all;
     int k, i;
 
-    for (k = 0; r == NULL && k < (int) s->nsps->len; k++)
-        r = query_node_find (g_ptr_array_index (s->nsps, k), oid);
+    r = query_tree_find (&s->tree, query_schema_is_oid, &oid);
     if (r == NULL)
         return;
     r->asked = FALSE;
@@ -1066,14 +711,14 @@ query_schema_take_details (query_pg_schema_t *s, Oid oid, GPtrArray *results)
     }
     // a table shows all its sections, a view and the like those with something
     for (i = QUERY_SECTION_COUNT - 1; i > QUERY_SECTION_COLUMNS; i--)
-        if (r->relkind != 'r' && r->relkind != 'p' && sections[i]->children->len == 0)
+        if (r->tag != 'r' && r->tag != 'p' && sections[i]->children->len == 0)
             g_ptr_array_remove_index (r->children, (guint) i);
     for (k = 0; k < (int) r->children->len; k++)
     {
         query_node_t *section = g_ptr_array_index (r->children, k);
 
         // the columns open the first time
-        section->open = query_node_was_open (s, section, k == QUERY_SECTION_COLUMNS);
+        section->open = query_tree_was_open (&s->tree, section, k == QUERY_SECTION_COLUMNS);
     }
 }
 
@@ -1155,7 +800,7 @@ query_schema_done (query_pg_schema_t *s)
 {
     query_pq_link_unwatch (&s->link);
     s->state = QUERY_SCHEMA_READY;
-    query_schema_mark (s);
+    query_tree_mark (&s->tree);
     if (s->asked == QUERY_SCHEMA_ASK_AI)
     {
         char *text =
@@ -1169,8 +814,8 @@ query_schema_done (query_pg_schema_t *s)
     {
         if (s->res_error != NULL)
         {
-            g_free (s->error);
-            s->error = g_strchomp (g_strdup (s->res_error));
+            g_free (s->tree.error);
+            s->tree.error = g_strchomp (g_strdup (s->res_error));
         }
         else
             query_schema_take_list (s, query_schema_result (s, 0), query_schema_result (s, 1));
@@ -1180,7 +825,7 @@ query_schema_done (query_pg_schema_t *s)
         query_schema_take_details (s, s->asked_oid, s->res_error == NULL ? s->results : NULL);
     g_ptr_array_set_size (s->results, 0);
     g_clear_pointer (&s->res_error, g_free);
-    query_schema_render (s);
+    query_tree_render (&s->tree);
     query_schema_next (s);
 }
 
@@ -1275,14 +920,14 @@ static void
 query_schema_refresh (query_pg_schema_t *s)
 {
     if (s->state == QUERY_SCHEMA_BROKEN)
-        g_clear_pointer (&s->error, g_free);
+        g_clear_pointer (&s->tree.error, g_free);
     s->want_list = TRUE;
     // the sections asked for come with the list
     g_array_set_size (s->want_details, 0);
-    if (!s->shown || s->error == NULL)
+    if (!s->tree.shown || s->tree.error == NULL)
     {
-        query_schema_mark (s);
-        query_schema_render (s);
+        query_tree_mark (&s->tree);
+        query_tree_render (&s->tree);
     }
     query_schema_next (s);
 }
@@ -1293,54 +938,18 @@ query_schema_refresh (query_pg_schema_t *s)
 static void
 query_schema_enter (query_pg_schema_t *s, query_node_t *n)
 {
-    if (n == NULL || !query_node_folds (n))
+    const query_node_t *r = query_tree_enter (&s->tree, n);
+
+    if (r == NULL && n == NULL)
         return;
-    query_schema_mark (s);
-    n->open = !n->open;
-    if (n->kind == QUERY_NODE_REL && n->open && !n->read && !n->asked)
+    if (r != NULL)
     {
-        n->asked = TRUE;
-        g_array_append_val (s->want_details, n->oid);
+        const Oid oid = (Oid) r->id;
+
+        g_array_append_val (s->want_details, oid);
     }
-    query_schema_render (s);
+    query_tree_render (&s->tree);
     query_schema_next (s);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* What Insert puts for @n at the cursor of the file of queries: the name of a schema, of a
-   relation with its schema, of a column, of an index; the columns of a key */
-static void
-query_schema_insert (query_pg_schema_t *s, const query_node_t *n)
-{
-    void *edit = s->q->host->window_top_file (s->q->host);
-
-    if (n == NULL || n->insert == NULL || *n->insert == '\0' || edit == NULL)
-        return;
-    s->q->host->insert_text (s->q->host, edit, n->insert, 0);
-    query_redraw (s->q);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The rows of the relation of @n, or that @n is of, in Table, a query of no file */
-static void
-query_schema_rows (query_pg_schema_t *s, query_node_t *n)
-{
-    const query_node_t *r = query_node_rel (n);
-    char *sql;
-
-    if (r == NULL || r->insert == NULL)
-        return;
-    if (s->q->backend->running (s->q->backend_data))
-    {
-        s->q->host->message (s->q->host, D_NORMAL, _ ("Query"),
-                             _ ("A query is running: its rows come once it ends."));
-        return;
-    }
-    sql = g_strdup_printf ("SELECT * FROM %s LIMIT %u;", r->insert, QUERY_TABLE_ROWS);
-    query_run_alone (s->q, sql);
-    g_free (sql);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1359,8 +968,7 @@ query_pg_schema_new (query_t *q, const query_pq_t *pq, gboolean read_only, const
     query_pq_link_init (&s->link, pq, query_schema_connected, query_schema_ready, s);
     s->results = g_ptr_array_new_with_free_func ((GDestroyNotify) pq->PQclear);
     s->want_details = g_array_new (FALSE, FALSE, sizeof (Oid));
-    s->nsps = g_ptr_array_new_with_free_func (query_node_free);
-    s->lines = g_ptr_array_new ();
+    query_tree_init (&s->tree, q);
     return s;
 }
 
@@ -1374,13 +982,8 @@ query_pg_schema_free (query_pg_schema_t *s)
     query_schema_close_conn (s);
     g_ptr_array_free (s->results, TRUE);
     g_array_free (s->want_details, TRUE);
-    g_ptr_array_free (s->lines, TRUE);
-    g_ptr_array_free (s->nsps, TRUE);
-    if (s->seen != NULL)
-        g_hash_table_destroy (s->seen);
+    query_tree_done (&s->tree);
     g_free (s->first);
-    g_free (s->error);
-    g_free (s->keep);
     g_free (s);
 }
 
@@ -1389,18 +992,18 @@ query_pg_schema_free (query_pg_schema_t *s)
 void
 query_pg_schema_do (query_pg_schema_t *s, query_schema_action_t action, long line)
 {
-    query_node_t *n = query_schema_node_at (s, line);
+    query_node_t *n = query_tree_node_at (&s->tree, line);
 
     switch (action)
     {
     case QUERY_SCHEMA_SHOW:
-        s->make = TRUE;
-        if (!s->read && s->state != QUERY_SCHEMA_BUSY)
+        s->tree.make = TRUE;
+        if (!s->tree.read && s->state != QUERY_SCHEMA_BUSY)
             query_schema_refresh (s);
         else
         {
-            query_schema_mark (s);
-            query_schema_render (s);
+            query_tree_mark (&s->tree);
+            query_tree_render (&s->tree);
         }
         break;
     case QUERY_SCHEMA_REFRESH:
@@ -1410,10 +1013,10 @@ query_pg_schema_do (query_pg_schema_t *s, query_schema_action_t action, long lin
         query_schema_enter (s, n);
         break;
     case QUERY_SCHEMA_ROWS:
-        query_schema_rows (s, n);
+        query_tree_rows (&s->tree, n);
         break;
     case QUERY_SCHEMA_INSERT:
-        query_schema_insert (s, n);
+        query_tree_insert (&s->tree, n);
         break;
     default:
         break;
@@ -1436,7 +1039,7 @@ query_pg_schema_ai (query_pg_schema_t *s)
 void
 query_pg_schema_changed (query_pg_schema_t *s)
 {
-    if (s->read)
+    if (s->tree.read)
         query_schema_refresh (s);
 }
 

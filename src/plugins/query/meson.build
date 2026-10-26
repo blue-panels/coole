@@ -2,7 +2,7 @@
 # debugger.  It reads the documents of mongosh --json, so it is there when json-glib is.
 query_module = shared_module('query',
   'query.c', 'query-core.c', 'query-mongo.c', 'query-postgres.c', 'query-pq.c', 'query-pg-schema.c',
-  'query-ai.c',
+  'query-ai.c', 'query-tree.c',
   name_prefix: '',
   c_args: src_c_args,
   dependencies: [glib_dep, intl, screen_headers, json_glib],
