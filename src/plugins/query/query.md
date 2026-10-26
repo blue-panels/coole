@@ -146,6 +146,20 @@ of the list. Another file in front shows its own History.
 
 **Ctrl-Alt-PgDn** and **Ctrl-Alt-PgUp** go from tab to tab.
 
+**Ctrl-Alt-S**
+: The window Schema at the right, QuerySchema, as for PostgreSQL below: the
+databases, that of the connection first and unfolded, *admin*, *local* and
+*config* left out unless it is one of them; their Collections, with the
+documents the server counts, *~1200*, Views, *on orders*, and Time series.
+A collection unfolded is read then: its Fields, of a sample of 100 of its
+documents, never a value, with their types and, when not all of them have
+the field, how many do, *50%*; its Indexes and their keys, *unique*,
+*sparse*, *ttl*; its Validator, the Pipeline of a view. Enter folds and
+unfolds, F5 puts the first 100 documents of the collection in Table,
+Insert puts *db.orders*, a field, the key of an index. mongosh reads it,
+a run of its own each time: a query that makes or drops a collection, a
+view or an index, or inserts, reads it again.
+
 **A query written by AI**
 
 **F6**
@@ -160,8 +174,9 @@ whether to stop it. Output tells the time it took, and what AI said beside
 the query.
 
 AI is told the names of the database, never a row: of MongoDB the
-collections, and the fields of a document of each with their types, in the
-database of the *use()* above the request; of PostgreSQL the relations of
+collections, the fields of a sample of the documents of each with their
+types, their indexes, and the views, in the database of the *use()* above
+the request; of PostgreSQL the relations of
 its schemas, their columns with their types and their keys, those of
 *MC_PG_SCHEMA* first; with *MC_QUERY_READ_ONLY=1*, that it is to change
 nothing.

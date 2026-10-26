@@ -640,6 +640,22 @@ test_ai (void)
     g_free (s);
 }
 
+static void
+test_mongo_changes_schema (void)
+{
+    g_assert_true (query_mongo_changes_schema ("db.createCollection(\"x\")"));
+    g_assert_true (query_mongo_changes_schema ("db.orders.drop ()"));
+    g_assert_true (query_mongo_changes_schema ("db.orders\n  .createIndex({ a: 1 })"));
+    g_assert_true (query_mongo_changes_schema ("db.new_one.insertOne({ a: 1 })"));
+    g_assert_true (query_mongo_changes_schema ("db.o.aggregate([{ $out: \"copy\" }])"));
+    g_assert_false (query_mongo_changes_schema ("db.o.aggregate([{ $match: {} }])"));
+    g_assert_false (query_mongo_changes_schema ("db.orders.find({ drop: 1 }).limit(5)"));
+    g_assert_false (query_mongo_changes_schema ("db.orders.dropped"));
+    g_assert_false (query_mongo_changes_schema (""));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (int argc, char **argv)
 {
@@ -652,5 +668,6 @@ main (int argc, char **argv)
     g_test_add_func ("/query/grid", test_grid);
     g_test_add_func ("/query/pg-ident", test_pg_ident);
     g_test_add_func ("/query/ai", test_ai);
+    g_test_add_func ("/query/mongo-changes-schema", test_mongo_changes_schema);
     return g_test_run ();
 }

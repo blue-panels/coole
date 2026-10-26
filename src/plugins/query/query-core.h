@@ -85,6 +85,9 @@ char *query_mongo_json_error (const char *json);
 char *query_mongo_endpoint (const char *uri, const char *db);
 /* The database: @db when given, else that of the path of the URI; NULL when there is none */
 char *query_mongo_db (const char *uri, const char *db);
+/* Whether the query @text may make or drop a collection, a view or an index: it calls
+   createCollection (), drop (), insertOne () and the like, an insert making its collection */
+gboolean query_mongo_changes_schema (const char *text);
 /* Whether @text has a call use ("name"), not in a string or a comment */
 gboolean query_has_use (const char *text);
 /* What the file of queries of the database @db starts with: use("db"); and an empty line */
