@@ -210,6 +210,17 @@ Markdown or alone. It runs in the directory of the temporary files, without
 *PGPASSWORD* and *MC_MONGO_URI* in its environment. The first lines of
 Output tell whether it is found.
 
+The scripts the plugin runs to read the schema and what AI is told, and
+the one mongosh runs before each query, are files of
+*/usr/share/coole/query*: *mongo-list.js*, *mongo-details.js*,
+*mongo-ai.js*, *mongo-prefix.js*, *pg-list.sql*, *pg-details.sql*,
+*pg-ai.sql*. One of the same name in *~/.config/coole/query*, or in
+*/etc/coole/query*, is run in its place. In them *{{> name}}* is the part
+*name* of the same extension, read from the same directories, *{{name}}*
+a value the plugin puts there, the database, the collection, the oid, and
+a line that is a comment alone is left out. When one is not there, Output
+or Schema tell it.
+
 **PostgreSQL**
 
 *coole -Q* with *MC_QUERY_KIND=postgres*, or a file *.sql*, runs the queries

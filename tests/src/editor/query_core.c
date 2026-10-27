@@ -29,9 +29,11 @@
    g_assert () check nothing, and the checks are the point of a test */
 #undef G_DISABLE_ASSERT
 
+#include <stdarg.h>
 #include <string.h>
 
 #include <glib.h>
+#include <glib/gstdio.h>
 
 #include "src/plugins/query/query-core.h"
 
@@ -721,6 +723,100 @@ test_mongo_changes_schema (void)
     g_assert_false (query_mongo_changes_schema (""));
 }
 
+/* The script @name of misc/query, filled with the values the plugin gives it: nothing of {{ }}
+   is left, nor a line that is a comment alone */
+static char *
+check_script (const char *name, ...)
+{
+    const char *dirs[] = { NULL, QUERY_SCRIPTS_DIR };
+    GError *error = NULL;
+    char *script = query_script_read (dirs, G_N_ELEMENTS (dirs), name, &error);
+    const char *values[5] = { NULL, NULL, NULL, NULL, NULL };
+    const char *v;
+    char *filled;
+    va_list args;
+    int n = 0;
+
+    g_assert_no_error (error);
+    g_assert_nonnull (script);
+    g_assert_null (strstr (script, "{{>"));
+    g_assert_false (g_str_has_prefix (script, "//") || g_str_has_prefix (script, "--"));
+    g_assert_null (strstr (script, "\n//"));
+    g_assert_null (strstr (script, "\n--"));
+    va_start (args, name);
+    while (n < 4 && (v = va_arg (args, const char *)) != NULL)
+        values[n++] = v;
+    va_end (args);
+    filled = query_script_fill (script, values[0], values[1], values[2], values[3], NULL);
+    g_assert_null (strstr (filled, "{{"));
+    g_assert_null (strstr (filled, "}}"));
+    g_free (script);
+    return filled;
+}
+
+static void
+test_scripts (void)
+{
+    const char *dirs[] = { QUERY_SCRIPTS_DIR };
+    GError *error = NULL;
+    char *s, *dir, *path;
+
+    s = query_script_fill ("a {{x}} b {{ y }} {{x}}", "x", "1", "y", "'two'", NULL);
+    g_assert_cmpstr (s, ==, "a 1 b 'two' 1");
+    g_free (s);
+    s = query_script_fill ("no value", "x", "1", NULL);
+    g_assert_cmpstr (s, ==, "no value");
+    g_free (s);
+
+    // each script with the values its caller gives, its parts put in
+    s = check_script ("mongo-details.js", "db", "\"shop\"", "collection", "\"orders\"", NULL);
+    g_assert_nonnull (strstr (s, "db = connect(process.env.MC_MONGO_URI)"));
+    g_assert_nonnull (strstr (s, "getSiblingDB(\"shop\")"));
+    g_free (s);
+    g_free (check_script ("mongo-ai.js", "use", "", "max", "300", NULL));
+    g_free (check_script ("mongo-list.js", NULL));
+    s = check_script ("mongo-prefix.js", NULL);
+    // the copies for Table after the line QUERY_TABLE_LINE has
+    g_assert_nonnull (strstr (s, "'\\x1e' + '" QUERY_TABLE_TAG " '"));
+    g_free (s);
+    s = check_script ("pg-details.sql", "oid", "16384", NULL);
+    g_assert_nonnull (strstr (s, "a.attrelid = 16384"));
+    g_free (s);
+    s = check_script ("pg-list.sql", NULL);
+    g_assert_nonnull (strstr (s, "WHERE n.nspname !~ '^pg_'"));
+    g_free (s);
+    g_free (check_script ("pg-ai.sql", NULL));
+
+    // none: its name in the error
+    s = query_script_read (dirs, G_N_ELEMENTS (dirs), "none.js", &error);
+    g_assert_null (s);
+    g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_NOENT);
+    g_assert_cmpstr (error->message, ==, "none.js");
+    g_clear_error (&error);
+
+    // the first directory that has it, a part of itself stopped
+    dir = g_dir_make_tmp ("query-scripts-XXXXXX", NULL);
+    path = g_build_filename (dir, "pg-list.sql", (char *) NULL);
+    g_assert_true (g_file_set_contents (path, "-- mine\nSELECT {{> pg-list}}\n", -1, NULL));
+    {
+        const char *mine[] = { dir, QUERY_SCRIPTS_DIR };
+
+        s = query_script_read (mine, G_N_ELEMENTS (mine), "pg-list.sql", &error);
+        g_assert_null (s);
+        g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_LOOP);
+        g_clear_error (&error);
+        g_assert_true (g_file_set_contents (path, "-- mine\nSELECT 1\n", -1, NULL));
+        s = query_script_read (mine, G_N_ELEMENTS (mine), "pg-list.sql", &error);
+        g_assert_no_error (error);
+        g_assert_cmpstr (s, ==, "SELECT 1");
+        g_free (s);
+    }
+    (void) g_remove (path);
+    (void) g_rmdir (dir);
+    g_free (path);
+    g_free (dir);
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 int
@@ -736,5 +832,6 @@ main (int argc, char **argv)
     g_test_add_func ("/query/pg-ident", test_pg_ident);
     g_test_add_func ("/query/ai", test_ai);
     g_test_add_func ("/query/mongo-changes-schema", test_mongo_changes_schema);
+    g_test_add_func ("/query/scripts", test_scripts);
     return g_test_run ();
 }

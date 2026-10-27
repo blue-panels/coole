@@ -42,6 +42,11 @@ install_data('git-menu.ini', 'ai.ini', install_dir: pkgsysconfdir)
 # how a project is built and debugged by its language; ~/.config/coole/presets.ini adds and
 # replaces
 install_data('presets.ini', install_dir: pkgsysconfdir)
+
+# the JavaScript of mongosh and the SQL of PostgreSQL the query plugin runs, read when it runs;
+# ~/.config/coole/query/ and /etc/coole/query/ have the user's and the system's in their place
+install_subdir('query', install_dir: pkgdatadir)
+
 # the language servers the LSP plugin knows; ~/.config/coole/lsp.json adds and replaces
 if have_gmodule and json_glib.found()
   install_data('lsp.json', install_dir: pkgsysconfdir)

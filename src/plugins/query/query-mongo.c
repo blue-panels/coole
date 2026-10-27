@@ -405,16 +405,29 @@ query_mongo_start (void *data)
 {
     query_mongo_t *m = (query_mongo_t *) data;
     query_t *q = m->q;
-    char *used = query_mongo_use (q->text);
-    // the database of the use () above a part run alone, in the prefix: the lines stay the same
-    char *prefix = q->use != NULL
-        ? g_strdup_printf ("%s db = db.getSiblingDB(%s);", query_mongo_prefix (), q->use)
-        : g_strdup (query_mongo_prefix ());
-    char *text;
+    char *why = NULL;
+    // what is run before the query, mongo-prefix.js
+    char *script = query_script ("mongo-prefix.js", &why);
+    char *used, *prefix, *text;
     const char *argv[10];
     int n = 0;
     GError *error = NULL;
 
+    if (script == NULL)
+    {
+        char *message = g_strconcat (why, "\n", (char *) NULL);
+
+        query_tab_set (q, QUERY_TAB_OUTPUT, message, TRUE);
+        query_table_say (q, "");
+        g_free (message);
+        g_free (why);
+        return;
+    }
+    used = query_mongo_use (q->text);
+    // the database of the use () above a part run alone, in the prefix: the lines stay the same
+    prefix = q->use != NULL ? g_strdup_printf ("%s\ndb = db.getSiblingDB(%s);", script, q->use)
+                            : g_strdup (script);
+    g_free (script);
     m->table = query_wants_table (q->text);
     m->limit = query_wants_limit (q->text);
     m->limited = FALSE;

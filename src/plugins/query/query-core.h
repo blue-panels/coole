@@ -49,9 +49,16 @@ gboolean query_line_separator (const char *p);
    separator, the whole text being the query. */
 char *query_section (const char *text, long line, long *first);
 
-/* What mongosh runs before the query: db is the database of MC_MONGO_URI, MC_MONGO_DB when given,
-   and a cursor is shown to its 1000th document, not to its 20th */
-const char *query_mongo_prefix (void);
+/* The script @name of the queries, mongo-list.js, of the first of the @count @dirs that has it,
+   a NULL one skipped: its lines that are a comment alone, "//" or "--" first, left out, and its
+   parts, {{> name}}, the files of the same extension, put in.  NULL when there is none, or a
+   part is a part of itself: @error, G_FILE_ERROR_NOENT or G_FILE_ERROR_LOOP, its message the
+   name of that file. */
+char *query_script_read (const char *const *dirs, guint count, const char *name, GError **error);
+/* @script with its values {{name}} put in, of the pairs of a name and its
+   value after it, NULL after the last; the values as JavaScript or SQL takes them, made by the
+   caller.  A name with no value is a g_critical (). */
+char *query_script_fill (const char *script, ...) G_GNUC_NULL_TERMINATED;
 /* Whether @text asks for the table: a line of it is the comment "// @table" */
 gboolean query_wants_table (const char *text);
 /* The number of a line "// @limit N" of @text, QUERY_LIMIT_DEFAULT without one; 0 when there is

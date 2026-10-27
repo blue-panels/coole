@@ -74,6 +74,7 @@ rm -rf %{buildroot}%{_docdir}/%{name}
 %{_datadir}/coole/defaults.ini
 %{_datadir}/coole/examples/
 %{_datadir}/coole/help/
+%{_datadir}/coole/query/
 %{_datadir}/coole/skins/
 %{_datadir}/coole/syntax/
 %dir %{_sysconfdir}/coole/

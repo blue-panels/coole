@@ -62,6 +62,8 @@ if json_glib.found()
                                dependencies: [glib_dep, json_glib]), suite: 'src/editor')
   test('query_core', executable('query_core', 'query_core.c',
                                 '../../../src/plugins/query/query-core.c',
+                                c_args: ['-DQUERY_SCRIPTS_DIR="@0@"'.format(
+                                  meson.project_source_root() / 'misc' / 'query')],
                                 dependencies: [glib_dep, json_glib]), suite: 'src/editor')
   test('lsp_client', executable('lsp_client', 'lsp_client.c', lsp_test_sources,
                                 '../../../src/plugins/lsp/lsp-client.c',
