@@ -56,97 +56,8 @@
     "\x1e"                                                                                         \
     "coole-schema "
 
-// db of the connection, as the queries have it
-#define QUERY_MS_CONNECT                                                                           \
-    "db = connect(process.env.MC_MONGO_URI); "                                                     \
-    "if (process.env.MC_MONGO_DB) db = db.getSiblingDB(process.env.MC_MONGO_DB); "
-
-// the type of a value, as mongosh names it, never the value
-#define QUERY_MS_TYPE                                                                              \
-    "const __t = (v) => v === null ? 'null' : v === undefined ? 'undefined' "                      \
-    ": v instanceof Date ? 'Date' : Array.isArray(v) ? 'Array' "                                   \
-    ": (v && v._bsontype) ? String(v._bsontype) : typeof v === 'number' ? 'Number' "               \
-    ": typeof v === 'string' ? 'String' : typeof v === 'boolean' ? 'Boolean' "                     \
-    ": typeof v === 'object' ? 'Object' : typeof v; "
-
-// the fields of __docs in __f: in how many of them, and their types
-#define QUERY_MS_FIELDS                                                                            \
-    "const __f = new Map(); "                                                                      \
-    "for (const __doc of __docs) for (const __k of Object.keys(__doc)) { "                         \
-    "const __e = __f.get(__k) || { n: 0, types: [] }; __e.n++; const __ty = __t(__doc[__k]); "     \
-    "if (!__e.types.includes(__ty)) __e.types.push(__ty); __f.set(__k, __e); } "
-
-// the documents of a sample of the collection __c, in __docs
-#define QUERY_MS_SAMPLE(n)                                                                         \
-    "let __docs = []; try { __docs = __c.aggregate([{ $sample: { size: " n " } }]).toArray(); } "  \
-    "catch (e) { try { __docs = __c.find().limit(" n ").toArray(); } catch (e2) {} } "
-
-/* The databases and their collections: those of the system left out, but that of the
-   connection; listDatabases not allowed, that alone */
-#define QUERY_MS_LIST                                                                              \
-    QUERY_MS_CONNECT                                                                               \
-    "{ const __cur = db.getName(); let __names = []; "                                             \
-    "try { __names = db.adminCommand({ listDatabases: 1, nameOnly: true }).databases"              \
-    ".map((d) => d.name); } catch (e) {} "                                                         \
-    "if (!__names.includes(__cur)) __names.push(__cur); "                                          \
-    "const __out = { current: __cur, dbs: [] }; "                                                  \
-    "for (const __n of __names.sort()) { "                                                         \
-    "if (['admin', 'local', 'config'].includes(__n) && __n !== __cur) continue; "                  \
-    "const __d = db.getSiblingDB(__n); const __c = []; let __infos = []; "                         \
-    "try { __infos = __d.getCollectionInfos(); } catch (e) {} "                                    \
-    "for (const __i of __infos) { if (__i.name.startsWith('system.')) continue; "                  \
-    "let __count = null; if (__i.type === 'collection') { "                                        \
-    "try { __count = __d.getCollection(__i.name).estimatedDocumentCount(); } catch (e) {} } "      \
-    "__c.push({ name: __i.name, type: __i.type || 'collection', count: __count, "                  \
-    "viewOn: (__i.options && __i.options.viewOn) || null }); } "                                   \
-    "__c.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0); "                         \
-    "__out.dbs.push({ name: __n, colls: __c }); } "                                                \
-    "print('\\x1e' + 'coole-schema ' + EJSON.stringify(__out)); }"
-
-/* What a collection unfolded shows, of its database and its name, the strings of JSON: the
-   fields of a sample of its documents, its indexes, its validator, the pipeline of a view */
-#define QUERY_MS_DETAILS                                                                           \
-    QUERY_MS_CONNECT                                                                               \
-    "{ const __d = db.getSiblingDB(%s); const __c = __d.getCollection(%s); "                       \
-    "const __out = { fields: [], indexes: [], sampled: 0, validator: null, pipeline: null "        \
-    "}; " QUERY_MS_TYPE QUERY_MS_SAMPLE ("100") QUERY_MS_FIELDS                                    \
-        "__out.sampled = __docs.length; "                                                          \
-        "for (const [__k, __e] of __f) __out.fields.push({ name: __k, types: __e.types, n: __e.n " \
-        "}); "                                                                                     \
-        "try { __out.indexes = __c.getIndexes().map((i) => ({ name: i.name, "                      \
-        "key: EJSON.stringify(i.key), unique: !!i.unique, sparse: !!i.sparse, "                    \
-        "ttl: i.expireAfterSeconds === undefined ? null : i.expireAfterSeconds })); } catch (e) "  \
-        "{} "                                                                                      \
-        "try { const __i = __d.getCollectionInfos({ name: __c.getName() })[0]; "                   \
-        "if (__i && __i.options) { "                                                               \
-        "if (__i.options.validator) __out.validator = EJSON.stringify(__i.options.validator); "    \
-        "if (__i.options.pipeline) __out.pipeline = EJSON.stringify(__i.options.pipeline); } } "   \
-        "catch (e) {} "                                                                            \
-        "print('\\x1e' + 'coole-schema ' + EJSON.stringify(__out)); }"
-
-/* What AI is told of the database, of the use () of the request, @1: its collections, the
-   fields of a sample of each with their types, never a value, their indexes; its views */
-#define QUERY_MS_AI                                                                                \
-    QUERY_MS_CONNECT                                                                               \
-    "%s"                                                                                           \
-    "{ " QUERY_MS_TYPE                                                                             \
-    "print('The database \"' + db.getName() + '\" of MongoDB ' + db.version() + '.'); "            \
-    "print('Its collections, a line each: the name: the fields of a sample of its documents, "     \
-    "with their types; its indexes.'); "                                                           \
-    "let __infos = []; try { __infos = db.getCollectionInfos(); } catch (e) {} "                   \
-    "const __n = __infos.filter((i) => !i.name.startsWith('system.'))"                             \
-    ".sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0); "                            \
-    "for (const __i of __n.slice(0, %d)) { "                                                       \
-    "if (__i.type === 'view') { print(__i.name + ': a view on ' + __i.options.viewOn "             \
-    "+ ', its pipeline ' + EJSON.stringify(__i.options.pipeline)); continue; } "                   \
-    "const __c = db.getCollection(__i.name); " QUERY_MS_SAMPLE ("20") QUERY_MS_FIELDS              \
-        "let __ix = []; try { __ix = __c.getIndexes().filter((i) => i.name !== '_id_')"            \
-        ".map((i) => EJSON.stringify(i.key) + (i.unique ? ' unique' : '')); } catch (e) {} "       \
-        "print(__i.name + ': ' + (__docs.length ? [...__f].map(([k, e]) => k + ' ' "               \
-        "+ e.types.join('|')).join(', ') : 'no document') "                                        \
-        "+ (__ix.length ? '; indexes ' + __ix.join(', ') : '')); } "                               \
-        "if (__n.length > %d) print('And ' + (__n.length - %d) + ' collections more, not "         \
-        "told.'); }"
+/* The scripts mongosh runs, those of src/plugins/query/scripts: mongo-list.js, mongo-details.js,
+   mongo-ai.js; what they read printed after QUERY_MS_TAG */
 
 // the collections AI is told of at most
 #define QUERY_MS_AI_COLLECTIONS 300
@@ -385,7 +296,7 @@ query_ms_member_true (JsonObject *o, const char *name)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The databases and their collections of the JSON of QUERY_MS_LIST: what was open open again, the
+/* The databases and their collections of the JSON of mongo-list.js: what was open open again, the
    details of a collection unfolded read again */
 static void
 query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
@@ -498,7 +409,7 @@ query_ms_is_key (const query_node_t *n, const void *data)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The sections of the collection of @key, wherever it is now, of the JSON of QUERY_MS_DETAILS;
+/* The sections of the collection of @key, wherever it is now, of the JSON of mongo-details.js;
    none of them on an error */
 static void
 query_ms_take_details (query_mongo_schema_t *s, const char *key, JsonObject *details)
@@ -646,21 +557,25 @@ query_ms_done (char *out, char *err, int status, gboolean cut, void *data)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* mongosh run on @script, as @asked */
+/* mongosh run on @script, as @asked, both taken; no script, @why tells it as a failure of mongosh
+   would be */
 static void
-query_ms_run (query_mongo_schema_t *s, char *script, query_ms_ask_t asked)
+query_ms_run (query_mongo_schema_t *s, char *script, char *why, query_ms_ask_t asked)
 {
     const char *argv[] = { s->mongosh, "--nodb", "--quiet", "--eval", script, NULL };
     GError *error = NULL;
 
     s->asked = asked;
-    s->proc = query_proc_start (argv, NULL, NULL, "", query_ms_done, s, &error);
-    g_free (script);
-    if (s->proc != NULL)
-        return;
+    if (script != NULL)
+    {
+        s->proc = query_proc_start (argv, NULL, NULL, "", query_ms_done, s, &error);
+        g_free (script);
+        if (s->proc != NULL)
+            return;
+    }
     // told as an answer of mongosh would be
     {
-        char *message = g_strdup_printf ("%s: %s", s->mongosh, error->message);
+        char *message = why != NULL ? why : g_strdup_printf ("%s: %s", s->mongosh, error->message);
 
         g_clear_error (&error);
         if (asked == QUERY_MS_ASK_AI)
@@ -693,27 +608,36 @@ query_ms_next (query_mongo_schema_t *s)
     if (s->want_list)
     {
         s->want_list = FALSE;
-        query_ms_run (s, g_strdup (QUERY_MS_LIST), QUERY_MS_ASK_LIST);
+        char *why = NULL;
+        char *script = query_script ("mongo-list.js", &why);
+
+        query_ms_run (s, script, why, QUERY_MS_ASK_LIST);
     }
     else if (s->want_ai)
     {
         char *used = s->want_ai_use != NULL
-            ? g_strdup_printf ("db = db.getSiblingDB(%s); ", s->want_ai_use)
+            ? g_strdup_printf ("db = db.getSiblingDB(%s);", s->want_ai_use)
             : g_strdup ("");
+        char *max = g_strdup_printf ("%d", QUERY_MS_AI_COLLECTIONS);
+        char *why = NULL;
+        char *script = query_script ("mongo-ai.js", &why);
+        char *filled =
+            script != NULL ? query_script_fill (script, "use", used, "max", max, NULL) : NULL;
 
         s->want_ai = FALSE;
         s->ai_sent = TRUE;
         g_clear_pointer (&s->want_ai_use, g_free);
-        query_ms_run (s,
-                      g_strdup_printf (QUERY_MS_AI, used, QUERY_MS_AI_COLLECTIONS,
-                                       QUERY_MS_AI_COLLECTIONS, QUERY_MS_AI_COLLECTIONS),
-                      QUERY_MS_ASK_AI);
+        query_ms_run (s, filled, why, QUERY_MS_ASK_AI);
+        g_free (script);
         g_free (used);
+        g_free (max);
     }
     else if (s->want_details->len > 0)
     {
         char *key = g_ptr_array_steal_index (s->want_details, 0);
         char *sep = strchr (key, '\x1f');
+        char *why = NULL;
+        char *script = query_script ("mongo-details.js", &why);
         char *d, *c;
 
         *sep = '\0';
@@ -721,7 +645,10 @@ query_ms_next (query_mongo_schema_t *s)
         c = query_ms_string (sep + 1);
         *sep = '\x1f';
         s->asked_key = key;
-        query_ms_run (s, g_strdup_printf (QUERY_MS_DETAILS, d, c), QUERY_MS_ASK_DETAILS);
+        query_ms_run (
+            s, script != NULL ? query_script_fill (script, "db", d, "collection", c, NULL) : NULL,
+            why, QUERY_MS_ASK_DETAILS);
+        g_free (script);
         g_free (d);
         g_free (c);
     }

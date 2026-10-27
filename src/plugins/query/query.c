@@ -43,6 +43,7 @@
 
 #include "lib/global.h"
 #include "lib/event.h"
+#include "lib/mcconfig.h"
 #include "lib/util.h"
 #include "lib/widget.h"
 #include "lib/tty/key.h"
@@ -271,6 +272,38 @@ query_tab_title (query_t *q, int tab, const char *title)
     reply = query_viewer (q, "set_title", &dict);
     if (reply != NULL)
         g_variant_unref (reply);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_script (const char *name, char **why)
+{
+    const char *misc = g_getenv ("COOLE_MISC_DIR");
+    char *dirs[] = {
+        g_build_filename (mc_config_get_path (), "query", (char *) NULL),
+        misc != NULL ? g_build_filename (misc, "query", (char *) NULL) : NULL,
+        g_build_filename (mc_global.sysconfig_dir, "query", (char *) NULL),
+        g_build_filename (mc_global.share_data_dir, "query", (char *) NULL),
+    };
+    GError *error = NULL;
+    char *text;
+    guint i;
+
+    text = query_script_read ((const char *const *) dirs, G_N_ELEMENTS (dirs), name, &error);
+    if (text == NULL)
+    {
+        *why = g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_LOOP)
+            ? g_strdup_printf (_ ("The script %s\nof the queries is a part of itself."),
+                               error->message)
+            : g_strdup_printf (_ ("The script %s\nof the queries is not there:\nit is in %s,\n"
+                                  "or in ~/.config/coole/query."),
+                               error->message, dirs[3]);
+        g_error_free (error);
+    }
+    for (i = 0; i < G_N_ELEMENTS (dirs); i++)
+        g_free (dirs[i]);
+    return text;
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -175,6 +175,10 @@ void query_tab_set (query_t *q, int tab, const char *text, gboolean front);
 void query_tab_title (query_t *q, int tab, const char *title);
 void query_table_say (query_t *q, const char *text);
 void query_redraw (query_t *q);
+/* The script @name of the queries, mongo-list.js, pg-list.sql: of ~/.config/coole/query, else of
+   the source of a build run by meson devenv, of /etc/coole/query, of the data of coole; NULL with
+   @why, what Output and Schema tell, when there is none */
+char *query_script (const char *name, char **why);
 
 /* The bytes @from to @to of the text of the file window @edit made @text, one change Undo
    takes back, the cursor after it and the window in front; FALSE when an edit of another goes on */

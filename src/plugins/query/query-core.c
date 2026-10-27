@@ -31,6 +31,7 @@
 
 #include <config.h>
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -426,22 +427,138 @@ query_section (const char *text, long line, long *first)
 
 /* --------------------------------------------------------------------------------------------- */
 
-const char *
-query_mongo_prefix (void)
+/* The text of @name, a script or a part, of the first of the @count @dirs that has it, its
+   lines that are a comment alone left out and its parts put in; NULL with @error.  @depth stops a
+   part of itself */
+static char *
+query_script_text (const char *const *dirs, guint count, const char *name, int depth,
+                   GError **error)
 {
-    /* printjson () and print () of an array or a cursor also print a copy of it as Extended JSON
-       on a line of its own, QUERY_TABLE_LINE before it, for the tab Table: what they show is as
-       it was; a cursor is made the array of its documents first, which it is read as once */
-    return "DBQuery.shellBatchSize = 1000; db = connect(process.env.MC_MONGO_URI); "
-           "if (process.env.MC_MONGO_DB) db = db.getSiblingDB(process.env.MC_MONGO_DB); "
-           "{ const __p = print, __pj = printjson; "
-           "const __t = (v) => (v && !Array.isArray(v) && typeof v.toArray === 'function') "
-           "? v.toArray() : v; "
-           "const __e = (v) => { if (Array.isArray(v)) "
-           "__p('\\x1e" QUERY_TABLE_TAG " ' + EJSON.stringify(v, { relaxed: true })); }; "
-           "globalThis.printjson = (x, ...r) => { const v = __t(x); __pj(v, ...r); __e(v); }; "
-           "globalThis.print = (...a) => { if (a.length === 1) { const v = __t(a[0]); "
-           "if (Array.isArray(v)) { __p(v); __e(v); return; } } __p(...a); }; }";
+    const char *ext = strrchr (name, '.');
+    const char *comment = ext != NULL && strcmp (ext, ".sql") == 0 ? "--" : "//";
+    char *text = NULL;
+    char **lines;
+    GString *out;
+    guint i;
+
+    if (depth > 8)
+    {
+        g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_LOOP, name);
+        return NULL;
+    }
+    for (i = 0; i < count && text == NULL; i++)
+        if (dirs[i] != NULL)
+        {
+            char *path = g_build_filename (dirs[i], name, (char *) NULL);
+
+            if (!g_file_get_contents (path, &text, NULL, NULL))
+                text = NULL;
+            g_free (path);
+        }
+    if (text == NULL)
+    {
+        g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOENT, name);
+        return NULL;
+    }
+
+    out = g_string_new (NULL);
+    lines = g_strsplit (text, "\n", -1);
+    g_free (text);
+    for (i = 0; lines[i] != NULL; i++)
+    {
+        const char *line = lines[i];
+        const char *at;
+
+        if (g_str_has_prefix (line + strspn (line, " \t"), comment))
+            continue;
+        if (out->len > 0)
+            g_string_append_c (out, '\n');
+        // its parts, {{> name}}, of the extension of the script
+        while ((at = strstr (line, "{{>")) != NULL)
+        {
+            const char *end = strstr (at, "}}");
+            char *part_name, *part;
+
+            if (end == NULL)
+                break;
+            g_string_append_len (out, line, at - line);
+            part_name = g_strstrip (g_strndup (at + 3, (gsize) (end - at - 3)));
+            if (ext != NULL)
+            {
+                char *with = g_strconcat (part_name, ext, (char *) NULL);
+
+                g_free (part_name);
+                part_name = with;
+            }
+            part = query_script_text (dirs, count, part_name, depth + 1, error);
+            g_free (part_name);
+            if (part == NULL)
+            {
+                g_strfreev (lines);
+                g_string_free (out, TRUE);
+                return NULL;
+            }
+            g_string_append (out, part);
+            g_free (part);
+            line = end + 2;
+        }
+        g_string_append (out, line);
+    }
+    g_strfreev (lines);
+    // no blank line at its end: a part goes in the middle of a line
+    while (out->len > 0 && out->str[out->len - 1] == '\n')
+        g_string_truncate (out, out->len - 1);
+    return g_string_free (out, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_script_read (const char *const *dirs, guint count, const char *name, GError **error)
+{
+    return query_script_text (dirs, count, name, 0, error);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_script_fill (const char *script, ...)
+{
+    GString *out = g_string_new (NULL);
+    const char *at = script;
+    const char *open;
+
+    while ((open = strstr (at, "{{")) != NULL)
+    {
+        const char *close = strstr (open + 2, "}}");
+        const char *value = NULL;
+        char *name;
+        const char *n;
+        va_list args;
+
+        if (close == NULL)
+            break;
+        g_string_append_len (out, at, open - at);
+        name = g_strstrip (g_strndup (open + 2, (gsize) (close - open - 2)));
+        va_start (args, script);
+        while ((n = va_arg (args, const char *)) != NULL)
+        {
+            const char *v = va_arg (args, const char *);
+
+            if (value == NULL && strcmp (n, name) == 0)
+                value = v;
+        }
+        va_end (args);
+        // a value not given is a fault of the caller: the script has nothing there
+        if (value == NULL)
+            g_critical ("query_script_fill: no value of {{%s}}", name);
+        else
+            g_string_append (out, value);
+        g_free (name);
+        at = close + 2;
+    }
+    g_string_append (out, at);
+    return g_string_free (out, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */

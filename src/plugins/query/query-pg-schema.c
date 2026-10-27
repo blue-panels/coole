@@ -51,66 +51,8 @@
 
 /*** file scope macro definitions ****************************************************************/
 
-// what is on the system left out
-#define QUERY_SCHEMA_USER_NSP "n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'"
-
-/* The relations of the schemas, a schema with none having one row with no relation, a partition
-   with its table; the functions, those of extensions left out */
-#define QUERY_SCHEMA_LIST                                                                          \
-    "SELECT n.nspname, c.oid, c.relname, c.relkind, c.reltuples::bigint, c.relispartition, "       \
-    "(SELECT i.inhparent FROM pg_catalog.pg_inherits i WHERE i.inhrelid = c.oid LIMIT 1) "         \
-    "FROM pg_catalog.pg_namespace n LEFT JOIN pg_catalog.pg_class c "                              \
-    "ON c.relnamespace = n.oid AND c.relkind IN ('r', 'p', 'v', 'm', 'f', 'S') "                   \
-    "WHERE " QUERY_SCHEMA_USER_NSP " ORDER BY n.nspname, c.relname; "                              \
-    "SELECT n.nspname, p.proname, pg_catalog.pg_get_function_identity_arguments (p.oid), "         \
-    "pg_catalog.pg_get_function_result (p.oid), p.prokind "                                        \
-    "FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace "          \
-    "WHERE " QUERY_SCHEMA_USER_NSP " AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_depend d "        \
-    "WHERE d.classid = 'pg_catalog.pg_proc'::pg_catalog.regclass AND d.objid = p.oid "             \
-    "AND d.deptype = 'e') ORDER BY 1, 2, 3"
-
-// the columns of a constraint, as SQL takes them, in its order
-#define QUERY_SCHEMA_KEY_COLUMNS                                                                   \
-    "(SELECT string_agg (pg_catalog.quote_ident (a.attname), ', ' "                                \
-    "ORDER BY pg_catalog.array_position (o.conkey, a.attnum)) FROM pg_catalog.pg_attribute a "     \
-    "WHERE a.attrelid = o.conrelid AND a.attnum = ANY (o.conkey))"
-
-/* What a relation unfolded shows, of its oid five times: its columns, of PostgreSQL 12 and later
-   (attgenerated); its keys; its indexes; the foreign keys of the others to it; its triggers */
-#define QUERY_SCHEMA_DETAILS                                                                       \
-    "SELECT a.attname, pg_catalog.format_type (a.atttypid, a.atttypmod), a.attnotnull, "           \
-    "a.attidentity, a.attgenerated, pg_catalog.pg_get_expr (d.adbin, d.adrelid) "                  \
-    "FROM pg_catalog.pg_attribute a LEFT JOIN pg_catalog.pg_attrdef d "                            \
-    "ON d.adrelid = a.attrelid AND d.adnum = a.attnum "                                            \
-    "WHERE a.attrelid = %u AND a.attnum > 0 AND NOT a.attisdropped ORDER BY a.attnum; "            \
-    "SELECT o.conname, o.contype, pg_catalog.pg_get_constraintdef "                                \
-    "(o.oid), " QUERY_SCHEMA_KEY_COLUMNS " FROM pg_catalog.pg_constraint o "                       \
-    "WHERE o.conrelid = %u AND o.contype IN ('p', 'u', 'f') "                                      \
-    "ORDER BY o.contype <> 'p', o.conname; "                                                       \
-    "SELECT c.relname, pg_catalog.pg_get_indexdef (i.indexrelid), i.indisprimary, "                \
-    "i.indisunique FROM pg_catalog.pg_index i "                                                    \
-    "JOIN pg_catalog.pg_class c ON c.oid = i.indexrelid WHERE i.indrelid = %u ORDER BY 1; "        \
-    "SELECT o.conname, o.conrelid::pg_catalog.regclass::text, " QUERY_SCHEMA_KEY_COLUMNS " "       \
-    "FROM pg_catalog.pg_constraint o WHERE o.confrelid = %u AND o.contype = 'f' "                  \
-    "ORDER BY 2, 1; "                                                                              \
-    "SELECT t.tgname, pg_catalog.pg_get_triggerdef (t.oid) FROM pg_catalog.pg_trigger t "          \
-    "WHERE t.tgrelid = %u AND NOT t.tgisinternal ORDER BY 1"
-
-/* What AI is told of a relation, a row each, partitions left out: its columns and keys, the names
-   as SQL takes them; of PostgreSQL 12 and later as the columns */
-#define QUERY_SCHEMA_AI                                                                            \
-    "SELECT n.nspname, c.relname, c.relkind, "                                                     \
-    "(SELECT string_agg (pg_catalog.quote_ident (a.attname) || ' ' || "                            \
-    "pg_catalog.format_type (a.atttypid, a.atttypmod) || "                                         \
-    "CASE WHEN a.attnotnull THEN ' not null' ELSE '' END, ', ' ORDER BY a.attnum) "                \
-    "FROM pg_catalog.pg_attribute a "                                                              \
-    "WHERE a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped), "                          \
-    "(SELECT string_agg (pg_catalog.pg_get_constraintdef (o.oid), ', ' "                           \
-    "ORDER BY o.contype <> 'p', o.conname) FROM pg_catalog.pg_constraint o "                       \
-    "WHERE o.conrelid = c.oid AND o.contype IN ('p', 'u', 'f')) "                                  \
-    "FROM pg_catalog.pg_namespace n JOIN pg_catalog.pg_class c ON c.relnamespace = n.oid "         \
-    "WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f') AND NOT c.relispartition "                       \
-    "AND " QUERY_SCHEMA_USER_NSP " ORDER BY n.nspname, c.relname LIMIT 5000"
+/* The queries of the catalog, those of src/plugins/query/scripts: pg-list.sql, pg-details.sql,
+   pg-ai.sql */
 
 // the relations AI is told of at most, those of MC_PG_SCHEMA first
 #define QUERY_SCHEMA_AI_MAX 300
@@ -149,7 +91,7 @@ enum
 };
 
 /* The sections of a relation unfolded, in their order and in that of the results of
-   QUERY_SCHEMA_DETAILS, the keys and the foreign keys being of one */
+   pg-details.sql, the keys and the foreign keys being of one */
 enum
 {
     QUERY_SECTION_COLUMNS,
@@ -316,7 +258,7 @@ query_schema_oid (const query_pq_t *pq, PGresult *res, int row, int field)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The schemas, their groups, the relations and the functions of the results of QUERY_SCHEMA_LIST:
+/* The schemas, their groups, the relations and the functions of the results of pg-list.sql:
    what was open before open again, the sections of a relation unfolded read again */
 static void
 query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
@@ -615,7 +557,7 @@ query_schema_is_oid (const query_node_t *n, const void *data)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The sections of the relation of @oid, wherever it is now, of the @results of
-   QUERY_SCHEMA_DETAILS; none of them on an error */
+   pg-details.sql; none of them on an error */
 static void
 query_schema_take_details (query_pg_schema_t *s, Oid oid, GPtrArray *results)
 {
@@ -713,7 +655,7 @@ query_schema_take_details (query_pg_schema_t *s, Oid oid, GPtrArray *results)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* What AI is told of the database, of the rows of QUERY_SCHEMA_AI in @res, NULL for none */
+/* What AI is told of the database, of the rows of pg-ai.sql in @res, NULL for none */
 static char *
 query_schema_ai_text (query_pg_schema_t *s, PGresult *res)
 {
@@ -860,6 +802,37 @@ query_schema_read_input (query_pg_schema_t *s)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The script @name, with its value {{oid}} @oid when it is not 0, sent as @asked; no script,
+   what it asks for ends with the error of it, as one of the server would */
+static void
+query_schema_send_script (query_pg_schema_t *s, const char *name, Oid oid, query_schema_ask_t asked)
+{
+    char *why = NULL;
+    char *sql = query_script (name, &why);
+
+    if (sql == NULL)
+    {
+        s->asked = asked;
+        g_free (s->res_error);
+        s->res_error = why;
+        query_schema_done (s);
+        return;
+    }
+    if (oid != 0)
+    {
+        char *number = g_strdup_printf ("%u", oid);
+        char *filled = query_script_fill (sql, "oid", number, NULL);
+
+        g_free (sql);
+        g_free (number);
+        sql = filled;
+    }
+    query_schema_send (s, sql, asked);
+    g_free (sql);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* What is asked for sent, the list first, what AI is told, the sections of the relations; the
    connection made first */
 static void
@@ -879,23 +852,21 @@ query_schema_next (query_pg_schema_t *s)
     if (s->want_list)
     {
         s->want_list = FALSE;
-        query_schema_send (s, QUERY_SCHEMA_LIST, QUERY_SCHEMA_ASK_LIST);
+        query_schema_send_script (s, "pg-list.sql", 0, QUERY_SCHEMA_ASK_LIST);
     }
     else if (s->want_ai)
     {
         s->want_ai = FALSE;
         s->ai_sent = TRUE;
-        query_schema_send (s, QUERY_SCHEMA_AI, QUERY_SCHEMA_ASK_AI);
+        query_schema_send_script (s, "pg-ai.sql", 0, QUERY_SCHEMA_ASK_AI);
     }
     else
     {
         const Oid oid = g_array_index (s->want_details, Oid, 0);
-        char *sql = g_strdup_printf (QUERY_SCHEMA_DETAILS, oid, oid, oid, oid, oid);
 
         s->asked_oid = oid;
         g_array_remove_index (s->want_details, 0);
-        query_schema_send (s, sql, QUERY_SCHEMA_ASK_DETAILS);
-        g_free (sql);
+        query_schema_send_script (s, "pg-details.sql", oid, QUERY_SCHEMA_ASK_DETAILS);
     }
 }
 
