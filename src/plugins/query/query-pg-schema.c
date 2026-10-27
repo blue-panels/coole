@@ -51,8 +51,8 @@
 
 /*** file scope macro definitions ****************************************************************/
 
-/* The queries of the catalog, those of src/plugins/query/scripts: pg-list.sql, pg-details.sql,
-   pg-ai.sql */
+/* The queries of the catalog, those of misc/query: pg-list.sql, pg-details.sql, pg-ai.sql,
+   pg-ddl-relation.sql, pg-ddl-function.sql */
 
 // the relations AI is told of at most, those of MC_PG_SCHEMA first
 #define QUERY_SCHEMA_AI_MAX 300
@@ -75,7 +75,9 @@ typedef enum
 {
     QUERY_SCHEMA_ASK_LIST,
     QUERY_SCHEMA_ASK_DETAILS,
-    QUERY_SCHEMA_ASK_AI
+    QUERY_SCHEMA_ASK_AI,
+    QUERY_SCHEMA_ASK_DDL,
+    QUERY_SCHEMA_ASK_ROLLBACK
 } query_schema_ask_t;
 
 /* The groups of a schema, in their order */
@@ -118,9 +120,17 @@ struct query_pg_schema_t
     char *res_error;     // its error
 
     gboolean want_list;
-    gboolean want_ai;      // what AI is told, to be sent
-    gboolean ai_sent;      // and sent
-    GArray *want_details;  // Oid of the relations whose sections are to be read
+    gboolean want_rollback;  // a query of its own ended in a transaction: it is rolled back first
+    gboolean want_ai;        // what AI is told, to be sent
+    gboolean ai_sent;        // and sent
+    GArray *want_details;    // Oid of the relations whose sections are to be read
+    Oid want_ddl;            // of the relation or the function whose DDL F4 asks for, 0 for none
+    gboolean want_ddl_function;
+    char *want_ddl_name;  // the relation as SQL takes it
+    guint want_ddl_id;    // the F4 it is of
+    gboolean asked_ddl_function;
+    char *asked_ddl_name;
+    guint asked_ddl_id;
 
     query_tree_t tree;
 };
@@ -182,7 +192,9 @@ query_schema_broken (query_pg_schema_t *s, const char *why)
     query_schema_close_conn (s);
     s->state = QUERY_SCHEMA_BROKEN;
     s->want_list = FALSE;
+    s->want_rollback = FALSE;
     g_array_set_size (s->want_details, 0);
+    s->want_ddl = 0;
     query_tree_unask (&s->tree);
     g_free (s->tree.error);
     s->tree.error = g_strchomp (error);
@@ -254,6 +266,437 @@ static Oid
 query_schema_oid (const query_pq_t *pq, PGresult *res, int row, int field)
 {
     return (Oid) strtoul (pq->PQgetvalue (res, row, field), NULL, 10);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+/* F4: the DDL */
+/* --------------------------------------------------------------------------------------------- */
+
+/* The field @field of the row @row of @res, NULL when it is null or there is no such row */
+static const char *
+query_ddl_value (const query_pq_t *pq, PGresult *res, int row, int field)
+{
+    if (res == NULL || row >= pq->PQntuples (res) || pq->PQgetisnull (res, row, field))
+        return NULL;
+    return pq->PQgetvalue (res, row, field);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* @text, a query of a view, with no ";" and no blank at its end */
+static void
+query_ddl_append_query (GString *ddl, const char *text)
+{
+    gsize len = strlen (text);
+
+    while (len > 0 && (g_ascii_isspace (text[len - 1]) || text[len - 1] == ';'))
+        len--;
+    g_string_append_len (ddl, text, (gssize) len);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* @text put as comments: each of its lines, a name in it with a line break of its own too, after
+   "-- "; a line ends at "\n", "\r" or "\r\n", as a comment of SQL does */
+static void
+query_ddl_append_comment (GString *ddl, const char *text)
+{
+    const char *at;
+
+    for (at = text; *at != '\0';)
+    {
+        const gsize len = strcspn (at, "\r\n");
+
+        g_string_append (ddl, "-- ");
+        g_string_append_len (ddl, at, (gssize) len);
+        g_string_append_c (ddl, '\n');
+        at += len;
+        if (at[0] == '\r' && at[1] == '\n')
+            at += 2;
+        else if (*at != '\0')
+            at++;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The CREATE of the sequence @name of the row @row of @res, its type and its numbers from the
+   field @at, unlogged when @unlogged, commented when @commented */
+static void
+query_ddl_append_sequence (const query_pq_t *pq, GString *ddl, const char *name, PGresult *res,
+                           int row, int at, gboolean unlogged, gboolean commented)
+{
+    char *text =
+        g_strdup_printf ("CREATE %sSEQUENCE %s AS %s\n    INCREMENT BY %s MINVALUE %s MAXVALUE %s\n"
+                         "    START WITH %s CACHE %s %sCYCLE;\n",
+                         unlogged ? "UNLOGGED " : "", name, pq->PQgetvalue (res, row, at),
+                         pq->PQgetvalue (res, row, at + 2), pq->PQgetvalue (res, row, at + 3),
+                         pq->PQgetvalue (res, row, at + 4), pq->PQgetvalue (res, row, at + 1),
+                         pq->PQgetvalue (res, row, at + 5),
+                         pq->PQgetvalue (res, row, at + 6)[0] == 't' ? "" : "NO ");
+
+    if (commented)
+        query_ddl_append_comment (ddl, text);
+    else
+        g_string_append (ddl, text);
+    g_free (text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The numbers of the sequence of the identity of the row @row of the columns @cols, those that
+   are not those PostgreSQL gives by itself, as GENERATED ... AS IDENTITY takes them: " (START
+   WITH 100 INCREMENT BY 10)"; nothing when they all are */
+static void
+query_ddl_append_identity (const query_pq_t *pq, GString *ddl, PGresult *cols, int row)
+{
+    const char *type = query_ddl_value (pq, cols, row, 9);
+    GString *opts;
+    gint64 inc, min, max, start, type_min, type_max;
+
+    if (type == NULL)
+        return;
+    type_max = strcmp (type, "smallint") == 0 ? G_MAXINT16
+        : strcmp (type, "integer") == 0       ? G_MAXINT32
+                                              : G_MAXINT64;
+    type_min = strcmp (type, "smallint") == 0 ? G_MININT16
+        : strcmp (type, "integer") == 0       ? G_MININT32
+                                              : G_MININT64;
+    start = g_ascii_strtoll (pq->PQgetvalue (cols, row, 10), NULL, 10);
+    inc = g_ascii_strtoll (pq->PQgetvalue (cols, row, 11), NULL, 10);
+    min = g_ascii_strtoll (pq->PQgetvalue (cols, row, 12), NULL, 10);
+    max = g_ascii_strtoll (pq->PQgetvalue (cols, row, 13), NULL, 10);
+    opts = g_string_new (NULL);
+    // a name of its own, not the one PostgreSQL gives it
+    if (query_ddl_value (pq, cols, row, 19) != NULL
+        && g_strcmp0 (pq->PQgetvalue (cols, row, 19), query_ddl_value (pq, cols, row, 20)) != 0)
+        g_string_append_printf (opts, " SEQUENCE NAME %s", pq->PQgetvalue (cols, row, 19));
+    // ascending from 1 to the end of its type, descending from -1, starting at its end
+    if (inc != 1)
+        g_string_append_printf (opts, " INCREMENT BY %" G_GINT64_FORMAT, inc);
+    if (min != (inc > 0 ? 1 : type_min))
+        g_string_append_printf (opts, " MINVALUE %" G_GINT64_FORMAT, min);
+    if (max != (inc > 0 ? type_max : -1))
+        g_string_append_printf (opts, " MAXVALUE %" G_GINT64_FORMAT, max);
+    if (start != (inc > 0 ? min : max))
+        g_string_append_printf (opts, " START WITH %" G_GINT64_FORMAT, start);
+    if (strcmp (pq->PQgetvalue (cols, row, 14), "1") != 0)
+        g_string_append_printf (opts, " CACHE %s", pq->PQgetvalue (cols, row, 14));
+    if (pq->PQgetvalue (cols, row, 15)[0] == 't')
+        g_string_append (opts, " CYCLE");
+    if (opts->len > 0)
+        g_string_append_printf (ddl, " (%s)", opts->str + 1);
+    g_string_free (opts, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* How many of the constraints @cons are validated: those in the parentheses of a CREATE */
+static int
+query_ddl_validated (const query_pq_t *pq, PGresult *cons)
+{
+    int i, n = 0;
+
+    for (i = 0; cons != NULL && i < pq->PQntuples (cons); i++)
+        if (pq->PQgetvalue (cons, i, 2)[0] == 't')
+            n++;
+    return n;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The columns and the constraints of a table, in its parentheses; a partition has those of its
+   table, its own constraints alone; one that inherits from others, @inherits, its own columns
+   alone, those of the others and their CHECK coming with INHERITS */
+static void
+query_ddl_append_columns (const query_pq_t *pq, GString *ddl, PGresult *cols, PGresult *cons,
+                          gboolean partition, gboolean inherits)
+{
+    gboolean first = TRUE;
+    int i;
+
+    for (i = 0; !partition && cols != NULL && i < pq->PQntuples (cols); i++)
+    {
+        const char *identity = query_ddl_value (pq, cols, i, 3);
+        const char *generated = query_ddl_value (pq, cols, i, 4);
+        const char *expr = query_ddl_value (pq, cols, i, 5);
+        const char *collation = query_ddl_value (pq, cols, i, 6);
+
+        // its parents give it defaults that are not the same: CREATE takes it as its own, with its
+        // default, or fails
+        if (inherits && pq->PQgetvalue (cols, i, 7)[0] != 't'
+            && g_ascii_strtoll (pq->PQgetvalue (cols, i, 21), NULL, 10) < 2)
+            continue;
+        g_string_append_printf (ddl, "%s\n    %s %s", first ? "" : ",", pq->PQgetvalue (cols, i, 0),
+                                pq->PQgetvalue (cols, i, 1));
+        first = FALSE;
+        // of a foreign table: the column of the server it is, column_name
+        if (query_ddl_value (pq, cols, i, 18) != NULL)
+            g_string_append_printf (ddl, " OPTIONS (%s)", pq->PQgetvalue (cols, i, 18));
+        if (collation != NULL)
+            g_string_append_printf (ddl, " COLLATE %s", collation);
+        if (generated != NULL && *generated != '\0' && expr != NULL)
+            g_string_append_printf (ddl, " GENERATED ALWAYS AS (%s) %s", expr,
+                                    *generated == 'v' ? "VIRTUAL" : "STORED");
+        else if (identity != NULL && *identity != '\0')
+        {
+            g_string_append_printf (ddl, " GENERATED %s AS IDENTITY",
+                                    *identity == 'a' ? "ALWAYS" : "BY DEFAULT");
+            query_ddl_append_identity (pq, ddl, cols, i);
+        }
+        else if (expr != NULL)
+            g_string_append_printf (ddl, " DEFAULT %s", expr);
+        if (pq->PQgetvalue (cols, i, 2)[0] == 't')
+            g_string_append (ddl, " NOT NULL");
+    }
+    for (i = 0; cons != NULL && i < pq->PQntuples (cons); i++)
+    {
+        const char *def = pq->PQgetvalue (cons, i, 1);
+        const char *storage = query_ddl_value (pq, cons, i, 3);
+        // the storage of the index of a key goes before DEFERRABLE
+        const char *attrs = strstr (def, " DEFERRABLE");
+
+        // one NOT VALID is added after the table: made in it, it is validated
+        if (pq->PQgetvalue (cons, i, 2)[0] != 't')
+            continue;
+        g_string_append_printf (ddl, "%s\n    CONSTRAINT %s ", first ? "" : ",",
+                                pq->PQgetvalue (cons, i, 0));
+        if (storage != NULL && *storage != '\0')
+        {
+            if (attrs == NULL)
+                attrs = def + strlen (def);
+            g_string_append_len (ddl, def, (gssize) (attrs - def));
+            g_string_append_printf (ddl, " WITH (%s)%s", storage, attrs);
+        }
+        else
+            g_string_append (ddl, def);
+        first = FALSE;
+    }
+    if (!first)
+        g_string_append (ddl, "\n");
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The DDL of the relation @name of the results of pg-ddl-relation.sql: its drop,
+   commented, its create, its indexes and triggers, its comments */
+static char *
+query_ddl_relation (const query_pq_t *pq, const char *name, GPtrArray *results)
+{
+    PGresult *rel = g_ptr_array_index (results, 0);
+    PGresult *cols = g_ptr_array_index (results, 1);
+    PGresult *cons = g_ptr_array_index (results, 2);
+    PGresult *idx = g_ptr_array_index (results, 3);
+    PGresult *trg = g_ptr_array_index (results, 4);
+    PGresult *seq = g_ptr_array_index (results, 5);
+    PGresult *owned = g_ptr_array_index (results, 6);
+    GString *ddl = g_string_new (NULL);
+    const char *kind, *what, *options, *comment;
+    char *drop;
+    gboolean partition;
+    int i;
+
+    if (pq->PQntuples (rel) == 0)
+    {
+        g_string_free (ddl, TRUE);
+        return NULL;
+    }
+    kind = pq->PQgetvalue (rel, 0, 0);
+    what = *kind == 'v' ? "VIEW"
+        : *kind == 'm'  ? "MATERIALIZED VIEW"
+        : *kind == 'f'  ? "FOREIGN TABLE"
+        : *kind == 'S'  ? "SEQUENCE"
+                        : "TABLE";
+    partition = pq->PQgetvalue (rel, 0, 2)[0] == 't' && query_ddl_value (pq, rel, 0, 3) != NULL;
+    options = query_ddl_value (pq, rel, 0, 9);
+    if (options != NULL && *options == '\0')
+        options = NULL;
+
+    drop = g_strdup_printf ("DROP %s %s;\n", what, name);
+    query_ddl_append_comment (ddl, drop);
+    g_free (drop);
+    if (*kind == 'v' || *kind == 'm')
+    {
+        if (*kind == 'v')
+            g_string_append_printf (ddl, "CREATE OR REPLACE VIEW %s", name);
+        else
+            g_string_append_printf (ddl, "CREATE MATERIALIZED VIEW %s", name);
+        if (options != NULL)
+            g_string_append_printf (ddl, " WITH (%s)", options);
+        g_string_append (ddl, " AS\n");
+        query_ddl_append_query (
+            ddl, query_ddl_value (pq, rel, 0, 6) != NULL ? query_ddl_value (pq, rel, 0, 6) : "");
+        // a materialized view not populated is made so: its query is not run
+        if (*kind == 'm')
+            g_string_append (ddl,
+                             pq->PQgetvalue (rel, 0, 12)[0] == 'f' ? "\nWITH NO DATA;\n"
+                                                                   : "\nWITH DATA;\n");
+        else
+            g_string_append (ddl, ";\n");
+        // the defaults of the columns of a view, for the INSERT through it
+        for (i = 0; *kind == 'v' && cols != NULL && i < pq->PQntuples (cols); i++)
+            if (query_ddl_value (pq, cols, i, 5) != NULL)
+                g_string_append_printf (ddl, "ALTER VIEW %s ALTER COLUMN %s SET DEFAULT %s;\n",
+                                        name, pq->PQgetvalue (cols, i, 0),
+                                        pq->PQgetvalue (cols, i, 5));
+    }
+    else if (*kind == 'S')
+    {
+        const char *dep = query_ddl_value (pq, seq, 0, 7);
+        const char *column = query_ddl_value (pq, seq, 0, 8);
+        // that of an identity is made and dropped with its table: its create told, commented
+        const gboolean identity = dep != NULL && *dep == 'i' && column != NULL;
+
+        if (seq == NULL || pq->PQntuples (seq) == 0)
+            g_string_append_printf (ddl, "CREATE %sSEQUENCE %s;\n",
+                                    pq->PQgetvalue (rel, 0, 1)[0] == 'u' ? "UNLOGGED " : "", name);
+        else
+        {
+            if (identity)
+            {
+                char *note = g_strdup_printf (
+                    "the sequence of the identity of %s, made and dropped with it\n", column);
+
+                query_ddl_append_comment (ddl, note);
+                g_free (note);
+            }
+            query_ddl_append_sequence (pq, ddl, name, seq, 0, 0,
+                                       pq->PQgetvalue (rel, 0, 1)[0] == 'u', identity);
+            if (dep != NULL && *dep == 'a' && column != NULL)
+                g_string_append_printf (ddl, "ALTER SEQUENCE %s OWNED BY %s;\n", name, column);
+        }
+    }
+    else
+    {
+        const gboolean unlogged = pq->PQgetvalue (rel, 0, 1)[0] == 'u';
+        const char *key = query_ddl_value (pq, rel, 0, 5);
+        // the tables it inherits from, not as a partition: INHERITS
+        const char *parents = partition ? NULL : query_ddl_value (pq, rel, 0, 11);
+
+        /* the sequences of its serial columns go with it: made first, for their default, owned
+           by their columns once it is */
+        for (i = 0; owned != NULL && i < pq->PQntuples (owned); i++)
+            query_ddl_append_sequence (pq, ddl, pq->PQgetvalue (owned, i, 0), owned, i, 1,
+                                       pq->PQgetvalue (owned, i, 9)[0] == 'u', FALSE);
+        g_string_append_printf (ddl, "CREATE %s%s %s", unlogged ? "UNLOGGED " : "", what, name);
+        if (partition)
+            g_string_append_printf (ddl, " PARTITION OF %s", pq->PQgetvalue (rel, 0, 3));
+        if (!partition || query_ddl_validated (pq, cons) > 0)
+        {
+            g_string_append (ddl, " (");
+            query_ddl_append_columns (pq, ddl, cols, cons, partition, parents != NULL);
+            g_string_append (ddl, ")");
+        }
+        if (parents != NULL)
+            g_string_append_printf (ddl, "\nINHERITS (%s)", parents);
+        if (partition && query_ddl_value (pq, rel, 0, 4) != NULL)
+            g_string_append_printf (ddl, "\n%s", pq->PQgetvalue (rel, 0, 4));
+        if (key != NULL)
+            g_string_append_printf (ddl, "\nPARTITION BY %s", key);
+        if (*kind == 'f' && query_ddl_value (pq, rel, 0, 7) != NULL)
+        {
+            g_string_append_printf (ddl, "\nSERVER %s", pq->PQgetvalue (rel, 0, 7));
+            if (query_ddl_value (pq, rel, 0, 8) != NULL)
+                g_string_append_printf (ddl, "\nOPTIONS (%s)", pq->PQgetvalue (rel, 0, 8));
+        }
+        if (options != NULL)
+            g_string_append_printf (ddl, "\nWITH (%s)", options);
+        g_string_append (ddl, ";\n");
+        // an inherited column, of a partition too, as the table has made it, not as its parents
+        // give it
+        for (i = 0; (parents != NULL || partition) && cols != NULL && i < pq->PQntuples (cols); i++)
+        {
+            const char *col = pq->PQgetvalue (cols, i, 0);
+            const char *own = query_ddl_value (pq, cols, i, 5);
+            const char *given = query_ddl_value (pq, cols, i, 16);
+            const char *generated = query_ddl_value (pq, cols, i, 4);
+
+            if (pq->PQgetvalue (cols, i, 7)[0] == 't' || (generated != NULL && *generated != '\0')
+                || g_ascii_strtoll (pq->PQgetvalue (cols, i, 21), NULL, 10) > 1)
+                continue;
+            if (own != NULL && g_strcmp0 (own, given) != 0)
+                g_string_append_printf (ddl, "ALTER TABLE %s ALTER COLUMN %s SET DEFAULT %s;\n",
+                                        name, col, own);
+            else if (own == NULL && given != NULL)
+                g_string_append_printf (ddl, "ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT;\n", name,
+                                        col);
+            if (pq->PQgetvalue (cols, i, 2)[0] == 't'
+                && g_strcmp0 (query_ddl_value (pq, cols, i, 17), "t") != 0)
+                g_string_append_printf (ddl, "ALTER TABLE %s ALTER COLUMN %s SET NOT NULL;\n", name,
+                                        col);
+        }
+    }
+
+    // its constraints NOT VALID, which a CREATE would validate
+    for (i = 0; (*kind == 'r' || *kind == 'p' || *kind == 'f') && i < pq->PQntuples (cons); i++)
+        if (pq->PQgetvalue (cons, i, 2)[0] != 't')
+            g_string_append_printf (ddl, "ALTER TABLE %s ADD CONSTRAINT %s %s;\n", name,
+                                    pq->PQgetvalue (cons, i, 0), pq->PQgetvalue (cons, i, 1));
+    for (i = 0; owned != NULL && i < pq->PQntuples (owned); i++)
+        g_string_append_printf (ddl, "ALTER SEQUENCE %s OWNED BY %s.%s;\n",
+                                pq->PQgetvalue (owned, i, 0), name, pq->PQgetvalue (owned, i, 8));
+    for (i = 0; idx != NULL && i < pq->PQntuples (idx); i++)
+        g_string_append_printf (ddl, "%s;\n", pq->PQgetvalue (idx, i, 0));
+    for (i = 0; trg != NULL && i < pq->PQntuples (trg); i++)
+    {
+        const char mode = pq->PQgetvalue (trg, i, 2)[0];
+        // the mode of the trigger of the table of the partition it is the clone of
+        const char *of = query_ddl_value (pq, trg, i, 3);
+
+        // a clone PARTITION OF makes
+        if (of == NULL)
+            g_string_append_printf (ddl, "%s;\n", pq->PQgetvalue (trg, i, 0));
+        if (mode != (of != NULL ? of[0] : 'O'))
+            g_string_append_printf (ddl, "ALTER TABLE %s %s TRIGGER %s;\n", name,
+                                    mode == 'D'       ? "DISABLE"
+                                        : mode == 'R' ? "ENABLE REPLICA"
+                                        : mode == 'A' ? "ENABLE ALWAYS"
+                                                      : "ENABLE",
+                                    pq->PQgetvalue (trg, i, 1));
+    }
+    comment = query_ddl_value (pq, rel, 0, 10);
+    if (comment != NULL)
+        g_string_append_printf (ddl, "COMMENT ON %s %s IS %s;\n", what, name, comment);
+    for (i = 0; cols != NULL && i < pq->PQntuples (cols); i++)
+        if (query_ddl_value (pq, cols, i, 8) != NULL)
+            g_string_append_printf (ddl, "COMMENT ON COLUMN %s.%s IS %s;\n", name,
+                                    pq->PQgetvalue (cols, i, 0), pq->PQgetvalue (cols, i, 8));
+    return g_string_free (ddl, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The DDL of the function of the result of pg-ddl-function.sql */
+static char *
+query_ddl_function (const query_pq_t *pq, PGresult *res)
+{
+    const char *def, *kind, *name;
+    char *drop;
+    GString *ddl;
+
+    if (res == NULL || pq->PQntuples (res) == 0)
+        return NULL;
+    def = query_ddl_value (pq, res, 0, 0);
+    kind = pq->PQgetvalue (res, 0, 1);
+    name = pq->PQgetvalue (res, 0, 2);
+    ddl = g_string_new (NULL);
+    drop = g_strdup_printf ("DROP %s %s;\n",
+                            *kind == 'p'       ? "PROCEDURE"
+                                : *kind == 'a' ? "AGGREGATE"
+                                               : "FUNCTION",
+                            name);
+    query_ddl_append_comment (ddl, drop);
+    g_free (drop);
+    if (def == NULL)
+        g_string_append (ddl, "-- PostgreSQL gives no CREATE of an aggregate\n");
+    else
+    {
+        query_ddl_append_query (ddl, def);
+        g_string_append (ddl, ";\n");
+    }
+    return g_string_free (ddl, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -405,13 +848,14 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
         const char *name = pq->PQgetvalue (funcs, i, 1);
         const char kind = pq->PQgetvalue (funcs, i, 4)[0];
         query_node_t *ns = g_hash_table_lookup (by_name, nsp);
+        query_node_t *f;
         char *qn, *qf;
 
         if (ns == NULL)
             continue;
         qn = query_pg_ident (nsp);
         qf = query_pg_ident (name);
-        (void) query_node_new (
+        f = query_node_new (
             &s->tree,
             query_node_group (&s->tree, ns, _ (query_group_names[QUERY_GROUP_FUNCTIONS]), FALSE),
             QUERY_NODE_ITEM, g_strdup_printf ("%s(%s)", name, pq->PQgetvalue (funcs, i, 2)),
@@ -420,6 +864,9 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
                 : kind == 'w' ? g_strdup_printf ("-> %s, window", pq->PQgetvalue (funcs, i, 3))
                               : g_strdup_printf ("-> %s", pq->PQgetvalue (funcs, i, 3)),
             g_strconcat (qn, ".", qf, "(", (char *) NULL));
+        // F4 reads its DDL by it
+        QUERY_ITEM (f)->id = query_schema_oid (pq, funcs, i, 5);
+        QUERY_ITEM (f)->tag = 'F';
         g_free (qn);
         g_free (qf);
     }
@@ -731,6 +1178,23 @@ query_schema_done (query_pg_schema_t *s)
 {
     query_pq_link_unwatch (&s->link);
     s->state = QUERY_SCHEMA_READY;
+    if (s->asked == QUERY_SCHEMA_ASK_ROLLBACK)
+    {
+        // not rolled back: the connection goes, the next query makes another
+        if (s->res_error != NULL)
+        {
+            query_schema_close_conn (s);
+            s->state = QUERY_SCHEMA_OFF;
+        }
+        g_ptr_array_set_size (s->results, 0);
+        g_clear_pointer (&s->res_error, g_free);
+        query_schema_next (s);
+        return;
+    }
+    /* a script that failed before its COMMIT, the DDL of a timeout: the transaction is left
+       open and failed, every query after it would fail too */
+    if (s->link.conn != NULL && s->pq->PQtransactionStatus (s->link.conn) != QUERY_PG_TRANS_IDLE)
+        s->want_rollback = TRUE;
     if (s->asked == QUERY_SCHEMA_ASK_AI)
     {
         char *text =
@@ -739,6 +1203,20 @@ query_schema_done (query_pg_schema_t *s)
         s->ai_sent = FALSE;
         query_ai_context (s->q, text, s->res_error);
         g_free (text);
+    }
+    else if (s->asked == QUERY_SCHEMA_ASK_DDL)
+    {
+        char *ddl = NULL;
+
+        if (s->res_error == NULL && s->asked_ddl_function)
+            ddl = query_ddl_function (s->pq, query_schema_result (s, 0));
+        else if (s->res_error == NULL && s->results->len == 7)
+            ddl = query_ddl_relation (s->pq, s->asked_ddl_name, s->results);
+        query_tree_ddl_put (&s->tree, s->asked_ddl_id, ddl,
+                            s->res_error != NULL ? g_strchomp (s->res_error)
+                                                 : _ ("It is no more: F4 has no DDL of it."));
+        g_free (ddl);
+        g_clear_pointer (&s->asked_ddl_name, g_free);
     }
     else if (s->asked == QUERY_SCHEMA_ASK_LIST)
     {
@@ -838,7 +1316,8 @@ query_schema_send_script (query_pg_schema_t *s, const char *name, Oid oid, query
 static void
 query_schema_next (query_pg_schema_t *s)
 {
-    const gboolean wanted = s->want_list || s->want_ai || s->want_details->len > 0;
+    const gboolean wanted = s->want_rollback || s->want_list || s->want_ddl != 0 || s->want_ai
+        || s->want_details->len > 0;
 
     if (!wanted)
         return;
@@ -849,10 +1328,29 @@ query_schema_next (query_pg_schema_t *s)
     }
     if (s->state != QUERY_SCHEMA_READY)
         return;
-    if (s->want_list)
+    if (s->want_rollback)
+    {
+        s->want_rollback = FALSE;
+        query_schema_send (s, "ROLLBACK", QUERY_SCHEMA_ASK_ROLLBACK);
+    }
+    else if (s->want_list)
     {
         s->want_list = FALSE;
         query_schema_send_script (s, "pg-list.sql", 0, QUERY_SCHEMA_ASK_LIST);
+    }
+    else if (s->want_ddl != 0)
+    {
+        const Oid oid = s->want_ddl;
+
+        s->want_ddl = 0;
+        s->asked_ddl_function = s->want_ddl_function;
+        s->asked_ddl_id = s->want_ddl_id;
+        g_free (s->asked_ddl_name);
+        s->asked_ddl_name = s->want_ddl_name;
+        s->want_ddl_name = NULL;
+        query_schema_send_script (
+            s, s->asked_ddl_function ? "pg-ddl-function.sql" : "pg-ddl-relation.sql", oid,
+            QUERY_SCHEMA_ASK_DDL);
     }
     else if (s->want_ai)
     {
@@ -912,6 +1410,55 @@ query_schema_query (const query_node_t *o, GPtrArray *fields)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* F4 on @n: the drop, commented, and the create of its schema, its function or its relation, read
+   from the server, put in the file of queries */
+static void
+query_schema_ddl (query_pg_schema_t *s, const query_node_t *n)
+{
+    const query_item_t *item = n != NULL ? QUERY_ITEM (n) : NULL;
+    const query_node_t *o;
+    guint id;
+
+    if (item == NULL)
+        return;
+    id = query_tree_ddl_ask (&s->tree);
+    if (item->kind == QUERY_NODE_ROOT)
+    {
+        GString *ddl = g_string_new (NULL);
+        char *drop = g_strdup_printf ("DROP SCHEMA %s;\n", item->insert);
+
+        query_ddl_append_comment (ddl, drop);
+        g_string_append_printf (ddl, "CREATE SCHEMA %s;\n", item->insert);
+        query_tree_ddl_put (&s->tree, id, ddl->str, NULL);
+        g_string_free (ddl, TRUE);
+        g_free (drop);
+        return;
+    }
+    s->want_ddl_id = id;
+    if (item->tag == 'F')
+    {
+        s->want_ddl = (Oid) item->id;
+        s->want_ddl_function = TRUE;
+    }
+    else
+    {
+        o = query_node_object ((query_node_t *) n);
+        if (o == NULL || QUERY_ITEM (o)->id == 0)
+        {
+            query_tree_ddl_put (&s->tree, id, NULL,
+                                _ ("F4 puts the DDL of a schema, a relation or a function."));
+            return;
+        }
+        s->want_ddl = (Oid) QUERY_ITEM (o)->id;
+        s->want_ddl_function = FALSE;
+        g_free (s->want_ddl_name);
+        s->want_ddl_name = g_strdup (QUERY_ITEM (o)->insert);
+    }
+    query_schema_next (s);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* An object opened, or F3 on one: its sections asked for, the tree query_tree_t.details */
 static void
 query_schema_details (query_node_t *o, void *data)
@@ -954,6 +1501,8 @@ query_pg_schema_free (query_pg_schema_t *s)
     query_schema_close_conn (s);
     g_ptr_array_free (s->results, TRUE);
     g_array_free (s->want_details, TRUE);
+    g_free (s->want_ddl_name);
+    g_free (s->asked_ddl_name);
     query_tree_done (&s->tree);
     g_free (s->first);
     g_free (s);
@@ -1000,6 +1549,9 @@ query_pg_schema_do (query_pg_schema_t *s, query_schema_action_t action, gboolean
         o = query_tree_query (&s->tree, n);
         if (o != NULL)
             query_schema_details (o, s);
+        break;
+    case QUERY_SCHEMA_DDL:
+        query_schema_ddl (s, n);
         break;
     default:
         break;
