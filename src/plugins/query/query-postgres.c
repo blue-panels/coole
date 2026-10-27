@@ -297,7 +297,7 @@ query_pg_connected (query_pg_t *p, gboolean ok)
     // the window Schema the first time, then the rows of the relation the panel was on, the
     // file of queries as it is
     if (first && p->schema != NULL)
-        query_pg_schema_do (p->schema, QUERY_SCHEMA_SHOW, -1);
+        (void) query_pg_schema_do (p->schema, QUERY_SCHEMA_SHOW, FALSE);
     if (first && p->relation != NULL && p->state == QUERY_PG_READY)
         query_run_alone (p->q, p->relation);
 }
@@ -1299,15 +1299,17 @@ query_pg_stop (void *data)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-query_pg_schema (void *data, query_schema_action_t action, long line)
+static gboolean
+query_pg_schema (void *data, query_schema_action_t action, gboolean key)
 {
     query_pg_t *p = (query_pg_t *) data;
 
-    if (p->schema == NULL)
-        query_pg_say (p, p->pq_error, TRUE);
-    else
-        query_pg_schema_do (p->schema, action, line);
+    if (p->schema != NULL)
+        return query_pg_schema_do (p->schema, action, key);
+    if (key)
+        return FALSE;
+    query_pg_say (p, p->pq_error, TRUE);
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */

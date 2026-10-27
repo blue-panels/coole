@@ -289,15 +289,22 @@ query_ms_reach (const char *dbname, const char *coll)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The database of @n: the root of the tree it is under */
+static const query_node_t *
+query_ms_db (const query_node_t *n)
+{
+    for (; n->parent != NULL && QUERY_ITEM (n)->kind != QUERY_NODE_ROOT; n = n->parent)
+        ;
+    return n;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The key of the collection @o in want_details: "db\x1fcollection" */
 static char *
 query_ms_key (const query_node_t *o)
 {
-    const query_node_t *root;
-
-    for (root = o; root->parent != NULL; root = root->parent)
-        ;
-    return g_strconcat (root->name, "\x1f", o->name, (char *) NULL);
+    return g_strconcat (query_ms_db (o)->key, "\x1f", o->key, (char *) NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -385,6 +392,7 @@ query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
 {
     JsonArray *dbs = json_object_get_array_member (list, "dbs");
     const char *current = query_ms_member_string (list, "current");
+    GPtrArray *roots;
     guint i, j, first = 0;
 
     g_free (s->current);
@@ -396,12 +404,11 @@ query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
         const char *dbname = query_ms_member_string (d, "name");
         JsonArray *colls = json_object_get_array_member (d, "colls");
         char *quoted = query_ms_string (dbname);
-        query_node_t *root = query_node_new (NULL, QUERY_NODE_ROOT, g_strdup (dbname), NULL,
-                                             g_strdup_printf ("db.getSiblingDB(%s)", quoted));
+        query_node_t *root = query_node_new (&s->tree, NULL, QUERY_NODE_ROOT, g_strdup (dbname),
+                                             NULL, g_strdup_printf ("db.getSiblingDB(%s)", quoted));
 
         g_free (quoted);
-        g_ptr_array_add (s->tree.roots, root);
-        root->open = query_tree_was_open (&s->tree, root, g_strcmp0 (dbname, current) == 0);
+        root->expanded = query_tree_was_open (&s->tree, root, g_strcmp0 (dbname, current) == 0);
         if (g_strcmp0 (dbname, current) == 0)
             first = i;
         for (j = 0; colls != NULL && j < json_array_get_length (colls); j++)
@@ -414,33 +421,37 @@ query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
             const int g = g_strcmp0 (type, "view") == 0 ? QUERY_MS_GROUP_VIEWS
                 : g_strcmp0 (type, "timeseries") == 0   ? QUERY_MS_GROUP_TIMESERIES
                                                         : QUERY_MS_GROUP_COLLECTIONS;
-            query_node_t *group = query_node_group (&s->tree, root, _ (query_ms_group_names[g]),
-                                                    g == QUERY_MS_GROUP_COLLECTIONS);
-            query_node_t *o =
-                query_node_new (group, QUERY_NODE_OBJECT, g_strdup (name), NULL, NULL);
+            query_node_t *o;
+            query_item_t *item;
             char *reach;
 
             if (name == NULL)
                 continue;
-            if (view_on != NULL)
-                o->text = g_strdup_printf (_ ("on %s"), view_on);
-            else if (count >= 0)
-                o->text = g_strdup_printf ("~%" G_GINT64_FORMAT, count);
-            o->insert = query_ms_collection (s, dbname, name);
+            o = query_node_new (&s->tree,
+                                query_node_group (&s->tree, root, _ (query_ms_group_names[g]),
+                                                  g == QUERY_MS_GROUP_COLLECTIONS),
+                                QUERY_NODE_OBJECT, g_strdup (name),
+                                view_on != NULL  ? g_strdup_printf (_ ("on %s"), view_on)
+                                    : count >= 0 ? query_tree_about (count)
+                                                 : NULL,
+                                query_ms_collection (s, dbname, name));
+            item = QUERY_ITEM (o);
             // the rows of F5 in the database of the collection, whatever the use () of the file
             reach = query_ms_reach (dbname, name);
-            o->rows = g_strdup_printf ("// @table\n%s.find({}).limit(%u)", reach, QUERY_TABLE_ROWS);
+            item->rows =
+                g_strdup_printf ("// @table\n%s.find({}).limit(%u)", reach, QUERY_TABLE_ROWS);
             g_free (reach);
-            o->open = query_tree_was_open (&s->tree, o, FALSE);
-            if (o->open)
+            o->expanded = query_tree_was_open (&s->tree, o, FALSE);
+            if (o->expanded)
             {
-                o->asked = TRUE;
+                item->asked = TRUE;
                 g_ptr_array_add (s->want_details, query_ms_key (o));
             }
         }
-        // the groups in their order
+        // the groups in their order; the nodes are the model's, the arrays their order
+        if (root->children != NULL)
         {
-            GPtrArray *sorted = g_ptr_array_new_with_free_func (query_node_free);
+            GPtrArray *sorted = g_ptr_array_new ();
             int g;
 
             for (g = 0; g < QUERY_MS_GROUP_COUNT; g++)
@@ -448,7 +459,7 @@ query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
                 guint k;
 
                 for (k = 0; k < root->children->len; k++)
-                    if (strcmp (((query_node_t *) g_ptr_array_index (root->children, k))->name,
+                    if (strcmp (((query_node_t *) g_ptr_array_index (root->children, k))->key,
                                 _ (query_ms_group_names[g]))
                         == 0)
                         g_ptr_array_add (sorted, g_ptr_array_steal_index (root->children, k--));
@@ -458,11 +469,12 @@ query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
         }
     }
     // that of the connection first
-    if (first > 0)
+    roots = query_tree_roots (&s->tree);
+    if (first > 0 && roots != NULL)
     {
-        gpointer f = g_ptr_array_steal_index (s->tree.roots, first);
+        gpointer f = g_ptr_array_steal_index (roots, first);
 
-        g_ptr_array_insert (s->tree.roots, 0, f);
+        g_ptr_array_insert (roots, 0, f);
     }
     s->tree.read = TRUE;
     g_clear_pointer (&s->tree.error, g_free);
@@ -476,13 +488,12 @@ query_ms_is_key (const query_node_t *n, const void *data)
 {
     const char *key = (const char *) data;
     const char *sep = strchr (key, '\x1f');
-    const query_node_t *root;
+    const char *db;
 
-    if (sep == NULL || strcmp (n->name, sep + 1) != 0)
+    if (sep == NULL || strcmp (n->key, sep + 1) != 0)
         return FALSE;
-    for (root = n; root->parent != NULL; root = root->parent)
-        ;
-    return strlen (root->name) == (gsize) (sep - key) && strncmp (root->name, key, sep - key) == 0;
+    db = query_ms_db (n)->key;
+    return strlen (db) == (gsize) (sep - key) && strncmp (db, key, sep - key) == 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -496,19 +507,22 @@ query_ms_take_details (query_mongo_schema_t *s, const char *key, JsonObject *det
     query_node_t *sections[QUERY_MS_SECTION_COUNT];
     JsonArray *fields, *indexes;
     const gint64 sampled = details != NULL ? query_ms_member_int (details, "sampled") : 0;
+    const char *validator = details != NULL ? query_ms_member_string (details, "validator") : NULL;
+    const char *pipeline = details != NULL ? query_ms_member_string (details, "pipeline") : NULL;
     guint i;
     int k;
 
-    if (o == NULL)
+    // read already: the list read twice asked for it twice
+    if (o == NULL || QUERY_ITEM (o)->read)
         return;
-    o->asked = FALSE;
-    o->read = TRUE;
-    if (o->children != NULL)
-        g_ptr_array_free (o->children, TRUE);
-    o->children = g_ptr_array_new_with_free_func (query_node_free);
+    // the fields and the indexes always, the validator and the pipeline when there is one
     for (k = 0; k < QUERY_MS_SECTION_COUNT; k++)
-        sections[k] = query_node_new (o, QUERY_NODE_SECTION,
-                                      g_strdup (_ (query_ms_section_names[k])), NULL, NULL);
+        sections[k] = k <= QUERY_MS_SECTION_INDEXES
+                || (k == QUERY_MS_SECTION_VALIDATOR && validator != NULL)
+                || (k == QUERY_MS_SECTION_PIPELINE && pipeline != NULL)
+            ? query_node_new (&s->tree, o, QUERY_NODE_SECTION,
+                              g_strdup (_ (query_ms_section_names[k])), NULL, NULL)
+            : NULL;
     fields = details != NULL ? json_object_get_array_member (details, "fields") : NULL;
     indexes = details != NULL ? json_object_get_array_member (details, "indexes") : NULL;
 
@@ -526,7 +540,7 @@ query_ms_take_details (query_mongo_schema_t *s, const char *key, JsonObject *det
                                     json_array_get_string_element (types, t));
         if (sampled > 0 && n >= 0 && n < sampled)
             g_string_append_printf (text, " %d%%", (int) (n * 100 / sampled));
-        (void) query_node_new (sections[QUERY_MS_SECTION_FIELDS], QUERY_NODE_ITEM,
+        (void) query_node_new (&s->tree, sections[QUERY_MS_SECTION_FIELDS], QUERY_NODE_ITEM,
                                g_strdup (query_ms_member_string (f, "name")),
                                g_string_free (text, FALSE),
                                g_strdup (query_ms_member_string (f, "name")));
@@ -544,31 +558,24 @@ query_ms_take_details (query_mongo_schema_t *s, const char *key, JsonObject *det
             g_string_append (text, " sparse");
         if (ttl >= 0)
             g_string_append_printf (text, " ttl %" G_GINT64_FORMAT " s", ttl);
-        (void) query_node_new (sections[QUERY_MS_SECTION_INDEXES], QUERY_NODE_ITEM,
+        (void) query_node_new (&s->tree, sections[QUERY_MS_SECTION_INDEXES], QUERY_NODE_ITEM,
                                g_strdup (query_ms_member_string (x, "name")),
                                g_string_free (text, FALSE),
                                g_strdup (query_ms_member_string (x, "key")));
     }
-    if (details != NULL && query_ms_member_string (details, "validator") != NULL)
-        (void) query_node_new (sections[QUERY_MS_SECTION_VALIDATOR], QUERY_NODE_ITEM,
-                               g_strdup (query_ms_member_string (details, "validator")), NULL,
-                               g_strdup (query_ms_member_string (details, "validator")));
-    if (details != NULL && query_ms_member_string (details, "pipeline") != NULL)
-        (void) query_node_new (sections[QUERY_MS_SECTION_PIPELINE], QUERY_NODE_ITEM,
-                               g_strdup (query_ms_member_string (details, "pipeline")), NULL,
-                               g_strdup (query_ms_member_string (details, "pipeline")));
+    if (validator != NULL)
+        (void) query_node_new (&s->tree, sections[QUERY_MS_SECTION_VALIDATOR], QUERY_NODE_ITEM,
+                               g_strdup (validator), NULL, g_strdup (validator));
+    if (pipeline != NULL)
+        (void) query_node_new (&s->tree, sections[QUERY_MS_SECTION_PIPELINE], QUERY_NODE_ITEM,
+                               g_strdup (pipeline), NULL, g_strdup (pipeline));
 
-    // the fields and the indexes always, the validator and the pipeline when there is one
-    for (k = QUERY_MS_SECTION_COUNT - 1; k > QUERY_MS_SECTION_INDEXES; k--)
-        if (sections[k]->children->len == 0)
-            g_ptr_array_remove_index (o->children, (guint) k);
-    for (i = 0; i < o->children->len; i++)
-    {
-        query_node_t *section = g_ptr_array_index (o->children, i);
-
-        // the fields open the first time
-        section->open = query_tree_was_open (&s->tree, section, i == QUERY_MS_SECTION_FIELDS);
-    }
+    // the fields open the first time
+    for (k = 0; k < QUERY_MS_SECTION_COUNT; k++)
+        if (sections[k] != NULL)
+            sections[k]->expanded =
+                query_tree_was_open (&s->tree, sections[k], k == QUERY_MS_SECTION_FIELDS);
+    query_node_read (o);
     query_tree_read (&s->tree, o, details != NULL);
 }
 
@@ -584,7 +591,6 @@ query_ms_done (char *out, char *err, int status, gboolean cut, void *data)
 
     (void) cut;
     s->proc = NULL;
-    query_tree_mark (&s->tree);
     if (s->asked == QUERY_MS_ASK_AI)
     {
         char *clean = query_mongo_clean (out);
@@ -666,7 +672,6 @@ query_ms_run (query_mongo_schema_t *s, char *script, query_ms_ask_t asked)
         {
             g_free (s->tree.error);
             s->tree.error = g_strdup (message);
-            query_tree_mark (&s->tree);
             query_tree_render (&s->tree);
         }
         g_free (message);
@@ -730,15 +735,12 @@ static char *
 query_ms_query (const query_node_t *o, GPtrArray *fields)
 {
     GString *text = g_string_new ("// @table\n");
-    char *dbname = query_ms_key (o), *reach;
+    // whatever the use () of the file, as F5 of Schema
+    char *reach = query_ms_reach (query_ms_db (o)->key, o->key);
     guint i;
 
-    // whatever the use () of the file, as F5 of Schema
-    *strchr (dbname, '\x1f') = '\0';
-    reach = query_ms_reach (dbname, o->name);
     g_string_append_printf (text, "%s.find({}", reach);
     g_free (reach);
-    g_free (dbname);
     for (i = 0; i < fields->len; i++)
     {
         const char *name = g_ptr_array_index (fields, i);
@@ -755,6 +757,18 @@ query_ms_query (const query_node_t *o, GPtrArray *fields)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A collection opened, or F3 on one: its details asked for, the tree query_tree_t.details */
+static void
+query_ms_details (query_node_t *o, void *data)
+{
+    query_mongo_schema_t *s = (query_mongo_schema_t *) data;
+
+    g_ptr_array_add (s->want_details, query_ms_key (o));
+    query_ms_next (s);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The list read again, the window made when it is not there yet */
 static void
 query_ms_refresh (query_mongo_schema_t *s)
@@ -764,7 +778,6 @@ query_ms_refresh (query_mongo_schema_t *s)
     // the details asked for come with the list
     g_ptr_array_set_size (s->want_details, 0);
     query_tree_cancel (&s->tree);
-    query_tree_mark (&s->tree);
     query_tree_render (&s->tree);
     query_ms_next (s);
 }
@@ -781,7 +794,7 @@ query_mongo_schema_new (query_t *q, const char *mongosh)
     s->q = q;
     s->mongosh = g_strdup (mongosh);
     s->want_details = g_ptr_array_new_with_free_func (g_free);
-    query_tree_init (&s->tree, q);
+    query_tree_init (&s->tree, q, query_ms_details, s);
     s->tree.query = query_ms_query;
     return s;
 }
@@ -806,34 +819,34 @@ query_mongo_schema_free (query_mongo_schema_t *s)
 
 /* --------------------------------------------------------------------------------------------- */
 
-void
-query_mongo_schema_do (query_mongo_schema_t *s, query_schema_action_t action, long line)
+gboolean
+query_mongo_schema_do (query_mongo_schema_t *s, query_schema_action_t action, gboolean key)
 {
-    query_node_t *n = query_tree_node_at (&s->tree, line);
+    // the node of the cursor; a key acts in the window alone, when it has the focus, with no node
+    // too: the key is not that of the file then
+    query_node_t *n = s->tree.window != NULL ? edit_tree_current (s->tree.window) : NULL;
     query_node_t *o;
 
+    if (key && !query_tree_has_focus (&s->tree))
+        return FALSE;
     switch (action)
     {
+    case QUERY_SCHEMA_TOGGLE:
+        if (query_tree_toggle (&s->tree))
+            break;
+        MC_FALLTHROUGH;
     case QUERY_SCHEMA_SHOW:
         s->tree.make = TRUE;
         if (!s->tree.read && !(s->proc != NULL && s->asked == QUERY_MS_ASK_LIST))
             query_ms_refresh (s);
         else
-        {
-            query_tree_mark (&s->tree);
             query_tree_render (&s->tree);
-        }
+        // QuerySchema gives it the focus, the start does not
+        if (action == QUERY_SCHEMA_TOGGLE && s->tree.window != NULL)
+            s->q->host->window_show (s->q->host, s->tree.window);
         break;
     case QUERY_SCHEMA_REFRESH:
         query_ms_refresh (s);
-        break;
-    case QUERY_SCHEMA_ENTER:
-        o = query_tree_enter (&s->tree, n);
-        if (o != NULL)
-            g_ptr_array_add (s->want_details, query_ms_key (o));
-        if (n != NULL)
-            query_tree_render (&s->tree);
-        query_ms_next (s);
         break;
     case QUERY_SCHEMA_ROWS:
         query_tree_rows (&s->tree, n);
@@ -844,14 +857,12 @@ query_mongo_schema_do (query_mongo_schema_t *s, query_schema_action_t action, lo
     case QUERY_SCHEMA_QUERY:
         o = query_tree_query (&s->tree, n);
         if (o != NULL)
-        {
-            g_ptr_array_add (s->want_details, query_ms_key (o));
-            query_ms_next (s);
-        }
+            query_ms_details (o, s);
         break;
     default:
         break;
     }
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */

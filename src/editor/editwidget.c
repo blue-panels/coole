@@ -3391,16 +3391,24 @@ WEdit *
 edit_find_editor (const WDialog *h)
 {
     const WGroup *g = CONST_GROUP (h);
+    WEdit *hidden = NULL;
     GList *l;
 
     if (edit_widget_is_editor (CONST_WIDGET (g->current->data)))
         return EDIT (g->current->data);
 
-    for (l = g->widgets; l != NULL; l = g_list_next (l))
+    // the file in front: the last one of the list seen is drawn over the others; else the last
+    // one hidden
+    for (l = g_list_last (g->widgets); l != NULL; l = g_list_previous (l))
         if (edit_widget_is_editor (CONST_WIDGET (l->data)))
-            return EDIT (l->data);
+        {
+            if (widget_get_state (CONST_WIDGET (l->data), WST_VISIBLE))
+                return EDIT (l->data);
+            if (hidden == NULL)
+                hidden = EDIT (l->data);
+        }
 
-    return NULL;
+    return hidden;
 }
 
 /* --------------------------------------------------------------------------------------------- */

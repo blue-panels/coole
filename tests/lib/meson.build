@@ -4,6 +4,8 @@ lib_tests = {
   'canonicalize_pathname': 'canonicalize_pathname.c',
   'mc_build_filename': 'mc_build_filename.c',
   'mc_realpath': 'mc_realpath.c',
+  'mctree_model': 'mctree_model.c',
+  'mctree_view': 'mctree_view.c',
   'name_quote': 'name_quote.c',
   'serialize': 'serialize.c',
   'tempdir': 'tempdir.c',

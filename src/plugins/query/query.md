@@ -292,7 +292,7 @@ connected: the schemas of the database, that of *MC_PG_SCHEMA* first and
 unfolded, else *public*, those of the system left out. A schema has its
 groups, those with something in them: Tables, Views, Materialized views,
 Foreign tables, Sequences, Functions, those of extensions left out. A table
-shows the rows the server reckons, *~50000*; a partitioned table its
+shows the rows the server reckons, *~50k*; a partitioned table its
 partitions under it, in its section Partitions.
 
 A relation unfolded has its sections, read then: Columns, their types,
@@ -301,20 +301,28 @@ the unique ones; Foreign keys; Indexes; References, the foreign keys of the
 other tables to it; Triggers. A table has all of them, the empty ones too,
 a view and the like those with something.
 
-In Schema:
+In Schema, a tree; the button bar shows F3 and F5:
+
+**Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
+: Move over the nodes.
 
 **Enter**
-: Fold or unfold the line: a schema, a group, a relation, a section. A
-double click does so too.
+: Fold or unfold the node: a schema, a group, a relation, a section. A
+double click does so too; **Right** unfolds, **Left** folds or goes to the
+parent. A relation unfolded and not read yet shows *...* until its sections
+come.
+
+**F10**, **Esc**
+: Close the window; Ctrl-Alt-S makes it again.
 
 **F5**
-: The first 100 rows of the relation of the line, or of that it is of, in
+: The first 100 rows of the relation of the node, or of that it is of, in
 Table: a query of no file, QuerySchemaRows, its text at the top of Table and
 in the head of Output.
 
 **F3**
 : The query of the rows of the relation put in the file of queries, its
-columns one a line, of the column of the line alone when it is one, read
+columns one a line, of the column of the node alone when it is one, read
 first when they are not yet: *SELECT id, name FROM public.users LIMIT 100;*,
 in the file F3 was pressed in, on the line of the cursor when it is empty, a
 paragraph of its own, else after its paragraph; the cursor goes there, F5
@@ -323,14 +331,14 @@ read again or another F3 comes; Output tells it, and when the columns could
 not be read. QuerySchemaQuery.
 
 **Insert**
-: Put what the line names at the cursor of the file of queries, as SQL
+: Put what the node names at the cursor of the file of queries, as SQL
 takes it, QuerySchemaInsert: *sales."Orders"* for a relation, the name of a
 schema, a column, an index, a trigger; the columns of a key, all those of
-the line Columns; the table of a reference; *sales.total(* for a function.
+the node Columns; the table of a reference; *sales.total(* for a function.
 
 **QuerySchemaRefresh**
-: Read the schemas again, with no key of its own, what is unfolded staying
-so. They are read again by themselves after a query whose *CREATE*,
+: Read the schemas again, with no key of its own, what is unfolded and the
+node of the cursor staying so. They are read again by themselves after a query whose *CREATE*,
 *ALTER* or *DROP* is committed.
 
 Schema reads the catalog by a connection of its own, of the same

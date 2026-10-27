@@ -342,7 +342,7 @@ query_mongo_close (void *data)
 static void
 query_mongo_schema_later (void *data)
 {
-    query_mongo_schema_do (((query_mongo_t *) data)->schema, QUERY_SCHEMA_SHOW, -1);
+    (void) query_mongo_schema_do (((query_mongo_t *) data)->schema, QUERY_SCHEMA_SHOW, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -490,10 +490,10 @@ query_mongo_ai_context (void *data, const char *use)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-query_mongo_schema (void *data, query_schema_action_t action, long line)
+static gboolean
+query_mongo_schema (void *data, query_schema_action_t action, gboolean key)
 {
-    query_mongo_schema_do (((query_mongo_t *) data)->schema, action, line);
+    return query_mongo_schema_do (((query_mongo_t *) data)->schema, action, key);
 }
 
 /* --------------------------------------------------------------------------------------------- */
