@@ -68,6 +68,7 @@ enum
     QUERY_CMD_SCHEMA_INSERT,
     QUERY_CMD_SCHEMA_REFRESH,
     QUERY_CMD_SCHEMA_QUERY,
+    QUERY_CMD_SCHEMA_DDL,
     QUERY_CMD_AI,
     QUERY_CMD_COUNT
 };
@@ -80,7 +81,8 @@ typedef enum
     QUERY_SCHEMA_REFRESH,  // read again
     QUERY_SCHEMA_ROWS,     // the rows of the relation in Table
     QUERY_SCHEMA_INSERT,   // the name put in the file
-    QUERY_SCHEMA_QUERY     // the query of the rows of the relation, of its columns, in the file
+    QUERY_SCHEMA_QUERY,    // the query of the rows of the relation, of its columns, in the file
+    QUERY_SCHEMA_DDL       // the drop, commented, and the create of what it is, in the file
 } query_schema_action_t;
 
 enum

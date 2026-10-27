@@ -160,7 +160,17 @@ puts the query of them in the file of queries, *// @table* and
 *db.getSiblingDB("shop").getCollection("orders").find({}, { _id: 1, total:
 1 }).limit(100)*, of its database whatever the *use()* of the file, of the
 field of the line alone when it is one, Insert puts *db.orders*, a field, the key of an
-index. mongosh reads it,
+index. F4 puts the DDL of the collection there, as F3 does its query: its
+*drop()*, commented, its *createCollection()* with its options, the
+validator, *capped*, the time series, or the *createView()* of a view, and a
+*createIndex()* for each index but *_id_*; of a database, its
+*dropDatabase()*, commented, and its *use()*. A value with a type of BSON
+in it, a date, a Long, is put in *EJSON.deserialize()*; indexes that could
+not be read are told in a comment. It is the definition, not a backup: the
+users, the roles and the documents are not in it; a document whose key is
+one of Extended JSON, *{ $date: "..." }*, is read back as that type, and a
+Double with no fraction as a number, the types mongosh gives them already
+lost. mongosh reads it,
 a run of its own each time: a query that makes or drops a collection, a
 view or an index, or inserts, reads it again.
 
@@ -213,7 +223,7 @@ Output tell whether it is found.
 The scripts the plugin runs to read the schema and what AI is told, and
 the one mongosh runs before each query, are files of
 */usr/share/coole/query*: *mongo-list.js*, *mongo-details.js*,
-*mongo-ai.js*, *mongo-prefix.js*, *pg-list.sql*, *pg-details.sql*,
+*mongo-ai.js*, *mongo-ddl.js*, *mongo-prefix.js*, *pg-list.sql*, *pg-details.sql*,
 *pg-ai.sql*. One of the same name in *~/.config/coole/query*, or in
 */etc/coole/query*, is run in its place. In them *{{> name}}* is the part
 *name* of the same extension, read from the same directories, *{{name}}*
@@ -312,7 +322,7 @@ the unique ones; Foreign keys; Indexes; References, the foreign keys of the
 other tables to it; Triggers. A table has all of them, the empty ones too,
 a view and the like those with something.
 
-In Schema, a tree; the button bar shows F3 and F5:
+In Schema, a tree; the button bar shows F3, F4 and F5:
 
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move over the nodes.

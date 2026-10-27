@@ -140,6 +140,7 @@ query_tree_buttonbar (edit_tree_t *tree, WButtonBar *bb)
 
     // the commands of the plugin, which act on the node of the cursor
     buttonbar_set_label_command (bb, 3, _ ("Query"), t->q->commands[QUERY_CMD_SCHEMA_QUERY], NULL);
+    buttonbar_set_label_command (bb, 4, _ ("DDL"), t->q->commands[QUERY_CMD_SCHEMA_DDL], NULL);
     buttonbar_set_label_command (bb, 5, _ ("Rows"), t->q->commands[QUERY_CMD_SCHEMA_ROWS], NULL);
 }
 
@@ -220,6 +221,27 @@ query_tree_drop_pending (query_tree_t *t)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* The file window of @file, NULL for one with no name: that of @edit while it is in front */
+static void *
+query_tree_window_of (query_tree_t *t, const char *file, void *edit)
+{
+    if (file != NULL)
+        return query_file_window (t->q, file);
+    return t->q->host->window_top_file (t->q->host) == edit ? edit : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_tree_drop_ddl (query_tree_t *t)
+{
+    t->ddl_wait = FALSE;
+    g_clear_pointer (&t->ddl_file, g_free);
+    t->ddl_edit = NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -248,6 +270,7 @@ query_tree_done (query_tree_t *t)
     g_free (t->error);
     g_free (t->keep);
     query_tree_drop_pending (t);
+    query_tree_drop_ddl (t);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -420,8 +443,13 @@ query_tree_unask (query_tree_t *t)
 {
     guint i;
 
-    // what was asked is lost: a query of F3 waiting for it with it
+    // what was asked is lost: a query of F3 waiting for it with it, and the DDL of F4
     query_tree_drop_pending (t);
+    if (t->ddl_wait)
+    {
+        query_tree_drop_ddl (t);
+        query_tree_say (t, _ ("The DDL of F4 could not be read."), NULL);
+    }
     for (i = 0; i < t->model->nodes->len; i++)
     {
         query_node_t *n = g_ptr_array_index (t->model->nodes, i);
@@ -594,9 +622,7 @@ query_tree_read (query_tree_t *t, query_node_t *o, gboolean ok)
     {
         char *field = g_strdup (t->pending_field);
         // the window of F3, by its file; one with no name while it is in front
-        void *edit = t->pending_file != NULL ? query_file_window (t->q, t->pending_file)
-            : t->q->host->window_top_file (t->q->host) == t->pending_edit ? t->pending_edit
-                                                                          : NULL;
+        void *edit = query_tree_window_of (t, t->pending_file, t->pending_edit);
 
         query_tree_drop_pending (t);
         if (ok)
@@ -613,7 +639,47 @@ query_tree_read (query_tree_t *t, query_node_t *o, gboolean ok)
 void
 query_tree_cancel (query_tree_t *t)
 {
+    // the DDL of F4 is of no node: it is put all the same
     query_tree_drop_pending (t);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+guint
+query_tree_ddl_ask (query_tree_t *t)
+{
+    // the file of queries in front now: the DDL goes there, whatever is in front once it is read
+    void *edit = t->q->host->window_top_file (t->q->host);
+
+    if (t->ddl_wait)
+        query_tree_say (t, _ ("The DDL of F4 of before is put no more: that of this one is."),
+                        NULL);
+    query_tree_drop_ddl (t);
+    t->ddl_wait = TRUE;
+    t->ddl_edit = edit;
+    t->ddl_file = edit != NULL ? t->q->host->get_current_file (t->q->host, edit) : NULL;
+    // the answer of an F4 of before, read while this one waits, is not taken for it
+    return ++t->ddl_id;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_tree_ddl_put (query_tree_t *t, guint id, const char *text, const char *error)
+{
+    void *edit;
+
+    if (!t->ddl_wait || id != t->ddl_id)
+        return;
+    edit = query_tree_window_of (t, t->ddl_file, t->ddl_edit);
+    query_tree_drop_ddl (t);
+    if (text == NULL)
+        query_tree_say (t, error != NULL ? error : _ ("The DDL of F4 could not be read."), NULL);
+    else if (edit == NULL)
+        query_tree_say (t, _ ("The file of queries F4 was pressed in is no more: the DDL is here."),
+                        text);
+    else if (!query_put_query (t->q, edit, text))
+        query_tree_say (t, _ ("The file of queries is being changed: the DDL is here."), text);
 }
 
 /* --------------------------------------------------------------------------------------------- */

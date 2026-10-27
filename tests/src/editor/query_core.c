@@ -775,6 +775,9 @@ test_scripts (void)
     g_free (s);
     g_free (check_script ("mongo-ai.js", "use", "", "max", "300", NULL));
     g_free (check_script ("mongo-list.js", NULL));
+    s = check_script ("mongo-ddl.js", "db", "\"shop\"", "collection", "\"orders\"", NULL);
+    g_assert_nonnull (strstr (s, "const __n = \"orders\";"));
+    g_free (s);
     s = check_script ("mongo-prefix.js", NULL);
     // the copies for Table after the line QUERY_TABLE_LINE has
     g_assert_nonnull (strstr (s, "'\\x1e' + '" QUERY_TABLE_TAG " '"));

@@ -120,6 +120,8 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { "QuerySchemaRefresh", N_ ("Read the schemas again"), NULL },
     { "QuerySchemaQuery",
       N_ ("Put the query of the rows of the relation of the node of Schema into the file"), NULL },
+    { "QuerySchemaDdl",
+      N_ ("Put the drop, commented, and the create of the node of Schema into the file"), "f4" },
     { "QueryAi", N_ ("Write the query of the request of the paragraph or the selection by AI"),
       "f6" },
     { NULL, NULL, NULL },
@@ -1559,6 +1561,7 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
     case QUERY_CMD_SCHEMA_INSERT:
     case QUERY_CMD_SCHEMA_REFRESH:
     case QUERY_CMD_SCHEMA_QUERY:
+    case QUERY_CMD_SCHEMA_DDL:
         // the keys of the nodes of Schema are its own there alone: Insert of a file is that of
         // the editor
         if (key && cmd != QUERY_CMD_SCHEMA && edit != NULL)
@@ -1574,6 +1577,7 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
                                        : cmd == QUERY_CMD_SCHEMA_ROWS   ? QUERY_SCHEMA_ROWS
                                        : cmd == QUERY_CMD_SCHEMA_INSERT ? QUERY_SCHEMA_INSERT
                                        : cmd == QUERY_CMD_SCHEMA_QUERY  ? QUERY_SCHEMA_QUERY
+                                       : cmd == QUERY_CMD_SCHEMA_DDL    ? QUERY_SCHEMA_DDL
                                                                         : QUERY_SCHEMA_REFRESH,
                                    key && cmd != QUERY_CMD_SCHEMA);
     case QUERY_CMD_AI:

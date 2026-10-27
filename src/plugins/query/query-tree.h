@@ -76,6 +76,13 @@ typedef struct
     char *pending_field;  // and the field it is of, NULL for all of them
     char *pending_file;   // the file of queries F3 was pressed in, NULL for one with no name
     void *pending_edit;   // its window then
+
+    // F4: the DDL asked for waits to be put in the file F4 was pressed in, NULL for one with no
+    // name, and its window then
+    gboolean ddl_wait;
+    guint ddl_id;  // of the last F4: the answer of another is not put
+    char *ddl_file;
+    void *ddl_edit;
 } query_tree_t;
 
 /*** global variables defined in .c file *********************************************************/
@@ -138,6 +145,12 @@ query_node_t *query_tree_query (query_tree_t *t, query_node_t *n);
 void query_tree_read (query_tree_t *t, query_node_t *o, gboolean ok);
 /* What was asked is asked no more, the tree read again: no query of F3 waits */
 void query_tree_cancel (query_tree_t *t);
+/* F4: the DDL the backend reads goes to the file of queries in front now; the id of the DDL
+   asked for, which the backend gives back with it */
+guint query_tree_ddl_ask (query_tree_t *t);
+/* The DDL of F4 @id read, @text, or not, @error, NULL for a word of its own: put in the file F4
+   was pressed in, or told; that of an F4 of before is not */
+void query_tree_ddl_put (query_tree_t *t, guint id, const char *text, const char *error);
 
 /*** inline functions ****************************************************************************/
 
