@@ -42,6 +42,7 @@
 
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
+#include "src/editor/edittree.h"
 #include "src/editor/editwindow.h"
 
 #include "project-core.h"
@@ -79,8 +80,6 @@ enum
     PROJECT_ACT_OPEN_PROJECT
 };
 
-typedef struct project_tree_t project_tree_t;
-
 typedef struct
 {
     mc_editor_host_t *host;
@@ -90,11 +89,10 @@ typedef struct
     gint64 files_time;     // when they were listed
     GPtrArray *recent;     // absolute names, the latest first
     long commands[PROJECT_CMD_COUNT];
-    project_tree_t *tree;
+    edit_tree_t *tree;      // the window of the tree, NULL when there is none
+    mctree_model_t *model;  // and what it shows
+    GHashTable *paths;      // the paths of the directories open, NULL for none
     gboolean service;
-    // the marks of a closed and an open directory in the tree, from the skin
-    char *glyph_closed;
-    char *glyph_open;
     // what the list chose, opened once its dialog is gone
     char *open_file;
     long open_line;
@@ -114,25 +112,14 @@ typedef struct
     long line;
 } project_symbol_t;
 
-/* a row of the tree */
+/* a node of the tree: its data */
 typedef struct
 {
     char *name;
     char *rel;  // relative to the root
-    int depth;
     gboolean dir;
     int symbol;  // a symbol of the outline: its index; -1 for a file or a directory
-} project_row_t;
-
-struct project_tree_t
-{
-    WEditWindow window;
-    project_t *project;
-    GHashTable *expanded;  // rel of the open directories
-    GPtrArray *rows;       // project_row_t shown
-    int selected;
-    int top;
-};
+} project_node_t;
 
 /* where an item of the list goes: a file, at a line or where it was */
 typedef struct
@@ -150,8 +137,8 @@ typedef struct
 
 /*** forward declarations (file scope functions) *************************************************/
 
-static void project_tree_rebuild (project_tree_t *tree);
-static void project_tree_reveal (project_tree_t *tree, const char *file);
+static void project_tree_rebuild (project_t *project, gboolean keep);
+static void project_tree_reveal (project_t *project, const char *file);
 
 /*** file scope variables ************************************************************************/
 
@@ -188,13 +175,13 @@ project_symbol_free (gpointer p)
 /* --------------------------------------------------------------------------------------------- */
 
 static void
-project_row_free (gpointer p)
+project_node_free (gpointer p)
 {
-    project_row_t *row = (project_row_t *) p;
+    project_node_t *data = (project_node_t *) p;
 
-    g_free (row->name);
-    g_free (row->rel);
-    g_free (row);
+    g_free (data->name);
+    g_free (data->rel);
+    g_free (data);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -341,10 +328,8 @@ project_set_root (project_t *project, const char *root, gboolean chosen)
     project_recent_load (project);
     if (project->tree != NULL)
     {
-        g_hash_table_remove_all (project->tree->expanded);
-        project->tree->selected = project->tree->top = 0;
         (void) project_files (project);
-        project_tree_rebuild (project->tree);
+        project_tree_rebuild (project, FALSE);
     }
     if (project->service)
         project->host->service_emit (
@@ -386,8 +371,7 @@ project_file_seen (project_t *project, void *edit)
             g_ptr_array_set_size (project->recent, PROJECT_RECENT_MAX);
         project_recent_save (project);
     }
-    if (project->tree != NULL)
-        project_tree_reveal (project->tree, file);
+    project_tree_reveal (project, file);
     g_free (file);
 }
 
@@ -766,10 +750,10 @@ project_pick (project_t *project, const char *title, gboolean recent_only, long 
 /* --------------------------------------------------------------------------------------------- */
 
 static gint
-project_row_compare (gconstpointer a, gconstpointer b)
+project_entry_compare (gconstpointer a, gconstpointer b)
 {
-    const project_row_t *x = *(project_row_t *const *) a;
-    const project_row_t *y = *(project_row_t *const *) b;
+    const project_node_t *x = *(project_node_t *const *) a;
+    const project_node_t *y = *(project_node_t *const *) b;
 
     if (x->dir != y->dir)
         return x->dir ? -1 : 1;
@@ -780,536 +764,343 @@ project_row_compare (gconstpointer a, gconstpointer b)
 
 static void project_outline_update (project_t *project, void *edit, gboolean edited);
 
-/* Whether a row of the tree is the file of the outline, which has symbols */
+/* Whether @rel is the file of the outline, which has symbols */
 static gboolean
-project_row_has_outline (const project_t *project, const project_row_t *row)
+project_is_outline (const project_t *project, const char *rel)
 {
-    const char *rel;
+    const char *orel;
 
-    if (row->dir || row->symbol >= 0 || project->outline == NULL || project->outline->len == 0)
+    if (project->outline == NULL || project->outline->len == 0)
         return FALSE;
-    rel = project_relative ((project_t *) project, project->outline_file);
-    return rel != NULL && strcmp (rel, row->rel) == 0;
+    orel = project_relative ((project_t *) project, project->outline_file);
+    return orel != NULL && strcmp (orel, rel) == 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The symbols of the file of the outline under its row, unless they are folded */
-static void
-project_tree_add_outline (project_tree_t *tree, const project_row_t *file_row)
+/* A node of the tree under @parent; @data taken */
+static mctree_node_t *
+project_node_add (mctree_model_t *model, mctree_node_t *parent, project_node_t *data)
 {
-    const project_t *project = tree->project;
+    mctree_node_t *node =
+        mctree_model_add_node (model, parent, MCTREE_NODE_FIELD, data->name, NULL);
+
+    mctree_node_set_data (node, data, project_node_free);
+    return node;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The symbols of the file of the outline under its node, open unless the user has folded them */
+static void
+project_tree_add_outline (project_t *project, mctree_model_t *model, mctree_node_t *file)
+{
+    const project_node_t *f = (const project_node_t *) file->data;
     guint i;
 
-    if (project->outline_closed || !project_row_has_outline (project, file_row))
+    if (!project_is_outline (project, f->rel))
         return;
     for (i = 0; i < project->outline->len; i++)
     {
         const project_symbol_t *sym = g_ptr_array_index (project->outline, i);
-        project_row_t *row = g_new0 (project_row_t, 1);
+        project_node_t *data = g_new0 (project_node_t, 1);
 
-        row->name = g_strdup (sym->label);
-        row->rel = g_strdup (file_row->rel);
-        row->depth = file_row->depth + 1;
-        row->symbol = (int) i;
-        g_ptr_array_add (tree->rows, row);
+        data->name = g_strdup (sym->label);
+        data->rel = g_strdup (f->rel);
+        data->symbol = (int) i;
+        (void) project_node_add (model, file, data);
     }
+    file->expanded = !project->outline_closed;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The rows of a directory of the tree, and of the open ones in it, from the sorted names */
+/* A directory opened, the root for one: what is in it, from the names of the files of the
+   project, the directories first, those in it read when they are opened */
 static void
-project_tree_add_dir (project_tree_t *tree, const GPtrArray *files, const char *dir, int depth)
+project_tree_children (mctree_model_t *model, mctree_node_t *node, void *user_data)
 {
+    project_t *project = (project_t *) user_data;
+    const char *dir = node->data != NULL ? ((const project_node_t *) node->data)->rel : "";
     const gsize dir_len = strlen (dir);
+    const GPtrArray *files = project->files;
     GPtrArray *children = g_ptr_array_new ();
     GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     guint i;
 
+    mctree_node_set_lazy (node, FALSE);
     for (i = 0; files != NULL && i < files->len; i++)
     {
         const char *rel = g_ptr_array_index (files, i);
         const char *rest, *slash;
-        project_row_t *row;
+        project_node_t *data;
 
         if (dir_len != 0 && (strncmp (rel, dir, dir_len) != 0 || rel[dir_len] != '/'))
             continue;
         rest = dir_len != 0 ? rel + dir_len + 1 : rel;
         slash = strchr (rest, '/');
-        row = g_new0 (project_row_t, 1);
-        row->depth = depth;
-        row->symbol = -1;
+        data = g_new0 (project_node_t, 1);
+        data->symbol = -1;
         if (slash == NULL)
         {
-            row->name = g_strdup (rest);
-            row->rel = g_strdup (rel);
+            data->name = g_strdup (rest);
+            data->rel = g_strdup (rel);
         }
         else
         {
-            row->name = g_strndup (rest, (gsize) (slash - rest));
-            row->rel = g_strndup (rel, (gsize) (slash - rel));
-            row->dir = TRUE;
-            if (g_hash_table_contains (seen, row->rel))
+            data->name = g_strndup (rest, (gsize) (slash - rest));
+            data->rel = g_strndup (rel, (gsize) (slash - rel));
+            data->dir = TRUE;
+            if (g_hash_table_contains (seen, data->rel))
             {
-                project_row_free (row);
+                project_node_free (data);
                 continue;
             }
-            g_hash_table_add (seen, g_strdup (row->rel));
+            g_hash_table_add (seen, g_strdup (data->rel));
         }
-        g_ptr_array_add (children, row);
+        g_ptr_array_add (children, data);
     }
-    g_ptr_array_sort (children, project_row_compare);
+    g_ptr_array_sort (children, project_entry_compare);
 
     for (i = 0; i < children->len; i++)
     {
-        project_row_t *row = g_ptr_array_index (children, i);
+        project_node_t *data = g_ptr_array_index (children, i);
+        mctree_node_t *child = project_node_add (model, node, data);
 
-        g_ptr_array_add (tree->rows, row);
-        if (row->dir && g_hash_table_contains (tree->expanded, row->rel))
-            project_tree_add_dir (tree, files, row->rel, depth + 1);
-        else if (!row->dir)
-            project_tree_add_outline (tree, row);
+        if (data->dir)
+        {
+            mctree_node_set_lazy (child, TRUE);
+            // open before: read and open now, the first time it is seen, under a parent closed too
+            if (project->paths != NULL)
+            {
+                char *path = mctree_node_path (child);
+
+                if (g_hash_table_contains (project->paths, path))
+                    mctree_node_expand (model, child);
+                g_free (path);
+            }
+        }
+        else
+            project_tree_add_outline (project, model, child);
     }
-    g_ptr_array_free (children, FALSE);
+    g_ptr_array_free (children, TRUE);
     g_hash_table_destroy (seen);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-project_tree_rebuild (project_tree_t *tree)
+/* The title of the frame: where the project is, its whole root, the home as ~ */
+static char *
+project_tree_title (const project_t *project)
 {
-    project_t *project = tree->project;
+    const char *home = g_get_home_dir ();
+    const size_t home_len = home != NULL ? strlen (home) : 0;
+    const char *root = project->root;
 
-    g_ptr_array_set_size (tree->rows, 0);
+    if (root == NULL)
+        return g_strdup (_ ("Project"));
+    if (home_len > 1 && strncmp (root, home, home_len) == 0
+        && (root[home_len] == '/' || root[home_len] == '\0'))
+        return g_strdup_printf ("~%s", root + home_len);
+    return g_strdup (root);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The tree made again from the files and the outline: the directories open, and the node of the
+   cursor, stay so when @keep */
+static void
+project_tree_rebuild (project_t *project, gboolean keep)
+{
+    edit_tree_t *tree = project->tree;
+    mctree_model_t *was = project->model;
+    const mctree_node_t *current = keep && tree != NULL ? edit_tree_current (tree) : NULL;
+    char *cursor = current != NULL ? mctree_node_path (current) : NULL;
+    // what was open, under a directory never opened too
+    GHashTable *paths = keep && was != NULL ? mctree_model_kept_paths (was, project->paths) : NULL;
+    char *title;
+
+    if (tree == NULL)
+    {
+        g_free (cursor);
+        if (paths != NULL)
+            g_hash_table_destroy (paths);
+        return;
+    }
+    // the outline folded by the user stays so, that of another file comes open
+    if (was != NULL && project->outline_file != NULL)
+    {
+        const char *rel = project_relative (project, project->outline_file);
+        char *path = rel != NULL ? g_strdelimit (g_strdup (rel), "/", MCTREE_PATH_SEP[0]) : NULL;
+        const mctree_node_t *file = path != NULL ? mctree_model_find_path (was, path) : NULL;
+
+        if (file != NULL && file->children != NULL && file->children->len > 0)
+            project->outline_closed = !file->expanded;
+        g_free (path);
+    }
     if (project->files == NULL)
         (void) project_files (project);
-    project_tree_add_dir (tree, project->files, "", 0);
-    tree->selected = CLAMP (tree->selected, 0, MAX ((int) tree->rows->len - 1, 0));
-    widget_draw (WIDGET (tree));
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static int
-project_tree_body_lines (const project_tree_t *tree)
-{
-    return MAX (1, WIDGET (tree)->rect.lines - 2);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-project_tree_scroll_to_selected (project_tree_t *tree)
-{
-    const int lines = project_tree_body_lines (tree);
-
-    if (tree->selected < tree->top)
-        tree->top = tree->selected;
-    else if (tree->selected >= tree->top + lines)
-        tree->top = tree->selected - lines + 1;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* Open the directories down to a file of the project and put the selection on it */
-static void
-project_tree_reveal (project_tree_t *tree, const char *file)
-{
-    const char *rel = project_relative (tree->project, file);
-    const char *slash;
-    guint i;
-
-    if (rel == NULL)
-        return;
-    for (slash = strchr (rel, '/'); slash != NULL; slash = strchr (slash + 1, '/'))
-        g_hash_table_add (tree->expanded, g_strndup (rel, (gsize) (slash - rel)));
-    project_tree_rebuild (tree);
-    for (i = 0; i < tree->rows->len; i++)
-        if (strcmp (((project_row_t *) g_ptr_array_index (tree->rows, i))->rel, rel) == 0)
-        {
-            tree->selected = (int) i;
-            break;
-        }
-    project_tree_scroll_to_selected (tree);
-    widget_draw (WIDGET (tree));
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-project_tree_draw (project_tree_t *tree)
-{
-    WEditWindow *win = &tree->window;
-    Widget *w = WIDGET (tree);
-    const gboolean focused = widget_get_state (w, WST_FOCUSED);
-    const int color = edit_window_frame_color (win, focused);
-    const int lines = project_tree_body_lines (tree);
-    const int width = MAX (0, w->rect.cols - 2);
-    char *current = NULL;
-    const char *current_rel;
-    void *top_file;
-    char *title;
-    int row;
-
-    edit_window_draw_frame (win, color, focused);
-    tty_setcolor (color);
-    // where the project is, its whole root, the home as ~; too long, its end is kept
-    if (tree->project->root != NULL)
-    {
-        const char *home = g_get_home_dir ();
-        const size_t home_len = home != NULL ? strlen (home) : 0;
-        const char *root = tree->project->root;
-
-        if (home_len > 1 && strncmp (root, home, home_len) == 0
-            && (root[home_len] == '/' || root[home_len] == '\0'))
-            title = g_strdup_printf ("[~%s]", root + home_len);
-        else
-            title = g_strdup_printf ("[%s]", root);
-    }
-    else
-        title = g_strdup_printf ("[%s]", _ ("Project"));
-    widget_gotoyx (w, 0, 2);
-    tty_print_string (str_term_trim (title, MAX (0, w->rect.cols - 10)));
+    project->model = mctree_model_new (G_MAXSIZE);
+    (void) mctree_model_add_node (project->model, NULL, MCTREE_NODE_ROOT, "", NULL);
+    project->model->root->expanded = TRUE;
+    project->model->children = project_tree_children;
+    project->model->children_data = project;
+    if (project->paths != NULL)
+        g_hash_table_destroy (project->paths);
+    project->paths = paths;
+    // the directories open again as they are read
+    project_tree_children (project->model, project->model->root, project);
+    edit_tree_set_model (tree, project->model);
+    if (cursor != NULL)
+        (void) mctree_view_goto_path (tree->view, cursor);
+    title = project_tree_title (project);
+    edit_tree_set_title (tree, title);
     g_free (title);
-    edit_window_draw_icons (win, color);
-
-    top_file = tree->project->host->window_top_file (tree->project->host);
-    if (top_file != NULL)
-        current = tree->project->host->get_current_file (tree->project->host, top_file);
-    current_rel = project_relative (tree->project, current);
-
-    for (row = 0; row < lines; row++)
-    {
-        const int index = tree->top + row;
-        GString *line = g_string_new (NULL);
-        int c = EDITOR_NORMAL_COLOR;
-
-        if (index < (int) tree->rows->len)
-        {
-            const project_row_t *r = g_ptr_array_index (tree->rows, index);
-            int i;
-
-            for (i = 0; i < r->depth; i++)
-                g_string_append (line, "  ");
-            if (r->dir || project_row_has_outline (tree->project, r))
-            {
-                const gboolean open = r->dir ? g_hash_table_contains (tree->expanded, r->rel)
-                                             : !tree->project->outline_closed;
-
-                g_string_append (line,
-                                 open ? tree->project->glyph_open : tree->project->glyph_closed);
-                g_string_append_c (line, ' ');
-            }
-            else
-                g_string_append (line, "  ");
-            g_string_append (line, r->name);
-            if (r->dir)
-                g_string_append_c (line, '/');
-            if (index == tree->selected && focused)
-                c = EDITOR_MARKED_COLOR;
-            else if (r->symbol >= 0 ? r->symbol == tree->project->outline_current
-                                    : current_rel != NULL && strcmp (current_rel, r->rel) == 0)
-                c = EDITOR_BOLD_COLOR;
-        }
-        tty_setcolor (EDITOR_NORMAL_COLOR);
-        tty_draw_hline (w->rect.y + row + 1, w->rect.x + 1, ' ', width);
-        tty_setcolor (c);
-        widget_gotoyx (w, row + 1, 1);
-        tty_print_string (str_fit_to_term (line->str, width, J_LEFT));
-        g_string_free (line, TRUE);
-    }
-    g_free (current);
-
-    // the scrollbar on the frame: where the rows are, of how many
-    if (win->fullscreen == 0)
-    {
-        edit_window_set_scroll (win, TRUE, (long) tree->rows->len, lines, tree->top);
-        edit_window_draw_bars (win, color);
-    }
+    mctree_model_free (was);
+    g_free (cursor);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Open the directories down to a file of the project and put the cursor on it */
 static void
-project_tree_activate (project_tree_t *tree)
+project_tree_reveal (project_t *project, const char *file)
 {
-    project_row_t *row;
+    const char *rel = project_relative (project, file);
+    mctree_node_t *node;
+    const char *at;
+    char *path;
 
-    if (tree->selected < 0 || tree->selected >= (int) tree->rows->len)
+    if (project->tree == NULL || project->model == NULL || rel == NULL)
         return;
-    row = g_ptr_array_index (tree->rows, tree->selected);
-    if (row->symbol >= 0)
+    node = project->model->root;
+    for (at = rel; node != NULL;)
+    {
+        const char *slash = strchr (at, '/');
+        const gsize len = slash != NULL ? (gsize) (slash - at) : strlen (at);
+        mctree_node_t *next = NULL;
+        guint i;
+
+        for (i = 0; node->children != NULL && i < node->children->len && next == NULL; i++)
+        {
+            mctree_node_t *child = g_ptr_array_index (node->children, i);
+
+            if (strlen (child->key) == len && strncmp (child->key, at, len) == 0)
+                next = child;
+        }
+        node = next;
+        if (node == NULL || slash == NULL)
+            break;
+        mctree_node_expand (project->model, node);
+        at = slash + 1;
+    }
+    path = g_strdelimit (g_strdup (rel), "/", MCTREE_PATH_SEP[0]);
+    mctree_view_rebuild (project->tree->view);
+    (void) mctree_view_goto_path (project->tree->view, path);
+    g_free (path);
+    widget_draw (WIDGET (project->tree));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The row of a node: a directory with a slash after its name */
+static void
+project_tree_row (edit_tree_t *tree, const mctree_node_t *node, GString *name, GString *info)
+{
+    const project_node_t *data = (const project_node_t *) node->data;
+
+    (void) tree;
+    (void) info;
+    g_string_append (name, node->key);
+    if (data != NULL && data->dir)
+        g_string_append_c (name, '/');
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Enter or a double click: a file opened, a symbol at its line; a directory opens or closes */
+static gboolean
+project_tree_activate (edit_tree_t *tree, mctree_node_t *node)
+{
+    project_t *project = (project_t *) tree->data;
+    const project_node_t *data = (const project_node_t *) node->data;
+
+    if (project == NULL || data == NULL || data->dir)
+        return FALSE;
+    if (data->symbol >= 0)
     {
         // the line of the symbol, in the window of the file
-        const project_symbol_t *sym = g_ptr_array_index (tree->project->outline, row->symbol);
+        const project_symbol_t *sym = g_ptr_array_index (project->outline, data->symbol);
 
-        (void) tree->project->host->show_location (tree->project->host, tree->project->outline_file,
-                                                   sym->line);
-    }
-    else if (row->dir)
-    {
-        if (!g_hash_table_remove (tree->expanded, row->rel))
-            g_hash_table_add (tree->expanded, g_strdup (row->rel));
-        project_tree_rebuild (tree);
+        (void) project->host->show_location (project->host, project->outline_file, sym->line);
     }
     else
     {
-        char *file = g_build_filename (tree->project->root, row->rel, (char *) NULL);
+        char *file = g_build_filename (project->root, data->rel, (char *) NULL);
 
-        (void) tree->project->host->open_file (tree->project->host, file);
+        (void) project->host->open_file (project->host, file);
         g_free (file);
     }
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The file in front, and the symbol its cursor is in, stand out */
 static gboolean
-project_tree_key (project_tree_t *tree, int key)
+project_tree_bold (edit_tree_t *tree, const mctree_node_t *node)
 {
-    const int lines = project_tree_body_lines (tree);
-    const int last = (int) tree->rows->len - 1;
-    project_row_t *row = tree->selected >= 0 && tree->selected <= last
-        ? g_ptr_array_index (tree->rows, tree->selected)
-        : NULL;
+    const project_t *project = (const project_t *) tree->data;
+    const project_node_t *data = (const project_node_t *) node->data;
+    void *top;
+    char *current;
+    const char *rel;
+    gboolean bold;
 
-    switch (key)
-    {
-    case KEY_UP:
-        tree->selected = MAX (0, tree->selected - 1);
-        break;
-    case KEY_DOWN:
-        tree->selected = MIN (last, tree->selected + 1);
-        break;
-    case KEY_PPAGE:
-        tree->selected = MAX (0, tree->selected - lines);
-        break;
-    case KEY_NPAGE:
-        tree->selected = MIN (last, tree->selected + lines);
-        break;
-    case KEY_HOME:
-        tree->selected = 0;
-        break;
-    case KEY_END:
-        tree->selected = MAX (0, last);
-        break;
-    case KEY_RIGHT:
-        if (row != NULL && row->dir && !g_hash_table_contains (tree->expanded, row->rel))
-            project_tree_activate (tree);
-        else if (row != NULL && project_row_has_outline (tree->project, row)
-                 && tree->project->outline_closed)
-        {
-            tree->project->outline_closed = FALSE;
-            project_tree_rebuild (tree);
-        }
-        break;
-    case KEY_LEFT:
-        if (row != NULL && row->dir && g_hash_table_contains (tree->expanded, row->rel))
-            project_tree_activate (tree);
-        else if (row != NULL && project_row_has_outline (tree->project, row)
-                 && !tree->project->outline_closed)
-        {
-            tree->project->outline_closed = TRUE;
-            project_tree_rebuild (tree);
-        }
-        else if (row != NULL && row->depth > 0)
-        {
-            // up to the directory it is in
-            int i;
-
-            for (i = tree->selected - 1; i >= 0; i--)
-                if (((project_row_t *) g_ptr_array_index (tree->rows, i))->depth < row->depth)
-                {
-                    tree->selected = i;
-                    break;
-                }
-        }
-        break;
-    case '\n':
-    case KEY_ENTER:
-        project_tree_activate (tree);
-        break;
-    default:
-        // a letter goes to the next name that starts with it
-        if (key > ' ' && key < 128 && last >= 0)
-        {
-            int i;
-
-            for (i = 1; i <= last + 1; i++)
-            {
-                const int at = (tree->selected + i) % (last + 1);
-                const project_row_t *r = g_ptr_array_index (tree->rows, at);
-
-                if (g_ascii_tolower (r->name[0]) == g_ascii_tolower (key))
-                {
-                    tree->selected = at;
-                    break;
-                }
-            }
-            break;
-        }
+    if (project == NULL || data == NULL || data->dir)
         return FALSE;
-    }
-    project_tree_scroll_to_selected (tree);
-    widget_draw (WIDGET (tree));
-    return TRUE;
+    if (data->symbol >= 0)
+        return data->symbol == project->outline_current;
+    top = project->host->window_top_file (project->host);
+    current = top != NULL ? project->host->get_current_file (project->host, top) : NULL;
+    rel = project_relative ((project_t *) project, current);
+    bold = rel != NULL && strcmp (rel, data->rel) == 0;
+    g_free (current);
+    return bold;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
 static void
-project_tree_buttonbar (project_tree_t *tree)
+project_tree_closed (edit_tree_t *tree)
 {
-    WButtonBar *bb = buttonbar_find (DIALOG (WIDGET (tree)->owner));
-    int i;
+    project_t *project = (project_t *) tree->data;
 
-    if (bb == NULL)
+    if (project == NULL)
         return;
-    for (i = 2; i <= 10; i++)
-        buttonbar_clear_label (bb, i, NULL);
-    buttonbar_set_label_command (bb, 1, _ ("Help"), CK_Help, NULL);
-    buttonbar_set_label_command (bb, 10, _ ("Close"), CK_Close, WIDGET (tree));
-    widget_draw (WIDGET (bb));
+    project->tree = NULL;
+    g_clear_pointer (&project->model, mctree_model_free);
+    g_clear_pointer (&project->paths, g_hash_table_destroy);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-static gboolean
-project_tree_close (WEditWindow *win)
-{
-    WDialog *dialog = DIALOG (WIDGET (win)->owner);
-
-    edit_window_give_room_back (win);
-    edit_window_destroy (win);
-    widget_draw (WIDGET (dialog));
-    return TRUE;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static cb_ret_t
-project_tree_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
-{
-    project_tree_t *tree = (project_tree_t *) w;
-
-    switch (msg)
-    {
-    case MSG_DRAW:
-        project_tree_draw (tree);
-        return MSG_HANDLED;
-    case MSG_FOCUS:
-        project_tree_buttonbar (tree);
-        project_tree_draw (tree);
-        return MSG_HANDLED;
-    case MSG_UNFOCUS:
-        project_tree_draw (tree);
-        return MSG_HANDLED;
-    case MSG_KEY:
-        if (parm == KEY_F (10) || parm == ESC_CHAR)
-        {
-            (void) project_tree_close (&tree->window);
-            return MSG_HANDLED;
-        }
-        return project_tree_key (tree, parm) ? MSG_HANDLED : MSG_NOT_HANDLED;
-    case MSG_ACTION:
-        if (parm == CK_Close)
-        {
-            (void) project_tree_close (&tree->window);
-            return MSG_HANDLED;
-        }
-        return MSG_NOT_HANDLED;
-    case MSG_CURSOR:
-        widget_gotoyx (w, 1 + tree->selected - tree->top, 1);
-        return MSG_HANDLED;
-    case MSG_DESTROY:
-        if (tree->project != NULL)
-            tree->project->tree = NULL;
-        g_hash_table_destroy (tree->expanded);
-        g_ptr_array_free (tree->rows, TRUE);
-        return group_default_callback (w, sender, msg, parm, data);
-    default:
-        return group_default_callback (w, sender, msg, parm, data);
-    }
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-project_tree_mouse (Widget *w, mouse_msg_t msg, mouse_event_t *event)
-{
-    project_tree_t *tree = (project_tree_t *) w;
-    const int index = tree->top + event->y - 1;
-
-    switch (msg)
-    {
-    case MSG_MOUSE_DOWN:
-        widget_select (w);
-        if (index >= 0 && index < (int) tree->rows->len)
-            tree->selected = index;
-        widget_draw (w);
-        break;
-    case MSG_MOUSE_CLICK:
-        if (event->count == GPM_DOUBLE && index == tree->selected)
-            project_tree_activate (tree);
-        else if (index == tree->selected && index >= 0 && index < (int) tree->rows->len
-                 && ((project_row_t *) g_ptr_array_index (tree->rows, index))->dir)
-            project_tree_activate (tree);
-        break;
-    case MSG_MOUSE_SCROLL_UP:
-        tree->top = MAX (0, tree->top - 3);
-        widget_draw (w);
-        break;
-    case MSG_MOUSE_SCROLL_DOWN:
-        tree->top =
-            MAX (0, MIN ((int) tree->rows->len - project_tree_body_lines (tree), tree->top + 3));
-        widget_draw (w);
-        break;
-    default:
-        break;
-    }
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static char *
-project_tree_title (const WEditWindow *win)
-{
-    const project_tree_t *tree = (const project_tree_t *) win;
-
-    return g_strdup_printf (
-        _ ("Project %s"),
-        tree->project != NULL && tree->project->root != NULL ? tree->project->root : "");
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The scrollbar of the frame has moved: the rows go with it, the selection stays where it is */
-static void
-project_tree_scrolled (WEditWindow *win, gboolean vertical, long pos)
-{
-    project_tree_t *tree = (project_tree_t *) win;
-
-    if (!vertical)
-        return;
-    tree->top =
-        (int) CLAMP (pos, 0, MAX (0, (int) tree->rows->len - project_tree_body_lines (tree)));
-    widget_draw (WIDGET (tree));
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* a scrollbar down the right side */
-static const edit_window_class_t project_tree_class = {
-    .callback = project_tree_callback,
-    .mouse_callback = project_tree_mouse,
-    .get_title = project_tree_title,
-    .close = project_tree_close,
-    .min_lines = 5,
-    .min_cols = 16,
-    .vbar = TRUE,
-    .scrolled = project_tree_scrolled,
+static const edit_tree_ops_t project_tree_ops = {
+    .row = project_tree_row,
+    .activate = project_tree_activate,
+    .bold = project_tree_bold,
+    .closed = project_tree_closed,
 };
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The tree closed, as F10 does */
+static void
+project_tree_close (project_t *project)
+{
+    if (project->tree != NULL)
+        (void) send_message (WIDGET (project->tree), NULL, MSG_ACTION, CK_Close, NULL);
+}
 
 /* --------------------------------------------------------------------------------------------- */
 
@@ -1317,14 +1108,14 @@ static const edit_window_class_t project_tree_class = {
 static void
 project_tree_toggle (project_t *project)
 {
-    project_tree_t *tree;
-    WRect area, rect;
+    WRect area;
     void *top_file;
+    char *title;
 
     if (project->tree != NULL)
     {
         if (project->host->window_current (project->host) == project->tree)
-            (void) project_tree_close (&project->tree->window);
+            project_tree_close (project);
         else
             project->host->window_show (project->host, project->tree);
         return;
@@ -1338,29 +1129,26 @@ project_tree_toggle (project_t *project)
 
     top_file = project->host->window_top_file (project->host);
     project->host->window_area (project->host, &area);
-    rect = area;
-    tree = g_new0 (project_tree_t, 1);
-    edit_window_init (&tree->window, &rect, &project_tree_class);
-    tree->window.fullscreen = 0;
-    tree->project = project;
-    tree->expanded = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-    tree->rows = g_ptr_array_new_with_free_func (project_row_free);
-    project->tree = tree;
-    project->host->window_add (project->host, tree);
+    title = project_tree_title (project);
+    project->tree = edit_tree_new (title, &project_tree_ops, project);
+    g_free (title);
+    project->host->window_add (project->host, project->tree);
     // the column at the right, the panel of the debugger under it
-    project->host->window_dock_right (project->host, tree, CLAMP (area.cols * 30 / 100, 24, 50));
+    project->host->window_dock_right (project->host, project->tree,
+                                      CLAMP (area.cols * 30 / 100, 24, 50));
     (void) project_files (project);
-    project_tree_rebuild (tree);
+    project_tree_rebuild (project, FALSE);
     if (top_file != NULL)
     {
         char *file = project->host->get_current_file (project->host, top_file);
 
-        project_tree_reveal (tree, file);
+        project_tree_reveal (project, file);
         project_outline_update (project, top_file, FALSE);
         g_free (file);
     }
 }
 
+/* --------------------------------------------------------------------------------------------- */
 /* --------------------------------------------------------------------------------------------- */
 /* Commands */
 /* --------------------------------------------------------------------------------------------- */
@@ -1622,7 +1410,7 @@ project_outline_update (project_t *project, void *edit, gboolean edited)
     project->outline_current = -2;  // drawn again
     // more than a twentieth of a second: too long for every rest of the typing
     project->outline_slow = g_get_monotonic_time () - started > G_USEC_PER_SEC / 20;
-    project_tree_rebuild (project->tree);
+    project_tree_rebuild (project, TRUE);
     project_outline_cursor (project, edit);
 }
 
@@ -1645,8 +1433,7 @@ project_handle_event (void *data, void *edit, int event_id, void *payload)
         if (payload != NULL && !project_files_have (project, (const char *) payload))
         {
             project_files_drop (project);
-            if (project->tree != NULL)
-                project_tree_rebuild (project->tree);
+            project_tree_rebuild (project, TRUE);
         }
         // the outline made too slow for the edits is made with the save
         if (edit != NULL && project->outline_slow)
@@ -1802,8 +1589,7 @@ project_tree_hide (void *data)
 {
     project_t *project = (project_t *) data;
 
-    if (project->tree != NULL)
-        (void) project_tree_close (&project->tree->window);
+    project_tree_close (project);
 }
 
 static void *
@@ -1834,10 +1620,6 @@ project_open (mc_editor_host_t *host, void *editor_dialog)
     (void) editor_dialog;
     project->host = host;
     project->recent = g_ptr_array_new_with_free_func (g_free);
-    project->glyph_closed =
-        mc_skin_get ("widget-editor", "tree-closed-char", mc_global.utf8_display ? ">" : "+");
-    project->glyph_open =
-        mc_skin_get ("widget-editor", "tree-open-char", mc_global.utf8_display ? "\u25bc" : "-");
     host->commands_register (host, PROJECT_KEYMAP_SECTION, N_ ("&Project"), project_commands);
     if (host->window_kind != NULL)
         host->window_kind (host, &project_tree_kind, project);
@@ -1860,14 +1642,14 @@ project_close (void *data)
     project_t *project = (project_t *) data;
 
     if (project->tree != NULL)
-        project->tree->project = NULL;
+        project->tree->data = NULL;
+    g_clear_pointer (&project->model, mctree_model_free);
+    g_clear_pointer (&project->paths, g_hash_table_destroy);
     if (project->service)
         project->host->service_unregister (project->host, PROJECT_SERVICE);
     project_files_drop (project);
     g_ptr_array_free (project->recent, TRUE);
     g_free (project->root);
-    g_free (project->glyph_closed);
-    g_free (project->glyph_open);
     g_free (project->open_file);
     g_free (project->outline_file);
     if (project->outline != NULL)
