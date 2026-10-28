@@ -89,6 +89,9 @@ typedef struct
     mctree_model_t *model;          // the tree read, its root of no name holding the roots shown
     edit_tree_t *window;            // the window Schema, NULL when there is none
     char *icons[QUERY_ICON_COUNT];  // the marks of the nodes, from the skin; "" for none
+    int colors[QUERY_ICON_COUNT];   // and the colors of their names, -1 for that of the row
+    int group_color;                // of a group and a section, -1 for that of the row
+    int info_color;                 // of what is at the right of a row, -1 for that of the row
     GHashTable *paths;  // the paths open before the tree was read again, NULL the first time
     char *keep;         // the path of the node of the cursor then
     gboolean shown;     // the window was made once
