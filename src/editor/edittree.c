@@ -470,10 +470,9 @@ edit_tree_new (const char *title, const edit_tree_ops_t *ops, void *data)
     tree->ops = ops;
     tree->data = data;
     tree->view = mctree_view_new ();
-    tree->glyph_closed =
-        mc_skin_get ("widget-editor", "tree-closed-char", mc_global.utf8_display ? ">" : "+");
-    tree->glyph_open =
-        mc_skin_get ("widget-editor", "tree-open-char", mc_global.utf8_display ? "\u25bc" : "-");
+    // from the skin; ASCII when it has none or the terminal cannot show its own
+    tree->glyph_closed = mc_skin_get ("widget-editor", "tree-closed-char", "+");
+    tree->glyph_open = mc_skin_get ("widget-editor", "tree-open-char", "-");
     return tree;
 }
 
