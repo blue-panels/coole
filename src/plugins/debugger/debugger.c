@@ -65,7 +65,8 @@ static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
     { "DebugStop", N_ ("Stop debugging"), "f15; ctrl-f2" },
     { "DebugToggleBreakpoint", N_ ("Toggle breakpoint"), "f6; ctrl-f8; ctrl-b" },
     { "DebugRunToCursor", N_ ("Run to cursor"), "f4; alt-f9" },
-    { "DebugEvaluate", N_ ("Evaluate expression"), "enter; alt-f8" },
+    // Alt-F8 as in IntelliJ; Enter stays a key of the text, which beeps in step mode
+    { "DebugEvaluate", N_ ("Evaluate expression"), "alt-f8" },
     { "DebugLeave", N_ ("Leave step mode"), "esc" },
     { "DebugClose", N_ ("Close debug session window"), "f10" },
     // from any window: to the panel of the debugger, and back to the file

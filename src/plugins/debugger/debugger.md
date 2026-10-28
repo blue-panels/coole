@@ -165,9 +165,10 @@ with a breakpoint, or with **Debug → Run to function...**.
 
 F2, F9 and F10 stay Save, the menu and Quit.
 
-**Enter**, **Alt-F8**
+**Alt-F8**
 : Evaluate the selection or the word under the cursor; the value comes in a
-dialog that can add it to the watches.
+dialog that can add it to the watches. Enter changes the text, as in other
+IDEs, and beeps here: Esc first to edit.
 
 **Alt-F10**
 : Back to the line the program is stopped at, the cursor having gone
@@ -239,7 +240,7 @@ of. A click on the mark before it does so too.
 value in a dialog that can add it to the watches; on a frame, go to it; on a
 breakpoint, go to its line.
 
-**Evaluate expression...** and **Enter** in a source window show an
+**Evaluate expression...** and **Alt-F8** in a source window show an
 expression as a tree in a dialog, its members as in the panel; **Add watch**
 there watches the member of the cursor, *p->corner[1]* for one, by the
 expression the debugger gives or one made as C has it.
@@ -355,7 +356,7 @@ function takes a name typed as it is, and a breakpoint goes on a line.
 **The rest of the Debug menu**
 
 **Call stack...** chooses a frame in a list, as Enter in the panel does.
-**Evaluate expression...** is Enter of a source window: the value of an
+**Evaluate expression...** is Alt-F8 of a source window: the value of an
 expression, in the dialog that can add it to the watches. **Add watch...**
 keeps an expression for the project; a watch shows a value, it does not
 stop the program when the value changes. Both offer the selection, or the
