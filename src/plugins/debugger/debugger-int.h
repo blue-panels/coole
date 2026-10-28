@@ -28,6 +28,8 @@
 #define MC__DEBUGGER_INT_H
 
 #include "lib/global.h"
+#include "lib/mctree/mctree-model.h"
+#include "src/editor/edittree.h"
 #include "src/editor/editwindow.h"
 #include "lib/editor-plugin.h"
 #include "debug-backend.h"
@@ -82,7 +84,6 @@ typedef struct
     unsigned int pending_token;
 } debug_watch_t;
 
-typedef struct debug_session_window_t debug_session_window_t;
 typedef struct debug_disasm_window_t debug_disasm_window_t;
 
 /* A breakpoint on an instruction, from the window of the instructions; not kept */
@@ -194,8 +195,13 @@ typedef struct
     // debug mode: the file windows take the keys of the debugger, F3 to F8, whether the program
     // runs or not (coole --debug, or Debug > Debug keys in files)
     gboolean debug_mode;
-    gboolean layout_pushed;  // the editor keeps the windows of before debugging
-    debug_session_window_t *session_window;
+    gboolean layout_pushed;       // the editor keeps the windows of before debugging
+    edit_tree_t *session_window;  // the panel, a tree window; NULL when it is closed
+    mctree_model_t *panel_model;  // what it shows
+    GHashTable *panel_open;       // the paths of the values open, kept from a stop to the next
+    GHashTable *panel_closed;     // and of the parts the user has closed
+    GHashTable *panel_members;    // the members read by the paths of their nodes, of this stop
+    guint panel_stop;             // which stop that is: an answer of another is of before
     // the virtual environment of the project with no debugpy has been told of
     gboolean venv_told;
     // the window of the instructions, those it shows, and the address of the frame among them
@@ -215,14 +221,6 @@ struct debug_disasm_window_t
     int cursor;
     int top;
     gboolean follow;  // the next drawing brings the program counter in sight
-};
-
-struct debug_session_window_t
-{
-    WEditWindow window;
-    debugger_t *debug;
-    int cursor;  // the row of the panel the cursor is on
-    int top;     // the first row in sight
 };
 
 /* a function of the project, from the index of the plugin ctags */
@@ -277,6 +275,11 @@ void debug_window_buttonbar (const debugger_t *debug, Widget *w);
 void debug_editor_buttonbar (debugger_t *debug, Widget *edit);
 gboolean debug_session_close_window (WEditWindow *win);
 void debug_session_refresh (debugger_t *debug);
+/* The members the panel has read are of before: the program has stopped again, another frame is
+   chosen */
+void debug_panel_forget_members (debugger_t *debug);
+/* The debugger is gone: the panel tells it, with nothing to show */
+void debug_panel_ended (debugger_t *debug);
 mc_ep_result_t debug_session_show (void *data, void *edit);
 mc_ep_window_state_t debug_panel_state (void *data);
 void debug_panel_show (void *data);
@@ -299,6 +302,11 @@ mc_ep_result_t debug_show_stack (void *data, void *edit);
 void debug_select_frame (debugger_t *debug, const debug_frame_t *frame);
 mc_ep_result_t debug_act_evaluate (void *data, void *edit);
 mc_ep_result_t debug_add_watch (void *data, void *edit);
+/* @expression watched, unless it is already */
+mc_ep_result_t debug_watch_add (debugger_t *debug, const char *expression);
+/* The expression of the member @name of the structure, the array or the pointer @parent of
+   @parent_type, as C has it: s.x, p->x, a[3] */
+char *debug_member_expression (const char *parent, const char *parent_type, const char *name);
 mc_ep_result_t debug_remove_watch (void *data, void *edit);
 mc_ep_result_t debug_show_watches (void *data, void *edit);
 

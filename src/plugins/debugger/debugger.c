@@ -1373,8 +1373,7 @@ debug_close (void *data)
 {
     debugger_t *debug = (debugger_t *) data;
 
-    if (debug->session_window != NULL)
-        debug->session_window->debug = NULL;
+    debug_panel_ended (debug);
     if (debug->disasm_window != NULL)
         debug->disasm_window->debug = NULL;
     if (debug->backend != NULL)
