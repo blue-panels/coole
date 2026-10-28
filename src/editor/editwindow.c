@@ -64,6 +64,11 @@ static void edit_window_place_bars (WEditWindow *win);
 
 /*** file scope variables ************************************************************************/
 
+// the screen is drawn whole, from the bottom up: the windows over one are drawn after it
+static gboolean edit_window_all = FALSE;
+// the windows over one are being drawn again: they do not draw again those over them
+static gboolean edit_window_above = FALSE;
+
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -107,6 +112,11 @@ edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
     }
 
     ret = win->klass->callback (w, sender, msg, parm, data);
+
+    /* Drawn alone, it has drawn over the windows over it: they are drawn again.  A file window
+       draws itself by edit_update_screen (), which does it */
+    if (msg == MSG_DRAW && !edit_widget_is_editor (w))
+        edit_window_draw_above (win);
 
     // the room made for it is forgotten with it
     if (msg == MSG_DESTROY && win->rooms != NULL)
@@ -991,6 +1001,59 @@ edit_window_draw_bars (WEditWindow *win, int color)
  * @param w probably window object
  * @return TRUE if widget is a window, FALSE otherwise
  */
+
+void
+edit_window_draw_above (WEditWindow *win)
+{
+    Widget *w = WIDGET (win);
+    WGroup *g = w->owner;
+    GArray *drawn;
+    GList *l;
+    gboolean any = FALSE;
+
+    if (g == NULL || edit_window_all || edit_window_above || !widget_get_state (w, WST_VISIBLE)
+        || !widget_get_state (WIDGET (g), WST_ACTIVE))
+        return;
+    l = g_list_find (g->widgets, w);
+    if (l == NULL)
+        return;
+
+    edit_window_above = TRUE;
+    // the rectangles drawn: that of the window, then those of the windows drawn again over it
+    drawn = g_array_new (FALSE, FALSE, sizeof (WRect));
+    g_array_append_val (drawn, w->rect);
+    for (l = g_list_next (l); l != NULL; l = g_list_next (l))
+    {
+        Widget *o = WIDGET (l->data);
+        guint i;
+
+        if (!edit_window_is_window (o) || !widget_get_state (o, WST_VISIBLE))
+            continue;
+        for (i = 0; i < drawn->len; i++)
+            if (rects_are_overlapped (&g_array_index (drawn, WRect, i), &o->rect))
+            {
+                widget_draw (o);
+                g_array_append_val (drawn, o->rect);
+                any = TRUE;
+                break;
+            }
+    }
+    g_array_free (drawn, TRUE);
+    edit_window_above = FALSE;
+    // the cursor back in the window with the focus, not in the last one drawn
+    if (any)
+        widget_update_cursor (WIDGET (g));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_window_drawing_all (gboolean on)
+{
+    edit_window_all = on;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 gboolean
 edit_window_is_window (const Widget *w)

@@ -66,6 +66,54 @@ static const edit_window_class_t test_window_class = {
     .min_cols = 6,
 };
 
+/* A window that counts how often it is drawn */
+typedef struct
+{
+    WEditWindow window;
+    int drawn;
+} test_drawn_t;
+
+static cb_ret_t
+test_drawn_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    if (msg == MSG_DRAW)
+    {
+        ((test_drawn_t *) w)->drawn++;
+        return MSG_HANDLED;
+    }
+    if (msg == MSG_CURSOR)
+        return MSG_HANDLED;
+    return group_default_callback (w, sender, msg, parm, data);
+}
+
+static const edit_window_class_t test_drawn_class = {
+    .callback = test_drawn_callback,
+    .get_title = test_window_get_title,
+    .close = test_window_close,
+    .min_lines = 4,
+    .min_cols = 6,
+};
+
+static test_drawn_t *
+test_drawn_new (int y, int x, int lines, int cols)
+{
+    test_drawn_t *t = g_new0 (test_drawn_t, 1);
+    WRect r;
+
+    rect_init (&r, y, x, lines, cols);
+    edit_window_init (&t->window, &r, &test_drawn_class);
+    group_add_widget (&owner.group, WIDGET (t));
+    return t;
+}
+
+static void
+test_drawn_free (test_drawn_t *t)
+{
+    group_remove_widget (WIDGET (t));
+    send_message (t, NULL, MSG_DESTROY, 0, NULL);
+    g_free (t);
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 static void
@@ -108,6 +156,52 @@ teardown (void)
     g_free (test_win);
     str_uninit_strings ();
 }
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A window drawn alone draws again the windows over it it has drawn over, and those over them,
+   not the others; nothing while the screen is drawn whole */
+START_TEST (test_window_draws_those_above)
+{
+    // from the bottom up: b over a, c apart, d over b alone
+    test_drawn_t *a = test_drawn_new (2, 40, 6, 20);
+    test_drawn_t *b = test_drawn_new (5, 45, 6, 20);
+    test_drawn_t *c = test_drawn_new (18, 2, 3, 10);
+    test_drawn_t *d = test_drawn_new (10, 60, 4, 10);
+
+    WIDGET (&owner)->state |= WST_ACTIVE;
+    widget_draw (WIDGET (a));
+    ck_assert_int_eq (a->drawn, 1);
+    ck_assert_int_eq (b->drawn, 1);
+    ck_assert_int_eq (c->drawn, 0);
+    ck_assert_int_eq (d->drawn, 1);
+
+    // the one on top draws itself alone
+    widget_draw (WIDGET (d));
+    ck_assert_int_eq (b->drawn, 1);
+    ck_assert_int_eq (d->drawn, 2);
+
+    // a hidden one is not drawn
+    widget_hide (WIDGET (b));
+    widget_draw (WIDGET (a));
+    ck_assert_int_eq (b->drawn, 1);
+    ck_assert_int_eq (d->drawn, 2);
+    widget_show (WIDGET (b));
+
+    // the screen drawn whole: each window once, by the screen
+    edit_window_drawing_all (TRUE);
+    widget_draw (WIDGET (a));
+    edit_window_drawing_all (FALSE);
+    ck_assert_int_eq (b->drawn, 1);
+    ck_assert_int_eq (d->drawn, 2);
+    WIDGET (&owner)->state &= ~WST_ACTIVE;
+
+    test_drawn_free (d);
+    test_drawn_free (c);
+    test_drawn_free (b);
+    test_drawn_free (a);
+}
+END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
@@ -1225,6 +1319,7 @@ main (void)
     tcase_add_test (tc_core, test_window_destroy_selects_top);
     tcase_add_test (tc_core, test_editor_is_window);
     tcase_add_test (tc_core, test_window_docks);
+    tcase_add_test (tc_core, test_window_draws_those_above);
 
     return mctest_run_all (tc_core);
 }
