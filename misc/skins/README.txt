@@ -346,21 +346,28 @@ applies individually to each of these three properties.
         breakpoint-char
         breakpoint-pending-char
         breakpoint-disabled-char
-            Marks of a breakpoint in the gutter: taken by GDB, not taken
-            yet or refused, disabled (default: a filled circle, a lozenge
-            and an empty circle; o ? - on a terminal that is not UTF-8)
+        breakpoint-condition-char
+            Marks of a breakpoint in the gutter and in the panel of the
+            debugger: taken by GDB, not taken yet or refused, disabled,
+            with a condition (default: o ? - c; the skins of coole give a
+            filled circle, a lozenge, an empty circle and a circle with a
+            dot)
 
         exec-char
         exec-breakpoint-char
             Mark of the line where the debugged program stopped, and of
-            that line when it has a breakpoint (default: > and a diamond;
-            > @ on a terminal that is not UTF-8)
+            that line when it has a breakpoint (default: > @; the skins of
+            coole give > and a diamond)
 
         tree-closed-char
         tree-open-char
-            Marks of a closed and an open directory in the tree of the
-            project (default: > and a triangle; + and - on a terminal that
-            is not UTF-8)
+            Marks of a closed and an open node of a tree window: the tree
+            of the project, the panel of the debugger, Schema of the
+            queries (default: + -; the skins of coole give > and a
+            triangle)
+
+        A mark the terminal cannot show, a character of UTF-8 on one
+        that is not, is the default instead.
 
         build-error-char
         build-warning-char

@@ -81,20 +81,22 @@ static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
     { NULL, NULL, NULL },
 };
 
+/* The marks of the gutter and the panel: their characters come from the skin, section
+   [widget-editor]; those here, ASCII, when it has none or the terminal cannot show its own */
 static const mc_ep_marker_kind_t debug_mark_kinds[DEBUG_MARK_COUNT] = {
-    { "debugger.breakpoint", "breakpoint-char", "\u25cf", "o", "breakpoint", "breakpointline", NULL,
-      10, "brightred" },
+    { "debugger.breakpoint", "breakpoint-char", "o", "o", "breakpoint", "breakpointline", NULL, 10,
+      "brightred" },
     // GDB has not taken it yet, or has refused it
-    { "debugger.breakpoint-pending", "breakpoint-pending-char", "\u25ca", "?", "breakpointpending",
+    { "debugger.breakpoint-pending", "breakpoint-pending-char", "?", "?", "breakpointpending",
       "breakpointline", NULL, 12, "red" },
-    { "debugger.breakpoint-disabled", "breakpoint-disabled-char", "\u25cb", "-",
-      "breakpointdisabled", NULL, NULL, 11, NULL },
+    { "debugger.breakpoint-disabled", "breakpoint-disabled-char", "-", "-", "breakpointdisabled",
+      NULL, NULL, 11, NULL },
     // the program stops there only when its condition is true
-    { "debugger.breakpoint-condition", "breakpoint-condition-char", "\u25c9", "c", "breakpoint",
+    { "debugger.breakpoint-condition", "breakpoint-condition-char", "c", "c", "breakpoint",
       "breakpointline", NULL, 10, "brightred" },
     { "debugger.exec", "exec-char", ">", ">", "execmark", "execline", "bookmarkfound", 20,
       "yellow" },
-    { "debugger.exec-breakpoint", "exec-breakpoint-char", "\u2666", "@", "execmark", "execline",
+    { "debugger.exec-breakpoint", "exec-breakpoint-char", "@", "@", "execmark", "execline",
       "bookmarkfound", 21, "brightred" },
 };
 
@@ -1355,9 +1357,8 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     {
         debug->marks[i] =
             host->marker_kind != NULL ? host->marker_kind (host, &debug_mark_kinds[i]) : -1;
-        debug->glyphs[i] = mc_skin_get ("widget-editor", debug_mark_kinds[i].glyph_key,
-                                        mc_global.utf8_display ? debug_mark_kinds[i].glyph
-                                                               : debug_mark_kinds[i].glyph_ascii);
+        debug->glyphs[i] =
+            mc_skin_get ("widget-editor", debug_mark_kinds[i].glyph_key, debug_mark_kinds[i].glyph);
     }
     if (host->startup_option (host, "debug") != NULL)
     {

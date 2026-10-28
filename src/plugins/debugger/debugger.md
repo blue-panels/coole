@@ -333,7 +333,8 @@ built from the text as it was. GDB stops only on lines with code: a
 breakpoint on another line moves to the next line GDB stops on. The skin
 gives the marks in *[widget-editor]* (*breakpoint-char*, *exec-char* and the
 others) and their colors in *[editor]* (*breakpoint*, *execmark*,
-*execline*); a terminal that is not UTF-8 shows *o*, *?*, *>* and *@*.
+*execline*); without them, or on a terminal that is not UTF-8, the marks are
+*o*, *?*, *-*, *c*, *>* and *@*.
 
 **Functions by name**
 
