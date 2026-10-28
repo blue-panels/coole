@@ -67,6 +67,9 @@ struct edit_tree_t
 
 /* A tree window of @title, not added yet: the owner adds it with the host, window_add () and
    window_dock_right () */
+/* The key in [editor] of the skin of the cursor of a tree, and its color */
+const char *edit_tree_cursor_key (void);
+int edit_tree_cursor_color (void);
 edit_tree_t *edit_tree_new (const char *title, const edit_tree_ops_t *ops, void *data);
 /* The title of the frame, @title */
 void edit_tree_set_title (edit_tree_t *tree, const char *title);

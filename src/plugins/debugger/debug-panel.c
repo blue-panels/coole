@@ -1324,13 +1324,13 @@ debug_session_show (void *data, void *edit)
     debug->panel_error_color = debug_panel_skin_color ("error", "brightred", NULL);
     debug->panel_title_color = debug_panel_skin_color ("title", "white", "bold");
     debug->panel_added_color = debug_panel_skin_color ("added", "green", NULL);
-    // on the light background of the cursor, darker
+    // on the background of the cursor of the tree
     debug->panel_changed_cursor =
-        debug_panel_skin_color_on ("editmarked", "changed-cursor", "brown", NULL);
+        debug_panel_skin_color_on (edit_tree_cursor_key (), "changed-cursor", "brown", NULL);
     debug->panel_added_cursor =
-        debug_panel_skin_color_on ("editmarked", "added-cursor", "green", NULL);
+        debug_panel_skin_color_on (edit_tree_cursor_key (), "added-cursor", "green", NULL);
     debug->panel_error_cursor =
-        debug_panel_skin_color_on ("editmarked", "error-cursor", "red", NULL);
+        debug_panel_skin_color_on (edit_tree_cursor_key (), "error-cursor", "red", NULL);
     g_free (debug->panel_changed_mark);
     debug->panel_changed_mark = mc_skin_get ("debugger", "changed-char", "*");
     g_free (debug->panel_added_mark);

@@ -204,6 +204,10 @@ applies individually to each of these three properties.
         editmarked
             Selected text
 
+        treeselected
+            The cursor of a tree window: the tree of the project, the panel
+            of the debugger, Schema (default: editmarked)
+
         editwhitespace
             Tabs and trailing spaces
 
