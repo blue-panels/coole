@@ -33,6 +33,9 @@ typedef struct
     gboolean (*activate) (edit_tree_t *tree, mctree_node_t *node);
     /* Whether the row of @node stands out, the file in front for one */
     gboolean (*bold) (edit_tree_t *tree, const mctree_node_t *node);
+    /* The colors of the name of @node and of what is at its right, -1 for those of the row; the
+       row of the cursor has its own */
+    void (*colors) (edit_tree_t *tree, const mctree_node_t *node, int *name, int *info);
     /* A key the window does not take, on @node, NULL for none: TRUE when it is taken */
     gboolean (*key) (edit_tree_t *tree, mctree_node_t *node, int key);
     /* A command of the button bar of the owner on @node, NULL for none: TRUE when it is taken */
