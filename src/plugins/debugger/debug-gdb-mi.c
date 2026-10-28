@@ -210,6 +210,8 @@ mi_variables (const gdb_mi_record_t *record)
         entry->value = value != NULL ? g_strdup (value)
             : type != NULL           ? g_strdup_printf ("{%s}", type)
                                      : g_strdup (_ ("<unavailable>"));
+        // the panel opens a pointer by it
+        entry->type = g_strdup (type);
         g_ptr_array_add (variables, entry);
     }
     return variables;
