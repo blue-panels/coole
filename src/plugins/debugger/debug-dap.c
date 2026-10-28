@@ -649,6 +649,8 @@ dap_event_breakpoint (dap_backend_t *dap, JsonObject *body)
 static void dap_configure (dap_backend_t *dap);
 static void dap_launch (dap_backend_t *dap);
 static void dap_child_configure (dap_backend_t *dap);
+static debug_variable_t *dap_variable (JsonObject *item, const char *name,
+                                       const char *value_member);
 
 static void
 dap_event (void *owner, dap_client_t *client, const char *event, JsonObject *body)
@@ -1543,10 +1545,13 @@ dap_response_gather_variables (void *owner, gboolean success, const char *messag
         if (g_strcmp0 (dap_string (item, "value"), "") == 0
             && dap_int (item, "variablesReference", 0) > 0)
             continue;
-        variable = g_new0 (debug_variable_t, 1);
-        variable->name = g_strdup (dap_string (item, "name"));
-        variable->value = g_strdup (dap_string (item, "value") != NULL ? dap_string (item, "value")
-                                                                       : _ ("<unavailable>"));
+        // with the reference of its members, its expression and its type: the panel opens it
+        variable = dap_variable (item, dap_string (item, "name"), "value");
+        if (dap_string (item, "value") == NULL)
+        {
+            g_free (variable->value);
+            variable->value = g_strdup (_ ("<unavailable>"));
+        }
         g_ptr_array_add (gather->variables, variable);
     }
 }

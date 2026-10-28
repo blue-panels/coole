@@ -54,7 +54,6 @@
 /*** forward declarations (file scope functions) */
 
 static void debug_reply_watch (void *ui, const debug_reply_t *reply, void *data);
-static mc_ep_result_t debug_watch_add (debugger_t *debug, const char *expression);
 
 /*** end of forward declarations */
 
@@ -303,6 +302,8 @@ debug_reply_variables (void *ui, const debug_reply_t *reply, void *data)
     g_ptr_array_unref (debug->locals);
     debug->locals = reply->variables != NULL ? g_ptr_array_ref (reply->variables)
                                              : g_ptr_array_new_with_free_func (debug_variable_free);
+    // a stop, or another frame: the members the panel has read are of before
+    debug_panel_forget_members (debug);
     debug_notes_show (debug);
     debug_session_refresh (debug);
 }
@@ -487,13 +488,24 @@ debug_type_is_pointer (const char *type)
     return len > 0 && type[len - 1] == '*';
 }
 
+char *
+debug_member_expression (const char *parent, const char *parent_type, const char *name)
+{
+    const gboolean simple = debug_expression_simple (parent);
+
+    if (name[0] != '\0' && strspn (name, "0123456789") == strlen (name))
+        return g_strdup_printf (simple ? "%s[%s]" : "(%s)[%s]", parent, name);
+    if (parent_type != NULL && debug_type_is_pointer (parent_type))
+        return g_strdup_printf (simple ? "%s->%s" : "(%s)->%s", parent, name);
+    return g_strdup_printf (simple ? "%s.%s" : "(%s).%s", parent, name);
+}
+
 /* The expression of a member, for a watch: the one the debugger gives, else made from that of
    the structure as C has it, s.x, p->x, a[3] */
 static char *
 debug_node_expression (const debug_node_t *node)
 {
     char *parent, *expression;
-    const char *type;
 
     if (node->var->expression != NULL)
         return g_strdup (node->var->expression);
@@ -502,17 +514,7 @@ debug_node_expression (const debug_node_t *node)
     parent = debug_node_expression (node->parent);
     if (parent == NULL)
         return NULL;
-    type = node->parent->var->type;
-    if (node->var->name[0] != '\0'
-        && strspn (node->var->name, "0123456789") == strlen (node->var->name))
-        expression = g_strdup_printf (debug_expression_simple (parent) ? "%s[%s]" : "(%s)[%s]",
-                                      parent, node->var->name);
-    else if (type != NULL && debug_type_is_pointer (type))
-        expression = g_strdup_printf (debug_expression_simple (parent) ? "%s->%s" : "(%s)->%s",
-                                      parent, node->var->name);
-    else
-        expression = g_strdup_printf (debug_expression_simple (parent) ? "%s.%s" : "(%s).%s",
-                                      parent, node->var->name);
+    expression = debug_member_expression (parent, node->parent->var->type, node->var->name);
     g_free (parent);
     return expression;
 }
@@ -868,7 +870,7 @@ debug_select_frame (debugger_t *debug, const debug_frame_t *frame)
     debug_session_refresh (debug);
 }
 
-static mc_ep_result_t
+mc_ep_result_t
 debug_watch_add (debugger_t *debug, const char *expression)
 {
     debug_watch_t *watch;

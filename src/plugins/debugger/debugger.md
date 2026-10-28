@@ -213,23 +213,32 @@ measure of the program: the work of the debugger is in it, and the time the
 program waited for what is typed in its tab. **Window → Debugger panel** and **Window → Debug console** open them
 again, beside the windows of the other plugins.
 
-In the panel the debugger keys work as in step mode (there F6 and F4 work on
-the cursor of the topmost file window, F10 closes the panel), and:
+The panel is a tree: its parts, Locals, Registers, Watches, Call stack and
+Breakpoints, open and close, and a variable or a watch with members, a
+structure, an array, a pointer to one, an object of Python, opens in place,
+its members under it, read from the debugger as it is opened. What is open
+stays open from a stop to the next, read again there: *p*, *p.meta* open,
+a step shows their new values. In the panel the debugger keys work as in step
+mode (there F6 and F4 work on the cursor of the topmost file window, F10
+closes the panel), and:
 
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
-: Move from one row to another.
+: Move from one row to another; a letter goes to the next row that starts
+with it.
+
+**Right**, **Left**
+: Open a part or a value with members; close it, or go up to the one it is
+of. A click on the mark before it does so too.
 
 **Enter**
-: On a variable or a watch, its whole value in a dialog that can add it to
-the watches; on a frame, go to it; on a breakpoint, go to its line.
+: On a value with members, open or close it; on one with none, its whole
+value in a dialog that can add it to the watches; on a frame, go to it; on a
+breakpoint, go to its line.
 
-A value with members, a structure, an array, a pointer to one, an object of
-Python, comes as a tree, its members shown. **Enter** or **Right** opens a
-member, **Left** closes it or goes up to the one it is of; **Add watch**
-watches the member of the cursor, *p->corner[1]* for one, by the expression
-the debugger gives or one made as C has it. The members come from the
-debugger as they are opened. **Evaluate expression...** and **Enter** in a
-source window give the same tree.
+**Evaluate expression...** and **Enter** in a source window show an
+expression as a tree in a dialog, its members as in the panel; **Add watch**
+there watches the member of the cursor, *p->corner[1]* for one, by the
+expression the debugger gives or one made as C has it.
 
 **Space**
 : Disable a breakpoint, or enable it again: GDB keeps it but does not stop
@@ -242,7 +251,7 @@ on it, and its mark is an empty circle.
 : Remove a watch or a breakpoint.
 
 **Ins**
-: Add a watch.
+: Add a watch; on a variable or a member, watch it, *pp->meta.id* for one.
 
 **:**
 : A command of GDB itself, for what the panel does not have: *p x*,
@@ -255,7 +264,8 @@ a debug adapter it is an expression or a command of the adapter's console,
 Under the local variables the panel has the registers of the frame: the
 general ones, the program counter and the flags, in hexadecimal; those the
 last step has changed are in bold. They are asked of the debugger only while
-they are shown: Enter on their title shows and hides them, and a stop in code
+they are shown: Enter on their title shows and hides them, Right opens it, and
+a stop in code
 with no source, or in a source of assembler (*.s*, *.S*, *.asm*), shows them.
 Enter on a register gives its value in the dialog
 that adds it to the watches, *$rax* for one. A program of a language with no
