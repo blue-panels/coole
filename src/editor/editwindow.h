@@ -160,6 +160,12 @@ void edit_window_set_scroll (WEditWindow *win, gboolean vertical, long total, lo
 /* Draw the scrollbars over the frame, after the frame */
 void edit_window_draw_bars (WEditWindow *win, int color);
 gboolean edit_window_is_window (const Widget *w);
+/* The windows over @win drawn again where it has drawn over them: a window draws its rectangle
+   whole, those over it not seen.  Nothing while the screen is drawn whole. */
+void edit_window_draw_above (WEditWindow *win);
+/* The screen of the editor is drawn whole, from the bottom up, while @on: a window has no need to
+   draw those over it again */
+void edit_window_drawing_all (gboolean on);
 
 /* Put a window on the screen; the screen owns it from now on */
 void edit_window_add (WDialog *h, WEditWindow *win);

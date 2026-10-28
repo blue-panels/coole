@@ -100,18 +100,6 @@ git_log_part (git_t *git, guint skip, int limit)
 /* The plugin */
 /* --------------------------------------------------------------------------------------------- */
 
-static void
-git_open_later (void *data)
-{
-    git_t *git = (git_t *) data;
-    void *edit = git->open_edit;
-
-    git->open_edit = NULL;
-    git_window_open (git, edit, git->open_tab);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 static gboolean
 git_run_command (git_t *git, int cmd, void *edit)
 {
@@ -119,9 +107,7 @@ git_run_command (git_t *git, int cmd, void *edit)
     {
     case GIT_CMD_STATUS:
     case GIT_CMD_LOG:
-        git->open_tab = cmd == GIT_CMD_LOG ? GIT_TAB_LOG : GIT_TAB_STATUS;
-        git->open_edit = edit;
-        git->host->call_later (git->host, git_open_later, git);
+        git_window_open (git, edit, cmd == GIT_CMD_LOG ? GIT_TAB_LOG : GIT_TAB_STATUS);
         return TRUE;
     case GIT_CMD_COMMIT:
     {
@@ -615,7 +601,6 @@ git_close (void *data)
     g_ptr_array_free (git->unstaged, TRUE);
     g_free (git->root);
     g_free (git->home);
-    g_free (git->over_path);
     g_free (git->rewrote);
     g_free (git->ahead);
     g_free (git->behind);

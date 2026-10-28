@@ -2867,6 +2867,17 @@ edit_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         edit_dlg_deinit ();
         return MSG_HANDLED;
 
+    case MSG_DRAW:
+    {
+        cb_ret_t ret;
+
+        // the windows from the bottom up: none draws again those over it
+        edit_window_drawing_all (TRUE);
+        ret = dlg_default_callback (w, sender, msg, parm, data);
+        edit_window_drawing_all (FALSE);
+        return ret;
+    }
+
     case MSG_IDLE:
         widget_idle (w, FALSE);
         edit_plugins_run_later (h);
@@ -3447,6 +3458,8 @@ edit_update_screen (WEdit *e)
            it moves, and that is no change of it. */
         if (widget_get_state (WIDGET (e), WST_FOCUSED))
             edit_publish_runtime_idle (e);
+        // drawn over the windows over it: they are drawn again
+        edit_window_draw_above (EDIT_WINDOW (e));
     }
 
     widget_draw (WIDGET (buttonbar_find (DIALOG (WIDGET (e)->owner))));

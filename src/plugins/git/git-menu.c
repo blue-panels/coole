@@ -701,16 +701,11 @@ git_ini_line_of (const char *path, const char *key)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* From the idle of the editor, the window of the message having drawn itself after its key: a
-   file on the whole screen over the window Git, as F4 opens one, Esc coming back */
+/* A file on the whole screen over the window Git, as F4 opens one, Esc coming back */
 static void
-git_open_over_later (void *data)
+git_open_over (git_t *git, const char *path, long line)
 {
-    git_t *git = (git_t *) data;
-    char *path = git->over_path;
-
-    git->over_path = NULL;
-    if (path != NULL && git->host->show_location (git->host, path, MAX (1, git->over_line)))
+    if (path != NULL && git->host->show_location (git->host, path, MAX (1, line)))
     {
         void *edit = git->host->window_current (git->host);
 
@@ -723,18 +718,6 @@ git_open_over_later (void *data)
             widget_draw (WIDGET (CONST_WIDGET (edit)->owner));
         }
     }
-    g_free (path);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-static void
-git_open_over (git_t *git, const char *path, long line)
-{
-    g_free (git->over_path);
-    git->over_path = g_strdup (path);
-    git->over_line = line;
-    git->host->call_later (git->host, git_open_over_later, git);
 }
 
 /* --------------------------------------------------------------------------------------------- */
