@@ -775,6 +775,9 @@ test_scripts (void)
     g_free (s);
     g_free (check_script ("mongo-ai.js", "use", "", "max", "300", NULL));
     g_free (check_script ("mongo-list.js", NULL));
+    s = check_script ("mongo-ddl.js", "db", "\"shop\"", "collection", "\"orders\"", NULL);
+    g_assert_nonnull (strstr (s, "const __n = \"orders\";"));
+    g_free (s);
     s = check_script ("mongo-prefix.js", NULL);
     // the copies for Table after the line QUERY_TABLE_LINE has
     g_assert_nonnull (strstr (s, "'\\x1e' + '" QUERY_TABLE_TAG " '"));
@@ -786,6 +789,11 @@ test_scripts (void)
     g_assert_nonnull (strstr (s, "WHERE n.nspname !~ '^pg_'"));
     g_free (s);
     g_free (check_script ("pg-ai.sql", NULL));
+    s = check_script ("pg-ddl-relation.sql", "oid", "16384", NULL);
+    g_assert_true (g_str_has_prefix (s, "BEGIN;\nSET LOCAL search_path = pg_catalog;"));
+    g_assert_nonnull (strstr (s, "d.refobjid = 16384"));
+    g_free (s);
+    g_free (check_script ("pg-ddl-function.sql", "oid", "16384", NULL));
 
     // none: its name in the error
     s = query_script_read (dirs, G_N_ELEMENTS (dirs), "none.js", &error);

@@ -56,8 +56,8 @@
     "\x1e"                                                                                         \
     "coole-schema "
 
-/* The scripts mongosh runs, those of src/plugins/query/scripts: mongo-list.js, mongo-details.js,
-   mongo-ai.js; what they read printed after QUERY_MS_TAG */
+/* The scripts mongosh runs, those of misc/query: mongo-list.js, mongo-details.js, mongo-ai.js,
+   mongo-ddl.js; what they read printed after QUERY_MS_TAG */
 
 // the collections AI is told of at most
 #define QUERY_MS_AI_COLLECTIONS 300
@@ -68,7 +68,8 @@ typedef enum
 {
     QUERY_MS_ASK_LIST,
     QUERY_MS_ASK_DETAILS,
-    QUERY_MS_ASK_AI
+    QUERY_MS_ASK_AI,
+    QUERY_MS_ASK_DDL
 } query_ms_ask_t;
 
 /* The groups of a database, in their order */
@@ -104,6 +105,9 @@ struct query_mongo_schema_t
     char *want_ai_use;        // of the database of the use () of the request, NULL for none
     gboolean ai_sent;         // and is read
     GPtrArray *want_details;  // "db\x1fcollection" of the collections to read
+    char *want_ddl;           // "db\x1fcollection" of the one whose DDL F4 asks for, NULL for none
+    guint want_ddl_id;        // the F4 it is of
+    guint asked_ddl_id;
 
     char *current;  // the database of the connection, first and unfolded
     query_tree_t tree;
@@ -530,7 +534,13 @@ query_ms_done (char *out, char *err, int status, gboolean cut, void *data)
 
         if (!ok)
             error = g_strdup (*err != '\0' ? g_strstrip (err) : _ ("mongosh failed."));
-        if (s->asked == QUERY_MS_ASK_LIST)
+        if (s->asked == QUERY_MS_ASK_DDL)
+            query_tree_ddl_put (&s->tree, s->asked_ddl_id,
+                                o != NULL ? query_ms_member_string (o, "ddl") : NULL,
+                                o != NULL && query_ms_member_string (o, "error") != NULL
+                                    ? query_ms_member_string (o, "error")
+                                    : error);
+        else if (s->asked == QUERY_MS_ASK_LIST)
         {
             if (o != NULL)
                 query_ms_take_list (s, o);
@@ -591,8 +601,9 @@ query_ms_run (query_mongo_schema_t *s, char *script, char *why, query_ms_ask_t a
         }
         g_free (message);
         g_clear_pointer (&s->asked_key, g_free);
-        // the details of the collections are not asked for again and again
+        // the details of the collections are not asked for again and again, nor the DDL
         g_ptr_array_set_size (s->want_details, 0);
+        g_clear_pointer (&s->want_ddl, g_free);
         query_tree_unask (&s->tree);
     }
 }
@@ -612,6 +623,27 @@ query_ms_next (query_mongo_schema_t *s)
         char *script = query_script ("mongo-list.js", &why);
 
         query_ms_run (s, script, why, QUERY_MS_ASK_LIST);
+    }
+    else if (s->want_ddl != NULL)
+    {
+        char *key = s->want_ddl;
+        char *sep = strchr (key, '\x1f');
+        char *why = NULL;
+        char *script = query_script ("mongo-ddl.js", &why);
+        char *d, *c;
+
+        s->want_ddl = NULL;
+        s->asked_ddl_id = s->want_ddl_id;
+        *sep = '\0';
+        d = query_ms_string (key);
+        c = query_ms_string (sep + 1);
+        query_ms_run (
+            s, script != NULL ? query_script_fill (script, "db", d, "collection", c, NULL) : NULL,
+            why, QUERY_MS_ASK_DDL);
+        g_free (script);
+        g_free (d);
+        g_free (c);
+        g_free (key);
     }
     else if (s->want_ai)
     {
@@ -684,6 +716,46 @@ query_ms_query (const query_node_t *o, GPtrArray *fields)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* F4 on @n: the drop, commented, and the create of its collection or view, read by mongosh, put
+   in the file of queries; of a database, its drop and its use () */
+static void
+query_ms_ddl (query_mongo_schema_t *s, query_node_t *n)
+{
+    const query_item_t *item = n != NULL ? QUERY_ITEM (n) : NULL;
+    const query_node_t *o;
+    guint id;
+
+    if (item == NULL)
+        return;
+    id = query_tree_ddl_ask (&s->tree);
+    if (item->kind == QUERY_NODE_ROOT)
+    {
+        char *quoted = query_ms_string (n->key);
+        char *ddl = g_strdup_printf ("// db.getSiblingDB(%s).dropDatabase()\n"
+                                     "// a database is made with its first collection\n"
+                                     "use(%s)\n",
+                                     quoted, quoted);
+
+        query_tree_ddl_put (&s->tree, id, ddl, NULL);
+        g_free (ddl);
+        g_free (quoted);
+        return;
+    }
+    o = query_node_object (n);
+    if (o == NULL)
+    {
+        query_tree_ddl_put (&s->tree, id, NULL,
+                            _ ("F4 puts the DDL of a database or a collection."));
+        return;
+    }
+    g_free (s->want_ddl);
+    s->want_ddl = query_ms_key (o);
+    s->want_ddl_id = id;
+    query_ms_next (s);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A collection opened, or F3 on one: its details asked for, the tree query_tree_t.details */
 static void
 query_ms_details (query_node_t *o, void *data)
@@ -736,6 +808,7 @@ query_mongo_schema_free (query_mongo_schema_t *s)
     if (s->proc != NULL)
         query_proc_kill (s->proc);
     g_ptr_array_free (s->want_details, TRUE);
+    g_free (s->want_ddl);
     query_tree_done (&s->tree);
     g_free (s->asked_key);
     g_free (s->want_ai_use);
@@ -785,6 +858,9 @@ query_mongo_schema_do (query_mongo_schema_t *s, query_schema_action_t action, gb
         o = query_tree_query (&s->tree, n);
         if (o != NULL)
             query_ms_details (o, s);
+        break;
+    case QUERY_SCHEMA_DDL:
+        query_ms_ddl (s, n);
         break;
     default:
         break;
