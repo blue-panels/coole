@@ -125,6 +125,14 @@ static const char *const query_ms_group_names[QUERY_MS_GROUP_COUNT] = {
     N_ ("Time series"),
 };
 
+// the marks of the items of each section
+static const query_icon_t query_ms_section_icons[QUERY_MS_SECTION_COUNT] = {
+    QUERY_ICON_FIELD,
+    QUERY_ICON_INDEX,
+    QUERY_ICON_VALIDATOR,
+    QUERY_ICON_PIPELINE,
+};
+
 static const char *const query_ms_section_names[QUERY_MS_SECTION_COUNT] = {
     N_ ("Fields"),
     N_ ("Indexes"),
@@ -323,6 +331,7 @@ query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
                                              NULL, g_strdup_printf ("db.getSiblingDB(%s)", quoted));
 
         g_free (quoted);
+        QUERY_ITEM (root)->icon = QUERY_ICON_DATABASE;
         root->expanded = query_tree_was_open (&s->tree, root, g_strcmp0 (dbname, current) == 0);
         if (g_strcmp0 (dbname, current) == 0)
             first = i;
@@ -351,6 +360,9 @@ query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
                                                  : NULL,
                                 query_ms_collection (s, dbname, name));
             item = QUERY_ITEM (o);
+            item->icon = g == QUERY_MS_GROUP_VIEWS ? QUERY_ICON_VIEW
+                : g == QUERY_MS_GROUP_TIMESERIES   ? QUERY_ICON_TIMESERIES
+                                                   : QUERY_ICON_COLLECTION;
             // the rows of F5 in the database of the collection, whatever the use () of the file
             reach = query_ms_reach (dbname, name);
             item->rows =
@@ -485,6 +497,13 @@ query_ms_take_details (query_mongo_schema_t *s, const char *key, JsonObject *det
         (void) query_node_new (&s->tree, sections[QUERY_MS_SECTION_PIPELINE], QUERY_NODE_ITEM,
                                g_strdup (pipeline), NULL, g_strdup (pipeline));
 
+    // what the items of each section are, for their marks
+    for (k = 0; k < QUERY_MS_SECTION_COUNT; k++)
+        for (i = 0;
+             sections[k] != NULL && sections[k]->children != NULL && i < sections[k]->children->len;
+             i++)
+            QUERY_ITEM ((query_node_t *) g_ptr_array_index (sections[k]->children, i))->icon =
+                query_ms_section_icons[k];
     // the fields open the first time
     for (k = 0; k < QUERY_MS_SECTION_COUNT; k++)
         if (sections[k] != NULL)

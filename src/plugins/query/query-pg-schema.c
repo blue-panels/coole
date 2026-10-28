@@ -147,6 +147,12 @@ static const char *const query_group_names[QUERY_GROUP_COUNT] = {
     N_ ("Foreign tables"), N_ ("Sequences"), N_ ("Functions"),
 };
 
+// the marks of the items of each section
+static const query_icon_t query_section_icons[QUERY_SECTION_COUNT] = {
+    QUERY_ICON_COLUMN, QUERY_ICON_KEY,       QUERY_ICON_FKEY,
+    QUERY_ICON_INDEX,  QUERY_ICON_REFERENCE, QUERY_ICON_TRIGGER,
+};
+
 static const char *const query_section_names[QUERY_SECTION_COUNT] = {
     N_ ("Columns"), N_ ("Keys"),       N_ ("Foreign keys"),
     N_ ("Indexes"), N_ ("References"), N_ ("Triggers"),
@@ -733,6 +739,7 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
         {
             n = query_node_new (&s->tree, NULL, QUERY_NODE_ROOT, g_strdup (nsp), NULL,
                                 query_pg_ident (nsp));
+            QUERY_ITEM (n)->icon = QUERY_ICON_SCHEMA;
             g_hash_table_insert (by_name, n->key, n);
             // the first time, that of MC_PG_SCHEMA open, else public
             n->expanded = query_tree_was_open (
@@ -817,6 +824,12 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
         item = QUERY_ITEM (r);
         item->id = oid;
         item->tag = pq->PQgetvalue (rels, i, 3)[0];
+        item->icon = item->tag == 'p' ? QUERY_ICON_PARTITIONED
+            : item->tag == 'v'        ? QUERY_ICON_VIEW
+            : item->tag == 'm'        ? QUERY_ICON_MATVIEW
+            : item->tag == 'f'        ? QUERY_ICON_FOREIGN
+            : item->tag == 'S'        ? QUERY_ICON_SEQUENCE
+                                      : QUERY_ICON_TABLE;
         // a sequence has nothing under it
         mctree_node_set_lazy (r, item->tag != 'S');
         reltuples = g_ascii_strtoll (pq->PQgetvalue (rels, i, 4), NULL, 10);
@@ -867,6 +880,9 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
         // F4 reads its DDL by it
         QUERY_ITEM (f)->id = query_schema_oid (pq, funcs, i, 5);
         QUERY_ITEM (f)->tag = 'F';
+        QUERY_ITEM (f)->icon = kind == 'p' ? QUERY_ICON_PROCEDURE
+            : kind == 'a'                  ? QUERY_ICON_AGGREGATE
+                                           : QUERY_ICON_FUNCTION;
         g_free (qn);
         g_free (qf);
     }
@@ -1091,6 +1107,13 @@ query_schema_take_details (query_pg_schema_t *s, Oid oid, GPtrArray *results)
                 query_schema_trigger_text (pq->PQgetvalue (res, k, 1), pq->PQgetvalue (res, k, 0)),
                 query_pg_ident (pq->PQgetvalue (res, k, 0)));
     }
+    // what the items of each section are, for their marks
+    for (i = 0; i < QUERY_SECTION_COUNT; i++)
+        for (k = 0; sections[i] != NULL && sections[i]->children != NULL
+             && k < (int) sections[i]->children->len;
+             k++)
+            QUERY_ITEM ((query_node_t *) g_ptr_array_index (sections[i]->children, k))->icon =
+                query_section_icons[i];
     // the columns open the first time
     for (i = 0; i < QUERY_SECTION_COUNT; i++)
         if (sections[i] != NULL)

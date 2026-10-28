@@ -115,16 +115,17 @@ edit_tree_draw (edit_tree_t *tree)
                 &g_array_index (tree->view->rows, mctree_visible_row_t, index);
             const mctree_node_t *node = r->node;
             const int lead = edit_tree_mark_col (r->depth) - 1;
+            GString *mark = g_string_new (NULL);
             GString *name = g_string_new (NULL);
             GString *info = g_string_new (NULL);
-            int room, info_cols;
+            int room, info_cols, mark_cols, row_color, name_color = -1, info_color = -1;
 
             // a node that does not open has room of a mark, as in the tree of the project
             if (mctree_node_expandable (node))
-                g_string_append_printf (name, "%s ",
+                g_string_append_printf (mark, "%s ",
                                         node->expanded ? tree->glyph_open : tree->glyph_closed);
             else
-                g_string_append (name, "  ");
+                g_string_append (mark, "  ");
             if (tree->ops->row != NULL)
                 tree->ops->row (tree, node, name, info);
             else
@@ -138,28 +139,42 @@ edit_tree_draw (edit_tree_t *tree)
                 g_string_append (name, " ...");
             if (index == tree->view->cursor && focused)
             {
-                tty_setcolor (EDITOR_MARKED_COLOR);
+                row_color = EDITOR_MARKED_COLOR;
+                tty_setcolor (row_color);
                 tty_draw_hline (w->rect.y + row + 1, w->rect.x + 1, ' ', width);
             }
-            else if (tree->ops->bold != NULL && tree->ops->bold (tree, node))
-                tty_setcolor (EDITOR_BOLD_COLOR);
+            else
+            {
+                row_color = tree->ops->bold != NULL && tree->ops->bold (tree, node)
+                    ? EDITOR_BOLD_COLOR
+                    : EDITOR_NORMAL_COLOR;
+                if (tree->ops->colors != NULL)
+                    tree->ops->colors (tree, node, &name_color, &info_color);
+            }
             widget_gotoyx (w, row + 1, 1 + lead);
             // the name at the left, what there is to know of it at the right, when both fit
             // a column of room at the right too
             room = width - lead - 1;
+            mark_cols = MIN (str_term_width1 (mark->str), MAX (0, room));
+            room -= mark_cols;
             info_cols = info->len > 0 ? str_term_width1 (info->str) : 0;
             if (info_cols > 0 && info_cols + 1 + str_term_width1 (name->str) > room)
                 info_cols = MIN (info_cols, MAX (0, room - str_term_width1 (name->str) - 1));
+            tty_setcolor (row_color);
+            tty_print_string (str_fit_to_term (mark->str, mark_cols, J_LEFT));
             if (room > 0)
             {
+                tty_setcolor (name_color >= 0 ? name_color : row_color);
                 tty_print_string (str_fit_to_term (
                     name->str, room - (info_cols > 0 ? info_cols + 1 : 0), J_LEFT));
                 if (info_cols > 0)
                 {
+                    tty_setcolor (info_color >= 0 ? info_color : row_color);
                     widget_gotoyx (w, row + 1, width - info_cols);
                     tty_print_string (str_fit_to_term (info->str, info_cols, J_LEFT));
                 }
             }
+            g_string_free (mark, TRUE);
             g_string_free (name, TRUE);
             g_string_free (info, TRUE);
         }

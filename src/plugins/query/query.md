@@ -232,6 +232,36 @@ part *name* of the same extension, read from the same directories,
 the oid, and a line that is a comment alone is left out. When one is not
 there, Output or Schema tell it.
 
+A node of Schema has a mark of what it is before its name when the skin
+gives one, in its section *[query]*; none gives one by default:
+
+```
+[query]
+    schema-char = ◫
+    table-char = ▦
+    column-char = ·
+```
+
+The keys are *schema-char*, *database-char*, *table-char*,
+*partitioned-char*, *view-char*, *matview-char*, *foreign-char*,
+*sequence-char*, *function-char*, *procedure-char*, *aggregate-char*,
+*column-char*, *key-char*, *fkey-char*, *index-char*, *reference-char*,
+*trigger-char*, *collection-char*, *timeseries-char*, *field-char*,
+*validator-char*, *pipeline-char*.
+
+The name of a node has a color of what it is too, the key of its mark
+without *-char*, a color of the skin on the background of the editor;
+*group* is that of a group and a section, *info* that of what is at the
+right of a row; none by default:
+
+```
+[query]
+    table = cyan
+    view = green
+    group = gray
+    info = gray
+```
+
 **PostgreSQL**
 
 *coole -Q* with *MC_QUERY_KIND=postgres*, or a file *.sql*, runs the queries

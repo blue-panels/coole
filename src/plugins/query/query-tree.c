@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include "lib/global.h"
+#include "lib/skin.h"
 #include "lib/widget.h"  // D_NORMAL
 
 #include "query-tree.h"
@@ -52,6 +53,14 @@
 static void query_tree_drop_pending (query_tree_t *t);
 
 /*** file scope variables ************************************************************************/
+
+// the keys of the marks in the section [query] of the skin, with "-char", by query_icon_t
+static const char *const query_icon_names[QUERY_ICON_COUNT] = {
+    "none",       "schema",     "database", "table",     "partitioned", "view",
+    "matview",    "foreign",    "sequence", "function",  "procedure",   "aggregate",
+    "column",     "key",        "fkey",     "index",     "reference",   "trigger",
+    "collection", "timeseries", "field",    "validator", "pipeline",
+};
 
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
@@ -121,7 +130,11 @@ query_tree_row (edit_tree_t *tree, const mctree_node_t *node, GString *name, GSt
 {
     const query_item_t *item = QUERY_ITEM (node);
 
-    (void) tree;
+    const query_tree_t *t = (const query_tree_t *) tree->data;
+
+    // the mark of what it is, when the skin has one
+    if (t != NULL && item != NULL && *t->icons[item->icon] != '\0')
+        g_string_append_printf (name, "%s ", t->icons[item->icon]);
     g_string_append (name, node->key != NULL ? node->key : "");
     if (node->value != NULL)
         g_string_append (info, node->value);
@@ -129,6 +142,40 @@ query_tree_row (edit_tree_t *tree, const mctree_node_t *node, GString *name, GSt
         && (item->kind == QUERY_NODE_ROOT || item->kind == QUERY_NODE_GROUP
             || item->kind == QUERY_NODE_SECTION))
         g_string_append_printf (info, "%s(%u)", info->len > 0 ? " " : "", query_node_count (node));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The colors of a node: of its name by what it is, a group and a section all of one; of what is
+   at its right */
+static void
+query_tree_colors (edit_tree_t *tree, const mctree_node_t *node, int *name, int *info)
+{
+    const query_tree_t *t = (const query_tree_t *) tree->data;
+    const query_item_t *item = QUERY_ITEM (node);
+
+    if (t == NULL || item == NULL)
+        return;
+    *name = item->kind == QUERY_NODE_GROUP || item->kind == QUERY_NODE_SECTION
+        ? t->group_color
+        : t->colors[item->icon];
+    *info = t->info_color;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The color of the key @key of the section [query] of the skin, its foreground on the background
+   of the editor: -1 when the skin has none */
+static int
+query_tree_skin_color (const char *key)
+{
+    char *fg = mc_skin_get ("query", key, "");
+    int color = -1;
+
+    if (fg != NULL && *fg != '\0')
+        color = mc_skin_color_on ("editor", "_default_", fg);
+    g_free (fg);
+    return color;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -156,6 +203,7 @@ query_tree_closed (edit_tree_t *tree)
 
 static const edit_tree_ops_t query_tree_ops = {
     .row = query_tree_row,
+    .colors = query_tree_colors,
     .buttonbar = query_tree_buttonbar,
     .closed = query_tree_closed,
 };
@@ -249,8 +297,22 @@ void
 query_tree_init (query_tree_t *t, query_t *q, void (*details) (query_node_t *o, void *data),
                  void *data)
 {
+    int i;
+
     memset (t, 0, sizeof (*t));
     t->q = q;
+    // none by default: a skin gives them, as UTF-8 may not be there
+    for (i = 0; i < QUERY_ICON_COUNT; i++)
+    {
+        char *key = g_strconcat (query_icon_names[i], "-char", (char *) NULL);
+
+        t->icons[i] = i == QUERY_ICON_NONE ? g_strdup ("") : mc_skin_get ("query", key, "");
+        g_free (key);
+        // the color of the name, by the same name: "table = brightcyan"
+        t->colors[i] = i == QUERY_ICON_NONE ? -1 : query_tree_skin_color (query_icon_names[i]);
+    }
+    t->group_color = query_tree_skin_color ("group");
+    t->info_color = query_tree_skin_color ("info");
     t->details = details;
     t->data = data;
     t->model = query_tree_model_new (t);
@@ -261,6 +323,8 @@ query_tree_init (query_tree_t *t, query_t *q, void (*details) (query_node_t *o, 
 void
 query_tree_done (query_tree_t *t)
 {
+    int i;
+
     // the window is the editor's, destroyed before the plugin closes
     if (t->window != NULL)
         t->window->data = NULL;
@@ -269,6 +333,8 @@ query_tree_done (query_tree_t *t)
         g_hash_table_destroy (t->paths);
     g_free (t->error);
     g_free (t->keep);
+    for (i = 0; i < QUERY_ICON_COUNT; i++)
+        g_free (t->icons[i]);
     query_tree_drop_pending (t);
     query_tree_drop_ddl (t);
 }

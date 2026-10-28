@@ -36,13 +36,43 @@ typedef enum
     QUERY_NODE_ITEM
 } query_node_kind_t;
 
+/* What a node is, for its mark from the skin, section [query]: <its name>-char */
+typedef enum
+{
+    QUERY_ICON_NONE,
+    QUERY_ICON_SCHEMA,
+    QUERY_ICON_DATABASE,
+    QUERY_ICON_TABLE,
+    QUERY_ICON_PARTITIONED,
+    QUERY_ICON_VIEW,
+    QUERY_ICON_MATVIEW,
+    QUERY_ICON_FOREIGN,
+    QUERY_ICON_SEQUENCE,
+    QUERY_ICON_FUNCTION,
+    QUERY_ICON_PROCEDURE,
+    QUERY_ICON_AGGREGATE,
+    QUERY_ICON_COLUMN,
+    QUERY_ICON_KEY,
+    QUERY_ICON_FKEY,
+    QUERY_ICON_INDEX,
+    QUERY_ICON_REFERENCE,
+    QUERY_ICON_TRIGGER,
+    QUERY_ICON_COLLECTION,
+    QUERY_ICON_TIMESERIES,
+    QUERY_ICON_FIELD,
+    QUERY_ICON_VALIDATOR,
+    QUERY_ICON_PIPELINE,
+    QUERY_ICON_COUNT
+} query_icon_t;
+
 /*** structures declarations (and typedefs of structures)*****************************************/
 
 /* What a node is to Schema */
 typedef struct
 {
     query_node_kind_t kind;
-    char *insert;  // what Insert puts in the file, NULL for nothing
+    query_icon_t icon;  // its mark, the backend's: QUERY_ICON_NONE for none
+    char *insert;       // what Insert puts in the file, NULL for nothing
 
     // an object
     char *rows;           // F5: the query of its rows, NULL for none
@@ -56,14 +86,18 @@ typedef struct
 typedef struct
 {
     query_t *q;
-    mctree_model_t *model;  // the tree read, its root of no name holding the roots shown
-    edit_tree_t *window;    // the window Schema, NULL when there is none
-    GHashTable *paths;      // the paths open before the tree was read again, NULL the first time
-    char *keep;             // the path of the node of the cursor then
-    gboolean shown;         // the window was made once
-    gboolean make;          // and is made again when the user has closed it: QuerySchema
-    gboolean read;          // the tree was read once
-    char *error;            // why it could not be, NULL for none
+    mctree_model_t *model;          // the tree read, its root of no name holding the roots shown
+    edit_tree_t *window;            // the window Schema, NULL when there is none
+    char *icons[QUERY_ICON_COUNT];  // the marks of the nodes, from the skin; "" for none
+    int colors[QUERY_ICON_COUNT];   // and the colors of their names, -1 for that of the row
+    int group_color;                // of a group and a section, -1 for that of the row
+    int info_color;                 // of what is at the right of a row, -1 for that of the row
+    GHashTable *paths;  // the paths open before the tree was read again, NULL the first time
+    char *keep;         // the path of the node of the cursor then
+    gboolean shown;     // the window was made once
+    gboolean make;      // and is made again when the user has closed it: QuerySchema
+    gboolean read;      // the tree was read once
+    char *error;        // why it could not be, NULL for none
 
     // an object opened whose sections are to be read: the backend asks for them
     void (*details) (query_node_t *o, void *data);
