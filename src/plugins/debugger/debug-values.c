@@ -89,12 +89,14 @@ debug_watches_refresh (debugger_t *debug)
 
         g_free (watch->value);
         watch->value = g_strdup (_ ("<evaluating>"));
+        watch->failed = FALSE;
         watch->pending_token = debug->backend->ops->evaluate (debug->backend, watch->expression,
                                                               debug_reply_watch, NULL, NULL);
         if (watch->pending_token == 0)
         {
             g_free (watch->value);
             watch->value = g_strdup (_ ("<GDB unavailable>"));
+            watch->failed = TRUE;
         }
     }
     debug_watches_show (debug);
@@ -381,6 +383,7 @@ debug_reply_watch (void *ui, const debug_reply_t *reply, void *data)
             continue;
         watch->pending_token = 0;
         value = failed ? reply->msg : reply->value;
+        watch->failed = failed;
         g_free (watch->value);
         watch->value = g_strdup (value != NULL ? value : _ ("<unavailable>"));
         debug_watches_show (debug);
@@ -852,6 +855,7 @@ debug_select_frame (debugger_t *debug, const debug_frame_t *frame)
     if (debug_source_here (frame->file) && frame->line > 0 && debug->host->show_location != NULL)
         (void) debug->host->show_location (debug->host, frame->file, frame->line);
     (void) debug->backend->ops->select_frame (debug->backend, frame->level);
+    debug->panel_frame = frame->level;
     (void) debug->backend->ops->variables (debug->backend, debug_reply_variables, NULL, NULL);
     debug_registers_refresh (debug);
     g_free (debug->disasm_address);

@@ -578,6 +578,7 @@ debug_stopped (debugger_t *debug, const debug_stop_t *stop)
         && debug->host->window_current (debug->host) == debug->session_window;
     debug->state = DEBUG_STOPPED;
     debug->step_left = FALSE;
+    debug_panel_stopped (debug);
     debug_clear_current (debug);
     g_free (debug->current_func);
     debug->current_func = g_strdup (stop->func);
@@ -1405,6 +1406,13 @@ debug_close (void *data)
     g_ptr_array_unref (debug->registers);
     if (debug->registers_before != NULL)
         g_hash_table_destroy (debug->registers_before);
+    if (debug->panel_values != NULL)
+        g_hash_table_destroy (debug->panel_values);
+    g_free (debug->panel_changed_mark);
+    g_free (debug->panel_added_mark);
+    g_free (debug->panel_arrow);
+    if (debug->panel_values_before != NULL)
+        g_hash_table_destroy (debug->panel_values_before);
     g_free (debug->current_address);
     g_ptr_array_unref (debug->instructions);
     g_ptr_array_free (debug->address_breakpoints, TRUE);

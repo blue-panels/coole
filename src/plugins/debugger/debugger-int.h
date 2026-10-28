@@ -82,6 +82,7 @@ typedef struct
     char *expression;
     char *value;
     unsigned int pending_token;
+    gboolean failed;  // the value is what the debugger said of the error
 } debug_watch_t;
 
 typedef struct debug_disasm_window_t debug_disasm_window_t;
@@ -202,7 +203,18 @@ typedef struct
     GHashTable *panel_closed;     // and of the parts the user has closed
     GHashTable *panel_members;    // the members read by the paths of their nodes, of this stop
     guint panel_stop;             // which stop that is: an answer of another is of before
-    int panel_internal_color;     // of the groups of the debugger, of what is seldom looked at
+    // the colors of the panel, from the skin: the groups of the debugger, of what is seldom
+    // looked at; a value the last step has changed; an error; the title of a part
+    int panel_internal_color, panel_changed_color, panel_error_color, panel_title_color;
+    // a value the last step has added, its color; the marks of one changed and one added, and
+    // what is between a value of before and that of now
+    int panel_added_color;
+    // those on the row of the cursor, on its background
+    int panel_changed_cursor, panel_added_cursor, panel_error_cursor;
+    char *panel_changed_mark, *panel_added_mark, *panel_arrow;
+    // the values of the panel by frame and path, at this stop and at the stop before
+    GHashTable *panel_values, *panel_values_before;
+    long panel_frame;  // the level of the frame chosen
     // the virtual environment of the project with no debugpy has been told of
     gboolean venv_told;
     // the window of the instructions, those it shows, and the address of the frame among them
@@ -279,6 +291,7 @@ void debug_session_refresh (debugger_t *debug);
 /* The members the panel has read are of before: the program has stopped again, another frame is
    chosen */
 void debug_panel_forget_members (debugger_t *debug);
+void debug_panel_stopped (debugger_t *debug);
 /* The debugger is gone: the panel tells it, with nothing to show */
 void debug_panel_ended (debugger_t *debug);
 mc_ep_result_t debug_session_show (void *data, void *edit);

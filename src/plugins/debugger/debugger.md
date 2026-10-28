@@ -222,8 +222,13 @@ stays open from a stop to the next, read again there: *p*, *p.meta* open,
 a step shows their new values. The groups debugpy adds to an object of
 Python, *special variables*, *function variables* and *class variables*,
 come after its fields and are gray, and so is what is in them: there is
-seldom anything to look at there. The skin gives their color, *internal* in
-*[debugger]*. In the panel the debugger keys work as in step mode (there F6
+seldom anything to look at there. A value the last step has changed is
+yellow, marked *\** and shown after the value it had, *0 -> 1*, as the row
+has room; a value it has made, a variable of the function there was none of
+or a member of an object, is green and marked *+*. An error of the debugger
+is red, of a watch it cannot evaluate say. The skin gives these colors and
+marks in *[debugger]*: *title*, *changed*, *added*, *error*, *internal*,
+*changed-char*, *added-char* and *arrow*. In the panel the debugger keys work as in step mode (there F6
 and F4 work on the cursor of the topmost file window, F10 closes the panel),
 and:
 
@@ -268,7 +273,7 @@ a debug adapter it is an expression or a command of the adapter's console,
 
 Under the local variables the panel has the registers of the frame: the
 general ones, the program counter and the flags, in hexadecimal; those the
-last step has changed are in bold. They are asked of the debugger only while
+last step has changed are yellow, as the values are. They are asked of the debugger only while
 they are shown: Enter on their title shows and hides them, Right opens it, and
 a stop in code
 with no source, or in a source of assembler (*.s*, *.S*, *.asm*), shows them.

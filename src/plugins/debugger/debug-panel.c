@@ -191,7 +191,10 @@ typedef struct
     char *expression;   // of a variable, a watch, a member: what gives it, NULL for none
     char *type;         // and its type, for the expressions of its members
     char *ref;          // of its members, that the debugger gives with it; NULL for none
-    gboolean changed;   // a register the last steps have changed
+    gboolean changed;   // a value, a register, the last step has changed
+    gboolean added;     // a value the last step has made, there was none at the stop before
+    char *before;       // the value it had at the stop before, of one changed
+    gboolean error;     // the value is an error the debugger said
     gboolean internal;  // a group of the debugger: the inside of Python, the methods
 } debug_panel_item_t;
 
@@ -221,6 +224,7 @@ debug_panel_item_free (gpointer p)
     g_free (item->expression);
     g_free (item->type);
     g_free (item->ref);
+    g_free (item->before);
     g_free (item);
 }
 
@@ -437,6 +441,7 @@ debug_panel_ask (debugger_t *debug, mctree_model_t *model, mctree_node_t *node)
                 const debug_variable_t *var = g_ptr_array_index (m->vars, i);
                 const gboolean internal = debug_panel_internal (var);
                 char *expression;
+                mctree_node_t *member;
 
                 if (internal != (pass == 1))
                     continue;
@@ -445,9 +450,11 @@ debug_panel_ask (debugger_t *debug, mctree_model_t *model, mctree_node_t *node)
                     ? debug_member_expression (item->expression, item->type, var->name)
                     : NULL;
                 // what is in a group of the debugger is of it too
-                (void) debug_panel_value (debug, model, node, PANEL_MEMBER, i, var->name,
-                                          var->value, expression, var->type, var->ref,
-                                          var->ref != NULL, internal || item->internal);
+                member = debug_panel_value (debug, model, node, PANEL_MEMBER, i, var->name,
+                                            var->value, expression, var->type, var->ref,
+                                            var->ref != NULL, internal || item->internal);
+                DEBUG_PANEL_ITEM (member)->error =
+                    var->ref == NULL && strcmp (var->name, _ ("<error>")) == 0;
                 g_free (expression);
             }
         g_free (path);
@@ -671,12 +678,14 @@ debug_panel_model (debugger_t *debug)
     for (i = 0; i < debug->watches->len; i++)
     {
         const debug_watch_t *watch = g_ptr_array_index (debug->watches, i);
+        mctree_node_t *node;
 
         /* its members are looked for by the debugger, while the program stops; open, it stays so
            while it runs */
-        (void) debug_panel_value (debug, model, part, PANEL_WATCH, i, watch->expression,
+        node = debug_panel_value (debug, model, part, PANEL_WATCH, i, watch->expression,
                                   watch->value != NULL ? watch->value : "?", watch->expression,
                                   NULL, NULL, TRUE, FALSE);
+        DEBUG_PANEL_ITEM (node)->error = watch->failed;
     }
     if (debug->watches->len == 0)
         (void) debug_panel_add (model, part, PANEL_TEXT, 0, _ ("Ins adds one"), NULL);
@@ -801,6 +810,110 @@ debug_panel_closed (const debugger_t *debug, const mctree_model_t *model)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The values the last step has changed: those the stop before had otherwise, in the same frame
+   of the same function; and those it has made: a variable there was none of there, a member of
+   a value whose members were read.  The values of this stop kept for the next.  A watch that is
+   evaluated has no value yet */
+static void
+debug_panel_mark_changed (debugger_t *debug, const mctree_model_t *model)
+{
+    const char *func = debug->current_func;
+    char *frame;
+    guint i;
+
+    if (debug->state != DEBUG_STOPPED)
+        return;
+    if (debug->panel_values == NULL)
+        debug->panel_values = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    // the frame chosen in the call stack; the stack is of the stop before till it is read again
+    for (i = 0; debug->panel_frame != 0 && debug->frames != NULL && i < debug->frames->len; i++)
+    {
+        const debug_frame_t *f = g_ptr_array_index (debug->frames, i);
+
+        if (f->level == debug->panel_frame)
+            func = f->func;
+    }
+    // the frame and its function: a key of its own says the stop has had them
+    frame = g_strdup_printf ("%ld" MCTREE_PATH_SEP "%s" MCTREE_PATH_SEP, debug->panel_frame,
+                             func != NULL ? func : "");
+    g_hash_table_replace (debug->panel_values, g_strdup (frame), g_strdup (""));
+    for (i = 0; i < model->nodes->len; i++)
+    {
+        mctree_node_t *node = g_ptr_array_index (model->nodes, i);
+        debug_panel_item_t *item = DEBUG_PANEL_ITEM (node);
+        const debug_watch_t *watch;
+        const char *before;
+        char *path, *key, *read;
+
+        if (item == NULL || node->value == NULL || item->error
+            || (item->kind != PANEL_LOCAL && item->kind != PANEL_WATCH
+                && item->kind != PANEL_MEMBER))
+            continue;
+        watch = item->kind == PANEL_WATCH ? g_ptr_array_index (debug->watches, item->index) : NULL;
+        if (watch != NULL && watch->pending_token != 0)
+            continue;
+        path = mctree_node_path (node);
+        key = g_strconcat (frame, path, (char *) NULL);
+        g_free (path);
+        before = debug->panel_values_before != NULL
+            ? g_hash_table_lookup (debug->panel_values_before, key)
+            : NULL;
+        item->changed = before != NULL && strcmp (before, node->value) != 0;
+        g_clear_pointer (&item->before, g_free);
+        if (item->changed)
+            item->before = g_strdup (before);
+        // the members of the node above were read, the key of it says
+        path = mctree_node_path (node->parent);
+        read = g_strconcat (frame, path, MCTREE_PATH_SEP "\x1e", (char *) NULL);
+        g_free (path);
+        item->added = before == NULL && debug->panel_values_before != NULL
+            && (item->kind == PANEL_LOCAL
+                    ? g_hash_table_contains (debug->panel_values_before, frame)
+                    : item->kind == PANEL_MEMBER
+                        && g_hash_table_contains (debug->panel_values_before, read));
+        if (item->kind == PANEL_MEMBER)
+            g_hash_table_replace (debug->panel_values, read, g_strdup (""));
+        else
+            g_free (read);
+        g_hash_table_replace (debug->panel_values, key, g_strdup (node->value));
+    }
+    g_free (frame);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A color of the panel: that of @key in [debugger] of the skin, @fg without it, on the
+   background of @on in [editor], _default_ say; with @attrs, NULL for those of it */
+static int
+debug_panel_skin_color_on (const char *on, const char *key, const char *fg, const char *attrs)
+{
+    char *skin_fg = mc_skin_get ("debugger", key, fg);
+    char *def_fg, *def_bg, *def_attrs;
+    tty_color_pair_t color;
+    int pair;
+
+    (void) mc_skin_color_names ("editor", on, &def_fg, &def_bg, &def_attrs);
+    color.fg = skin_fg;
+    color.bg = def_bg;
+    color.attrs = attrs != NULL ? (char *) attrs : def_attrs;
+    color.pair_index = 0;
+    pair = tty_try_alloc_color_pair (&color, FALSE);
+    g_free (skin_fg);
+    g_free (def_fg);
+    g_free (def_bg);
+    g_free (def_attrs);
+    return pair;
+}
+
+/* The same on the background of the editor */
+static int
+debug_panel_skin_color (const char *key, const char *fg, const char *attrs)
+{
+    return debug_panel_skin_color_on ("_default_", key, fg, attrs);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The panel made again from what the debugger says now: what was open and closed stays so, the
    cursor on its node */
 static void
@@ -828,6 +941,7 @@ debug_panel_rebuild (debugger_t *debug)
     debug->panel_closed = closed;
 
     debug->panel_model = debug_panel_model (debug);
+    debug_panel_mark_changed (debug, debug->panel_model);
     // the rows where they were, the cursor on its node, then drawn
     top = tree->view->top;
     mctree_view_set_model (tree->view, debug->panel_model);
@@ -845,36 +959,86 @@ debug_panel_rebuild (debugger_t *debug)
 static void
 debug_panel_row (edit_tree_t *tree, const mctree_node_t *node, GString *name, GString *info)
 {
-    (void) tree;
-    g_string_append (name, node->key != NULL ? node->key : "");
-    if (node->value != NULL)
-        g_string_append (info, node->value);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The parts stand out, and the registers the last steps have changed */
-static gboolean
-debug_panel_bold (edit_tree_t *tree, const mctree_node_t *node)
-{
+    const debugger_t *debug = (const debugger_t *) tree->data;
     const debug_panel_item_t *item = DEBUG_PANEL_ITEM (node);
+    const mctree_node_t *up;
+    int room, left;
 
-    (void) tree;
-    return item != NULL
-        && (item->kind == PANEL_TITLE || item->kind == PANEL_REGISTERS || item->changed);
+    // a value the last step has changed, or made, is marked before its name
+    if (debug != NULL && item != NULL && (item->changed || item->added)
+        && item->kind != PANEL_REGISTER)
+        g_string_append_printf (
+            name, "%s ", item->changed ? debug->panel_changed_mark : debug->panel_added_mark);
+    g_string_append (name, node->key != NULL ? node->key : "");
+    if (node->value == NULL)
+        return;
+    if (debug == NULL || item == NULL || item->before == NULL)
+    {
+        g_string_append (info, node->value);
+        return;
+    }
+    /* the value of before, then that of now, as the row of the tree has room for them: that of
+       before cut first */
+    room = WIDGET (tree)->rect.cols - 6;
+    for (up = node->parent; up != NULL && up->parent != NULL; up = up->parent)
+        room -= 2;
+    left = room - str_term_width1 (name->str) - 1 - str_term_width1 (node->value)
+        - str_term_width1 (debug->panel_arrow) - 2;
+    if (left >= 4)
+        g_string_append_printf (
+            info, "%s %s ",
+            left >= str_term_width1 (item->before) ? item->before : str_trunc (item->before, left),
+            debug->panel_arrow);
+    g_string_append (info, node->value);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The groups of the debugger dimmed: there is seldom anything to look at in them */
+/* The titles of the parts stand out, without a bar the width of the panel; a value the last
+   step has changed and an error by their color; the groups of the debugger dimmed: there is
+   seldom anything to look at in them */
 static void
 debug_panel_colors (edit_tree_t *tree, const mctree_node_t *node, int *name, int *info)
 {
     const debugger_t *debug = (const debugger_t *) tree->data;
     const debug_panel_item_t *item = DEBUG_PANEL_ITEM (node);
 
-    if (debug != NULL && item != NULL && item->internal)
+    if (debug == NULL || item == NULL)
+        return;
+    if (item->kind == PANEL_TITLE || item->kind == PANEL_REGISTERS)
+        *name = debug->panel_title_color;
+    else if (item->internal)
         *name = *info = debug->panel_internal_color;
+    else if (item->error)
+        *info = debug->panel_error_color;
+    else if (item->changed && item->kind == PANEL_REGISTER)
+        *info = debug->panel_changed_color;
+    else if (item->changed)
+        *name = *info = debug->panel_changed_color;
+    else if (item->added)
+        *name = *info = debug->panel_added_color;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* On the row of the cursor a value changed, made, an error, keeps its color, one that reads on
+   the background of the cursor */
+static void
+debug_panel_cursor_colors (edit_tree_t *tree, const mctree_node_t *node, int *name, int *info)
+{
+    const debugger_t *debug = (const debugger_t *) tree->data;
+    const debug_panel_item_t *item = DEBUG_PANEL_ITEM (node);
+
+    if (debug == NULL || item == NULL || item->internal)
+        return;
+    if (item->error)
+        *info = debug->panel_error_cursor;
+    else if (item->changed && item->kind == PANEL_REGISTER)
+        *info = debug->panel_changed_cursor;
+    else if (item->changed)
+        *name = *info = debug->panel_changed_cursor;
+    else if (item->added)
+        *name = *info = debug->panel_added_cursor;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1043,8 +1207,8 @@ debug_panel_closed_window (edit_tree_t *tree)
 static const edit_tree_ops_t debug_panel_ops = {
     .row = debug_panel_row,
     .activate = debug_panel_activate,
-    .bold = debug_panel_bold,
     .colors = debug_panel_colors,
+    .cursor_colors = debug_panel_cursor_colors,
     .key = debug_panel_key,
     .action = debug_panel_action,
     .buttonbar = debug_panel_buttonbar,
@@ -1094,6 +1258,19 @@ debug_panel_forget_members (debugger_t *debug)
 /* --------------------------------------------------------------------------------------------- */
 
 void
+debug_panel_stopped (debugger_t *debug)
+{
+    // the values of this stop are those of the stop before for the next
+    if (debug->panel_values_before != NULL)
+        g_hash_table_destroy (debug->panel_values_before);
+    debug->panel_values_before = debug->panel_values;
+    debug->panel_values = NULL;
+    debug->panel_frame = 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
 debug_panel_ended (debugger_t *debug)
 {
     if (debug->session_window != NULL)
@@ -1104,6 +1281,8 @@ debug_panel_ended (debugger_t *debug)
     g_clear_pointer (&debug->panel_members, g_hash_table_destroy);
     g_clear_pointer (&debug->panel_open, g_hash_table_destroy);
     g_clear_pointer (&debug->panel_closed, g_hash_table_destroy);
+    g_clear_pointer (&debug->panel_values, g_hash_table_destroy);
+    g_clear_pointer (&debug->panel_values_before, g_hash_table_destroy);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1132,7 +1311,6 @@ debug_session_show (void *data, void *edit)
 {
     debugger_t *debug = (debugger_t *) data;
     WRect area;
-    char *color;
 
     (void) edit;
     if (debug->session_window != NULL)
@@ -1141,10 +1319,24 @@ debug_session_show (void *data, void *edit)
         return MC_EPR_OK;
     }
     debug->host->window_area (debug->host, &area);
-    // the groups of the debugger, gray on the background of the editor unless the skin says
-    color = mc_skin_get ("debugger", "internal", "gray");
-    debug->panel_internal_color = mc_skin_color_on ("editor", "_default_", color);
-    g_free (color);
+    debug->panel_internal_color = debug_panel_skin_color ("internal", "gray", NULL);
+    debug->panel_changed_color = debug_panel_skin_color ("changed", "yellow", NULL);
+    debug->panel_error_color = debug_panel_skin_color ("error", "brightred", NULL);
+    debug->panel_title_color = debug_panel_skin_color ("title", "white", "bold");
+    debug->panel_added_color = debug_panel_skin_color ("added", "green", NULL);
+    // on the light background of the cursor, darker
+    debug->panel_changed_cursor =
+        debug_panel_skin_color_on ("editmarked", "changed-cursor", "brown", NULL);
+    debug->panel_added_cursor =
+        debug_panel_skin_color_on ("editmarked", "added-cursor", "green", NULL);
+    debug->panel_error_cursor =
+        debug_panel_skin_color_on ("editmarked", "error-cursor", "red", NULL);
+    g_free (debug->panel_changed_mark);
+    debug->panel_changed_mark = mc_skin_get ("debugger", "changed-char", "*");
+    g_free (debug->panel_added_mark);
+    debug->panel_added_mark = mc_skin_get ("debugger", "added-char", "+");
+    g_free (debug->panel_arrow);
+    debug->panel_arrow = mc_skin_get ("debugger", "arrow", "->");
     debug->session_window = edit_tree_new (_ ("Debugger"), &debug_panel_ops, debug);
     debug->host->window_add (debug->host, debug->session_window);
     // the column at the right: all of it, or under the tree of the project

@@ -142,6 +142,8 @@ edit_tree_draw (edit_tree_t *tree)
                 row_color = EDITOR_MARKED_COLOR;
                 tty_setcolor (row_color);
                 tty_draw_hline (w->rect.y + row + 1, w->rect.x + 1, ' ', width);
+                if (tree->ops->cursor_colors != NULL)
+                    tree->ops->cursor_colors (tree, node, &name_color, &info_color);
             }
             else
             {
