@@ -370,6 +370,16 @@ terminal_window_set_buttonbar (terminal_window_t *tw)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The terminal has drawn what came of its shell, not by the window: over the windows over it, which
+   are drawn again */
+static void
+terminal_window_drawn (void *data)
+{
+    edit_window_draw_above (EDIT_WINDOW (data));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 terminal_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
@@ -547,6 +557,7 @@ terminal_window_new (terminal_plugin_t *tp, const terminal_window_t *old, const 
     }
 
     group_add_widget_autopos (GROUP (tw), WIDGET (tw->term), WPOS_KEEP_ALL, NULL);
+    mcterm_set_after_redraw_callback (tw->term, terminal_window_drawn, tw);
     // there is no command line of the editor: the shell's own line editor takes the typing
     mcterm_set_typing_elsewhere (tw->term, FALSE);
     mcterm_set_scroll_allowed (tw->term, TRUE);
@@ -694,6 +705,7 @@ terminal_program_new (terminal_plugin_t *tp)
         return NULL;
     }
     group_add_widget_autopos (GROUP (tw), WIDGET (tw->term), WPOS_KEEP_ALL, NULL);
+    mcterm_set_after_redraw_callback (tw->term, terminal_window_drawn, tw);
     mcterm_set_typing_elsewhere (tw->term, FALSE);
     mcterm_set_scroll_allowed (tw->term, TRUE);
     mcterm_set_after_redraw_callback (tw->term, terminal_window_after_redraw, tw);
