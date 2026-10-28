@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include "lib/global.h"
+#include "lib/skin.h"
 #include "lib/widget.h"  // D_NORMAL
 
 #include "query-tree.h"
@@ -52,6 +53,14 @@
 static void query_tree_drop_pending (query_tree_t *t);
 
 /*** file scope variables ************************************************************************/
+
+// the keys of the marks in the section [query] of the skin, with "-char", by query_icon_t
+static const char *const query_icon_names[QUERY_ICON_COUNT] = {
+    "none",       "schema",     "database", "table",     "partitioned", "view",
+    "matview",    "foreign",    "sequence", "function",  "procedure",   "aggregate",
+    "column",     "key",        "fkey",     "index",     "reference",   "trigger",
+    "collection", "timeseries", "field",    "validator", "pipeline",
+};
 
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
@@ -121,7 +130,11 @@ query_tree_row (edit_tree_t *tree, const mctree_node_t *node, GString *name, GSt
 {
     const query_item_t *item = QUERY_ITEM (node);
 
-    (void) tree;
+    const query_tree_t *t = (const query_tree_t *) tree->data;
+
+    // the mark of what it is, when the skin has one
+    if (t != NULL && item != NULL && *t->icons[item->icon] != '\0')
+        g_string_append_printf (name, "%s ", t->icons[item->icon]);
     g_string_append (name, node->key != NULL ? node->key : "");
     if (node->value != NULL)
         g_string_append (info, node->value);
@@ -249,8 +262,18 @@ void
 query_tree_init (query_tree_t *t, query_t *q, void (*details) (query_node_t *o, void *data),
                  void *data)
 {
+    int i;
+
     memset (t, 0, sizeof (*t));
     t->q = q;
+    // none by default: a skin gives them, as UTF-8 may not be there
+    for (i = 0; i < QUERY_ICON_COUNT; i++)
+    {
+        char *key = g_strconcat (query_icon_names[i], "-char", (char *) NULL);
+
+        t->icons[i] = i == QUERY_ICON_NONE ? g_strdup ("") : mc_skin_get ("query", key, "");
+        g_free (key);
+    }
     t->details = details;
     t->data = data;
     t->model = query_tree_model_new (t);
@@ -261,6 +284,8 @@ query_tree_init (query_tree_t *t, query_t *q, void (*details) (query_node_t *o, 
 void
 query_tree_done (query_tree_t *t)
 {
+    int i;
+
     // the window is the editor's, destroyed before the plugin closes
     if (t->window != NULL)
         t->window->data = NULL;
@@ -269,6 +294,8 @@ query_tree_done (query_tree_t *t)
         g_hash_table_destroy (t->paths);
     g_free (t->error);
     g_free (t->keep);
+    for (i = 0; i < QUERY_ICON_COUNT; i++)
+        g_free (t->icons[i]);
     query_tree_drop_pending (t);
     query_tree_drop_ddl (t);
 }
