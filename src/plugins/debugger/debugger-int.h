@@ -202,6 +202,7 @@ typedef struct
     GHashTable *panel_closed;     // and of the parts the user has closed
     GHashTable *panel_members;    // the members read by the paths of their nodes, of this stop
     guint panel_stop;             // which stop that is: an answer of another is of before
+    int panel_internal_color;     // of the groups of the debugger, of what is seldom looked at
     // the virtual environment of the project with no debugpy has been told of
     gboolean venv_told;
     // the window of the instructions, those it shows, and the address of the frame among them

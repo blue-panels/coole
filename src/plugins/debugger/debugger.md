@@ -218,9 +218,13 @@ Breakpoints, open and close, and a variable or a watch with members, a
 structure, an array, a pointer to one, an object of Python, opens in place,
 its members under it, read from the debugger as it is opened. What is open
 stays open from a stop to the next, read again there: *p*, *p.meta* open,
-a step shows their new values. In the panel the debugger keys work as in step
-mode (there F6 and F4 work on the cursor of the topmost file window, F10
-closes the panel), and:
+a step shows their new values. The groups debugpy adds to an object of
+Python, *special variables*, *function variables* and *class variables*,
+come after its fields and are gray, and so is what is in them: there is
+seldom anything to look at there. The skin gives their color, *internal* in
+*[debugger]*. In the panel the debugger keys work as in step mode (there F6
+and F4 work on the cursor of the topmost file window, F10 closes the panel),
+and:
 
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move from one row to another; a letter goes to the next row that starts

@@ -376,6 +376,18 @@ applies individually to each of these three properties.
             terminal that is not UTF-8)
 
 
+Debugger section
+================
+
+    [debugger]
+        Colors of the panel of the debugger
+
+        internal
+            The groups the debugger adds to an object, special variables,
+            function variables and class variables of Python, and what is
+            in them, on the background of the editor (default: gray)
+
+
 Git graph section
 =================
 

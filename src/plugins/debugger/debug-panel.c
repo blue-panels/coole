@@ -187,11 +187,12 @@ typedef enum
 typedef struct
 {
     debug_panel_kind_t kind;
-    guint index;       // of the variable, the watch, the frame, the breakpoint or the register
-    char *expression;  // of a variable, a watch, a member: what gives it, NULL for none
-    char *type;        // and its type, for the expressions of its members
-    char *ref;         // of its members, that the debugger gives with it; NULL for none
-    gboolean changed;  // a register the last steps have changed
+    guint index;        // of the variable, the watch, the frame, the breakpoint or the register
+    char *expression;   // of a variable, a watch, a member: what gives it, NULL for none
+    char *type;         // and its type, for the expressions of its members
+    char *ref;          // of its members, that the debugger gives with it; NULL for none
+    gboolean changed;   // a register the last steps have changed
+    gboolean internal;  // a group of the debugger: the inside of Python, the methods
 } debug_panel_item_t;
 
 /* The members of a node read, by the path of the node, till the program goes on: a node open,
@@ -315,16 +316,19 @@ debug_panel_part (const debugger_t *debug, mctree_model_t *model, debug_panel_ki
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A variable, a watch or a member: it opens when its members may be read, open when it was */
+/* A variable, a watch or a member: it opens when its members may be read, open when it was;
+   @internal, of a group of the debugger, before it opens, for its members to be of it too */
 static mctree_node_t *
 debug_panel_value (const debugger_t *debug, mctree_model_t *model, mctree_node_t *parent,
                    debug_panel_kind_t kind, guint index, const char *name, const char *value,
-                   const char *expression, const char *type, const char *ref, gboolean may_open)
+                   const char *expression, const char *type, const char *ref, gboolean may_open,
+                   gboolean internal)
 {
     mctree_node_t *node = debug_panel_add (model, parent, kind, index, name, value);
     debug_panel_item_t *item = DEBUG_PANEL_ITEM (node);
     char *path;
 
+    item->internal = internal;
     item->expression = g_strdup (expression);
     item->type = g_strdup (type);
     item->ref = g_strdup (ref);
@@ -336,6 +340,31 @@ debug_panel_value (const debugger_t *debug, mctree_model_t *model, mctree_node_t
         mctree_node_expand (model, node);
     g_free (path);
     return node;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether @var is a group the debugger adds, of what is seldom looked at: debugpy puts the
+   attributes __*__, the functions and those of the class in "special variables", "function
+   variables", "class variables", groups of no type, before the fields.  They go after the
+   fields, dimmed, as other IDEs put the static and the private members */
+static gboolean
+debug_panel_internal (const debug_variable_t *var)
+{
+    static const char *const groups[] = {
+        "special variables",
+        "function variables",
+        "class variables",
+        "protected variables",
+    };
+    size_t i;
+
+    if (var->ref == NULL || (var->type != NULL && *var->type != '\0') || var->name == NULL)
+        return FALSE;
+    for (i = 0; i < G_N_ELEMENTS (groups); i++)
+        if (strcmp (var->name, groups[i]) == 0)
+            return TRUE;
+    return FALSE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -392,7 +421,7 @@ debug_panel_ask (debugger_t *debug, mctree_model_t *model, mctree_node_t *node)
     debug_panel_item_t *item = DEBUG_PANEL_ITEM (node);
     char *path = mctree_node_path (node);
     debug_panel_members_t *m;
-    guint i;
+    guint i, pass;
 
     if (debug->panel_members == NULL)
         debug->panel_members =
@@ -401,18 +430,26 @@ debug_panel_ask (debugger_t *debug, mctree_model_t *model, mctree_node_t *node)
     if (m != NULL && m->vars != NULL)
     {
         mctree_node_set_lazy (node, FALSE);
-        for (i = 0; i < m->vars->len; i++)
-        {
-            const debug_variable_t *var = g_ptr_array_index (m->vars, i);
-            char *expression = var->expression != NULL ? g_strdup (var->expression)
-                : item->expression != NULL
-                ? debug_member_expression (item->expression, item->type, var->name)
-                : NULL;
+        // the fields, then the groups of the debugger
+        for (pass = 0; pass < 2; pass++)
+            for (i = 0; i < m->vars->len; i++)
+            {
+                const debug_variable_t *var = g_ptr_array_index (m->vars, i);
+                const gboolean internal = debug_panel_internal (var);
+                char *expression;
 
-            (void) debug_panel_value (debug, model, node, PANEL_MEMBER, i, var->name, var->value,
-                                      expression, var->type, var->ref, var->ref != NULL);
-            g_free (expression);
-        }
+                if (internal != (pass == 1))
+                    continue;
+                expression = var->expression != NULL ? g_strdup (var->expression)
+                    : item->expression != NULL && !internal
+                    ? debug_member_expression (item->expression, item->type, var->name)
+                    : NULL;
+                // what is in a group of the debugger is of it too
+                (void) debug_panel_value (debug, model, node, PANEL_MEMBER, i, var->name,
+                                          var->value, expression, var->type, var->ref,
+                                          var->ref != NULL, internal || item->internal);
+                g_free (expression);
+            }
         g_free (path);
         return;
     }
@@ -519,7 +556,7 @@ debug_panel_model (debugger_t *debug)
     const debug_launch_t *launch = debug_active_launch (debug);
     mctree_node_t *part;
     char *text;
-    guint i;
+    guint i, pass;
 
     (void) mctree_model_add_node (model, NULL, MCTREE_NODE_ROOT, "", NULL);
     model->root->expanded = TRUE;
@@ -585,15 +622,23 @@ debug_panel_model (debugger_t *debug)
     if (debug->state == DEBUG_STOPPED)
     {
         part = debug_panel_part (debug, model, PANEL_TITLE, _ ("Locals"));
-        for (i = 0; i < debug->locals->len; i++)
-        {
-            const debug_variable_t *local = g_ptr_array_index (debug->locals, i);
+        // the variables, then the groups of the debugger: those of a module, say
+        for (pass = 0; pass < 2; pass++)
+            for (i = 0; i < debug->locals->len; i++)
+            {
+                const debug_variable_t *local = g_ptr_array_index (debug->locals, i);
+                const gboolean internal = debug_panel_internal (local);
+                const char *expression =
+                    local->expression != NULL ? local->expression : local->name;
 
-            (void) debug_panel_value (
-                debug, model, part, PANEL_LOCAL, i, local->name, local->value,
-                local->expression != NULL ? local->expression : local->name, local->type,
-                local->ref, local->ref != NULL || debug_panel_may_open (local->value, local->type));
-        }
+                if (internal != (pass == 1))
+                    continue;
+                (void) debug_panel_value (
+                    debug, model, part, PANEL_LOCAL, i, local->name, local->value,
+                    internal ? NULL : expression, local->type, local->ref,
+                    local->ref != NULL || debug_panel_may_open (local->value, local->type),
+                    internal);
+            }
         // a program of Python has none; read when the part is opened
         if (debug->backend == NULL || debug->backend->ops->has_registers == NULL
             || debug->backend->ops->has_registers (debug->backend))
@@ -631,7 +676,7 @@ debug_panel_model (debugger_t *debug)
            while it runs */
         (void) debug_panel_value (debug, model, part, PANEL_WATCH, i, watch->expression,
                                   watch->value != NULL ? watch->value : "?", watch->expression,
-                                  NULL, NULL, TRUE);
+                                  NULL, NULL, TRUE, FALSE);
     }
     if (debug->watches->len == 0)
         (void) debug_panel_add (model, part, PANEL_TEXT, 0, _ ("Ins adds one"), NULL);
@@ -821,6 +866,19 @@ debug_panel_bold (edit_tree_t *tree, const mctree_node_t *node)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The groups of the debugger dimmed: there is seldom anything to look at in them */
+static void
+debug_panel_colors (edit_tree_t *tree, const mctree_node_t *node, int *name, int *info)
+{
+    const debugger_t *debug = (const debugger_t *) tree->data;
+    const debug_panel_item_t *item = DEBUG_PANEL_ITEM (node);
+
+    if (debug != NULL && item != NULL && item->internal)
+        *name = *info = debug->panel_internal_color;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* Enter, a double click: a frame chosen, a breakpoint shown, a value of no members evaluated;
    a node with members opens or closes */
 static gboolean
@@ -986,6 +1044,7 @@ static const edit_tree_ops_t debug_panel_ops = {
     .row = debug_panel_row,
     .activate = debug_panel_activate,
     .bold = debug_panel_bold,
+    .colors = debug_panel_colors,
     .key = debug_panel_key,
     .action = debug_panel_action,
     .buttonbar = debug_panel_buttonbar,
@@ -1073,6 +1132,7 @@ debug_session_show (void *data, void *edit)
 {
     debugger_t *debug = (debugger_t *) data;
     WRect area;
+    char *color;
 
     (void) edit;
     if (debug->session_window != NULL)
@@ -1081,6 +1141,10 @@ debug_session_show (void *data, void *edit)
         return MC_EPR_OK;
     }
     debug->host->window_area (debug->host, &area);
+    // the groups of the debugger, gray on the background of the editor unless the skin says
+    color = mc_skin_get ("debugger", "internal", "gray");
+    debug->panel_internal_color = mc_skin_color_on ("editor", "_default_", color);
+    g_free (color);
     debug->session_window = edit_tree_new (_ ("Debugger"), &debug_panel_ops, debug);
     debug->host->window_add (debug->host, debug->session_window);
     // the column at the right: all of it, or under the tree of the project
