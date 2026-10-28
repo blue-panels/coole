@@ -134,20 +134,13 @@ typedef struct
     git_msg_mode_t msg_mode;
     char *msg_file;
     char *msg_root;
-    char *msg_sha;        // of the commit it rewords
-    char *msg_head;       // the branch and the HEAD an amend or a reword was started on
-    gboolean msg_failed;  // git said no to it: it is kept for the next commit
-    void *msg_edit;       // its window, to close once it is committed
-    void *msg_window;     // its window among those of the window Git, NULL when it is not
-    void *opened;         // the file window F4 opened from the window Git, NULL when none
-    char *over_path;      // the file the menu of the message opens next, over the window Git
-    long over_line;
+    char *msg_sha;                 // of the commit it rewords
+    char *msg_head;                // the branch and the HEAD an amend or a reword was started on
+    gboolean msg_failed;           // git said no to it: it is kept for the next commit
+    void *msg_edit;                // its window, to close once it is committed
+    void *msg_window;              // its window among those of the window Git, NULL when it is not
+    void *opened;                  // the file window F4 opened from the window Git, NULL when none
     gboolean opened_from_message;  // the file opened was opened from it: back to it
-
-    // the tab of the window to open once the editor is idle: the file window that took the key
-    // draws itself after the key
-    int open_tab;
-    void *open_edit;
 
     // coole --git: the work tree it names, the editor ending with the window Git; with
     // --git-commit and the like, once the message is done
