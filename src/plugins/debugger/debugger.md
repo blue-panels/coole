@@ -228,9 +228,10 @@ has room; a value it has made, a variable of the function there was none of
 or a member of an object, is green and marked *+*. An error of the debugger
 is red, of a watch it cannot evaluate say. The skin gives these colors and
 marks in *[debugger]*: *title*, *changed*, *added*, *error*, *internal*,
-*changed-char*, *added-char* and *arrow*. In the panel the debugger keys work as in step mode (there F6
-and F4 work on the cursor of the topmost file window, F10 closes the panel),
-and:
+*changed-char*, *added-char* and *arrow*. In the panel the debugger keys
+work as in step mode (there F6 and F4 work on the cursor of the topmost file
+window; F10 closes the panel, and while a program is debugged it asks first:
+**Stop** the session, **Close panel** and let it go on, or **Cancel**), and:
 
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move from one row to another; a letter goes to the next row that starts

@@ -348,6 +348,21 @@ debug_run_command (debugger_t *debug, int cmd, void *edit)
         debug_session_refresh (debug);
         return TRUE;
     case DEBUG_CMD_CLOSE:
+        if (debug->session_window == NULL)
+            return TRUE;
+        // F10 of the panel while a program is debugged: the session stopped, or left to run
+        if (debug_session_live (debug))
+            switch (query_dialog (_ ("Debug"), _ ("Stop the debug session?"), D_NORMAL, 3,
+                                  _ ("&Stop"), _ ("C&lose panel"), _ ("&Cancel")))
+            {
+            case 0:
+                (void) debug_stop (debug, edit);
+                break;
+            case 1:
+                break;
+            default:
+                return TRUE;
+            }
         if (debug->session_window != NULL)
             (void) debug_session_close_window (&debug->session_window->window);
         return TRUE;
