@@ -36,6 +36,8 @@ typedef struct
     /* The colors of the name of @node and of what is at its right, -1 for those of the row; the
        row of the cursor has its own */
     void (*colors) (edit_tree_t *tree, const mctree_node_t *node, int *name, int *info);
+    /* The same on the row of the cursor, on its background; NULL: the row of one color */
+    void (*cursor_colors) (edit_tree_t *tree, const mctree_node_t *node, int *name, int *info);
     /* A key the window does not take, on @node, NULL for none: TRUE when it is taken */
     gboolean (*key) (edit_tree_t *tree, mctree_node_t *node, int key);
     /* A command of the button bar of the owner on @node, NULL for none: TRUE when it is taken */
@@ -65,6 +67,9 @@ struct edit_tree_t
 
 /* A tree window of @title, not added yet: the owner adds it with the host, window_add () and
    window_dock_right () */
+/* The key in [editor] of the skin of the cursor of a tree, and its color */
+const char *edit_tree_cursor_key (void);
+int edit_tree_cursor_color (void);
 edit_tree_t *edit_tree_new (const char *title, const edit_tree_ops_t *ops, void *data);
 /* The title of the frame, @title */
 void edit_tree_set_title (edit_tree_t *tree, const char *title);

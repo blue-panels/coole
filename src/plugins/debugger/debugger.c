@@ -65,7 +65,8 @@ static const mc_ep_command_t debug_commands[DEBUG_CMD_COUNT + 1] = {
     { "DebugStop", N_ ("Stop debugging"), "f15; ctrl-f2" },
     { "DebugToggleBreakpoint", N_ ("Toggle breakpoint"), "f6; ctrl-f8; ctrl-b" },
     { "DebugRunToCursor", N_ ("Run to cursor"), "f4; alt-f9" },
-    { "DebugEvaluate", N_ ("Evaluate expression"), "enter; alt-f8" },
+    // Alt-F8 as in IntelliJ; Enter stays a key of the text, which beeps in step mode
+    { "DebugEvaluate", N_ ("Evaluate expression"), "alt-f8" },
     { "DebugLeave", N_ ("Leave step mode"), "esc" },
     { "DebugClose", N_ ("Close debug session window"), "f10" },
     // from any window: to the panel of the debugger, and back to the file
@@ -347,6 +348,21 @@ debug_run_command (debugger_t *debug, int cmd, void *edit)
         debug_session_refresh (debug);
         return TRUE;
     case DEBUG_CMD_CLOSE:
+        if (debug->session_window == NULL)
+            return TRUE;
+        // F10 of the panel while a program is debugged: the session stopped, or left to run
+        if (debug_session_live (debug))
+            switch (query_dialog (_ ("Debug"), _ ("Stop the debug session?"), D_NORMAL, 3,
+                                  _ ("&Stop"), _ ("C&lose panel"), _ ("&Cancel")))
+            {
+            case 0:
+                (void) debug_stop (debug, edit);
+                break;
+            case 1:
+                break;
+            default:
+                return TRUE;
+            }
         if (debug->session_window != NULL)
             (void) debug_session_close_window (&debug->session_window->window);
         return TRUE;
@@ -577,6 +593,7 @@ debug_stopped (debugger_t *debug, const debug_stop_t *stop)
         && debug->host->window_current (debug->host) == debug->session_window;
     debug->state = DEBUG_STOPPED;
     debug->step_left = FALSE;
+    debug_panel_stopped (debug);
     debug_clear_current (debug);
     g_free (debug->current_func);
     debug->current_func = g_strdup (stop->func);
@@ -1404,6 +1421,13 @@ debug_close (void *data)
     g_ptr_array_unref (debug->registers);
     if (debug->registers_before != NULL)
         g_hash_table_destroy (debug->registers_before);
+    if (debug->panel_values != NULL)
+        g_hash_table_destroy (debug->panel_values);
+    g_free (debug->panel_changed_mark);
+    g_free (debug->panel_added_mark);
+    g_free (debug->panel_arrow);
+    if (debug->panel_values_before != NULL)
+        g_hash_table_destroy (debug->panel_values_before);
     g_free (debug->current_address);
     g_ptr_array_unref (debug->instructions);
     g_ptr_array_free (debug->address_breakpoints, TRUE);

@@ -204,6 +204,15 @@ applies individually to each of these three properties.
         editmarked
             Selected text
 
+        treeselected
+            The cursor of a tree window: the tree of the project, the panel
+            of the debugger, Schema (default: editmarked)
+
+        treecurrent
+            The function or class the cursor of the file is in, in the tree
+            of the project; the file itself has editbold (default: yellow
+            on the background of the editor)
+
         editwhitespace
             Tabs and trailing spaces
 
@@ -374,6 +383,50 @@ applies individually to each of these three properties.
             Marks of a line the compiler has named an error or a warning
             of (default: a multiplication sign and !; E and ! on a
             terminal that is not UTF-8)
+
+
+Debugger section
+================
+
+    [debugger]
+        Colors of the panel of the debugger, on the background of the
+        editor
+
+        title
+            The titles of the parts, Locals, Registers, Watches, Call stack
+            and Breakpoints (default: white, bold)
+
+        changed
+            A value the last step has changed, a register too (default:
+            yellow)
+
+        added
+            A value the last step has made: a variable of the function
+            there was none of, a member of an object (default: green)
+
+        changed-cursor
+        added-cursor
+        error-cursor
+            The same on the row of the cursor, on its background (default:
+            brown, green and red)
+
+        changed-char
+        added-char
+            Marks before the name of a value changed and of one made
+            (default: * and +)
+
+        arrow
+            Between the value of before and that of now of a value changed
+            (default: ->)
+
+        error
+            A value that is an error the debugger said, of a watch say
+            (default: brightred)
+
+        internal
+            The groups the debugger adds to an object, special variables,
+            function variables and class variables of Python, and what is
+            in them (default: gray)
 
 
 Git graph section

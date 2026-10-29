@@ -1046,7 +1046,7 @@ project_tree_activate (edit_tree_t *tree, mctree_node_t *node)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The file in front, and the symbol its cursor is in, stand out */
+/* The file in front stands out */
 static gboolean
 project_tree_bold (edit_tree_t *tree, const mctree_node_t *node)
 {
@@ -1060,13 +1060,33 @@ project_tree_bold (edit_tree_t *tree, const mctree_node_t *node)
     if (project == NULL || data == NULL || data->dir)
         return FALSE;
     if (data->symbol >= 0)
-        return data->symbol == project->outline_current;
+        return FALSE;
     top = project->host->window_top_file (project->host);
     current = top != NULL ? project->host->get_current_file (project->host, top) : NULL;
     rel = project_relative ((project_t *) project, current);
     bold = rel != NULL && strcmp (rel, data->rel) == 0;
     g_free (current);
     return bold;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The symbol the cursor of the file is in, by the color of its name: treecurrent in [editor] of
+   the skin, yellow on the background of the editor without it; a bar is the file's and the
+   cursor's */
+static void
+project_tree_colors (edit_tree_t *tree, const mctree_node_t *node, int *name, int *info)
+{
+    const project_t *project = (const project_t *) tree->data;
+    const project_node_t *data = (const project_node_t *) node->data;
+
+    (void) info;
+    if (project == NULL || data == NULL || data->dir || data->symbol < 0
+        || data->symbol != project->outline_current)
+        return;
+    *name = mc_skin_color_is_set ("editor", "treecurrent")
+        ? mc_skin_color_get ("editor", "treecurrent")
+        : mc_skin_color_on ("editor", "_default_", "yellow");
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1089,6 +1109,7 @@ static const edit_tree_ops_t project_tree_ops = {
     .row = project_tree_row,
     .activate = project_tree_activate,
     .bold = project_tree_bold,
+    .colors = project_tree_colors,
     .closed = project_tree_closed,
 };
 

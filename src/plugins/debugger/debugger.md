@@ -165,9 +165,10 @@ with a breakpoint, or with **Debug → Run to function...**.
 
 F2, F9 and F10 stay Save, the menu and Quit.
 
-**Enter**, **Alt-F8**
+**Alt-F8**
 : Evaluate the selection or the word under the cursor; the value comes in a
-dialog that can add it to the watches.
+dialog that can add it to the watches. Enter changes the text, as in other
+IDEs, and beeps here: Esc first to edit.
 
 **Alt-F10**
 : Back to the line the program is stopped at, the cursor having gone
@@ -218,9 +219,19 @@ Breakpoints, open and close, and a variable or a watch with members, a
 structure, an array, a pointer to one, an object of Python, opens in place,
 its members under it, read from the debugger as it is opened. What is open
 stays open from a stop to the next, read again there: *p*, *p.meta* open,
-a step shows their new values. In the panel the debugger keys work as in step
-mode (there F6 and F4 work on the cursor of the topmost file window, F10
-closes the panel), and:
+a step shows their new values. The groups debugpy adds to an object of
+Python, *special variables*, *function variables* and *class variables*,
+come after its fields and are gray, and so is what is in them: there is
+seldom anything to look at there. A value the last step has changed is
+yellow, marked *\** and shown after the value it had, *0 -> 1*, as the row
+has room; a value it has made, a variable of the function there was none of
+or a member of an object, is green and marked *+*. An error of the debugger
+is red, of a watch it cannot evaluate say. The skin gives these colors and
+marks in *[debugger]*: *title*, *changed*, *added*, *error*, *internal*,
+*changed-char*, *added-char* and *arrow*. In the panel the debugger keys
+work as in step mode (there F6 and F4 work on the cursor of the topmost file
+window; F10 closes the panel, and while a program is debugged it asks first:
+**Stop** the session, **Close panel** and let it go on, or **Cancel**), and:
 
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move from one row to another; a letter goes to the next row that starts
@@ -235,7 +246,7 @@ of. A click on the mark before it does so too.
 value in a dialog that can add it to the watches; on a frame, go to it; on a
 breakpoint, go to its line.
 
-**Evaluate expression...** and **Enter** in a source window show an
+**Evaluate expression...** and **Alt-F8** in a source window show an
 expression as a tree in a dialog, its members as in the panel; **Add watch**
 there watches the member of the cursor, *p->corner[1]* for one, by the
 expression the debugger gives or one made as C has it.
@@ -263,7 +274,7 @@ a debug adapter it is an expression or a command of the adapter's console,
 
 Under the local variables the panel has the registers of the frame: the
 general ones, the program counter and the flags, in hexadecimal; those the
-last step has changed are in bold. They are asked of the debugger only while
+last step has changed are yellow, as the values are. They are asked of the debugger only while
 they are shown: Enter on their title shows and hides them, Right opens it, and
 a stop in code
 with no source, or in a source of assembler (*.s*, *.S*, *.asm*), shows them.
@@ -351,7 +362,7 @@ function takes a name typed as it is, and a breakpoint goes on a line.
 **The rest of the Debug menu**
 
 **Call stack...** chooses a frame in a list, as Enter in the panel does.
-**Evaluate expression...** is Enter of a source window: the value of an
+**Evaluate expression...** is Alt-F8 of a source window: the value of an
 expression, in the dialog that can add it to the watches. **Add watch...**
 keeps an expression for the project; a watch shows a value, it does not
 stop the program when the value changes. Both offer the selection, or the

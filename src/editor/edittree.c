@@ -139,15 +139,23 @@ edit_tree_draw (edit_tree_t *tree)
                 g_string_append (name, " ...");
             if (index == tree->view->cursor && focused)
             {
-                row_color = EDITOR_MARKED_COLOR;
+                row_color = edit_tree_cursor_color ();
                 tty_setcolor (row_color);
                 tty_draw_hline (w->rect.y + row + 1, w->rect.x + 1, ' ', width);
+                if (tree->ops->cursor_colors != NULL)
+                    tree->ops->cursor_colors (tree, node, &name_color, &info_color);
             }
             else
             {
                 row_color = tree->ops->bold != NULL && tree->ops->bold (tree, node)
                     ? EDITOR_BOLD_COLOR
                     : EDITOR_NORMAL_COLOR;
+                // a row that stands out is a bar the width of the window, as the cursor is
+                if (row_color != EDITOR_NORMAL_COLOR)
+                {
+                    tty_setcolor (row_color);
+                    tty_draw_hline (w->rect.y + row + 1, w->rect.x + 1, ' ', width);
+                }
                 if (tree->ops->colors != NULL)
                     tree->ops->colors (tree, node, &name_color, &info_color);
             }
@@ -456,6 +464,23 @@ static const edit_window_class_t edit_tree_class = {
 
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+const char *
+edit_tree_cursor_key (void)
+{
+    // the cursor of a tree as that of the panels of a skin that says, the mark of the editor else
+    return mc_skin_color_is_set ("editor", "treeselected") ? "treeselected" : "editmarked";
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+int
+edit_tree_cursor_color (void)
+{
+    return mc_skin_color_get ("editor", edit_tree_cursor_key ());
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 edit_tree_t *
