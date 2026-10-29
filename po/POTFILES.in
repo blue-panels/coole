@@ -32,6 +32,14 @@ src/plugins/ctags/ctags-plugin.c
 src/plugins/ctags/ctags-ui.c
 src/plugins/debugger/debugger.c
 src/plugins/project/project.c
+src/plugins/query/query.c
+src/plugins/query/query-ai.c
+src/plugins/query/query-mongo.c
+src/plugins/query/query-mongo-schema.c
+src/plugins/query/query-pg-schema.c
+src/plugins/query/query-postgres.c
+src/plugins/query/query-pq.c
+src/plugins/query/query-tree.c
 src/plugins/build/build.c
 src/plugins/etags/etags.c
 src/plugins/spell/spell.c

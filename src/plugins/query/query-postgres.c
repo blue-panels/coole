@@ -39,6 +39,7 @@
 
 #include <config.h>
 
+#include <inttypes.h>  // PRId64: G_GINT64_FORMAT is not read by xgettext
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
@@ -467,14 +468,14 @@ query_pg_table (query_pg_t *p, const char *status)
     else
         g_string_append_printf (p->tables, ANSI_BOLD "%u. " ANSI_RESET, p->ntables);
     if (status == NULL)
-        g_string_append_printf (
-            p->tables, _ ("incomplete, the command failed after %" G_GINT64_FORMAT " rows\n\n%s\n"),
-            p->nrows, grid);
+        g_string_append_printf (p->tables,
+                                _ ("incomplete, the command failed after %" PRId64 " rows\n\n%s\n"),
+                                (int64_t) p->nrows, grid);
     else if (p->nrows == 0)
         g_string_append_printf (p->tables, _ ("no rows\n\n%s\n"), grid);
     else if (p->nrows > (gint64) QUERY_TABLE_ROWS)
-        g_string_append_printf (p->tables, _ ("the first %u of %" G_GINT64_FORMAT " rows\n\n%s\n"),
-                                QUERY_TABLE_ROWS, p->nrows, grid);
+        g_string_append_printf (p->tables, _ ("the first %u of %" PRId64 " rows\n\n%s\n"),
+                                QUERY_TABLE_ROWS, (int64_t) p->nrows, grid);
     else
         g_string_append_printf (p->tables,
                                 ngettext ("%u row\n\n%s\n", "%u rows\n\n%s\n", (gulong) p->nrows),
