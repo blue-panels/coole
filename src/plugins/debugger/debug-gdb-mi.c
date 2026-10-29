@@ -71,7 +71,22 @@ typedef struct
     // the names of the registers by their numbers, and the numbers of those the panel shows
     GPtrArray *register_names;
     GArray *general;
+    // the numbers of the catchpoints of the exceptions of C++, by the kind of each
+    char *catchpoints[2];
+    // which asking for each that is: an answer to one asked for before is of none
+    guint catch_asked[2];
 } mi_backend_t;
+
+/* The exceptions of C++ GDB catches: thrown, caught */
+static const struct
+{
+    const char *id;
+    const char *label;
+    const char *command;
+} mi_catches[] = {
+    { "throw", N_ ("C++ exceptions, when thrown"), "-catch-throw" },
+    { "catch", N_ ("C++ exceptions, when caught"), "-catch-catch" },
+};
 
 /* A request that waits for another first: the registers for their names, the instructions near
    an address for those of its function */
@@ -595,6 +610,20 @@ mi_stopped (mi_backend_t *mi, const gdb_mi_record_t *record)
     stop.exit_code = gdb_mi_record_string (record, "exit-code");
     stop.signal_name = gdb_mi_record_string (record, "signal-name");
     stop.signal_meaning = gdb_mi_record_string (record, "signal-meaning");
+    // a catchpoint is a breakpoint to GDB
+    if (stop.reason == DEBUG_STOP_BREAKPOINT)
+    {
+        const char *number = gdb_mi_record_string (record, "bkptno");
+        size_t i;
+
+        for (i = 0; i < G_N_ELEMENTS (mi_catches); i++)
+            if (number != NULL && g_strcmp0 (mi->catchpoints[i], number) == 0)
+            {
+                stop.reason = DEBUG_STOP_EXCEPTION;
+                stop.exception_name = _ ("C++ exception");
+                stop.exception_text = i == 0 ? _ ("thrown") : _ ("caught");
+            }
+    }
     EVENTS (mi)->stopped (UI (mi), &stop);
 }
 
@@ -701,6 +730,8 @@ mi_start (debug_backend_t *b, const debug_start_t *spec, GError **error)
     // another program, another machine perhaps
     g_ptr_array_set_size (mi->register_names, 0);
     g_array_set_size (mi->general, 0);
+    g_clear_pointer (&mi->catchpoints[0], g_free);
+    g_clear_pointer (&mi->catchpoints[1], g_free);
     if (!gdb_mi_session_start (mi->gdb, spec->debugger, error))
         return FALSE;
 
@@ -851,6 +882,89 @@ mi_break_enable (debug_backend_t *b, const char *id, gboolean enable)
 
     token = mi_send (MI (b), command);
     g_free (command);
+    return token;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The kinds of exceptions GDB stops on, the same with no session */
+GPtrArray *
+debug_gdb_mi_exception_filters (void)
+{
+    GPtrArray *filters = g_ptr_array_new_with_free_func (debug_exception_filter_free);
+    size_t i;
+
+    for (i = 0; i < G_N_ELEMENTS (mi_catches); i++)
+        g_ptr_array_add (
+            filters, debug_exception_filter_new (mi_catches[i].id, _ (mi_catches[i].label), FALSE));
+    return filters;
+}
+
+static GPtrArray *
+mi_exception_filters (const debug_backend_t *b)
+{
+    (void) b;
+    return debug_gdb_mi_exception_filters ();
+}
+
+/* A catchpoint of an exception GDB has taken: its number, for its stops and for taking it off */
+typedef struct
+{
+    mi_backend_t *mi;
+    size_t kind;
+    guint asked;
+} mi_catch_t;
+
+static void
+mi_catch_reply (void *ui, const debug_reply_t *reply, void *data)
+{
+    mi_catch_t *taken = (mi_catch_t *) data;
+
+    // given up, or asked for again, while GDB answered: this one goes, refused or not
+    if (taken->asked != taken->mi->catch_asked[taken->kind])
+    {
+        if (reply->ok && reply->id != NULL)
+            (void) mi_break_delete (&taken->mi->base, reply->id);
+        return;
+    }
+    if (!reply->ok)
+    {
+        EVENTS (taken->mi)->error (
+            ui, reply->msg != NULL ? reply->msg : _ ("GDB refused a command."), FALSE);
+        return;
+    }
+    g_free (taken->mi->catchpoints[taken->kind]);
+    taken->mi->catchpoints[taken->kind] = g_strdup (reply->id);
+}
+
+/* The catchpoints there are go, those of @ids come */
+static guint
+mi_break_exceptions (debug_backend_t *b, const char *const *ids)
+{
+    mi_backend_t *mi = MI (b);
+    guint token = ++mi->next_token;
+    size_t i;
+
+    for (i = 0; i < G_N_ELEMENTS (mi_catches); i++)
+    {
+        // one GDB has not answered for yet goes when it does
+        mi->catch_asked[i]++;
+        if (mi->catchpoints[i] != NULL)
+        {
+            token = mi_break_delete (b, mi->catchpoints[i]);
+            g_clear_pointer (&mi->catchpoints[i], g_free);
+        }
+        if (ids != NULL && g_strv_contains (ids, mi_catches[i].id))
+        {
+            mi_catch_t *taken = g_new0 (mi_catch_t, 1);
+
+            taken->mi = mi;
+            taken->kind = i;
+            taken->asked = mi->catch_asked[i];
+            token = mi_request (mi, MI_REPLY_BREAKPOINT, mi_catch_reply, taken, g_free,
+                                mi_catches[i].command);
+        }
+    }
     return token;
 }
 
@@ -1104,6 +1218,8 @@ mi_free (debug_backend_t *b)
     g_queue_free_full (mi->startup, g_free);
     g_ptr_array_free (mi->register_names, TRUE);
     g_array_free (mi->general, TRUE);
+    g_free (mi->catchpoints[0]);
+    g_free (mi->catchpoints[1]);
     g_free (mi);
 }
 
@@ -1121,6 +1237,8 @@ static const debug_backend_ops_t mi_ops = {
     .break_delete = mi_break_delete,
     .break_enable = mi_break_enable,
     .break_condition = mi_break_condition,
+    .exception_filters = mi_exception_filters,
+    .break_exceptions = mi_break_exceptions,
     .run_to = mi_run_to,
     .select_frame = mi_select_frame,
     .stack = mi_stack,

@@ -818,3 +818,258 @@ debug_toggle_breakpoint (void *data, void *edit)
     debug_config_save (debug);
     return MC_EPR_OK;
 }
+
+/* --------------------------------------------------------------------------------------------- */
+/* The exceptions the program stops on */
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the program debugged now was started with @launch: another configuration chosen
+   since has its own exceptions, not those of the program that runs */
+static gboolean
+debug_launch_runs (const debugger_t *debug, const debug_launch_t *launch)
+{
+    return launch != NULL && debug_alive (debug) && debug->session_launch == launch;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The kinds of exceptions the debugger of a configuration offers: those of the one that runs
+   it, of GDB, or those the adapter offered when it last ran; to be unreffed, NULL when not
+   known */
+static GPtrArray *
+debug_exception_filters (const debugger_t *debug, const debug_launch_t *launch)
+{
+    GPtrArray *filters;
+
+    // those of the sessions of the adapter that runs, all of them
+    if (debug_launch_runs (debug, launch) && debug->session_filters != NULL
+        && debug->session_filters->len > 0)
+        return g_ptr_array_ref (debug->session_filters);
+    // the debugger that runs tells its own, when it runs this configuration
+    if (debug_launch_runs (debug, launch) && debug->backend->ops->exception_filters != NULL)
+    {
+        filters = debug->backend->ops->exception_filters (debug->backend);
+        if (filters->len > 0)
+            return filters;
+        g_ptr_array_unref (filters);
+    }
+    // GDB has them all the time: one that does not run tells them too
+    if (!debug_launch_is_dap (launch))
+        return debug_gdb_mi_exception_filters ();
+    return launch->exception_filters != NULL ? g_ptr_array_ref (launch->exception_filters) : NULL;
+}
+
+/* The ids of the kinds the program stops on: those chosen, or those the debugger stops on by
+   itself */
+static char **
+debug_exceptions_chosen (const debug_launch_t *launch, const GPtrArray *filters)
+{
+    GPtrArray *ids;
+    guint i;
+
+    if (launch->exceptions != NULL)
+        return g_strdupv (launch->exceptions);
+    ids = g_ptr_array_new ();
+    for (i = 0; filters != NULL && i < filters->len; i++)
+    {
+        const debug_exception_filter_t *filter = g_ptr_array_index (filters, i);
+
+        if (filter->on)
+            g_ptr_array_add (ids, g_strdup (filter->id));
+    }
+    g_ptr_array_add (ids, NULL);
+    return (char **) g_ptr_array_free (ids, FALSE);
+}
+
+static gboolean
+debug_exception_filters_equal (const GPtrArray *a, const GPtrArray *b)
+{
+    guint i;
+
+    if (a == NULL || b == NULL || a->len != b->len)
+        return a == b;
+    for (i = 0; i < a->len; i++)
+    {
+        const debug_exception_filter_t *x = g_ptr_array_index (a, i);
+        const debug_exception_filter_t *y = g_ptr_array_index (b, i);
+
+        if (strcmp (x->id, y->id) != 0 || strcmp (x->label, y->label) != 0 || x->on != y->on)
+            return FALSE;
+    }
+    return TRUE;
+}
+
+/* The kinds the adapter of the program offers kept with its configuration, to be chosen the
+   next time before it runs: those of all its sessions, the program's own one added to those of
+   the adapter, the same each run */
+void
+debug_exceptions_cache (debugger_t *debug)
+{
+    debug_launch_t *launch = debug->session_launch;
+    GPtrArray *filters;
+    guint i, j;
+
+    if (!debug_launch_runs (debug, launch) || !debug_launch_is_dap (launch)
+        || debug->backend->ops->exception_filters == NULL)
+        return;
+    filters = debug->backend->ops->exception_filters (debug->backend);
+    if (debug->session_filters == NULL)
+        debug->session_filters = g_ptr_array_new_with_free_func (debug_exception_filter_free);
+    for (i = 0; i < filters->len; i++)
+    {
+        const debug_exception_filter_t *filter = g_ptr_array_index (filters, i);
+
+        for (j = 0; j < debug->session_filters->len; j++)
+            if (strcmp (((debug_exception_filter_t *) g_ptr_array_index (debug->session_filters, j))
+                            ->id,
+                        filter->id)
+                == 0)
+                break;
+        if (j == debug->session_filters->len)
+            g_ptr_array_add (debug->session_filters,
+                             debug_exception_filter_new (filter->id, filter->label, filter->on));
+    }
+    g_ptr_array_unref (filters);
+    if (debug->session_filters->len > 0
+        && !debug_exception_filters_equal (launch->exception_filters, debug->session_filters))
+    {
+        if (launch->exception_filters != NULL)
+            g_ptr_array_unref (launch->exception_filters);
+        launch->exception_filters = g_ptr_array_new_with_free_func (debug_exception_filter_free);
+        for (i = 0; i < debug->session_filters->len; i++)
+        {
+            const debug_exception_filter_t *filter = g_ptr_array_index (debug->session_filters, i);
+
+            g_ptr_array_add (launch->exception_filters,
+                             debug_exception_filter_new (filter->id, filter->label, filter->on));
+        }
+        debug_config_save (debug);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The program is loaded: the debugger is told the exceptions to stop on, those chosen, else
+   those it stops on by itself, of each session it has */
+void
+debug_exceptions_install (debugger_t *debug)
+{
+    // the program is that of the configuration it was started with, another may be chosen since
+    debug_launch_t *launch = debug->session_launch;
+
+    if (!debug_launch_runs (debug, launch) || debug->backend->ops->break_exceptions == NULL)
+        return;
+    debug_exceptions_cache (debug);
+    (void) debug->backend->ops->break_exceptions (debug->backend,
+                                                  (const char *const *) launch->exceptions);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Debug > Exceptions...: the kinds of exceptions the program stops on, of the configuration */
+mc_ep_result_t
+debug_act_exceptions (void *data, void *edit)
+{
+    debugger_t *debug = (debugger_t *) data;
+    debug_launch_t *launch;
+    GPtrArray *filters;
+    char **chosen;
+    GArray *widgets;
+    GPtrArray *labels;
+    gboolean *states;
+    guint i;
+    int ret;
+
+    if (!debug_require_project (debug, edit))
+        return MC_EPR_FAILED;
+    launch = debug_active_launch (debug);
+    if (launch == NULL)
+    {
+        debug_error (debug, _ ("Make a debug configuration first: Debug > New configuration..."));
+        return MC_EPR_FAILED;
+    }
+    filters = debug_exception_filters (debug, launch);
+    if (filters == NULL || filters->len == 0)
+    {
+        debug->host->message (
+            debug->host, D_NORMAL, _ ("Exceptions"),
+            filters == NULL
+                ? _ ("A debug adapter tells the exceptions it can stop on when it starts.\n"
+                     "Start the program once, then choose them here.")
+                : _ ("The debugger has no exceptions to stop on."));
+        if (filters != NULL)
+            g_ptr_array_unref (filters);
+        return MC_EPR_FAILED;
+    }
+
+    chosen = debug_exceptions_chosen (launch, filters);
+    states = g_new0 (gboolean, filters->len);
+    labels = g_ptr_array_new_with_free_func (g_free);
+    widgets = g_array_new (FALSE, TRUE, sizeof (quick_widget_t));
+    {
+        quick_widget_t label = QUICK_LABEL (_ ("Stop the program on the exceptions:"), NULL);
+
+        g_array_append_val (widgets, label);
+    }
+    for (i = 0; i < filters->len; i++)
+    {
+        const debug_exception_filter_t *filter = g_ptr_array_index (filters, i);
+        // the words of the adapter: a '&' of them is not a hotkey, the first one only is read so
+        const char *amp = strchr (filter->label, '&');
+        char *label = amp == NULL
+            ? g_strdup (filter->label)
+            : g_strdup_printf ("%.*s&%s", (int) (amp - filter->label), filter->label, amp);
+        quick_widget_t checkbox = QUICK_CHECKBOX (label, &states[i], NULL);
+
+        g_ptr_array_add (labels, label);
+
+        states[i] = g_strv_contains ((const char *const *) chosen, filter->id);
+        g_array_append_val (widgets, checkbox);
+    }
+    {
+        quick_widget_t tail[] = {
+            QUICK_BUTTONS_OK_CANCEL,
+            QUICK_END,
+        };
+        WRect r = { -1, -1, 0, 56 };
+        quick_dialog_t qdlg = {
+            .rect = r,
+            .title = _ ("Exceptions"),
+            .help = "[Debugger]",
+            .help_file = "debugger.md",
+            .widgets = NULL,
+            .callback = NULL,
+            .mouse_callback = NULL,
+        };
+
+        g_array_append_vals (widgets, tail, G_N_ELEMENTS (tail));
+        qdlg.widgets = (quick_widget_t *) widgets->data;
+        ret = quick_dialog (&qdlg);
+    }
+    g_array_free (widgets, TRUE);
+    g_ptr_array_unref (labels);
+    g_strfreev (chosen);
+
+    if (ret != B_CANCEL)
+    {
+        GPtrArray *ids = g_ptr_array_new ();
+
+        for (i = 0; i < filters->len; i++)
+            if (states[i])
+                g_ptr_array_add (
+                    ids,
+                    g_strdup (((debug_exception_filter_t *) g_ptr_array_index (filters, i))->id));
+        g_ptr_array_add (ids, NULL);
+        g_strfreev (launch->exceptions);
+        launch->exceptions = (char **) g_ptr_array_free (ids, FALSE);
+        debug_config_save (debug);
+        // the program that runs stops on them from now on
+        if (debug_launch_runs (debug, launch) && debug->breakpoints_installed
+            && debug->backend->ops->break_exceptions != NULL)
+            (void) debug->backend->ops->break_exceptions (debug->backend,
+                                                          (const char *const *) launch->exceptions);
+    }
+    g_free (states);
+    g_ptr_array_unref (filters);
+    return ret != B_CANCEL ? MC_EPR_OK : MC_EPR_FAILED;
+}

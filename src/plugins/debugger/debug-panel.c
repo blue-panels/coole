@@ -1070,6 +1070,7 @@ debug_panel_activate (edit_tree_t *tree, mctree_node_t *node)
         node->expanded = !node->expanded;
         mctree_node_set_lazy (node, FALSE);
         debug->registers_shown = node->expanded;
+        debug->registers_closed = !node->expanded;
         debug_registers_refresh (debug);
         debug_session_refresh (debug);
         return TRUE;
@@ -1253,6 +1254,36 @@ debug_panel_forget_members (debugger_t *debug)
             debug->backend->ops->release (debug->backend, m->ref);
     }
     g_clear_pointer (&debug->panel_members, g_hash_table_destroy);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+debug_panel_show_registers (debugger_t *debug)
+{
+    guint i;
+
+    // shown already, or closed by the user: as the user has it
+    if (debug->registers_shown || debug->registers_closed)
+        return;
+    debug->registers_shown = TRUE;
+    /* the part opens with them, closed as it was while they were not shown: open in the panel
+       now, for the next one to keep it so */
+    for (i = 0; debug->panel_model != NULL && i < debug->panel_model->nodes->len; i++)
+    {
+        mctree_node_t *node = g_ptr_array_index (debug->panel_model->nodes, i);
+        const debug_panel_item_t *item = DEBUG_PANEL_ITEM (node);
+
+        if (item != NULL && item->kind == PANEL_REGISTERS)
+        {
+            char *path = mctree_node_path (node);
+
+            node->expanded = TRUE;
+            if (debug->panel_closed != NULL)
+                g_hash_table_remove (debug->panel_closed, path);
+            g_free (path);
+        }
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */

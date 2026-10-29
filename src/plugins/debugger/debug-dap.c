@@ -95,6 +95,10 @@ typedef struct
     GPtrArray *frames;  // dap_frame_t of the stop, the top first
     guint selected;     // the frame the plugin has chosen
     GPtrArray *breakpoints;
+    // the kinds of exceptions the program stops on, sent again to the session of the program
+    char **exceptions;
+    // or those the adapter stops on by itself, of the session they go to
+    gboolean exceptions_default;
     guint next_token;
     guint next_bp;
     // the scopes of the last frame had registers: those of machine code do, those of Python not
@@ -526,6 +530,8 @@ dap_response_stop_frames (void *owner, gboolean success, const char *message, Js
     JsonObject *event = (JsonObject *) data;
     JsonArray *list = dap_array (body, "stackFrames");
     const char *reason = dap_string (event, "reason");
+    const char *description;
+    char *first_line = NULL;
     debug_stop_t stop = { 0 };
     guint i;
 
@@ -553,11 +559,33 @@ dap_response_stop_frames (void *owner, gboolean success, const char *message, Js
         stop.reason = DEBUG_STOP_BREAKPOINT;
     else if (strcmp (reason, "step") == 0)
         stop.reason = DEBUG_STOP_STEP;
-    else if (strcmp (reason, "exception") == 0 || strcmp (reason, "signal") == 0)
+    else if (strcmp (reason, "exception") == 0
+             && (dap_string (event, "text") != NULL || dap_string (event, "exceptionId") != NULL
+                 || dap_string (event, "exceptionDescription") != NULL))
+        stop.reason = DEBUG_STOP_EXCEPTION;
+    // lldb-dap tells its signals as an exception, with nothing of one
+    else if (strcmp (reason, "exception") == 0)
+        stop.reason = DEBUG_STOP_SIGNAL;
+    else if (strcmp (reason, "signal") == 0)
         stop.reason = DEBUG_STOP_SIGNAL;
     else
         stop.reason = DEBUG_STOP_OTHER;
-    if (stop.reason == DEBUG_STOP_SIGNAL)
+    if (stop.reason == DEBUG_STOP_EXCEPTION)
+    {
+        /* the kind as the stop says it, debugpy in "text", its exceptionId having a note after
+           it; what it says as exceptionInfo has it, the first line: the rest is its stack. The
+           description of the stop is not it, only the words of the stop: "Paused on exception" */
+        stop.exception_name = dap_string (event, "text") != NULL
+            ? dap_string (event, "text")
+            : dap_string (event, "exceptionId");
+        description = dap_string (event, "exceptionDescription");
+        if (description != NULL)
+        {
+            first_line = g_strndup (description, strcspn (description, "\n"));
+            stop.exception_text = first_line;
+        }
+    }
+    else if (stop.reason == DEBUG_STOP_SIGNAL)
     {
         stop.signal_name =
             dap_string (event, "description") != NULL ? dap_string (event, "description") : reason;
@@ -575,21 +603,62 @@ dap_response_stop_frames (void *owner, gboolean success, const char *message, Js
     }
     dap_breakpoints_temporary_off (dap);
     EVENTS (dap)->stopped (UI (dap), &stop);
+    g_free (first_line);
+}
+
+/* The frames of the stop, @event its own reference given */
+static void
+dap_stop_frames (dap_backend_t *dap, JsonObject *event)
+{
+    JsonObject *args;
+    JsonNode *node;
+
+    /* the thread that stopped: another may have stopped while the exception of this one was
+       asked for; the stop told now is this one's, the steps go on with it */
+    if (dap_int (event, "threadId", -1) >= 0)
+        dap->thread = dap_int (event, "threadId", 1);
+    node = dap_thread_args (dap, &args);
+    json_object_set_int_member (args, "levels", 64);
+    (void) dap_request (dap, "stackTrace", node, dap_response_stop_frames, event,
+                        (GDestroyNotify) json_object_unref);
+}
+
+/* What the exception of the stop is, put in the event of the stop; then its frames */
+static void
+dap_response_exception_info (void *owner, gboolean success, const char *message, JsonObject *body,
+                             void *data)
+{
+    dap_backend_t *dap = (dap_backend_t *) owner;
+    JsonObject *event = (JsonObject *) data;
+
+    (void) message;
+    if (success && dap_string (body, "exceptionId") != NULL)
+        json_object_set_string_member (event, "exceptionId", dap_string (body, "exceptionId"));
+    if (success && dap_string (body, "description") != NULL)
+        json_object_set_string_member (event, "exceptionDescription",
+                                       dap_string (body, "description"));
+    dap_stop_frames (dap, json_object_ref (event));
 }
 
 static void
 dap_event_stopped (dap_backend_t *dap, JsonObject *body)
 {
-    JsonObject *args;
-    JsonNode *node;
+    JsonObject *event = body != NULL ? json_object_ref (body) : json_object_new ();
 
-    if (dap_int (body, "threadId", -1) >= 0)
-        dap->thread = dap_int (body, "threadId", 1);
-    node = dap_thread_args (dap, &args);
-    json_object_set_int_member (args, "levels", 64);
-    (void) dap_request (dap, "stackTrace", node, dap_response_stop_frames,
-                        body != NULL ? json_object_ref (body) : json_object_new (),
-                        (GDestroyNotify) json_object_unref);
+    if (dap_int (event, "threadId", -1) >= 0)
+        dap->thread = dap_int (event, "threadId", 1);
+    if (g_strcmp0 (dap_string (event, "reason"), "exception") == 0
+        && dap_can (dap, "supportsExceptionInfoRequest"))
+    {
+        JsonObject *args;
+        JsonNode *node = dap_thread_args (dap, &args);
+
+        // the frames after it
+        (void) dap_request (dap, "exceptionInfo", node, dap_response_exception_info, event,
+                            (GDestroyNotify) json_object_unref);
+        return;
+    }
+    dap_stop_frames (dap, event);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -651,6 +720,7 @@ static void dap_launch (dap_backend_t *dap);
 static void dap_child_configure (dap_backend_t *dap);
 static debug_variable_t *dap_variable (JsonObject *item, const char *name,
                                        const char *value_member);
+static void dap_exceptions_send (dap_backend_t *dap);
 
 static void
 dap_event (void *owner, dap_client_t *client, const char *event, JsonObject *body)
@@ -800,6 +870,9 @@ dap_response_child_initialize (void *owner, gboolean success, const char *messag
         if (dap->capabilities != NULL)
             json_object_unref (dap->capabilities);
         dap->capabilities = json_object_ref (body);
+        // its kinds of exceptions added to those to choose from
+        if (EVENTS (dap)->exception_filters != NULL)
+            EVENTS (dap)->exception_filters (UI (dap));
     }
     node = json_node_new (JSON_NODE_OBJECT);
     json_node_set_object (node, dap->child_configuration);
@@ -838,6 +911,8 @@ dap_child_configure (dap_backend_t *dap)
     if (addresses)
         dap_breakpoints_send (dap, DAP_BP_ADDRESS, NULL);
     g_ptr_array_free (files, TRUE);
+    if (dap->exceptions != NULL || dap->exceptions_default)
+        dap_exceptions_send (dap);
     (void) dap_request (dap, "configurationDone", NULL, dap_response_plain_log, NULL, NULL);
 }
 
@@ -1122,6 +1197,10 @@ dap_start (debug_backend_t *b, const debug_start_t *spec, GError **error)
     dap->launch_extra = g_strdup (spec->launch_extra);
     g_ptr_array_set_size (dap->breakpoints, 0);
     g_ptr_array_set_size (dap->frames, 0);
+    g_clear_pointer (&dap->exceptions, g_strfreev);
+    dap->exceptions_default = FALSE;
+    // another adapter, perhaps: what it can do it says again
+    g_clear_pointer (&dap->capabilities, json_object_unref);
     dap->initialized = dap->launched = dap->configured = FALSE;
     if (dap->argv[0] == NULL && (spec->address == NULL || *spec->address == '\0'))
     {
@@ -1393,6 +1472,77 @@ dap_break_condition (debug_backend_t *b, const char *id, const char *condition)
     g_free (bp->condition);
     bp->condition = g_strdup (condition);
     dap_breakpoints_send (dap, bp->kind, bp->file);
+    return ++dap->next_token;
+}
+
+/* The kinds of exceptions the adapter offers, from its capabilities */
+static GPtrArray *
+dap_exception_filters (const debug_backend_t *b)
+{
+    const dap_backend_t *dap = DAP (b);
+    JsonArray *list = dap_array (dap->capabilities, "exceptionBreakpointFilters");
+    GPtrArray *filters = g_ptr_array_new_with_free_func (debug_exception_filter_free);
+    guint i;
+
+    for (i = 0; list != NULL && i < json_array_get_length (list); i++)
+    {
+        JsonObject *item = json_array_get_object_element (list, i);
+
+        if (item != NULL && dap_string (item, "filter") != NULL)
+            g_ptr_array_add (filters,
+                             debug_exception_filter_new (dap_string (item, "filter"),
+                                                         dap_string (item, "label"),
+                                                         dap_bool (item, "default", FALSE)));
+    }
+    return filters;
+}
+
+/* The kinds of exceptions to stop on, of those the adapter offers: one it has not is refused */
+static void
+dap_exceptions_send (dap_backend_t *dap)
+{
+    GPtrArray *offered = dap_exception_filters (&dap->base);
+    JsonArray *list = json_array_new ();
+    JsonObject *args;
+    JsonNode *node = dap_args (&args);
+    guint i, j;
+
+    // those the adapter of the session stops on by itself
+    for (j = 0; dap->exceptions_default && j < offered->len; j++)
+    {
+        const debug_exception_filter_t *filter = g_ptr_array_index (offered, j);
+
+        if (filter->on)
+            json_array_add_string_element (list, filter->id);
+    }
+    for (i = 0; dap->exceptions != NULL && dap->exceptions[i] != NULL; i++)
+        for (j = 0; j < offered->len; j++)
+            if (strcmp (((debug_exception_filter_t *) g_ptr_array_index (offered, j))->id,
+                        dap->exceptions[i])
+                == 0)
+            {
+                json_array_add_string_element (list, dap->exceptions[i]);
+                break;
+            }
+    json_object_set_array_member (args, "filters", list);
+    // an adapter without any takes no request of them
+    if (offered->len > 0)
+        (void) dap_request (dap, "setExceptionBreakpoints", node, dap_response_plain_log, NULL,
+                            NULL);
+    else
+        json_node_unref (node);
+    g_ptr_array_unref (offered);
+}
+
+static guint
+dap_break_exceptions (debug_backend_t *b, const char *const *ids)
+{
+    dap_backend_t *dap = DAP (b);
+
+    g_strfreev (dap->exceptions);
+    dap->exceptions = g_strdupv ((char **) ids);
+    dap->exceptions_default = ids == NULL;
+    dap_exceptions_send (dap);
     return ++dap->next_token;
 }
 
@@ -1990,6 +2140,7 @@ dap_free (debug_backend_t *b)
         json_object_unref (dap->capabilities);
     g_ptr_array_free (dap->frames, TRUE);
     g_ptr_array_free (dap->breakpoints, TRUE);
+    g_strfreev (dap->exceptions);
     g_free (dap);
 }
 
@@ -2006,6 +2157,8 @@ static const debug_backend_ops_t dap_ops = {
     .break_delete = dap_break_delete,
     .break_enable = dap_break_enable,
     .break_condition = dap_break_condition,
+    .exception_filters = dap_exception_filters,
+    .break_exceptions = dap_break_exceptions,
     .run_to = dap_run_to,
     .select_frame = dap_select_frame,
     .stack = dap_stack,

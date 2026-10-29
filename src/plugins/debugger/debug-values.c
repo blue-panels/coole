@@ -261,7 +261,6 @@ debug_reply_stack (void *ui, const debug_reply_t *reply, void *data)
     debugger_t *debug = (debugger_t *) ui;
     guint i;
 
-    (void) data;
     // the frames are the panel's now
     g_ptr_array_unref (debug->frames);
     debug->frames = reply->frames != NULL ? g_ptr_array_ref (reply->frames)
@@ -290,6 +289,31 @@ debug_reply_stack (void *ui, const debug_reply_t *reply, void *data)
         else
             frame->label = g_strdup_printf ("#%ld %s  %s", frame->level, func,
                                             frame->from != NULL ? frame->from : _ ("<no source>"));
+    }
+    /* the frame of the source, at the stop the stack was asked at: the program gone on, or
+       stopped again since, it is of none */
+    if (debug->source_frame_wanted && debug->state == DEBUG_STOPPED
+        && GPOINTER_TO_UINT (data) == debug->stop_serial)
+    {
+        debug->source_frame_wanted = FALSE;
+        for (i = 0; i < debug->frames->len; i++)
+        {
+            const debug_frame_t *frame = g_ptr_array_index (debug->frames, i);
+
+            if (debug_source_here (frame->file) && frame->line > 0)
+            {
+                debug_select_frame (debug, frame);
+                return;
+            }
+        }
+        /* no frame has its source: the registers and the instructions are what there is to
+           see, as at any stop in code with no source */
+        debug_panel_show_registers (debug);
+        debug_registers_refresh (debug);
+        debug_disasm_show (debug,
+                           debug->session_window == NULL
+                               || debug->host->window_current (debug->host)
+                                   != debug->session_window);
     }
     debug_session_refresh (debug);
 }
