@@ -208,6 +208,11 @@ applies individually to each of these three properties.
             The cursor of a tree window: the tree of the project, the panel
             of the debugger, Schema (default: editmarked)
 
+        treecurrent
+            The function or class the cursor of the file is in, in the tree
+            of the project; the file itself has editbold (default: yellow
+            on the background of the editor)
+
         editwhitespace
             Tabs and trailing spaces
 
