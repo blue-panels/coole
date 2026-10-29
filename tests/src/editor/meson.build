@@ -65,6 +65,21 @@ if json_glib.found()
                                 c_args: ['-DQUERY_SCRIPTS_DIR="@0@"'.format(
                                   meson.project_source_root() / 'misc' / 'query')],
                                 dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  # the backend of PostgreSQL on a live server, skipped unless COOLE_TEST_PG is set: see
+  # query_pg.c; libpq is loaded by gmodule, as in the plugin
+  if have_gmodule
+    query_pg = executable('query_pg', 'query_pg.c',
+                          '../../../src/plugins/query/query-postgres.c',
+                          '../../../src/plugins/query/query-pq.c',
+                          '../../../src/plugins/query/query-core.c',
+                          c_args: ['-DQUERY_SCRIPTS_DIR="@0@"'.format(
+                            meson.project_source_root() / 'misc' / 'query')],
+                          dependencies: [glib_dep, intl, screen_headers, json_glib])
+    test('query_pg', query_pg, suite: 'src/editor', timeout: 120)
+    # the way of a libpq older than 17, with libpq 17 too: rows one by one, the cancel by a thread
+    test('query_pg_old', query_pg, env: ['COOLE_PQ_FORCE_OLD=1'], suite: 'src/editor',
+         timeout: 120)
+  endif
   test('lsp_client', executable('lsp_client', 'lsp_client.c', lsp_test_sources,
                                 '../../../src/plugins/lsp/lsp-client.c',
                                 '../../../src/content-frame.c',
@@ -72,6 +87,16 @@ if json_glib.found()
                                         test_python_arg],
                                 dependencies: [glib_dep, screen_deps, json_glib]),
        suite: 'src/editor', timeout: 120)
+endif
+
+# the values query-pq.h writes for libpq, which coole loads without its headers, are those of
+# libpq-fe.h: only its headers are taken, nothing is linked
+libpq_headers = dependency('libpq', required: false)
+if libpq_headers.found()
+  test('query_pq_enums', executable('query_pq_enums', 'query_pq_enums.c',
+                                    dependencies: [glib_dep,
+                                                   libpq_headers.partial_dependency(compile_args: true)]),
+       suite: 'src/editor')
 endif
 
 test('fuzzy', executable('fuzzy', 'fuzzy.c', '../../../src/fuzzy.c', dependencies: [glib_dep]),
