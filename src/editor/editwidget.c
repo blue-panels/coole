@@ -3492,7 +3492,10 @@ edit_add_window (WDialog *h, const WRect *r, const edit_arg_t *arg)
     edit_window_add (h, EDIT_WINDOW (edit));
     // fullscreen, it fills what the docks leave
     edit_dock_arrange (h);
-    edit_set_buttonbar (edit, buttonbar_find (h));
+    /* given the focus, it has its labels already, and those of the plugins over them: the
+       editor's again would take those off */
+    if (!widget_get_state (WIDGET (edit), WST_FOCUSED))
+        edit_set_buttonbar (edit, buttonbar_find (h));
     edit_plugins_file_event (edit, TRUE);
     edit_publish_runtime_open (edit);
     widget_draw (WIDGET (h));
