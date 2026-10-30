@@ -118,7 +118,9 @@ edit_tree_draw (edit_tree_t *tree)
             GString *mark = g_string_new (NULL);
             GString *name = g_string_new (NULL);
             GString *info = g_string_new (NULL);
-            int room, info_cols, mark_cols, row_color, name_color = -1, info_color = -1;
+            GString *icon = g_string_new (NULL);
+            int room, info_cols, mark_cols, icon_cols, row_color, name_color = -1, info_color = -1;
+            int icon_color = -1;
 
             // a node that does not open has room of a mark, as in the tree of the project
             if (mctree_node_expandable (node))
@@ -134,6 +136,10 @@ edit_tree_draw (edit_tree_t *tree)
                 if (node->value != NULL)
                     g_string_append (info, node->value);
             }
+            if (tree->ops->icon != NULL)
+                tree->ops->icon (tree, node, icon, &icon_color);
+            if (icon->len > 0)
+                g_string_append_c (icon, ' ');
             // opened, its children are read
             if (node->expanded && node->lazy)
                 g_string_append (name, " ...");
@@ -144,6 +150,7 @@ edit_tree_draw (edit_tree_t *tree)
                 tty_draw_hline (w->rect.y + row + 1, w->rect.x + 1, ' ', width);
                 if (tree->ops->cursor_colors != NULL)
                     tree->ops->cursor_colors (tree, node, &name_color, &info_color);
+                icon_color = -1;
             }
             else
             {
@@ -165,11 +172,18 @@ edit_tree_draw (edit_tree_t *tree)
             room = width - lead - 1;
             mark_cols = MIN (str_term_width1 (mark->str), MAX (0, room));
             room -= mark_cols;
+            icon_cols = MIN (str_term_width1 (icon->str), MAX (0, room));
+            room -= icon_cols;
             info_cols = info->len > 0 ? str_term_width1 (info->str) : 0;
             if (info_cols > 0 && info_cols + 1 + str_term_width1 (name->str) > room)
                 info_cols = MIN (info_cols, MAX (0, room - str_term_width1 (name->str) - 1));
             tty_setcolor (row_color);
             tty_print_string (str_fit_to_term (mark->str, mark_cols, J_LEFT));
+            if (icon_cols > 0)
+            {
+                tty_setcolor (icon_color >= 0 ? icon_color : row_color);
+                tty_print_string (str_fit_to_term (icon->str, icon_cols, J_LEFT));
+            }
             if (room > 0)
             {
                 tty_setcolor (name_color >= 0 ? name_color : row_color);
@@ -185,6 +199,7 @@ edit_tree_draw (edit_tree_t *tree)
             g_string_free (mark, TRUE);
             g_string_free (name, TRUE);
             g_string_free (info, TRUE);
+            g_string_free (icon, TRUE);
         }
     }
     g_strfreev (message);
