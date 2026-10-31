@@ -138,6 +138,8 @@ struct WMcTerm
        told to go, or was typed on, and the screen has yet to say so. */
     gboolean line_cleared;
     gboolean line_typed;
+    // bytes of a UTF-8 character still to come: the shell echoes it only when it is whole
+    int utf8_left;
     // a UTF-8 character collected for a child that asked for every key as a kitty CSI u
     unsigned char kitty_utf8[6];
     int kitty_utf8_len;
@@ -3972,9 +3974,21 @@ mcterm_send_key (WMcTerm *t, int key)
 
     if (key >= 0x20 && key <= 0xFF && key != 0x7F)
     {
-        t->line_typed = TRUE;
-        t->line_cleared = FALSE;
+        if (!mc_global.utf8_display || key < 0x80)
+            t->utf8_left = 0;
+        else if (key >= 0xC0)
+            t->utf8_left = key >= 0xF0 ? 3 : (key >= 0xE0 ? 2 : 1);
+        else if (t->utf8_left > 0)
+            t->utf8_left--;
+
+        if (t->utf8_left == 0)
+        {
+            t->line_typed = TRUE;
+            t->line_cleared = FALSE;
+        }
     }
+    else
+        t->utf8_left = 0;
 
     return mcterm_send_encoded_key (t, key);
 }
