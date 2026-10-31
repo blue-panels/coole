@@ -2172,6 +2172,12 @@ terminals only (1, the default) or always (2).
 *alternate_plus_minus*
 : Keep the plus and the minus keys of the numeric keypad as plus and minus.
 
+*keybar_modifiers*
+: If true, the key bar shows the commands of Shift, Ctrl or Alt with the F keys
+while that modifier is held. This needs a terminal with the kitty keyboard
+protocol: coole then asks it for every key with its release, and for focus
+events. Other terminals are not affected. False by default.
+
 *verbose*
 : Show the progress of long operations.
 

@@ -130,6 +130,7 @@ static const struct
     { "mouse_close_dialog", &mouse_close_dialog },
     { "drop_menus", &drop_menus },
     { "old_esc_mode", &old_esc_mode },
+    { "keybar_modifiers", &keybar_modifiers },
     { "show_all_if_ambiguous", &mc_global.widget.show_all_if_ambiguous },
     { "alternate_plus_minus", &mc_global.tty.alternate_plus_minus },
     { "editor_fill_tabs_with_spaces", &edit_options.fill_tabs_with_spaces },
