@@ -2746,3 +2746,910 @@ msgid ""
 "Cannot copy %s to %s:\n"
 "%s"
 msgstr "Не удаётся переименовать %s в %s: %s"
+
+#: src/plugins/query/query.c:110
+msgid "Run the selection, else the part between \"// ---\", else the file"
+msgstr "Выполнить выделение, иначе часть между \"// ---\", иначе весь файл"
+
+#: src/plugins/query/query.c:111
+msgid "Run the whole file, even with a selection"
+msgstr "Выполнить весь файл, даже при выделении"
+
+#: src/plugins/query/query.c:112
+msgid "Stop the query"
+msgstr "Остановить запрос"
+
+#: src/plugins/query/query.c:113
+msgid "Put the version of the query of History into the file"
+msgstr "Вставить в файл версию запроса из истории"
+
+#: src/plugins/query/query.c:114
+msgid "Compare the version of the query of History with the file"
+msgstr "Сравнить версию запроса из истории с файлом"
+
+#: src/plugins/query/query.c:115
+msgid "Roll the transaction of the session back"
+msgstr "Откатить транзакцию сеанса"
+
+#: src/plugins/query/query.c:116
+msgid "Show or hide the schemas, the relations and their columns"
+msgstr "Показать или скрыть схемы, отношения и их столбцы"
+
+#: src/plugins/query/query.c:118
+msgid "The rows of the relation of the node of Schema in Table"
+msgstr "Строки отношения узла схемы во вкладке Таблица"
+
+#: src/plugins/query/query.c:119
+msgid "Put the name of the node of Schema into the file"
+msgstr "Вставить в файл имя узла схемы"
+
+#: src/plugins/query/query.c:120
+msgid "Read the schemas again"
+msgstr "Перечитать схемы"
+
+#: src/plugins/query/query.c:122
+msgid ""
+"Put the query of the rows of the relation of the node of Schema into the file"
+msgstr "Вставить в файл запрос строк отношения узла схемы"
+
+#: src/plugins/query/query.c:124
+msgid ""
+"Put the drop, commented, and the create of the node of Schema into the file"
+msgstr "Вставить в файл закомментированный DROP и CREATE узла схемы"
+
+#: src/plugins/query/query.c:125
+msgid "Write the query of the request of the paragraph or the selection by AI"
+msgstr "Написать с помощью ИИ запрос по просьбе из абзаца или выделения"
+
+#: src/plugins/query/query.c:144 src/plugins/query/query-postgres.c:615
+#: src/plugins/query/query-postgres.c:621
+msgid "Output"
+msgstr "Вывод"
+
+#: src/plugins/query/query.c:145
+msgid "Table"
+msgstr "Таблица"
+
+#: src/plugins/query/query.c:299
+#, c-format
+msgid ""
+"The script %s\n"
+"of the queries is a part of itself."
+msgstr ""
+"Скрипт запросов %s\n"
+"включает сам себя."
+
+#: src/plugins/query/query.c:301
+#, c-format
+msgid ""
+"The script %s\n"
+"of the queries is not there:\n"
+"it is in %s,\n"
+"or in ~/.config/coole/query."
+msgstr ""
+"Скрипта запросов %s нет:\n"
+"он лежит в %s\n"
+"или в ~/.config/coole/query."
+
+#: src/plugins/query/query.c:597
+#, c-format
+msgid "%u run"
+msgid_plural "%u runs"
+msgstr[0] "%u запуск"
+msgstr[1] "%u запуска"
+msgstr[2] "%u запусков"
+msgstr[3] "%u запусков"
+
+#: src/plugins/query/query.c:598
+msgid "current"
+msgstr "текущая"
+
+#: src/plugins/query/query.c:603 src/plugins/query/query-ai.c:329
+#: src/plugins/query/query-mongo.c:163 src/plugins/query/query-postgres.c:735
+msgid "stopped"
+msgstr "остановлен"
+
+#: src/plugins/query/query.c:605 src/plugins/query/query-mongo.c:167
+#, c-format
+msgid "exit %d"
+msgstr "код %d"
+
+#: src/plugins/query/query.c:622
+msgid "No file of queries in front.\n"
+msgstr "Впереди нет файла запросов.\n"
+
+#: src/plugins/query/query.c:624
+msgid "No version yet: a run keeps the file as it is.\n"
+msgstr "Версий пока нет: запуск сохраняет файл как есть.\n"
+
+#: src/plugins/query/query.c:654
+#, c-format
+msgid "History: %s"
+msgstr "История: %s"
+
+#: src/plugins/query/query.c:831
+#, c-format
+msgid "lines %ld-%ld"
+msgstr "строки %ld-%ld"
+
+#: src/plugins/query/query.c:833
+#, c-format
+msgid "line %ld"
+msgstr "строка %ld"
+
+#. the commands of the plugin, which act on the node of the cursor
+#: src/plugins/query/query.c:894 src/plugins/query/query.c:932
+#: src/plugins/query/query.c:1552 src/plugins/query/query.c:1571
+#: src/plugins/query/query.c:1759 src/plugins/query/query-ai.c:478
+#: src/plugins/query/query-ai.c:484 src/plugins/query/query-ai.c:505
+#: src/plugins/query/query-ai.c:525 src/plugins/query/query-tree.c:189
+#: src/plugins/query/query-tree.c:628
+msgid "Query"
+msgstr "Запрос"
+
+#: src/plugins/query/query.c:894
+msgid "A query is running. Stop it?"
+msgstr "Выполняется запрос. Остановить его?"
+
+#: src/plugins/query/query.c:894 src/plugins/query/query.c:1759
+#: src/plugins/query/query-ai.c:485
+msgid "&Stop"
+msgstr "&Остановить"
+
+#: src/plugins/query/query.c:933 src/plugins/query/query-ai.c:526
+msgid "The selection is empty."
+msgstr "Выделение пусто."
+
+#: src/plugins/query/query.c:934
+msgid ""
+"The part of the file between the lines \"// ---\"\n"
+"around the cursor is empty."
+msgstr ""
+"Часть файла между строками \"// ---\"\n"
+"вокруг курсора пуста."
+
+#: src/plugins/query/query.c:936
+msgid "The file is empty."
+msgstr "Файл пуст."
+
+#: src/plugins/query/query.c:975 src/plugins/query/query.c:976
+msgid "Running...\n"
+msgstr "Выполняется...\n"
+
+#: src/plugins/query/query.c:1010
+msgid ""
+"The version was kept, not run: Enter puts it in the file, to run it there.\n"
+msgstr ""
+"Версия сохранена, но не выполнялась: Enter вставит её в файл, чтобы "
+"выполнить там.\n"
+
+#: src/plugins/query/query.c:1284
+msgid "The version is gone from the store.\n"
+msgstr "Версии больше нет в хранилище.\n"
+
+#: src/plugins/query/query.c:1297
+msgid "The file of queries is not open.\n"
+msgstr "Файл запросов не открыт.\n"
+
+#: src/plugins/query/query.c:1321
+msgid "What the file has cannot be kept as a version: it stays as it is.\n"
+msgstr "Содержимое файла нельзя сохранить как версию: он остаётся как есть.\n"
+
+#: src/plugins/query/query.c:1339
+#, c-format
+msgid ""
+"The file is as it was at %s; what it had is the version \"current\" of "
+"History.\n"
+"Undo takes it back.\n"
+msgstr ""
+"Файл стал таким, как в %s; прежнее содержимое - версия \"текущая\" в "
+"истории.\n"
+"Undo вернёт его.\n"
+
+#: src/plugins/query/query.c:1342
+#, c-format
+msgid ""
+"The file is as it was at %s; what it had is the version \"current\" of "
+"History, Enter on it brings it back.\n"
+msgstr ""
+"Файл стал таким, как в %s; прежнее содержимое - версия \"текущая\" в "
+"истории, Enter на ней вернёт его.\n"
+
+#: src/plugins/query/query.c:1347
+#, c-format
+msgid "The file is as it was at %s already.\n"
+msgstr "Файл уже такой, как в %s.\n"
+
+#: src/plugins/query/query.c:1418
+msgid "The query has no version of the file to compare.\n"
+msgstr "У запроса нет версии файла для сравнения.\n"
+
+#: src/plugins/query/query.c:1432
+msgid "The file cannot be compared now.\n"
+msgstr "Сейчас файл нельзя сравнить.\n"
+
+#: src/plugins/query/query.c:1440
+#, c-format
+msgid "%s, now"
+msgstr "%s, сейчас"
+
+#: src/plugins/query/query.c:1450
+msgid "diff is not found.\n"
+msgstr "diff не найден.\n"
+
+#: src/plugins/query/query.c:1452
+#, c-format
+msgid "The file is as it was at %s.\n"
+msgstr "Файл такой же, как в %s.\n"
+
+#: src/plugins/query/query.c:1553
+msgid "The queries of this database have no transaction."
+msgstr "У запросов этой базы данных нет транзакций."
+
+#: src/plugins/query/query.c:1572
+msgid "The queries of this database have no schema shown."
+msgstr "Для запросов этой базы данных схема не показывается."
+
+#: src/plugins/query/query.c:1689
+msgid "No query run yet.\n"
+msgstr "Запросы ещё не выполнялись.\n"
+
+#: src/plugins/query/query.c:1709
+msgid "&Query"
+msgstr "&Запрос"
+
+#: src/plugins/query/query.c:1759
+msgid "Stop the query and quit?"
+msgstr "Остановить запрос и выйти?"
+
+#: src/plugins/query/query-ai.c:331
+msgid "exit code"
+msgstr "код возврата"
+
+#: src/plugins/query/query-ai.c:343
+#, c-format
+msgid ""
+"%s answered with no query, in no block ```: the file is left as it is.\n"
+msgstr "%s ответил без запроса в блоке ```: файл оставлен как есть.\n"
+
+#: src/plugins/query/query-ai.c:351
+msgid ""
+"The query is put in the file after the request and its query, not run: F5 "
+"runs it, Undo takes it back.\n"
+msgstr ""
+"Запрос вставлен в файл после просьбы и её запроса, но не выполнен: F5 "
+"выполнит его, Undo уберёт.\n"
+
+#: src/plugins/query/query-ai.c:354
+msgid ""
+"The query is put in the file under the request, not run: F5 runs it, Undo "
+"takes it back.\n"
+msgstr ""
+"Запрос вставлен в файл под просьбой, но не выполнен: F5 выполнит его, Undo "
+"уберёт.\n"
+
+#: src/plugins/query/query-ai.c:358
+#, c-format
+msgid ""
+"The request is no more where it was in the file: the query is here.\n"
+"\n"
+"%s\n"
+msgstr ""
+"Просьбы больше нет там, где она была в файле: запрос здесь.\n"
+"\n"
+"%s\n"
+
+#: src/plugins/query/query-ai.c:479
+msgid "AI writes no queries of this database."
+msgstr "ИИ не пишет запросы для этой базы данных."
+
+#: src/plugins/query/query-ai.c:484
+msgid "AI is writing a query. Stop it?"
+msgstr "ИИ пишет запрос. Остановить?"
+
+#: src/plugins/query/query-ai.c:495
+msgid "AI is stopped.\n"
+msgstr "ИИ остановлен.\n"
+
+#: src/plugins/query/query-ai.c:503 src/plugins/query/query-ai.c:610
+#, c-format
+msgid "%s is no command: claude, codex or a command line."
+msgstr "%s - не команда: нужен claude, codex или командная строка."
+
+#: src/plugins/query/query-ai.c:527
+msgid ""
+"The request to AI is the paragraph of the cursor, or the selection:\n"
+"the line of the cursor is empty."
+msgstr ""
+"Просьба к ИИ - абзац под курсором или выделение:\n"
+"строка курсора пуста."
+
+#: src/plugins/query/query-ai.c:542
+msgid "AI is told of the database...\n"
+msgstr "ИИ получает сведения о базе данных...\n"
+
+#: src/plugins/query/query-ai.c:563
+#, c-format
+msgid "What AI is told of the database cannot be read: %s\n"
+msgstr "Не удалось прочитать сведения о базе данных для ИИ: %s\n"
+
+#: src/plugins/query/query-ai.c:588
+#, c-format
+msgid "%s is writing the query of the request... F6 stops it.\n"
+msgstr "%s пишет запрос по просьбе... F6 остановит.\n"
+
+#: src/plugins/query/query-ai.c:618
+#, c-format
+msgid "F6 writes the query of the request of the paragraph by AI, %s: %s\n"
+msgstr "F6 пишет с помощью ИИ запрос по просьбе из абзаца, %s: %s\n"
+
+#: src/plugins/query/query-ai.c:620
+msgid "by default"
+msgstr "по умолчанию"
+
+#: src/plugins/query/query-ai.c:623
+#, c-format
+msgid ""
+"%s is not found: F6, the queries written by AI, needs it, or another in "
+"[Query] ai of the configuration\n"
+msgstr ""
+"%s не найден: он нужен F6, запросам от ИИ, или другой в [Query] ai "
+"конфигурации\n"
+
+#: src/plugins/query/query-mongo.c:99
+#, c-format
+msgid ""
+"no JSON: %s\n"
+"\n"
+msgstr ""
+"не JSON: %s\n"
+"\n"
+
+#: src/plugins/query/query-mongo.c:104
+msgid ""
+"no documents\n"
+"\n"
+msgstr ""
+"нет документов\n"
+"\n"
+
+#: src/plugins/query/query-mongo.c:106
+#, c-format
+msgid ""
+"the first %u of %u documents\n"
+"\n"
+"%s\n"
+msgstr ""
+"первые %u из %u документов\n"
+"\n"
+"%s\n"
+
+#: src/plugins/query/query-mongo.c:110
+#, c-format
+msgid ""
+"%u document\n"
+"\n"
+"%s\n"
+msgid_plural ""
+"%u documents\n"
+"\n"
+"%s\n"
+msgstr[0] ""
+"%u документ\n"
+"\n"
+"%s\n"
+msgstr[1] ""
+"%u документа\n"
+"\n"
+"%s\n"
+msgstr[2] ""
+"%u документов\n"
+"\n"
+"%s\n"
+msgstr[3] ""
+"%u документов\n"
+"\n"
+"%s\n"
+
+#: src/plugins/query/query-mongo.c:128
+msgid "printed"
+msgstr "напечатано"
+
+#: src/plugins/query/query-mongo.c:130
+msgid "the value at the end"
+msgstr "значение в конце"
+
+#: src/plugins/query/query-mongo.c:135
+msgid ""
+"No table: printjson () of an array or a cursor makes one, and a line \"// "
+"@table\" one of the value the query ends with.\n"
+msgstr ""
+"Таблицы нет: её делает printjson () массива или курсора, а строка \"// "
+"@table\" - таблицу значения, которым кончается запрос.\n"
+
+#: src/plugins/query/query-mongo.c:159
+#, c-format
+msgid "limit %ld   "
+msgstr "предел %ld   "
+
+#: src/plugins/query/query-mongo.c:161
+msgid "@limit: no find () or aggregate ([...]) to limit   "
+msgstr "@limit: нет find () или aggregate ([...]) для предела   "
+
+#: src/plugins/query/query-mongo.c:165
+#, c-format
+msgid "killed by signal %d"
+msgstr "убит сигналом %d"
+
+#: src/plugins/query/query-mongo.c:172
+msgid "... mongosh printed more than 8 MB: the rest is cut."
+msgstr "... mongosh вывел больше 8 МБ: остальное обрезано."
+
+#: src/plugins/query/query-mongo.c:228
+msgid "The query was stopped.\n"
+msgstr "Запрос остановлен.\n"
+
+#: src/plugins/query/query-mongo.c:231
+msgid "The query ends with a cursor: .toArray() after it makes the table.\n"
+msgstr "Запрос кончается курсором: .toArray() после него сделает таблицу.\n"
+
+#: src/plugins/query/query-mongo.c:234
+msgid "The query failed: Output tells why.\n"
+msgstr "Запрос не удался: причина во вкладке Вывод.\n"
+
+#: src/plugins/query/query-mongo.c:237
+msgid "mongosh printed more than 8 MB: no table of a part of it.\n"
+msgstr "mongosh вывел больше 8 МБ: таблицы из части вывода нет.\n"
+
+#: src/plugins/query/query-mongo.c:240
+msgid ""
+"The query ends with no value for the table: printjson () and print () print, "
+"and have none.\n"
+msgstr ""
+"Запрос не кончается значением для таблицы: printjson () и print () печатают, "
+"но значения не дают.\n"
+
+#: src/plugins/query/query-mongo.c:361 src/plugins/query/query-postgres.c:1185
+#, c-format
+msgid "Database: %s\n"
+msgstr "База данных: %s\n"
+
+#: src/plugins/query/query-mongo.c:366
+msgid "mongosh is not found: MC_MONGOSH or PATH should have it."
+msgstr "mongosh не найден: он должен быть в MC_MONGOSH или PATH."
+
+#: src/plugins/query/query-mongo.c:370 src/plugins/query/query-postgres.c:1203
+#, c-format
+msgid "%s is not found: no completion of the queries (%s)\n"
+msgstr "%s не найден: автодополнения запросов нет (%s)\n"
+
+#: src/plugins/query/query-mongo.c:377
+#, c-format
+msgid ""
+"use(\"%s\") is put at the top of the file: the language server\n"
+"completes the collections of that database.\n"
+"\n"
+msgstr ""
+"use(\"%s\") вставлен в начало файла: языковой сервер\n"
+"дополняет коллекции этой базы данных.\n"
+"\n"
+
+#: src/plugins/query/query-mongo.c:381
+msgid ""
+"F5 runs the selection, else the part between the lines \"// ---\"\n"
+"around the cursor, else the whole file; Ctrl-F5 the whole file.\n"
+"A line \"// @table\" in the query makes the tab Table of the\n"
+"documents it ends with.\n"
+msgstr ""
+"F5 выполняет выделение, иначе часть между строками \"// ---\"\n"
+"вокруг курсора, иначе весь файл; Ctrl-F5 - весь файл.\n"
+"Строка \"// @table\" в запросе делает вкладку Таблица из\n"
+"документов, которыми он кончается.\n"
+
+#: src/plugins/query/query-mongo.c:447
+msgid "The query is longer than mongosh takes (128 KB).\n"
+msgstr "Запрос длиннее, чем принимает mongosh (128 КБ).\n"
+
+#: src/plugins/query/query-mongo-schema.c:123
+msgid "Collections"
+msgstr "Коллекции"
+
+#: src/plugins/query/query-mongo-schema.c:124
+#: src/plugins/query/query-pg-schema.c:146
+msgid "Views"
+msgstr "Представления"
+
+#: src/plugins/query/query-mongo-schema.c:125
+msgid "Time series"
+msgstr "Временные ряды"
+
+#: src/plugins/query/query-mongo-schema.c:137
+msgid "Fields"
+msgstr "Поля"
+
+#: src/plugins/query/query-mongo-schema.c:138
+#: src/plugins/query/query-pg-schema.c:158
+msgid "Indexes"
+msgstr "Индексы"
+
+#: src/plugins/query/query-mongo-schema.c:139
+msgid "Validator"
+msgstr "Валидатор"
+
+#: src/plugins/query/query-mongo-schema.c:140
+msgid "Pipeline"
+msgstr "Конвейер"
+
+#: src/plugins/query/query-mongo-schema.c:247
+msgid "mongosh printed nothing of the schema."
+msgstr "mongosh ничего не вывел о схеме."
+
+#: src/plugins/query/query-mongo-schema.c:358
+#, c-format
+msgid "on %s"
+msgstr "на %s"
+
+#: src/plugins/query/query-mongo-schema.c:555
+msgid "mongosh failed."
+msgstr "mongosh завершился с ошибкой."
+
+#: src/plugins/query/query-mongo-schema.c:767
+msgid "F4 puts the DDL of a database or a collection."
+msgstr "F4 вставляет DDL базы данных или коллекции."
+
+#: src/plugins/query/query-postgres.c:232
+msgid "The query was stopped before it ran.\n"
+msgstr "Запрос остановлен до выполнения.\n"
+
+#: src/plugins/query/query-postgres.c:233
+msgid "The query was not run: there is no connection.\n"
+msgstr "Запрос не выполнен: нет подключения.\n"
+
+#. the editor and the screen are UTF-8: the text of another encoding would be wrong
+#: src/plugins/query/query-postgres.c:251
+#, c-format
+msgid "The connection is not in UTF8 but in %s: it is closed."
+msgstr "Подключение не в UTF8, а в %s: оно закрыто."
+
+#: src/plugins/query/query-postgres.c:255
+#: src/plugins/query/query-postgres.c:266
+#: src/plugins/query/query-postgres.c:337
+msgid "no connection"
+msgstr "нет подключения"
+
+#: src/plugins/query/query-postgres.c:262
+#, c-format
+msgid "No connection to %s: %s"
+msgstr "Нет подключения к %s: %s"
+
+#: src/plugins/query/query-postgres.c:275
+#, c-format
+msgid "Connected to %s, PostgreSQL %d.%d."
+msgstr "Подключено к %s, PostgreSQL %d.%d."
+
+#: src/plugins/query/query-postgres.c:281
+msgid ""
+"It is a new connection: the transaction, the temporary tables, SET, the "
+"prepared\n"
+"statements and the locks of the one before are gone."
+msgstr ""
+"Это новое подключение: транзакция, временные таблицы, SET, подготовленные\n"
+"операторы и блокировки прежнего потеряны."
+
+#: src/plugins/query/query-postgres.c:338
+#: src/plugins/query/query-pg-schema.c:239
+msgid "libpq has no memory for a connection."
+msgstr "У libpq нет памяти для подключения."
+
+#: src/plugins/query/query-postgres.c:472
+#, c-format
+msgid ""
+"incomplete, the command failed after %<PRId64> rows\n"
+"\n"
+"%s\n"
+msgstr ""
+"неполная, команда не удалась после %<PRId64> строк\n"
+"\n"
+"%s\n"
+
+#: src/plugins/query/query-postgres.c:475
+#, c-format
+msgid ""
+"no rows\n"
+"\n"
+"%s\n"
+msgstr ""
+"нет строк\n"
+"\n"
+"%s\n"
+
+#: src/plugins/query/query-postgres.c:477
+#, c-format
+msgid ""
+"the first %u of %<PRId64> rows\n"
+"\n"
+"%s\n"
+msgstr ""
+"первые %u из %<PRId64> строк\n"
+"\n"
+"%s\n"
+
+#: src/plugins/query/query-postgres.c:481
+#, c-format
+msgid ""
+"%u row\n"
+"\n"
+"%s\n"
+msgid_plural ""
+"%u rows\n"
+"\n"
+"%s\n"
+msgstr[0] ""
+"%u строка\n"
+"\n"
+"%s\n"
+msgstr[1] ""
+"%u строки\n"
+"\n"
+"%s\n"
+msgstr[2] ""
+"%u строк\n"
+"\n"
+"%s\n"
+msgstr[3] ""
+"%u строк\n"
+"\n"
+"%s\n"
+
+#: src/plugins/query/query-postgres.c:556
+#, c-format
+msgid "at column %ld\n"
+msgstr "в столбце %ld\n"
+
+#: src/plugins/query/query-postgres.c:558
+#, c-format
+msgid "at line %ld, column %ld\n"
+msgstr "в строке %ld, столбце %ld\n"
+
+#: src/plugins/query/query-postgres.c:620
+msgid "TX FAILED: ROLLBACK required"
+msgstr "СБОЙ ТРАНЗАКЦИИ: нужен ROLLBACK"
+
+#: src/plugins/query/query-postgres.c:621
+msgid "TX FAILED"
+msgstr "СБОЙ ТРАНЗАКЦИИ"
+
+#: src/plugins/query/query-postgres.c:679
+msgid "(nothing to run)\n"
+msgstr "(нечего выполнять)\n"
+
+#: src/plugins/query/query-postgres.c:715
+msgid "The query ended before the cancel came.\n"
+msgstr "Запрос завершился раньше, чем пришла отмена.\n"
+
+#: src/plugins/query/query-postgres.c:724
+msgid ""
+"The connection is lost: the transaction, the temporary tables, SET, the "
+"prepared\n"
+"statements and the locks of the session are gone. F5 connects again."
+msgstr ""
+"Подключение потеряно: транзакция, временные таблицы, SET, подготовленные\n"
+"операторы и блокировки сеанса потеряны. F5 подключится снова."
+
+#: src/plugins/query/query-postgres.c:737
+msgid "failed"
+msgstr "ошибка"
+
+#: src/plugins/query/query-postgres.c:739
+msgid "done"
+msgstr "готово"
+
+#: src/plugins/query/query-postgres.c:745
+msgid "... more than 8 MB: the rest is cut."
+msgstr "... больше 8 МБ: остальное обрезано."
+
+#: src/plugins/query/query-postgres.c:754
+msgid ""
+"No rows: a command that gives some, SELECT, ... RETURNING, makes a table.\n"
+msgstr ""
+"Строк нет: таблицу делает команда, которая их возвращает, SELECT, ... "
+"RETURNING.\n"
+
+#: src/plugins/query/query-postgres.c:796
+msgid "COPY FROM STDIN: coole -Q has nothing to send"
+msgstr "COPY FROM STDIN: coole -Q нечего отправить"
+
+#: src/plugins/query/query-postgres.c:845
+msgid ""
+"It is a new connection: the transaction, the temporary tables, SET, the "
+"prepared\n"
+"statements and the locks of the one before are gone.\n"
+msgstr ""
+"Это новое подключение: транзакция, временные таблицы, SET, подготовленные\n"
+"операторы и блокировки прежнего потеряны.\n"
+
+#: src/plugins/query/query-postgres.c:884
+#, c-format
+msgid "The cancel could not be sent: %s"
+msgstr "Не удалось отправить отмену: %s"
+
+#: src/plugins/query/query-postgres.c:983
+msgid "no memory"
+msgstr "нет памяти"
+
+#: src/plugins/query/query-postgres.c:1013
+msgid "no cancel for this connection"
+msgstr "у этого подключения нет отмены"
+
+#: src/plugins/query/query-postgres.c:1187
+msgid "The query of the rows of the relation is put in the file.\n"
+msgstr "Запрос строк отношения вставлен в файл.\n"
+
+#: src/plugins/query/query-postgres.c:1195
+msgid ", rows one by one"
+msgstr ", строки по одной"
+
+#: src/plugins/query/query-postgres.c:1209
+msgid ""
+"F5 runs the selection, else the whole file; Ctrl-F5 the whole file.\n"
+"\n"
+msgstr ""
+"F5 выполняет выделение, иначе весь файл; Ctrl-F5 - весь файл.\n"
+"\n"
+
+#: src/plugins/query/query-postgres.c:1212
+#: src/plugins/query/query-postgres.c:1248
+#: src/plugins/query/query-postgres.c:1254
+msgid "Connecting...\n"
+msgstr "Подключение...\n"
+
+#: src/plugins/query/query-postgres.c:1239
+msgid "no libpq"
+msgstr "нет libpq"
+
+#: src/plugins/query/query-postgres.c:1264
+msgid "Running... once the cancel before is sent.\n"
+msgstr "Выполнится... как только уйдёт прежняя отмена.\n"
+
+#: src/plugins/query/query-postgres.c:1284
+msgid "The connection was stopped: F5 connects again."
+msgstr "Подключение остановлено: F5 подключится снова."
+
+#: src/plugins/query/query-postgres.c:1290
+msgid "The query was stopped before it ran."
+msgstr "Запрос остановлен до выполнения."
+
+#: src/plugins/query/query-postgres.c:1295
+msgid "Running... the cancel is sent.\n"
+msgstr "Выполняется... отмена отправлена.\n"
+
+#: src/plugins/query/query-pg-schema.c:146
+msgid "Tables"
+msgstr "Таблицы"
+
+#: src/plugins/query/query-pg-schema.c:146
+msgid "Materialized views"
+msgstr "Материализованные представления"
+
+#: src/plugins/query/query-pg-schema.c:147
+msgid "Foreign tables"
+msgstr "Внешние таблицы"
+
+#: src/plugins/query/query-pg-schema.c:147
+msgid "Sequences"
+msgstr "Последовательности"
+
+#: src/plugins/query/query-pg-schema.c:147
+msgid "Functions"
+msgstr "Функции"
+
+#: src/plugins/query/query-pg-schema.c:157
+msgid "Columns"
+msgstr "Столбцы"
+
+#: src/plugins/query/query-pg-schema.c:157
+msgid "Keys"
+msgstr "Ключи"
+
+#: src/plugins/query/query-pg-schema.c:157
+msgid "Foreign keys"
+msgstr "Внешние ключи"
+
+#: src/plugins/query/query-pg-schema.c:158
+msgid "References"
+msgstr "Ссылки"
+
+#: src/plugins/query/query-pg-schema.c:158
+msgid "Triggers"
+msgstr "Триггеры"
+
+#: src/plugins/query/query-pg-schema.c:196
+#, c-format
+msgid "No connection: %s"
+msgstr "Нет подключения: %s"
+
+#: src/plugins/query/query-pg-schema.c:785
+msgid "Partitions"
+msgstr "Секции"
+
+#: src/plugins/query/query-pg-schema.c:840
+msgid "[partitioned]"
+msgstr "[секционирована]"
+
+#: src/plugins/query/query-pg-schema.c:875
+msgid "procedure"
+msgstr "процедура"
+
+#: src/plugins/query/query-pg-schema.c:876
+msgid "aggregate"
+msgstr "агрегат"
+
+#: src/plugins/query/query-pg-schema.c:1240
+msgid "It is no more: F4 has no DDL of it."
+msgstr "Его больше нет: у F4 нет его DDL."
+
+#: src/plugins/query/query-pg-schema.c:1472
+msgid "F4 puts the DDL of a schema, a relation or a function."
+msgstr "F4 вставляет DDL схемы, отношения или функции."
+
+#: src/plugins/query/query-pq.c:97
+#, c-format
+msgid "%s is not found: libpq5 should be installed"
+msgstr "%s не найдена: нужно установить libpq5"
+
+#: src/plugins/query/query-pq.c:124
+#, c-format
+msgid "%s lacks a function of libpq: %s"
+msgstr "В %s нет функции libpq: %s"
+
+#: src/plugins/query/query-tree.c:190
+msgid "DDL"
+msgstr "DDL"
+
+#: src/plugins/query/query-tree.c:191
+msgid "Rows"
+msgstr "Строки"
+
+#: src/plugins/query/query-tree.c:254
+msgid "The file of queries F3 was pressed in is no more: the query is here."
+msgstr "Файла запросов, в котором нажата F3, больше нет: запрос здесь."
+
+#: src/plugins/query/query-tree.c:256
+msgid "The file of queries is being changed: the query is here."
+msgstr "Файл запросов сейчас меняется: запрос здесь."
+
+#: src/plugins/query/query-tree.c:517 src/plugins/query/query-tree.c:743
+msgid "The DDL of F4 could not be read."
+msgstr "Не удалось прочитать DDL для F4."
+
+#: src/plugins/query/query-tree.c:546
+msgid "Schema"
+msgstr "Схема"
+
+#: src/plugins/query/query-tree.c:560
+msgid "Reading..."
+msgstr "Чтение..."
+
+#: src/plugins/query/query-tree.c:629
+msgid "A query is running: its rows come once it ends."
+msgstr "Выполняется запрос: строки придут, когда он кончится."
+
+#: src/plugins/query/query-tree.c:658
+msgid "The query of F3 of before is put no more: that of this one is."
+msgstr "Запрос прежней F3 больше не вставляется: вставляется запрос этой."
+
+#: src/plugins/query/query-tree.c:697
+msgid "The columns could not be read: F3 puts no query."
+msgstr "Не удалось прочитать столбцы: F3 не вставляет запрос."
+
+#: src/plugins/query/query-tree.c:721
+msgid "The DDL of F4 of before is put no more: that of this one is."
+msgstr "DDL прежней F4 больше не вставляется: вставляется DDL этой."
+
+#: src/plugins/query/query-tree.c:745
+msgid "The file of queries F4 was pressed in is no more: the DDL is here."
+msgstr "Файла запросов, в котором нажата F4, больше нет: DDL здесь."
+
+#: src/plugins/query/query-tree.c:748
+msgid "The file of queries is being changed: the DDL is here."
+msgstr "Файл запросов сейчас меняется: DDL здесь."
