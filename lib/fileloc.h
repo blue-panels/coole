@@ -16,22 +16,27 @@
 #define MC_USERCONF_DIR "coole"
 #endif
 
-#define TAGS_NAME             "TAGS"
+#define TAGS_NAME                      "TAGS"
 
-#define MC_GLOBAL_CONFIG_FILE "defaults.ini"
-#define MC_HELP_DIR           "help"
-#define MC_HELP               MC_HELP_DIR PATH_SEP_STR "coole.md"
-#define GLOBAL_KEYMAP_FILE    "keymap.ini"
-#define CHARSETS_LIST         "charsets"
-#define MC_MACRO_FILE         "macros"
+#define MC_GLOBAL_CONFIG_FILE          "defaults.ini"
+#define MC_HELP_DIR                    "help"
+#define MC_HELP                        MC_HELP_DIR PATH_SEP_STR "coole.md"
+#define GLOBAL_KEYMAP_FILE             "keymap.ini"
+#define CHARSETS_LIST                  "charsets"
+#define MC_MACRO_FILE                  "macros"
 
-#define MC_CONFIG_FILE        "ini"
-#define MC_FILEPOS_FILE       "filepos"
-#define MC_HISTORY_FILE       "history"
+#define MC_CONFIG_FILE                 "ini"
+#define MC_FILEPOS_FILE                "filepos"
+#define MC_HISTORY_FILE                "history"
 
-#define MC_SKINS_DIR          "skins"
+#define MC_SKINS_DIR                   "skins"
 
-#define MC_ZDOTDIR_SUBDIR     "zdotdir"  // the startup files the terminal gives zsh
+#define MC_ZDOTDIR_SUBDIR              "zdotdir"        // the startup files the terminal gives zsh
+#define MC_BASHRC_TERM_FILE            "mcterm_bashrc"  // the startup file the terminal gives bash
+
+#define MC_BASHRC_CUSTOM_PROFILE_FILE  "bashrc"
+#define MC_BASHRC_DEFAULT_PROFILE_FILE ".bashrc"
+#define MC_INPUTRC_FILE                "inputrc"
 
 /* file names */
 #define EDIT_HOME_MACRO_FILE "macros.d" PATH_SEP_STR "macro"
