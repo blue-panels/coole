@@ -117,63 +117,67 @@ static const struct decode_ds
     const char *seq;
     int code;
 } decode_ds[] = {
-    { "\033[57414u", '\n' },                       // keypad Enter
-    { "\033[13;5u", KEY_M_CTRL | '\n' },           // Ctrl-Enter
-    { "\033[13;2u", KEY_M_SHIFT | '\n' },          // Shift-Enter
-    { "\033[13;3u", KEY_M_ALT | '\n' },            // Alt-Enter
-    { "\033[27u", ESC_CHAR },                      // Esc
-    { "\033[9;2u", KEY_M_SHIFT | '\t' },           // Shift-Tab
-    { "\033[127;3u", KEY_M_ALT | KEY_BACKSPACE },  // Alt-Backspace
-    { "\033[97;5u", XCTRL ('a') },                 // Ctrl-A
-    { "\033[97;6u", XCTRL ('a') },                 // Ctrl-Shift-A, as the keymap names it
-    { "\033[109;5u", '\n' },                       // Ctrl-M stays Enter
-    { "\033[105;5u", '\t' },                       // Ctrl-I stays Tab
-    { "\033[32;5u", XCTRL (' ') },                 // Ctrl-Space
-    { "\033[49;5u", KEY_M_CTRL | '1' },            // Ctrl-1, not Ctrl-Q
-    { "\033[49:33;6u", KEY_M_CTRL | '1' },         // Ctrl-Shift-1 keeps the digit
-    { "\033[97;3u", ALT ('a') },                   // Alt-A
-    { "\033[97;4u", ALT ('A') },                   // Alt-Shift-A
-    { "\033[49:33;4u", ALT ('!') },                // Alt-Shift-1 with the shifted key
-    { "\033[1092::97;5u", XCTRL ('a') },           // Ctrl-ef with the base layout key
-    { "\033[57417u", KEY_LEFT },                   // keypad Left
-    { "\033[57403u", '4' },                        // keypad 4
-    { "\033[57413u", '+' },                        // keypad +
-    { "\033[57426;2u", KEY_M_SHIFT | KEY_DC },     // Shift-keypad Delete
-    { "\033[P", KEY_F (1) },                       // F1
-    { "\033[Q", KEY_F (2) },                       // F2
-    { "\033[13~", KEY_F (3) },                     // F3, from the xterm table
-    { "\033[S", KEY_F (4) },                       // F4
-    { "\033[1;2P", KEY_F (11) },                   // Shift-F1
-    { "\033[1;5S", KEY_M_CTRL | KEY_F (4) },       // Ctrl-F4
-    { "\033[1;5A", KEY_M_CTRL | KEY_UP },          // Ctrl-Up, from the xterm table
-    { "\033[1092;5u", KEY_KITTY_EVENT },           // Ctrl-ef without the base layout key
-    { "\033[97;9u", KEY_M_SUPER | 'a' },           // Super-A
-    { "\033[97;13u", KEY_M_SUPER | XCTRL ('a') },  // Super-Ctrl-A
-    { "\033[97;17u", KEY_KITTY_EVENT },            // Hyper-A
-    { "\033[57358u", KEY_KITTY_EVENT },            // Caps Lock
-    { "\033[57376u", KEY_KITTY_EVENT },            // F13
-    { "\033[97;5:2u", XCTRL ('a') },               // Ctrl-A repeated
-    { "\033[97;5:3u", -1 },                        // Ctrl-A released, no one asked for it
-    { "\033[57442;5u", MCKEY_MODIFIERS },          // Left Ctrl pressed
-    { "\033[57442;1:3u", MCKEY_MODIFIERS },        // Left Ctrl released
-    { "\033[57447;2:2u", MCKEY_MODIFIERS },        // Right Shift repeated
-    { "\033[1;5:2A", KEY_M_CTRL | KEY_UP },        // Ctrl-Up repeated
-    { "\033[1;1:3A", -1 },                         // Up released
-    { "\033[97;;97u", 'a' },                       // a, every key as an escape code
-    { "\033[97:65;2;65u", 'A' },                   // Shift-A with its text
-    { "\033[32;;32u", ' ' },                       // Space
-    { "\033[97;5;1u", XCTRL ('a') },               // Ctrl-A: control text is not text
-    { "\033[97;3;97u", ALT ('a') },                // Alt-A: the text does not count
-    { "\033[57403;129;52u", '4' },                 // keypad 4 with Num Lock
-    { "\033[13;1:2~", KEY_F (3) },                 // F3 repeated
-    { "\033[1;129D", KEY_LEFT },                   // Left with Num Lock
-    { "\033[6;129~", KEY_NPAGE },                  // PgDn with Num Lock
-    { "\033[1;133A", KEY_M_CTRL | KEY_UP },        // Ctrl-Up with Num Lock
-    { "\033[1;65P", KEY_F (1) },                   // F1 with Caps Lock
-    { "\033[13;193~", KEY_F (3) },                 // F3 with Caps and Num Lock
-    { "\033[1;129:3D", -1 },                       // Left released with Num Lock
-    { "\033[97;65;65u", 'A' },                     // a with Caps Lock: its text
-    { "\033[97;69u", XCTRL ('a') },                // Ctrl-A with Caps Lock
+    { "\033[57414u", '\n' },                             // keypad Enter
+    { "\033[13;5u", KEY_M_CTRL | '\n' },                 // Ctrl-Enter
+    { "\033[13;2u", KEY_M_SHIFT | '\n' },                // Shift-Enter
+    { "\033[13;3u", KEY_M_ALT | '\n' },                  // Alt-Enter
+    { "\033[27u", ESC_CHAR },                            // Esc
+    { "\033[9;2u", KEY_M_SHIFT | '\t' },                 // Shift-Tab
+    { "\033[127;3u", KEY_M_ALT | KEY_BACKSPACE },        // Alt-Backspace
+    { "\033[97;5u", XCTRL ('a') },                       // Ctrl-A
+    { "\033[97;6u", XCTRL ('a') },                       // Ctrl-Shift-A, as the keymap names it
+    { "\033[109;5u", '\n' },                             // Ctrl-M stays Enter
+    { "\033[105;5u", '\t' },                             // Ctrl-I stays Tab
+    { "\033[32;5u", XCTRL (' ') },                       // Ctrl-Space
+    { "\033[49;5u", KEY_M_CTRL | '1' },                  // Ctrl-1, not Ctrl-Q
+    { "\033[49:33;6u", KEY_M_CTRL | '1' },               // Ctrl-Shift-1 keeps the digit
+    { "\033[97;3u", ALT ('a') },                         // Alt-A
+    { "\033[97;4u", ALT ('A') },                         // Alt-Shift-A
+    { "\033[49:33;4u", ALT ('!') },                      // Alt-Shift-1 with the shifted key
+    { "\033[1092::97;5u", XCTRL ('a') },                 // Ctrl-ef with the base layout key
+    { "\033[57417u", KEY_LEFT },                         // keypad Left
+    { "\033[57403u", '4' },                              // keypad 4
+    { "\033[57413u", '+' },                              // keypad +
+    { "\033[57413;3u", ALT ('+') },                      // Alt-keypad +: Alt-plus, as before
+    { "\033[57413;2u", KEY_M_SHIFT | KEY_KP_ADD },       // Shift-keypad +
+    { "\033[57413;5u", KEY_M_CTRL | KEY_KP_ADD },        // Ctrl-keypad +
+    { "\033[57412;2u", KEY_M_SHIFT | KEY_KP_SUBTRACT },  // Shift-keypad -
+    { "\033[57426;2u", KEY_M_SHIFT | KEY_DC },           // Shift-keypad Delete
+    { "\033[P", KEY_F (1) },                             // F1
+    { "\033[Q", KEY_F (2) },                             // F2
+    { "\033[13~", KEY_F (3) },                           // F3, from the xterm table
+    { "\033[S", KEY_F (4) },                             // F4
+    { "\033[1;2P", KEY_F (11) },                         // Shift-F1
+    { "\033[1;5S", KEY_M_CTRL | KEY_F (4) },             // Ctrl-F4
+    { "\033[1;5A", KEY_M_CTRL | KEY_UP },                // Ctrl-Up, from the xterm table
+    { "\033[1092;5u", KEY_KITTY_EVENT },                 // Ctrl-ef without the base layout key
+    { "\033[97;9u", KEY_M_SUPER | 'a' },                 // Super-A
+    { "\033[97;13u", KEY_M_SUPER | XCTRL ('a') },        // Super-Ctrl-A
+    { "\033[97;17u", KEY_KITTY_EVENT },                  // Hyper-A
+    { "\033[57358u", KEY_KITTY_EVENT },                  // Caps Lock
+    { "\033[57376u", KEY_KITTY_EVENT },                  // F13
+    { "\033[97;5:2u", XCTRL ('a') },                     // Ctrl-A repeated
+    { "\033[97;5:3u", -1 },                              // Ctrl-A released, no one asked for it
+    { "\033[57442;5u", MCKEY_MODIFIERS },                // Left Ctrl pressed
+    { "\033[57442;1:3u", MCKEY_MODIFIERS },              // Left Ctrl released
+    { "\033[57447;2:2u", MCKEY_MODIFIERS },              // Right Shift repeated
+    { "\033[1;5:2A", KEY_M_CTRL | KEY_UP },              // Ctrl-Up repeated
+    { "\033[1;1:3A", -1 },                               // Up released
+    { "\033[97;;97u", 'a' },                             // a, every key as an escape code
+    { "\033[97:65;2;65u", 'A' },                         // Shift-A with its text
+    { "\033[32;;32u", ' ' },                             // Space
+    { "\033[97;5;1u", XCTRL ('a') },                     // Ctrl-A: control text is not text
+    { "\033[97;3;97u", ALT ('a') },                      // Alt-A: the text does not count
+    { "\033[57403;129;52u", '4' },                       // keypad 4 with Num Lock
+    { "\033[13;1:2~", KEY_F (3) },                       // F3 repeated
+    { "\033[1;129D", KEY_LEFT },                         // Left with Num Lock
+    { "\033[6;129~", KEY_NPAGE },                        // PgDn with Num Lock
+    { "\033[1;133A", KEY_M_CTRL | KEY_UP },              // Ctrl-Up with Num Lock
+    { "\033[1;65P", KEY_F (1) },                         // F1 with Caps Lock
+    { "\033[13;193~", KEY_F (3) },                       // F3 with Caps and Num Lock
+    { "\033[1;129:3D", -1 },                             // Left released with Num Lock
+    { "\033[97;65;65u", 'A' },                           // a with Caps Lock: its text
+    { "\033[97;69u", XCTRL ('a') },                      // Ctrl-A with Caps Lock
 };
 
 START_PARAMETRIZED_TEST (test_kitty_decode, decode_ds)
@@ -413,6 +417,86 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+static gboolean
+seq_event (const char *seq, tty_key_event_t *ev)
+{
+    return tty_kitty_seq_event (seq, (int) strlen (seq), ev);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_kitty_event_text)
+{
+    tty_key_event_t ev;
+    char text[16];
+
+    /* the whole text of the event: a letter with a combining mark is three bytes of UTF-8 */
+    ck_assert (seq_event (ESC_STR "[97;3;97:776u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 3);
+    ck_assert (memcmp (text, "a\xCC\x88", 3) == 0);
+
+    /* a text that does not fit is not cut */
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, 2), 0);
+
+    /* Alt with a Cyrillic letter and no key of the base layout: the letter of the key */
+    ck_assert (seq_event (ESC_STR "[1092;3u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 2);
+    ck_assert (memcmp (text, "\xD1\x84", 2) == 0);
+
+    /* with Shift, the shifted key */
+    ck_assert (seq_event (ESC_STR "[97:65;4u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 1);
+    ck_assert_int_eq (text[0], 'A');
+
+    /* with Shift and no alternate keys reported, the capital of the letter */
+    ck_assert (seq_event (ESC_STR "[97;4u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 1);
+    ck_assert_int_eq (text[0], 'A');
+    ck_assert (seq_event (ESC_STR "[1092;4u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 2);
+    ck_assert (memcmp (text, "\xD0\xA4", 2) == 0);
+    /* a key that is not a letter types what the layout says, which the terminal does not tell */
+    ck_assert (seq_event (ESC_STR "[49;4u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 0);
+    /* it does with the alternate keys */
+    ck_assert (seq_event (ESC_STR "[49:33;4u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 1);
+    ck_assert_int_eq (text[0], '!');
+
+    /* a functional key types nothing: the plus of the keypad, Enter, a release */
+    ck_assert (seq_event (ESC_STR "[57413;3u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 0);
+    ck_assert (seq_event (ESC_STR "[13;3u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 0);
+    ck_assert (seq_event (ESC_STR "[97;3:3u", &ev));
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 0);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_kitty_event_long_text)
+{
+    tty_key_event_t ev;
+    char text[TTY_KITTY_TEXT_BYTES];
+    GString *seq;
+    int i;
+
+    /* a text longer than any small buffer comes whole, not as the letter of the key */
+    seq = g_string_new (ESC_STR "[97;3;98");
+    for (i = 1; i < 65; i++)
+        g_string_append (seq, ":98");
+    g_string_append_c (seq, 'u');
+    ck_assert (seq_event (seq->str, &ev));
+    g_string_free (seq, TRUE);
+    ck_assert_uint_eq (tty_key_event_text (&ev, text, sizeof (text)), 65);
+    for (i = 0; i < 65; i++)
+        ck_assert_int_eq (text[i], 'b');
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 START_TEST (test_kitty_flags_base)
 {
     keybar_modifiers = FALSE;
@@ -578,6 +662,8 @@ main (void)
     tcase_add_test (tc_core, test_kitty_release_wanted);
     tcase_add_test (tc_core, test_kitty_release_dropped_before_key);
     tcase_add_test (tc_core, test_kitty_text_bytes);
+    tcase_add_test (tc_core, test_kitty_event_text);
+    tcase_add_test (tc_core, test_kitty_event_long_text);
     tcase_add_test (tc_core, test_kitty_flags_base);
     tcase_add_test (tc_core, test_kitty_held_modifiers);
     tcase_add_test (tc_core, test_getch_skips_modifiers);
