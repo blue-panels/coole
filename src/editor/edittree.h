@@ -29,6 +29,9 @@ typedef struct
     /* The name of the row of @node after its marker, and what is at the right of the row;
        NULL: its key, and its value at the right */
     void (*row) (edit_tree_t *tree, const mctree_node_t *node, GString *name, GString *info);
+    /* The mark of what @node is, between its marker and its name, and its color, -1 for that of
+       the row; NULL: none.  The row of the cursor has it in the color of the row */
+    void (*icon) (edit_tree_t *tree, const mctree_node_t *node, GString *icon, int *color);
     /* Enter or a double click on @node: TRUE when it is taken, else the node opens or closes */
     gboolean (*activate) (edit_tree_t *tree, mctree_node_t *node);
     /* Whether the row of @node stands out, the file in front for one */

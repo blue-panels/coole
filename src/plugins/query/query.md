@@ -249,16 +249,17 @@ The keys are *schema-char*, *database-char*, *table-char*,
 *trigger-char*, *collection-char*, *timeseries-char*, *field-char*,
 *validator-char*, *pipeline-char*.
 
-The name of a node has a color of what it is too, the key of its mark
-without *-char*, a color of the skin on the background of the editor;
-*group* is that of a group and a section, *info* that of what is at the
-right of a row; none by default:
+The mark has a color of what the node is, the key of the mark without
+*-char*, a color of the skin on the background of the editor; the name
+is in the color of the text. *item* is that of the name of an item, a
+column, a key, an index, a field; *info* that of what is at the right of
+a row; none by default:
 
 ```
 [query]
     table = cyan
     view = green
-    group = gray
+    item = gray
     info = gray
 ```
 

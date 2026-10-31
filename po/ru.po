@@ -2298,6 +2298,10 @@ msgstr "Замена"
 msgid "ButtonBar|Copy"
 msgstr "Копия"
 
+#: src/plugins/query/query.c
+msgid "ButtonBar|Run"
+msgstr "Пуск"
+
 msgid "ButtonBar|Move"
 msgstr "Переместить"
 

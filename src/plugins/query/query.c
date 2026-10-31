@@ -1618,6 +1618,36 @@ query_handle_key (void *data, int key, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The labels of a file: the keys of the plugin over those of the editor, F5 Copy say */
+static void
+query_buttonbar (query_t *q, void *edit)
+{
+    WButtonBar *bb = buttonbar_find (DIALOG (WIDGET (edit)->owner));
+    int i;
+
+    if (bb == NULL)
+        return;
+    for (i = 1; i <= 10; i++)
+    {
+        const long command = q->host->command_lookup (q->host, QUERY_KEYMAP_SECTION, KEY_F (i));
+
+        // the others of the plugin are of History and Schema, a file has those of the editor
+        switch (query_command (q, command))
+        {
+        case QUERY_CMD_RUN:
+            buttonbar_set_label_command (bb, i, Q_ ("ButtonBar|Run"), command, WIDGET (edit));
+            break;
+        case QUERY_CMD_AI:
+            buttonbar_set_label_command (bb, i, Q_ ("ButtonBar|AIGen"), command, WIDGET (edit));
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A file window in front: History is of its file, unless it is of the store of versions */
 static mc_ep_result_t
 query_handle_event (void *data, void *edit, int event_id, void *payload)
@@ -1626,9 +1656,11 @@ query_handle_event (void *data, void *edit, int event_id, void *payload)
     char *file;
 
     (void) payload;
+    if (!q->on || event_id != MC_EP_EVENT_FOCUS_IN || edit == NULL)
+        return MC_EPR_NOT_SUPPORTED;
+    query_buttonbar (q, edit);
     // before the tabs are made, at the start, the start loads the history itself
-    if (!q->on || event_id != MC_EP_EVENT_FOCUS_IN || edit == NULL
-        || q->tabs[QUERY_TAB_HISTORY] == 0)
+    if (q->tabs[QUERY_TAB_HISTORY] == 0)
         return MC_EPR_NOT_SUPPORTED;
     file = q->host->get_current_file (q->host, edit);
     if (file != NULL && g_strcmp0 (file, q->history_file) != 0 && !query_in_versions (file))
