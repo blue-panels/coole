@@ -130,11 +130,8 @@ query_tree_row (edit_tree_t *tree, const mctree_node_t *node, GString *name, GSt
 {
     const query_item_t *item = QUERY_ITEM (node);
 
-    const query_tree_t *t = (const query_tree_t *) tree->data;
+    (void) tree;
 
-    // the mark of what it is, when the skin has one
-    if (t != NULL && item != NULL && *t->icons[item->icon] != '\0')
-        g_string_append_printf (name, "%s ", t->icons[item->icon]);
     g_string_append (name, node->key != NULL ? node->key : "");
     if (node->value != NULL)
         g_string_append (info, node->value);
@@ -146,8 +143,23 @@ query_tree_row (edit_tree_t *tree, const mctree_node_t *node, GString *name, GSt
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The colors of a node: of its name by what it is, a group and a section all of one; of what is
-   at its right */
+/* The mark of what a node is, when the skin has one, in the color of what it is */
+static void
+query_tree_icon (edit_tree_t *tree, const mctree_node_t *node, GString *icon, int *color)
+{
+    const query_tree_t *t = (const query_tree_t *) tree->data;
+    const query_item_t *item = QUERY_ITEM (node);
+
+    if (t == NULL || item == NULL)
+        return;
+    g_string_append (icon, t->icons[item->icon]);
+    *color = t->colors[item->icon];
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The colors of a node: the name of an item, a column or an index say, of one color, of what has
+   something in it that of the row; of what is at its right */
 static void
 query_tree_colors (edit_tree_t *tree, const mctree_node_t *node, int *name, int *info)
 {
@@ -156,9 +168,8 @@ query_tree_colors (edit_tree_t *tree, const mctree_node_t *node, int *name, int 
 
     if (t == NULL || item == NULL)
         return;
-    *name = item->kind == QUERY_NODE_GROUP || item->kind == QUERY_NODE_SECTION
-        ? t->group_color
-        : t->colors[item->icon];
+    if (item->kind == QUERY_NODE_ITEM)
+        *name = t->item_color;
     *info = t->info_color;
 }
 
@@ -203,6 +214,7 @@ query_tree_closed (edit_tree_t *tree)
 
 static const edit_tree_ops_t query_tree_ops = {
     .row = query_tree_row,
+    .icon = query_tree_icon,
     .colors = query_tree_colors,
     .buttonbar = query_tree_buttonbar,
     .closed = query_tree_closed,
@@ -308,10 +320,10 @@ query_tree_init (query_tree_t *t, query_t *q, void (*details) (query_node_t *o, 
 
         t->icons[i] = i == QUERY_ICON_NONE ? g_strdup ("") : mc_skin_get ("query", key, "");
         g_free (key);
-        // the color of the name, by the same name: "table = brightcyan"
+        // the color of the mark, by the same name: "table = brightcyan"
         t->colors[i] = i == QUERY_ICON_NONE ? -1 : query_tree_skin_color (query_icon_names[i]);
     }
-    t->group_color = query_tree_skin_color ("group");
+    t->item_color = query_tree_skin_color ("item");
     t->info_color = query_tree_skin_color ("info");
     t->details = details;
     t->data = data;
