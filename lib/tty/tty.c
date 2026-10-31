@@ -89,6 +89,7 @@ static GSList *painters = NULL;
 static gboolean painting = FALSE;
 
 static gboolean has_kitty_keyboard = FALSE;
+static gboolean has_win32_input = FALSE;
 
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
@@ -178,7 +179,8 @@ tty_raw_write (const char *data, size_t len)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The answers: CSI ? <flags> u, the kitty keyboard protocol, and the DA1 one,
+/* The answers: CSI ? <flags> u, the kitty keyboard protocol, CSI ? 9001 ; <state> $ y,
+   the Win32 input mode, and the DA1 one,
    CSI ? <attributes> c, which every terminal gives and gives last. The sequences
    are taken out of the buffer as they are found, and what is left is the user's. */
 static void
@@ -200,7 +202,7 @@ tty_parse_terminal_reply (char *buf, size_t *len, gboolean *da1_seen)
 
         if (*p == '?')
         {
-            int n = 0;
+            int n = 0, first = -1;
             gboolean have = FALSE;
 
             for (p++; p < end; p++)
@@ -217,8 +219,23 @@ tty_parse_terminal_reply (char *buf, size_t *len, gboolean *da1_seen)
                     taken = (size_t) (p + 1 - (buf + i));
                     break;
                 }
+                else if (*p == '$' && have && first >= 0)
+                {
+                    /* CSI ? <mode> ; <state> $ y: the state of a mode: 0 unknown, 1 set, 2 reset,
+                       3 permanently set, 4 permanently reset (it cannot be turned on) */
+                    if (p + 1 >= end)
+                        break;  // still arriving
+                    if (p[1] != 'y')
+                        break;
+                    if (first == 9001 && n >= 1 && n <= 3)
+                        has_win32_input = TRUE;
+                    taken = (size_t) (p + 2 - (buf + i));
+                    break;
+                }
                 else if (*p == ';' || *p == 'c')
                 {
+                    if (first < 0 && have)
+                        first = n;
                     n = 0;
                     have = FALSE;
                     if (*p == 'c')
@@ -249,6 +266,7 @@ void
 tty_probe_terminal (void)
 {
     const char *kitty_env = getenv ("COOLE_KITTY_KEYBOARD");
+    const char *win32_env = getenv ("COOLE_WIN32_INPUT");
     const char *term = getenv ("TERM");
     char buf[512];
     size_t len = 0;
@@ -256,18 +274,27 @@ tty_probe_terminal (void)
     gboolean multiplexer =
         term != NULL && (strncmp (term, "screen", 6) == 0 || strncmp (term, "tmux", 4) == 0);
     gboolean ask_kitty = !multiplexer && (kitty_env == NULL || kitty_env[0] != '0');
+    gboolean ask_win32 = !multiplexer && (win32_env == NULL || win32_env[0] != '0');
     int waited_ms = 0;
 
     has_kitty_keyboard = FALSE;
+    has_win32_input = FALSE;
 
-    if (!ask_kitty || !isatty (STDIN_FILENO) || !isatty (STDOUT_FILENO))
+    if ((!ask_kitty && !ask_win32) || !isatty (STDIN_FILENO) || !isatty (STDOUT_FILENO))
         return;
 
     {
         /* Every terminal answers DA1, and answers in the order it is asked: DA1 goes
-           last, so its answer comes after that of the kitty keyboard query. */
-        static const char query[] = ESC_STR "[?u" ESC_STR "[c";
+           last, so its answer comes after all the others. The kitty keyboard query and the
+           DECRQM question about mode 9001 (Win32 input mode, Windows Terminal) go first. */
+        static const char kitty_query[] = ESC_STR "[?u";
+        static const char win32_query[] = ESC_STR "[?9001$p";
+        static const char query[] = ESC_STR "[c";
 
+        if (ask_kitty)
+            tty_raw_write (kitty_query, sizeof (kitty_query) - 1);
+        if (ask_win32)
+            tty_raw_write (win32_query, sizeof (win32_query) - 1);
         tty_raw_write (query, sizeof (query) - 1);
 
         /* A terminal that answers nothing costs the whole wait once, at startup. */
@@ -311,6 +338,14 @@ gboolean
 tty_has_kitty_keyboard (void)
 {
     return has_kitty_keyboard;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+tty_has_win32_input (void)
+{
+    return has_win32_input;
 }
 
 /* --------------------------------------------------------------------------------------------- */

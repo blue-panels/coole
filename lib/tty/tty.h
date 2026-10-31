@@ -170,7 +170,8 @@ extern void tty_touch_area (int y, int x, int rows, int cols);
 typedef void (*tty_painter_fn) (void *data);
 extern void tty_painter_add (tty_painter_fn fn, void *data);
 extern void tty_painter_remove (tty_painter_fn fn, void *data);
-/* Ask the terminal whether it knows the kitty keyboard protocol. Once, after
+/* Ask the terminal whether it knows the kitty keyboard protocol and the Win32
+   input mode of Windows Terminal. Once, after
    tty_init(), while nothing else reads the keyboard; a terminal that does not
    answer within a moment is taken not to know. */
 extern void tty_probe_terminal (void);
@@ -181,6 +182,8 @@ extern void tty_unget_input (const unsigned char *data, size_t len);
 extern gboolean tty_has_sixel (void);
 /* The terminal answered CSI ? u. COOLE_KITTY_KEYBOARD=0 turns the question off. */
 extern gboolean tty_has_kitty_keyboard (void);
+/* The terminal knows the Win32 input mode (DECSET 9001) of Windows Terminal */
+extern gboolean tty_has_win32_input (void);
 /* Pixels per cell, 0 when the terminal did not say. */
 extern void tty_cell_size (int *width, int *height);
 
