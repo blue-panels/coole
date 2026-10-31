@@ -1,5 +1,5 @@
 foreach name : ['clipboard_info', 'input_clip_text', 'file_history', 'keymap_reload',
-                'runtime_host__syntax', 'learn_modifiers', 'term_key_merge',
+                'runtime_host__syntax', 'learn_modifiers', 'term_key_merge', 'tty_enter', 'tty_kitty_keyboard',
                 'usermenu__test_condition', 'usermenu__test_expand_format']
   test(name,
     executable(name, name + '.c',

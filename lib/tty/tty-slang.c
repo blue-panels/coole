@@ -321,6 +321,7 @@ void
 tty_enter_ca_mode (void)
 {
     // S-Lang handles alternate screen switching and cursor position saving
+    SLtt_flush_output ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -351,6 +352,8 @@ tty_reset_prog_mode (void)
     SLsmg_init_smg ();
     slsmg_active = TRUE;
     SLsmg_touch_lines (0, LINES);
+    // the switch to the alternate screen must reach the terminal before the modes set after it
+    SLtt_flush_output ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -707,6 +710,15 @@ tty_touch_area (int y, int x, int rows, int cols)
     (void) x;
     (void) cols;
     SLsmg_touch_lines (y, rows);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_unget_input (const unsigned char *data, size_t len)
+{
+    while (len > 0)
+        SLang_ungetkey (data[--len]);
 }
 
 /* --------------------------------------------------------------------------------------------- */

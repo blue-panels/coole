@@ -88,6 +88,8 @@ typedef struct
 static GSList *painters = NULL;
 static gboolean painting = FALSE;
 
+static gboolean has_kitty_keyboard = FALSE;
+
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -176,10 +178,139 @@ tty_raw_write (const char *data, size_t len)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The answers: CSI ? <flags> u, the kitty keyboard protocol, and the DA1 one,
+   CSI ? <attributes> c, which every terminal gives and gives last. The sequences
+   are taken out of the buffer as they are found, and what is left is the user's. */
+static void
+tty_parse_terminal_reply (char *buf, size_t *len, gboolean *da1_seen)
+{
+    size_t i = 0;
+
+    while (i + 2 < *len)
+    {
+        const char *p = buf + i + 2;
+        const char *end = buf + *len;
+        size_t taken = 0;
+
+        if (buf[i] != ESC_CHAR || buf[i + 1] != '[')
+        {
+            i++;
+            continue;
+        }
+
+        if (*p == '?')
+        {
+            int n = 0;
+            gboolean have = FALSE;
+
+            for (p++; p < end; p++)
+            {
+                if (*p >= '0' && *p <= '9')
+                {
+                    n = n * 10 + (*p - '0');
+                    have = TRUE;
+                }
+                else if (*p == 'u' && have)
+                {
+                    /* CSI ? <flags> u: the kitty keyboard protocol is known */
+                    has_kitty_keyboard = TRUE;
+                    taken = (size_t) (p + 1 - (buf + i));
+                    break;
+                }
+                else if (*p == ';' || *p == 'c')
+                {
+                    n = 0;
+                    have = FALSE;
+                    if (*p == 'c')
+                    {
+                        *da1_seen = TRUE;
+                        taken = (size_t) (p + 1 - (buf + i));
+                        break;
+                    }
+                }
+                else
+                    break;
+            }
+        }
+
+        if (taken == 0)
+        {
+            i++;
+            continue;
+        }
+        memmove (buf + i, buf + i + taken, *len - i - taken);
+        *len -= taken;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+tty_probe_terminal (void)
+{
+    const char *kitty_env = getenv ("COOLE_KITTY_KEYBOARD");
+    const char *term = getenv ("TERM");
+    char buf[512];
+    size_t len = 0;
+    gboolean da1_seen = FALSE;
+    gboolean multiplexer =
+        term != NULL && (strncmp (term, "screen", 6) == 0 || strncmp (term, "tmux", 4) == 0);
+    gboolean ask_kitty = !multiplexer && (kitty_env == NULL || kitty_env[0] != '0');
+    int waited_ms = 0;
+
+    has_kitty_keyboard = FALSE;
+
+    if (!ask_kitty || !isatty (STDIN_FILENO) || !isatty (STDOUT_FILENO))
+        return;
+
+    {
+        /* Every terminal answers DA1, and answers in the order it is asked: DA1 goes
+           last, so its answer comes after that of the kitty keyboard query. */
+        static const char query[] = ESC_STR "[?u" ESC_STR "[c";
+
+        tty_raw_write (query, sizeof (query) - 1);
+
+        /* A terminal that answers nothing costs the whole wait once, at startup. */
+        while (len < sizeof (buf) - 1 && !da1_seen && waited_ms < 1000)
+        {
+            fd_set fds;
+            struct timeval tv = { 0, 50000 };
+            ssize_t n;
+
+            FD_ZERO (&fds);
+            FD_SET (STDIN_FILENO, &fds);
+            if (select (STDIN_FILENO + 1, &fds, NULL, NULL, &tv) <= 0)
+            {
+                waited_ms += 50;
+                continue;
+            }
+            n = read (STDIN_FILENO, buf + len, sizeof (buf) - 1 - len);
+            if (n <= 0)
+                break;
+            len += (size_t) n;
+            tty_parse_terminal_reply (buf, &len, &da1_seen);
+        }
+
+        /* Whatever else came in was typed: it goes back to the keyboard. */
+        if (len > 0)
+            tty_unget_input ((const unsigned char *) buf, len);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 gboolean
 tty_has_sixel (void)
 {
     return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+tty_has_kitty_keyboard (void)
+{
+    return has_kitty_keyboard;
 }
 
 /* --------------------------------------------------------------------------------------------- */

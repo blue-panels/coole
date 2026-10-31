@@ -114,6 +114,7 @@ char *learn_key (void);
 int tty_normalize_keycode (int code);
 char *tty_key_lookup_sequence (int code);
 int tty_match_seq_to_keycode (const char *seq, int len);
+int tty_decode_key_seq (const char *seq, int len);
 char *tty_build_key_name (const char *base, int modifiers);
 
 /* Returns a key code (interpreted) */
@@ -126,6 +127,10 @@ void application_keypad_mode (void);
 /* Bracketed paste mode */
 void enable_bracketed_paste (void);
 void disable_bracketed_paste (void);
+
+/* Kitty keyboard protocol, if the terminal knows it */
+void enable_kitty_keyboard (void);
+void disable_kitty_keyboard (void);
 
 /*** inline functions ****************************************************************************/
 

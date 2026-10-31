@@ -122,7 +122,8 @@ static const global_keymap_ini_t default_menu_keymap[] = {
     { "PageDown", "pgdn" },
     { "Home", "home; alt-lt; ctrl-a" },
     { "End", "end; alt-gt; ctrl-e" },
-    { "Enter", "enter" },
+    /* Alacritty keypad Enter sends LF, also used by legacy Ctrl-Enter. */
+    { "Enter", "enter; ctrl-enter" },
     { "Quit", "f10; ctrl-g; esc" },
     {
         NULL,
