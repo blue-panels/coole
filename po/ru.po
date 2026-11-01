@@ -3614,6 +3614,10 @@ msgstr "DDL"
 msgid "Rows"
 msgstr "Строки"
 
+#: src/plugins/query/query-tree.c:200
+msgid "Reconn"
+msgstr "Заново"
+
 #: src/plugins/query/query-tree.c:254
 msgid "The file of queries F3 was pressed in is no more: the query is here."
 msgstr "Файла запросов, в котором нажата F3, больше нет: запрос здесь."
