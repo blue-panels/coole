@@ -197,6 +197,8 @@ query_tree_buttonbar (edit_tree_t *tree, WButtonBar *bb)
     const query_tree_t *t = (const query_tree_t *) tree->data;
 
     // the commands of the plugin, which act on the node of the cursor
+    buttonbar_set_label_command (bb, 2, _ ("Reconn"), t->q->commands[QUERY_CMD_SCHEMA_REFRESH],
+                                 NULL);
     buttonbar_set_label_command (bb, 3, _ ("Query"), t->q->commands[QUERY_CMD_SCHEMA_QUERY], NULL);
     buttonbar_set_label_command (bb, 4, _ ("DDL"), t->q->commands[QUERY_CMD_SCHEMA_DDL], NULL);
     buttonbar_set_label_command (bb, 5, _ ("Rows"), t->q->commands[QUERY_CMD_SCHEMA_ROWS], NULL);

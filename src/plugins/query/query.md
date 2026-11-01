@@ -155,7 +155,7 @@ A collection unfolded is read then: its Fields, of a sample of 100 of its
 documents, never a value, with their types and, when not all of them have
 the field, how many do, *50%*; its Indexes and their keys, *unique*,
 *sparse*, *ttl*; its Validator, the Pipeline of a view. Enter folds and
-unfolds, F5 puts the first 100 documents of the collection in Table, F3
+unfolds, F2 reads it all again by a new mongosh, F5 puts the first 100 documents of the collection in Table, F3
 puts the query of them in the file of queries, *// @table* and
 *db.getSiblingDB("shop").getCollection("orders").find({}, { _id: 1, total:
 1 }).limit(100)*, of its database whatever the *use()* of the file, of the
@@ -354,7 +354,7 @@ the unique ones; Foreign keys; Indexes; References, the foreign keys of the
 other tables to it; Triggers. A table has all of them, the empty ones too,
 a view and the like those with something.
 
-In Schema, a tree; the button bar shows F3, F4 and F5:
+In Schema, a tree; the button bar shows F2, F3, F4 and F5:
 
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move over the nodes.
@@ -405,9 +405,10 @@ takes it, QuerySchemaInsert: *sales."Orders"* for a relation, the name of a
 schema, a column, an index, a trigger; the columns of a key, all those of
 the node Columns; the table of a reference; *sales.total(* for a function.
 
-**QuerySchemaRefresh**
-: Read the schemas again, with no key of its own, what is unfolded and the
-node of the cursor staying so. They are read again by themselves after a query whose *CREATE*,
+**F2**
+: Connect again and read the schemas again, QuerySchemaRefresh: after a
+connection that was lost or did not come at the start. What is unfolded and
+the node of the cursor stay so. They are read again by themselves after a query whose *CREATE*,
 *ALTER* or *DROP* is committed.
 
 Schema reads the catalog by a connection of its own, of the same
