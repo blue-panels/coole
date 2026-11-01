@@ -1164,6 +1164,8 @@ query_edit_put (query_t *q, void *edit, gsize from, gsize to, const char *text)
     // one change: an edit of another going on, the plugin's or the editor's, is not mixed in
     if (!edit_runtime_begin (e))
         return FALSE;
+    // a selection, or a mark F3 began, is not dragged on by the cursor sent to the text put
+    edit_mark_cmd (e, TRUE);
     edit_cursor_move (e, (off_t) from - e->buffer.curs1);
     for (n = from; n < to; n++)
         (void) edit_delete (e, TRUE);
