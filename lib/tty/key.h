@@ -122,6 +122,7 @@ gboolean define_sequence (int code, const char *seq, int action);
 void init_key (void);
 void init_key_input_fd (void);
 void done_key (void);
+void xmouse_reset (void);
 
 int tty_keyname_to_keycode (const char *name, char **label);
 char *tty_keycode_to_keyname (const int keycode);
@@ -182,7 +183,8 @@ void application_keypad_mode (void);
 void enable_bracketed_paste (void);
 void disable_bracketed_paste (void);
 
-/* Kitty keyboard protocol, if the terminal knows it */
+/* Kitty keyboard protocol, if the terminal knows it, else the Win32 input mode of Windows
+   Terminal, if it knows that */
 void enable_kitty_keyboard (void);
 void disable_kitty_keyboard (void);
 /* Ask the terminal for the kitty flags 2, 8 and 16 in @flags on top of mc's own, or for no more */

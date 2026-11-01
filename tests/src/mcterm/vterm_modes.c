@@ -232,6 +232,35 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* APC, PM and SOS strings are for other terminals: none of their text reaches the screen, and
+   what comes after them is drawn as usual. */
+START_TEST (test_apc_pm_sos_strings_are_not_shown)
+{
+    mcview_vterm_t *vt = mcview_vterm_new ();
+    const char *expect = "ABCDEFG";
+    int i;
+
+    mcview_vterm_set_size (vt, 3, 20);
+    mcview_vterm_reset (vt);
+
+    feed (vt, "A\033_Ga=T,f=100;AAAA\033\\B"); /* APC, ended by ST (kitty graphics) */
+    feed (vt, "\033_far2l1\007C");             /* APC, ended by BEL (far2l) */
+    feed (vt, "\033^pm text\033\\D");          /* PM */
+    feed (vt, "\033Xsos text\033\\E");         /* SOS */
+    feed (vt, "\033_cancelled\030F");          /* CAN aborts the string */
+    feed (vt, "\033[41mG");                    /* an SGR right after still works */
+
+    for (i = 0; expect[i] != '\0'; i++)
+        ck_assert_uint_eq (cell_ch (vt, 0, i), (gunichar) expect[i]);
+    ck_assert_uint_eq (cell_ch (vt, 0, 7), 0);
+    ck_assert_int_eq (mcview_terminal_buffer_get (mcview_vterm_buf (vt), 0, 6)->attr.bg, 1);
+
+    mcview_vterm_free (vt);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (void)
 {
@@ -245,6 +274,7 @@ main (void)
     tcase_add_test (tc_core, test_kitty_keyboard_stack_per_screen);
     tcase_add_test (tc_core, test_kitty_keyboard_stack_limit);
     tcase_add_test (tc_core, test_kitty_keyboard_leaves_the_cursor_alone);
+    tcase_add_test (tc_core, test_apc_pm_sos_strings_are_not_shown);
 
     return mctest_run_all (tc_core);
 }
