@@ -258,6 +258,7 @@ main (int argc, char *argv[])
 
     // Set up the terminal size.
     tty_init (!mc_args__nomouse, mc_global.tty.xterm_flag);
+    tty_probe_terminal ();
 
     // Removing this from the X code let's us type C-c
     load_key_defs ();
@@ -284,11 +285,13 @@ main (int argc, char *argv[])
     /* Done after tty_enter_ca_mode (tty_init) because in VTE bracketed mode is
        separate for the normal and alternate screens */
     enable_bracketed_paste ();
+    enable_kitty_keyboard ();
 
     // Program main loop
     exit_code = run_editor () ? EXIT_SUCCESS : EXIT_FAILURE;
 
     disable_bracketed_paste ();
+    disable_kitty_keyboard ();
 
     disable_mouse ();
 

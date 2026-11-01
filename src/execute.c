@@ -81,6 +81,7 @@ edition_post_exec (void)
     channels_up ();
     enable_mouse ();
     enable_bracketed_paste ();
+    enable_kitty_keyboard ();
     if (mc_global.tty.alternate_plus_minus)
         application_keypad_mode ();
 }
@@ -101,6 +102,7 @@ edition_pre_exec (void)
     channels_down ();
     disable_mouse ();
     disable_bracketed_paste ();
+    disable_kitty_keyboard ();
 
     tty_reset_shell_mode ();
     tty_keypad (FALSE);

@@ -40,8 +40,9 @@
 
 /*** file scope macro definitions ****************************************************************/
 
-#define KS_DLG_WIDTH   50
-#define KS_DLG_HEIGHT  11
+/* wide enough for a kitty key and its release with their bytes in hex */
+#define KS_DLG_WIDTH   76
+#define KS_DLG_HEIGHT  14
 
 #define KS_BTN_CAPTURE (B_USER + 1)
 
@@ -52,6 +53,11 @@
 /*** file scope variables ************************************************************************/
 
 static WLabel *ks_lbl_raw;
+static WLabel *ks_lbl_raw_hex;
+static WLabel *ks_lbl_rest_title;
+static WLabel *ks_lbl_rest;
+static WLabel *ks_lbl_rest_hex;
+static WLabel *ks_lbl_kitty;
 static WLabel *ks_lbl_keycode;
 static WLabel *ks_lbl_name;
 static WLabel *ks_lbl_action;
@@ -60,57 +66,109 @@ static WLabel *ks_lbl_action;
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
+/* @seq as learn_key () writes it in @label, and its bytes in hex in @hex_label below it */
+
 static void
-ks_update_display (const char *seq)
+ks_set_raw (WLabel *label, WLabel *hex_label, const char *seq)
+{
+    char *raw;
+    GString *hex;
+    size_t i;
+
+    raw = convert_controls (seq);
+    hex = g_string_sized_new (64);
+    if (raw[0] != '\0')
+    {
+        g_string_append_c (hex, '[');
+        for (i = 0; raw[i] != '\0'; i++)
+        {
+            if (i > 0)
+                g_string_append_c (hex, ' ');
+            g_string_append_printf (hex, "%02x", (unsigned char) raw[i]);
+        }
+        g_string_append_c (hex, ']');
+    }
+    label_set_text (label, seq);
+    label_set_text (hex_label, hex->str);
+    g_string_free (hex, TRUE);
+    g_free (raw);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+ks_update_display (const char *seq, const char *rest)
 {
     char *raw;
     int keycode;
+    gboolean modifier_key = FALSE;
     char *key_name;
     const char *action_name;
     char kc_display[32];
 
-    /* convert to raw bytes */
+    ks_set_raw (ks_lbl_raw, ks_lbl_raw_hex, seq);
+    ks_set_raw (ks_lbl_rest, ks_lbl_rest_hex, rest);
+    {
+        char *rest_raw = convert_controls (rest);
+        tty_key_event_t ev;
+
+        label_set_text (ks_lbl_rest_title,
+                        tty_kitty_seq_event (rest_raw, (int) strlen (rest_raw), &ev)
+                                && ev.event == TTY_KITTY_RELEASE
+                            ? _ ("Release:")
+                            : _ ("Then:"));
+        g_free (rest_raw);
+    }
+
     raw = convert_controls (seq);
 
-    /* display raw sequence + hex dump */
+    keycode = tty_decode_key_seq (raw, (int) strlen (raw));
     {
-        GString *disp;
-        int i;
+        tty_key_event_t ev;
+        GString *k = g_string_new ("");
 
-        disp = g_string_sized_new (64);
-        g_string_append (disp, seq);
-        g_string_append (disp, "  [");
-        for (i = 0; i < (int) strlen (raw); i++)
+        if (tty_kitty_seq_event (raw, (int) strlen (raw), &ev))
         {
-            if (i > 0)
-                g_string_append_c (disp, ' ');
-            g_string_append_printf (disp, "%02x", (unsigned char) raw[i]);
+            static const char *const mod_names[] = { "Shift", "Alt",  "Ctrl", "Super",
+                                                     "Hyper", "Meta", "Caps", "Num" };
+            static const char *const event_names[] = { "press", "repeat", "release" };
+            size_t m;
+            int i;
+
+            static const char *const modifier_keys[] = {
+                "Left Shift",  "Left Ctrl",   "Left Alt",     "Left Super",   "Left Hyper",
+                "Left Meta",   "Right Shift", "Right Ctrl",   "Right Alt",    "Right Super",
+                "Right Hyper", "Right Meta",  "Level3 Shift", "Level5 Shift",
+            };
+
+            g_string_append_printf (k, "%u", ev.key);
+            if (ev.final == 'u' && ev.key >= 57441 && ev.key < 57441 + G_N_ELEMENTS (modifier_keys))
+            {
+                g_string_append_printf (k, " (%s)", modifier_keys[ev.key - 57441]);
+                modifier_key = TRUE;
+            }
+            if (ev.shifted != 0 || ev.base != 0)
+                g_string_append_printf (k, ":%u", ev.shifted);
+            if (ev.base != 0)
+                g_string_append_printf (k, ":%u", ev.base);
+            for (m = 0; m < G_N_ELEMENTS (mod_names); m++)
+                if ((ev.mods & (1U << m)) != 0)
+                    g_string_append_printf (k, " %s", mod_names[m]);
+            if (ev.event >= TTY_KITTY_PRESS && ev.event <= TTY_KITTY_RELEASE)
+                g_string_append_printf (k, " %s", event_names[ev.event - 1]);
+            for (i = 0; i < ev.text_len; i++)
+                g_string_append_printf (k, i == 0 ? " U+%04X" : ":U+%04X", (unsigned) ev.text[i]);
         }
-        g_string_append_c (disp, ']');
-        label_set_text (ks_lbl_raw, disp->str);
-        g_string_free (disp, TRUE);
+        label_set_text (ks_lbl_kitty, k->str);
+        g_string_free (k, TRUE);
     }
-
-    /* match trie */
-    keycode = tty_match_seq_to_keycode (raw, (int) strlen (raw));
-
-    /* single byte fallback: control char -> Ctrl-<letter> using the same encoding
-     * as the XCTRL macro in keymap parsing (KEY_M_CTRL | (c & 0x1F)), so the action
-     * lookup below finds the matching keymap entry. */
-    if (keycode == 0 && strlen (raw) == 1)
-    {
-        unsigned char c = (unsigned char) raw[0];
-
-        keycode = (c < 32) ? (KEY_M_CTRL | c) : (int) c;
-    }
-    /* ESC + single char: Alt */
-    if (keycode == 0 && strlen (raw) == 2 && raw[0] == '\x1b')
-        keycode = KEY_M_ALT | (int) (unsigned char) raw[1];
     g_free (raw);
 
     /* display keycode */
     if (keycode > 0)
         g_snprintf (kc_display, sizeof (kc_display), "0x%x (%d)", (unsigned) keycode, keycode);
+    else if (modifier_key)
+        g_strlcpy (kc_display, _ ("(modifier key)"), sizeof (kc_display));
     else
         g_strlcpy (kc_display, _ ("(not recognized)"), sizeof (kc_display));
     label_set_text (ks_lbl_keycode, kc_display);
@@ -176,6 +234,7 @@ ks_capture_btn (WButton *button, int action)
 {
     WDialog *d;
     char *seq;
+    char *rest = NULL;
 
     (void) button;
     (void) action;
@@ -186,17 +245,16 @@ ks_capture_btn (WButton *button, int action)
     mc_refresh ();
 
     disable_mouse ();
-    seq = learn_key ();
+    seq = learn_key_ex (&rest);
     enable_mouse ();
 
     dlg_run_done (d);
     widget_destroy (WIDGET (d));
 
     if (seq != NULL)
-    {
-        ks_update_display (seq);
-        g_free (seq);
-    }
+        ks_update_display (seq, rest != NULL ? rest : "");
+    g_free (seq);
+    g_free (rest);
 
     return 0;
 }
@@ -209,12 +267,13 @@ ks_capture_btn (WButton *button, int action)
 void
 key_sniffer (void)
 {
+    const int width = MAX (50, MIN (KS_DLG_WIDTH, COLS - 4));
     WDialog *dlg;
     WGroup *g;
     WButton *btn;
 
-    dlg = dlg_create (TRUE, 0, 0, KS_DLG_HEIGHT, KS_DLG_WIDTH, WPOS_CENTER, FALSE, dialog_colors,
-                      NULL, NULL, "[Key Sniffer]", _ ("Key sniffer"));
+    dlg = dlg_create (TRUE, 0, 0, KS_DLG_HEIGHT, width, WPOS_CENTER, FALSE, dialog_colors, NULL,
+                      NULL, "[Key Sniffer]", _ ("Key sniffer"));
     g = GROUP (dlg);
 
     group_add_widget (g, label_new (2, 2, _ ("Shortcut:")));
@@ -228,16 +287,31 @@ key_sniffer (void)
     group_add_widget (g, label_new (4, 2, _ ("Raw:")));
     ks_lbl_raw = label_new (4, 12, "");
     group_add_widget (g, ks_lbl_raw);
+    ks_lbl_raw_hex = label_new (5, 12, "");
+    group_add_widget (g, ks_lbl_raw_hex);
 
-    group_add_widget (g, label_new (5, 2, _ ("Keycode:")));
-    ks_lbl_keycode = label_new (5, 12, "");
+    ks_lbl_rest_title = label_new (6, 2, _ ("Then:"));
+    group_add_widget (g, ks_lbl_rest_title);
+    ks_lbl_rest = label_new (6, 12, "");
+    group_add_widget (g, ks_lbl_rest);
+    ks_lbl_rest_hex = label_new (7, 12, "");
+    group_add_widget (g, ks_lbl_rest_hex);
+
+    group_add_widget (g, label_new (8, 2, _ ("Keycode:")));
+    ks_lbl_keycode = label_new (8, 12, "");
     group_add_widget (g, ks_lbl_keycode);
 
-    group_add_widget (g, hline_new (7, -1, -1));
+    group_add_widget (g, label_new (9, 2, _ ("Kitty:")));
+    ks_lbl_kitty = label_new (9, 12, "");
+    group_add_widget (g, ks_lbl_kitty);
 
-    btn = button_new (8, 6, KS_BTN_CAPTURE, NORMAL_BUTTON, _ ("&Capture key"), ks_capture_btn);
+    group_add_widget (g, hline_new (10, -1, -1));
+
+    btn = button_new (11, width / 2 - 19, KS_BTN_CAPTURE, NORMAL_BUTTON, _ ("&Capture key"),
+                      ks_capture_btn);
     group_add_widget (g, btn);
-    group_add_widget (g, button_new (8, 30, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL));
+    group_add_widget (g,
+                      button_new (11, width / 2 + 5, B_CANCEL, NORMAL_BUTTON, _ ("&Close"), NULL));
 
     dlg_run (dlg);
     widget_destroy (WIDGET (dlg));
