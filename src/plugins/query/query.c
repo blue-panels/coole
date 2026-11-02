@@ -918,6 +918,9 @@ query_run (query_t *q, void *edit, gboolean all)
             bol--;
         column = g_utf8_strlen (bol, (gssize) (text + start - bol));
         selected = TRUE;
+        // a mark F3 began ends where it is: the selection run stays, the cursor drags it no more
+        if (e->mark2 < 0)
+            edit_mark_cmd (e, FALSE);
     }
     else
     {
