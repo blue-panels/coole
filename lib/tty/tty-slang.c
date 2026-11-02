@@ -83,6 +83,9 @@ static gboolean no_slang_delay;
 
 static gboolean slsmg_active = FALSE;
 
+/* the terminal holds the screen it shows since the start, until the first frame is drawn */
+static gboolean sync_until_first_frame = FALSE;
+
 /* This table describes which capabilities we want and which values we
  * assign to them.
  */
@@ -276,6 +279,15 @@ tty_init (gboolean mouse_enable, gboolean is_xterm)
      */
     tty_display_8bit (FALSE);
 
+    /* Synchronized output from before the switch to the alternate screen until the first frame:
+       the plugins load after the switch, and a terminal that knows the mode keeps showing what it
+       had (the shell, the panels of M-Commander) instead of an empty screen meanwhile. */
+    if (is_xterm)
+    {
+        SLtt_write_string ((SLFUTURE_CONST char *) ESC_STR "[?2026h");
+        sync_until_first_frame = TRUE;
+    }
+
     SLsmg_init_smg ();
     slsmg_active = TRUE;
     if (!mouse_enable)
@@ -296,6 +308,12 @@ tty_shutdown (void)
     char *op_cap;
 
     tty_destroy_winch_pipe ();
+    // quit before the first frame: the terminal must show the screen again
+    if (sync_until_first_frame)
+    {
+        SLtt_write_string ((SLFUTURE_CONST char *) ESC_STR "[?2026l");
+        sync_until_first_frame = FALSE;
+    }
     tty_reset_shell_mode ();
     tty_noraw_mode ();
     tty_keypad (FALSE);
@@ -699,6 +717,7 @@ tty_refresh (void)
         SLtt_write_string ((SLFUTURE_CONST char *) ESC_STR "[?2026l");
         SLtt_flush_output ();
     }
+    sync_until_first_frame = FALSE;
     tty_run_painters ();
 }
 
