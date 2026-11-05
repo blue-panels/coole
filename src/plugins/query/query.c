@@ -127,8 +127,10 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { NULL, NULL, NULL },
 };
 
+/* the mark of the line of an error: its character from the skin, section [widget-editor]; this
+   one, ASCII, when it has none or the terminal cannot show its own */
 static const mc_ep_marker_kind_t query_mark_kind = {
-    "query.error", "query-error-char", "\u00d7", "E", "builderror", NULL, NULL, 6, "brightred",
+    "query.error", "query-error-char", "E", "E", "builderror", NULL, NULL, 6, "brightred",
 };
 
 // the extension of the versions of a file of queries, that of the files of the backend

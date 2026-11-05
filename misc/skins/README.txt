@@ -375,14 +375,19 @@ applies individually to each of these three properties.
             queries (default: + -; the skins of coole give > and a
             triangle)
 
-        A mark the terminal cannot show, a character of UTF-8 on one
-        that is not, is the default instead.
-
         build-error-char
         build-warning-char
             Marks of a line the compiler has named an error or a warning
-            of (default: a multiplication sign and !; E and ! on a
-            terminal that is not UTF-8)
+            of (default: E !; the skins of coole give a multiplication
+            sign and !)
+
+        query-error-char
+            Mark of the line of a query the database has refused, in a
+            file run by coole -Q (default: E; the skins of coole give a
+            multiplication sign)
+
+        A mark the terminal cannot show, a character of UTF-8 on one
+        that is not, is the default instead.
 
 
 Debugger section
