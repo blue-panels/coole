@@ -38,11 +38,14 @@
 #include <unistd.h>
 
 #include "lib/global.h"
+#include "lib/keybind.h"
 #include "lib/util.h"
 #include "lib/widget.h"
 #include "lib/tty/key.h"
 #include "lib/tty/tty.h"
 #include "lib/plugin-service.h"
+
+#include "src/keymap.h"  // keymap_section_map ()
 
 #include "build-core.h"
 #include "build-presets.h"
@@ -1392,6 +1395,24 @@ static const mc_ep_action_t build_actions[] = {
     { "Output", build_act_output },       { "Language defaults", build_act_defaults },
 };
 
+/* The key of a menu entry, the first the keymap has for its command: the first actions are the
+   commands, in their order */
+static char *
+build_menu_shortcut (int action_index)
+{
+    const global_keymap_t *map = keymap_section_map (BUILD_KEYMAP_SECTION);
+    long command;
+    size_t i;
+
+    if (map == NULL || action_index < 0 || action_index > BUILD_ACT_PREV)
+        return NULL;
+    command = keybind_lookup_action (build_commands[action_index].name);
+    for (i = 0; map[i].key != 0; i++)
+        if (map[i].command == command && map[i].caption[0] != '\0')
+            return g_strdup (map[i].caption);
+    return NULL;
+}
+
 static const mc_ep_cmd_menu_entry_t build_menu[] = {
     { MC_EP_MENU_COMMAND, NULL, 0, NULL },
     { MC_EP_MENU_COMMAND, N_ ("B&uild project"), BUILD_ACT_RUN, NULL },
@@ -1416,6 +1437,7 @@ static const mc_editor_plugin_t build_plugin = {
     .action_count = G_N_ELEMENTS (build_actions),
     .cmd_menu_entries = build_menu,
     .cmd_menu_entry_count = G_N_ELEMENTS (build_menu),
+    .get_menu_shortcut = build_menu_shortcut,
 };
 
 /*** public functions ****************************************************************************/
