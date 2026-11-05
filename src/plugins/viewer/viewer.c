@@ -36,18 +36,21 @@
  *    open       title, text, place ("right", "bottom", "full"), size (percent), focus,
  *               cursorline (a list: the line of the cursor drawn across the window, in the
  *               color of a bookmark found) -> id
- *    set_text   id, text
+ *    set_text   id, text, cursorline (when given: the window becomes a list, or stops being one)
  *    set_title  id, title
  *    scroll_to  id, line
  *    move_to    id, line: the cursor to the line, the view following it
  *    show       id, focus
  *    hide       id
  *    close      id
- *    info       id -> cols, lines, top, total, line (of the cursor), visible, focused, window
+ *    info       id -> cols, lines, top, total, line (of the cursor), selected (text is marked),
+ *               visible, focused, window
  *    add_type   type, suffixes (strings), starts (strings)
  *
  *  Signal "closed", id: the user closed the window.
  *  Signal "activate", id, line (from 0): a double click on a line of a window of cursorline.
+ *  Signal "cursor", id, line (from 0): the user moved the cursor of a window of cursorline to
+ *  another line, by a key or a press of the mouse; not when move_to does.
  *
  *  Preview: Ctrl-Alt-P, or Window > Preview, shows a window "Preview" at the right of the file,
  *  whatever the file is, and follows it: its text as it changes, its cursor, the file window that
@@ -316,6 +319,22 @@ viewer_window_activated (void *data, long line)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The cursor of a list moved by the user: those who listen are told, "cursor" */
+static void
+viewer_window_cursor (void *data, long line)
+{
+    viewer_window_t *vw = (viewer_window_t *) data;
+    GVariantDict dict;
+
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", vw->id);
+    g_variant_dict_insert (&dict, "line", "x", (gint64) line);
+    vw->viewer->host->service_emit (vw->viewer->host, VIEWER_SERVICE, "cursor",
+                                    g_variant_dict_end (&dict));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A window is destroyed, by the user or with the editor: it is forgotten, and those who listen
    are told */
 static void
@@ -406,6 +425,7 @@ viewer_window_new (viewer_t *v, const WRect *r, int dock, gboolean full, const c
     g_hash_table_insert (v->windows, key, win);
     edit_text_window_on_destroy (win, viewer_window_destroyed, vw);
     edit_text_window_on_activate (win, viewer_window_activated, vw);
+    edit_text_window_on_cursor (win, viewer_window_cursor, vw);
 
     prev = v->host->window_current (v->host);
     v->host->window_add (v->host, win);
@@ -506,9 +526,13 @@ viewer_call (void *data, const char *method, GVariant *args, GError **error)
         gsize len = 0;
         char *text;
 
+        gboolean list;
+
         text = viewer_arg_text (args, "text", &len);
         edit_text_window_set_text (win, text, text != NULL ? len : 0);
         g_free (text);
+        if (g_variant_lookup (args, "cursorline", "b", &list))
+            edit_text_window_set_line_cursor (win, list);
     }
     else if (strcmp (method, "set_title") == 0)
     {
@@ -568,6 +592,7 @@ viewer_call (void *data, const char *method, GVariant *args, GError **error)
         g_variant_dict_insert (&dict, "top", "x", (gint64) edit_text_window_top (win));
         g_variant_dict_insert (&dict, "total", "x", (gint64) edit_text_window_lines (win));
         g_variant_dict_insert (&dict, "line", "x", (gint64) edit_text_window_cursor_line (win));
+        g_variant_dict_insert (&dict, "selected", "b", edit_text_window_selected (win));
         // a tab of the bottom not seen is there all the same
         g_variant_dict_insert (
             &dict, "visible", "b",

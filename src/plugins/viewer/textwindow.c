@@ -118,6 +118,8 @@ typedef struct
     void *on_destroy_data;
     void (*on_activate) (void *data, long line);  // a double click on a line of a list
     void *on_activate_data;
+    void (*on_cursor) (void *data, long line);  // the user moved the cursor of a list
+    void *on_cursor_data;
 } WTextWindow;
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -695,6 +697,16 @@ text_window_move_cursor (WTextWindow *tw, long line, long col, gboolean remember
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The user moved the cursor of a list off the line @was: whoever listens is told */
+static void
+text_window_cursor_moved (WTextWindow *tw, long was)
+{
+    if (tw->line_cursor && tw->cur_line != was && tw->on_cursor != NULL)
+        tw->on_cursor (tw->on_cursor_data, tw->cur_line);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* What is marked, as text: the characters without their colors, a line of the text a line; the
    blanks a line ends with, which pad a table, left out */
 static char *
@@ -1023,7 +1035,13 @@ text_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         return MSG_HANDLED;
 
     case MSG_KEY:
-        return text_window_key (tw, parm);
+    {
+        const long was = tw->cur_line;
+        const cb_ret_t ret = text_window_key (tw, parm);
+
+        text_window_cursor_moved (tw, was);
+        return ret;
+    }
 
     case MSG_CURSOR:
     {
@@ -1090,6 +1108,7 @@ static void
 text_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
 {
     WTextWindow *tw = TEXT_WINDOW (w);
+    const long was = tw->cur_line;
 
     switch (msg)
     {
@@ -1140,6 +1159,9 @@ text_window_mouse_callback (Widget *w, mouse_msg_t msg, mouse_event_t *event)
     default:
         break;
     }
+    // a press puts the cursor on a line; a drag marks text, the cursor going along
+    if (msg == MSG_MOUSE_DOWN)
+        text_window_cursor_moved (tw, was);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1326,6 +1348,25 @@ edit_text_window_on_activate (WEditWindow *win, void (*fn) (void *data, long lin
 
     tw->on_activate = fn;
     tw->on_activate_data = data;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+edit_text_window_selected (const WEditWindow *win)
+{
+    return CONST_TEXT_WINDOW (win)->selected;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_text_window_on_cursor (WEditWindow *win, void (*fn) (void *data, long line), void *data)
+{
+    WTextWindow *tw = TEXT_WINDOW (win);
+
+    tw->on_cursor = fn;
+    tw->on_cursor_data = data;
 }
 
 /* --------------------------------------------------------------------------------------------- */

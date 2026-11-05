@@ -48,6 +48,11 @@ int edit_text_window_text_lines (const WEditWindow *win);
 /* @fn is called with @data and the line, from 0, at a double click on a line of a list */
 void edit_text_window_on_activate (WEditWindow *win, void (*fn) (void *data, long line),
                                    void *data);
+/* Whether text of the window is marked */
+gboolean edit_text_window_selected (const WEditWindow *win);
+/* @fn is called with @data and the line, from 0, when the user moves the cursor of a list to
+   another line, by a key or a press of the mouse */
+void edit_text_window_on_cursor (WEditWindow *win, void (*fn) (void *data, long line), void *data);
 /* @fn is called with @data when the window is destroyed */
 void edit_text_window_on_destroy (WEditWindow *win, void (*fn) (void *data), void *data);
 
