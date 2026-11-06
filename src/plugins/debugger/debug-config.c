@@ -1638,74 +1638,150 @@ debug_configure_impl (debugger_t *debug, void *edit, gboolean create_new)
     return MC_EPR_OK;
 }
 
-mc_ep_result_t
-debug_configure (void *data, void *edit)
+/* The configuration @index the active one, kept so */
+static void
+debug_configuration_activate (debugger_t *debug, guint index)
 {
-    return debug_configure_impl ((debugger_t *) data, edit, FALSE);
+    if (index >= debug->launches->len || index == debug->active_launch)
+        return;
+    debug->active_launch = index;
+    debug_config_save (debug);
+    debug_session_refresh (debug);
 }
 
-mc_ep_result_t
-debug_new_configuration (void *data, void *edit)
+/* The configuration @index deleted, when the user says so; the active one stays active, the
+   first when it was that one */
+static void
+debug_configuration_delete (debugger_t *debug, guint index)
 {
-    return debug_configure_impl ((debugger_t *) data, edit, TRUE);
+    const debug_launch_t *launch;
+
+    if (index >= debug->launches->len)
+        return;
+    launch = g_ptr_array_index (debug->launches, index);
+    if (query_dialog (_ ("Debug"), _ ("Delete the debug configuration?"), D_NORMAL, 2,
+                      _ ("&Delete"), _ ("&Cancel"))
+        != 0)
+        return;
+    if (debug->session_launch == launch)
+        debug->session_launch = NULL;
+    g_ptr_array_remove_index (debug->launches, index);
+    if (debug->active_launch == index)
+        debug->active_launch = 0;
+    else if (debug->active_launch > index)
+        debug->active_launch--;
+    debug_config_save (debug);
+    debug_session_refresh (debug);
 }
 
+/* The configurations of the project in one dialog, as the lists of Turbo Vision are: the one
+   Start runs is marked; Select makes the one of the cursor it, New guesses another one and
+   makes it, Edit and Delete change the one of the cursor and leave the one marked.  The dialog
+   comes back after New, Edit and Delete */
 mc_ep_result_t
-debug_select_configuration (void *data, void *edit)
+debug_configurations (void *data, void *edit)
 {
     debugger_t *debug = (debugger_t *) data;
-    Listbox *selector;
-    debug_launch_t *chosen;
-    guint i;
+    enum
+    {
+        DEBUG_B_NEW = B_USER,
+        DEBUG_B_EDIT,
+        DEBUG_B_DELETE
+    };
+    static const struct
+    {
+        int action;
+        int flags;
+        const char *label;
+    } buttons[] = {
+        { B_ENTER, DEFPUSH_BUTTON, N_ ("&Select") },
+        { DEBUG_B_NEW, NORMAL_BUTTON, N_ ("&New") },
+        { DEBUG_B_EDIT, NORMAL_BUTTON, N_ ("&Edit") },
+        { DEBUG_B_DELETE, NORMAL_BUTTON, N_ ("&Delete") },
+        { B_CANCEL, NORMAL_BUTTON, N_ ("&Close") },
+    };
 
     if (!debug_require_project (debug, edit))
         return MC_EPR_FAILED;
+    // none yet: the first one guessed
     if (debug->launches->len == 0)
-        return debug_new_configuration (data, edit);
-    selector = listbox_window_new (MIN ((int) debug->launches->len, 16), 70,
-                                   _ ("Select debug configuration"), NULL);
-    for (i = 0; i < debug->launches->len; i++)
+        return debug_configure_impl (debug, edit, TRUE);
+    while (TRUE)
     {
-        debug_launch_t *launch = g_ptr_array_index (debug->launches, i);
-        char *label = g_strdup_printf ("%s  %s", launch->name, launch->executable);
+        const int list_h = (int) MIN (debug->launches->len, 12);
+        const int dlg_w = MIN (COLS - 4, 76);
+        const int dlg_h = list_h + 6;
+        WDialog *dlg;
+        WListbox *list;
+        void *chosen = NULL;
+        guint index = 0;
+        int ret, x;
+        guint i;
 
-        LISTBOX_APPEND_TEXT (selector, 0, label, launch, FALSE);
-        g_free (label);
-    }
-    chosen = listbox_run_with_data (selector, NULL);
-    if (chosen == NULL)
-        return MC_EPR_FAILED;
-    for (i = 0; i < debug->launches->len; i++)
-        if (g_ptr_array_index (debug->launches, i) == chosen)
+        // the last one deleted: nothing more to choose from
+        if (debug->launches->len == 0)
+            return MC_EPR_OK;
+
+        dlg = dlg_create (TRUE, 0, 0, dlg_h, dlg_w, WPOS_CENTER, TRUE, dialog_colors, NULL, NULL,
+                          "[Debugger]", _ ("Debug configurations"));
+        list = listbox_new (2, 2, list_h, dlg_w - 4, FALSE, NULL);
+        for (i = 0; i < debug->launches->len; i++)
         {
-            debug->active_launch = i;
+            const debug_launch_t *launch = g_ptr_array_index (debug->launches, i);
+            char *label = g_strdup_printf ("%c %s  %s", i == debug->active_launch ? '*' : ' ',
+                                           launch->name, launch->executable);
+
+            listbox_add_item (list, LISTBOX_APPEND_AT_END, 0, label, GUINT_TO_POINTER (i + 1),
+                              FALSE);
+            g_free (label);
+        }
+        listbox_set_current (list, (int) debug->active_launch);
+        group_add_widget (GROUP (dlg), list);
+        group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+        x = 3;
+        for (i = 0; i < G_N_ELEMENTS (buttons); i++)
+        {
+            WButton *b = button_new (dlg_h - 2, x, buttons[i].action, buttons[i].flags,
+                                     _ (buttons[i].label), NULL);
+
+            group_add_widget (GROUP (dlg), b);
+            x += button_get_width (b) + 1;
+        }
+        widget_select (WIDGET (list));
+        ret = dlg_run (dlg);
+        listbox_get_current (list, NULL, &chosen);
+        if (chosen != NULL)
+            index = GPOINTER_TO_UINT (chosen) - 1;
+        widget_destroy (WIDGET (dlg));
+
+        switch (ret)
+        {
+        case B_ENTER:
+            debug_configuration_activate (debug, index);
+            return MC_EPR_OK;
+        case DEBUG_B_NEW:
+            (void) debug_configure_impl (debug, edit, TRUE);
+            break;
+        case DEBUG_B_EDIT:
+        {
+            // the form changes the active one: the one of the cursor for it, then back
+            const guint active = debug->active_launch;
+
+            debug->active_launch = index;
+            (void) debug_configure_impl (debug, edit, FALSE);
+            debug->active_launch = active;
             debug_config_save (debug);
+            // the panel and the bar of the one active again
             debug_session_refresh (debug);
+            break;
+        }
+        case DEBUG_B_DELETE:
+            debug_configuration_delete (debug, index);
+            break;
+        default:
             return MC_EPR_OK;
         }
-    return MC_EPR_FAILED;
-}
-
-mc_ep_result_t
-debug_delete_configuration (void *data, void *edit)
-{
-    debugger_t *debug = (debugger_t *) data;
-    debug_launch_t *launch = debug_active_launch (debug);
-
-    (void) edit;
-    if (launch == NULL)
-        return MC_EPR_FAILED;
-    if (query_dialog (_ ("Debug"), _ ("Delete the selected debug configuration?"), D_NORMAL, 2,
-                      _ ("&Delete"), _ ("&Cancel"))
-        != 0)
-        return MC_EPR_FAILED;
-    if (debug->session_launch == launch)
-        debug->session_launch = NULL;
-    g_ptr_array_remove_index (debug->launches, debug->active_launch);
-    debug->active_launch = 0;
-    debug_config_save (debug);
-    debug_session_refresh (debug);
-    return MC_EPR_OK;
+    }
 }
 
 /* Whether a debug adapter runs the program of a configuration, not GDB/MI */

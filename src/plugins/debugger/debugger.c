@@ -104,10 +104,7 @@ static const mc_ep_marker_kind_t debug_mark_kinds[DEBUG_MARK_COUNT] = {
 enum
 {
     DEBUG_ACT_PROJECT_STATUS,
-    DEBUG_ACT_CONFIGURE,
-    DEBUG_ACT_NEW_CONFIGURATION,
-    DEBUG_ACT_SELECT_CONFIGURATION,
-    DEBUG_ACT_DELETE_CONFIGURATION,
+    DEBUG_ACT_CONFIGURATIONS,
     DEBUG_ACT_START,
     DEBUG_ACT_TOGGLE_BREAKPOINT,
     DEBUG_ACT_CONTINUE,
@@ -1556,10 +1553,7 @@ debug_act_start (void *data, void *edit)
 
 static const mc_ep_action_t debug_actions[] = {
     { "Project status", debug_project_status },
-    { "Configure", debug_configure },
-    { "New configuration", debug_new_configuration },
-    { "Select configuration", debug_select_configuration },
-    { "Delete configuration", debug_delete_configuration },
+    { "Configurations", debug_configurations },
     { "Start", debug_act_start },
     { "Toggle breakpoint", debug_toggle_breakpoint },
     { "Continue", debug_continue },
@@ -1620,12 +1614,7 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("GDB co&mmand..."), DEBUG_ACT_GDB_COMMAND, NULL },
     // what one sets once, with the project
     { MC_EP_MENU_PROJECT, NULL, 0, NULL },
-    { MC_EP_MENU_PROJECT, N_ ("Ne&w debug configuration..."), DEBUG_ACT_NEW_CONFIGURATION, NULL },
-    { MC_EP_MENU_PROJECT, N_ ("&Select debug configuration..."), DEBUG_ACT_SELECT_CONFIGURATION,
-      NULL },
-    { MC_EP_MENU_PROJECT, N_ ("Confi&gure debug configuration..."), DEBUG_ACT_CONFIGURE, NULL },
-    { MC_EP_MENU_PROJECT, N_ ("&Delete debug configuration..."), DEBUG_ACT_DELETE_CONFIGURATION,
-      NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Debug configurations..."), DEBUG_ACT_CONFIGURATIONS, NULL },
     { MC_EP_MENU_PROJECT, N_ ("Project st&atus..."), DEBUG_ACT_PROJECT_STATUS, NULL },
     // the windows of the debugger, with those of the other plugins
 };

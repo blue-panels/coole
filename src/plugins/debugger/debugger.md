@@ -143,11 +143,11 @@ source; the frame that threw it is the one shown.
 
 **The configurations**
 
-A project may have several, in the menu **Project**: **New debug
-configuration...** guesses another one, **Select debug configuration...**
-chooses the one **Start** runs, **Configure debug configuration...** changes
-it. They are kept, when **Keep in the project** is
-checked, in *.coole/debug.ini* in the project, with the names relative to it,
+A project may have several. **Project → Debug configurations...** lists
+them, the one **Start** runs marked with a star: **Select** makes the one of
+the cursor that one, **New** guesses another one, **Edit** changes the one of
+the cursor and **Delete** deletes it; the list comes back after them. They
+are kept, when **Keep in the project** is checked, in *.coole/debug.ini* in the project, with the names relative to it,
 for everyone who works on it; else with the settings of the user. A project
 new to the debugger has it checked. The breakpoints
 and the watches are one's own: they stay with the settings of the user.
