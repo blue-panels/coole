@@ -28,6 +28,11 @@
 
 /*** declarations of public functions ************************************************************/
 
+/* The cursor to @column, from 0, of the line it is on, and the view following it, as a search
+   puts it on what it found.  @tab_width 0: @column counts bytes; else it counts the columns of
+   the screen as a compiler does, a tab going to the next multiple of @tab_width and a wide
+   character taking two.  Past the end of the line: the end. */
+void edit_cursor_to_column (WEdit *edit, long column, int tab_width);
 /* From where @edit is to @file, at @line from 1 and @column bytes into the line: the window of
    the file to the front when one has it, else the file loaded in @edit, or in a new window when
    @edit has changes not saved.  FALSE when the file cannot be opened. */

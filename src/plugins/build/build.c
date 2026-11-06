@@ -46,9 +46,8 @@
 #include "lib/tty/tty.h"
 #include "lib/plugin-service.h"
 
-#include "src/keymap.h"             // keymap_section_map ()
-#include "src/editor/edit-impl.h"   // edit_cursor_move ()
-#include "src/editor/editwidget.h"  // WEdit
+#include "src/keymap.h"            // keymap_section_map ()
+#include "src/editor/edit-impl.h"  // edit_widget_is_editor ()
 
 #include "build-core.h"
 #include "build-presets.h"
@@ -937,68 +936,24 @@ build_file_loaded (build_t *build, const char *file)
     for (item = GROUP (build->host->host_data)->widgets; item != NULL && !found;
          item = g_list_next (item))
     {
-        const WEdit *edit;
+        char *name;
 
         if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
             continue;
-        edit = CONST_EDIT (item->data);
-        if (edit->filename == NULL)
-            continue;
-        if (strcmp (edit->filename, file) == 0)
+        name = build->host->get_current_file (build->host, item->data);
+        if (name != NULL && strcmp (name, file) == 0)
             found = TRUE;
-        else if (real != NULL)
+        else if (name != NULL && real != NULL)
         {
-            char *other = realpath (edit->filename, NULL);
+            char *other = realpath (name, NULL);
 
             found = other != NULL && strcmp (other, real) == 0;
             free (other);
         }
+        g_free (name);
     }
     free (real);
     return found;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* The byte of the line from @bol to @eol at the column @column, from 1, as gcc counts it by
-   default: a tab goes to the next stop of BUILD_TAB_WIDTH, a wide character takes two columns,
-   a byte that is not UTF-8 one */
-static off_t
-build_column_offset (const WEdit *edit, off_t bol, off_t eol, long column)
-{
-    GString *line = g_string_sized_new ((gsize) (eol - bol));
-    const char *p, *end;
-    long col = 1;
-    off_t i, offset;
-
-    for (i = bol; i < eol; i++)
-        g_string_append_c (line, (char) edit_buffer_get_byte (&edit->buffer, i));
-    p = line->str;
-    end = line->str + line->len;
-    while (p < end && col < column)
-    {
-        const gunichar c = g_utf8_get_char_validated (p, end - p);
-
-        if (*p == '\t')
-        {
-            col = ((col - 1) / BUILD_TAB_WIDTH + 1) * BUILD_TAB_WIDTH + 1;
-            p++;
-        }
-        else if (c == (gunichar) -1 || c == (gunichar) -2)
-        {
-            col++;
-            p++;
-        }
-        else
-        {
-            if (!g_unichar_iszerowidth (c))
-                col += g_unichar_iswide (c) ? 2 : 1;
-            p = g_utf8_next_char (p);
-        }
-    }
-    offset = bol + (off_t) (p - line->str);
-    g_string_free (line, TRUE);
-    return offset;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1015,19 +970,19 @@ build_note_clear (build_t *build)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The line of a diagnostic in its file, the cursor on the column the compiler named, as a
-   search puts it on what it found: not past the end of the line where it stood before.
+/* The line of a diagnostic in its file, the cursor on the column the compiler named.
    @load: the file is loaded when no window has it, else it is not shown.  The message goes
    after the line when the list is not in sight.  FALSE when the line is not shown */
 static gboolean
 build_show (build_t *build, const build_diagnostic_t *d, gboolean load)
 {
-    WEdit *edit;
-    off_t bol, eol;
-
     if (!load && !build_file_loaded (build, d->file))
         return FALSE;
-    if (!build->host->show_location (build->host, d->file, d->line))
+    // the column of gcc counts the columns of the screen from 1, a tab to a stop of 8
+    if (build->host->show_location_at != NULL
+            ? !build->host->show_location_at (build->host, d->file, d->line, MAX (d->column - 1, 0),
+                                              BUILD_TAB_WIDTH)
+            : !build->host->show_location (build->host, d->file, d->line))
         return FALSE;
     build_note_clear (build);
     if (!build->listed || build_output_state (build) == MC_EP_WINDOW_CLOSED)
@@ -1036,18 +991,6 @@ build_show (build_t *build, const build_diagnostic_t *d, gboolean load)
         build->note_file = g_strdup (d->file);
         build->note_line = d->line;
     }
-    edit = (WEdit *) build->host->window_top_file (build->host);
-    if (d->column < 1 || edit == NULL || edit->buffer.curs_line != d->line - 1)
-        return TRUE;
-    bol = edit_buffer_get_current_bol (&edit->buffer);
-    eol = edit_buffer_get_current_eol (&edit->buffer);
-    edit->over_col = 0;
-    edit_cursor_move (edit, build_column_offset (edit, bol, eol, d->column) - edit->buffer.curs1);
-    edit->search_start = edit->buffer.curs1;
-    edit->prev_col = edit_get_col (edit);
-    edit->force |= REDRAW_PAGE;
-    edit_scroll_screen_over_cursor (edit);
-    widget_draw (WIDGET (edit));
     return TRUE;
 }
 

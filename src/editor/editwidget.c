@@ -1152,8 +1152,10 @@ editor_host_load_in_place (mc_editor_host_t *host, edit_arg_t *arg)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static gboolean
-editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long line)
+/* The window of @file brought to the front on @line, or the file loaded there: the window shown,
+   NULL when it is not */
+static WEdit *
+editor_host_show_location_window (mc_editor_host_t *host, const char *file, long line)
 {
     WDialog *dialog = DIALOG (host->host_data);
     WGroup *group = GROUP (dialog);
@@ -1163,7 +1165,7 @@ editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long l
     gboolean opened;
 
     if (file == NULL || line <= 0)
-        return FALSE;
+        return NULL;
     for (item = group->widgets; item != NULL; item = g_list_next (item))
     {
         WEdit *edit;
@@ -1177,13 +1179,38 @@ editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long l
         edit_move_to_line (edit, line - 1);
         edit->force |= REDRAW_COMPLETELY;
         widget_draw (WIDGET (dialog));
-        return TRUE;
+        return edit;
     }
     path = g_strdup (file);
     edit_arg_init (&arg, path, line);
     opened = editor_host_load_in_place (host, &arg);
     g_free (path);
-    return opened;
+    // the window loaded is the file window on top
+    return opened ? EDIT (editor_host_window_top_file_impl (host)) : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_show_location_impl (mc_editor_host_t *host, const char *file, long line)
+{
+    return editor_host_show_location_window (host, file, line) != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+editor_host_show_location_at_impl (mc_editor_host_t *host, const char *file, long line, long column,
+                                   int tab_width)
+{
+    WEdit *edit = editor_host_show_location_window (host, file, line);
+
+    if (edit == NULL)
+        return FALSE;
+    edit_cursor_to_column (edit, column, tab_width);
+    edit->force |= REDRAW_COMPLETELY;
+    widget_draw (WIDGET (edit));
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1217,6 +1244,9 @@ editor_host_set_line_note_impl (mc_editor_host_t *host, const char *file, long l
         else
             g_hash_table_remove (edit->line_notes, GINT_TO_POINTER ((gint) (line - 1)));
         edit->force |= REDRAW_COMPLETELY;
+        // the window in sight seen at once: no key may come to draw it; the others when shown
+        if (edit == editor_host_window_top_file_impl (host))
+            widget_draw (WIDGET (edit));
     }
 }
 
@@ -1470,6 +1500,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->window_docked = editor_host_window_docked_impl;
     ctx->host->navigate = editor_host_navigate_impl;
     ctx->host->go_to = editor_host_go_to_impl;
+    ctx->host->show_location_at = editor_host_show_location_at_impl;
     ctx->window_kinds = g_ptr_array_new_with_free_func (editor_window_kind_free);
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
     // the plugins reach it from open(): call_later() for one

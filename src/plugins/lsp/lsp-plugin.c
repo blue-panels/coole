@@ -45,7 +45,7 @@
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
 #include "src/editor/editwindow.h"
-#include "src/editor/editnav.h"  // edit_nav_history ()
+#include "src/editor/editnav.h"  // edit_nav_history (), edit_cursor_to_column ()
 
 #include "lib/editor-plugin.h"
 #include "lib/plugin-prefs.h"  // mc_plugin_prefs_is_disabled ()
@@ -2290,23 +2290,6 @@ lsp_place_column (lsp_plugin_t *plugin, const lsp_place_t *place)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The cursor at @column bytes into its line, the line shown */
-static void
-lsp_cursor_to_column (WEdit *edit, long column)
-{
-    const off_t bol = edit_buffer_get_current_bol (&edit->buffer);
-    const off_t eol = edit_buffer_get_current_eol (&edit->buffer);
-    const off_t to = MIN (bol + column, eol);
-
-    edit_cursor_move (edit, to - edit->buffer.curs1);
-    edit->search_start = edit->buffer.curs1;
-    edit->prev_col = edit_get_col (edit);
-    edit->force |= REDRAW_PAGE;
-    edit_scroll_screen_over_cursor (edit);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 /* The path of a window of the file @path, when one has it open */
 static char *
 lsp_open_path (const lsp_plugin_t *plugin, const char *path)
@@ -2348,6 +2331,14 @@ lsp_go (lsp_plugin_t *plugin, WEdit *edit, const lsp_place_t *place)
         return;
     }
     open = lsp_open_path (plugin, place->path);
+    // a window has the file: the host puts the cursor on the column
+    if (open != NULL && host->show_location_at != NULL)
+    {
+        (void) host->show_location_at (host, open, (long) place->line + 1, column, 0);
+        g_free (open);
+        host->redraw (host);
+        return;
+    }
     if (open != NULL)
         gone = host->show_location (host, open, (long) place->line + 1);
     else
@@ -2363,7 +2354,7 @@ lsp_go (lsp_plugin_t *plugin, WEdit *edit, const lsp_place_t *place)
         char *canonical = lsp_canonical_path (path);
 
         if (g_strcmp0 (canonical, place->path) == 0)
-            lsp_cursor_to_column (EDIT (now), column);
+            edit_cursor_to_column (EDIT (now), column, 0);
         g_free (canonical);
         g_free (path);
     }

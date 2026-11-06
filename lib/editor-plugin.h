@@ -259,6 +259,11 @@ typedef struct mc_editor_host_t
        has it, its undo kept */
     gboolean (*go_to) (struct mc_editor_host_t *host, void *edit, const char *file, long line,
                        long column);
+    /* As show_location(), the cursor on @column, from 0, of the line.  @tab_width 0: @column
+       counts bytes; else the columns of the screen as a compiler counts them, a tab going to
+       the next multiple of @tab_width (gcc: 8) and a wide character taking two */
+    gboolean (*show_location_at) (struct mc_editor_host_t *host, const char *file, long line,
+                                  long column, int tab_width);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.
