@@ -1623,10 +1623,8 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     // what is sent to it and to GDB
     { DEBUG_MENU, N_ ("Send &line..."), DEBUG_ACT_INPUT, NULL },
     { DEBUG_MENU, N_ ("GDB co&mmand..."), DEBUG_ACT_GDB_COMMAND, NULL },
-    { DEBUG_MENU, NULL, 0, NULL },
-    // the panel, and the keys of the files; the console and the disassembly are in Window
-    { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
-    { DEBUG_MENU, N_ ("Debug ke&ys in files"), DEBUG_ACT_MODE, NULL },
+    // the panel, the console and the disassembly are windows, in Window, with the keys of the files
+    { MC_EP_MENU_WINDOW, N_ ("Debug &keys in files"), DEBUG_ACT_MODE, NULL },
     // what one sets once, with the project
     { MC_EP_MENU_PROJECT, NULL, 0, NULL },
     { MC_EP_MENU_PROJECT, N_ ("&Debug configurations..."), DEBUG_ACT_CONFIGURATIONS, NULL },

@@ -209,7 +209,7 @@ typedef struct
     guint build_signal;
     guint project_signal;  // the project chosen or closed by the project plugin
     // debug mode: the file windows take the keys of the debugger, F3 to F8, whether the program
-    // runs or not (coole --debug, or Debug > Debug keys in files)
+    // runs or not (coole --debug, or Window > Debug keys in files)
     gboolean debug_mode;
     gboolean layout_pushed;       // the editor keeps the windows of before debugging
     edit_tree_t *session_window;  // the panel, a tree window; NULL when it is closed

@@ -77,7 +77,7 @@ to do next while nothing runs.
 In debug mode the file windows take the keys of the debugger all the time,
 not only while the program is stopped: F3 to F8 are the debugger's, F2, F9
 and F10 stay Save, the menu and Quit, and the text can be edited as ever.
-**Debug → Debug keys in files** turns debug mode on and off without
+**Window → Debug keys in files** turns debug mode on and off without
 *--debug*.
 
 In debug mode the editor asks before it ends, F10 being easy to press by a

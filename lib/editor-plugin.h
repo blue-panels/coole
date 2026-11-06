@@ -29,6 +29,9 @@
 /* the Project menu, after Command: the project, its build and its debug configurations; the
    entries of each plugin together, the plugins in their order */
 #define MC_EP_MENU_PROJECT "Project"
+/* the Window menu: entries after the list of the windows, before Layout; what is about the
+   windows of a plugin and is no window (a window goes there with window_kind()) */
+#define MC_EP_MENU_WINDOW "Window"
 /* the Plugins menu: entries after the list of the plugins (a window goes to the Window menu with
    window_kind()) */
 #define MC_EP_MENU_PLUGINS "Plugins"

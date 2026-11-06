@@ -421,15 +421,21 @@ create_window_menu (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The menu Window: the windows of the editor, then those of the plugins */
+/* The menu Window: the windows of the editor, those of the plugins, then the entries of the
+   plugins */
 static GList *
 edit_window_menu_remake (void *data)
 {
     Widget *menubar = WIDGET (data);
-    GList *entries = append_runtime_menu_entries (create_window_menu (), "Window");
+    GList *entries = create_window_menu ();
+    GList *plugin_entries;
 
     if (menubar->owner != NULL)
         entries = g_list_concat (entries, edit_window_kinds_menu (DIALOG (menubar->owner)));
+    plugin_entries = edit_menu_trim_separators (create_plugin_menu_entries (MC_EP_MENU_WINDOW));
+    if (plugin_entries != NULL)
+        entries = g_list_concat (g_list_append (entries, menu_separator_new ()), plugin_entries);
+    entries = append_runtime_menu_entries (entries, MC_EP_MENU_WINDOW);
     entries = g_list_append (entries, menu_separator_new ());
     entries = g_list_append (entries, menu_entry_new (_ ("La&yout..."), CK_WindowLayout));
     return entries;
