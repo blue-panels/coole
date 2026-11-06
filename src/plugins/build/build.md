@@ -68,7 +68,7 @@ The debug configurations stay as they are, until they are made anew.
 These are the default keys; they can be changed in **Options → Key
 bindings → Editor → Build**, or in the *[build]* section of the keymap.
 
-**Alt-Shift-B**
+**Ctrl-F9, Alt-Shift-B**
 : Build the project: the modified files of it are saved first, and the
 output comes in the window **Build** at the bottom of the screen;
 **Project → Build output** and **Window → Build output** show it again.

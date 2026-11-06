@@ -133,7 +133,7 @@ static mc_ep_window_state_t build_output_state (void *data);
 /*** file scope variables ************************************************************************/
 
 static const mc_ep_command_t build_commands[BUILD_CMD_COUNT + 1] = {
-    { "BuildRun", N_ ("Build the project"), "alt-shift-b" },
+    { "BuildRun", N_ ("Build the project"), "ctrl-f9; alt-shift-b" },
     { "BuildNextError", N_ ("Go to the next error of the build"), "alt-shift-j" },
     { "BuildPrevError", N_ ("Go to the previous error of the build"), "alt-shift-k" },
     { "BuildShowError", N_ ("Go to the error of the line of the list of the build"), "enter" },
@@ -1620,7 +1620,7 @@ build_act_output (void *data, void *edit)
 
     (void) edit;
     if (build->output->len == 0)
-        g_string_assign (build->output, _ ("No build yet: Alt-Shift-B builds the project.\n"));
+        g_string_assign (build->output, _ ("No build yet: Ctrl-F9 builds the project.\n"));
     build->quiet = FALSE;
     build_output_show (build);
     return MC_EPR_OK;
