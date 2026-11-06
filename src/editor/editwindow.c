@@ -1118,6 +1118,9 @@ edit_window_destroy (WEditWindow *win)
 
     if (top != NULL)
         widget_select (top);
+    // what the window covered, and the windows of the docks that took its room, drawn again
+    if (g != NULL)
+        widget_draw (WIDGET (g));
 }
 
 /* --------------------------------------------------------------------------------------------- */
