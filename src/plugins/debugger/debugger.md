@@ -306,7 +306,7 @@ registers, Python say, has no such title.
 
 **The instructions**
 
-**Debug → Disassembly** opens a window under the source, a tab beside the
+**Window → Disassembly** opens a window under the source, a tab beside the
 console, with the instructions of the function of the frame: each source line
 before its instructions, when the program has its source, and *>* on the
 instruction the program is at. A stop in code with no source opens it by

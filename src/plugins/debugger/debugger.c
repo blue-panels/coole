@@ -1584,15 +1584,12 @@ static const mc_ep_action_t debug_actions[] = {
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
-    // what one does, first
+    // the run of the program
     { DEBUG_MENU, N_ ("&Start or continue"), DEBUG_ACT_START, NULL },
-    { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
-    { DEBUG_MENU, N_ ("Breakpoint condition..."), DEBUG_ACT_CONDITION, NULL },
-    { DEBUG_MENU, N_ ("Breakpoint on fun&ction..."), DEBUG_ACT_FUNCTION_BREAKPOINT, NULL },
-    { DEBUG_MENU, N_ ("Exceptions..."), DEBUG_ACT_EXCEPTIONS, NULL },
-    { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
-    { DEBUG_MENU, N_ ("Debug ke&ys in files"), DEBUG_ACT_MODE, NULL },
+    { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
+    { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
+    // its steps
     { DEBUG_MENU, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
     { DEBUG_MENU, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
     { DEBUG_MENU, N_ ("Step o&ut"), DEBUG_ACT_FINISH, NULL },
@@ -1601,17 +1598,26 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("Run to cursor"), DEBUG_ACT_RUN_TO_CURSOR, NULL },
     { DEBUG_MENU, N_ ("Run t&o function..."), DEBUG_ACT_RUN_TO_FUNCTION, NULL },
     { DEBUG_MENU, N_ ("Show the stop line"), DEBUG_ACT_SHOW_STOP, NULL },
-    { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
-    { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
-    { DEBUG_MENU, N_ ("Co&nsole"), DEBUG_ACT_OUTPUT, NULL },
-    { DEBUG_MENU, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
-    { DEBUG_MENU, N_ ("Disassembly"), DEBUG_ACT_DISASSEMBLY, NULL },
+    // where it stops
+    { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
+    { DEBUG_MENU, N_ ("Breakpoint condition..."), DEBUG_ACT_CONDITION, NULL },
+    { DEBUG_MENU, N_ ("Breakpoint on fun&ction..."), DEBUG_ACT_FUNCTION_BREAKPOINT, NULL },
+    { DEBUG_MENU, N_ ("Exceptions..."), DEBUG_ACT_EXCEPTIONS, NULL },
+    { DEBUG_MENU, NULL, 0, NULL },
+    // what it has, stopped
     { DEBUG_MENU, N_ ("Evaluate e&xpression..."), DEBUG_ACT_EVALUATE, NULL },
     { DEBUG_MENU, N_ ("&Add watch..."), DEBUG_ACT_ADD_WATCH, NULL },
     { DEBUG_MENU, N_ ("&Remove watch..."), DEBUG_ACT_REMOVE_WATCH, NULL },
+    { DEBUG_MENU, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
+    { DEBUG_MENU, NULL, 0, NULL },
+    // what is sent to it and to GDB
     { DEBUG_MENU, N_ ("Send &line..."), DEBUG_ACT_INPUT, NULL },
     { DEBUG_MENU, N_ ("GDB co&mmand..."), DEBUG_ACT_GDB_COMMAND, NULL },
+    { DEBUG_MENU, NULL, 0, NULL },
+    // the panel, and the keys of the files; the console and the disassembly are in Window
+    { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
+    { DEBUG_MENU, N_ ("Debug ke&ys in files"), DEBUG_ACT_MODE, NULL },
     // what one sets once, with the project
     { MC_EP_MENU_PROJECT, NULL, 0, NULL },
     { MC_EP_MENU_PROJECT, N_ ("&Debug configurations..."), DEBUG_ACT_CONFIGURATIONS, NULL },
