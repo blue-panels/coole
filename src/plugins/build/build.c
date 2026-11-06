@@ -46,7 +46,7 @@
 #include "lib/tty/tty.h"
 #include "lib/plugin-service.h"
 
-#include "src/keymap.h"            // keymap_section_map ()
+#include "src/keymap.h"            // keymap_menu_shortcut ()
 #include "src/editor/edit-impl.h"  // edit_widget_is_editor ()
 
 #include "build-core.h"
@@ -1722,22 +1722,27 @@ static const mc_ep_action_t build_actions[] = {
     { "Output", build_act_output },       { "Language defaults", build_act_defaults },
 };
 
-/* The key of a menu entry, the first the keymap has for its command: the first actions are the
-   commands, in their order */
+/* The key of a menu entry, that of the command of its action */
 static char *
 build_menu_shortcut (int action_index)
 {
-    const global_keymap_t *map = keymap_section_map (BUILD_KEYMAP_SECTION);
-    long command;
-    size_t i;
+    int cmd;
 
-    if (map == NULL || action_index < 0 || action_index > BUILD_ACT_PREV)
+    switch (action_index)
+    {
+    case BUILD_ACT_RUN:
+        cmd = BUILD_CMD_RUN;
+        break;
+    case BUILD_ACT_NEXT:
+        cmd = BUILD_CMD_NEXT;
+        break;
+    case BUILD_ACT_PREV:
+        cmd = BUILD_CMD_PREV;
+        break;
+    default:
         return NULL;
-    command = keybind_lookup_action (build_commands[action_index].name);
-    for (i = 0; map[i].key != 0; i++)
-        if (map[i].command == command && map[i].caption[0] != '\0')
-            return g_strdup (map[i].caption);
-    return NULL;
+    }
+    return keymap_menu_shortcut (BUILD_KEYMAP_SECTION, build_commands[cmd].name);
 }
 
 static const mc_ep_cmd_menu_entry_t build_menu[] = {

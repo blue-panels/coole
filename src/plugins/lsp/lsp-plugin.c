@@ -4343,21 +4343,13 @@ static const mc_ep_cmd_menu_entry_t lsp_menu[] = {
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The key of a menu entry, the first the keymap has for its command */
+/* The key of a menu entry: its action is the command of its index */
 static char *
 lsp_menu_shortcut (int action_index)
 {
-    const global_keymap_t *map = keymap_section_map (LSP_KEYMAP_SECTION);
-    long command;
-    size_t i;
-
-    if (map == NULL || action_index < 0 || action_index >= LSP_CMD_COUNT)
+    if (action_index < 0 || action_index >= LSP_CMD_COUNT)
         return NULL;
-    command = keybind_lookup_action (lsp_commands[action_index].name);
-    for (i = 0; map[i].key != 0; i++)
-        if (map[i].command == command && map[i].caption[0] != '\0')
-            return g_strdup (map[i].caption);
-    return NULL;
+    return keymap_menu_shortcut (LSP_KEYMAP_SECTION, lsp_commands[action_index].name);
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -1641,36 +1641,13 @@ debug_menu_shortcut (int action_index)
         { DEBUG_ACT_SHOW_STOP, DEBUG_CMD_SHOW_STOP },
         { DEBUG_ACT_CONDITION, DEBUG_CMD_CONDITION },
     };
-    const global_keymap_t *map = keymap_section_map (DEBUG_KEYMAP_SECTION);
-    const char *first = NULL;
-    const char *found = NULL;
-    long command;
-    size_t i, k;
+    size_t k;
 
     for (k = 0; k < G_N_ELEMENTS (keys) && keys[k].action != action_index; k++)
         ;
-    if (k == G_N_ELEMENTS (keys) || map == NULL)
+    if (k == G_N_ELEMENTS (keys))
         return NULL;
-    command = keybind_lookup_action (debug_commands[keys[k].cmd].name);
-    for (i = 0; map[i].key != 0; i++)
-        if (map[i].command == command && map[i].caption[0] != '\0')
-        {
-            if (found == NULL
-                && keybind_lookup_keymap_command (editor_map, map[i].key) == CK_IgnoreKey)
-                found = map[i].caption;
-            if (first == NULL)
-                first = map[i].caption;
-        }
-    if (found == NULL)
-        found = first;
-    if (found == NULL)
-        return NULL;
-    // "Alt-G" of the keymap is Alt with Shift and g, F18 is Shift-F8: said so
-    if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
-        return g_strdup_printf ("Alt-Shift-%c", found[4]);
-    if ((found[0] == 'F' || found[0] == 'f') && atoi (found + 1) > 10 && atoi (found + 1) <= 20)
-        return g_strdup_printf ("Shift-F%d", atoi (found + 1) - 10);
-    return g_strdup (found);
+    return keymap_menu_shortcut (DEBUG_KEYMAP_SECTION, debug_commands[keys[k].cmd].name);
 }
 
 static const mc_editor_plugin_t debug_plugin = {
