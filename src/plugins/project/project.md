@@ -13,6 +13,9 @@ directory with a *.coole* or a *.git* in it, else the outermost one with a
 build file (*meson.build*, *CMakeLists.txt*, *Makefile* and the like) up to
 the home directory, else the directory of the file itself. The first file
 opened gives the project; **Project → Open project...** chooses another.
+**Project → Close project** leaves the project: the files opened then make
+none, till a project is opened again. The debugger works on the project
+chosen here, and leaves it when it is closed.
 
 The files of the project are what git knows and does not ignore, in a
 repository; else everything under the project but hidden directories and
@@ -91,4 +94,6 @@ after a change; without ctags there is none.
 
 The plugin offers the service *project*: *root* gives the project of a file
 (argument *file*) or the project there is, *files* its files, *recent* the
-recent ones; the signal *changed* says the project is another one.
+recent ones, *open* (argument *root*) chooses the project of a directory, as
+**Open project** does; the signal *changed* says the project is another one
+(*root*, *chosen*), an empty *root* that it was closed.

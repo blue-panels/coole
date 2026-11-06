@@ -78,7 +78,8 @@ enum
     PROJECT_ACT_RECENT,
     PROJECT_ACT_TREE,
     PROJECT_ACT_ALTERNATE,
-    PROJECT_ACT_OPEN_PROJECT
+    PROJECT_ACT_OPEN_PROJECT,
+    PROJECT_ACT_CLOSE_PROJECT
 };
 
 typedef struct
@@ -86,6 +87,7 @@ typedef struct
     mc_editor_host_t *host;
     char *root;            // NULL till a file is opened
     gboolean root_chosen;  // by the user: the files opened do not change it
+    gboolean closed;       // by the user: no project till one is opened
     GPtrArray *files;      // relative to the root, NULL till listed
     gint64 files_time;     // when they were listed
     GPtrArray *recent;     // absolute names, the latest first
@@ -137,6 +139,8 @@ typedef struct
 } project_match_t;
 
 /*** forward declarations (file scope functions) *************************************************/
+
+static void project_tree_close (project_t *project);
 
 static void project_tree_rebuild (project_t *project, gboolean keep);
 static void project_tree_reveal (project_t *project, const char *file);
@@ -325,6 +329,7 @@ project_set_root (project_t *project, const char *root, gboolean chosen)
     g_free (project->root);
     project->root = g_strdup (root);
     project->root_chosen = chosen;
+    project->closed = FALSE;
     project_files_drop (project);
     project_recent_load (project);
     if (project->tree != NULL)
@@ -340,6 +345,27 @@ project_set_root (project_t *project, const char *root, gboolean chosen)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* No project, till one is opened: the files opened do not make one.  The others are told, the
+   root empty */
+static void
+project_unset (project_t *project)
+{
+    if (project->root == NULL)
+        return;
+    project_tree_close (project);
+    g_free (project->root);
+    project->root = NULL;
+    project->root_chosen = FALSE;
+    project->closed = TRUE;
+    project_files_drop (project);
+    g_ptr_array_set_size (project->recent, 0);
+    if (project->service)
+        project->host->service_emit (project->host, PROJECT_SERVICE, "changed",
+                                     g_variant_new_parsed ("{'root': <''>, 'chosen': <true>}"));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* A file window came to the front: it is the latest of the project, and it is the project the
    first time */
 static void
@@ -350,9 +376,10 @@ project_file_seen (project_t *project, void *edit)
 
     if (file == NULL)
         return;
-    if (project->root == NULL
-        || (!project->root_chosen && project_relative (project, file) == NULL
-            && project->recent->len == 0))
+    if (!project->closed
+        && (project->root == NULL
+            || (!project->root_chosen && project_relative (project, file) == NULL
+                && project->recent->len == 0)))
     {
         char *root = project_find_root (file);
 
@@ -1503,6 +1530,33 @@ project_act_alternate (void *data, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The others may keep the project as it is: the debugger, while a program is debugged, asks
+   the user before the project changes to @root (NULL: closed).  Asked before, so that a Cancel
+   leaves all the plugins on the one project; TRUE without the debugger */
+static gboolean
+project_may_change (project_t *project, const char *root)
+{
+    GVariantDict args;
+    GVariant *reply;
+    gboolean ok = TRUE;
+
+    if (project->host->service_call == NULL)
+        return TRUE;
+    g_variant_dict_init (&args, NULL);
+    if (root != NULL)
+        g_variant_dict_insert (&args, "root", "s", root);
+    reply = project->host->service_call (project->host, "debugger", "leave_project",
+                                         g_variant_dict_end (&args), NULL);
+    if (reply != NULL)
+    {
+        (void) g_variant_lookup (reply, "ok", "b", &ok);
+        g_variant_unref (reply);
+    }
+    return ok;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static mc_ep_result_t
 project_act_open_project (void *data, void *edit)
 {
@@ -1528,8 +1582,30 @@ project_act_open_project (void *data, void *edit)
         g_free (root);
         return MC_EPR_FAILED;
     }
+    if (!project_may_change (project, root))
+    {
+        g_free (root);
+        return MC_EPR_FAILED;
+    }
     project_set_root (project, root, TRUE);
     g_free (root);
+    return MC_EPR_OK;
+}
+
+static mc_ep_result_t
+project_act_close_project (void *data, void *edit)
+{
+    project_t *project = (project_t *) data;
+
+    (void) edit;
+    if (project->root == NULL)
+    {
+        project->host->message (project->host, D_NORMAL, _ ("Project"), _ ("No project is open."));
+        return MC_EPR_FAILED;
+    }
+    if (!project_may_change (project, NULL))
+        return MC_EPR_FAILED;
+    project_unset (project);
     return MC_EPR_OK;
 }
 
@@ -1565,6 +1641,29 @@ project_call (void *data, const char *method, GVariant *args, GError **error)
             &reply, "files",
             g_variant_new_strv (files != NULL ? (const gchar *const *) files->pdata : NULL,
                                 files != NULL ? (gssize) files->len : 0));
+    }
+    else if (strcmp (method, "open") == 0)
+    {
+        // the project of a directory, as Open project chooses it
+        const char *root = NULL;
+
+        if (args == NULL || !g_variant_lookup (args, "root", "&s", &root)
+            || !g_file_test (root, G_FILE_TEST_IS_DIR))
+        {
+            g_variant_dict_clear (&reply);
+            g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_ARGS, "project: no directory");
+            return NULL;
+        }
+        {
+            // "/src/app/" or a relative name: the root as Open project has it
+            char *canonical = g_canonicalize_filename (root, NULL);
+            const gboolean ok = project_may_change (project, canonical);
+
+            if (ok)
+                project_set_root (project, canonical, TRUE);
+            g_free (canonical);
+            g_variant_dict_insert (&reply, "opened", "b", ok);
+        }
     }
     else if (strcmp (method, "recent") == 0)
         g_variant_dict_insert_value (
@@ -1687,10 +1786,12 @@ static const mc_ep_action_t project_actions[] = {
     { "Tree", project_act_tree },
     { "Header or source", project_act_alternate },
     { "Open project", project_act_open_project },
+    { "Close project", project_act_close_project },
 };
 
 static const mc_ep_cmd_menu_entry_t project_menu[] = {
     { MC_EP_MENU_PROJECT, N_ ("&Open project..."), PROJECT_ACT_OPEN_PROJECT, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Close pro&ject"), PROJECT_ACT_CLOSE_PROJECT, NULL },
     { MC_EP_MENU_PROJECT, N_ ("Open &file of project..."), PROJECT_ACT_OPEN_FILE, NULL },
     { MC_EP_MENU_PROJECT, N_ ("&Recent files of project..."), PROJECT_ACT_RECENT, NULL },
     { MC_EP_MENU_PROJECT, N_ ("Project &tree"), PROJECT_ACT_TREE, NULL },

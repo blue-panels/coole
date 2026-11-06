@@ -1365,7 +1365,8 @@ build_project_changed (const char *name, const char *signal, GVariant *args, voi
         return;
     (void) g_variant_lookup (args, "root", "&s", &root);
     (void) g_variant_lookup (args, "chosen", "b", &chosen);
-    if (root != NULL && chosen)
+    // an empty root: the project closed, nothing to adopt
+    if (root != NULL && *root != '\0' && chosen)
         (void) build_project_adopt (build, root, FALSE);
 }
 

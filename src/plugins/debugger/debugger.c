@@ -103,7 +103,6 @@ static const mc_ep_marker_kind_t debug_mark_kinds[DEBUG_MARK_COUNT] = {
 
 enum
 {
-    DEBUG_ACT_OPEN_PROJECT,
     DEBUG_ACT_PROJECT_STATUS,
     DEBUG_ACT_CONFIGURE,
     DEBUG_ACT_NEW_CONFIGURATION,
@@ -1164,6 +1163,20 @@ debug_service_call (void *data, const char *method, GVariant *args, GError **err
     GVariantDict reply;
     int key = 0;
 
+    /* the project plugin before it changes the project: the session stopped, asked first; the
+       answer before anything has changed, so that Cancel keeps both where they are */
+    if (strcmp (method, "leave_project") == 0)
+    {
+        const char *root = NULL;
+
+        if (args != NULL)
+            (void) g_variant_lookup (args, "root", "&s", &root);
+        g_variant_dict_init (&reply, NULL);
+        g_variant_dict_insert (&reply, "ok", "b",
+                               g_strcmp0 (root, debug->project_dir) == 0
+                                   || debug_project_may_leave (debug, root != NULL));
+        return g_variant_dict_end (&reply);
+    }
     if (strcmp (method, "program_key") != 0)
     {
         g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD, "debugger: no method %s",
@@ -1400,6 +1413,7 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
         for (i = 0; i < (int) G_N_ELEMENTS (debug_window_kinds); i++)
             host->window_kind (host, &debug_window_kinds[i], debug);
     debug->build_signal = host->service_connect (host, "build", debug_build_finished, debug);
+    debug->project_signal = host->service_connect (host, "project", debug_project_changed, debug);
     debug->service = host->service_register (host, DEBUG_SERVICE, debug_service_call, debug, NULL);
     for (i = 0; i < DEBUG_CMD_COUNT; i++)
         debug->commands[i] = host->command_id (host, debug_commands[i].name);
@@ -1444,6 +1458,8 @@ debug_close (void *data)
     g_free (debug->current_file);
     if (debug->build_signal != 0)
         debug->host->service_disconnect (debug->host, debug->build_signal);
+    if (debug->project_signal != 0)
+        debug->host->service_disconnect (debug->host, debug->project_signal);
     if (debug->service)
         debug->host->service_unregister (debug->host, DEBUG_SERVICE);
     for (int i = 0; i < DEBUG_MARK_COUNT; i++)
@@ -1501,8 +1517,8 @@ debug_file_open (void *data, void *edit)
 
     if (file == NULL)
         return MC_EPR_NOT_SUPPORTED;
-    // the first file of a project: its breakpoints show at once
-    if (debug->project_dir == NULL)
+    // the first file of a project: its breakpoints show at once; none after Close project
+    if (debug->project_dir == NULL && !debug->project_closed)
     {
         char *root = debug_project_of (debug, edit);
 
@@ -1539,7 +1555,6 @@ debug_act_start (void *data, void *edit)
 }
 
 static const mc_ep_action_t debug_actions[] = {
-    { "Open project", debug_open_project },
     { "Project status", debug_project_status },
     { "Configure", debug_configure },
     { "New configuration", debug_new_configuration },

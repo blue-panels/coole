@@ -146,6 +146,8 @@ typedef struct
     debug_backend_t *backend;
     debug_state_t state;
     char *project_dir;
+    gboolean
+        project_closed;  // by Close project: the project of a file is not taken till one is opened
     GPtrArray *launches;
     guint active_launch;
     // the configuration the program debugged was started with, NULL when none runs
@@ -205,6 +207,7 @@ typedef struct
     gboolean start_after_build;
     gboolean built_for_start;
     guint build_signal;
+    guint project_signal;  // the project chosen or closed by the project plugin
     // debug mode: the file windows take the keys of the debugger, F3 to F8, whether the program
     // runs or not (coole --debug, or Debug > Debug keys in files)
     gboolean debug_mode;
@@ -283,8 +286,10 @@ void debug_launch_free (gpointer data);
 debug_launch_t *debug_active_launch (const debugger_t *debug);
 void debug_config_save (debugger_t *debug);
 char *debug_project_of (debugger_t *debug, void *edit);
+gboolean debug_project_may_leave (debugger_t *debug, gboolean another);
 mc_ep_result_t debug_project_switch (debugger_t *debug, char *project);
 mc_ep_result_t debug_open_project (void *data, void *edit);
+void debug_project_changed (const char *name, const char *signal, GVariant *args, void *data);
 gboolean debug_require_project (debugger_t *debug, void *edit);
 mc_ep_result_t debug_project_status (void *data, void *edit);
 gboolean debug_parse_environment (debugger_t *debug, const char *value, char ***entries);

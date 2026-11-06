@@ -513,6 +513,32 @@ debug_config_load (debugger_t *debug)
     g_free (shared_path);
 }
 
+/* The project may change, to another one (@another) or to none: TRUE when no program is debugged,
+   or the user stops it for that, which is done; FALSE when the user keeps the session */
+gboolean
+debug_project_may_leave (debugger_t *debug, gboolean another)
+{
+    if (debug->state == DEBUG_STARTING || debug->state == DEBUG_RUNNING
+        || debug->state == DEBUG_STOPPED)
+    {
+        if (query_dialog (_ ("Debug"),
+                          another ? _ ("Stop the session and switch project?")
+                                  : _ ("Stop the session and close the project?"),
+                          D_NORMAL, 2, another ? _ ("&Switch") : _ ("C&lose"), _ ("&Cancel"))
+            != 0)
+            return FALSE;
+    }
+    if (debug->backend != NULL)
+        debug->backend->ops->stop (debug->backend);
+    debug_requests_clear (debug);
+    debug_pty_close (debug);
+    debug_clear_current (debug);
+    // the values after the lines are of the program stopped
+    debug_notes_clear (debug);
+    debug->state = DEBUG_OFF;
+    return TRUE;
+}
+
 /* The project of a file, as the project plugin sees it; NULL without that plugin */
 char *
 debug_project_of (debugger_t *debug, void *edit)
@@ -546,11 +572,12 @@ debug_project_of (debugger_t *debug, void *edit)
     return root;
 }
 
-/* Work on the project of that directory: its configurations, breakpoints and watches */
+/* Work on the project of that directory: its configurations, breakpoints and watches; NULL: on
+   none, the project closed */
 mc_ep_result_t
 debug_project_switch (debugger_t *debug, char *project)
 {
-    if (!g_file_test (project, G_FILE_TEST_IS_DIR))
+    if (project != NULL && !g_file_test (project, G_FILE_TEST_IS_DIR))
     {
         debug_error (debug, _ ("The project directory does not exist."));
         g_free (project);
@@ -561,23 +588,11 @@ debug_project_switch (debugger_t *debug, char *project)
         g_free (project);
         return MC_EPR_OK;
     }
-    if (debug->state == DEBUG_STARTING || debug->state == DEBUG_RUNNING
-        || debug->state == DEBUG_STOPPED)
+    if (!debug_project_may_leave (debug, project != NULL))
     {
-        if (query_dialog (_ ("Debug"), _ ("Stop the session and switch project?"), D_NORMAL, 2,
-                          _ ("&Switch"), _ ("&Cancel"))
-            != 0)
-        {
-            g_free (project);
-            return MC_EPR_FAILED;
-        }
+        g_free (project);
+        return MC_EPR_FAILED;
     }
-    if (debug->backend != NULL)
-        debug->backend->ops->stop (debug->backend);
-    debug_requests_clear (debug);
-    debug_pty_close (debug);
-    debug_clear_current (debug);
-    debug->state = DEBUG_OFF;
     // the build of the project before is no start of this one
     debug->start_after_build = FALSE;
     debug->breakpoints_installed = FALSE;
@@ -590,6 +605,7 @@ debug_project_switch (debugger_t *debug, char *project)
     debug->active_launch = 0;
     g_free (debug->project_dir);
     debug->project_dir = project;
+    debug->project_closed = FALSE;
     debug->venv_told = FALSE;
     g_ptr_array_set_size (debug->frames, 0);
     debug_config_load (debug);
@@ -611,7 +627,7 @@ debug_open_project (void *data, void *edit)
 
     if (suggested == NULL)
         suggested = file != NULL ? g_path_get_dirname (file) : g_get_current_dir ();
-    chosen = input_dialog (_ ("Open debug project"), _ ("Project directory:"), NULL, suggested,
+    chosen = input_dialog (_ ("Open project"), _ ("Project directory:"), "project-root", suggested,
                            INPUT_COMPLETE_FILENAMES);
     g_free (suggested);
     g_free (file);
@@ -619,10 +635,56 @@ debug_open_project (void *data, void *edit)
         return MC_EPR_FAILED;
     {
         char *project = g_canonicalize_filename (chosen, NULL);
+        GVariantDict args;
+        GVariant *reply = NULL;
 
         g_free (chosen);
+        // the project of the project plugin, which tells the debugger with the others
+        if (g_file_test (project, G_FILE_TEST_IS_DIR) && debug->host->service_call != NULL)
+        {
+            g_variant_dict_init (&args, NULL);
+            g_variant_dict_insert (&args, "root", "s", project);
+            reply = debug->host->service_call (debug->host, "project", "open",
+                                               g_variant_dict_end (&args), NULL);
+        }
+        // the debugger has followed it, or the user kept the session: not asked again
+        if (reply != NULL)
+        {
+            const gboolean switched = g_strcmp0 (debug->project_dir, project) == 0;
+
+            g_variant_unref (reply);
+            g_free (project);
+            return switched ? MC_EPR_OK : MC_EPR_FAILED;
+        }
+        // without the project plugin
         return debug_project_switch (debug, project);
     }
+}
+
+/* The project plugin chose a project, or closed it: the debugger works on that one.  A project
+   it found for a file opened is not followed: the debugger takes it when it starts */
+void
+debug_project_changed (const char *name, const char *signal, GVariant *args, void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+    const char *root = NULL;
+    gboolean chosen = FALSE;
+
+    (void) name;
+    if (strcmp (signal, "changed") != 0 || args == NULL)
+        return;
+    (void) g_variant_lookup (args, "root", "&s", &root);
+    (void) g_variant_lookup (args, "chosen", "b", &chosen);
+    if (root == NULL || !chosen)
+        return;
+    if (*root == '\0')
+    {
+        // closed: F5 asks for a project, it does not take the one of the file again
+        if (debug_project_switch (debug, NULL) == MC_EPR_OK)
+            debug->project_closed = TRUE;
+        return;
+    }
+    (void) debug_project_switch (debug, g_strdup (root));
 }
 
 /* The debugger works on a project: the one the project plugin knows, else the one the user
@@ -634,8 +696,11 @@ debug_require_project (debugger_t *debug, void *edit)
 
     if (debug->project_dir != NULL)
         return TRUE;
-    root =
-        debug_project_of (debug, edit != NULL ? edit : debug->host->window_top_file (debug->host));
+    // Close project: the user names the next one
+    root = debug->project_closed
+        ? NULL
+        : debug_project_of (debug,
+                            edit != NULL ? edit : debug->host->window_top_file (debug->host));
     if (root != NULL)
         return debug_project_switch (debug, root) == MC_EPR_OK;
     return debug_open_project (debug, edit) == MC_EPR_OK;

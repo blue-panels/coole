@@ -13,8 +13,9 @@ Put a breakpoint on a line with **Ctrl-F8** and run with **Shift-F9** (or
 **Debug → Toggle breakpoint** and **Debug → Start or continue**). The first
 time, the debugger makes a configuration of its own:
 
-1. The project is the one the project plugin finds for the file: no
-directory has to be named. **Project → Open project...** names another.
+1. The project is the one chosen with **Project → Open project...**, else
+the one the project plugin finds for the file: no directory has to be named.
+Another project chosen there, or the project closed, the debugger follows.
 2. The program is the one the build has made, found by the build plugin
 among the programs of the project with debug information; of several, the
 newest come first in a list to choose from. The language of the project,
