@@ -40,6 +40,7 @@
 #include "lib/tty/tty.h"
 #include "lib/plugin-service.h"
 
+#include "src/keymap.h"  // keymap_menu_shortcut ()
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
 #include "src/editor/edittree.h"
@@ -1689,11 +1690,38 @@ static const mc_ep_action_t project_actions[] = {
 };
 
 static const mc_ep_cmd_menu_entry_t project_menu[] = {
-    { MC_EP_MENU_FILE, N_ ("Open file of pro&ject..."), PROJECT_ACT_OPEN_FILE, NULL },
-    { MC_EP_MENU_FILE, N_ ("Recent files of project..."), PROJECT_ACT_RECENT, NULL },
-    { MC_EP_MENU_FILE, N_ ("Open project..."), PROJECT_ACT_OPEN_PROJECT, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Open project..."), PROJECT_ACT_OPEN_PROJECT, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Open &file of project..."), PROJECT_ACT_OPEN_FILE, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Recent files of project..."), PROJECT_ACT_RECENT, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Project &tree"), PROJECT_ACT_TREE, NULL },
     { MC_EP_MENU_NAVIGATE, N_ ("Header or source"), PROJECT_ACT_ALTERNATE, NULL },
 };
+
+/* The key of a menu entry, that of the command of its action */
+static char *
+project_menu_shortcut (int action_index)
+{
+    int cmd;
+
+    switch (action_index)
+    {
+    case PROJECT_ACT_OPEN_FILE:
+        cmd = PROJECT_CMD_OPEN_FILE;
+        break;
+    case PROJECT_ACT_RECENT:
+        cmd = PROJECT_CMD_RECENT;
+        break;
+    case PROJECT_ACT_TREE:
+        cmd = PROJECT_CMD_TREE;
+        break;
+    case PROJECT_ACT_ALTERNATE:
+        cmd = PROJECT_CMD_ALTERNATE;
+        break;
+    default:
+        return NULL;
+    }
+    return keymap_menu_shortcut (PROJECT_KEYMAP_SECTION, project_commands[cmd].name);
+}
 
 static const mc_editor_plugin_t project_plugin = {
     .api_version = MC_EDITOR_PLUGIN_API_VERSION,
@@ -1710,6 +1738,7 @@ static const mc_editor_plugin_t project_plugin = {
     .action_count = G_N_ELEMENTS (project_actions),
     .cmd_menu_entries = project_menu,
     .cmd_menu_entry_count = G_N_ELEMENTS (project_menu),
+    .get_menu_shortcut = project_menu_shortcut,
 };
 
 /*** public functions ****************************************************************************/

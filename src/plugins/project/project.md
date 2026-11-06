@@ -12,7 +12,7 @@ The project of a file is found from the directory of the file up: the nearest
 directory with a *.coole* or a *.git* in it, else the outermost one with a
 build file (*meson.build*, *CMakeLists.txt*, *Makefile* and the like) up to
 the home directory, else the directory of the file itself. The first file
-opened gives the project; **File → Open project...** chooses another.
+opened gives the project; **Project → Open project...** chooses another.
 
 The files of the project are what git knows and does not ignore, in a
 repository; else everything under the project but hidden directories and
@@ -50,7 +50,7 @@ says so.
 
 **Alt-Shift-T**
 : Show the tree of the project, give it the focus, and hide it; it is
-**Window → Project tree** too.
+**Project → Project tree** and **Window → Project tree** too.
 
 **Alt-Shift-A**
 : Switch between a source and its header: *calc.c* and *calc.h*, next to it

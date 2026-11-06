@@ -1746,12 +1746,13 @@ build_menu_shortcut (int action_index)
 }
 
 static const mc_ep_cmd_menu_entry_t build_menu[] = {
-    { MC_EP_MENU_COMMAND, NULL, 0, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("B&uild project"), BUILD_ACT_RUN, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("Next build error"), BUILD_ACT_NEXT, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("Previous build error"), BUILD_ACT_PREV, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("Build command..."), BUILD_ACT_CONFIGURE, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("Language defaults of the project..."), BUILD_ACT_DEFAULTS, NULL },
+    { MC_EP_MENU_PROJECT, NULL, 0, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("B&uild project"), BUILD_ACT_RUN, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Build &command..."), BUILD_ACT_CONFIGURE, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Bu&ild output"), BUILD_ACT_OUTPUT, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Next build error"), BUILD_ACT_NEXT, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Previous build error"), BUILD_ACT_PREV, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Language defaults of the project..."), BUILD_ACT_DEFAULTS, NULL },
 };
 
 static const mc_editor_plugin_t build_plugin = {

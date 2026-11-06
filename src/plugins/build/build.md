@@ -53,13 +53,13 @@ A file opened alone, without a project, leaves no file in its directory. A
 *.coole/project.ini* that cannot be read is told of, with its line, and left
 as it is until it is put right.
 
-**Command → Build command...** gives a project a command of its own,
+**Project → Build command...** gives a project a command of its own,
 *command* in *.coole/project.ini*, which then goes before what was found.
 With nothing found the plugin asks for one the first time. A command given
 before there was this file, kept with the settings of the user, goes into
 it with the copy.
 
-**Command → Language defaults of the project...** makes *.coole/project.ini*
+**Project → Language defaults of the project...** makes *.coole/project.ini*
 the preset of the language again, without the command given to the project.
 The debug configurations stay as they are, until they are made anew.
 
@@ -71,7 +71,7 @@ bindings → Editor → Build**, or in the *[build]* section of the keymap.
 **Alt-Shift-B**
 : Build the project: the modified files of it are saved first, and the
 output comes in the window **Build** at the bottom of the screen;
-**Window → Build output** shows it again.
+**Project → Build output** and **Window → Build output** show it again.
 
 **Alt-Shift-J**
 : Go to the next error, or to the next warning when there is no error.

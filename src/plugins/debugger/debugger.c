@@ -1575,7 +1575,6 @@ static const mc_ep_action_t debug_actions[] = {
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
-    { MC_EP_MENU_FILE, N_ ("Open debug &project..."), DEBUG_ACT_OPEN_PROJECT, NULL },
     // what one does, first
     { DEBUG_MENU, N_ ("&Start or continue"), DEBUG_ACT_START, NULL },
     { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
@@ -1604,14 +1603,15 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("&Remove watch..."), DEBUG_ACT_REMOVE_WATCH, NULL },
     { DEBUG_MENU, N_ ("Send &line..."), DEBUG_ACT_INPUT, NULL },
     { DEBUG_MENU, N_ ("GDB co&mmand..."), DEBUG_ACT_GDB_COMMAND, NULL },
-    { DEBUG_MENU, NULL, 0, NULL },
-    // what one sets once
-    { DEBUG_MENU, N_ ("Ne&w configuration..."), DEBUG_ACT_NEW_CONFIGURATION, NULL },
-    { DEBUG_MENU, N_ ("Select con&figuration..."), DEBUG_ACT_SELECT_CONFIGURATION, NULL },
-    { DEBUG_MENU, N_ ("Confi&gure selected..."), DEBUG_ACT_CONFIGURE, NULL },
-    { DEBUG_MENU, N_ ("&Delete configuration..."), DEBUG_ACT_DELETE_CONFIGURATION, NULL },
-    { DEBUG_MENU, N_ ("Open proj&ect..."), DEBUG_ACT_OPEN_PROJECT, NULL },
-    { DEBUG_MENU, N_ ("Project status..."), DEBUG_ACT_PROJECT_STATUS, NULL },
+    // what one sets once, with the project
+    { MC_EP_MENU_PROJECT, NULL, 0, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Ne&w debug configuration..."), DEBUG_ACT_NEW_CONFIGURATION, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Select debug configuration..."), DEBUG_ACT_SELECT_CONFIGURATION,
+      NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Confi&gure debug configuration..."), DEBUG_ACT_CONFIGURE, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Delete debug configuration..."), DEBUG_ACT_DELETE_CONFIGURATION,
+      NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Project st&atus..."), DEBUG_ACT_PROJECT_STATUS, NULL },
     // the windows of the debugger, with those of the other plugins
 };
 

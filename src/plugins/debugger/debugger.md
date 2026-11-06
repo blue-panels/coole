@@ -14,7 +14,7 @@ Put a breakpoint on a line with **Ctrl-F8** and run with **Shift-F9** (or
 time, the debugger makes a configuration of its own:
 
 1. The project is the one the project plugin finds for the file: no
-directory has to be named. **Debug → Open project...** names another.
+directory has to be named. **Project → Open project...** names another.
 2. The program is the one the build has made, found by the build plugin
 among the programs of the project with debug information; of several, the
 newest come first in a list to choose from. The language of the project,
@@ -142,9 +142,10 @@ source; the frame that threw it is the one shown.
 
 **The configurations**
 
-A project may have several: **New configuration...** guesses another one,
-**Select configuration...** chooses the one **Start** runs, **Configure
-selected...** changes it. They are kept, when **Keep in the project** is
+A project may have several, in the menu **Project**: **New debug
+configuration...** guesses another one, **Select debug configuration...**
+chooses the one **Start** runs, **Configure debug configuration...** changes
+it. They are kept, when **Keep in the project** is
 checked, in *.coole/debug.ini* in the project, with the names relative to it,
 for everyone who works on it; else with the settings of the user. A project
 new to the debugger has it checked. The breakpoints
