@@ -1190,6 +1190,33 @@ debug_service_call (void *data, const char *method, GVariant *args, GError **err
     return g_variant_dict_end (&reply);
 }
 
+/* Whether the debugger takes @key of its command @cmd in a file window whose keymap is
+   @editor_keys, in the state it is in; the editor has it else.  The keys and the button bar
+   go by it */
+gboolean
+debug_takes_key (const debugger_t *debug, int cmd, int key, const global_keymap_t *editor_keys)
+{
+    // Help and Quit stay the editor's
+    if (cmd == DEBUG_CMD_NONE || cmd == DEBUG_CMD_HELP || cmd == DEBUG_CMD_CLOSE)
+        return FALSE;
+    // Stop, Ctrl-F2 and Shift-F5, is the editor's Save as and Insert file while nothing is debugged
+    if (cmd == DEBUG_CMD_STOP)
+        return debug_session_live (debug);
+    if (debug_stepping (debug))
+        return TRUE;
+    // debug mode: the commands of the debugger have their keys, the editor's F3 to F8 too
+    if (debug->debug_mode && cmd != DEBUG_CMD_LEAVE && cmd != DEBUG_CMD_EVALUATE
+        && cmd != DEBUG_CMD_STEP_INSTRUCTION && cmd != DEBUG_CMD_NEXT_INSTRUCTION)
+        return TRUE;
+    /* out of step mode, a key of the debugger the editor has nothing on is the debugger's:
+       Alt-F5, Ctrl-B, Ctrl-F8, Shift-F9; F5 stays Copy */
+    if (cmd == DEBUG_CMD_LEAVE || cmd == DEBUG_CMD_EVALUATE)
+        return FALSE;
+    return keybind_lookup_keymap_command (editor_keys, key) == CK_IgnoreKey;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static mc_ep_result_t
 debug_handle_key (void *data, int key, void *edit)
 {
@@ -1203,42 +1230,18 @@ debug_handle_key (void *data, int key, void *edit)
         return cmd == DEBUG_CMD_PANEL && debug_run_command (debug, cmd, NULL)
             ? MC_EPR_OK
             : MC_EPR_NOT_SUPPORTED;
-    // Stop, Ctrl-F2 and Shift-F5, is the editor's Save as and Insert file while nothing is debugged
-    if (cmd == DEBUG_CMD_STOP && !debug_session_live (debug))
-        return MC_EPR_NOT_SUPPORTED;
-    // debug mode: the commands of the debugger have their keys, the editor's F3 to F8 too
-    if (!debug_stepping (debug) && debug->debug_mode && cmd != DEBUG_CMD_NONE
-        && cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && cmd != DEBUG_CMD_LEAVE
-        && cmd != DEBUG_CMD_EVALUATE && cmd != DEBUG_CMD_STEP_INSTRUCTION
-        && cmd != DEBUG_CMD_NEXT_INSTRUCTION)
+    if (debug_takes_key (debug, cmd, key, WIDGET (edit)->keymap))
     {
         // a step with nothing running is no Search of the editor either
         if (!debug_run_command (debug, cmd, edit))
             tty_beep ();
         return MC_EPR_OK;
     }
-    /* out of step mode, a key of the debugger the editor has nothing on is the debugger's:
-       Alt-F5, Ctrl-B, Ctrl-F8, Shift-F9; F5 stays Copy, Ctrl-F2 Save as unless a program is
-       debugged */
     if (!debug_stepping (debug))
-    {
-        // the program debugged, Stop is the debugger's
-        if (cmd == DEBUG_CMD_STOP)
-            return debug_run_command (debug, cmd, edit) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
-        if (cmd == DEBUG_CMD_NONE || cmd == DEBUG_CMD_HELP || cmd == DEBUG_CMD_CLOSE
-            || cmd == DEBUG_CMD_LEAVE || cmd == DEBUG_CMD_EVALUATE
-            || keybind_lookup_keymap_command (WIDGET (edit)->keymap, key) != CK_IgnoreKey)
-            return MC_EPR_NOT_SUPPORTED;
-        return debug_run_command (debug, cmd, edit) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
-    }
-
-    // Help and Quit stay the editor's
-    if (cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && debug_run_command (debug, cmd, edit))
-        return MC_EPR_OK;
-
+        return MC_EPR_NOT_SUPPORTED;
+    // in step mode the keys that move and look are the editor's; one that would change the text
     if (debug_step_passes (keybind_lookup_keymap_command (WIDGET (edit)->keymap, key)))
         return MC_EPR_NOT_SUPPORTED;
-    // a key that would change the text
     tty_beep ();
     return MC_EPR_OK;
 }
@@ -1414,6 +1417,7 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
     debug->service = host->service_register (host, DEBUG_SERVICE, debug_service_call, debug, NULL);
     for (i = 0; i < DEBUG_CMD_COUNT; i++)
         debug->commands[i] = host->command_id (host, debug_commands[i].name);
+    debug_bar_labels (debug);
     for (i = 0; i < DEBUG_MARK_COUNT; i++)
     {
         debug->marks[i] =
@@ -1434,7 +1438,12 @@ static void
 debug_close (void *data)
 {
     debugger_t *debug = (debugger_t *) data;
+    int i;
 
+    // the keys are gone with the plugin: the bar shows the editor's there again
+    if (debug->host->command_label != NULL)
+        for (i = 0; i < DEBUG_CMD_COUNT; i++)
+            debug->host->command_label (debug->host, debug_commands[i].name, NULL);
     debug_panel_ended (debug);
     if (debug->disasm_window != NULL)
         debug->disasm_window->debug = NULL;
@@ -1459,7 +1468,7 @@ debug_close (void *data)
         debug->host->service_disconnect (debug->host, debug->project_signal);
     if (debug->service)
         debug->host->service_unregister (debug->host, DEBUG_SERVICE);
-    for (int i = 0; i < DEBUG_MARK_COUNT; i++)
+    for (i = 0; i < DEBUG_MARK_COUNT; i++)
         g_free (debug->glyphs[i]);
     g_free (debug->current_func);
     if (debug->session_filters != NULL)

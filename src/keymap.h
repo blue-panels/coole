@@ -34,6 +34,7 @@ extern GArray *mcterm_keymap;
 extern const global_keymap_t *help_map;
 extern const global_keymap_t *editor_map;
 extern const global_keymap_t *editor_x_map;
+extern const global_keymap_t *plugin_bar_map;
 extern const global_keymap_t *mcterm_map;
 
 /*** declarations of public functions ************************************************************/
@@ -45,6 +46,7 @@ void keymap_refresh_widgets (void);
 void keymap_register_section (const char *section, const char *title,
                               const keymap_command_t *commands);
 const global_keymap_t *keymap_section_map (const char *section);
+void keymap_command_label (const char *action, const char *label);
 /* The key a menu shows for a command of a plugin, newly allocated; NULL when it has none */
 char *keymap_menu_shortcut (const char *section, const char *action);
 gboolean keymap_plugin_section (guint index, const char **section, const char **title);

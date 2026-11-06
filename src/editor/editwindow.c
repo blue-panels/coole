@@ -111,6 +111,11 @@ edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
         return MSG_HANDLED;
     }
 
+    /* A modifier held, the bar shows the keys of a file window: a window that is no file has
+       none of them, its class may give its own */
+    if (msg == MSG_FOCUS && w->owner != NULL && !edit_widget_is_editor (w))
+        buttonbar_set_modifier_labels (buttonbar_find (DIALOG (w->owner)), NULL, NULL, NULL, NULL);
+
     ret = win->klass->callback (w, sender, msg, parm, data);
 
     /* Drawn alone, it has drawn over the windows over it: they are drawn again.  A file window

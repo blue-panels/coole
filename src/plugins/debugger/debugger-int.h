@@ -269,6 +269,8 @@ typedef struct
 int debug_command (const debugger_t *debug, long command);
 int debug_command_of_key (const debugger_t *debug, int key);
 gboolean debug_stepping (const debugger_t *debug);
+gboolean debug_takes_key (const debugger_t *debug, int cmd, int key,
+                          const global_keymap_t *editor_keys);
 gboolean debug_step_passes (long command);
 gboolean debug_run_command (debugger_t *debug, int cmd, void *edit);
 void debug_error (debugger_t *debug, const char *message_text);
@@ -305,6 +307,7 @@ void debug_window_buttonbar (const debugger_t *debug, Widget *w);
 void debug_editor_buttonbar (debugger_t *debug, Widget *edit);
 gboolean debug_session_close_window (WEditWindow *win);
 void debug_session_refresh (debugger_t *debug);
+void debug_bar_labels (const debugger_t *debug);
 /* The members the panel has read are of before: the program has stopped again, another frame is
    chosen */
 void debug_panel_forget_members (debugger_t *debug);

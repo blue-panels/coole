@@ -861,6 +861,15 @@ editor_host_commands_register_impl (mc_editor_host_t *host, const char *section,
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+editor_host_command_label_impl (mc_editor_host_t *host, const char *name, const char *label)
+{
+    (void) host;
+    keymap_command_label (name, label);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static long
 editor_host_command_id_impl (mc_editor_host_t *host, const char *name)
 {
@@ -1501,6 +1510,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->navigate = editor_host_navigate_impl;
     ctx->host->go_to = editor_host_go_to_impl;
     ctx->host->show_location_at = editor_host_show_location_at_impl;
+    ctx->host->command_label = editor_host_command_label_impl;
     ctx->window_kinds = g_ptr_array_new_with_free_func (editor_window_kind_free);
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
     // the plugins reach it from open(): call_later() for one
@@ -2626,7 +2636,8 @@ edit_set_buttonbar (WEdit *edit, WButtonBar *bb)
     buttonbar_set_label (bb, 8, Q_ ("ButtonBar|Delete"), w->keymap, w);
     buttonbar_set_label (bb, 9, Q_ ("ButtonBar|PullDn"), w->keymap, NULL);
     buttonbar_set_label (bb, 10, Q_ ("ButtonBar|Quit"), w->keymap, NULL);
-    buttonbar_set_modifier_labels (bb, &editor_map, NULL, mod_labels, NULL);
+    // the plugins see a key first: the commands of theirs with a label, before the editor's
+    buttonbar_set_modifier_labels (bb, &plugin_bar_map, &editor_map, mod_labels, NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */

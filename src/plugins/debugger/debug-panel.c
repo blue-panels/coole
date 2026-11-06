@@ -147,7 +147,13 @@ debug_editor_buttonbar (debugger_t *debug, Widget *edit)
 
     if (bb == NULL)
         return;
+    // the keys as they are now: the keymap of the editor read, maybe changed since
+    debug_bar_labels (debug);
     edit_set_buttonbar (EDIT (edit), bb);
+    /* a modifier held: in step mode the keys of the editor with one beep, Shift-F2 Save as,
+       Shift-F3 Column; only the plugins' are shown, the debugger's over all */
+    if (debug_stepping (debug))
+        buttonbar_set_modifier_labels (bb, &plugin_bar_map, NULL, NULL, NULL);
     if (debug_stepping (debug) || debug->debug_mode)
         for (i = 1; i <= 10; i++)
         {
@@ -1318,10 +1324,114 @@ debug_panel_ended (debugger_t *debug)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The label of the button of @cmd while the modifiers of a key of it are held in a file window:
+   what the key does in the state of the session, by the rules of debug_handle_key (); NULL when
+   the key does nothing there or is the editor's */
+static const char *
+debug_bar_label (const debugger_t *debug, int cmd)
+{
+    const gboolean stepping = debug_stepping (debug);
+    const gboolean stopped = debug->state == DEBUG_STOPPED;
+    const gboolean live =
+        debug->state == DEBUG_STARTING || debug->state == DEBUG_RUNNING || stopped;
+
+    // N_() with the context of the bar, which translates them
+    switch (cmd)
+    {
+    case DEBUG_CMD_START_CONTINUE:
+        return stopped ? N_ ("ButtonBar|Continue")
+            : debug->state == DEBUG_OFF || debug->state == DEBUG_FINISHED ? N_ ("ButtonBar|Start")
+                                                                          : NULL;
+    case DEBUG_CMD_PAUSE:
+        return debug->state == DEBUG_RUNNING ? N_ ("ButtonBar|Pause") : NULL;
+    case DEBUG_CMD_STEP_INTO:
+        return stopped ? N_ ("ButtonBar|Into") : NULL;
+    case DEBUG_CMD_STEP_OVER:
+        return stopped ? N_ ("ButtonBar|Over") : NULL;
+    case DEBUG_CMD_STEP_OUT:
+        return stopped ? N_ ("ButtonBar|Out") : NULL;
+    case DEBUG_CMD_STOP:
+        return live ? N_ ("ButtonBar|Stop") : NULL;
+    case DEBUG_CMD_TOGGLE_BREAKPOINT:
+        return N_ ("ButtonBar|Break");
+    case DEBUG_CMD_RUN_TO_CURSOR:
+        return stopped ? N_ ("ButtonBar|ToCurs") : NULL;
+    // out of step mode the editor's: Shift-F4 and Shift-F7 are its Replace and Search again
+    case DEBUG_CMD_EVALUATE:
+        return stepping && stopped ? N_ ("ButtonBar|Eval") : NULL;
+    case DEBUG_CMD_STEP_INSTRUCTION:
+        return stepping && stopped ? N_ ("ButtonBar|StepI") : NULL;
+    case DEBUG_CMD_NEXT_INSTRUCTION:
+        return stepping && stopped ? N_ ("ButtonBar|NextI") : NULL;
+    case DEBUG_CMD_SHOW_STOP:
+        return stopped ? N_ ("ButtonBar|Where") : NULL;
+    case DEBUG_CMD_CONDITION:
+        return N_ ("ButtonBar|Cond");
+    case DEBUG_CMD_PANEL:
+        return N_ ("ButtonBar|Panel");
+    // Help, Close, Index and Leave are the editor's in a file window
+    default:
+        return NULL;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the debugger takes now, in a file window, each key of @cmd the bar shows with a
+   modifier held: an F key with Shift, Ctrl or Alt */
+static gboolean
+debug_bar_keys_taken (const debugger_t *debug, int cmd)
+{
+    const global_keymap_t *map = keymap_section_map (DEBUG_KEYMAP_SECTION);
+    size_t i;
+
+    for (i = 0; map != NULL && map[i].key != 0; i++)
+    {
+        const int key = (int) map[i].key;
+        const int base = key & ~KEY_M_MASK;
+        const gboolean modified = (key & KEY_M_MASK) != 0
+            ? base >= KEY_F (1) && base <= KEY_F (10)
+            : base >= KEY_F (11) && base <= KEY_F (20);
+
+        if (map[i].command == debug->commands[cmd] && modified
+            && !debug_takes_key (debug, cmd, key, editor_map))
+            return FALSE;
+    }
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The labels the bar shows while the modifiers of a key of the debugger are held, those of the
+   state the session is in: Shift-F9 Start, then Continue, none while the program runs */
+void
+debug_bar_labels (const debugger_t *debug)
+{
+    int cmd;
+
+    if (debug->host->command_label == NULL)
+        return;
+    for (cmd = 0; cmd < DEBUG_CMD_COUNT; cmd++)
+    {
+        const char *name = keybind_lookup_actionname (debug->commands[cmd]);
+        const char *label = debug_bar_label (debug, cmd);
+
+        // a label says what all its keys do: one of them the editor's now, none
+        if (label != NULL && !debug_bar_keys_taken (debug, cmd))
+            label = NULL;
+        if (name != NULL)
+            debug->host->command_label (debug->host, name, label);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 void
 debug_session_refresh (debugger_t *debug)
 {
     Widget *current = WIDGET (debug->host->window_current (debug->host));
+
+    debug_bar_labels (debug);
 
     if (debug->session_window != NULL)
         debug_panel_rebuild (debug);

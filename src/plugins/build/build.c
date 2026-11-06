@@ -1529,6 +1529,9 @@ build_open (mc_editor_host_t *host, void *editor_dialog)
     build->rows = g_array_new (FALSE, FALSE, sizeof (int));
     build->current = -1;
     host->commands_register (host, BUILD_KEYMAP_SECTION, N_ ("&Build"), build_commands);
+    // Ctrl held, the bar says what Ctrl-F9 does
+    if (host->command_label != NULL)
+        host->command_label (host, build_commands[BUILD_CMD_RUN].name, N_ ("ButtonBar|Build"));
     if (host->window_kind != NULL)
         host->window_kind (host, &build_output_kind, build);
     for (i = 0; i < BUILD_CMD_COUNT; i++)
@@ -1556,6 +1559,9 @@ build_close (void *data)
 {
     build_t *build = (build_t *) data;
 
+    // the key is gone with the plugin: the bar shows the editor's there again
+    if (build->host->command_label != NULL)
+        build->host->command_label (build->host, build_commands[BUILD_CMD_RUN].name, NULL);
     if (build->output_fd >= 0)
     {
         delete_select_channel (build->output_fd);

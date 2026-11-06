@@ -248,6 +248,8 @@ void keybind_cmd_bind (GArray *keymap, const char *keybind, long action);
 long keybind_lookup_action (const char *name);
 long keybind_register_action (const char *name, const char *description);
 const char *keybind_lookup_actionname (long action);
+void keybind_set_action_label (long action, const char *label);
+const char *keybind_lookup_actionlabel (long action);
 const char *keybind_lookup_actiondesc (long action);
 const char *keybind_lookup_keymap_shortcut (const global_keymap_t *keymap, long action);
 long keybind_lookup_keymap_command (const global_keymap_t *keymap, long key);

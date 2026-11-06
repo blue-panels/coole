@@ -281,6 +281,13 @@ What the editor provides to the plugin, passed to open():
                              button bar for one, goes to handle_action()
   command_lookup(host, section, key)
                              the command a key is bound to in a section
+  command_label(host, name, label)
+                             the label ("ButtonBar|Build") of a command:
+                             while the modifiers of a key of it are held
+                             (Ctrl of Ctrl-F9) the button bar shows it,
+                             over the editor's command; NULL: none.  Given
+                             only while the plugin takes the key, it may
+                             change with the state of the plugin
   open_file(host, file)      the window of a file to the front, or a new
                              one with the cursor where it was
   set_line_note(host, file, line, text)
