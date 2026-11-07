@@ -79,6 +79,24 @@ output comes in the window **Build** at the bottom of the screen;
 **Alt-Shift-K**
 : Go to the previous one.
 
+**Enter**
+: In the list of the window **Build**: go to the error of its line.
+
+**The list of the errors**
+
+While the build runs, the window **Build** shows what the compiler says.
+When it is over and the compiler has named lines, the window is a list, as
+the window Message of Turbo C was: the result first, then an error or a
+warning a line, *Error bad.c 3: 'x' undeclared*, its notes under it, and
+what the compiler said last. The cursor of the list is on the error gone to;
+**Alt-Shift-J** and **Alt-Shift-K** move it with the file. In the list, the
+cursor moved by a key or the mouse shows the line of its error in its file,
+when a window has the file, the list keeping the focus; **Enter** or a
+double click goes to it, opening the file. Enter on marked text copies it.
+The cursor goes to the column the compiler named. Gone to while the build
+runs, or with the window closed, the message of the error stands after its
+line.
+
 **The marks**
 
 A line the compiler has named an error of is marked with a cross in the

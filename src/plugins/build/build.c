@@ -32,17 +32,23 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "lib/global.h"
+#include "lib/keybind.h"
 #include "lib/util.h"
 #include "lib/widget.h"
 #include "lib/tty/key.h"
 #include "lib/tty/tty.h"
 #include "lib/plugin-service.h"
+
+#include "src/keymap.h"             // keymap_section_map ()
+#include "src/editor/edit-impl.h"   // edit_cursor_move ()
+#include "src/editor/editwidget.h"  // WEdit
 
 #include "build-core.h"
 #include "build-presets.h"
@@ -55,6 +61,8 @@
 #define BUILD_SERVICE        "build"
 #define BUILD_KEYMAP_SECTION "build"
 #define BUILD_OUTPUT_MAX     (512 * 1024)
+// the columns a tab goes to in the column the compiler names, as gcc counts them
+#define BUILD_TAB_WIDTH 8
 
 /*** file scope type declarations ****************************************************************/
 
@@ -64,6 +72,7 @@ enum
     BUILD_CMD_RUN,
     BUILD_CMD_NEXT,
     BUILD_CMD_PREV,
+    BUILD_CMD_SHOW,
     BUILD_CMD_COUNT
 };
 
@@ -99,15 +108,28 @@ typedef struct
     // asked for by another plugin, before a start: the window goes when the build is fine
     gboolean quiet;
     GPtrArray *diagnostics;  // build_diagnostic_t
+    GPtrArray *notes;        // GString, the notes of the compiler on each diagnostic
+    // the window a list of the diagnostics once the build is over, the output under it
+    gboolean listed;
+    GString *list;  // its text
+    GArray *rows;   // int, for each line of it: the diagnostic, or -1
     int current;
+    // the note of the error gone to when the list was not in sight, after its line
+    char *note_file;
+    long note_line;
     long commands[BUILD_CMD_COUNT];
     int marks[BUILD_MARK_COUNT];
     gboolean service;
     char *presets_told;  // what was wrong in the presets of the user, said once
     guint project_signal;
+    guint viewer_signal;
 } build_t;
 
 /*** forward declarations (file scope functions) *************************************************/
+
+static void build_list_cursor (build_t *build);
+static void build_note_clear (build_t *build);
+static mc_ep_window_state_t build_output_state (void *data);
 
 /*** file scope variables ************************************************************************/
 
@@ -115,15 +137,26 @@ static const mc_ep_command_t build_commands[BUILD_CMD_COUNT + 1] = {
     { "BuildRun", N_ ("Build the project"), "alt-shift-b" },
     { "BuildNextError", N_ ("Go to the next error of the build"), "alt-shift-j" },
     { "BuildPrevError", N_ ("Go to the previous error of the build"), "alt-shift-k" },
+    { "BuildShowError", N_ ("Go to the error of the line of the list of the build"), "enter" },
     { NULL, NULL, NULL },
 };
 
+/* The marks of the gutter: their characters come from the skin, section [widget-editor]; those
+   here, ASCII, when it has none or the terminal cannot show its own */
 static const mc_ep_marker_kind_t build_mark_kinds[BUILD_MARK_COUNT] = {
-    { "build.error", "build-error-char", "\u00d7", "E", "builderror", NULL, NULL, 6, "brightred" },
+    { "build.error", "build-error-char", "E", "E", "builderror", NULL, NULL, 6, "brightred" },
     { "build.warning", "build-warning-char", "!", "!", "buildwarning", NULL, NULL, 5, "yellow" },
 };
 
 /*** file scope functions ************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+build_note_free_cb (gpointer p)
+{
+    g_string_free ((GString *) p, TRUE);
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 static void
@@ -437,19 +470,38 @@ build_viewer (build_t *build, const char *method, GVariantDict *dict)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Where a diagnostic is, as the list shows it: the file from the root of the project, or its
+   name alone outside it, and the line */
+static char *
+build_where (const build_t *build, const build_diagnostic_t *d)
+{
+    const size_t len = build->root != NULL ? strlen (build->root) : 0;
+    const char *file = d->file;
+
+    if (len > 0 && strncmp (file, build->root, len) == 0 && file[len] == PATH_SEP)
+        file += len + 1;
+    else
+        file = x_basename (file);
+    return g_strdup_printf ("%s %ld", file, d->line);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 build_output_show (build_t *build)
 {
     GVariantDict dict;
     GVariant *reply;
     long lines = 0;
+    const char *text = build->listed ? build->list->str : build->output->str;
     const char *p;
 
-    for (p = build->output->str; *p != '\0'; p++)
+    for (p = text; *p != '\0'; p++)
         if (*p == '\n')
             lines++;
     g_variant_dict_init (&dict, NULL);
-    g_variant_dict_insert (&dict, "text", "s", build->output->str);
+    g_variant_dict_insert (&dict, "text", "s", text);
+    g_variant_dict_insert (&dict, "cursorline", "b", build->listed);
     if (build->window != 0)
     {
         g_variant_dict_insert (&dict, "id", "x", build->window);
@@ -462,7 +514,8 @@ build_output_show (build_t *build)
     if (build->window == 0)
     {
         g_variant_dict_init (&dict, NULL);
-        g_variant_dict_insert (&dict, "text", "s", build->output->str);
+        g_variant_dict_insert (&dict, "text", "s", text);
+        g_variant_dict_insert (&dict, "cursorline", "b", build->listed);
         g_variant_dict_insert (&dict, "title", "s", _ ("Build"));
         g_variant_dict_insert (&dict, "place", "s", "bottom");
         g_variant_dict_insert (&dict, "size", "i", 30);
@@ -474,16 +527,18 @@ build_output_show (build_t *build)
             g_variant_unref (reply);
         }
     }
-    // the end of the output in sight
+    // the end of the output in sight; a list from its top
     if (build->window != 0)
     {
         g_variant_dict_init (&dict, NULL);
         g_variant_dict_insert (&dict, "id", "x", build->window);
-        g_variant_dict_insert (&dict, "line", "x", (gint64) MAX (1, lines));
+        g_variant_dict_insert (&dict, "line", "x", build->listed ? 0 : (gint64) MAX (1, lines));
         reply = build_viewer (build, "scroll_to", &dict);
         if (reply != NULL)
             g_variant_unref (reply);
     }
+    // the cursor of a list, and the view with it, on the error gone to
+    build_list_cursor (build);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -517,11 +572,122 @@ build_line (build_t *build, const char *line)
     // a note goes with the error before it
     if (d == NULL || strstr (line, ": note:") != NULL)
     {
+        if (d != NULL && build->notes->len > 0)
+        {
+            GString *notes = g_ptr_array_index (build->notes, build->notes->len - 1);
+            char *where = build_where (build, d);
+
+            g_string_append_printf (notes, "%s%s: %s", notes->len > 0 ? "\n" : "", where,
+                                    d->message);
+            g_free (where);
+        }
         build_diagnostic_free (d);
         return;
     }
     build_mark (build, d);
     g_ptr_array_add (build->diagnostics, d);
+    g_ptr_array_add (build->notes, g_string_new (NULL));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The line of the list of a diagnostic, from 0; -1 when there is no list or it is not in it */
+static long
+build_row_of (const build_t *build, int diagnostic)
+{
+    guint i;
+
+    for (i = 0; build->listed && i < build->rows->len; i++)
+        if (g_array_index (build->rows, int, i) == diagnostic)
+            return (long) i;
+    return -1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A line of the list, with what it is the line of: @diagnostic, or -1 */
+static void build_list_add (build_t *build, int diagnostic, const char *format, ...)
+    G_GNUC_PRINTF (3, 4);
+
+static void
+build_list_add (build_t *build, int diagnostic, const char *format, ...)
+{
+    va_list args;
+
+    va_start (args, format);
+    g_string_append_vprintf (build->list, format, args);
+    va_end (args);
+    g_string_append_c (build->list, '\n');
+    g_array_append_val (build->rows, diagnostic);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The list of the build over, as the Message window of Turbo C had it: a line of the result,
+   then an error or a warning a line, its notes under it, and the output of the compiler last.
+   The cursor of the list on the diagnostic gone to last, else the first */
+static void
+build_list (build_t *build, const char *result)
+{
+    guint i;
+
+    build->listed = build->diagnostics->len > 0;
+    g_string_truncate (build->list, 0);
+    g_array_set_size (build->rows, 0);
+    if (!build->listed)
+        return;
+    build_list_add (build, -1, "%s", result);
+    for (i = 0; i < build->diagnostics->len; i++)
+    {
+        const build_diagnostic_t *d = g_ptr_array_index (build->diagnostics, i);
+        const GString *notes = g_ptr_array_index (build->notes, i);
+        char *where = build_where (build, d);
+
+        // the colors of a terminal, red and yellow: the window shows those of the compiler
+        build_list_add (build, (int) i, "%s%s\033[0m %s: %s", d->error ? "\033[1;31m" : "\033[33m",
+                        d->error ? _ ("Error") : _ ("Warning"), where, d->message);
+        g_free (where);
+        if (notes->len > 0)
+        {
+            char **lines = g_strsplit (notes->str, "\n", -1);
+            char **l;
+
+            for (l = lines; *l != NULL; l++)
+                build_list_add (build, (int) i, "        %s", *l);
+            g_strfreev (lines);
+        }
+    }
+    build_list_add (build, -1, "%s", "");
+    build_list_add (build, -1, "%s", _ ("The output of the compiler:"));
+    {
+        char **lines = g_strsplit (build->output->str, "\n", -1);
+        char **l;
+
+        for (l = lines; *l != NULL; l++)
+            if (l[1] != NULL || **l != '\0')
+                build_list_add (build, -1, "%s", *l);
+        g_strfreev (lines);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The cursor of the list on the diagnostic gone to, the view following it */
+static void
+build_list_cursor (build_t *build)
+{
+    const long row = build_row_of (build, build->current >= 0 ? build->current : 0);
+    GVariantDict dict;
+    GVariant *reply;
+
+    if (row < 0 || build->window == 0)
+        return;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", build->window);
+    g_variant_dict_insert (&dict, "line", "x", (gint64) row);
+    reply = build_viewer (build, "move_to", &dict);
+    if (reply != NULL)
+        g_variant_unref (reply);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -542,9 +708,12 @@ build_finished (build_t *build, int status)
         summary = g_strdup_printf (_ ("\nThe build failed. Errors: %u, warnings: %u.\n"), errors,
                                    build->diagnostics->len - errors);
     g_string_append (build->output, summary);
+    // the error gone to while the build ran stays the one of the list, its note in the list now
+    build_list (build, g_strstrip (summary));
+    if (build->listed)
+        build_note_clear (build);
     g_free (summary);
     build_output_show (build);
-    build->current = -1;
     if (build->quiet && WIFEXITED (status) && WEXITSTATUS (status) == 0 && build->window != 0)
     {
         GVariantDict dict;
@@ -723,6 +892,10 @@ build_start (build_t *build, const char *root)
     g_free (build->dir);
     build->dir = dir;
     g_ptr_array_set_size (build->diagnostics, 0);
+    g_ptr_array_set_size (build->notes, 0);
+    build_note_clear (build);
+    build->listed = FALSE;
+    build->current = -1;
     build_marks_clear (build);
     g_string_printf (build->output, "$ %s\n", command);
     g_string_truncate (build->pending, 0);
@@ -748,6 +921,133 @@ build_start (build_t *build, const char *root)
     (void) fcntl (out, F_SETFL, fcntl (out, F_GETFL) | O_NONBLOCK);
     add_select_channel (out, build_output_ready, build);
     build_output_show (build);
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether a window of the editor has the file @file */
+static gboolean
+build_file_loaded (build_t *build, const char *file)
+{
+    char *real = realpath (file, NULL);
+    gboolean found = FALSE;
+    GList *item;
+
+    for (item = GROUP (build->host->host_data)->widgets; item != NULL && !found;
+         item = g_list_next (item))
+    {
+        const WEdit *edit;
+
+        if (!edit_widget_is_editor (CONST_WIDGET (item->data)))
+            continue;
+        edit = CONST_EDIT (item->data);
+        if (edit->filename == NULL)
+            continue;
+        if (strcmp (edit->filename, file) == 0)
+            found = TRUE;
+        else if (real != NULL)
+        {
+            char *other = realpath (edit->filename, NULL);
+
+            found = other != NULL && strcmp (other, real) == 0;
+            free (other);
+        }
+    }
+    free (real);
+    return found;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The byte of the line from @bol to @eol at the column @column, from 1, as gcc counts it by
+   default: a tab goes to the next stop of BUILD_TAB_WIDTH, a wide character takes two columns,
+   a byte that is not UTF-8 one */
+static off_t
+build_column_offset (const WEdit *edit, off_t bol, off_t eol, long column)
+{
+    GString *line = g_string_sized_new ((gsize) (eol - bol));
+    const char *p, *end;
+    long col = 1;
+    off_t i, offset;
+
+    for (i = bol; i < eol; i++)
+        g_string_append_c (line, (char) edit_buffer_get_byte (&edit->buffer, i));
+    p = line->str;
+    end = line->str + line->len;
+    while (p < end && col < column)
+    {
+        const gunichar c = g_utf8_get_char_validated (p, end - p);
+
+        if (*p == '\t')
+        {
+            col = ((col - 1) / BUILD_TAB_WIDTH + 1) * BUILD_TAB_WIDTH + 1;
+            p++;
+        }
+        else if (c == (gunichar) -1 || c == (gunichar) -2)
+        {
+            col++;
+            p++;
+        }
+        else
+        {
+            if (!g_unichar_iszerowidth (c))
+                col += g_unichar_iswide (c) ? 2 : 1;
+            p = g_utf8_next_char (p);
+        }
+    }
+    offset = bol + (off_t) (p - line->str);
+    g_string_free (line, TRUE);
+    return offset;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Take off the note of the error gone to last */
+static void
+build_note_clear (build_t *build)
+{
+    if (build->note_file != NULL)
+        build->host->set_line_note (build->host, build->note_file, build->note_line, NULL);
+    g_free (build->note_file);
+    build->note_file = NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The line of a diagnostic in its file, the cursor on the column the compiler named, as a
+   search puts it on what it found: not past the end of the line where it stood before.
+   @load: the file is loaded when no window has it, else it is not shown.  The message goes
+   after the line when the list is not in sight.  FALSE when the line is not shown */
+static gboolean
+build_show (build_t *build, const build_diagnostic_t *d, gboolean load)
+{
+    WEdit *edit;
+    off_t bol, eol;
+
+    if (!load && !build_file_loaded (build, d->file))
+        return FALSE;
+    if (!build->host->show_location (build->host, d->file, d->line))
+        return FALSE;
+    build_note_clear (build);
+    if (!build->listed || build_output_state (build) == MC_EP_WINDOW_CLOSED)
+    {
+        build->host->set_line_note (build->host, d->file, d->line, d->message);
+        build->note_file = g_strdup (d->file);
+        build->note_line = d->line;
+    }
+    edit = (WEdit *) build->host->window_top_file (build->host);
+    if (d->column < 1 || edit == NULL || edit->buffer.curs_line != d->line - 1)
+        return TRUE;
+    bol = edit_buffer_get_current_bol (&edit->buffer);
+    eol = edit_buffer_get_current_eol (&edit->buffer);
+    edit->over_col = 0;
+    edit_cursor_move (edit, build_column_offset (edit, bol, eol, d->column) - edit->buffer.curs1);
+    edit->search_start = edit->buffer.curs1;
+    edit->prev_col = edit_get_col (edit);
+    edit->force |= REDRAW_PAGE;
+    edit_scroll_screen_over_cursor (edit);
+    widget_draw (WIDGET (edit));
     return TRUE;
 }
 
@@ -780,15 +1080,89 @@ build_go (build_t *build, int step)
             break;
     }
     d = g_ptr_array_index (build->diagnostics, build->current);
-    (void) build->host->show_location (build->host, d->file, d->line);
-    {
-        char *where = g_strdup_printf ("%s:%ld: %s", x_basename (d->file), d->line, d->message);
+    (void) build_show (build, d, TRUE);
+    build_list_cursor (build);
+}
 
-        // the message stays in sight on the output
-        g_string_append_printf (build->output, "\n> %s\n", where);
-        build_output_show (build);
-        g_free (where);
+/* --------------------------------------------------------------------------------------------- */
+
+/* The diagnostic of the line @row of the list in its file; FALSE when the line has none.
+   @stay: the list keeps the focus, the file only shown */
+static gboolean
+build_show_row (build_t *build, long row, gboolean stay)
+{
+    const build_diagnostic_t *d;
+    int i;
+
+    if (!build->listed || row < 0 || row >= (long) build->rows->len)
+        return FALSE;
+    i = g_array_index (build->rows, int, row);
+    if (i < 0 || i >= (int) build->diagnostics->len)
+        return FALSE;
+    build->current = i;
+    d = g_ptr_array_index (build->diagnostics, i);
+    // the cursor going down the list shows the files open, Enter opens one
+    if (!build_show (build, d, !stay))
+        return TRUE;
+    if (stay && build->window != 0)
+    {
+        GVariantDict dict;
+        GVariant *reply;
+
+        g_variant_dict_init (&dict, NULL);
+        g_variant_dict_insert (&dict, "id", "x", build->window);
+        g_variant_dict_insert (&dict, "focus", "b", TRUE);
+        reply = build_viewer (build, "show", &dict);
+        if (reply != NULL)
+            g_variant_unref (reply);
     }
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Enter in the list: the error of its line, in its file */
+static gboolean
+build_show_cursor (build_t *build)
+{
+    GVariantDict dict;
+    GVariant *reply;
+    gint64 row = -1;
+    gboolean focused = FALSE, selected = FALSE;
+
+    if (build->window == 0 || !build->listed)
+        return FALSE;
+    g_variant_dict_init (&dict, NULL);
+    g_variant_dict_insert (&dict, "id", "x", build->window);
+    reply = build_viewer (build, "info", &dict);
+    if (reply == NULL)
+        return FALSE;
+    (void) g_variant_lookup (reply, "focused", "b", &focused);
+    (void) g_variant_lookup (reply, "selected", "b", &selected);
+    (void) g_variant_lookup (reply, "line", "x", &row);
+    g_variant_unref (reply);
+    // Enter on marked text copies it, as in any window of the viewer
+    return focused && !selected && build_show_row (build, (long) row, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The list of the build: a double click on a line goes to its error, the cursor moved on it
+   shows the error in its file, the list keeping the focus */
+static void
+build_viewer_signal (const char *name, const char *signal, GVariant *args, void *data)
+{
+    build_t *build = (build_t *) data;
+    gint64 id = 0, line = -1;
+
+    (void) name;
+    if (build->window == 0 || !g_variant_lookup (args, "id", "x", &id) || id != build->window
+        || !g_variant_lookup (args, "line", "x", &line))
+        return;
+    if (strcmp (signal, "activate") == 0)
+        (void) build_show_row (build, (long) line, FALSE);
+    else if (strcmp (signal, "cursor") == 0)
+        (void) build_show_row (build, (long) line, TRUE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -814,6 +1188,9 @@ build_run_command (build_t *build, int cmd, void *edit)
     case BUILD_CMD_PREV:
         build_go (build, -1);
         return TRUE;
+    case BUILD_CMD_SHOW:
+        // Enter of a file is that of the editor
+        return edit == NULL && build_show_cursor (build);
     default:
         return FALSE;
     }
@@ -1203,6 +1580,9 @@ build_open (mc_editor_host_t *host, void *editor_dialog)
     build->pending = g_string_new (NULL);
     build->partial = g_string_new (NULL);
     build->diagnostics = g_ptr_array_new_with_free_func (build_diagnostic_free_cb);
+    build->notes = g_ptr_array_new_with_free_func (build_note_free_cb);
+    build->list = g_string_new (NULL);
+    build->rows = g_array_new (FALSE, FALSE, sizeof (int));
     build->current = -1;
     host->commands_register (host, BUILD_KEYMAP_SECTION, N_ ("&Build"), build_commands);
     if (host->window_kind != NULL)
@@ -1213,8 +1593,11 @@ build_open (mc_editor_host_t *host, void *editor_dialog)
         build->marks[i] = host->marker_kind (host, &build_mark_kinds[i]);
     build->service = host->service_register (host, BUILD_SERVICE, build_call, build, NULL);
     if (host->service_connect != NULL)
+    {
         build->project_signal =
             host->service_connect (host, "project", build_project_changed, build);
+        build->viewer_signal = host->service_connect (host, "viewer", build_viewer_signal, build);
+    }
     // coole -D: the project is there before this plugin hears of it; once the editor runs, which
     // can tell what is wrong
     if (host->startup_option (host, "debug") != NULL)
@@ -1253,7 +1636,13 @@ build_close (void *data)
         build->host->service_unregister (build->host, BUILD_SERVICE);
     if (build->project_signal != 0)
         build->host->service_disconnect (build->host, build->project_signal);
+    if (build->viewer_signal != 0)
+        build->host->service_disconnect (build->host, build->viewer_signal);
     g_ptr_array_free (build->diagnostics, TRUE);
+    g_ptr_array_free (build->notes, TRUE);
+    g_free (build->note_file);
+    g_string_free (build->list, TRUE);
+    g_array_free (build->rows, TRUE);
     g_string_free (build->output, TRUE);
     g_string_free (build->pending, TRUE);
     g_string_free (build->partial, TRUE);
@@ -1390,6 +1779,24 @@ static const mc_ep_action_t build_actions[] = {
     { "Output", build_act_output },       { "Language defaults", build_act_defaults },
 };
 
+/* The key of a menu entry, the first the keymap has for its command: the first actions are the
+   commands, in their order */
+static char *
+build_menu_shortcut (int action_index)
+{
+    const global_keymap_t *map = keymap_section_map (BUILD_KEYMAP_SECTION);
+    long command;
+    size_t i;
+
+    if (map == NULL || action_index < 0 || action_index > BUILD_ACT_PREV)
+        return NULL;
+    command = keybind_lookup_action (build_commands[action_index].name);
+    for (i = 0; map[i].key != 0; i++)
+        if (map[i].command == command && map[i].caption[0] != '\0')
+            return g_strdup (map[i].caption);
+    return NULL;
+}
+
 static const mc_ep_cmd_menu_entry_t build_menu[] = {
     { MC_EP_MENU_COMMAND, NULL, 0, NULL },
     { MC_EP_MENU_COMMAND, N_ ("B&uild project"), BUILD_ACT_RUN, NULL },
@@ -1414,6 +1821,7 @@ static const mc_editor_plugin_t build_plugin = {
     .action_count = G_N_ELEMENTS (build_actions),
     .cmd_menu_entries = build_menu,
     .cmd_menu_entry_count = G_N_ELEMENTS (build_menu),
+    .get_menu_shortcut = build_menu_shortcut,
 };
 
 /*** public functions ****************************************************************************/
