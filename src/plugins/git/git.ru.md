@@ -13,7 +13,7 @@
 
 **Окно Git**
 
-**Alt-Shift-C** открывает его на вкладке **Status**, **Alt-Shift-L** - на
+**Alt-C** открывает его на вкладке **Status**, **Alt-L** - на
 вкладке **Log**. В меню **Окна** есть пункт для каждого его окна: **Git:
 commit message**, **Git: status and log**, **Git: staged changes** и **Git:
 diff**; пункт открывает окно Git, если оно закрыто, и передает клавиши своему
@@ -442,10 +442,10 @@ command = { cat; echo; echo 'The last messages:'; git log -n 8 --format='%B---' 
 Это клавиши по умолчанию; их можно изменить в **Настройки -> Привязки
 клавиш -> Редактор -> Git** или в секции *[git]* раскладки клавиш.
 
-**Alt-Shift-C**
+**Alt-C**
 : Окно Git на вкладке Status.
 
-**Alt-Shift-L**
+**Alt-L**
 : Окно Git на вкладке Log.
 
 *GitCommit*

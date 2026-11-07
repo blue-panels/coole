@@ -985,7 +985,8 @@ debug_act_exceptions (void *data, void *edit)
     launch = debug_active_launch (debug);
     if (launch == NULL)
     {
-        debug_error (debug, _ ("Make a debug configuration first: Debug > New configuration..."));
+        debug_error (debug,
+                     _ ("Make a debug configuration first: Project > Debug configurations..."));
         return MC_EPR_FAILED;
     }
     filters = debug_exception_filters (debug, launch);

@@ -146,6 +146,8 @@ typedef struct
     debug_backend_t *backend;
     debug_state_t state;
     char *project_dir;
+    gboolean
+        project_closed;  // by Close project: the project of a file is not taken till one is opened
     GPtrArray *launches;
     guint active_launch;
     // the configuration the program debugged was started with, NULL when none runs
@@ -205,8 +207,9 @@ typedef struct
     gboolean start_after_build;
     gboolean built_for_start;
     guint build_signal;
+    guint project_signal;  // the project chosen or closed by the project plugin
     // debug mode: the file windows take the keys of the debugger, F3 to F8, whether the program
-    // runs or not (coole --debug, or Debug > Debug keys in files)
+    // runs or not (coole --debug, or Window > Debug keys in files)
     gboolean debug_mode;
     gboolean layout_pushed;       // the editor keeps the windows of before debugging
     edit_tree_t *session_window;  // the panel, a tree window; NULL when it is closed
@@ -266,6 +269,8 @@ typedef struct
 int debug_command (const debugger_t *debug, long command);
 int debug_command_of_key (const debugger_t *debug, int key);
 gboolean debug_stepping (const debugger_t *debug);
+gboolean debug_takes_key (const debugger_t *debug, int cmd, int key,
+                          const global_keymap_t *editor_keys);
 gboolean debug_step_passes (long command);
 gboolean debug_run_command (debugger_t *debug, int cmd, void *edit);
 void debug_error (debugger_t *debug, const char *message_text);
@@ -283,17 +288,16 @@ void debug_launch_free (gpointer data);
 debug_launch_t *debug_active_launch (const debugger_t *debug);
 void debug_config_save (debugger_t *debug);
 char *debug_project_of (debugger_t *debug, void *edit);
+gboolean debug_project_may_leave (debugger_t *debug, gboolean another);
 mc_ep_result_t debug_project_switch (debugger_t *debug, char *project);
 mc_ep_result_t debug_open_project (void *data, void *edit);
+void debug_project_changed (const char *name, const char *signal, GVariant *args, void *data);
 gboolean debug_require_project (debugger_t *debug, void *edit);
 mc_ep_result_t debug_project_status (void *data, void *edit);
 gboolean debug_parse_environment (debugger_t *debug, const char *value, char ***entries);
 const char *debug_adapter_hint (const char *adapter);
 mc_ep_result_t debug_configure_impl (debugger_t *debug, void *edit, gboolean create_new);
-mc_ep_result_t debug_configure (void *data, void *edit);
-mc_ep_result_t debug_new_configuration (void *data, void *edit);
-mc_ep_result_t debug_select_configuration (void *data, void *edit);
-mc_ep_result_t debug_delete_configuration (void *data, void *edit);
+mc_ep_result_t debug_configurations (void *data, void *edit);
 gboolean debug_launch_is_dap (const debug_launch_t *launch);
 char *debug_launch_debugger (const debug_launch_t *launch);
 char *debug_adapter_check (debugger_t *debug, const debug_launch_t *launch);
@@ -303,6 +307,7 @@ void debug_window_buttonbar (const debugger_t *debug, Widget *w);
 void debug_editor_buttonbar (debugger_t *debug, Widget *edit);
 gboolean debug_session_close_window (WEditWindow *win);
 void debug_session_refresh (debugger_t *debug);
+void debug_bar_labels (const debugger_t *debug);
 /* The members the panel has read are of before: the program has stopped again, another frame is
    chosen */
 void debug_panel_forget_members (debugger_t *debug);

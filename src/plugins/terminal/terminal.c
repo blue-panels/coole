@@ -932,6 +932,7 @@ static void
 terminal_program_show (void *data)
 {
     terminal_plugin_t *tp = (terminal_plugin_t *) data;
+    gboolean made = FALSE;
 
     if (tp->program == NULL)
     {
@@ -939,8 +940,10 @@ terminal_program_show (void *data)
         if (tp->program == NULL)
             return;
         tp->host->window_add (tp->host, tp->program);
+        made = TRUE;
     }
-    if (!widget_get_state (WIDGET (tp->program), WST_VISIBLE))
+    // a window just added is visible already: it goes to its tab at the bottom all the same
+    if (made || !widget_get_state (WIDGET (tp->program), WST_VISIBLE))
         terminal_place (tp, tp->program);
     tp->host->window_show (tp->host, tp->program);
 }

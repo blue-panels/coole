@@ -53,13 +53,13 @@ A file opened alone, without a project, leaves no file in its directory. A
 *.coole/project.ini* that cannot be read is told of, with its line, and left
 as it is until it is put right.
 
-**Command → Build command...** gives a project a command of its own,
+**Project → Build command...** gives a project a command of its own,
 *command* in *.coole/project.ini*, which then goes before what was found.
 With nothing found the plugin asks for one the first time. A command given
 before there was this file, kept with the settings of the user, goes into
 it with the copy.
 
-**Command → Language defaults of the project...** makes *.coole/project.ini*
+**Project → Language defaults of the project...** makes *.coole/project.ini*
 the preset of the language again, without the command given to the project.
 The debug configurations stay as they are, until they are made anew.
 
@@ -68,15 +68,15 @@ The debug configurations stay as they are, until they are made anew.
 These are the default keys; they can be changed in **Options → Key
 bindings → Editor → Build**, or in the *[build]* section of the keymap.
 
-**Alt-Shift-B**
+**Ctrl-F9, Alt-B**
 : Build the project: the modified files of it are saved first, and the
 output comes in the window **Build** at the bottom of the screen;
-**Window → Build output** shows it again.
+**Project → Build output** and **Window → Build output** show it again.
 
-**Alt-Shift-J**
+**Alt-J**
 : Go to the next error, or to the next warning when there is no error.
 
-**Alt-Shift-K**
+**Alt-K**
 : Go to the previous one.
 
 **Enter**
@@ -89,7 +89,7 @@ When it is over and the compiler has named lines, the window is a list, as
 the window Message of Turbo C was: the result first, then an error or a
 warning a line, *Error bad.c 3: 'x' undeclared*, its notes under it, and
 what the compiler said last. The cursor of the list is on the error gone to;
-**Alt-Shift-J** and **Alt-Shift-K** move it with the file. In the list, the
+**Alt-J** and **Alt-K** move it with the file. In the list, the
 cursor moved by a key or the mouse shows the line of its error in its file,
 when a window has the file, the list keeping the focus; **Enter** or a
 double click goes to it, opening the file. Enter on marked text copies it.

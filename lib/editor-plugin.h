@@ -26,6 +26,12 @@
 #define MC_EP_MENU_COMMAND  "Command"
 #define MC_EP_MENU_FILE     "File"
 #define MC_EP_MENU_NAVIGATE "Navigate"
+/* the Project menu, after Command: the project, its build and its debug configurations; the
+   entries of each plugin together, the plugins in their order */
+#define MC_EP_MENU_PROJECT "Project"
+/* the Window menu: entries after the list of the windows, before Layout; what is about the
+   windows of a plugin and is no window (a window goes there with window_kind()) */
+#define MC_EP_MENU_WINDOW "Window"
 /* the Plugins menu: entries after the list of the plugins (a window goes to the Window menu with
    window_kind()) */
 #define MC_EP_MENU_PLUGINS "Plugins"
@@ -264,6 +270,12 @@ typedef struct mc_editor_host_t
        the next multiple of @tab_width (gcc: 8) and a wide character taking two */
     gboolean (*show_location_at) (struct mc_editor_host_t *host, const char *file, long line,
                                   long column, int tab_width);
+    /* The label, N_() with the "ButtonBar|" context, of the button of a command registered by
+       commands_register(): while the modifiers of a key of it are held (Ctrl of Ctrl-F9), the
+       button bar shows it on that F key, over the editor's command, since the plugin sees the
+       key first.  NULL takes it away: a plugin gives one only while the key is its own, it may
+       change it with its state.  The commands without one are not shown so */
+    void (*command_label) (struct mc_editor_host_t *host, const char *name, const char *label);
 } mc_editor_host_t;
 
 /* A named action a plugin exposes for menu or keyboard use.

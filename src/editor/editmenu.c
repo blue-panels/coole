@@ -90,6 +90,7 @@ static int menu_idx_options = 6;
 static GPtrArray *runtime_menu_actions = NULL;
 
 static GList *create_plugin_menu_entries (const char *menu_name);
+static GList *edit_menu_trim_separators (GList *entries);
 
 typedef struct
 {
@@ -222,8 +223,9 @@ append_runtime_menu_entries (GList *entries, const char *menu_path)
 static gboolean
 edit_runtime_menu_is_builtin (const char *menu_path)
 {
-    static const char *const names[] = { "File",   "Edit",    "Search", "Command", "Navigate",
-                                         "Window", "Plugins", "Lua",    "Options", NULL };
+    static const char *const names[] = { "File",    "Edit",     "Search", "Command",
+                                         "Project", "Navigate", "Window", "Plugins",
+                                         "Lua",     "Options",  NULL };
     guint i;
 
     for (i = 0; names[i] != NULL; i++)
@@ -257,8 +259,8 @@ static gboolean
 edit_menu_is_builtin (const char *menu_name)
 {
     static const char *const names[] = {
-        MC_EP_MENU_FILE,    "Edit",    "Search", MC_EP_MENU_COMMAND, MC_EP_MENU_NAVIGATE, "Window",
-        MC_EP_MENU_PLUGINS, "Options", NULL
+        MC_EP_MENU_FILE,     "Edit",   "Search",           MC_EP_MENU_COMMAND, MC_EP_MENU_PROJECT,
+        MC_EP_MENU_NAVIGATE, "Window", MC_EP_MENU_PLUGINS, "Options",          NULL
     };
     int i;
 
@@ -419,15 +421,21 @@ create_window_menu (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The menu Window: the windows of the editor, then those of the plugins */
+/* The menu Window: the windows of the editor, those of the plugins, then the entries of the
+   plugins */
 static GList *
 edit_window_menu_remake (void *data)
 {
     Widget *menubar = WIDGET (data);
-    GList *entries = append_runtime_menu_entries (create_window_menu (), "Window");
+    GList *entries = create_window_menu ();
+    GList *plugin_entries;
 
     if (menubar->owner != NULL)
         entries = g_list_concat (entries, edit_window_kinds_menu (DIALOG (menubar->owner)));
+    plugin_entries = edit_menu_trim_separators (create_plugin_menu_entries (MC_EP_MENU_WINDOW));
+    if (plugin_entries != NULL)
+        entries = g_list_concat (g_list_append (entries, menu_separator_new ()), plugin_entries);
+    entries = append_runtime_menu_entries (entries, MC_EP_MENU_WINDOW);
     entries = g_list_append (entries, menu_separator_new ());
     entries = g_list_append (entries, menu_entry_new (_ ("La&yout..."), CK_WindowLayout));
     return entries;
@@ -586,6 +594,27 @@ create_plugin_menu_entries (const char *menu_name)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The entries of a menu of the plugins alone, which part their entries with separators: none
+   first, last or two together, whichever plugins are there */
+static GList *
+edit_menu_trim_separators (GList *entries)
+{
+    GList *item = entries;
+
+    while (item != NULL)
+    {
+        GList *next = g_list_next (item);
+
+        // a separator is an entry of NULL
+        if (item->data == NULL && (item->prev == NULL || next == NULL || next->data == NULL))
+            entries = g_list_delete_link (entries, item);
+        item = next;
+    }
+    return entries;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 edit_drop_menu_cmd (WDialog *h, int which)
 {
@@ -634,6 +663,19 @@ edit_init_menu (WMenuBar *menubar)
                                 append_runtime_menu_entries (create_command_menu (), "Command"),
                                 "[Internal File Editor]"));
     menu_idx_command = idx++;
+
+    // the project, its build and its debugging, of the plugins that know them
+    {
+        GList *project_entries = append_runtime_menu_entries (
+            edit_menu_trim_separators (create_plugin_menu_entries (MC_EP_MENU_PROJECT)), "Project");
+
+        if (project_entries != NULL)
+        {
+            menubar_add_menu (menubar,
+                              menu_new (_ ("&Project"), project_entries, "[Internal File Editor]"));
+            idx++;
+        }
+    }
 
     navigate_entries = create_plugin_menu_entries (MC_EP_MENU_NAVIGATE);
     navigate_entries = append_runtime_menu_entries (navigate_entries, "Navigate");

@@ -254,6 +254,8 @@ static const size_t num_command_names = G_N_ELEMENTS (command_names) - 1;
 
 /* the commands of the plugins: name_keymap_t of their own strings, CK_PluginFirst and up */
 static GArray *plugin_command_names = NULL;
+/* the labels of the button bar of the commands of the plugins, by their numbers; NULL: none */
+static GPtrArray *plugin_command_labels = NULL;
 
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
@@ -400,6 +402,45 @@ keybind_lookup_actionname (long action)
             return command_names[i].name;
 
     return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Give a command of a plugin the label of its button on the bar: of an F key with modifiers the
+ * bar shows when they are held.  Only the commands with one are shown so.
+ *
+ * @param label N_() translatable, with the "ButtonBar|" context; NULL takes it away
+ */
+
+void
+keybind_set_action_label (long action, const char *label)
+{
+    guint index;
+
+    if (keybind_plugin_command (action) == NULL)
+        return;
+    index = (guint) (action - CK_PluginFirst);
+    if (plugin_command_labels == NULL)
+        plugin_command_labels = g_ptr_array_new_with_free_func (g_free);
+    if (plugin_command_labels->len <= index)
+        g_ptr_array_set_size (plugin_command_labels, (gint) index + 1);
+    g_free (g_ptr_array_index (plugin_command_labels, index));
+    g_ptr_array_index (plugin_command_labels, index) = g_strdup (label);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The label keybind_set_action_label() gave the command, untranslated; NULL: none */
+const char *
+keybind_lookup_actionlabel (long action)
+{
+    guint index;
+
+    if (keybind_plugin_command (action) == NULL || plugin_command_labels == NULL)
+        return NULL;
+    index = (guint) (action - CK_PluginFirst);
+    return index < plugin_command_labels->len ? g_ptr_array_index (plugin_command_labels, index)
+                                              : NULL;
 }
 
 /* --------------------------------------------------------------------------------------------- */

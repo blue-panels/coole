@@ -204,7 +204,9 @@ buttonbar_mod_command (const WButtonBar *bb, int i, int mod, const char **text,
                 *text = Q_ (l->text);
                 return command;
             }
-        *text = keybind_lookup_actionname (command);
+        // a command of a plugin, with the label it gave
+        *text = keybind_lookup_actionlabel (command);
+        *text = *text != NULL ? Q_ (*text) : keybind_lookup_actionname (command);
     }
 
     return command;

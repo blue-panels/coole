@@ -513,6 +513,32 @@ debug_config_load (debugger_t *debug)
     g_free (shared_path);
 }
 
+/* The project may change, to another one (@another) or to none: TRUE when no program is debugged,
+   or the user stops it for that, which is done; FALSE when the user keeps the session */
+gboolean
+debug_project_may_leave (debugger_t *debug, gboolean another)
+{
+    if (debug->state == DEBUG_STARTING || debug->state == DEBUG_RUNNING
+        || debug->state == DEBUG_STOPPED)
+    {
+        if (query_dialog (_ ("Debug"),
+                          another ? _ ("Stop the session and switch project?")
+                                  : _ ("Stop the session and close the project?"),
+                          D_NORMAL, 2, another ? _ ("&Switch") : _ ("C&lose"), _ ("&Cancel"))
+            != 0)
+            return FALSE;
+    }
+    if (debug->backend != NULL)
+        debug->backend->ops->stop (debug->backend);
+    debug_requests_clear (debug);
+    debug_pty_close (debug);
+    debug_clear_current (debug);
+    // the values after the lines are of the program stopped
+    debug_notes_clear (debug);
+    debug->state = DEBUG_OFF;
+    return TRUE;
+}
+
 /* The project of a file, as the project plugin sees it; NULL without that plugin */
 char *
 debug_project_of (debugger_t *debug, void *edit)
@@ -546,11 +572,12 @@ debug_project_of (debugger_t *debug, void *edit)
     return root;
 }
 
-/* Work on the project of that directory: its configurations, breakpoints and watches */
+/* Work on the project of that directory: its configurations, breakpoints and watches; NULL: on
+   none, the project closed */
 mc_ep_result_t
 debug_project_switch (debugger_t *debug, char *project)
 {
-    if (!g_file_test (project, G_FILE_TEST_IS_DIR))
+    if (project != NULL && !g_file_test (project, G_FILE_TEST_IS_DIR))
     {
         debug_error (debug, _ ("The project directory does not exist."));
         g_free (project);
@@ -561,23 +588,11 @@ debug_project_switch (debugger_t *debug, char *project)
         g_free (project);
         return MC_EPR_OK;
     }
-    if (debug->state == DEBUG_STARTING || debug->state == DEBUG_RUNNING
-        || debug->state == DEBUG_STOPPED)
+    if (!debug_project_may_leave (debug, project != NULL))
     {
-        if (query_dialog (_ ("Debug"), _ ("Stop the session and switch project?"), D_NORMAL, 2,
-                          _ ("&Switch"), _ ("&Cancel"))
-            != 0)
-        {
-            g_free (project);
-            return MC_EPR_FAILED;
-        }
+        g_free (project);
+        return MC_EPR_FAILED;
     }
-    if (debug->backend != NULL)
-        debug->backend->ops->stop (debug->backend);
-    debug_requests_clear (debug);
-    debug_pty_close (debug);
-    debug_clear_current (debug);
-    debug->state = DEBUG_OFF;
     // the build of the project before is no start of this one
     debug->start_after_build = FALSE;
     debug->breakpoints_installed = FALSE;
@@ -590,6 +605,7 @@ debug_project_switch (debugger_t *debug, char *project)
     debug->active_launch = 0;
     g_free (debug->project_dir);
     debug->project_dir = project;
+    debug->project_closed = FALSE;
     debug->venv_told = FALSE;
     g_ptr_array_set_size (debug->frames, 0);
     debug_config_load (debug);
@@ -611,7 +627,7 @@ debug_open_project (void *data, void *edit)
 
     if (suggested == NULL)
         suggested = file != NULL ? g_path_get_dirname (file) : g_get_current_dir ();
-    chosen = input_dialog (_ ("Open debug project"), _ ("Project directory:"), NULL, suggested,
+    chosen = input_dialog (_ ("Open project"), _ ("Project directory:"), "project-root", suggested,
                            INPUT_COMPLETE_FILENAMES);
     g_free (suggested);
     g_free (file);
@@ -619,10 +635,56 @@ debug_open_project (void *data, void *edit)
         return MC_EPR_FAILED;
     {
         char *project = g_canonicalize_filename (chosen, NULL);
+        GVariantDict args;
+        GVariant *reply = NULL;
 
         g_free (chosen);
+        // the project of the project plugin, which tells the debugger with the others
+        if (g_file_test (project, G_FILE_TEST_IS_DIR) && debug->host->service_call != NULL)
+        {
+            g_variant_dict_init (&args, NULL);
+            g_variant_dict_insert (&args, "root", "s", project);
+            reply = debug->host->service_call (debug->host, "project", "open",
+                                               g_variant_dict_end (&args), NULL);
+        }
+        // the debugger has followed it, or the user kept the session: not asked again
+        if (reply != NULL)
+        {
+            const gboolean switched = g_strcmp0 (debug->project_dir, project) == 0;
+
+            g_variant_unref (reply);
+            g_free (project);
+            return switched ? MC_EPR_OK : MC_EPR_FAILED;
+        }
+        // without the project plugin
         return debug_project_switch (debug, project);
     }
+}
+
+/* The project plugin chose a project, or closed it: the debugger works on that one.  A project
+   it found for a file opened is not followed: the debugger takes it when it starts */
+void
+debug_project_changed (const char *name, const char *signal, GVariant *args, void *data)
+{
+    debugger_t *debug = (debugger_t *) data;
+    const char *root = NULL;
+    gboolean chosen = FALSE;
+
+    (void) name;
+    if (strcmp (signal, "changed") != 0 || args == NULL)
+        return;
+    (void) g_variant_lookup (args, "root", "&s", &root);
+    (void) g_variant_lookup (args, "chosen", "b", &chosen);
+    if (root == NULL || !chosen)
+        return;
+    if (*root == '\0')
+    {
+        // closed: F5 asks for a project, it does not take the one of the file again
+        if (debug_project_switch (debug, NULL) == MC_EPR_OK)
+            debug->project_closed = TRUE;
+        return;
+    }
+    (void) debug_project_switch (debug, g_strdup (root));
 }
 
 /* The debugger works on a project: the one the project plugin knows, else the one the user
@@ -634,8 +696,11 @@ debug_require_project (debugger_t *debug, void *edit)
 
     if (debug->project_dir != NULL)
         return TRUE;
-    root =
-        debug_project_of (debug, edit != NULL ? edit : debug->host->window_top_file (debug->host));
+    // Close project: the user names the next one
+    root = debug->project_closed
+        ? NULL
+        : debug_project_of (debug,
+                            edit != NULL ? edit : debug->host->window_top_file (debug->host));
     if (root != NULL)
         return debug_project_switch (debug, root) == MC_EPR_OK;
     return debug_open_project (debug, edit) == MC_EPR_OK;
@@ -1573,74 +1638,150 @@ debug_configure_impl (debugger_t *debug, void *edit, gboolean create_new)
     return MC_EPR_OK;
 }
 
-mc_ep_result_t
-debug_configure (void *data, void *edit)
+/* The configuration @index the active one, kept so */
+static void
+debug_configuration_activate (debugger_t *debug, guint index)
 {
-    return debug_configure_impl ((debugger_t *) data, edit, FALSE);
+    if (index >= debug->launches->len || index == debug->active_launch)
+        return;
+    debug->active_launch = index;
+    debug_config_save (debug);
+    debug_session_refresh (debug);
 }
 
-mc_ep_result_t
-debug_new_configuration (void *data, void *edit)
+/* The configuration @index deleted, when the user says so; the active one stays active, the
+   first when it was that one */
+static void
+debug_configuration_delete (debugger_t *debug, guint index)
 {
-    return debug_configure_impl ((debugger_t *) data, edit, TRUE);
+    const debug_launch_t *launch;
+
+    if (index >= debug->launches->len)
+        return;
+    launch = g_ptr_array_index (debug->launches, index);
+    if (query_dialog (_ ("Debug"), _ ("Delete the debug configuration?"), D_NORMAL, 2,
+                      _ ("&Delete"), _ ("&Cancel"))
+        != 0)
+        return;
+    if (debug->session_launch == launch)
+        debug->session_launch = NULL;
+    g_ptr_array_remove_index (debug->launches, index);
+    if (debug->active_launch == index)
+        debug->active_launch = 0;
+    else if (debug->active_launch > index)
+        debug->active_launch--;
+    debug_config_save (debug);
+    debug_session_refresh (debug);
 }
 
+/* The configurations of the project in one dialog, as the lists of Turbo Vision are: the one
+   Start runs is marked; Select makes the one of the cursor it, New guesses another one and
+   makes it, Edit and Delete change the one of the cursor and leave the one marked.  The dialog
+   comes back after New, Edit and Delete */
 mc_ep_result_t
-debug_select_configuration (void *data, void *edit)
+debug_configurations (void *data, void *edit)
 {
     debugger_t *debug = (debugger_t *) data;
-    Listbox *selector;
-    debug_launch_t *chosen;
-    guint i;
+    enum
+    {
+        DEBUG_B_NEW = B_USER,
+        DEBUG_B_EDIT,
+        DEBUG_B_DELETE
+    };
+    static const struct
+    {
+        int action;
+        int flags;
+        const char *label;
+    } buttons[] = {
+        { B_ENTER, DEFPUSH_BUTTON, N_ ("&Select") },
+        { DEBUG_B_NEW, NORMAL_BUTTON, N_ ("&New") },
+        { DEBUG_B_EDIT, NORMAL_BUTTON, N_ ("&Edit") },
+        { DEBUG_B_DELETE, NORMAL_BUTTON, N_ ("&Delete") },
+        { B_CANCEL, NORMAL_BUTTON, N_ ("&Close") },
+    };
 
     if (!debug_require_project (debug, edit))
         return MC_EPR_FAILED;
+    // none yet: the first one guessed
     if (debug->launches->len == 0)
-        return debug_new_configuration (data, edit);
-    selector = listbox_window_new (MIN ((int) debug->launches->len, 16), 70,
-                                   _ ("Select debug configuration"), NULL);
-    for (i = 0; i < debug->launches->len; i++)
+        return debug_configure_impl (debug, edit, TRUE);
+    while (TRUE)
     {
-        debug_launch_t *launch = g_ptr_array_index (debug->launches, i);
-        char *label = g_strdup_printf ("%s  %s", launch->name, launch->executable);
+        const int list_h = (int) MIN (debug->launches->len, 12);
+        const int dlg_w = MIN (COLS - 4, 76);
+        const int dlg_h = list_h + 6;
+        WDialog *dlg;
+        WListbox *list;
+        void *chosen = NULL;
+        guint index = 0;
+        int ret, x;
+        guint i;
 
-        LISTBOX_APPEND_TEXT (selector, 0, label, launch, FALSE);
-        g_free (label);
-    }
-    chosen = listbox_run_with_data (selector, NULL);
-    if (chosen == NULL)
-        return MC_EPR_FAILED;
-    for (i = 0; i < debug->launches->len; i++)
-        if (g_ptr_array_index (debug->launches, i) == chosen)
+        // the last one deleted: nothing more to choose from
+        if (debug->launches->len == 0)
+            return MC_EPR_OK;
+
+        dlg = dlg_create (TRUE, 0, 0, dlg_h, dlg_w, WPOS_CENTER, TRUE, dialog_colors, NULL, NULL,
+                          "[Debugger]", _ ("Debug configurations"));
+        list = listbox_new (2, 2, list_h, dlg_w - 4, FALSE, NULL);
+        for (i = 0; i < debug->launches->len; i++)
         {
-            debug->active_launch = i;
+            const debug_launch_t *launch = g_ptr_array_index (debug->launches, i);
+            char *label = g_strdup_printf ("%c %s  %s", i == debug->active_launch ? '*' : ' ',
+                                           launch->name, launch->executable);
+
+            listbox_add_item (list, LISTBOX_APPEND_AT_END, 0, label, GUINT_TO_POINTER (i + 1),
+                              FALSE);
+            g_free (label);
+        }
+        listbox_set_current (list, (int) debug->active_launch);
+        group_add_widget (GROUP (dlg), list);
+        group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+        x = 3;
+        for (i = 0; i < G_N_ELEMENTS (buttons); i++)
+        {
+            WButton *b = button_new (dlg_h - 2, x, buttons[i].action, buttons[i].flags,
+                                     _ (buttons[i].label), NULL);
+
+            group_add_widget (GROUP (dlg), b);
+            x += button_get_width (b) + 1;
+        }
+        widget_select (WIDGET (list));
+        ret = dlg_run (dlg);
+        listbox_get_current (list, NULL, &chosen);
+        if (chosen != NULL)
+            index = GPOINTER_TO_UINT (chosen) - 1;
+        widget_destroy (WIDGET (dlg));
+
+        switch (ret)
+        {
+        case B_ENTER:
+            debug_configuration_activate (debug, index);
+            return MC_EPR_OK;
+        case DEBUG_B_NEW:
+            (void) debug_configure_impl (debug, edit, TRUE);
+            break;
+        case DEBUG_B_EDIT:
+        {
+            // the form changes the active one: the one of the cursor for it, then back
+            const guint active = debug->active_launch;
+
+            debug->active_launch = index;
+            (void) debug_configure_impl (debug, edit, FALSE);
+            debug->active_launch = active;
             debug_config_save (debug);
+            // the panel and the bar of the one active again
             debug_session_refresh (debug);
+            break;
+        }
+        case DEBUG_B_DELETE:
+            debug_configuration_delete (debug, index);
+            break;
+        default:
             return MC_EPR_OK;
         }
-    return MC_EPR_FAILED;
-}
-
-mc_ep_result_t
-debug_delete_configuration (void *data, void *edit)
-{
-    debugger_t *debug = (debugger_t *) data;
-    debug_launch_t *launch = debug_active_launch (debug);
-
-    (void) edit;
-    if (launch == NULL)
-        return MC_EPR_FAILED;
-    if (query_dialog (_ ("Debug"), _ ("Delete the selected debug configuration?"), D_NORMAL, 2,
-                      _ ("&Delete"), _ ("&Cancel"))
-        != 0)
-        return MC_EPR_FAILED;
-    if (debug->session_launch == launch)
-        debug->session_launch = NULL;
-    g_ptr_array_remove_index (debug->launches, debug->active_launch);
-    debug->active_launch = 0;
-    debug_config_save (debug);
-    debug_session_refresh (debug);
-    return MC_EPR_OK;
+    }
 }
 
 /* Whether a debug adapter runs the program of a configuration, not GDB/MI */

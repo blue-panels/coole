@@ -103,12 +103,8 @@ static const mc_ep_marker_kind_t debug_mark_kinds[DEBUG_MARK_COUNT] = {
 
 enum
 {
-    DEBUG_ACT_OPEN_PROJECT,
     DEBUG_ACT_PROJECT_STATUS,
-    DEBUG_ACT_CONFIGURE,
-    DEBUG_ACT_NEW_CONFIGURATION,
-    DEBUG_ACT_SELECT_CONFIGURATION,
-    DEBUG_ACT_DELETE_CONFIGURATION,
+    DEBUG_ACT_CONFIGURATIONS,
     DEBUG_ACT_START,
     DEBUG_ACT_TOGGLE_BREAKPOINT,
     DEBUG_ACT_CONTINUE,
@@ -1164,6 +1160,20 @@ debug_service_call (void *data, const char *method, GVariant *args, GError **err
     GVariantDict reply;
     int key = 0;
 
+    /* the project plugin before it changes the project: the session stopped, asked first; the
+       answer before anything has changed, so that Cancel keeps both where they are */
+    if (strcmp (method, "leave_project") == 0)
+    {
+        const char *root = NULL;
+
+        if (args != NULL)
+            (void) g_variant_lookup (args, "root", "&s", &root);
+        g_variant_dict_init (&reply, NULL);
+        g_variant_dict_insert (&reply, "ok", "b",
+                               g_strcmp0 (root, debug->project_dir) == 0
+                                   || debug_project_may_leave (debug, root != NULL));
+        return g_variant_dict_end (&reply);
+    }
     if (strcmp (method, "program_key") != 0)
     {
         g_set_error (error, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD, "debugger: no method %s",
@@ -1180,6 +1190,33 @@ debug_service_call (void *data, const char *method, GVariant *args, GError **err
     return g_variant_dict_end (&reply);
 }
 
+/* Whether the debugger takes @key of its command @cmd in a file window whose keymap is
+   @editor_keys, in the state it is in; the editor has it else.  The keys and the button bar
+   go by it */
+gboolean
+debug_takes_key (const debugger_t *debug, int cmd, int key, const global_keymap_t *editor_keys)
+{
+    // Help and Quit stay the editor's
+    if (cmd == DEBUG_CMD_NONE || cmd == DEBUG_CMD_HELP || cmd == DEBUG_CMD_CLOSE)
+        return FALSE;
+    // Stop, Ctrl-F2 and Shift-F5, is the editor's Save as and Insert file while nothing is debugged
+    if (cmd == DEBUG_CMD_STOP)
+        return debug_session_live (debug);
+    if (debug_stepping (debug))
+        return TRUE;
+    // debug mode: the commands of the debugger have their keys, the editor's F3 to F8 too
+    if (debug->debug_mode && cmd != DEBUG_CMD_LEAVE && cmd != DEBUG_CMD_EVALUATE
+        && cmd != DEBUG_CMD_STEP_INSTRUCTION && cmd != DEBUG_CMD_NEXT_INSTRUCTION)
+        return TRUE;
+    /* out of step mode, a key of the debugger the editor has nothing on is the debugger's:
+       Alt-F5, Ctrl-B, Ctrl-F8, Shift-F9; F5 stays Copy */
+    if (cmd == DEBUG_CMD_LEAVE || cmd == DEBUG_CMD_EVALUATE)
+        return FALSE;
+    return keybind_lookup_keymap_command (editor_keys, key) == CK_IgnoreKey;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static mc_ep_result_t
 debug_handle_key (void *data, int key, void *edit)
 {
@@ -1193,42 +1230,18 @@ debug_handle_key (void *data, int key, void *edit)
         return cmd == DEBUG_CMD_PANEL && debug_run_command (debug, cmd, NULL)
             ? MC_EPR_OK
             : MC_EPR_NOT_SUPPORTED;
-    // Stop, Ctrl-F2 and Shift-F5, is the editor's Save as and Insert file while nothing is debugged
-    if (cmd == DEBUG_CMD_STOP && !debug_session_live (debug))
-        return MC_EPR_NOT_SUPPORTED;
-    // debug mode: the commands of the debugger have their keys, the editor's F3 to F8 too
-    if (!debug_stepping (debug) && debug->debug_mode && cmd != DEBUG_CMD_NONE
-        && cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && cmd != DEBUG_CMD_LEAVE
-        && cmd != DEBUG_CMD_EVALUATE && cmd != DEBUG_CMD_STEP_INSTRUCTION
-        && cmd != DEBUG_CMD_NEXT_INSTRUCTION)
+    if (debug_takes_key (debug, cmd, key, WIDGET (edit)->keymap))
     {
         // a step with nothing running is no Search of the editor either
         if (!debug_run_command (debug, cmd, edit))
             tty_beep ();
         return MC_EPR_OK;
     }
-    /* out of step mode, a key of the debugger the editor has nothing on is the debugger's:
-       Alt-F5, Ctrl-B, Ctrl-F8, Shift-F9; F5 stays Copy, Ctrl-F2 Save as unless a program is
-       debugged */
     if (!debug_stepping (debug))
-    {
-        // the program debugged, Stop is the debugger's
-        if (cmd == DEBUG_CMD_STOP)
-            return debug_run_command (debug, cmd, edit) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
-        if (cmd == DEBUG_CMD_NONE || cmd == DEBUG_CMD_HELP || cmd == DEBUG_CMD_CLOSE
-            || cmd == DEBUG_CMD_LEAVE || cmd == DEBUG_CMD_EVALUATE
-            || keybind_lookup_keymap_command (WIDGET (edit)->keymap, key) != CK_IgnoreKey)
-            return MC_EPR_NOT_SUPPORTED;
-        return debug_run_command (debug, cmd, edit) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
-    }
-
-    // Help and Quit stay the editor's
-    if (cmd != DEBUG_CMD_HELP && cmd != DEBUG_CMD_CLOSE && debug_run_command (debug, cmd, edit))
-        return MC_EPR_OK;
-
+        return MC_EPR_NOT_SUPPORTED;
+    // in step mode the keys that move and look are the editor's; one that would change the text
     if (debug_step_passes (keybind_lookup_keymap_command (WIDGET (edit)->keymap, key)))
         return MC_EPR_NOT_SUPPORTED;
-    // a key that would change the text
     tty_beep ();
     return MC_EPR_OK;
 }
@@ -1337,7 +1350,7 @@ debug_build_finished (const char *name, const char *signal, GVariant *args, void
     {
         debug_error (debug,
                      _ ("The build failed: the lines with errors are marked, and\n"
-                        "Alt-Shift-J goes from one to the next."));
+                        "Alt-J goes from one to the next."));
         return;
     }
     debug->built_for_start = TRUE;
@@ -1400,9 +1413,11 @@ debug_open (mc_editor_host_t *host, void *editor_dialog)
         for (i = 0; i < (int) G_N_ELEMENTS (debug_window_kinds); i++)
             host->window_kind (host, &debug_window_kinds[i], debug);
     debug->build_signal = host->service_connect (host, "build", debug_build_finished, debug);
+    debug->project_signal = host->service_connect (host, "project", debug_project_changed, debug);
     debug->service = host->service_register (host, DEBUG_SERVICE, debug_service_call, debug, NULL);
     for (i = 0; i < DEBUG_CMD_COUNT; i++)
         debug->commands[i] = host->command_id (host, debug_commands[i].name);
+    debug_bar_labels (debug);
     for (i = 0; i < DEBUG_MARK_COUNT; i++)
     {
         debug->marks[i] =
@@ -1423,7 +1438,12 @@ static void
 debug_close (void *data)
 {
     debugger_t *debug = (debugger_t *) data;
+    int i;
 
+    // the keys are gone with the plugin: the bar shows the editor's there again
+    if (debug->host->command_label != NULL)
+        for (i = 0; i < DEBUG_CMD_COUNT; i++)
+            debug->host->command_label (debug->host, debug_commands[i].name, NULL);
     debug_panel_ended (debug);
     if (debug->disasm_window != NULL)
         debug->disasm_window->debug = NULL;
@@ -1444,9 +1464,11 @@ debug_close (void *data)
     g_free (debug->current_file);
     if (debug->build_signal != 0)
         debug->host->service_disconnect (debug->host, debug->build_signal);
+    if (debug->project_signal != 0)
+        debug->host->service_disconnect (debug->host, debug->project_signal);
     if (debug->service)
         debug->host->service_unregister (debug->host, DEBUG_SERVICE);
-    for (int i = 0; i < DEBUG_MARK_COUNT; i++)
+    for (i = 0; i < DEBUG_MARK_COUNT; i++)
         g_free (debug->glyphs[i]);
     g_free (debug->current_func);
     if (debug->session_filters != NULL)
@@ -1501,8 +1523,8 @@ debug_file_open (void *data, void *edit)
 
     if (file == NULL)
         return MC_EPR_NOT_SUPPORTED;
-    // the first file of a project: its breakpoints show at once
-    if (debug->project_dir == NULL)
+    // the first file of a project: its breakpoints show at once; none after Close project
+    if (debug->project_dir == NULL && !debug->project_closed)
     {
         char *root = debug_project_of (debug, edit);
 
@@ -1539,12 +1561,8 @@ debug_act_start (void *data, void *edit)
 }
 
 static const mc_ep_action_t debug_actions[] = {
-    { "Open project", debug_open_project },
     { "Project status", debug_project_status },
-    { "Configure", debug_configure },
-    { "New configuration", debug_new_configuration },
-    { "Select configuration", debug_select_configuration },
-    { "Delete configuration", debug_delete_configuration },
+    { "Configurations", debug_configurations },
     { "Start", debug_act_start },
     { "Toggle breakpoint", debug_toggle_breakpoint },
     { "Continue", debug_continue },
@@ -1575,16 +1593,12 @@ static const mc_ep_action_t debug_actions[] = {
 };
 
 static const mc_ep_cmd_menu_entry_t debug_menu[] = {
-    { MC_EP_MENU_FILE, N_ ("Open debug &project..."), DEBUG_ACT_OPEN_PROJECT, NULL },
-    // what one does, first
+    // the run of the program
     { DEBUG_MENU, N_ ("&Start or continue"), DEBUG_ACT_START, NULL },
-    { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
-    { DEBUG_MENU, N_ ("Breakpoint condition..."), DEBUG_ACT_CONDITION, NULL },
-    { DEBUG_MENU, N_ ("Breakpoint on fun&ction..."), DEBUG_ACT_FUNCTION_BREAKPOINT, NULL },
-    { DEBUG_MENU, N_ ("Exceptions..."), DEBUG_ACT_EXCEPTIONS, NULL },
-    { DEBUG_MENU, N_ ("Panel of t&he debugger"), DEBUG_ACT_SESSION, NULL },
-    { DEBUG_MENU, N_ ("Debug ke&ys in files"), DEBUG_ACT_MODE, NULL },
+    { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
+    { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
+    // its steps
     { DEBUG_MENU, N_ ("Step o&ver"), DEBUG_ACT_NEXT, NULL },
     { DEBUG_MENU, N_ ("Step &into"), DEBUG_ACT_STEP, NULL },
     { DEBUG_MENU, N_ ("Step o&ut"), DEBUG_ACT_FINISH, NULL },
@@ -1593,25 +1607,28 @@ static const mc_ep_cmd_menu_entry_t debug_menu[] = {
     { DEBUG_MENU, N_ ("Run to cursor"), DEBUG_ACT_RUN_TO_CURSOR, NULL },
     { DEBUG_MENU, N_ ("Run t&o function..."), DEBUG_ACT_RUN_TO_FUNCTION, NULL },
     { DEBUG_MENU, N_ ("Show the stop line"), DEBUG_ACT_SHOW_STOP, NULL },
-    { DEBUG_MENU, N_ ("&Pause"), DEBUG_ACT_PAUSE, NULL },
-    { DEBUG_MENU, N_ ("S&top"), DEBUG_ACT_STOP, NULL },
     { DEBUG_MENU, NULL, 0, NULL },
-    { DEBUG_MENU, N_ ("Co&nsole"), DEBUG_ACT_OUTPUT, NULL },
-    { DEBUG_MENU, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
-    { DEBUG_MENU, N_ ("Disassembly"), DEBUG_ACT_DISASSEMBLY, NULL },
+    // where it stops
+    { DEBUG_MENU, N_ ("Toggle &breakpoint"), DEBUG_ACT_TOGGLE_BREAKPOINT, NULL },
+    { DEBUG_MENU, N_ ("Breakpoint condition..."), DEBUG_ACT_CONDITION, NULL },
+    { DEBUG_MENU, N_ ("Breakpoint on fun&ction..."), DEBUG_ACT_FUNCTION_BREAKPOINT, NULL },
+    { DEBUG_MENU, N_ ("Exceptions..."), DEBUG_ACT_EXCEPTIONS, NULL },
+    { DEBUG_MENU, NULL, 0, NULL },
+    // what it has, stopped
     { DEBUG_MENU, N_ ("Evaluate e&xpression..."), DEBUG_ACT_EVALUATE, NULL },
     { DEBUG_MENU, N_ ("&Add watch..."), DEBUG_ACT_ADD_WATCH, NULL },
     { DEBUG_MENU, N_ ("&Remove watch..."), DEBUG_ACT_REMOVE_WATCH, NULL },
+    { DEBUG_MENU, N_ ("Call stac&k..."), DEBUG_ACT_STACK, NULL },
+    { DEBUG_MENU, NULL, 0, NULL },
+    // what is sent to it and to GDB
     { DEBUG_MENU, N_ ("Send &line..."), DEBUG_ACT_INPUT, NULL },
     { DEBUG_MENU, N_ ("GDB co&mmand..."), DEBUG_ACT_GDB_COMMAND, NULL },
-    { DEBUG_MENU, NULL, 0, NULL },
-    // what one sets once
-    { DEBUG_MENU, N_ ("Ne&w configuration..."), DEBUG_ACT_NEW_CONFIGURATION, NULL },
-    { DEBUG_MENU, N_ ("Select con&figuration..."), DEBUG_ACT_SELECT_CONFIGURATION, NULL },
-    { DEBUG_MENU, N_ ("Confi&gure selected..."), DEBUG_ACT_CONFIGURE, NULL },
-    { DEBUG_MENU, N_ ("&Delete configuration..."), DEBUG_ACT_DELETE_CONFIGURATION, NULL },
-    { DEBUG_MENU, N_ ("Open proj&ect..."), DEBUG_ACT_OPEN_PROJECT, NULL },
-    { DEBUG_MENU, N_ ("Project status..."), DEBUG_ACT_PROJECT_STATUS, NULL },
+    // the panel, the console and the disassembly are windows, in Window, with the keys of the files
+    { MC_EP_MENU_WINDOW, N_ ("Debug &keys in files"), DEBUG_ACT_MODE, NULL },
+    // what one sets once, with the project
+    { MC_EP_MENU_PROJECT, NULL, 0, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Debug configurations..."), DEBUG_ACT_CONFIGURATIONS, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Project st&atus..."), DEBUG_ACT_PROJECT_STATUS, NULL },
     // the windows of the debugger, with those of the other plugins
 };
 

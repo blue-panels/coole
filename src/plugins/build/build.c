@@ -133,7 +133,7 @@ static mc_ep_window_state_t build_output_state (void *data);
 /*** file scope variables ************************************************************************/
 
 static const mc_ep_command_t build_commands[BUILD_CMD_COUNT + 1] = {
-    { "BuildRun", N_ ("Build the project"), "alt-shift-b" },
+    { "BuildRun", N_ ("Build the project"), "ctrl-f9; alt-shift-b" },
     { "BuildNextError", N_ ("Go to the next error of the build"), "alt-shift-j" },
     { "BuildPrevError", N_ ("Go to the previous error of the build"), "alt-shift-k" },
     { "BuildShowError", N_ ("Go to the error of the line of the list of the build"), "enter" },
@@ -1365,7 +1365,8 @@ build_project_changed (const char *name, const char *signal, GVariant *args, voi
         return;
     (void) g_variant_lookup (args, "root", "&s", &root);
     (void) g_variant_lookup (args, "chosen", "b", &chosen);
-    if (root != NULL && chosen)
+    // an empty root: the project closed, nothing to adopt
+    if (root != NULL && *root != '\0' && chosen)
         (void) build_project_adopt (build, root, FALSE);
 }
 
@@ -1528,6 +1529,9 @@ build_open (mc_editor_host_t *host, void *editor_dialog)
     build->rows = g_array_new (FALSE, FALSE, sizeof (int));
     build->current = -1;
     host->commands_register (host, BUILD_KEYMAP_SECTION, N_ ("&Build"), build_commands);
+    // Ctrl held, the bar says what Ctrl-F9 does
+    if (host->command_label != NULL)
+        host->command_label (host, build_commands[BUILD_CMD_RUN].name, N_ ("ButtonBar|Build"));
     if (host->window_kind != NULL)
         host->window_kind (host, &build_output_kind, build);
     for (i = 0; i < BUILD_CMD_COUNT; i++)
@@ -1555,6 +1559,9 @@ build_close (void *data)
 {
     build_t *build = (build_t *) data;
 
+    // the key is gone with the plugin: the bar shows the editor's there again
+    if (build->host->command_label != NULL)
+        build->host->command_label (build->host, build_commands[BUILD_CMD_RUN].name, NULL);
     if (build->output_fd >= 0)
     {
         delete_select_channel (build->output_fd);
@@ -1619,7 +1626,7 @@ build_act_output (void *data, void *edit)
 
     (void) edit;
     if (build->output->len == 0)
-        g_string_assign (build->output, _ ("No build yet: Alt-Shift-B builds the project.\n"));
+        g_string_assign (build->output, _ ("No build yet: Ctrl-F9 builds the project.\n"));
     build->quiet = FALSE;
     build_output_show (build);
     return MC_EPR_OK;
@@ -1746,12 +1753,13 @@ build_menu_shortcut (int action_index)
 }
 
 static const mc_ep_cmd_menu_entry_t build_menu[] = {
-    { MC_EP_MENU_COMMAND, NULL, 0, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("B&uild project"), BUILD_ACT_RUN, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("Next build error"), BUILD_ACT_NEXT, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("Previous build error"), BUILD_ACT_PREV, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("Build command..."), BUILD_ACT_CONFIGURE, NULL },
-    { MC_EP_MENU_COMMAND, N_ ("Language defaults of the project..."), BUILD_ACT_DEFAULTS, NULL },
+    { MC_EP_MENU_PROJECT, NULL, 0, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("B&uild project"), BUILD_ACT_RUN, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Build &command..."), BUILD_ACT_CONFIGURE, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Bu&ild output"), BUILD_ACT_OUTPUT, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Next build error"), BUILD_ACT_NEXT, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Previous build error"), BUILD_ACT_PREV, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("&Language defaults of the project..."), BUILD_ACT_DEFAULTS, NULL },
 };
 
 static const mc_editor_plugin_t build_plugin = {

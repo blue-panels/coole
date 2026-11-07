@@ -197,6 +197,33 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+START_TEST (test_plugin_label)
+{
+    const long build = keybind_register_action ("TestBuildRun", "Build");
+    const long other = keybind_register_action ("TestBuildOther", "Other");
+    global_keymap_t plugin_map[] = {
+        { KEY_M_CTRL | KEY_F (9), build, "" },
+        { KEY_M_ALT | KEY_F (9), other, "" },
+        { 0, CK_IgnoreKey, "" },
+    };
+
+    second_map = plugin_map;
+    buttonbar_set_modifier_labels (bb, &first_map, &second_map, labels, receiver);
+
+    // a command of a plugin is shown by the label it gave, else by its name
+    keybind_set_action_label (build, N_ ("ButtonBar|Build"));
+    ck_assert_str_eq (label (9, KEY_M_CTRL), "Build");
+    ck_assert_str_eq (label (9, KEY_M_ALT), "TestBuildOther");
+    ck_assert_ptr_null (keybind_lookup_actionlabel (other));
+    ck_assert_ptr_null (keybind_lookup_actionlabel (CK_Copy));
+
+    keybind_set_action_label (build, NULL);
+    ck_assert_str_eq (label (9, KEY_M_CTRL), "TestBuildRun");
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (void)
 {
@@ -207,6 +234,7 @@ main (void)
     tcase_add_test (tc_core, test_held_modifiers);
     tcase_add_test (tc_core, test_labels);
     tcase_add_test (tc_core, test_call);
+    tcase_add_test (tc_core, test_plugin_label);
 
     return mctest_run_all (tc_core);
 }

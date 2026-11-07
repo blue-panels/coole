@@ -13,8 +13,9 @@ Put a breakpoint on a line with **Ctrl-F8** and run with **Shift-F9** (or
 **Debug → Toggle breakpoint** and **Debug → Start or continue**). The first
 time, the debugger makes a configuration of its own:
 
-1. The project is the one the project plugin finds for the file: no
-directory has to be named. **Debug → Open project...** names another.
+1. The project is the one chosen with **Project → Open project...**, else
+the one the project plugin finds for the file: no directory has to be named.
+Another project chosen there, or the project closed, the debugger follows.
 2. The program is the one the build has made, found by the build plugin
 among the programs of the project with debug information; of several, the
 newest come first in a list to choose from. The language of the project,
@@ -38,7 +39,7 @@ project is built before every start. Enter takes it.
 
 Then the project is built (its modified files saved first), GDB starts, and
 the program runs to the first breakpoint. When the build fails, the start
-waits: the lines with errors are marked, and **Alt-Shift-J** goes from one
+waits: the lines with errors are marked, and **Alt-J** goes from one
 to the next.
 
 **The program in a terminal**
@@ -76,7 +77,7 @@ to do next while nothing runs.
 In debug mode the file windows take the keys of the debugger all the time,
 not only while the program is stopped: F3 to F8 are the debugger's, F2, F9
 and F10 stay Save, the menu and Quit, and the text can be edited as ever.
-**Debug → Debug keys in files** turns debug mode on and off without
+**Window → Debug keys in files** turns debug mode on and off without
 *--debug*.
 
 In debug mode the editor asks before it ends, F10 being easy to press by a
@@ -142,10 +143,11 @@ source; the frame that threw it is the one shown.
 
 **The configurations**
 
-A project may have several: **New configuration...** guesses another one,
-**Select configuration...** chooses the one **Start** runs, **Configure
-selected...** changes it. They are kept, when **Keep in the project** is
-checked, in *.coole/debug.ini* in the project, with the names relative to it,
+A project may have several. **Project → Debug configurations...** lists
+them, the one **Start** runs marked with a star: **Select** makes the one of
+the cursor that one, **New** guesses another one, **Edit** changes the one of
+the cursor and **Delete** deletes it; the list comes back after them. They
+are kept, when **Keep in the project** is checked, in *.coole/debug.ini* in the project, with the names relative to it,
 for everyone who works on it; else with the settings of the user. A project
 new to the debugger has it checked. The breakpoints
 and the watches are one's own: they stay with the settings of the user.
@@ -304,7 +306,7 @@ registers, Python say, has no such title.
 
 **The instructions**
 
-**Debug → Disassembly** opens a window under the source, a tab beside the
+**Window → Disassembly** opens a window under the source, a tab beside the
 console, with the instructions of the function of the frame: each source line
 before its instructions, when the program has its source, and *>* on the
 instruction the program is at. A stop in code with no source opens it by

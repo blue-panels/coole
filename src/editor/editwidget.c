@@ -861,6 +861,15 @@ editor_host_commands_register_impl (mc_editor_host_t *host, const char *section,
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+editor_host_command_label_impl (mc_editor_host_t *host, const char *name, const char *label)
+{
+    (void) host;
+    keymap_command_label (name, label);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static long
 editor_host_command_id_impl (mc_editor_host_t *host, const char *name)
 {
@@ -1393,8 +1402,8 @@ editor_host_window_kind_impl (mc_editor_host_t *host, const mc_ep_window_kind_t 
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The key of a command of a keymap section as the menus say it: Alt-Shift-G for the Alt-G of the
-   keymap, Shift-F8 for F18 */
+/* The key of a command of a keymap section as the menus say it: Alt-G as the keymap has it, the
+   capital letter is Shift; Shift-F8 for F18 */
 static char *
 editor_command_caption (const char *section, const char *command)
 {
@@ -1414,8 +1423,6 @@ editor_command_caption (const char *section, const char *command)
             found = map[i].caption;
     if (found == NULL)
         return NULL;
-    if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
-        return g_strdup_printf ("Alt-Shift-%c", found[4]);
     if ((found[0] == 'F' || found[0] == 'f') && atoi (found + 1) > 10 && atoi (found + 1) <= 20)
         return g_strdup_printf ("Shift-F%d", atoi (found + 1) - 10);
     return g_strdup (found);
@@ -1501,6 +1508,7 @@ editor_plugin_ctx_create (WDialog *edit_dlg)
     ctx->host->navigate = editor_host_navigate_impl;
     ctx->host->go_to = editor_host_go_to_impl;
     ctx->host->show_location_at = editor_host_show_location_at_impl;
+    ctx->host->command_label = editor_host_command_label_impl;
     ctx->window_kinds = g_ptr_array_new_with_free_func (editor_window_kind_free);
     ctx->instances = g_ptr_array_new_with_free_func (editor_plugin_instance_free);
     // the plugins reach it from open(): call_later() for one
@@ -1669,8 +1677,13 @@ edit_plugin_handle_action (WDialog *edit_dlg, long command, WEdit *edit)
         {
             editor_plugin_instance_t *inst =
                 (editor_plugin_instance_t *) g_ptr_array_index (ctx->instances, i);
+            /* done, whatever came of it: a dialog cancelled, a project kept is no command for
+               the editor, which would give it to the plugin once more */
             if (inst->plugin == aplugin)
-                return (aplugin->actions[a_idx].callback (inst->plugin_data, edit) == MC_EPR_OK);
+            {
+                (void) aplugin->actions[a_idx].callback (inst->plugin_data, edit);
+                return TRUE;
+            }
         }
         return FALSE;
     }
@@ -2626,7 +2639,8 @@ edit_set_buttonbar (WEdit *edit, WButtonBar *bb)
     buttonbar_set_label (bb, 8, Q_ ("ButtonBar|Delete"), w->keymap, w);
     buttonbar_set_label (bb, 9, Q_ ("ButtonBar|PullDn"), w->keymap, NULL);
     buttonbar_set_label (bb, 10, Q_ ("ButtonBar|Quit"), w->keymap, NULL);
-    buttonbar_set_modifier_labels (bb, &editor_map, NULL, mod_labels, NULL);
+    // the plugins see a key first: the commands of theirs with a label, before the editor's
+    buttonbar_set_modifier_labels (bb, &plugin_bar_map, &editor_map, mod_labels, NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */

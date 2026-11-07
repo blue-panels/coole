@@ -58,6 +58,8 @@ GArray *mcterm_keymap = NULL;
 const global_keymap_t *help_map = NULL;
 const global_keymap_t *editor_map = NULL;
 const global_keymap_t *editor_x_map = NULL;
+/* the keys of the commands of the plugins that have a label on the button bar */
+const global_keymap_t *plugin_bar_map = NULL;
 const global_keymap_t *mcterm_map = NULL;
 
 /*** file scope macro definitions ****************************************************************/
@@ -86,6 +88,7 @@ typedef struct
 /*** file scope variables ************************************************************************/
 
 static GPtrArray *plugin_sections = NULL;
+static GArray *plugin_bar_keymap = NULL;
 static gboolean keymap_loaded = FALSE;
 static gboolean keymap_from_file = FALSE;
 
@@ -664,6 +667,34 @@ keymap_plugin_section_find (const char *section)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+/* plugin_bar_map made again from the sections of the plugins, in the order they came */
+static void
+keymap_plugin_bar_make (void)
+{
+    guint i;
+
+    if (plugin_bar_keymap != NULL)
+        g_array_free (plugin_bar_keymap, TRUE);
+    plugin_bar_keymap = g_array_new (TRUE, FALSE, sizeof (global_keymap_t));
+
+    for (i = 0; plugin_sections != NULL && i < plugin_sections->len; i++)
+    {
+        const keymap_plugin_section_t *ps = g_ptr_array_index (plugin_sections, i);
+        guint k;
+
+        for (k = 0; ps->keymap != NULL && k < ps->keymap->len; k++)
+        {
+            const global_keymap_t *b = &g_array_index (ps->keymap, global_keymap_t, k);
+
+            if (keybind_lookup_actionlabel (b->command) != NULL)
+                g_array_append_val (plugin_bar_keymap, *b);
+        }
+    }
+    plugin_bar_map = (const global_keymap_t *) plugin_bar_keymap->data;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -707,6 +738,23 @@ keymap_register_section (const char *section, const char *title, const keymap_co
     keymap_plugin_section_load (ps, cfg);
     if (cfg != NULL)
         mc_config_deinit (cfg);
+    keymap_plugin_bar_make ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The label of the button of the command @action of a plugin: the bar shows it while the
+   modifiers of a key of it are held.  @label N_() translatable, with the "ButtonBar|" context */
+
+void
+keymap_command_label (const char *action, const char *label)
+{
+    const long command = keybind_lookup_action (action);
+
+    if (command == CK_IgnoreKey)
+        return;
+    keybind_set_action_label (command, label);
+    keymap_plugin_bar_make ();
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -724,8 +772,8 @@ keymap_section_map (const char *section)
 
 /* The key a menu shows for the command @action of the section @section of a plugin; NULL when
    the keymap has none.  Of its keys, the first the editor has nothing on, since that one works
-   in a file window too, else the first.  "Alt-G" of the keymap is Alt with Shift and g, F18 is
-   Shift-F8: the menu says so */
+   in a file window too, else the first.  "Alt-G" stays as it is, the capital letter is Shift, as
+   the editor's own keys say it; F18 is Shift-F8 */
 char *
 keymap_menu_shortcut (const char *section, const char *action)
 {
@@ -751,8 +799,6 @@ keymap_menu_shortcut (const char *section, const char *action)
         found = first;
     if (found == NULL)
         return NULL;
-    if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
-        return g_strdup_printf ("Alt-Shift-%c", found[4]);
     if ((found[0] == 'F' || found[0] == 'f') && atoi (found + 1) > 10 && atoi (found + 1) <= 20)
         return g_strdup_printf ("Shift-F%d", atoi (found + 1) - 10);
     return g_strdup (found);
@@ -814,6 +860,7 @@ keymap_load (gboolean load_from_file)
         }
         mc_config_deinit (mc_global_keymap);
     }
+    keymap_plugin_bar_make ();
     keymap_loaded = TRUE;
     keymap_from_file = load_from_file;
 
@@ -868,6 +915,10 @@ keymap_free (void)
             ps->map = NULL;
         }
     }
+    if (plugin_bar_keymap != NULL)
+        g_array_free (plugin_bar_keymap, TRUE);
+    plugin_bar_keymap = NULL;
+    plugin_bar_map = NULL;
 }
 
 /* --------------------------------------------------------------------------------------------- */
