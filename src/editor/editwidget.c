@@ -1677,8 +1677,13 @@ edit_plugin_handle_action (WDialog *edit_dlg, long command, WEdit *edit)
         {
             editor_plugin_instance_t *inst =
                 (editor_plugin_instance_t *) g_ptr_array_index (ctx->instances, i);
+            /* done, whatever came of it: a dialog cancelled, a project kept is no command for
+               the editor, which would give it to the plugin once more */
             if (inst->plugin == aplugin)
-                return (aplugin->actions[a_idx].callback (inst->plugin_data, edit) == MC_EPR_OK);
+            {
+                (void) aplugin->actions[a_idx].callback (inst->plugin_data, edit);
+                return TRUE;
+            }
         }
         return FALSE;
     }
