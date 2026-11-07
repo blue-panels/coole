@@ -1350,7 +1350,7 @@ debug_build_finished (const char *name, const char *signal, GVariant *args, void
     {
         debug_error (debug,
                      _ ("The build failed: the lines with errors are marked, and\n"
-                        "Alt-Shift-J goes from one to the next."));
+                        "Alt-J goes from one to the next."));
         return;
     }
     debug->built_for_start = TRUE;

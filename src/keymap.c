@@ -772,8 +772,8 @@ keymap_section_map (const char *section)
 
 /* The key a menu shows for the command @action of the section @section of a plugin; NULL when
    the keymap has none.  Of its keys, the first the editor has nothing on, since that one works
-   in a file window too, else the first.  "Alt-G" of the keymap is Alt with Shift and g, F18 is
-   Shift-F8: the menu says so */
+   in a file window too, else the first.  "Alt-G" stays as it is, the capital letter is Shift, as
+   the editor's own keys say it; F18 is Shift-F8 */
 char *
 keymap_menu_shortcut (const char *section, const char *action)
 {
@@ -799,8 +799,6 @@ keymap_menu_shortcut (const char *section, const char *action)
         found = first;
     if (found == NULL)
         return NULL;
-    if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
-        return g_strdup_printf ("Alt-Shift-%c", found[4]);
     if ((found[0] == 'F' || found[0] == 'f') && atoi (found + 1) > 10 && atoi (found + 1) <= 20)
         return g_strdup_printf ("Shift-F%d", atoi (found + 1) - 10);
     return g_strdup (found);

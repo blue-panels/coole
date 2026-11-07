@@ -13,7 +13,7 @@ the hooks, the configuration and the identity of the user apply.
 
 **The window Git**
 
-**Alt-Shift-C** opens it on the tab **Status**, **Alt-Shift-L** on the tab
+**Alt-C** opens it on the tab **Status**, **Alt-L** on the tab
 **Log**. The menu **Window** has an entry for each of its windows, **Git:
 commit message**, **Git: status and log**, **Git: staged changes** and
 **Git: diff**: one opens the window Git when it is not, and gives its window
@@ -446,10 +446,10 @@ plugins** is not touched.
 These are the default keys; they can be changed in **Options -> Key
 bindings -> Editor -> Git**, or in the *[git]* section of the keymap.
 
-**Alt-Shift-C**
+**Alt-C**
 : The window Git, on the tab Status.
 
-**Alt-Shift-L**
+**Alt-L**
 : The window Git, on the tab Log.
 
 *GitCommit*

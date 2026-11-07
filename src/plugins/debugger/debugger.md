@@ -39,7 +39,7 @@ project is built before every start. Enter takes it.
 
 Then the project is built (its modified files saved first), GDB starts, and
 the program runs to the first breakpoint. When the build fails, the start
-waits: the lines with errors are marked, and **Alt-Shift-J** goes from one
+waits: the lines with errors are marked, and **Alt-J** goes from one
 to the next.
 
 **The program in a terminal**

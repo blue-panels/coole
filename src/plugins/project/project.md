@@ -26,7 +26,7 @@ build trees.
 These are the default keys; they can be changed in **Options → Key
 bindings → Editor → Project**, or in the *[project]* section of the keymap.
 
-**Alt-Shift-P**
+**Alt-P**
 : Open a file of the project. Type some letters of its name: they are looked
 for in order, in the last part of the name first, so *edwi* finds
 *src/editor/editwidget.c*. With nothing typed the recent files are listed.
@@ -51,11 +51,11 @@ says so.
 **Ctrl-E**
 : The recent files of the project, the latest first.
 
-**Alt-Shift-T**
+**Alt-T**
 : Show the tree of the project, give it the focus, and hide it; it is
 **Project → Project tree** and **Window → Project tree** too.
 
-**Alt-Shift-A**
+**Alt-A**
 : Switch between a source and its header: *calc.c* and *calc.h*, next to it
 or anywhere in the project.
 

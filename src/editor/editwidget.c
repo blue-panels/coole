@@ -1402,8 +1402,8 @@ editor_host_window_kind_impl (mc_editor_host_t *host, const mc_ep_window_kind_t 
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The key of a command of a keymap section as the menus say it: Alt-Shift-G for the Alt-G of the
-   keymap, Shift-F8 for F18 */
+/* The key of a command of a keymap section as the menus say it: Alt-G as the keymap has it, the
+   capital letter is Shift; Shift-F8 for F18 */
 static char *
 editor_command_caption (const char *section, const char *command)
 {
@@ -1423,8 +1423,6 @@ editor_command_caption (const char *section, const char *command)
             found = map[i].caption;
     if (found == NULL)
         return NULL;
-    if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
-        return g_strdup_printf ("Alt-Shift-%c", found[4]);
     if ((found[0] == 'F' || found[0] == 'f') && atoi (found + 1) > 10 && atoi (found + 1) <= 20)
         return g_strdup_printf ("Shift-F%d", atoi (found + 1) - 10);
     return g_strdup (found);
