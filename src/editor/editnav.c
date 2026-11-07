@@ -155,7 +155,6 @@ edit_nav_go (WEdit *edit, const edit_nav_place_t *place)
 {
     WDialog *h = DIALOG (CONST_WIDGET (edit)->owner);
     WEdit *target = edit_nav_window_of (edit, place->file);
-    off_t bol, eol;
 
     if (target != NULL)
         edit_window_show (EDIT_WINDOW (target));
@@ -181,13 +180,7 @@ edit_nav_go (WEdit *edit, const edit_nav_place_t *place)
             return FALSE;
     }
     edit_move_to_line (target, place->line - 1);
-    bol = edit_buffer_get_current_bol (&target->buffer);
-    eol = edit_buffer_get_current_eol (&target->buffer);
-    edit_cursor_move (target, MIN (bol + place->column, eol) - target->buffer.curs1);
-    target->search_start = target->buffer.curs1;
-    target->prev_col = edit_get_col (target);
-    target->force |= REDRAW_PAGE;
-    edit_scroll_screen_over_cursor (target);
+    edit_cursor_to_column (target, place->column, 0);
     widget_draw (WIDGET (h));
     return TRUE;
 }
@@ -246,6 +239,46 @@ edit_nav_line_text (const WEdit *edit, const edit_nav_place_t *place, GHashTable
 
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_cursor_to_column (WEdit *edit, long column, int tab_width)
+{
+    const off_t bol = edit_buffer_get_current_bol (&edit->buffer);
+    const off_t eol = edit_buffer_get_current_eol (&edit->buffer);
+    off_t to = bol;
+
+    if (tab_width <= 0)
+        to = MIN (bol + MAX (column, 0), eol);
+    else
+    {
+        long col = 0;
+
+        // a character a column, a wide one two, a tab to the next stop; a byte not UTF-8 one
+        while (to < eol && col < column)
+        {
+            int size = 1;
+            const int c = edit_buffer_get_utf (&edit->buffer, to, &size);
+
+            if (c == '\t')
+                col = (col / tab_width + 1) * tab_width;
+            else if (size <= 0 || c < 0)
+                col++;
+            else if (!g_unichar_iszerowidth ((gunichar) c))
+                col += g_unichar_iswide ((gunichar) c) ? 2 : 1;
+            to += MAX (size, 1);
+        }
+        to = MIN (to, eol);
+    }
+    // not past the end of the line where the cursor stood before, as a search puts it
+    edit->over_col = 0;
+    edit_cursor_move (edit, to - edit->buffer.curs1);
+    edit->search_start = edit->buffer.curs1;
+    edit->prev_col = edit_get_col (edit);
+    edit->force |= REDRAW_PAGE;
+    edit_scroll_screen_over_cursor (edit);
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 gboolean

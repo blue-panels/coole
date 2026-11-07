@@ -45,6 +45,8 @@ void keymap_refresh_widgets (void);
 void keymap_register_section (const char *section, const char *title,
                               const keymap_command_t *commands);
 const global_keymap_t *keymap_section_map (const char *section);
+/* The key a menu shows for a command of a plugin, newly allocated; NULL when it has none */
+char *keymap_menu_shortcut (const char *section, const char *action);
 gboolean keymap_plugin_section (guint index, const char **section, const char **title);
 
 /*** inline functions ****************************************************************************/

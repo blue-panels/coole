@@ -722,6 +722,44 @@ keymap_section_map (const char *section)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The key a menu shows for the command @action of the section @section of a plugin; NULL when
+   the keymap has none.  Of its keys, the first the editor has nothing on, since that one works
+   in a file window too, else the first.  "Alt-G" of the keymap is Alt with Shift and g, F18 is
+   Shift-F8: the menu says so */
+char *
+keymap_menu_shortcut (const char *section, const char *action)
+{
+    const global_keymap_t *map = keymap_section_map (section);
+    const char *first = NULL;
+    const char *found = NULL;
+    long command;
+    size_t i;
+
+    if (map == NULL || action == NULL)
+        return NULL;
+    command = keybind_lookup_action (action);
+    for (i = 0; map[i].key != 0; i++)
+        if (map[i].command == command && map[i].caption[0] != '\0')
+        {
+            if (found == NULL && editor_map != NULL
+                && keybind_lookup_keymap_command (editor_map, map[i].key) == CK_IgnoreKey)
+                found = map[i].caption;
+            if (first == NULL)
+                first = map[i].caption;
+        }
+    if (found == NULL)
+        found = first;
+    if (found == NULL)
+        return NULL;
+    if (g_str_has_prefix (found, "Alt-") && g_ascii_isupper (found[4]) && found[5] == '\0')
+        return g_strdup_printf ("Alt-Shift-%c", found[4]);
+    if ((found[0] == 'F' || found[0] == 'f') && atoi (found + 1) > 10 && atoi (found + 1) <= 20)
+        return g_strdup_printf ("Shift-F%d", atoi (found + 1) - 10);
+    return g_strdup (found);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The sections of the plugins, in the order they came: their names and their titles */
 gboolean
 keymap_plugin_section (guint index, const char **section, const char **title)
