@@ -254,6 +254,20 @@ edit_plugin_menu_free (gpointer data)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* coole -D is for a project, its build and its debugging: the menus of drawing, of the format
+   of the text and of the plugins are not in the menubar; their scripts keep their keys, and
+   Options keeps Manage plugins */
+static gboolean
+edit_menu_off_for_session (const char *menu_name)
+{
+    static const char *const debug_off[] = { "Drawing", "Format", MC_EP_MENU_PLUGINS, NULL };
+
+    return menu_name != NULL && edit_startup_option ("debug") != NULL
+        && g_strv_contains (debug_off, menu_name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The menus the menubar has of its own, which the plugins add entries to */
 static gboolean
 edit_menu_is_builtin (const char *menu_name)
@@ -748,6 +762,7 @@ edit_init_menu (WMenuBar *menubar)
         GList *entries;
 
         if (edit_runtime_menu_is_builtin (action->menu_path)
+            || edit_menu_off_for_session (action->menu_path)
             || (i > 0
                 && g_strcmp0 (((const edit_runtime_menu_action_t *) g_ptr_array_index (
                                    runtime_menu_actions, i - 1))
@@ -771,11 +786,16 @@ edit_init_menu (WMenuBar *menubar)
     }
     menu_idx_window = idx++;
 
-    menubar_add_menu (menubar,
-                      menu_new (_ ("Pl&ugins"),
-                                append_runtime_menu_entries (create_plugins_menu (), "Plugins"),
-                                "[Internal File Editor]"));
-    menu_idx_plugins = idx++;
+    if (edit_menu_off_for_session (MC_EP_MENU_PLUGINS))
+        menu_idx_plugins = -1;
+    else
+    {
+        menubar_add_menu (menubar,
+                          menu_new (_ ("Pl&ugins"),
+                                    append_runtime_menu_entries (create_plugins_menu (), "Plugins"),
+                                    "[Internal File Editor]"));
+        menu_idx_plugins = idx++;
+    }
 
     menubar_add_menu (menubar,
                       menu_new (_ ("&Options"),
