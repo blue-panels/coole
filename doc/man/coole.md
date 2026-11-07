@@ -73,7 +73,8 @@ breakpoint, F5 builds the program and runs it, making its debug
 configuration the first time, F7 and F8 step, F3 indexes the symbols of the
 project; F2, F9 and F10 stay Save, the menu and Quit, and Alt-F5 goes
 to the panel and back. It needs the project, build and debugger plugins,
-and ctags for F3.
+and ctags for F3. The menus Drawing, Format and Plugins are not in the
+menubar; their keys stay, and Options keeps Manage plugins.
 
 *-Q, --query*
 : Run the queries of the file in a database, MongoDB by mongosh or
