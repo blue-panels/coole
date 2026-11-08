@@ -36,10 +36,16 @@
 
 #include <config.h>
 
+#include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>  // PRId64: G_GINT64_FORMAT is not read by xgettext
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <glib/gstdio.h>
 
 #include "lib/global.h"
 #include "lib/event.h"
@@ -77,6 +83,12 @@
 #define QUERY_HEAD_QUERY 60
 // the height of the tabs, percent of the screen
 #define QUERY_TABS_SIZE 40
+// what the writer of an export has before it goes to the file
+#define QUERY_EXPORT_CHUNK (64 * 1024)
+// the files "name.2.part" and on the export tries, those before it being there
+#define QUERY_EXPORT_PARTS 100
+// the rows of an INSERT of the export, unless the dialog says otherwise
+#define QUERY_EXPORT_PER_INSERT 100
 
 /*** file scope type declarations ****************************************************************/
 
@@ -93,6 +105,17 @@ typedef struct
     char *summary;  // how it ended, told in place of the exit code: "SELECT 12"; NULL for none
 } query_entry_t;
 
+/* The export of a run: its rows written to a file */
+struct query_export_run_t
+{
+    query_export_t *writer;
+    char *path;  // the file
+    char *tmp;   // written first, the file once all is there: no half of a file in its place
+    int fd;
+    gint64 bytes;
+    char *error;  // why it could not be written, NULL for none
+};
+
 /*** forward declarations (file scope functions) *************************************************/
 
 const mc_editor_plugin_t *mc_editor_plugin_register (void);
@@ -100,6 +123,8 @@ static void query_run_text (query_t *q, char *text, char *file, long first, char
                             char *version);
 static gboolean query_blank (const char *text);
 static void query_current_one (query_t *q);
+static void query_run (query_t *q, void *edit, gboolean all, gboolean export);
+static query_export_run_t *query_export_ask (query_t *q, const char *base, const char *table);
 static char *query_history_file_text (query_t *q);
 static char *query_version_of_text (const char *file, const char *text);
 
@@ -124,6 +149,10 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
       N_ ("Put the drop, commented, and the create of the node of Schema into the file"), "f4" },
     { "QueryAi", N_ ("Write the query of the request of the paragraph or the selection by AI"),
       "f6" },
+    { "QueryExport",
+      N_ ("Write all the rows of the query, or of the relation of Schema, to a file: CSV, JSON, "
+          "SQL"),
+      NULL },
     { NULL, NULL, NULL },
 };
 
@@ -880,9 +909,9 @@ query_blank (const char *text)
 /* --------------------------------------------------------------------------------------------- */
 
 /* Run the selection of @edit, else the section of its cursor between lines "// ---", else all of
-   it; all of it when @all */
+   it; all of it when @all; its rows written to a file asked for when @export */
 static void
-query_run (query_t *q, void *edit, gboolean all)
+query_run (query_t *q, void *edit, gboolean all, gboolean export)
 {
     WEdit *e;
     char *text, *block = NULL, *use = NULL, *file, *version;
@@ -943,10 +972,27 @@ query_run (query_t *q, void *edit, gboolean all)
         g_free (text);
         return;
     }
+    file = q->host->get_current_file (q->host, edit);
+    if (export)
+    {
+        char *base = file != NULL ? g_path_get_basename (file) : g_strdup ("query");
+        char *dot = strrchr (base, '.');
+
+        if (dot != NULL && dot != base)
+            *dot = '\0';
+        q->export = query_export_ask (q, base, NULL);
+        g_free (base);
+        if (q->export == NULL)
+        {
+            g_free (file);
+            g_free (block);
+            g_free (text);
+            return;
+        }
+    }
     // a part run alone is in the database of the use ("name") above it
     if (first > 0 && q->backend->context != NULL)
         use = q->backend->context (text, first);
-    file = q->host->get_current_file (q->host, edit);
     // the file as it is run, unless it is that of the run before; nothing run, no version
     version = file != NULL && !query_in_versions (file) ? query_version_save (file, text) : NULL;
     g_free (text);
@@ -977,9 +1023,20 @@ query_run_text (query_t *q, char *text, char *file, long first, char *use, char 
     q->stopped = FALSE;
     q->started = g_get_monotonic_time ();
     q->host->clear_markers (q->host, NULL, q->mark);
-    query_tab_set (q, QUERY_TAB_OUTPUT, _ ("Running...\n"), TRUE);
+    if (q->export != NULL)
+    {
+        char *line = g_strdup_printf (_ ("Running, the rows written to %s...\n"), q->export->path);
+
+        query_tab_set (q, QUERY_TAB_OUTPUT, line, TRUE);
+        g_free (line);
+    }
+    else
+        query_tab_set (q, QUERY_TAB_OUTPUT, _ ("Running...\n"), TRUE);
     query_table_say (q, _ ("Running...\n"));
     q->backend->start (q->backend_data);
+    // a backend that could not start it: no file
+    if (q->export != NULL && !q->backend->running (q->backend_data))
+        g_free (query_export_close (q, FALSE, NULL));
     query_redraw (q);
 }
 
@@ -991,6 +1048,378 @@ query_run_alone (query_t *q, const char *text)
     // a query of no file, of no line: nothing of it is marked in one
     q->first_column = 0;
     query_run_text (q, g_strdup (text), NULL, 0, NULL, NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* QueryExport */
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_export_run_free (query_export_run_t *x)
+{
+    query_export_free (x->writer);
+    g_free (x->path);
+    g_free (x->tmp);
+    g_free (x->error);
+    g_free (x);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The file of the export opened, a file of its own next to the file asked for, made new: one of
+   that name there, of another export or of the user, is left as it is, "name.2.part" taken;
+   FALSE with @error when it cannot be */
+static gboolean
+query_export_open (query_export_run_t *x, char **error)
+{
+    int i;
+
+    for (i = 1; i <= QUERY_EXPORT_PARTS; i++)
+    {
+        g_free (x->tmp);
+        x->tmp = i == 1 ? g_strconcat (x->path, ".part", (char *) NULL)
+                        : g_strdup_printf ("%s.%d.part", x->path, i);
+        x->fd = g_open (x->tmp, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0666);
+        if (x->fd >= 0)
+            return TRUE;
+        if (errno != EEXIST)
+            break;
+    }
+    *error = g_strdup_printf ("%s: %s", x->tmp, g_strerror (errno));
+    // no file of its own to remove: that of the name is not its
+    g_clear_pointer (&x->tmp, g_free);
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The options of the export of the user, the last ones given to the dialog */
+static query_export_options_t *
+query_export_options (query_t *q)
+{
+    if (q->export_options == NULL)
+    {
+        query_export_options_t *o = g_new0 (query_export_options_t, 1);
+
+        o->format = QUERY_EXPORT_CSV;
+        o->delimiter = ',';
+        o->header = TRUE;
+        o->per_insert = QUERY_EXPORT_PER_INSERT;
+        q->export_options = o;
+    }
+    return q->export_options;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The file and the format of QueryExport asked for, @base the start of the name of the file, the
+   time after it; @table the name INSERT is given, NULL for that of the dialog before.  NULL when
+   the user cancels, or the file cannot be made. */
+static query_export_run_t *
+query_export_ask (query_t *q, const char *base, const char *table)
+{
+    query_export_options_t *o = query_export_options (q);
+    const char *formats[QUERY_EXPORT_FORMATS];
+    int which[QUERY_EXPORT_FORMATS];  // the format of each item of the dialog
+    const char *delimiters[] = { N_ ("&,"), N_ ("&;"), N_ ("&Tab") };
+    const char delimiter_chars[] = { ',', ';', '\t' };
+    int n = 0, item = 0, delimiter = 0, ret, i;
+    gboolean header = o->header, quote_all = o->quote_all, null_word = o->null_word;
+    char *path = NULL, *name = NULL, *rows = NULL, *proposed, *dir, *stamp, *start, *error = NULL;
+    char *per = g_strdup_printf ("%d", o->per_insert);
+    GDateTime *now = g_date_time_new_now_local ();
+    query_export_run_t *x;
+
+    for (i = 0; i < QUERY_EXPORT_FORMATS; i++)
+    {
+        static const char *const names[QUERY_EXPORT_FORMATS] = {
+            N_ ("&CSV"),        N_ ("&JSON, an array"), N_ ("&NDJSON, an object a line"),
+            N_ ("S&QL INSERT"), N_ ("&Markdown"),
+        };
+
+        // INSERT of the rows of a database of tables of SQL alone
+        if (i == QUERY_EXPORT_SQL && !q->backend->export_sql)
+            continue;
+        if ((int) o->format == i)
+            item = n;
+        which[n] = i;
+        formats[n++] = _ (names[i]);
+    }
+    for (i = 0; i < (int) G_N_ELEMENTS (delimiters); i++)
+    {
+        if (o->delimiter == delimiter_chars[i])
+            delimiter = i;
+        delimiters[i] = _ (delimiters[i]);
+    }
+
+    // "orders-20261108-101500.csv" in the directory of coole
+    dir = g_get_current_dir ();
+    stamp = g_date_time_format (now, "%Y%m%d-%H%M%S");
+    g_date_time_unref (now);
+    start = g_strdup_printf ("%s-%s.", base, stamp);
+    g_free (stamp);
+    {
+        char *file = g_strconcat (start, query_export_extension (o->format), (char *) NULL);
+
+        proposed = g_build_filename (dir, file, (char *) NULL);
+        g_free (file);
+    }
+
+    {
+        quick_widget_t widgets[] = {
+            QUICK_LABELED_INPUT (_ ("File:"), input_label_above, proposed, "query-export-file",
+                                 &path, NULL, FALSE, FALSE, INPUT_COMPLETE_FILENAMES),
+            QUICK_START_COLUMNS,
+            QUICK_START_GROUPBOX (_ ("Format")),
+            QUICK_RADIO (n, formats, &item, NULL),
+            QUICK_STOP_GROUPBOX,
+            QUICK_NEXT_COLUMN,
+            QUICK_START_GROUPBOX (_ ("CSV: the delimiter")),
+            QUICK_RADIO (G_N_ELEMENTS (delimiters), delimiters, &delimiter, NULL),
+            QUICK_STOP_GROUPBOX,
+            QUICK_STOP_COLUMNS,
+            QUICK_CHECKBOX (_ ("CSV: the names of the columns on the &first line"), &header, NULL),
+            QUICK_CHECKBOX (_ ("CSV: every value in &quotes"), &quote_all, NULL),
+            QUICK_CHECKBOX (_ ("CSV, Markdown: NULL as the word N&ULL, else nothing"), &null_word,
+                            NULL),
+            QUICK_SEPARATOR (TRUE),
+            QUICK_LABELED_INPUT (_ ("INSERT INTO:"), input_label_left,
+                                 table != NULL          ? table
+                                     : o->table != NULL ? o->table
+                                                        : "export",
+                                 "query-export-table", &name, NULL, FALSE, FALSE,
+                                 INPUT_COMPLETE_NONE),
+            QUICK_LABELED_INPUT (_ ("Rows a statement:"), input_label_left, per,
+                                 "query-export-rows", &rows, NULL, FALSE, FALSE,
+                                 INPUT_COMPLETE_NONE),
+            QUICK_BUTTONS_OK_CANCEL,
+            QUICK_END,
+        };
+        WRect r = { -1, -1, 0, MIN (72, COLS - 4) };
+        quick_dialog_t qdlg = {
+            .rect = r,
+            .title = _ ("Export the rows of the query"),
+            .help = QUERY_HELP_NODE,
+            .help_file = QUERY_HELP_FILE,
+            .widgets = widgets,
+            .callback = NULL,
+            .mouse_callback = NULL,
+        };
+
+        // no INSERT: its lines are not there
+        if (!q->backend->export_sql)
+        {
+            const size_t at = 13;
+
+            memmove (&widgets[at], &widgets[at + 3],
+                     sizeof (widgets) - (at + 3) * sizeof (widgets[0]));
+        }
+        ret = quick_dialog (&qdlg);
+    }
+    g_free (per);
+    g_free (dir);
+    if (ret == B_CANCEL || path == NULL || *g_strstrip (path) == '\0')
+    {
+        g_free (path);
+        g_free (name);
+        g_free (rows);
+        g_free (start);
+        g_free (proposed);
+        return NULL;
+    }
+
+    o->format = (query_export_format_t) which[item];
+    o->delimiter = delimiter_chars[delimiter];
+    o->header = header;
+    o->quote_all = quote_all;
+    o->null_word = null_word;
+    if (name != NULL)
+    {
+        // the table of Schema is that of its relation, not one to keep for the next export
+        if (table == NULL || strcmp (g_strstrip (name), table) != 0)
+        {
+            g_free (o->table);
+            o->table = g_strdup (g_strstrip (name));
+        }
+    }
+    if (rows != NULL)
+        o->per_insert = MAX (1, atoi (rows));
+
+    // the name proposed, left as it was: the extension of the format chosen
+    if (strcmp (path, proposed) == 0)
+    {
+        char *file = g_strconcat (start, query_export_extension (o->format), (char *) NULL);
+        char *d = g_path_get_dirname (proposed);
+
+        g_free (path);
+        path = g_build_filename (d, file, (char *) NULL);
+        g_free (d);
+        g_free (file);
+    }
+    else if (!g_path_is_absolute (path))
+    {
+        char *cwd = g_get_current_dir ();
+        char *full = g_build_filename (cwd, path, (char *) NULL);
+
+        g_free (cwd);
+        g_free (path);
+        path = full;
+    }
+    g_free (start);
+    g_free (proposed);
+
+    if (g_file_test (path, G_FILE_TEST_EXISTS))
+    {
+        char *text = g_strdup_printf (_ ("The file %s is there. Write over it?"), path);
+        const int answer = query_dialog (_ ("Export"), text, D_NORMAL, 2, _ ("&Yes"), _ ("&No"));
+
+        g_free (text);
+        if (answer != 0)
+        {
+            g_free (path);
+            g_free (name);
+            g_free (rows);
+            return NULL;
+        }
+    }
+
+    {
+        query_export_options_t given = *o;
+
+        // the name of Schema, else that of the dialog
+        given.table = name != NULL ? g_strstrip (name) : o->table;
+        x = g_new0 (query_export_run_t, 1);
+        x->writer = query_export_new (&given);
+    }
+    x->path = path;
+    x->fd = -1;
+    g_free (name);
+    g_free (rows);
+    if (!query_export_open (x, &error))
+    {
+        q->host->message (q->host, D_ERROR, _ ("Export"), error);
+        g_free (error);
+        query_export_run_free (x);
+        return NULL;
+    }
+    return x;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_export_alone (query_t *q, const char *text, const char *name, const char *table)
+{
+    if (q->backend->running (q->backend_data))
+    {
+        query_run (q, NULL, FALSE, FALSE);
+        return;
+    }
+    q->export = query_export_ask (q, name, table);
+    if (q->export != NULL)
+        query_run_alone (q, text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+query_export_t *
+query_export_writer (query_t *q)
+{
+    return q->export != NULL && q->export->error == NULL ? q->export->writer : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+query_export_flush (query_t *q, gboolean all)
+{
+    query_export_run_t *x = q->export;
+    GString *out;
+    gsize done = 0;
+
+    if (x == NULL)
+        return TRUE;
+    if (x->error != NULL)
+        return FALSE;
+    out = query_export_text (x->writer);
+    if (!all && out->len < QUERY_EXPORT_CHUNK)
+        return TRUE;
+    while (done < out->len)
+    {
+        const ssize_t n = write (x->fd, out->str + done, out->len - done);
+
+        if (n < 0 && errno == EINTR)
+            continue;
+        if (n <= 0)
+        {
+            x->error = g_strdup_printf ("%s: %s", x->tmp, g_strerror (n < 0 ? errno : ENOSPC));
+            g_string_truncate (out, 0);
+            return FALSE;
+        }
+        done += (gsize) n;
+    }
+    x->bytes += (gint64) out->len;
+    g_string_truncate (out, 0);
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_export_close (query_t *q, gboolean ok, const char *why)
+{
+    query_export_run_t *x = q->export;
+    char *line;
+
+    if (x == NULL)
+        return NULL;
+    if (ok && x->error == NULL)
+    {
+        query_export_end (x->writer);
+        (void) query_export_flush (q, TRUE);
+    }
+    if (x->fd >= 0 && close (x->fd) != 0 && x->error == NULL)
+        x->error = g_strdup_printf ("%s: %s", x->tmp, g_strerror (errno));
+    x->fd = -1;
+    ok = ok && x->error == NULL;
+    if (ok && g_rename (x->tmp, x->path) != 0)
+    {
+        x->error = g_strdup_printf ("%s: %s", x->path, g_strerror (errno));
+        ok = FALSE;
+    }
+    if (!ok)
+        (void) g_unlink (x->tmp);
+    q->export = NULL;
+
+    if (ok)
+    {
+        const gint64 rows = query_export_rows (x->writer);
+        char *size = g_format_size ((guint64) x->bytes);
+        char *skipped = query_export_skipped (x->writer);
+        GString *text = g_string_new (ANSI_GREEN);
+
+        g_string_append_printf (text,
+                                ngettext ("%" PRId64 " row written to %s, %s.",
+                                          "%" PRId64 " rows written to %s, %s.", (gulong) rows),
+                                (int64_t) rows, x->path, size);
+        g_string_append (text, ANSI_RESET "\n");
+        if (skipped != NULL)
+            g_string_append_printf (text,
+                                    _ ("Keys of documents after the first %d, no columns of "
+                                       "the file, are left out: %s\n"),
+                                    QUERY_EXPORT_SAMPLE, skipped);
+        g_free (skipped);
+        g_free (size);
+        line = g_string_free (text, FALSE);
+    }
+    else
+        line = g_strdup_printf (ANSI_RED "%s: %s" ANSI_RESET "\n", _ ("No file is written"),
+                                x->error != NULL  ? x->error
+                                    : why != NULL ? why
+                                    : q->stopped  ? _ ("the query was stopped")
+                                                  : _ ("the query failed"));
+    query_export_run_free (x);
+    return line;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1006,7 +1435,7 @@ query_history_run (query_t *q, const char *version)
 
     if (q->backend->running (q->backend_data))
     {
-        query_run (q, NULL, FALSE);
+        query_run (q, NULL, FALSE, FALSE);
         return;
     }
     if (e == NULL)
@@ -1546,10 +1975,23 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
         if (version != NULL)
             query_history_run (q, version);
         else
-            query_run (q, edit, FALSE);
+            query_run (q, edit, FALSE, FALSE);
         return TRUE;
     case QUERY_CMD_RUN_ALL:
-        query_run (q, edit, TRUE);
+        query_run (q, edit, TRUE, FALSE);
+        return TRUE;
+    case QUERY_CMD_EXPORT:
+        if (!q->backend->export)
+        {
+            q->host->message (q->host, D_NORMAL, _ ("Query"),
+                              _ ("The rows of the queries of this database are not exported."));
+            return TRUE;
+        }
+        // in Schema: the rows of the relation of the node of its cursor
+        if (edit == NULL && q->backend->schema != NULL
+            && q->backend->schema (q->backend_data, QUERY_SCHEMA_EXPORT, TRUE))
+            return TRUE;
+        query_run (q, edit, FALSE, TRUE);
         return TRUE;
     case QUERY_CMD_STOP:
         query_stop (q);
@@ -1559,7 +2001,7 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
             q->host->message (q->host, D_NORMAL, _ ("Query"),
                               _ ("The queries of this database have no transaction."));
         else if (q->backend->running (q->backend_data))
-            query_run (q, NULL, FALSE);
+            query_run (q, NULL, FALSE, FALSE);
         else
             query_run_alone (q, q->backend->rollback);
         return TRUE;
@@ -1773,6 +2215,13 @@ query_close (void *data)
     query_ai_free (q);
     if (q->backend != NULL)
         q->backend->close (q->backend_data);
+    // a run killed by the close: no half of a file
+    g_free (query_export_close (q, FALSE, NULL));
+    if (q->export_options != NULL)
+    {
+        g_free (q->export_options->table);
+        g_free (q->export_options);
+    }
     if (q->viewer_signal != 0)
         q->host->service_disconnect (q->host, q->viewer_signal);
     g_ptr_array_free (q->history, TRUE);

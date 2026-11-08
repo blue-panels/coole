@@ -74,6 +74,7 @@ if json_glib.found()
   if have_gmodule
     query_pg = executable('query_pg', 'query_pg.c',
                           '../../../src/plugins/query/query-postgres.c',
+                          '../../../src/plugins/query/query-export.c',
                           '../../../src/plugins/query/query-pq.c',
                           '../../../src/plugins/query/query-core.c',
                           c_args: ['-DQUERY_SCRIPTS_DIR="@0@"'.format(

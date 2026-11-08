@@ -73,6 +73,7 @@ query_item_free (gpointer data)
 
     g_free (item->insert);
     g_free (item->rows);
+    g_free (item->all);
     g_free (item);
 }
 
@@ -644,6 +645,23 @@ query_tree_rows (query_tree_t *t, query_node_t *n)
         return;
     }
     query_run_alone (t->q, QUERY_ITEM (o)->rows);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_tree_export (query_tree_t *t, query_node_t *n)
+{
+    const query_node_t *o = query_node_object (n);
+    char *base;
+
+    if (o == NULL || QUERY_ITEM (o)->all == NULL)
+        return;
+    // the file named after the object, INSERT into the relation it is; a '/' of a name in quotes
+    // is no directory
+    base = g_strdelimit (g_strdup (o->key), "/", '_');
+    query_export_alone (t->q, QUERY_ITEM (o)->all, base, QUERY_ITEM (o)->insert);
+    g_free (base);
 }
 
 /* --------------------------------------------------------------------------------------------- */

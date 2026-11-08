@@ -74,6 +74,17 @@
 #define QUERY_PG_BYTEA_SHOWN 16
 // the type bytea, its Oid in pg_type
 #define QUERY_PG_BYTEA_OID 17
+// the types of pg_type the export writes by their kind
+#define QUERY_PG_BOOL_OID    16
+#define QUERY_PG_INT8_OID    20
+#define QUERY_PG_INT2_OID    21
+#define QUERY_PG_INT4_OID    23
+#define QUERY_PG_OID_OID     26
+#define QUERY_PG_JSON_OID    114
+#define QUERY_PG_FLOAT4_OID  700
+#define QUERY_PG_FLOAT8_OID  701
+#define QUERY_PG_NUMERIC_OID 1700
+#define QUERY_PG_JSONB_OID   3802
 
 /*** file scope type declarations ****************************************************************/
 
@@ -139,6 +150,11 @@ typedef struct
     GPtrArray *cells;    // of the first QUERY_TABLE_ROWS rows; the rest only counted
     gint64 nrows;
     char *status;  // "SELECT 600": the last chunk has it, not the end of the rows after it
+
+    // QueryExport: the rows of the first command that has some go to its file too
+    gboolean exporting;    // those of the command being read
+    gboolean exported;     // those of a command before
+    query_value_t *kinds;  // of its columns, NULL when it is not exported
 } query_pg_t;
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -228,6 +244,7 @@ query_pg_not_run (query_pg_t *p, int status, const char *summary)
     if (!p->pending)
         return;
     p->pending = FALSE;
+    g_free (query_export_close (q, FALSE, NULL));
     query_table_say (q,
                      status < 0 ? _ ("The query was stopped before it ran.\n")
                                 : _ ("The query was not run: there is no connection.\n"));
@@ -428,7 +445,67 @@ query_pg_cell (const query_pg_t *p, const PGresult *res, int row, int column)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The rows of @res, of the command being read: the first QUERY_TABLE_ROWS kept, all counted */
+/* What the export writes a value of the type @type as */
+static query_value_t
+query_pg_kind (Oid type)
+{
+    switch (type)
+    {
+    case QUERY_PG_BOOL_OID:
+        return QUERY_VALUE_BOOL;
+    case QUERY_PG_INT2_OID:
+    case QUERY_PG_INT4_OID:
+    case QUERY_PG_INT8_OID:
+    case QUERY_PG_OID_OID:
+    case QUERY_PG_FLOAT4_OID:
+    case QUERY_PG_FLOAT8_OID:
+    case QUERY_PG_NUMERIC_OID:
+        return QUERY_VALUE_NUMBER;
+    case QUERY_PG_JSON_OID:
+    case QUERY_PG_JSONB_OID:
+        return QUERY_VALUE_JSON;
+    default:
+        return QUERY_VALUE_TEXT;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The rows of @res written to the file of the export, whole, as the server wrote them; the
+   query canceled when the file cannot be written */
+static void
+query_pg_export_rows (query_pg_t *p, const PGresult *res)
+{
+    const query_pq_t *pq = p->pq;
+    query_export_t *x = query_export_writer (p->q);
+    const int nfields = pq->PQnfields (res), ntuples = pq->PQntuples (res);
+    const char **values;
+    gsize *lens;
+    int r, c;
+
+    if (x == NULL)
+        return;
+    values = g_new0 (const char *, nfields + 1);
+    lens = g_new0 (gsize, nfields + 1);
+    for (r = 0; r < ntuples; r++)
+    {
+        for (c = 0; c < nfields; c++)
+        {
+            values[c] = pq->PQgetisnull (res, r, c) ? NULL : pq->PQgetvalue (res, r, c);
+            lens[c] = (gsize) pq->PQgetlength (res, r, c);
+        }
+        query_export_row (x, values, lens, p->kinds);
+    }
+    g_free (values);
+    g_free (lens);
+    if (!query_export_flush (p->q, FALSE) && !p->q->stopped)
+        p->q->backend->stop (p);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The rows of @res, of the command being read: the first QUERY_TABLE_ROWS kept, all counted;
+   all of them to the file of an export, those of its first command that has some */
 static void
 query_pg_rows (query_pg_t *p, const PGresult *res)
 {
@@ -443,7 +520,17 @@ query_pg_rows (query_pg_t *p, const PGresult *res)
         p->nrows = 0;
         for (c = 0; c < nfields; c++)
             g_ptr_array_add (p->columns, g_strdup (pq->PQfname (res, c)));
+        p->exporting = query_export_writer (p->q) != NULL && !p->exported;
+        if (p->exporting)
+        {
+            p->kinds = g_new0 (query_value_t, nfields + 1);
+            for (c = 0; c < nfields; c++)
+                p->kinds[c] = query_pg_kind (pq->PQftype (res, c));
+            query_export_columns (query_export_writer (p->q), p->columns);
+        }
     }
+    if (p->exporting)
+        query_pg_export_rows (p, res);
     for (r = 0; r < ntuples; r++, p->nrows++)
         if (p->nrows < (gint64) QUERY_TABLE_ROWS)
             for (c = 0; c < nfields; c++)
@@ -481,6 +568,13 @@ query_pg_table (query_pg_t *p, const char *status)
                                 ngettext ("%u row\n\n%s\n", "%u rows\n\n%s\n", (gulong) p->nrows),
                                 (guint) p->nrows, grid);
     p->rows = p->rows || (status != NULL && p->nrows > 0);
+    // the rows of the export are those of this command: the others go to Table alone
+    if (p->exporting)
+    {
+        p->exporting = FALSE;
+        p->exported = TRUE;
+        g_clear_pointer (&p->kinds, g_free);
+    }
     g_free (grid);
     g_ptr_array_free (p->columns, TRUE);
     g_ptr_array_free (p->cells, TRUE);
@@ -706,7 +800,7 @@ query_pg_done (query_pg_t *p)
     char when[16];
     const time_t now = time (NULL);
     GString *text = g_string_new (NULL);
-    char *title;
+    char *title, *exported;
 
     // a query that ended by itself before the cancel came is no query stopped
     if (q->stopped && !p->canceled && !p->lost)
@@ -729,6 +823,14 @@ query_pg_done (query_pg_t *p)
     else
         p->state = QUERY_PG_READY;
 
+    /* the file of the export, there when all the rows of its command came; why there is none is
+       told by query_export_close () for a query stopped or failed */
+    exported = query_export_close (q, !q->stopped && !p->failed && p->exported,
+                                   !q->stopped && !p->failed && !p->exported
+                                       ? _ ("the query gave no rows: a command that gives some, "
+                                            "SELECT, ... RETURNING, is exported")
+                                       : NULL);
+
     (void) strftime (when, sizeof (when), "%H:%M:%S", localtime (&now));
     query_output_head (q, text, seconds, when);
     if (q->stopped)
@@ -739,6 +841,11 @@ query_pg_done (query_pg_t *p)
         g_string_append (text, _ ("done"));
     title = query_pg_transaction (p, text);
     g_string_append (text, ANSI_RESET "\n\n");
+    if (exported != NULL)
+    {
+        g_string_append (text, exported);
+        g_string_append_c (text, '\n');
+    }
     g_string_append_len (text, p->out->str, (gssize) p->out->len);
     if (p->cut)
         g_string_append_printf (text, ANSI_RED "\n%s\n" ANSI_RESET,
@@ -753,8 +860,9 @@ query_pg_done (query_pg_t *p)
         g_string_append (p->tables,
                          _ ("No rows: a command that gives some, SELECT, ... RETURNING, "
                             "makes a table.\n"));
-    // in front when it has rows, Output with an error
-    query_tab_set (q, QUERY_TAB_TABLE, p->tables->str, p->rows && !p->failed);
+    // in front when it has rows, Output with an error, and with the file of an export
+    query_tab_set (q, QUERY_TAB_TABLE, p->tables->str, p->rows && !p->failed && exported == NULL);
+    g_free (exported);
     query_history_add (q, when, seconds, q->stopped ? -1 : p->failed ? 1 : 0, p->summary);
     // the other connection of Schema sees what is committed alone
     if (p->ddl && p->schema != NULL
@@ -837,7 +945,8 @@ query_pg_send (query_pg_t *p)
     g_string_truncate (p->tables, 0);
     p->ntables = 0;
     p->rows = p->failed = p->cut = p->link.flushing = p->copy_out = p->copy_in = p->lost = p->told =
-        p->canceled = FALSE;
+        p->canceled = p->exporting = p->exported = FALSE;
+    g_clear_pointer (&p->kinds, g_free);
     g_clear_pointer (&p->summary, g_free);
     if (p->reconnect)
     {
@@ -1134,6 +1243,7 @@ query_pg_close (void *data)
     g_string_free (p->out, TRUE);
     g_string_free (p->tables, TRUE);
     g_free (p->status);
+    g_free (p->kinds);
     g_free (p->summary);
     if (p->columns != NULL)
     {
@@ -1343,6 +1453,8 @@ const query_backend_t query_postgres_backend = {
     .start = query_pg_start,
     .stop = query_pg_stop,
     .rollback = "ROLLBACK",
+    .export = TRUE,
+    .export_sql = TRUE,
     .schema = query_pg_schema,
     .language = "SQL of PostgreSQL, run by libpq as it is: no command of psql",
     .comment = "-- ",
