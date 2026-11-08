@@ -152,7 +152,7 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { "QueryExport",
       N_ ("Write all the rows of the query, or of the relation of Schema, to a file: CSV, JSON, "
           "SQL"),
-      NULL },
+      "ctrl-f6; alt-x" },
     { NULL, NULL, NULL },
 };
 
@@ -1405,7 +1405,7 @@ query_export_close (query_t *q, gboolean ok, const char *why)
         g_string_append (text, ANSI_RESET "\n");
         if (skipped != NULL)
             g_string_append_printf (text,
-                                    _ ("Keys of documents after the first %d, no columns of "
+                                    _ ("Keys the first %d documents have not, no columns of "
                                        "the file, are left out: %s\n"),
                                     QUERY_EXPORT_SAMPLE, skipped);
         g_free (skipped);
@@ -2198,6 +2198,10 @@ query_open (mc_editor_host_t *host, void *editor_dialog)
     if (q->on)
     {
         q->backend_data = q->backend->open (q);
+        // Ctrl held, the bar says what Ctrl-F6 does
+        if (host->command_label != NULL)
+            host->command_label (host, query_commands[QUERY_CMD_EXPORT].name,
+                                 N_ ("ButtonBar|Export"));
         query_extension = q->backend->extension;
         q->viewer_signal = host->service_connect (host, "viewer", query_viewer_signal, q);
         host->call_later (host, query_startup, q);
@@ -2213,6 +2217,9 @@ query_close (void *data)
     query_t *q = (query_t *) data;
 
     query_ai_free (q);
+    // the key is gone with the plugin: the bar shows the editor's there again
+    if (q->on && q->host->command_label != NULL)
+        q->host->command_label (q->host, query_commands[QUERY_CMD_EXPORT].name, NULL);
     if (q->backend != NULL)
         q->backend->close (q->backend_data);
     // a run killed by the close: no half of a file

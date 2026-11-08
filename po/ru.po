@@ -2302,6 +2302,10 @@ msgstr "Копия"
 msgid "ButtonBar|Run"
 msgstr "Пуск"
 
+#: src/plugins/query/query.c
+msgid "ButtonBar|Export"
+msgstr "Экспорт"
+
 msgid "ButtonBar|Move"
 msgstr "Переместить"
 
@@ -3661,3 +3665,136 @@ msgstr "Файла запросов, в котором нажата F4, боль
 #: src/plugins/query/query-tree.c:748
 msgid "The file of queries is being changed: the DDL is here."
 msgstr "Файл запросов сейчас меняется: DDL здесь."
+
+#: src/plugins/query/query.c
+msgid "Write all the rows of the query, or of the relation of Schema, to a file: CSV, JSON, SQL"
+msgstr "Записать все строки запроса или отношения Схемы в файл: CSV, JSON, SQL"
+
+#: src/plugins/query/query.c
+#, c-format
+msgid "Running, the rows written to %s...\n"
+msgstr "Выполняется, строки пишутся в %s...\n"
+
+#: src/plugins/query/query.c
+msgid "&,"
+msgstr "&,"
+
+#: src/plugins/query/query.c
+msgid "&;"
+msgstr "&;"
+
+#: src/plugins/query/query.c
+msgid "&Tab"
+msgstr "&Табуляция"
+
+#: src/plugins/query/query.c
+msgid "&CSV"
+msgstr "&CSV"
+
+#: src/plugins/query/query.c
+msgid "&JSON, an array"
+msgstr "&JSON, массив"
+
+#: src/plugins/query/query.c
+msgid "&NDJSON, an object a line"
+msgstr "&NDJSON, объект на строку"
+
+#: src/plugins/query/query.c
+msgid "S&QL INSERT"
+msgstr "S&QL INSERT"
+
+#: src/plugins/query/query.c
+msgid "&Markdown"
+msgstr "&Markdown"
+
+#: src/plugins/query/query.c
+msgid "File:"
+msgstr "Файл:"
+
+#: src/plugins/query/query.c
+msgid "Format"
+msgstr "Формат"
+
+#: src/plugins/query/query.c
+msgid "CSV: the delimiter"
+msgstr "CSV: разделитель"
+
+#: src/plugins/query/query.c
+msgid "CSV: the names of the columns on the &first line"
+msgstr "CSV: имена столбцов в &первой строке"
+
+#: src/plugins/query/query.c
+msgid "CSV: every value in &quotes"
+msgstr "CSV: каждое значение в &кавычках"
+
+#: src/plugins/query/query.c
+msgid "CSV, Markdown: NULL as the word N&ULL, else nothing"
+msgstr "CSV, Markdown: NULL как слово N&ULL, иначе пусто"
+
+#: src/plugins/query/query.c
+msgid "INSERT INTO:"
+msgstr "INSERT INTO:"
+
+#: src/plugins/query/query.c
+msgid "Rows a statement:"
+msgstr "Строк в операторе:"
+
+#: src/plugins/query/query.c
+msgid "Export the rows of the query"
+msgstr "Экспорт строк запроса"
+
+#: src/plugins/query/query.c
+#, c-format
+msgid "The file %s is there. Write over it?"
+msgstr "Файл %s уже есть. Перезаписать его?"
+
+#: src/plugins/query/query.c
+msgid "Export"
+msgstr "Экспорт"
+
+#: src/plugins/query/query.c
+#, c-format
+msgid "%<PRId64> row written to %s, %s."
+msgid_plural "%<PRId64> rows written to %s, %s."
+msgstr[0] "%<PRId64> строка записана в %s, %s."
+msgstr[1] "%<PRId64> строки записаны в %s, %s."
+msgstr[2] "%<PRId64> строк записано в %s, %s."
+msgstr[3] "%<PRId64> строк записано в %s, %s."
+
+#: src/plugins/query/query.c
+#, c-format
+msgid "Keys the first %d documents have not, no columns of the file, are left out: %s\n"
+msgstr "Ключи, которых нет в первых %d документах, не стали столбцами файла и пропущены: %s\n"
+
+#: src/plugins/query/query.c
+msgid "No file is written"
+msgstr "Файл не записан"
+
+#: src/plugins/query/query.c
+msgid "the query was stopped"
+msgstr "запрос остановлен"
+
+#: src/plugins/query/query.c
+msgid "the query failed"
+msgstr "запрос не удался"
+
+#: src/plugins/query/query.c
+msgid "The rows of the queries of this database are not exported."
+msgstr "Строки запросов этой базы данных не экспортируются."
+
+#: src/plugins/query/query-mongo.c
+#, c-format
+msgid "mongosh printed no JSON: %s"
+msgstr "mongosh напечатал не JSON: %s"
+
+#: src/plugins/query/query-mongo.c
+msgid ""
+"QueryExport writes the documents of a query that ends with find (), aggregate ()\n"
+"or toArray (): this one ends with none.\n"
+msgstr ""
+"QueryExport записывает документы запроса, который кончается find (), aggregate ()\n"
+"или toArray (): этот не кончается ни одним из них.\n"
+
+#: src/plugins/query/query-postgres.c
+msgid "the query gave no rows: a command that gives some, SELECT, ... RETURNING, is exported"
+msgstr "запрос не дал строк: экспортируется команда, которая их даёт, SELECT, ... RETURNING"
