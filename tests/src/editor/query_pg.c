@@ -283,6 +283,7 @@ struct query_export_run_t
 };
 
 static GString *export_file;
+static gboolean export_create_table = TRUE;
 static gboolean export_ok;
 static char *export_why;
 
@@ -533,6 +534,7 @@ run_export (const char *text, query_export_format_t format, const char *table)
         .header = TRUE,
         .table = (char *) table,
         .per_insert = 2,
+        .create_table = export_create_table,
     };
 
     g_string_truncate (export_file, 0);
@@ -568,7 +570,36 @@ test_export (void)
                      "{\"id\":2,\"ok\":false,\"doc\":null,\"price\":\"NaN\"}\n]\n");
 
     // INSERT of SQL: run again, the rows are the same
+    // the table made first, of the types of the columns: the file alone makes the rows again
+    run_export ("SELECT * FROM e ORDER BY id", QUERY_EXPORT_SQL, "pg_temp.e3");
+    g_assert_true (export_ok);
+    assert_has (export_file->str,
+                "CREATE TABLE pg_temp.e3 (\n  id integer,\n  name text,\n  ok boolean,\n"
+                "  doc jsonb,\n  price numeric,\n  b bytea\n);\n");
+    {
+        char *again = g_strconcat (export_file->str,
+                                   "SELECT count(*) AS same FROM (SELECT * FROM e EXCEPT "
+                                   "SELECT * FROM e3) AS d",
+                                   (char *) NULL);
+
+        run (again);
+        g_free (again);
+    }
+    g_assert_cmpint (history_status, ==, 0);
+    assert_has (tab_text[QUERY_TAB_TABLE], "| 0 ");
+
+    // the types of their modifiers: a scale below 0, PostgreSQL 15
+    run_export ("SELECT 1.5::numeric(5,1) AS a, 'x'::varchar(7) AS b, 1200::numeric(5,-2) AS c",
+                QUERY_EXPORT_SQL, "pg_temp.e4");
+    g_assert_true (export_ok);
+    assert_has (export_file->str,
+                "  a numeric(5,1),\n  b character varying(7),\n  c numeric(5,-2)\n");
+    run (export_file->str);
+    g_assert_cmpint (history_status, ==, 0);
+
+    export_create_table = FALSE;
     run_export ("SELECT * FROM e ORDER BY id", QUERY_EXPORT_SQL, "e2");
+    export_create_table = TRUE;
     g_assert_true (export_ok);
     {
         char *again = g_strconcat ("CREATE TEMP TABLE e2 (LIKE e);\n", export_file->str,

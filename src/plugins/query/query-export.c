@@ -54,6 +54,7 @@ struct query_export_t
     GString *out;
     GPtrArray *columns;  // their names, NULL until they are known
     GHashTable *names;   // the same, to be found
+    GPtrArray *types;    // of SQL, NULL for none known
     gint64 rows;
     gboolean opened;  // what goes before the first row is written: "[" of JSON
 
@@ -243,6 +244,24 @@ query_export_head (query_export_t *x)
             query_csv_value (x, out, name, strlen (name));
         }
         g_string_append_c (out, '\n');
+        break;
+    case QUERY_EXPORT_SQL:
+        // the table of the INSERT statements, of the columns of the rows
+        if (!x->o.create_table || x->columns->len == 0)
+            break;
+        g_string_append_printf (out, "CREATE TABLE %s (\n", x->o.table);
+        for (c = 0; c < x->columns->len; c++)
+        {
+            char *name = query_pg_ident (g_ptr_array_index (x->columns, c));
+            const char *type = x->types != NULL && c < x->types->len
+                ? (const char *) g_ptr_array_index (x->types, c)
+                : "text";
+
+            g_string_append_printf (out, "  %s %s%s\n", name, type,
+                                    c + 1 < x->columns->len ? "," : "");
+            g_free (name);
+        }
+        g_string_append (out, ");\n\n");
         break;
     case QUERY_EXPORT_MARKDOWN:
         if (x->columns->len == 0)
@@ -598,11 +617,27 @@ query_export_free (query_export_t *x)
         g_hash_table_destroy (x->names);
     if (x->columns != NULL)
         g_ptr_array_free (x->columns, TRUE);
+    if (x->types != NULL)
+        g_ptr_array_free (x->types, TRUE);
     if (x->sample != NULL)
         g_ptr_array_free (x->sample, TRUE);
     if (x->skipped != NULL)
         g_hash_table_destroy (x->skipped);
     g_free (x);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_export_types (query_export_t *x, GPtrArray *types)
+{
+    guint c;
+
+    if (x->types != NULL)
+        return;
+    x->types = g_ptr_array_new_with_free_func (g_free);
+    for (c = 0; c < types->len; c++)
+        g_ptr_array_add (x->types, g_strdup (g_ptr_array_index (types, c)));
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -664,21 +699,28 @@ query_export_row (query_export_t *x, const char *const *values, const gsize *len
         break;
     case QUERY_EXPORT_JSON:
     case QUERY_EXPORT_NDJSON:
+    {
+        // an array of objects indented: a key a line
+        const gboolean indent = x->o.format == QUERY_EXPORT_JSON && x->o.indent;
+
         if (x->o.format == QUERY_EXPORT_JSON)
             g_string_append (out, x->opened ? ",\n" : "[\n");
         x->opened = TRUE;
-        g_string_append_c (out, '{');
+        g_string_append (out, indent ? "  {" : "{");
         for (c = 0; c < n; c++)
         {
             const char *name = g_ptr_array_index (x->columns, c);
 
             if (c > 0)
                 g_string_append_c (out, ',');
+            if (indent)
+                g_string_append (out, "\n    ");
             query_json_string (out, name, strlen (name));
-            g_string_append_c (out, ':');
+            g_string_append (out, indent ? ": " : ":");
             query_json_value (out, values[c], lens[c], kinds[c]);
         }
-        g_string_append_c (out, '}');
+        g_string_append (out, indent && n > 0 ? "\n  }" : "}");
+    }
         if (x->o.format == QUERY_EXPORT_NDJSON)
             g_string_append_c (out, '\n');
         break;
@@ -706,7 +748,7 @@ query_export_row (query_export_t *x, const char *const *values, const gsize *len
         {
             g_string_append (out, "| ");
             if (values[c] == NULL)
-                g_string_append (out, x->o.null_word ? "NULL" : "");
+                g_string_append (out, x->o.null_markdown ? "NULL" : "");
             else if (kinds[c] == QUERY_VALUE_BOOL)
                 g_string_append (out, query_bool_true (values[c], lens[c]) ? "true" : "false");
             else
@@ -738,11 +780,25 @@ query_export_document (query_export_t *x, const char *json, GError **error)
             g_object_unref (parser);
             return FALSE;
         }
-        g_object_unref (parser);
         if (x->o.format == QUERY_EXPORT_JSON)
             g_string_append (x->out, x->opened ? ",\n" : "[\n");
         x->opened = TRUE;
-        g_string_append (x->out, json);
+        if (x->o.format == QUERY_EXPORT_JSON && x->o.indent
+            && json_parser_get_root (parser) != NULL)
+        {
+            // a key a line, inside the array
+            char *pretty = json_to_string (json_parser_get_root (parser), TRUE);
+            char **lines = g_strsplit (pretty, "\n", -1);
+            char **l;
+
+            for (l = lines; *l != NULL; l++)
+                g_string_append_printf (x->out, "%s  %s", l == lines ? "" : "\n", *l);
+            g_strfreev (lines);
+            g_free (pretty);
+        }
+        else
+            g_string_append (x->out, json);
+        g_object_unref (parser);
         if (x->o.format == QUERY_EXPORT_NDJSON)
             g_string_append_c (x->out, '\n');
         x->rows++;

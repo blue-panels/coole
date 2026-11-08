@@ -48,11 +48,16 @@ typedef struct
     char delimiter;
     gboolean header;     // the names of the columns on the first line
     gboolean quote_all;  // every value in quotes, else those that need them
-    // CSV and Markdown: NULL is the word NULL, else nothing
-    gboolean null_word;
-    // SQL: INSERT INTO @table, @per_insert rows a statement
+    gboolean null_word;  // NULL is the word NULL, else nothing
+    // JSON: an object on lines of their own, a key a line
+    gboolean indent;
+    // SQL: INSERT INTO @table, @per_insert rows a statement, after its CREATE TABLE when
+    // @create_table
     char *table;
     int per_insert;
+    gboolean create_table;
+    // Markdown: NULL is the word NULL, else nothing
+    gboolean null_markdown;
 } query_export_options_t;
 
 typedef struct query_export_t query_export_t;
@@ -68,6 +73,9 @@ const char *query_export_extension (query_export_format_t format);
 query_export_t *query_export_new (const query_export_options_t *options);
 void query_export_free (query_export_t *x);
 
+/* The types of SQL of the columns, "integer", "character varying(20)", before their names: those
+   of CREATE TABLE, "text" without them */
+void query_export_types (query_export_t *x, GPtrArray *types);
 /* The names of the columns of the rows, before the first of them */
 void query_export_columns (query_export_t *x, GPtrArray *names);
 /* A row: its values of @lens bytes, of @kinds, as many as the columns; a NULL value is NULL */

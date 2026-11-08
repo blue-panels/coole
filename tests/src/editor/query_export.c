@@ -158,6 +158,15 @@ test_json (void)
     g_assert_cmpstr (s, ==, "[]\n");
     g_free (s);
 
+    // a key a line
+    options.indent = TRUE;
+    s = export_rows (&options, 1);
+    g_assert_cmpstr (s, ==,
+                     "[\n  {\n    \"id\": 1,\n    \"name\": \"plain\",\n    \"ok\": true,\n"
+                     "    \"doc\": {\"a\": 1},\n    \"Price\": 1.50\n  }\n]\n");
+    g_free (s);
+    options.indent = FALSE;
+
     options.format = QUERY_EXPORT_NDJSON;
     s = export_rows (&options, 1);
     g_assert_cmpstr (
@@ -196,6 +205,31 @@ test_sql (void)
     s = export_rows (&options, 0);
     g_assert_cmpstr (s, ==, "");
     g_free (s);
+
+    // the table made first, of the types given, text for those not given
+    options.create_table = TRUE;
+    options.table = (char *) "t";
+    {
+        query_export_t *x = query_export_new (&options);
+        GPtrArray *names = g_ptr_array_new (), *types = g_ptr_array_new ();
+        const char *values[] = { "1", NULL };
+        const gsize lens[] = { 1, 0 };
+        const query_value_t k[] = { QUERY_VALUE_NUMBER, QUERY_VALUE_TEXT };
+
+        g_ptr_array_add (names, (gpointer) "id");
+        g_ptr_array_add (names, (gpointer) "Name");
+        g_ptr_array_add (types, (gpointer) "integer");
+        query_export_types (x, types);
+        query_export_columns (x, names);
+        query_export_row (x, values, lens, k);
+        query_export_end (x);
+        g_assert_cmpstr (query_export_text (x)->str, ==,
+                         "CREATE TABLE t (\n  id integer,\n  \"Name\" text\n);\n\n"
+                         "INSERT INTO t (id, \"Name\") VALUES\n  (1, NULL);\n");
+        query_export_free (x);
+        g_ptr_array_free (names, TRUE);
+        g_ptr_array_free (types, TRUE);
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -261,6 +295,15 @@ test_markdown (void)
     query_export_options_t options = { .format = QUERY_EXPORT_MARKDOWN };
     char *s;
 
+    // NULL as a word of its own option, not that of CSV
+    options.null_word = TRUE;
+    options.null_markdown = TRUE;
+    s = export_rows (&options, 3);
+    g_assert_nonnull (strstr (s, "| 3 | NULL | NULL | [1, 2] | -0.5e3 |\n"));
+    g_free (s);
+    options.null_word = FALSE;
+    options.null_markdown = FALSE;
+
     s = export_rows (&options, 3);
     g_assert_cmpstr (s, ==,
                      "| id | name | ok | doc | Price |\n"
@@ -310,6 +353,18 @@ test_documents (void)
     g_assert_cmpstr (
         s, ==, "[\n{\"_id\": 3, \"sub\": {\"x\": \"y|z\"}, \"ok\": true, \"none\": null}\n]\n");
     g_free (s);
+    {
+        // indented: a key a line, inside the array
+        query_export_options_t options = { .format = QUERY_EXPORT_JSON, .indent = TRUE };
+        query_export_t *x = query_export_new (&options);
+
+        g_assert_true (query_export_document (x, "{\"_id\": 3, \"sub\": {\"x\": 1}}", NULL));
+        query_export_end (x);
+        g_assert_cmpstr (
+            query_export_text (x)->str, ==,
+            "[\n  {\n    \"_id\" : 3,\n    \"sub\" : {\n      \"x\" : 1\n    }\n  }\n]\n");
+        query_export_free (x);
+    }
 
     s = export_documents (QUERY_EXPORT_MARKDOWN, docs + 2, NULL);
     g_assert_cmpstr (s, ==,

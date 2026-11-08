@@ -3676,64 +3676,12 @@ msgid "Running, the rows written to %s...\n"
 msgstr "Выполняется, строки пишутся в %s...\n"
 
 #: src/plugins/query/query.c
-msgid "&,"
-msgstr "&,"
-
-#: src/plugins/query/query.c
-msgid "&;"
-msgstr "&;"
-
-#: src/plugins/query/query.c
-msgid "&Tab"
-msgstr "&Табуляция"
-
-#: src/plugins/query/query.c
-msgid "&CSV"
-msgstr "&CSV"
-
-#: src/plugins/query/query.c
-msgid "&JSON, an array"
-msgstr "&JSON, массив"
-
-#: src/plugins/query/query.c
-msgid "&NDJSON, an object a line"
-msgstr "&NDJSON, объект на строку"
-
-#: src/plugins/query/query.c
-msgid "S&QL INSERT"
-msgstr "S&QL INSERT"
-
-#: src/plugins/query/query.c
 msgid "&Markdown"
 msgstr "&Markdown"
 
 #: src/plugins/query/query.c
 msgid "File:"
 msgstr "Файл:"
-
-#: src/plugins/query/query.c
-msgid "Format"
-msgstr "Формат"
-
-#: src/plugins/query/query.c
-msgid "CSV: the delimiter"
-msgstr "CSV: разделитель"
-
-#: src/plugins/query/query.c
-msgid "CSV: the names of the columns on the &first line"
-msgstr "CSV: имена столбцов в &первой строке"
-
-#: src/plugins/query/query.c
-msgid "CSV: every value in &quotes"
-msgstr "CSV: каждое значение в &кавычках"
-
-#: src/plugins/query/query.c
-msgid "CSV, Markdown: NULL as the word N&ULL, else nothing"
-msgstr "CSV, Markdown: NULL как слово N&ULL, иначе пусто"
-
-#: src/plugins/query/query.c
-msgid "INSERT INTO:"
-msgstr "INSERT INTO:"
 
 #: src/plugins/query/query.c
 msgid "Rows a statement:"
@@ -3798,3 +3746,71 @@ msgstr ""
 #: src/plugins/query/query-postgres.c
 msgid "the query gave no rows: a command that gives some, SELECT, ... RETURNING, is exported"
 msgstr "запрос не дал строк: экспортируется команда, которая их даёт, SELECT, ... RETURNING"
+
+#: src/plugins/query/query.c
+msgid "C&SV"
+msgstr "C&SV"
+
+#: src/plugins/query/query.c
+msgid "S&QL"
+msgstr "S&QL"
+
+#: src/plugins/query/query.c
+msgid "The names of the columns on the first &line"
+msgstr "Имена столбцов в первой &строке"
+
+#: src/plugins/query/query.c
+msgid "Every value in quot&es, else those that need them"
+msgstr "Каждое значение в &кавычках, иначе только где нужно"
+
+#: src/plugins/query/query.c
+msgid "&JSON"
+msgstr "&JSON"
+
+#: src/plugins/query/query.c
+msgid "&NDJSON"
+msgstr "&NDJSON"
+
+#: src/plugins/query/query.c
+msgid "Delimiter:"
+msgstr "Разделитель:"
+
+#: src/plugins/query/query.c
+msgid "NULL as the word N&ULL, else nothing"
+msgstr "NULL как слово N&ULL, иначе пусто"
+
+#: src/plugins/query/query.c
+msgid "An array of objects, a row an object."
+msgstr "Массив объектов, строка - объект."
+
+#: src/plugins/query/query.c
+msgid "&Indented: a key a line"
+msgstr "С &отступами: ключ на строку"
+
+#: src/plugins/query/query.c
+msgid "Table of the INSERT statements:"
+msgstr "Таблица операторов INSERT:"
+
+#: src/plugins/query/query.c
+msgid "CREATE &TABLE first, of the types of the columns"
+msgstr "Сначала CREATE &TABLE, по типам столбцов"
+
+#: src/plugins/query/query.c
+msgid "A table, each cell on one line."
+msgstr "Таблица, каждая ячейка в одну строку."
+
+#: src/plugins/query/query.c
+msgid ""
+"An object a line, for jq, mongoimport and the like:\n"
+"nothing to choose."
+msgstr ""
+"Объект на строку, для jq, mongoimport и им подобных:\n"
+"настраивать нечего."
+
+#: src/plugins/query/query.c
+msgid "The delimiter is one character, not a quote, or \\t for a tab."
+msgstr "Разделитель - один символ, не кавычка, или \\t для табуляции."
+
+#: src/plugins/query/query.c
+msgid "Options"
+msgstr "Настройки"

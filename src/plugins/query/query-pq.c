@@ -116,10 +116,10 @@ query_pq_load (char **error)
                    && QUERY_PQ_FUNCTION (PQresultErrorMessage) && QUERY_PQ_FUNCTION (PQcmdStatus)
                    && QUERY_PQ_FUNCTION (PQntuples) && QUERY_PQ_FUNCTION (PQnfields)
                    && QUERY_PQ_FUNCTION (PQfname) && QUERY_PQ_FUNCTION (PQftype)
-                   && QUERY_PQ_FUNCTION (PQgetvalue) && QUERY_PQ_FUNCTION (PQgetisnull)
-                   && QUERY_PQ_FUNCTION (PQgetlength) && QUERY_PQ_FUNCTION (PQclear)
-                   && QUERY_PQ_FUNCTION (PQgetCancel) && QUERY_PQ_FUNCTION (PQfreeCancel)
-                   && QUERY_PQ_FUNCTION (PQcancel)))
+                   && QUERY_PQ_FUNCTION (PQfmod) && QUERY_PQ_FUNCTION (PQgetvalue)
+                   && QUERY_PQ_FUNCTION (PQgetisnull) && QUERY_PQ_FUNCTION (PQgetlength)
+                   && QUERY_PQ_FUNCTION (PQclear) && QUERY_PQ_FUNCTION (PQgetCancel)
+                   && QUERY_PQ_FUNCTION (PQfreeCancel) && QUERY_PQ_FUNCTION (PQcancel)))
         {
             query_pq_error = g_strdup_printf (_ ("%s lacks a function of libpq: %s"),
                                               g_module_name (query_pq_module), g_module_error ());

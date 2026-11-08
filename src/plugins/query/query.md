@@ -182,25 +182,33 @@ the documents of the collection to a file, as below.
 would run, the selection, else the part between the lines *// ---*, else
 the file, with no *// @limit* and not the 100 rows of Table; in Schema,
 all the rows of the relation of the node, all the documents of the
-collection. A dialog asks for the file, by default the name of the file of
-queries, or of the relation, and the time, *orders-20261108-101500.csv*,
-in the directory of coole, and for the format:
+collection. A dialog has a page for each format, the buttons at its top
+going from one to another: the page seen is the format written. Each has
+the file, by default the name of the file of queries, or of the relation,
+and the time, *orders-20261108-101500.csv*, in the directory of coole; a
+name left as it was takes the extension of the page.
 
 *CSV*
-: The delimiter, *,*, *;* or a tab; the names of the columns on the first
-line; every value in quotes, else those with the delimiter, a quote or a
-newline in them; *NULL* as the word NULL, else nothing.
+: The delimiter, a character, *\t* or *Tab* for a tab; the names of the
+columns on the first line; every value in quotes, else those with the
+delimiter, a quote or a newline in them; *NULL* as the word NULL, else
+nothing.
 
 *JSON*, *NDJSON*
-: An array of objects, or an object a line. Numbers, booleans and JSON are
-written as they are, the rest as strings, a *NaN* too.
+: An array of objects, indented or not, or an object a line. Numbers,
+booleans and JSON are written as they are, the rest as strings, a *NaN*
+too.
 
-*SQL INSERT*
-: PostgreSQL alone: *INSERT INTO* the table the dialog names, that of the
-relation of Schema, so many rows a statement, the values literals of SQL.
+*SQL*
+: PostgreSQL alone: *INSERT INTO* the table the page names, so many rows a
+statement, the values literals of SQL; first its *CREATE TABLE* when it is
+asked for, of the columns of the query and their types, the file then
+making the rows again by itself. The columns are named as the query names
+them, by its aliases too. A query of a file asks for *CREATE TABLE* at
+first; the rows of a relation of Schema go into it, without one.
 
 *Markdown*
-: A table, each cell on one line.
+: A table, each cell on one line; *NULL* as the word NULL, else nothing.
 
 The rows are written as they come, to the file and *.part* beside it, which
 takes its place once all of them are there: a query stopped, failed or that

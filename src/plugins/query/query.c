@@ -116,6 +116,30 @@ struct query_export_run_t
     char *error;  // why it could not be written, NULL for none
 };
 
+/* The page of a format of the dialog of the export: the value of its button */
+#define QUERY_PAGE(format) (B_USER + (int) (format))
+
+/* What the pages of the dialog of the export are given, from one page to another */
+typedef struct
+{
+    query_export_format_t format;                         // of the page seen
+    query_export_format_t formats[QUERY_EXPORT_FORMATS];  // those of the pages, in their order
+    int count;
+    char *path;
+    char *start;  // of the name proposed, before its extension: "/home/u/orders-20261108-101500."
+    // CSV
+    char *delimiter;  // as it is written: ",", "\\t" or "Tab" for a tab
+    gboolean header, quote_all, null_word;
+    // JSON
+    gboolean indent;
+    // SQL
+    char *table;
+    char *per;
+    gboolean create_table;
+    // Markdown
+    gboolean null_markdown;
+} query_export_form_t;
+
 /*** forward declarations (file scope functions) *************************************************/
 
 const mc_editor_plugin_t *mc_editor_plugin_register (void);
@@ -161,6 +185,9 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
 static const mc_ep_marker_kind_t query_mark_kind = {
     "query.error", "query-error-char", "E", "E", "builderror", NULL, NULL, 6, "brightred",
 };
+
+// the line of the options of a page of the dialog of the export, while it runs
+static unsigned long query_export_options_line;
 
 // the extension of the versions of a file of queries, that of the files of the backend
 static const char *query_extension = ".js";
@@ -1105,6 +1132,7 @@ query_export_options (query_t *q)
         o->delimiter = ',';
         o->header = TRUE;
         o->per_insert = QUERY_EXPORT_PER_INSERT;
+        o->create_table = TRUE;
         q->export_options = o;
     }
     return q->export_options;
@@ -1112,189 +1140,344 @@ query_export_options (query_t *q)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The file and the format of QueryExport asked for, @base the start of the name of the file, the
-   time after it; @table the name INSERT is given, NULL for that of the dialog before.  NULL when
-   the user cancels, or the file cannot be made. */
-static query_export_run_t *
-query_export_ask (query_t *q, const char *base, const char *table)
+/* The delimiter of CSV written @text: a character of ASCII, a quote and the end of a line not one;
+   "\\t" or "Tab" a tab.  FALSE when it is none. */
+static gboolean
+query_export_delimiter (const char *text, char *c)
 {
-    query_export_options_t *o = query_export_options (q);
-    const char *formats[QUERY_EXPORT_FORMATS];
-    int which[QUERY_EXPORT_FORMATS];  // the format of each item of the dialog
-    const char *delimiters[] = { N_ ("&,"), N_ ("&;"), N_ ("&Tab") };
-    const char delimiter_chars[] = { ',', ';', '\t' };
-    int n = 0, item = 0, delimiter = 0, ret, i;
-    gboolean header = o->header, quote_all = o->quote_all, null_word = o->null_word;
-    char *path = NULL, *name = NULL, *rows = NULL, *proposed, *dir, *stamp, *start, *error = NULL;
-    char *per = g_strdup_printf ("%d", o->per_insert);
-    GDateTime *now = g_date_time_new_now_local ();
-    query_export_run_t *x;
-
-    for (i = 0; i < QUERY_EXPORT_FORMATS; i++)
+    if (strcmp (text, "\\t") == 0 || g_ascii_strcasecmp (text, "tab") == 0)
     {
-        static const char *const names[QUERY_EXPORT_FORMATS] = {
-            N_ ("&CSV"),        N_ ("&JSON, an array"), N_ ("&NDJSON, an object a line"),
-            N_ ("S&QL INSERT"), N_ ("&Markdown"),
+        *c = '\t';
+        return TRUE;
+    }
+    if (text[0] == '\0' || text[1] != '\0' || !g_ascii_isprint (text[0]) || text[0] == '"')
+        return FALSE;
+    *c = text[0];
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The dialog of the export made: the line of the options of the format has its title at its left,
+   as a groupbox has, the line going from one side of the dialog to the other */
+static cb_ret_t
+query_export_dialog_cb (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    if (msg == MSG_INIT)
+    {
+        Widget *line = widget_find_by_id (w, query_export_options_line);
+
+        if (line != NULL)
+        {
+            char *title = g_strdup_printf (" %s ", _ ("Options"));
+
+            hline_set_text (HLINE (line), title);
+            HLINE (line)->text_align = J_LEFT;
+            g_free (title);
+        }
+    }
+    return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A page of the dialog of the export, that of the format @f->format, the buttons at its top going
+   to those of the others: what it was given put in @f unless it is canceled; B_ENTER, B_CANCEL
+   or the page of a format */
+static int
+query_export_page (query_export_form_t *f)
+{
+    static const char *const tab_names[QUERY_EXPORT_FORMATS] = {
+        N_ ("C&SV"), N_ ("&JSON"), N_ ("&NDJSON"), N_ ("S&QL"), N_ ("&Markdown"),
+    };
+    char *path = NULL, *table = NULL, *per = NULL;
+    char *delimiter = NULL;
+    int ret, i;
+    gboolean header = f->header, quote_all = f->quote_all, null_word = f->null_word;
+    gboolean indent = f->indent, create_table = f->create_table, null_markdown = f->null_markdown;
+    GArray *widgets = g_array_new (FALSE, FALSE, sizeof (quick_widget_t));
+
+    {
+        quick_widget_t top[] = {
+            QUICK_TOP_BUTTONS (FALSE, TRUE),
         };
-
-        // INSERT of the rows of a database of tables of SQL alone
-        if (i == QUERY_EXPORT_SQL && !q->backend->export_sql)
-            continue;
-        if ((int) o->format == i)
-            item = n;
-        which[n] = i;
-        formats[n++] = _ (names[i]);
-    }
-    for (i = 0; i < (int) G_N_ELEMENTS (delimiters); i++)
-    {
-        if (o->delimiter == delimiter_chars[i])
-            delimiter = i;
-        delimiters[i] = _ (delimiters[i]);
-    }
-
-    // "orders-20261108-101500.csv" in the directory of coole
-    dir = g_get_current_dir ();
-    stamp = g_date_time_format (now, "%Y%m%d-%H%M%S");
-    g_date_time_unref (now);
-    start = g_strdup_printf ("%s-%s.", base, stamp);
-    g_free (stamp);
-    {
-        char *file = g_strconcat (start, query_export_extension (o->format), (char *) NULL);
-
-        proposed = g_build_filename (dir, file, (char *) NULL);
-        g_free (file);
-    }
-
-    {
-        quick_widget_t widgets[] = {
-            QUICK_LABELED_INPUT (_ ("File:"), input_label_above, proposed, "query-export-file",
+        quick_widget_t head[] = {
+            QUICK_LABELED_INPUT (_ ("File:"), input_label_above, f->path, "query-export-file",
                                  &path, NULL, FALSE, FALSE, INPUT_COMPLETE_FILENAMES),
-            QUICK_START_COLUMNS,
-            QUICK_START_GROUPBOX (_ ("Format")),
-            QUICK_RADIO (n, formats, &item, NULL),
-            QUICK_STOP_GROUPBOX,
-            QUICK_NEXT_COLUMN,
-            QUICK_START_GROUPBOX (_ ("CSV: the delimiter")),
-            QUICK_RADIO (G_N_ELEMENTS (delimiters), delimiters, &delimiter, NULL),
-            QUICK_STOP_GROUPBOX,
-            QUICK_STOP_COLUMNS,
-            QUICK_CHECKBOX (_ ("CSV: the names of the columns on the &first line"), &header, NULL),
-            QUICK_CHECKBOX (_ ("CSV: every value in &quotes"), &quote_all, NULL),
-            QUICK_CHECKBOX (_ ("CSV, Markdown: NULL as the word N&ULL, else nothing"), &null_word,
-                            NULL),
+            // the line of the options of the format: its title put in by the callback
             QUICK_SEPARATOR (TRUE),
-            QUICK_LABELED_INPUT (_ ("INSERT INTO:"), input_label_left,
-                                 table != NULL          ? table
-                                     : o->table != NULL ? o->table
-                                                        : "export",
-                                 "query-export-table", &name, NULL, FALSE, FALSE,
+        };
+        quick_widget_t csv[] = {
+            QUICK_LABELED_INPUT (_ ("Delimiter:"), input_label_left, f->delimiter,
+                                 "query-export-delimiter", &delimiter, NULL, FALSE, FALSE,
                                  INPUT_COMPLETE_NONE),
-            QUICK_LABELED_INPUT (_ ("Rows a statement:"), input_label_left, per,
-                                 "query-export-rows", &rows, NULL, FALSE, FALSE,
+            QUICK_CHECKBOX (_ ("The names of the columns on the first &line"), &header, NULL),
+            QUICK_CHECKBOX (_ ("Every value in quot&es, else those that need them"), &quote_all,
+                            NULL),
+            QUICK_CHECKBOX (_ ("NULL as the word N&ULL, else nothing"), &null_word, NULL),
+        };
+        quick_widget_t json[] = {
+            QUICK_LABEL (_ ("An array of objects, a row an object."), NULL),
+            QUICK_CHECKBOX (_ ("&Indented: a key a line"), &indent, NULL),
+        };
+        quick_widget_t ndjson[] = {
+            QUICK_LABEL (_ ("An object a line, for jq, mongoimport and the like:\n"
+                            "nothing to choose."),
+                         NULL),
+        };
+        quick_widget_t sql[] = {
+            QUICK_LABELED_INPUT (_ ("Table of the INSERT statements:"), input_label_above, f->table,
+                                 "query-export-table", &table, NULL, FALSE, FALSE,
                                  INPUT_COMPLETE_NONE),
+            QUICK_CHECKBOX (_ ("CREATE &TABLE first, of the types of the columns"), &create_table,
+                            NULL),
+            QUICK_LABELED_INPUT (_ ("Rows a statement:"), input_label_left, f->per,
+                                 "query-export-rows", &per, NULL, FALSE, FALSE,
+                                 INPUT_COMPLETE_NONE),
+        };
+        quick_widget_t markdown[] = {
+            QUICK_LABEL (_ ("A table, each cell on one line."), NULL),
+            QUICK_CHECKBOX (_ ("NULL as the word N&ULL, else nothing"), &null_markdown, NULL),
+        };
+        quick_widget_t end[] = {
             QUICK_BUTTONS_OK_CANCEL,
             QUICK_END,
         };
-        WRect r = { -1, -1, 0, MIN (72, COLS - 4) };
+        // the height of the highest page, that of CSV: the dialog does not jump from one to another
+        WRect r = { -1, -1, 16, MIN (64, COLS - 4) };
         quick_dialog_t qdlg = {
             .rect = r,
             .title = _ ("Export the rows of the query"),
             .help = QUERY_HELP_NODE,
             .help_file = QUERY_HELP_FILE,
-            .widgets = widgets,
-            .callback = NULL,
+            .widgets = NULL,
+            .callback = query_export_dialog_cb,
             .mouse_callback = NULL,
         };
 
-        // no INSERT: its lines are not there
-        if (!q->backend->export_sql)
+        head[1].id = &query_export_options_line;
+        g_array_append_vals (widgets, top, G_N_ELEMENTS (top));
+        for (i = 0; i < f->count; i++)
         {
-            const size_t at = 13;
+            quick_widget_t tab[] = {
+                QUICK_BUTTON (_ (tab_names[f->formats[i]]), QUERY_PAGE (f->formats[i]), NULL, NULL),
+            };
 
-            memmove (&widgets[at], &widgets[at + 3],
-                     sizeof (widgets) - (at + 3) * sizeof (widgets[0]));
+            g_array_append_vals (widgets, tab, 1);
         }
-        ret = quick_dialog (&qdlg);
+        g_array_append_vals (widgets, head, G_N_ELEMENTS (head));
+        switch (f->format)
+        {
+        case QUERY_EXPORT_CSV:
+            g_array_append_vals (widgets, csv, G_N_ELEMENTS (csv));
+            break;
+        case QUERY_EXPORT_JSON:
+            g_array_append_vals (widgets, json, G_N_ELEMENTS (json));
+            break;
+        case QUERY_EXPORT_NDJSON:
+            g_array_append_vals (widgets, ndjson, G_N_ELEMENTS (ndjson));
+            break;
+        case QUERY_EXPORT_SQL:
+            g_array_append_vals (widgets, sql, G_N_ELEMENTS (sql));
+            break;
+        default:
+            g_array_append_vals (widgets, markdown, G_N_ELEMENTS (markdown));
+            break;
+        }
+        g_array_append_vals (widgets, end, G_N_ELEMENTS (end));
+        qdlg.widgets = (quick_widget_t *) widgets->data;
+        // the cursor on the button of the page seen, as the dialog of FTP has it: that one shows
+        // which it is
+        for (i = 0; i < f->count && f->formats[i] != f->format; i++)
+            ;
+        ret = quick_dialog_skip (&qdlg, i + 1);
+        g_array_free (widgets, TRUE);
     }
-    g_free (per);
-    g_free (dir);
-    if (ret == B_CANCEL || path == NULL || *g_strstrip (path) == '\0')
+
+    if (ret == B_CANCEL)
     {
         g_free (path);
-        g_free (name);
-        g_free (rows);
-        g_free (start);
-        g_free (proposed);
+        g_free (table);
+        g_free (per);
+        g_free (delimiter);
+        return ret;
+    }
+    if (delimiter != NULL)
+    {
+        g_free (f->delimiter);
+        f->delimiter = delimiter;
+    }
+    f->header = header;
+    f->quote_all = quote_all;
+    f->null_word = null_word;
+    f->indent = indent;
+    f->create_table = create_table;
+    f->null_markdown = null_markdown;
+    if (path != NULL)
+    {
+        g_free (f->path);
+        f->path = g_strstrip (path);
+    }
+    if (table != NULL)
+    {
+        g_free (f->table);
+        f->table = g_strstrip (table);
+    }
+    if (per != NULL)
+    {
+        g_free (f->per);
+        f->per = per;
+    }
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The page of the format @format seen: the name proposed, left as it was, takes its extension */
+static void
+query_export_form_turn (query_export_form_t *f, query_export_format_t format)
+{
+    char *was = g_strconcat (f->start, query_export_extension (f->format), (char *) NULL);
+
+    if (strcmp (f->path, was) == 0)
+    {
+        g_free (f->path);
+        f->path = g_strconcat (f->start, query_export_extension (format), (char *) NULL);
+    }
+    g_free (was);
+    f->format = format;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The file and the format of QueryExport asked for, @base the start of the name of the file, the
+   time after it; @table the name INSERT is given, NULL for that of the dialog before, the
+   relation of Schema whose rows are exported.  NULL when the user cancels, or the file cannot be
+   made. */
+static query_export_run_t *
+query_export_ask (query_t *q, const char *base, const char *table)
+{
+    query_export_options_t *o = query_export_options (q);
+    query_export_form_t f = { 0 };
+    query_export_options_t given;
+    GDateTime *now = g_date_time_new_now_local ();
+    char *dir = g_get_current_dir (), *stamp, *name, *error = NULL;
+    query_export_run_t *x;
+    char delimiter = o->delimiter;
+    int ret, i;
+
+    // the pages: INSERT of the rows of a database of tables of SQL alone
+    for (i = 0; i < QUERY_EXPORT_FORMATS; i++)
+        if (i != QUERY_EXPORT_SQL || q->backend->export_sql)
+            f.formats[f.count++] = (query_export_format_t) i;
+    f.format =
+        o->format == QUERY_EXPORT_SQL && !q->backend->export_sql ? QUERY_EXPORT_CSV : o->format;
+    f.delimiter = o->delimiter == '\t' ? g_strdup ("\\t") : g_strdup_printf ("%c", o->delimiter);
+    f.header = o->header;
+    f.quote_all = o->quote_all;
+    f.null_word = o->null_word;
+    f.indent = o->indent;
+    f.null_markdown = o->null_markdown;
+    f.table = g_strdup (table != NULL ? table : o->table != NULL ? o->table : "export");
+    f.per = g_strdup_printf ("%d", o->per_insert);
+    // the rows of a relation of Schema go to its table, which is there; those of a query to a
+    // new one
+    f.create_table = table == NULL && o->create_table;
+
+    // "orders-20261108-101500.csv" in the directory of coole
+    stamp = g_date_time_format (now, "%Y%m%d-%H%M%S");
+    g_date_time_unref (now);
+    name = g_strdup_printf ("%s-%s.", base, stamp);
+    f.start = g_build_filename (dir, name, (char *) NULL);
+    g_free (name);
+    g_free (stamp);
+    g_free (dir);
+    f.path = g_strconcat (f.start, query_export_extension (f.format), (char *) NULL);
+
+    // a page after another, what each was given kept, until OK or Cancel; a delimiter of CSV
+    // that is none goes back to its page
+    while (TRUE)
+    {
+        ret = query_export_page (&f);
+        if (ret >= QUERY_PAGE (0) && ret < QUERY_PAGE (QUERY_EXPORT_FORMATS))
+            query_export_form_turn (&f, (query_export_format_t) (ret - QUERY_PAGE (0)));
+        else if (ret != B_CANCEL && f.format == QUERY_EXPORT_CSV
+                 && !query_export_delimiter (f.delimiter, &delimiter))
+            q->host->message (q->host, D_ERROR, _ ("Export"),
+                              _ ("The delimiter is one character, not a quote, or \\t for a "
+                                 "tab."));
+        else
+            break;
+    }
+
+    g_free (f.delimiter);
+    if (ret == B_CANCEL || *f.path == '\0')
+    {
+        g_free (f.path);
+        g_free (f.start);
+        g_free (f.table);
+        g_free (f.per);
         return NULL;
     }
 
-    o->format = (query_export_format_t) which[item];
-    o->delimiter = delimiter_chars[delimiter];
-    o->header = header;
-    o->quote_all = quote_all;
-    o->null_word = null_word;
-    if (name != NULL)
+    o->format = f.format;
+    if (f.format == QUERY_EXPORT_CSV)
+        o->delimiter = delimiter;
+    o->header = f.header;
+    o->quote_all = f.quote_all;
+    o->null_word = f.null_word;
+    o->indent = f.indent;
+    o->null_markdown = f.null_markdown;
+    o->per_insert = MAX (1, atoi (f.per));
+    // the table and CREATE TABLE of Schema are those of its relation, not kept for the next one
+    if (table == NULL)
     {
-        // the table of Schema is that of its relation, not one to keep for the next export
-        if (table == NULL || strcmp (g_strstrip (name), table) != 0)
-        {
-            g_free (o->table);
-            o->table = g_strdup (g_strstrip (name));
-        }
+        g_free (o->table);
+        o->table = g_strdup (f.table);
+        o->create_table = f.create_table;
     }
-    if (rows != NULL)
-        o->per_insert = MAX (1, atoi (rows));
+    g_free (f.per);
+    g_free (f.start);
 
-    // the name proposed, left as it was: the extension of the format chosen
-    if (strcmp (path, proposed) == 0)
+    // "~/exports/a.csv" in the home directory
     {
-        char *file = g_strconcat (start, query_export_extension (o->format), (char *) NULL);
-        char *d = g_path_get_dirname (proposed);
+        char *home = tilde_expand (f.path);
 
-        g_free (path);
-        path = g_build_filename (d, file, (char *) NULL);
-        g_free (d);
-        g_free (file);
+        g_free (f.path);
+        f.path = home;
     }
-    else if (!g_path_is_absolute (path))
+    if (!g_path_is_absolute (f.path))
     {
         char *cwd = g_get_current_dir ();
-        char *full = g_build_filename (cwd, path, (char *) NULL);
+        char *full = g_build_filename (cwd, f.path, (char *) NULL);
 
         g_free (cwd);
-        g_free (path);
-        path = full;
+        g_free (f.path);
+        f.path = full;
     }
-    g_free (start);
-    g_free (proposed);
 
-    if (g_file_test (path, G_FILE_TEST_EXISTS))
+    if (g_file_test (f.path, G_FILE_TEST_EXISTS))
     {
-        char *text = g_strdup_printf (_ ("The file %s is there. Write over it?"), path);
+        char *text = g_strdup_printf (_ ("The file %s is there. Write over it?"), f.path);
         const int answer = query_dialog (_ ("Export"), text, D_NORMAL, 2, _ ("&Yes"), _ ("&No"));
 
         g_free (text);
         if (answer != 0)
         {
-            g_free (path);
-            g_free (name);
-            g_free (rows);
+            g_free (f.path);
+            g_free (f.table);
             return NULL;
         }
     }
 
-    {
-        query_export_options_t given = *o;
-
-        // the name of Schema, else that of the dialog
-        given.table = name != NULL ? g_strstrip (name) : o->table;
-        x = g_new0 (query_export_run_t, 1);
-        x->writer = query_export_new (&given);
-    }
-    x->path = path;
+    given = *o;
+    given.table = f.table;
+    given.create_table = f.create_table;
+    x = g_new0 (query_export_run_t, 1);
+    x->writer = query_export_new (&given);
+    x->path = f.path;
     x->fd = -1;
-    g_free (name);
-    g_free (rows);
+    g_free (f.table);
     if (!query_export_open (x, &error))
     {
         q->host->message (q->host, D_ERROR, _ ("Export"), error);

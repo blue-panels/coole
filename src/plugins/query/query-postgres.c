@@ -155,6 +155,8 @@ typedef struct
     gboolean exporting;    // those of the command being read
     gboolean exported;     // those of a command before
     query_value_t *kinds;  // of its columns, NULL when it is not exported
+    const char **values;   // of a row of it, written
+    gsize *lens;
 } query_pg_t;
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -471,6 +473,78 @@ query_pg_kind (Oid type)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The type of SQL of a column of the type @type, @mod its modifier, for CREATE TABLE of the
+   export: the types of pg_catalog by their oid, the others text, which takes their values as
+   they are written */
+static char *
+query_pg_type_name (Oid type, int mod)
+{
+    static const struct
+    {
+        Oid oid;
+        const char *name;
+    } types[] = {
+        { 16, "boolean" },
+        { 17, "bytea" },
+        { 18, "\"char\"" },
+        { 19, "name" },
+        { 20, "bigint" },
+        { 21, "smallint" },
+        { 23, "integer" },
+        { 25, "text" },
+        { 26, "oid" },
+        { 114, "json" },
+        { 142, "xml" },
+        { 650, "cidr" },
+        { 700, "real" },
+        { 701, "double precision" },
+        { 829, "macaddr" },
+        { 869, "inet" },
+        { 1000, "boolean[]" },
+        { 1005, "smallint[]" },
+        { 1007, "integer[]" },
+        { 1009, "text[]" },
+        { 1015, "character varying[]" },
+        { 1016, "bigint[]" },
+        { 1021, "real[]" },
+        { 1022, "double precision[]" },
+        { 1082, "date" },
+        { 1083, "time" },
+        { 1114, "timestamp" },
+        { 1184, "timestamp with time zone" },
+        { 1186, "interval" },
+        { 1231, "numeric[]" },
+        { 1266, "time with time zone" },
+        { 1562, "bit varying" },
+        { 2950, "uuid" },
+        { 2951, "uuid[]" },
+        { 3614, "tsvector" },
+        { 3802, "jsonb" },
+        { 3807, "jsonb[]" },
+    };
+    guint i;
+
+    // the length of char and varchar, the precision of numeric: of their modifier, 4 more
+    if ((type == 1042 || type == 1043) && mod >= 4)
+        return g_strdup_printf ("%s(%d)", type == 1042 ? "character" : "character varying",
+                                mod - 4);
+    if (type == 1042 || type == 1043)
+        return g_strdup (type == 1042 ? "character" : "character varying");
+    if (type == 1560)
+        return mod > 0 ? g_strdup_printf ("bit(%d)", mod) : g_strdup ("bit");
+    // the scale a signed field of 11 bits, PostgreSQL 15 taking one below 0: numeric(5,-2)
+    if (type == QUERY_PG_NUMERIC_OID)
+        return mod >= 4 ? g_strdup_printf ("numeric(%d,%d)", ((mod - 4) >> 16) & 0xffff,
+                                           (((mod - 4) & 0x7ff) ^ 1024) - 1024)
+                        : g_strdup ("numeric");
+    for (i = 0; i < G_N_ELEMENTS (types); i++)
+        if (types[i].oid == type)
+            return g_strdup (types[i].name);
+    return g_strdup ("text");
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* The rows of @res written to the file of the export, whole, as the server wrote them; the
    query canceled when the file cannot be written */
 static void
@@ -479,25 +553,19 @@ query_pg_export_rows (query_pg_t *p, const PGresult *res)
     const query_pq_t *pq = p->pq;
     query_export_t *x = query_export_writer (p->q);
     const int nfields = pq->PQnfields (res), ntuples = pq->PQntuples (res);
-    const char **values;
-    gsize *lens;
     int r, c;
 
     if (x == NULL)
         return;
-    values = g_new0 (const char *, nfields + 1);
-    lens = g_new0 (gsize, nfields + 1);
     for (r = 0; r < ntuples; r++)
     {
         for (c = 0; c < nfields; c++)
         {
-            values[c] = pq->PQgetisnull (res, r, c) ? NULL : pq->PQgetvalue (res, r, c);
-            lens[c] = (gsize) pq->PQgetlength (res, r, c);
+            p->values[c] = pq->PQgetisnull (res, r, c) ? NULL : pq->PQgetvalue (res, r, c);
+            p->lens[c] = (gsize) pq->PQgetlength (res, r, c);
         }
-        query_export_row (x, values, lens, p->kinds);
+        query_export_row (x, p->values, p->lens, p->kinds);
     }
-    g_free (values);
-    g_free (lens);
     if (!query_export_flush (p->q, FALSE) && !p->q->stopped)
         p->q->backend->stop (p);
 }
@@ -523,9 +591,20 @@ query_pg_rows (query_pg_t *p, const PGresult *res)
         p->exporting = query_export_writer (p->q) != NULL && !p->exported;
         if (p->exporting)
         {
+            GPtrArray *types = g_ptr_array_new_with_free_func (g_free);
+
             p->kinds = g_new0 (query_value_t, nfields + 1);
+            // a row at a time, by one row of libpq older than 17: made once for the command
+            p->values = g_new0 (const char *, nfields + 1);
+            p->lens = g_new0 (gsize, nfields + 1);
             for (c = 0; c < nfields; c++)
+            {
                 p->kinds[c] = query_pg_kind (pq->PQftype (res, c));
+                g_ptr_array_add (types,
+                                 query_pg_type_name (pq->PQftype (res, c), pq->PQfmod (res, c)));
+            }
+            query_export_types (query_export_writer (p->q), types);
+            g_ptr_array_free (types, TRUE);
             query_export_columns (query_export_writer (p->q), p->columns);
         }
     }
@@ -574,6 +653,8 @@ query_pg_table (query_pg_t *p, const char *status)
         p->exporting = FALSE;
         p->exported = TRUE;
         g_clear_pointer (&p->kinds, g_free);
+        g_clear_pointer (&p->values, g_free);
+        g_clear_pointer (&p->lens, g_free);
     }
     g_free (grid);
     g_ptr_array_free (p->columns, TRUE);
@@ -947,6 +1028,8 @@ query_pg_send (query_pg_t *p)
     p->rows = p->failed = p->cut = p->link.flushing = p->copy_out = p->copy_in = p->lost = p->told =
         p->canceled = p->exporting = p->exported = FALSE;
     g_clear_pointer (&p->kinds, g_free);
+    g_clear_pointer (&p->values, g_free);
+    g_clear_pointer (&p->lens, g_free);
     g_clear_pointer (&p->summary, g_free);
     if (p->reconnect)
     {
@@ -1244,6 +1327,8 @@ query_pg_close (void *data)
     g_string_free (p->tables, TRUE);
     g_free (p->status);
     g_free (p->kinds);
+    g_free (p->values);
+    g_free (p->lens);
     g_free (p->summary);
     if (p->columns != NULL)
     {
