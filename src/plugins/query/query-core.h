@@ -78,6 +78,10 @@ char *query_use_before (const char *text, long line);
 /* The query of @text for the table: ".toArray()" on a line after it when it ends with a chain of
    a query, find () or aggregate () and what a cursor is sorted and cut with; else @text */
 char *query_mongo_for_table (const char *text);
+/* The query of @text for QueryExport: ".forEach(@each)" on a line after it when it ends with a
+   chain of a query, find () or aggregate () and what a cursor is sorted and cut with, or with
+   toArray (); NULL when it ends with none */
+char *query_mongo_for_export (const char *text, const char *each);
 /* The output of mongosh without the warning the prefix makes it print first */
 char *query_mongo_clean (const char *out);
 /* Where a SyntaxError of mongosh is, by what it printed: "SyntaxError: ... (3:0)" is the line 3,

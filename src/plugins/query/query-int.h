@@ -108,6 +108,9 @@ typedef struct query_proc_t query_proc_t;
    printed more than QUERY_OUTPUT_MAX on stdout, the rest not kept, and its @status of waitpid ();
    @out and @err are taken */
 typedef void (*query_proc_done_fn) (char *out, char *err, int status, gboolean cut, void *data);
+/* A line of stdout of a program of query_proc_lines (), without its newline: TRUE when it is
+   taken, not kept for what query_proc_done_fn is given */
+typedef gboolean (*query_proc_line_fn) (const char *line, gsize len, void *data);
 
 /* What runs the queries of a kind of database */
 typedef struct
@@ -218,6 +221,8 @@ void query_ai_free (query_t *q);
 query_proc_t *query_proc_start (const char *const *argv, char **envp, const char *dir,
                                 const char *input, query_proc_done_fn done, void *data,
                                 GError **error);
+/* Each line of stdout of @p given to @line as it comes, before it is kept */
+void query_proc_lines (query_proc_t *p, query_proc_line_fn line);
 /* Ask it to end: @done is called once it has */
 void query_proc_stop (query_proc_t *p);
 /* End it at once, @done not called */

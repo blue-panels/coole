@@ -72,6 +72,8 @@ typedef struct
     gboolean table;      // asked for by "// @table": mongosh --json, its answer in columns too
     long limit;          // asked for by "// @limit N", 0 when not
     gboolean limited;    // and put into the query
+    char *export_error;  // a document of the export that was no JSON, NULL for none
+    char *exported;      // the line of Output on the file of the export, NULL for none
 
     query_mongo_schema_t *schema;  // the window Schema, and what AI is told
 } query_mongo_t;
@@ -166,6 +168,8 @@ query_output_done (query_mongo_t *m, const char *out, const char *err, int statu
     else
         g_string_append_printf (text, _ ("exit %d"), WEXITSTATUS (status));
     g_string_append (text, ANSI_RESET "\n\n");
+    if (m->exported != NULL)
+        g_string_append_printf (text, "%s\n", m->exported);
     g_string_append (text, out);
     if (m->cut)
         g_string_append_printf (text, ANSI_RED "\n%s\n" ANSI_RESET,
@@ -218,7 +222,12 @@ query_done (query_mongo_t *m, char *raw, char *err, int status)
     }
     else if (tail != NULL)
         json = g_strdup (tail);
+    // the file of the export, there when mongosh printed all its documents
+    m->exported = query_export_close (q, !q->stopped && code == 0 && m->export_error == NULL,
+                                      m->export_error);
     query_output_done (m, out, err, status);
+    g_clear_pointer (&m->exported, g_free);
+    g_clear_pointer (&m->export_error, g_free);
     if (m->cut)
         // copies cut too: none of them
         g_ptr_array_set_size (tables, 0);
@@ -250,6 +259,33 @@ query_done (query_mongo_t *m, char *raw, char *err, int status)
     if (!q->stopped && query_mongo_changes_schema (q->text))
         query_mongo_schema_changed (m->schema);
     query_redraw (q);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A line mongosh printed: a document of the export to its file, query_proc_line_fn; mongosh
+   stopped when the file cannot be written */
+static gboolean
+query_mongo_row (const char *line, gsize len, void *data)
+{
+    query_mongo_t *m = (query_mongo_t *) data;
+    query_export_t *x = query_export_writer (m->q);
+    GError *error = NULL;
+
+    (void) len;
+    if (!g_str_has_prefix (line, QUERY_EXPORT_LINE))
+        return FALSE;
+    if (x == NULL || m->export_error != NULL)
+        return TRUE;
+    if (!query_export_document (x, line + strlen (QUERY_EXPORT_LINE), &error))
+    {
+        m->export_error = g_strdup_printf (_ ("mongosh printed no JSON: %s"), error->message);
+        g_error_free (error);
+    }
+    if ((m->export_error != NULL || !query_export_flush (m->q, FALSE)) && !m->q->stopped
+        && m->proc != NULL)
+        query_proc_stop (m->proc);
+    return TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -332,6 +368,7 @@ query_mongo_close (void *data)
     if (m->proc != NULL)
         query_proc_kill (m->proc);
     query_mongo_schema_free (m->schema);
+    g_free (m->export_error);
     g_free (m->mongosh);
     g_free (m);
 }
@@ -423,13 +460,35 @@ query_mongo_start (void *data)
         g_free (why);
         return;
     }
+    // QueryExport: each document printed by mongo-export.js after the prefix
+    if (q->export != NULL)
+    {
+        char *each = query_script ("mongo-export.js", &why);
+
+        if (each == NULL)
+        {
+            char *message = g_strconcat (why, "\n", (char *) NULL);
+
+            query_tab_set (q, QUERY_TAB_OUTPUT, message, TRUE);
+            query_table_say (q, "");
+            g_free (message);
+            g_free (why);
+            g_free (script);
+            return;
+        }
+        prefix = g_strconcat (script, "\n", each, (char *) NULL);
+        g_free (each);
+        g_free (script);
+        script = prefix;
+    }
     used = query_mongo_use (q->text);
     // the database of the use () above a part run alone, in the prefix: the lines stay the same
     prefix = q->use != NULL ? g_strdup_printf ("%s\ndb = db.getSiblingDB(%s);", script, q->use)
                             : g_strdup (script);
     g_free (script);
-    m->table = query_wants_table (q->text);
-    m->limit = query_wants_limit (q->text);
+    // all the documents of the export: no limit, no table
+    m->table = q->export == NULL && query_wants_table (q->text);
+    m->limit = q->export == NULL ? query_wants_limit (q->text) : 0;
     m->limited = FALSE;
     text = m->limit > 0 ? query_mongo_with_limit (used, m->limit, &m->limited) : g_strdup (used);
     g_free (used);
@@ -439,6 +498,23 @@ query_mongo_start (void *data)
 
         g_free (text);
         text = array;
+    }
+    else if (q->export != NULL)
+    {
+        char *each = query_mongo_for_export (text, "__cooleRow");
+
+        g_free (text);
+        if (each == NULL)
+        {
+            query_tab_set (q, QUERY_TAB_OUTPUT,
+                           _ ("QueryExport writes the documents of a query that ends with find (), "
+                              "aggregate ()\nor toArray (): this one ends with none.\n"),
+                           TRUE);
+            query_table_say (q, "");
+            g_free (prefix);
+            return;
+        }
+        text = each;
     }
     // what goes to mongosh, ".toArray()" too, and a query of History, which was not looked at
     if (strlen (text) > QUERY_TEXT_MAX)
@@ -465,6 +541,8 @@ query_mongo_start (void *data)
     m->cut = FALSE;
     // nothing to read from the terminal of coole
     m->proc = query_proc_start (argv, NULL, NULL, "", query_mongo_proc_done, m, &error);
+    if (m->proc != NULL && q->export != NULL)
+        query_proc_lines (m->proc, query_mongo_row);
     if (m->proc == NULL)
     {
         char *message = g_strdup_printf ("%s: %s\n", m->mongosh, error->message);
@@ -529,6 +607,7 @@ const query_backend_t query_mongo_backend = {
     .language = "JavaScript of mongosh, db being the database below: db.name.find (), "
                 ".aggregate ([...]) and the like, no use ()",
     .comment = "// ",
+    .export = TRUE,
     .ai_context = query_mongo_ai_context,
     .schema = query_mongo_schema,
 };

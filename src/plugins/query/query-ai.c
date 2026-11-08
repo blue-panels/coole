@@ -77,6 +77,8 @@ struct query_proc_t
     GString *out, *err;
     gboolean cut;  // stdout was more than QUERY_OUTPUT_MAX
     query_proc_done_fn done;
+    query_proc_line_fn line;  // NULL when stdout is kept as it comes
+    GString *partial;         // of query_proc_lines (): a line not ended yet
     void *data;
 };
 
@@ -146,9 +148,55 @@ query_proc_close_fds (query_proc_t *p)
 static void
 query_proc_free (query_proc_t *p)
 {
+    if (p->partial != NULL)
+        g_string_free (p->partial, TRUE);
     g_string_free (p->out, TRUE);
     g_string_free (p->err, TRUE);
     g_free (p);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Stdout kept, at most QUERY_OUTPUT_MAX of it */
+static void
+query_proc_keep (query_proc_t *p, const char *buf, gsize n)
+{
+    GString *s = p->out;
+
+    if (s->len + n > QUERY_OUTPUT_MAX)
+        p->cut = TRUE;
+    if (s->len < QUERY_OUTPUT_MAX)
+        g_string_append_len (s, buf, (gssize) MIN (n, QUERY_OUTPUT_MAX - s->len));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Stdout by lines, each given to the callback of query_proc_lines (), those it takes not kept;
+   the end of the last one when @end */
+static void
+query_proc_split (query_proc_t *p, const char *buf, gsize n, gboolean end)
+{
+    gsize start = 0, i;
+
+    g_string_append_len (p->partial, buf, (gssize) n);
+    for (i = 0; i < p->partial->len; i++)
+        if (p->partial->str[i] == '\n')
+        {
+            p->partial->str[i] = '\0';
+            if (!p->line (p->partial->str + start, i - start, p->data))
+            {
+                query_proc_keep (p, p->partial->str + start, i - start);
+                query_proc_keep (p, "\n", 1);
+            }
+            start = i + 1;
+        }
+    g_string_erase (p->partial, 0, (gssize) start);
+    if (end && p->partial->len > 0)
+    {
+        if (!p->line (p->partial->str, p->partial->len, p->data))
+            query_proc_keep (p, p->partial->str, p->partial->len);
+        g_string_truncate (p->partial, 0);
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -164,13 +212,17 @@ query_proc_ready (int fd, void *data)
 
     if (n > 0)
     {
-        if (which == 0 && s->len + (gsize) n > QUERY_OUTPUT_MAX)
-            p->cut = TRUE;
-        if (s->len < QUERY_OUTPUT_MAX)
+        if (which == 0 && p->line != NULL)
+            query_proc_split (p, buf, (gsize) n, FALSE);
+        else if (which == 0)
+            query_proc_keep (p, buf, (gsize) n);
+        else if (s->len < QUERY_OUTPUT_MAX)
             g_string_append_len (s, buf, MIN (n, (ssize_t) (QUERY_OUTPUT_MAX - s->len)));
     }
     else if (n == 0 || (errno != EAGAIN && errno != EINTR))
     {
+        if (which == 0 && p->line != NULL)
+            query_proc_split (p, "", 0, TRUE);
         delete_select_channel (fd);
         close (fd);
         p->fds[which] = -1;
@@ -438,6 +490,16 @@ query_proc_start (const char *const *argv, char **envp, const char *dir, const c
         add_select_channel (p->fds[i], query_proc_ready, p);
     }
     return p;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_proc_lines (query_proc_t *p, query_proc_line_fn line)
+{
+    p->line = line;
+    if (p->partial == NULL)
+        p->partial = g_string_new (NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */
