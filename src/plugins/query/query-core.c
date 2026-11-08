@@ -776,6 +776,29 @@ query_mongo_for_table (const char *text)
 
 /* --------------------------------------------------------------------------------------------- */
 
+char *
+query_mongo_for_export (const char *text, const char *each)
+{
+    const char *end;
+    GArray *chain = query_chain (text, &end);
+    char *all = NULL;
+
+    // a cursor, or the array of one
+    if (chain->len > 0
+        && (query_is_cursor_call (&g_array_index (chain, query_call_t, 0))
+            || query_call_is (&g_array_index (chain, query_call_t, 0), "toArray")))
+    {
+        char *body = g_strndup (text, (gsize) (end - text));
+
+        all = g_strconcat (body, "\n.forEach(", each, ")", (char *) NULL);
+        g_free (body);
+    }
+    g_array_free (chain, TRUE);
+    return all;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* Whether the text from @from up to @to has @word */
 static gboolean
 query_text_has (const char *from, const char *to, const char *word)

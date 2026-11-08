@@ -133,6 +133,7 @@ typedef struct
     int (*PQnfields) (const PGresult *res);
     char *(*PQfname) (const PGresult *res, int field_num);
     Oid (*PQftype) (const PGresult *res, int field_num);
+    int (*PQfmod) (const PGresult *res, int field_num);
     char *(*PQgetvalue) (const PGresult *res, int tup_num, int field_num);
     int (*PQgetisnull) (const PGresult *res, int tup_num, int field_num);
     int (*PQgetlength) (const PGresult *res, int tup_num, int field_num);

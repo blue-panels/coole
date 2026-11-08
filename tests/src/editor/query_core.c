@@ -36,11 +36,21 @@
 #include <glib/gstdio.h>
 
 #include "src/plugins/query/query-core.h"
+#include "src/plugins/query/query-export.h"
 
 static void
 check_for_table (const char *text, const char *want)
 {
     char *s = query_mongo_for_table (text);
+
+    g_assert_cmpstr (s, ==, want);
+    g_free (s);
+}
+
+static void
+check_for_export (const char *text, const char *want)
+{
+    char *s = query_mongo_for_export (text, "__row");
 
     g_assert_cmpstr (s, ==, want);
     g_free (s);
@@ -200,6 +210,13 @@ test_mongo (void)
 
     // a chain of a query: made an array
     check_for_table ("db.a.find()\n  .limit(2);  \n", "db.a.find()\n  .limit(2)\n.toArray()");
+    // the export: each document of a cursor or of its array; nothing else is one
+    check_for_export ("db.a.find({x: 1}).sort({y: 1}); // all\n",
+                      "db.a.find({x: 1}).sort({y: 1})\n.forEach(__row)");
+    check_for_export ("db.a.aggregate([{$match: {}}]).toArray()",
+                      "db.a.aggregate([{$match: {}}]).toArray()\n.forEach(__row)");
+    check_for_export ("db.a.countDocuments()", NULL);
+    check_for_export ("const x = 1;", NULL);
     check_for_table ("db.a.find({x: f(1)})", "db.a.find({x: f(1)})\n.toArray()");
     check_for_table ("db.a.aggregate([{$sample: {size: 3}}])",
                      "db.a.aggregate([{$sample: {size: 3}}])\n.toArray()");
@@ -781,6 +798,11 @@ test_scripts (void)
     s = check_script ("mongo-prefix.js", NULL);
     // the copies for Table after the line QUERY_TABLE_LINE has
     g_assert_nonnull (strstr (s, "'\\x1e' + '" QUERY_TABLE_TAG " '"));
+    g_free (s);
+    s = check_script ("mongo-export.js", NULL);
+    // each document after the line QUERY_EXPORT_LINE has, by the function the export calls
+    g_assert_nonnull (strstr (s, "'\\x1e' + '" QUERY_EXPORT_TAG " '"));
+    g_assert_nonnull (strstr (s, "globalThis.__cooleRow ="));
     g_free (s);
     s = check_script ("pg-details.sql", "oid", "16384", NULL);
     g_assert_nonnull (strstr (s, "a.attrelid = 16384"));

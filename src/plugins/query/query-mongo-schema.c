@@ -367,6 +367,7 @@ query_ms_take_list (query_mongo_schema_t *s, JsonObject *list)
             reach = query_ms_reach (dbname, name);
             item->rows =
                 g_strdup_printf ("// @table\n%s.find({}).limit(%u)", reach, QUERY_TABLE_ROWS);
+            item->all = g_strdup_printf ("%s.find({})", reach);
             g_free (reach);
             o->expanded = query_tree_was_open (&s->tree, o, FALSE);
             if (o->expanded)
@@ -869,6 +870,9 @@ query_mongo_schema_do (query_mongo_schema_t *s, query_schema_action_t action, gb
         break;
     case QUERY_SCHEMA_ROWS:
         query_tree_rows (&s->tree, n);
+        break;
+    case QUERY_SCHEMA_EXPORT:
+        query_tree_export (&s->tree, n);
         break;
     case QUERY_SCHEMA_INSERT:
         query_tree_insert (&s->tree, n);

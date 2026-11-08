@@ -93,6 +93,7 @@ or *postgres/*, the name of the connection, and that of the database and
 not shown, and the plugins of a project and of code (project, build,
 debugger, ctags, etags, git, terminal, spell) are not started; the
 scripts stay, and the language server of the queries when lsp.json has one.
+The menus Drawing, Format and Plugins are not in the menubar, as with -D.
 It needs the query plugin.
 
 *-G, --git=directory*

@@ -172,7 +172,59 @@ one of Extended JSON, *{ $date: "..." }*, is read back as that type, and a
 Double with no fraction as a number, the types mongosh gives them already
 lost. mongosh reads it,
 a run of its own each time: a query that makes or drops a collection, a
-view or an index, or inserts, reads it again.
+view or an index, or inserts, reads it again. **Ctrl-F6** there writes all
+the documents of the collection to a file, as below.
+
+**Export**
+
+**Ctrl-F6**, **Alt-X**
+: Write all the rows of the query to a file, QueryExport: the query F5
+would run, the selection, else the part between the lines *// ---*, else
+the file, with no *// @limit* and not the 100 rows of Table; in Schema,
+all the rows of the relation of the node, all the documents of the
+collection. A dialog has a page for each format, the buttons at its top
+going from one to another: the page seen is the format written. Each has
+the file, by default the name of the file of queries, or of the relation,
+and the time, *orders-20261108-101500.csv*, in the directory of coole; a
+name left as it was takes the extension of the page.
+
+*CSV*
+: The delimiter, a character, *\t* or *Tab* for a tab; the names of the
+columns on the first line; every value in quotes, else those with the
+delimiter, a quote or a newline in them; *NULL* as the word NULL, else
+nothing.
+
+*JSON*, *NDJSON*
+: An array of objects, indented or not, or an object a line. Numbers,
+booleans and JSON are written as they are, the rest as strings, a *NaN*
+too.
+
+*SQL*
+: PostgreSQL alone: *INSERT INTO* the table the page names, so many rows a
+statement, the values literals of SQL; first its *CREATE TABLE* when it is
+asked for, of the columns of the query and their types, the file then
+making the rows again by itself. The columns are named as the query names
+them, by its aliases too. A query of a file asks for *CREATE TABLE* at
+first; the rows of a relation of Schema go into it, without one.
+
+*Markdown*
+: A table, each cell on one line; *NULL* as the word NULL, else nothing.
+
+The rows are written as they come, to the file and *.part* beside it, which
+takes its place once all of them are there: a query stopped, failed or that
+gave no rows leaves no file, and a file that cannot be written stops it.
+Output tells how many rows went to the file; a file that is there already
+is asked about. The dialog keeps what it was given until coole ends.
+
+Of MongoDB the query ends with a cursor or an array, *find()*,
+*aggregate()*, *toArray()*: each document goes to the file as relaxed
+Extended JSON, a Long of more than 53 bits as *{"$numberLong": "..."}*,
+what *print()* prints to Output. CSV and Markdown have the keys of the
+first 200 documents as their columns, *_id* first: a key that comes later
+is left out, and Output names it; an ObjectId is its hex, a date its ISO
+string, an object or an array its JSON. Of PostgreSQL the rows are those of
+the first command of the query that has some, whole, a *bytea* as
+*\x...*; the commands after it go to Table.
 
 **A query written by AI**
 
@@ -223,8 +275,8 @@ Output tell whether it is found.
 The scripts the plugin runs to read the schema and what AI is told, and
 the one mongosh runs before each query, are files of
 */usr/share/coole/query*: *mongo-list.js*, *mongo-details.js*,
-*mongo-ai.js*, *mongo-ddl.js*, *mongo-prefix.js*, *pg-list.sql*,
-*pg-details.sql*, *pg-ai.sql*, *pg-ddl-relation.sql*,
+*mongo-ai.js*, *mongo-ddl.js*, *mongo-prefix.js*, *mongo-export.js*,
+*pg-list.sql*, *pg-details.sql*, *pg-ai.sql*, *pg-ddl-relation.sql*,
 *pg-ddl-function.sql*. One of the same name in *~/.config/coole/query*, or
 in */etc/coole/query*, is run in its place. In them *{{> name}}* is the
 part *name* of the same extension, read from the same directories,
@@ -372,6 +424,10 @@ come.
 : The first 100 rows of the relation of the node, or of that it is of, in
 Table: a query of no file, QuerySchemaRows, its text at the top of Table and
 in the head of Output.
+
+**Ctrl-F6**, **Alt-X**
+: All the rows of the relation of the node written to a file, QueryExport,
+as in a file; INSERT is into that relation.
 
 **F3**
 : The query of the rows of the relation put in the file of queries, its

@@ -842,6 +842,7 @@ query_schema_take_list (query_pg_schema_t *s, PGresult *rels, PGresult *funcs)
         qr = query_pg_ident (r->key);
         item->insert = g_strconcat (qn, ".", qr, (char *) NULL);
         item->rows = g_strdup_printf ("SELECT * FROM %s LIMIT %u;", item->insert, QUERY_TABLE_ROWS);
+        item->all = g_strdup_printf ("SELECT * FROM %s;", item->insert);
         g_free (qn);
         g_free (qr);
         // a relation unfolded before is read again
@@ -1564,6 +1565,9 @@ query_pg_schema_do (query_pg_schema_t *s, query_schema_action_t action, gboolean
         break;
     case QUERY_SCHEMA_ROWS:
         query_tree_rows (&s->tree, n);
+        break;
+    case QUERY_SCHEMA_EXPORT:
+        query_tree_export (&s->tree, n);
         break;
     case QUERY_SCHEMA_INSERT:
         query_tree_insert (&s->tree, n);

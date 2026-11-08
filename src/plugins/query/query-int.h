@@ -36,6 +36,8 @@
 #include "lib/global.h"
 #include "lib/editor-plugin.h"
 
+#include "query-export.h"
+
 /*** typedefs(not structures) and defined constants **********************************************/
 
 // what a run prints that is shown; the rest is cut
@@ -70,6 +72,7 @@ enum
     QUERY_CMD_SCHEMA_QUERY,
     QUERY_CMD_SCHEMA_DDL,
     QUERY_CMD_AI,
+    QUERY_CMD_EXPORT,
     QUERY_CMD_COUNT
 };
 
@@ -82,7 +85,8 @@ typedef enum
     QUERY_SCHEMA_ROWS,     // the rows of the relation in Table
     QUERY_SCHEMA_INSERT,   // the name put in the file
     QUERY_SCHEMA_QUERY,    // the query of the rows of the relation, of its columns, in the file
-    QUERY_SCHEMA_DDL       // the drop, commented, and the create of what it is, in the file
+    QUERY_SCHEMA_DDL,      // the drop, commented, and the create of what it is, in the file
+    QUERY_SCHEMA_EXPORT    // all the rows of the relation written to a file
 } query_schema_action_t;
 
 enum
@@ -96,6 +100,7 @@ enum
 /*** structures declarations (and typedefs of structures)*****************************************/
 
 typedef struct query_t query_t;
+typedef struct query_export_run_t query_export_run_t;
 typedef struct query_ai_t query_ai_t;
 typedef struct query_proc_t query_proc_t;
 
@@ -103,6 +108,9 @@ typedef struct query_proc_t query_proc_t;
    printed more than QUERY_OUTPUT_MAX on stdout, the rest not kept, and its @status of waitpid ();
    @out and @err are taken */
 typedef void (*query_proc_done_fn) (char *out, char *err, int status, gboolean cut, void *data);
+/* A line of stdout of a program of query_proc_lines (), without its newline: TRUE when it is
+   taken, not kept for what query_proc_done_fn is given */
+typedef gboolean (*query_proc_line_fn) (const char *line, gsize len, void *data);
 
 /* What runs the queries of a kind of database */
 typedef struct
@@ -125,6 +133,9 @@ typedef struct
     /* the window Schema: @action on the node of its cursor, by a key when @key, then only when the
        window has the focus; TRUE when it is done.  NULL for a backend with none */
     gboolean (*schema) (void *data, query_schema_action_t action, gboolean key);
+    // QueryExport writes the rows of its queries to a file; INSERT of SQL too, rows of tables
+    gboolean export;
+    gboolean export_sql;
     // F6, a query written by AI: the language it is told to write, the start of a line comment
     const char *language;
     const char *comment;
@@ -162,6 +173,10 @@ struct query_t
     GPtrArray *rows;     // the version of each line of the tab History, a name
     char *version;       // the version of the file of the run of the moment, NULL for none
     guint viewer_signal;
+
+    // QueryExport: the run of the moment writes its rows to a file, NULL when it does not
+    query_export_run_t *export;
+    query_export_options_t *export_options;  // what the dialog was given the last time, NULL before
 };
 
 /*** global variables defined in .c file *********************************************************/
@@ -206,6 +221,8 @@ void query_ai_free (query_t *q);
 query_proc_t *query_proc_start (const char *const *argv, char **envp, const char *dir,
                                 const char *input, query_proc_done_fn done, void *data,
                                 GError **error);
+/* Each line of stdout of @p given to @line as it comes, before it is kept */
+void query_proc_lines (query_proc_t *p, query_proc_line_fn line);
 /* Ask it to end: @done is called once it has */
 void query_proc_stop (query_proc_t *p);
 /* End it at once, @done not called */
@@ -213,6 +230,18 @@ void query_proc_kill (query_proc_t *p);
 
 /* Run @text, a query of no file, as QueryRollback does: an error of it is marked nowhere */
 void query_run_alone (query_t *q, const char *text);
+/* QueryExport of @text, a query of no file, all the rows of the relation @name of Schema: the
+   file and the format asked for, then it is run; @table the name INSERT of SQL is given */
+void query_export_alone (query_t *q, const char *text, const char *name, const char *table);
+
+/* The writer of the export of the run of the moment; NULL when it is no export */
+query_export_t *query_export_writer (query_t *q);
+/* What the writer has written out to the file once there is enough of it, all of it when @all;
+   FALSE when the file cannot be written: the run is to stop, query_export_close () tells why */
+gboolean query_export_flush (query_t *q, gboolean all);
+/* The end of the export of the run: the file there when @ok, else gone, @why it is not; the line
+   that tells it, for Output; NULL when the run was no export */
+char *query_export_close (query_t *q, gboolean ok, const char *why);
 /* The start of the head of the output of a run, bold: its lines, the time it took, when it ended
    (@when, "14:02:11"), what it ran in; what a backend adds goes after it, then ANSI_RESET */
 void query_output_head (query_t *q, GString *text, double seconds, const char *when);

@@ -276,6 +276,56 @@ query_ai_startup (query_t *qq, GString *text)
     (void) text;
 }
 
+/* The export: its file a string */
+struct query_export_run_t
+{
+    query_export_t *writer;
+};
+
+static GString *export_file;
+static gboolean export_create_table = TRUE;
+static gboolean export_ok;
+static char *export_why;
+
+query_export_t *
+query_export_writer (query_t *qq)
+{
+    return qq->export != NULL ? qq->export->writer : NULL;
+}
+
+gboolean
+query_export_flush (query_t *qq, gboolean all)
+{
+    GString *out;
+
+    (void) all;
+    if (qq->export == NULL)
+        return TRUE;
+    out = query_export_text (qq->export->writer);
+    g_string_append_len (export_file, out->str, (gssize) out->len);
+    g_string_truncate (out, 0);
+    return TRUE;
+}
+
+char *
+query_export_close (query_t *qq, gboolean ok, const char *why)
+{
+    if (qq->export == NULL)
+        return NULL;
+    if (ok)
+    {
+        query_export_end (qq->export->writer);
+        (void) query_export_flush (qq, TRUE);
+    }
+    export_ok = ok;
+    g_free (export_why);
+    export_why = g_strdup (why);
+    query_export_free (qq->export->writer);
+    g_free (qq->export);
+    qq->export = NULL;
+    return g_strdup (ok ? "exported\n" : "not exported\n");
+}
+
 /* The window Schema is not there */
 query_pg_schema_t *
 query_pg_schema_new (query_t *qq, const query_pq_t *pq, gboolean read_only, const char *schema)
@@ -475,6 +525,119 @@ test_copy (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* @text run, its rows exported in @format: the file in export_file */
+static void
+run_export (const char *text, query_export_format_t format, const char *table)
+{
+    query_export_options_t options = {
+        .format = format,
+        .header = TRUE,
+        .table = (char *) table,
+        .per_insert = 2,
+        .create_table = export_create_table,
+    };
+
+    g_string_truncate (export_file, 0);
+    q.export = g_new0 (query_export_run_t, 1);
+    q.export->writer = query_export_new (&options);
+    run (text);
+    g_assert_null (q.export);
+}
+
+static void
+test_export (void)
+{
+    export_file = g_string_new (NULL);
+    run ("CREATE TEMP TABLE e (id int, name text, ok bool, doc jsonb, price numeric, b bytea);\n"
+         "INSERT INTO e VALUES (1, 'a, \"b\"', true, '{\"k\": [1]}', 1.50, '\\x0102'),\n"
+         "  (2, NULL, false, NULL, 'NaN', NULL)");
+    g_assert_cmpint (history_status, ==, 0);
+
+    // the rows of the first command that has some, whole, by their types; the second to Table
+    run_export ("SELECT * FROM e ORDER BY id;\nSELECT 7 AS seven", QUERY_EXPORT_CSV, NULL);
+    g_assert_true (export_ok);
+    g_assert_cmpstr (export_file->str, ==,
+                     "id,name,ok,doc,price,b\n"
+                     "1,\"a, \"\"b\"\"\",true,\"{\"\"k\"\": [1]}\",1.50,\\x0102\n"
+                     "2,,false,,NaN,\n");
+    assert_has (tab_text[QUERY_TAB_OUTPUT], "exported\n");
+    assert_has (tab_text[QUERY_TAB_TABLE], "seven");
+
+    run_export ("SELECT id, ok, doc, price FROM e ORDER BY id", QUERY_EXPORT_JSON, NULL);
+    g_assert_true (export_ok);
+    g_assert_cmpstr (export_file->str, ==,
+                     "[\n{\"id\":1,\"ok\":true,\"doc\":{\"k\": [1]},\"price\":1.50},\n"
+                     "{\"id\":2,\"ok\":false,\"doc\":null,\"price\":\"NaN\"}\n]\n");
+
+    // INSERT of SQL: run again, the rows are the same
+    // the table made first, of the types of the columns: the file alone makes the rows again
+    run_export ("SELECT * FROM e ORDER BY id", QUERY_EXPORT_SQL, "pg_temp.e3");
+    g_assert_true (export_ok);
+    assert_has (export_file->str,
+                "CREATE TABLE pg_temp.e3 (\n  id integer,\n  name text,\n  ok boolean,\n"
+                "  doc jsonb,\n  price numeric,\n  b bytea\n);\n");
+    {
+        char *again = g_strconcat (export_file->str,
+                                   "SELECT count(*) AS same FROM (SELECT * FROM e EXCEPT "
+                                   "SELECT * FROM e3) AS d",
+                                   (char *) NULL);
+
+        run (again);
+        g_free (again);
+    }
+    g_assert_cmpint (history_status, ==, 0);
+    assert_has (tab_text[QUERY_TAB_TABLE], "| 0 ");
+
+    // the types of their modifiers: a scale below 0, PostgreSQL 15
+    run_export ("SELECT 1.5::numeric(5,1) AS a, 'x'::varchar(7) AS b, 1200::numeric(5,-2) AS c",
+                QUERY_EXPORT_SQL, "pg_temp.e4");
+    g_assert_true (export_ok);
+    assert_has (export_file->str,
+                "  a numeric(5,1),\n  b character varying(7),\n  c numeric(5,-2)\n");
+    run (export_file->str);
+    g_assert_cmpint (history_status, ==, 0);
+
+    export_create_table = FALSE;
+    run_export ("SELECT * FROM e ORDER BY id", QUERY_EXPORT_SQL, "e2");
+    export_create_table = TRUE;
+    g_assert_true (export_ok);
+    {
+        char *again = g_strconcat ("CREATE TEMP TABLE e2 (LIKE e);\n", export_file->str,
+                                   "SELECT count(*) AS same FROM (SELECT * FROM e EXCEPT "
+                                   "SELECT * FROM e2) AS d",
+                                   (char *) NULL);
+
+        run (again);
+        g_free (again);
+    }
+    g_assert_cmpint (history_status, ==, 0);
+    g_assert_cmpstr (history_summary, ==, "SELECT 1");
+    assert_has (tab_text[QUERY_TAB_TABLE], "| 0 ");
+
+    // more rows than a chunk, all of them
+    run_export ("SELECT i FROM generate_series (1, 1000) AS i", QUERY_EXPORT_NDJSON, NULL);
+    g_assert_true (export_ok);
+    g_assert_true (g_str_has_prefix (export_file->str, "{\"i\":1}\n{\"i\":2}\n"));
+    g_assert_true (g_str_has_suffix (export_file->str, "{\"i\":1000}\n"));
+
+    // no rows to export, a query that failed: no file; that it failed told, not "no rows"
+    run_export ("CREATE TEMP TABLE z (i int)", QUERY_EXPORT_CSV, NULL);
+    g_assert_false (export_ok);
+    assert_has (export_why, "gave no rows");
+    run_export ("SELEC 1", QUERY_EXPORT_CSV, NULL);
+    g_assert_false (export_ok);
+    g_assert_null (export_why);
+    run_export ("SELECT 1 / (3 - i) FROM generate_series (1, 5) AS i", QUERY_EXPORT_CSV, NULL);
+    g_assert_false (export_ok);
+    g_assert_null (export_why);
+    assert_has (tab_text[QUERY_TAB_OUTPUT], "not exported\n");
+
+    g_string_free (export_file, TRUE);
+    g_clear_pointer (&export_why, g_free);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 test_cancel (void)
 {
@@ -584,6 +747,7 @@ main (int argc, char **argv)
     g_test_add_func ("/query-pg/errors", test_errors);
     g_test_add_func ("/query-pg/transaction", test_transaction);
     g_test_add_func ("/query-pg/copy", test_copy);
+    g_test_add_func ("/query-pg/export", test_export);
     // before a thread of a cancel is there: it changes the environment
     g_test_add_func ("/query-pg/password", test_password);
     g_test_add_func ("/query-pg/cancel", test_cancel);

@@ -65,11 +65,16 @@ if json_glib.found()
                                 c_args: ['-DQUERY_SCRIPTS_DIR="@0@"'.format(
                                   meson.project_source_root() / 'misc' / 'query')],
                                 dependencies: [glib_dep, json_glib]), suite: 'src/editor')
+  test('query_export', executable('query_export', 'query_export.c',
+                                  '../../../src/plugins/query/query-export.c',
+                                  '../../../src/plugins/query/query-core.c',
+                                  dependencies: [glib_dep, json_glib]), suite: 'src/editor')
   # the backend of PostgreSQL on a live server, skipped unless COOLE_TEST_PG is set: see
   # query_pg.c; libpq is loaded by gmodule, as in the plugin
   if have_gmodule
     query_pg = executable('query_pg', 'query_pg.c',
                           '../../../src/plugins/query/query-postgres.c',
+                          '../../../src/plugins/query/query-export.c',
                           '../../../src/plugins/query/query-pq.c',
                           '../../../src/plugins/query/query-core.c',
                           c_args: ['-DQUERY_SCRIPTS_DIR="@0@"'.format(

@@ -76,6 +76,7 @@ typedef struct
 
     // an object
     char *rows;           // F5: the query of its rows, NULL for none
+    char *all;            // QueryExport: the query of all its rows, NULL for none
     guint64 id;           // the backend's: the Oid of a relation
     char tag;             // the backend's: the relkind of a relation
     gboolean read;        // its sections are read
@@ -171,6 +172,8 @@ gboolean query_tree_has_focus (const query_tree_t *t);
 void query_tree_insert (query_tree_t *t, const query_node_t *n);
 /* F5 on @n: the rows of its object in Table, a query of no file */
 void query_tree_rows (query_tree_t *t, query_node_t *n);
+/* QueryExport on @n: all the rows of its object written to a file */
+void query_tree_export (query_tree_t *t, query_node_t *n);
 /* F3 on @n: the query of the rows of its object put in the file of queries, of all its fields,
    or of the field @n alone; the object whose sections are to be read first, NULL for none */
 query_node_t *query_tree_query (query_tree_t *t, query_node_t *n);

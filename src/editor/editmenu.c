@@ -254,16 +254,17 @@ edit_plugin_menu_free (gpointer data)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* coole -D is for a project, its build and its debugging: the menus of drawing, of the format
-   of the text and of the plugins are not in the menubar; their scripts keep their keys, and
-   Options keeps Manage plugins */
+/* coole -D is for a project, its build and its debugging, coole -Q for the queries of a
+   database: the menus of drawing, of the format of the text and of the plugins are not in the
+   menubar; their scripts keep their keys, and Options keeps Manage plugins */
 static gboolean
 edit_menu_off_for_session (const char *menu_name)
 {
-    static const char *const debug_off[] = { "Drawing", "Format", MC_EP_MENU_PLUGINS, NULL };
+    static const char *const session_off[] = { "Drawing", "Format", MC_EP_MENU_PLUGINS, NULL };
 
-    return menu_name != NULL && edit_startup_option ("debug") != NULL
-        && g_strv_contains (debug_off, menu_name);
+    return menu_name != NULL
+        && (edit_startup_option ("debug") != NULL || edit_startup_option ("query") != NULL)
+        && g_strv_contains (session_off, menu_name);
 }
 
 /* --------------------------------------------------------------------------------------------- */
