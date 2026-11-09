@@ -138,11 +138,12 @@ test_elf (void)
     char *dir = at ("prog");
     build_elf_t elf;
     GPtrArray *programs;
+    char *cc = g_find_program_in_path ("cc");
 
     write_file ("prog/main.c", "int main (void) { return 0; }\n");
     write_file ("prog/out/.keep", "");
     // the flags in the debug information, which clang leaves out by default
-    if (g_find_program_in_path ("cc") == NULL || !compile ("-g -O0 -grecord-gcc-switches", debug)
+    if (cc == NULL || !compile ("-g -O0 -grecord-gcc-switches", debug)
         || !compile ("-g -O2 -grecord-gcc-switches", fast))
     {
         g_test_skip ("no C compiler");
@@ -170,6 +171,7 @@ test_elf (void)
     g_ptr_array_free (programs, TRUE);
 
 out:
+    g_free (cc);
     g_free (debug);
     g_free (fast);
     g_free (dir);

@@ -68,9 +68,8 @@ teardown (void)
 {
     GError *error = NULL;
 
-    edit_clean (test_edit);
     group_remove_widget (test_edit);
-    g_free (test_edit);
+    widget_destroy (WIDGET (test_edit));
 
     free_codepages_list ();
     ck_assert (events_deinit (&error));

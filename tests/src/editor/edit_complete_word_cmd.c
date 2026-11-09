@@ -181,9 +181,8 @@ static void
 my_teardown (void)
 {
     edit_completion_dialog_show__deinit ();
-    edit_clean (test_edit);
     group_remove_widget (test_edit);
-    g_free (test_edit);
+    widget_destroy (WIDGET (test_edit));
 
     mc_config_deinit (mc_global.main_config);
     free_codepages_list ();

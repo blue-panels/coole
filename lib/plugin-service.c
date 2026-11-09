@@ -186,7 +186,7 @@ mc_service_call (const char *name, const char *method, GVariant *args, GError **
     }
 
     g_clear_error (&e);
-    return g_variant_ref_sink (answer);
+    return g_variant_take_ref (answer);
 }
 
 /* --------------------------------------------------------------------------------------------- */

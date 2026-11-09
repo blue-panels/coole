@@ -1,0 +1,24 @@
+# Only the code of others. Each entry says why it is not a bug of coole.
+
+# valgrind checks sizeof (char *) bytes for TIOCLINUX; the call passes one byte, initialized
+{
+   ioctl_tioclinux_reads_one_byte
+   Memcheck:Param
+   ioctl(TIOCLINUX)
+   fun:ioctl
+}
+
+# the AVX2 copy of glibc reads 32 bytes at a time inside its own bounds
+{
+   glibc_wcsxfrm_avx2
+   Memcheck:Addr32
+   fun:__wcpncpy_avx2
+   fun:wcsxfrm_l
+}
+
+# code with no object file: the JIT of PCRE2, not built with valgrind support
+{
+   pcre2_jit
+   Memcheck:Cond
+   obj:???
+}
