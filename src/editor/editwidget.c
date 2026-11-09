@@ -3118,7 +3118,7 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
             runtime_told_editor = NULL;
         edit_plugins_tell_closed (e);
         edit_clean (e);
-        return MSG_HANDLED;
+        return group_default_callback (w, sender, msg, parm, data);
 
     default:
         return widget_default_callback (w, sender, msg, parm, data);

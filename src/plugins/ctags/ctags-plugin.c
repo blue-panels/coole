@@ -2333,6 +2333,7 @@ ctags_outline (ctags_data_t *d, const char *file, const char *text, gsize len)
     g_free (src);
     g_free (tags);
     g_ptr_array_free (argv, TRUE);
+    g_free (program);
     g_strfreev (args);
     g_free (options);
     return result;
