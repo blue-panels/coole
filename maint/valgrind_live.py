@@ -263,12 +263,17 @@ def menu(s, title, item):
 def quit_editor(s):
     s.send(F10, 2)
     end = time.time() + 40
+    again = time.time() + 8
     while not s.finished and time.time() < end:
         text = s.text()
         if "Save before close?" in text:
             s.send(b"n", 2)
         elif "Quit the editor?" in text:
             s.send(ENTER, 2)
+        elif time.time() > again:
+            # F10 closed something that was open over the file
+            s.send(F10, 2)
+            again = time.time() + 8
         else:
             s.pump(1)
 
