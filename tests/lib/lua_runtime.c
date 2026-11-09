@@ -1631,7 +1631,7 @@ test_echo_service (void *data, const char *method, GVariant *args, GError **err)
         return g_variant_ref (args);
     if (strcmp (method, "ping") == 0)
     {
-        mc_service_emit ("echo", "pong", g_variant_ref (args));
+        mc_service_emit ("echo", "pong", args);
         return g_variant_new_array (G_VARIANT_TYPE ("{sv}"), NULL, 0);
     }
     g_set_error (err, MC_SERVICE_ERROR, MC_SERVICE_ERROR_METHOD, "no method %s", method);

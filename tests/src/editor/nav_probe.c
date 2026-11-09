@@ -89,9 +89,8 @@ setup (void)
 static void
 teardown (void)
 {
-    edit_clean (ed);
     group_remove_widget (ed);
-    g_free (ed);
+    widget_destroy (WIDGET (ed));
     free_codepages_list ();
     str_uninit_strings ();
 }
@@ -156,9 +155,8 @@ fresh (void)
     WRect r;
     if (ed != NULL)
     {
-        edit_clean (ed);
         group_remove_widget (ed);
-        g_free (ed);
+        widget_destroy (WIDGET (ed));
     }
     memset (&owner, 0, sizeof (owner));
     rect_init (&r, 0, 0, 24, 80);

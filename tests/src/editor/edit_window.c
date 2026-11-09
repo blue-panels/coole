@@ -1216,8 +1216,7 @@ START_TEST (test_editor_is_window)
     ck_assert (edit_window_is_window (CONST_WIDGET (edit)));
     ck_assert (edit_widget_is_editor (CONST_WIDGET (edit)));
     ck_assert_ptr_eq (CONST_EDIT_WINDOW (edit)->klass, &edit_class);
-    edit_clean (edit);
-    g_free (edit);
+    widget_destroy (WIDGET (edit));
 }
 END_TEST
 

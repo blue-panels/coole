@@ -63,9 +63,8 @@ setup (void)
 static void
 teardown (void)
 {
-    edit_clean (test_edit);
     group_remove_widget (test_edit);
-    g_free (test_edit);
+    widget_destroy (WIDGET (test_edit));
 
     free_codepages_list ();
     str_uninit_strings ();

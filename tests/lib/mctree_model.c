@@ -236,7 +236,7 @@ test_children (mctree_model_t *model, mctree_node_t *node, void *user_data)
 static void
 test_data_free (gpointer data)
 {
-    (void) data;
+    g_free (data);
     data_freed++;
 }
 
