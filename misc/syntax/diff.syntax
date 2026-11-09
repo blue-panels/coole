@@ -11,7 +11,7 @@ context exclusive linestart @@*@@ \n META_DIFF_RANGE
 context exclusive linestart Index:\s \n META_DIFF_HEADER white
 context exclusive linestart \s \n
 context exclusive linestart \t \n
-context linestart diff \n META_DIFF_HEADER red
+context linestart diff \n META_DIFF_HEADER_COMMAND red
 context linestart ---\s \n META_DIFF_HEADER
 context linestart \+\+\+\s \n META_DIFF_HEADER
 context linestart \*\*\*\s \n META_DIFF_HEADER

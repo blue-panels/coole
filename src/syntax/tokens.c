@@ -100,6 +100,7 @@ static const syntax_token_classic_t classic[] = {
     { "markup.changed", "yellow", NULL },
     { "meta.diff.range", "brightcyan", NULL },
     { "meta.diff.header", "brightmagenta", NULL },
+    { "meta.diff.header.command", "white", NULL },
     { "invalid", "white", "red" },
 };
 
