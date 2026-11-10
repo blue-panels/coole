@@ -3642,6 +3642,9 @@ edit_plugin_off_for_session (const char *name)
 
     if (name == NULL)
         return FALSE;
+    // the queries are of coole -Q alone: its menu Query is not there without it
+    if (strcmp (name, "query") == 0)
+        return edit_startup_option ("query") == NULL;
     if (edit_startup_option ("query") != NULL)
         return g_strv_contains (query_plugins, name);
     return edit_startup_option ("git") != NULL && g_strv_contains (project_plugins, name);

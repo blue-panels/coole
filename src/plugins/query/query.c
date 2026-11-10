@@ -57,6 +57,8 @@
 #include "lib/editor-plugin.h"
 #include "lib/plugin-service.h"
 
+#include "src/keymap.h"
+
 #include "src/editor/edit-impl.h"
 #include "src/editor/editwidget.h"
 
@@ -68,9 +70,11 @@
 /*** file scope macro definitions ****************************************************************/
 
 #define QUERY_KEYMAP_SECTION "query"
-#define QUERY_HELP_FILE      "query.md"
-#define QUERY_HELP_NODE      "[Query]"
-#define QUERY_HISTORY_MAX    100
+// the menu of the plugin, in the menubar before Window
+#define QUERY_MENU        N_ ("&Query")
+#define QUERY_HELP_FILE   "query.md"
+#define QUERY_HELP_NODE   "[Query]"
+#define QUERY_HISTORY_MAX 100
 // the versions of a file of queries, as it was run, in the data of the user; the newest kept
 #define QUERY_VERSIONS_DIR ".history"
 #define QUERY_VERSIONS_MAX 200
@@ -2441,6 +2445,140 @@ query_ok_to_quit (void *data)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The commands of the menu Query: those of the keys, the menu running them as their keys do
+   outside a window of the tabs or of Schema */
+static mc_ep_result_t
+query_menu_run (void *data, void *edit, int cmd)
+{
+    query_t *q = (query_t *) data;
+
+    return query_run_command (q, cmd, edit, FALSE) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static mc_ep_result_t
+query_act_run (void *data, void *edit)
+{
+    return query_menu_run (data, edit, QUERY_CMD_RUN);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static mc_ep_result_t
+query_act_run_all (void *data, void *edit)
+{
+    return query_menu_run (data, edit, QUERY_CMD_RUN_ALL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static mc_ep_result_t
+query_act_stop (void *data, void *edit)
+{
+    return query_menu_run (data, edit, QUERY_CMD_STOP);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static mc_ep_result_t
+query_act_export (void *data, void *edit)
+{
+    return query_menu_run (data, edit, QUERY_CMD_EXPORT);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static mc_ep_result_t
+query_act_ai (void *data, void *edit)
+{
+    return query_menu_run (data, edit, QUERY_CMD_AI);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static mc_ep_result_t
+query_act_rollback (void *data, void *edit)
+{
+    return query_menu_run (data, edit, QUERY_CMD_ROLLBACK);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static mc_ep_result_t
+query_act_schema (void *data, void *edit)
+{
+    return query_menu_run (data, edit, QUERY_CMD_SCHEMA);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static mc_ep_result_t
+query_act_schema_refresh (void *data, void *edit)
+{
+    return query_menu_run (data, edit, QUERY_CMD_SCHEMA_REFRESH);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The actions of the menu, in the order of query_actions[] */
+enum
+{
+    QUERY_ACT_RUN,
+    QUERY_ACT_RUN_ALL,
+    QUERY_ACT_STOP,
+    QUERY_ACT_EXPORT,
+    QUERY_ACT_AI,
+    QUERY_ACT_ROLLBACK,
+    QUERY_ACT_SCHEMA,
+    QUERY_ACT_SCHEMA_REFRESH,
+    QUERY_ACT_COUNT
+};
+
+/* each action, and the command whose key the menu shows */
+static const mc_ep_action_t query_actions[QUERY_ACT_COUNT] = {
+    { "Run", query_act_run },       { "Run the whole file", query_act_run_all },
+    { "Stop", query_act_stop },     { "Export", query_act_export },
+    { "AI", query_act_ai },         { "Rollback", query_act_rollback },
+    { "Schema", query_act_schema }, { "Read the schema again", query_act_schema_refresh },
+};
+
+static const int query_action_commands[QUERY_ACT_COUNT] = {
+    QUERY_CMD_RUN, QUERY_CMD_RUN_ALL,  QUERY_CMD_STOP,   QUERY_CMD_EXPORT,
+    QUERY_CMD_AI,  QUERY_CMD_ROLLBACK, QUERY_CMD_SCHEMA, QUERY_CMD_SCHEMA_REFRESH,
+};
+
+static const mc_ep_cmd_menu_entry_t query_menu[] = {
+    // the run of the query
+    { QUERY_MENU, N_ ("&Run"), QUERY_ACT_RUN, NULL },
+    { QUERY_MENU, N_ ("Run the whole &file"), QUERY_ACT_RUN_ALL, NULL },
+    { QUERY_MENU, N_ ("&Stop"), QUERY_ACT_STOP, NULL },
+    { QUERY_MENU, NULL, 0, NULL },
+    // what is made of it
+    { QUERY_MENU, N_ ("&Export the rows..."), QUERY_ACT_EXPORT, NULL },
+    { QUERY_MENU, N_ ("Write the query by &AI"), QUERY_ACT_AI, NULL },
+    { QUERY_MENU, NULL, 0, NULL },
+    { QUERY_MENU, N_ ("Roll &back"), QUERY_ACT_ROLLBACK, NULL },
+    { QUERY_MENU, NULL, 0, NULL },
+    // the database
+    { QUERY_MENU, N_ ("S&chema"), QUERY_ACT_SCHEMA, NULL },
+    { QUERY_MENU, N_ ("Read the schema a&gain"), QUERY_ACT_SCHEMA_REFRESH, NULL },
+};
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The key of the action @action_index, as the keymap has it now */
+static char *
+query_menu_shortcut (int action_index)
+{
+    if (action_index < 0 || action_index >= QUERY_ACT_COUNT)
+        return NULL;
+    return keymap_menu_shortcut (QUERY_KEYMAP_SECTION,
+                                 query_commands[query_action_commands[action_index]].name);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static const mc_editor_plugin_t query_plugin = {
     .api_version = MC_EDITOR_PLUGIN_API_VERSION,
     .name = "query",
@@ -2452,6 +2590,11 @@ static const mc_editor_plugin_t query_plugin = {
     .handle_event = query_handle_event,
     .handle_action = query_handle_action,
     .ok_to_quit = query_ok_to_quit,
+    .actions = query_actions,
+    .action_count = QUERY_ACT_COUNT,
+    .cmd_menu_entries = query_menu,
+    .cmd_menu_entry_count = G_N_ELEMENTS (query_menu),
+    .get_menu_shortcut = query_menu_shortcut,
 };
 
 /* --------------------------------------------------------------------------------------------- */

@@ -3814,3 +3814,31 @@ msgstr "Разделитель - один символ, не кавычка, и�
 #: src/plugins/query/query.c
 msgid "Options"
 msgstr "Настройки"
+
+#: src/plugins/query/query.c
+msgid "&Run"
+msgstr "&Выполнить"
+
+#: src/plugins/query/query.c
+msgid "Run the whole &file"
+msgstr "Выполнить весь &файл"
+
+#: src/plugins/query/query.c
+msgid "&Export the rows..."
+msgstr "&Экспорт строк..."
+
+#: src/plugins/query/query.c
+msgid "Write the query by &AI"
+msgstr "Написать запрос с &ИИ"
+
+#: src/plugins/query/query.c
+msgid "Roll &back"
+msgstr "Отк&атить"
+
+#: src/plugins/query/query.c
+msgid "S&chema"
+msgstr "С&хема"
+
+#: src/plugins/query/query.c
+msgid "Read the schema a&gain"
+msgstr "Прочитать схему &заново"
