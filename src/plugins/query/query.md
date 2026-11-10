@@ -59,6 +59,9 @@ taken from the environment, *process.env.NAME*, which mongosh inherits too.
 
 These are the default keys; they can be changed in **Options → Key
 bindings → Editor → Query**, or in the *[query]* section of the keymap.
+The menu **Query** has the commands of a file, with their keys: Run, Run
+the whole file, Stop, Export the rows, Write the query by AI, Roll back,
+Schema, Read the schema again. It is there in *coole -Q* alone.
 
 **F5**
 : Run the selection, else the part of the file the cursor is in between
