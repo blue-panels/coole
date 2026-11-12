@@ -68,6 +68,14 @@ At the right of a file stand its lines as they are on the disk: *336*. A file
 larger than 1M or one that is not text shows its size instead: *27K*,
 *3M*. They are counted again when the file changes.
 
+Before a name the tree can show a mark of what it is, in its color, from the
+section *[project]* of the skin: *source-char = x* and *source = green*. The
+keys are file, source, header, build, doc, config, script and binary for the
+files, and function, prototype, type, enum, macro and variable for the
+symbols. A mark of *%e* is the first letter of the extension: *c* for
+*calc.c*, *h* for *calc.h*. A skin without them shows no marks; *darkfar*
+has them.
+
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move in the tree.
 
