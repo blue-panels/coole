@@ -30,6 +30,9 @@
 #include <config.h>
 
 #include <string.h>
+#include <sys/stat.h>
+
+#include <glib/gstdio.h>
 
 #include "lib/global.h"
 #include "lib/skin.h"
@@ -56,6 +59,8 @@
 #define PROJECT_SERVICE        "project"
 #define PROJECT_KEYMAP_SECTION "project"
 #define PROJECT_RECENT_MAX     30
+// a larger file, or one with a NUL, shows its size at the right of the tree, not its lines
+#define PROJECT_LINES_MAX_SIZE (1024 * 1024)
 #define PROJECT_LIST_MAX       500
 
 /*** file scope type declarations ****************************************************************/
@@ -106,7 +111,18 @@ typedef struct
     gboolean outline_closed;
     // ctags took long over the outline of the file: made again when it is saved, not at each edit
     gboolean outline_slow;
+    // what the tree shows at the right of a file, by its absolute name: project_size_t
+    GHashTable *sizes;
 } project_t;
+
+/* the lines or the size of a file at the right of the tree, kept till the file changes */
+typedef struct
+{
+    gint64 mtime;
+    long mtime_ns; // a change saved within the same second, the size kept, is seen too
+    goffset size;
+    char *text;
+} project_size_t;
 
 /* a symbol of the outline */
 typedef struct
@@ -1031,17 +1047,125 @@ project_tree_reveal (project_t *project, const char *file)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The row of a node: a directory with a slash after its name */
+static void
+project_size_free (gpointer p)
+{
+    project_size_t *size = (project_size_t *) p;
+
+    g_free (size->text);
+    g_free (size);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The size of a file the way the tree shows it: 512B, 12K, 3M */
+static char *
+project_size_text (goffset size)
+{
+    if (size < 1024)
+        return g_strdup_printf ("%dB", (int) size);
+    if (size < 1024 * 1024)
+        return g_strdup_printf ("%" G_GINT64_FORMAT "K", (gint64) ((size + 1023) / 1024));
+    return g_strdup_printf ("%" G_GINT64_FORMAT "M",
+                            (gint64) ((size + 1024 * 1024 - 1) / (1024 * 1024)));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The nanoseconds of the time a file was changed, where the system keeps them */
+static long
+project_mtime_ns (const GStatBuf *st)
+{
+#if defined(HAVE_STRUCT_STAT_ST_MTIM)
+    return (long) st->st_mtim.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
+    return (long) st->st_mtimespec.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
+    return (long) st->st_mtimensec;
+#else
+    (void) st;
+    return 0;
+#endif
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What the tree shows at the right of a file: its lines, or its size when it is large or not text;
+   read again only when its time or its size changes.  NULL when it cannot be read */
+static const char *
+project_file_size (project_t *project, const char *rel)
+{
+    char *file = g_build_filename (project->root, rel, (char *) NULL);
+    GStatBuf st;
+    project_size_t *size;
+    char *contents = NULL;
+    gsize len = 0;
+
+    if (g_stat (file, &st) != 0 || !S_ISREG (st.st_mode))
+    {
+        g_free (file);
+        return NULL;
+    }
+    if (project->sizes == NULL)
+        project->sizes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, project_size_free);
+    size = g_hash_table_lookup (project->sizes, file);
+    if (size != NULL && size->mtime == (gint64) st.st_mtime
+        && size->mtime_ns == project_mtime_ns (&st) && size->size == (goffset) st.st_size)
+    {
+        g_free (file);
+        return size->text;
+    }
+    if (size == NULL)
+    {
+        size = g_new0 (project_size_t, 1);
+        g_hash_table_insert (project->sizes, g_strdup (file), size);
+    }
+    size->mtime = (gint64) st.st_mtime;
+    size->mtime_ns = project_mtime_ns (&st);
+    size->size = (goffset) st.st_size;
+    g_free (size->text);
+    size->text = NULL;
+    if (st.st_size <= PROJECT_LINES_MAX_SIZE && g_file_get_contents (file, &contents, &len, NULL)
+        && memchr (contents, '\0', len) == NULL)
+    {
+        gsize i, lines = 0;
+
+        for (i = 0; i < len; i++)
+            if (contents[i] == '\n')
+                lines++;
+        // the last line without a newline is a line too
+        if (len > 0 && contents[len - 1] != '\n')
+            lines++;
+        size->text = g_strdup_printf ("%" G_GSIZE_FORMAT, lines);
+    }
+    else
+        size->text = project_size_text ((goffset) st.st_size);
+    g_free (contents);
+    g_free (file);
+    return size->text;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The row of a node: a directory with a slash after its name; a file with its lines at the
+   right, or its size */
 static void
 project_tree_row (edit_tree_t *tree, const mctree_node_t *node, GString *name, GString *info)
 {
+    project_t *project = (project_t *) tree->data;
     const project_node_t *data = (const project_node_t *) node->data;
 
-    (void) tree;
-    (void) info;
     g_string_append (name, node->key);
     if (data != NULL && data->dir)
         g_string_append_c (name, '/');
+    else if (project != NULL && project->root != NULL && data != NULL && data->symbol < 0
+             && data->rel != NULL)
+    {
+        const char *text = project_file_size (project, data->rel);
+
+        if (text != NULL)
+            g_string_append (info, text);
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1766,6 +1890,7 @@ project_close (void *data)
         project->tree->data = NULL;
     g_clear_pointer (&project->model, mctree_model_free);
     g_clear_pointer (&project->paths, g_hash_table_destroy);
+    g_clear_pointer (&project->sizes, g_hash_table_destroy);
     if (project->service)
         project->host->service_unregister (project->host, PROJECT_SERVICE);
     project_files_drop (project);

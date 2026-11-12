@@ -64,6 +64,10 @@ or anywhere in the project.
 The title of the tree is the root of the project, the home as *~*:
 *[~/dev/sh-debug]*; when it does not fit, its end is kept.
 
+At the right of a file stand its lines as they are on the disk: *336*. A file
+larger than 1M or one that is not text shows its size instead: *27K*,
+*3M*. They are counted again when the file changes.
+
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move in the tree.
 
