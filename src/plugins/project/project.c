@@ -1104,7 +1104,17 @@ project_tree_reveal (project_t *project, const char *file)
     }
     path = g_strdelimit (g_strdup (rel), "/", MCTREE_PATH_SEP[0]);
     mctree_view_rebuild (project->tree->view);
-    (void) mctree_view_goto_path (project->tree->view, path);
+    {
+        // the cursor on a symbol of the file stays there: the click on it shows the file
+        const mctree_node_t *current = edit_tree_current (project->tree);
+        char *at_path = current != NULL ? mctree_node_path (current) : NULL;
+        const gsize path_len = strlen (path);
+
+        if (at_path == NULL || strncmp (at_path, path, path_len) != 0
+            || at_path[path_len] != MCTREE_PATH_SEP[0])
+            (void) mctree_view_goto_path (project->tree->view, path);
+        g_free (at_path);
+    }
     g_free (path);
     widget_draw (WIDGET (project->tree));
 }
