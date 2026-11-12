@@ -29,8 +29,10 @@
 
 #include <config.h>
 
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <glib/gstdio.h>
 
@@ -64,7 +66,18 @@
 #define PROJECT_LINES_MAX_SIZE (1024 * 1024)
 // what the marks of the tree stand for: by the names of the files, the kinds of the symbols
 #define PROJECT_MARKS_FILE "project-marks.ini"
-#define PROJECT_LIST_MAX   500
+// the lines that Find in project lists at most; the letters it starts at
+#define PROJECT_FIND_MAX 5000
+#define PROJECT_FIND_MIN 2
+// the bytes of a line it shows at most, and of a line it looks for the column of the text in
+#define PROJECT_FIND_LABEL_MAX  300
+#define PROJECT_FIND_COLUMN_MAX 4096
+// the rows of its list at most, and of its view of the file around the line of the cursor
+#define PROJECT_FIND_LIST_MAX    13
+#define PROJECT_FIND_VIEW_BEFORE 3
+#define PROJECT_FIND_VIEW_AFTER  5
+#define PROJECT_FIND_VIEW        (PROJECT_FIND_VIEW_BEFORE + 1 + PROJECT_FIND_VIEW_AFTER)
+#define PROJECT_LIST_MAX         500
 
 /*** file scope type declarations ****************************************************************/
 
@@ -76,6 +89,7 @@ enum
     PROJECT_CMD_RECENT,
     PROJECT_CMD_TREE,
     PROJECT_CMD_ALTERNATE,
+    PROJECT_CMD_FIND,
     PROJECT_CMD_COUNT
 };
 
@@ -107,6 +121,7 @@ enum
     PROJECT_ACT_RECENT,
     PROJECT_ACT_TREE,
     PROJECT_ACT_ALTERNATE,
+    PROJECT_ACT_FIND,
     PROJECT_ACT_OPEN_PROJECT,
     PROJECT_ACT_CLOSE_PROJECT
 };
@@ -199,6 +214,7 @@ static const mc_ep_command_t project_commands[PROJECT_CMD_COUNT + 1] = {
     { "ProjectRecentFiles", N_ ("Recent files of the project"), "ctrl-e" },
     { "ProjectTree", N_ ("Show or hide the project tree"), "alt-shift-t" },
     { "ProjectAlternate", N_ ("Switch between source and header"), "alt-shift-a" },
+    { "ProjectFind", N_ ("Find a text in the files of the project"), "alt-f7" },
     { NULL, NULL, NULL },
 };
 
@@ -1668,6 +1684,441 @@ project_alternate (project_t *project, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* A line found by Find in project */
+typedef struct
+{
+    char *rel;
+    long line;
+    long column;  // in bytes, of the text found
+} project_found_t;
+
+static void
+project_found_free (gpointer p)
+{
+    project_found_t *f = (project_found_t *) p;
+
+    g_free (f->rel);
+    g_free (f);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Where @text is in @line, in bytes, 0 when it is not; @any_case: in any case, of any script */
+static long
+project_find_column (const char *line, const char *text, gboolean any_case)
+{
+    const char *at;
+    char *folded;
+    const char *p;
+    long column = 0;
+
+    if (!any_case || !g_utf8_validate (line, -1, NULL) || !g_utf8_validate (text, -1, NULL))
+    {
+        at = any_case ? NULL : strstr (line, text);
+        if (at == NULL && any_case)
+        {
+            char *l = g_ascii_strdown (line, -1), *t = g_ascii_strdown (text, -1);
+
+            at = strstr (l, t);
+            at = at != NULL ? line + (at - l) : NULL;
+            g_free (l);
+            g_free (t);
+        }
+        return at != NULL ? (long) (at - line) : 0;
+    }
+    // the folded text is compared with the folded line from each of its letters on
+    folded = g_utf8_casefold (text, -1);
+    for (p = line; *p != '\0' && p - line < PROJECT_FIND_COLUMN_MAX; p = g_utf8_next_char (p))
+    {
+        const gsize n = strlen (p);
+        char *here = g_utf8_casefold (p, (gssize) MIN (n, strlen (text) * 4 + 4));
+        const gboolean hit = g_str_has_prefix (here, folded);
+
+        g_free (here);
+        if (hit)
+        {
+            column = (long) (p - line);
+            break;
+        }
+    }
+    g_free (folded);
+    return column;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The lines of the files of the project that have @text, as grep finds them, at most
+   PROJECT_FIND_MAX: the labels in @labels, "src/calc.c:42: the line", and where they are in
+   @found.  A text with no capital letter is found in any case.  FALSE when grep cannot be run */
+static gboolean
+project_find_lines (project_t *project, const char *text, GPtrArray *labels, GPtrArray *found)
+{
+    const GPtrArray *files = project_files (project);
+    char *list_path = NULL;
+    int fd;
+    FILE *list, *fp;
+    char *cmd, *q_root, *q_text, *q_list;
+    GString *line;
+    guint i;
+    int c;
+    const char *p;
+    gboolean any_case = TRUE;
+
+    if (files == NULL || files->len == 0)
+        return TRUE;
+    // a capital letter of any script, as grep -i folds them all
+    if (g_utf8_validate (text, -1, NULL))
+    {
+        for (p = text; *p != '\0'; p = g_utf8_next_char (p))
+            if (g_unichar_isupper (g_utf8_get_char (p)))
+                any_case = FALSE;
+    }
+    else
+        for (p = text; *p != '\0'; p++)
+            if (g_ascii_isupper (*p))
+                any_case = FALSE;
+    fd = g_file_open_tmp ("coole-find-XXXXXX", &list_path, NULL);
+    if (fd < 0)
+        return FALSE;
+    list = fdopen (fd, "w");
+    if (list == NULL)
+    {
+        close (fd);
+        unlink (list_path);
+        g_free (list_path);
+        return FALSE;
+    }
+    // the names separated by NUL for xargs -0: no shell quoting, no limit of the command line
+    for (i = 0; i < files->len; i++)
+    {
+        const char *rel = (const char *) g_ptr_array_index (files, i);
+
+        // what coole keeps of the project, its tags among them, is no text of it
+        if (strncmp (rel, ".coole/", 7) == 0)
+            continue;
+        fputs (rel, list);
+        fputc ('\0', list);
+    }
+    fclose (list);
+
+    q_root = g_shell_quote (project->root);
+    q_text = g_shell_quote (text);
+    q_list = g_shell_quote (list_path);
+    // -F: the text as it is, no pattern; -I: binary files skipped; -H: the name with one file too;
+    // -Z: a NUL after the name, which may have a colon in it
+    cmd = g_strdup_printf ("cd %s && xargs -0 grep -n -H -Z -I -F %s-e %s -- < %s 2>/dev/null",
+                           q_root, any_case ? "-i " : "", q_text, q_list);
+    g_free (q_root);
+    g_free (q_text);
+    g_free (q_list);
+    fp = popen (cmd, "r");
+    g_free (cmd);
+    if (fp == NULL)
+    {
+        unlink (list_path);
+        g_free (list_path);
+        return FALSE;
+    }
+
+    line = g_string_new (NULL);
+    while (found->len < PROJECT_FIND_MAX)
+    {
+        char *name_end;
+        char *colon, *rest;
+        long number;
+        project_found_t *f;
+
+        g_string_truncate (line, 0);
+        while ((c = fgetc (fp)) != EOF && c != '\n')
+            g_string_append_c (line, (char) c);
+        if (c == EOF && line->len == 0)
+            break;
+        // name NUL line:text
+        name_end = memchr (line->str, '\0', line->len);
+        if (name_end == NULL)
+            continue;
+        colon = strchr (name_end + 1, ':');
+        if (colon == NULL)
+            continue;
+        *colon = '\0';
+        number = strtol (name_end + 1, NULL, 10);
+        if (number <= 0)
+            continue;
+        rest = colon + 1;
+        f = g_new (project_found_t, 1);
+        f->rel = g_strdup (line->str);
+        f->line = number;
+        f->column = project_find_column (rest, text, any_case);
+        g_ptr_array_add (found, f);
+        // the line as it shows: no indent, tabs as spaces, a long one cut
+        g_strdelimit (rest, "\t", ' ');
+        rest = g_strchug (rest);
+        if (strlen (rest) > PROJECT_FIND_LABEL_MAX)
+        {
+            char *cut = rest + PROJECT_FIND_LABEL_MAX;
+
+            if (g_utf8_validate (rest, -1, NULL))
+                cut = g_utf8_find_prev_char (rest, cut + 1);
+            *cut = '\0';
+        }
+        g_ptr_array_add (labels, g_strdup_printf ("%s:%ld: %s", line->str, number, rest));
+    }
+    g_string_free (line, TRUE);
+    pclose (fp);
+    unlink (list_path);
+    g_free (list_path);
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* the dialog of Find in project while it runs: the text, the lines found, a view of the one the
+   cursor is on */
+static project_t *find_project = NULL;
+static WInput *find_input = NULL;
+static WListbox *find_list = NULL;
+static WListbox *find_view = NULL;
+static char *find_last = NULL;        // the text the list is of
+static GPtrArray *find_found = NULL;  // project_found_t, what the items of the list go to
+static const project_found_t *find_shown = NULL;  // the line find_view shows
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The lines of the file around the one of the cursor of the list, that one current */
+static void
+project_find_view (void)
+{
+    const project_found_t *f = NULL;
+    char *file;
+    FILE *fp;
+
+    listbox_get_current (find_list, NULL, (void **) &f);
+    if (f == find_shown)
+        return;
+    find_shown = f;
+    listbox_remove_list (find_view);
+    file = f != NULL ? g_build_filename (find_project->root, f->rel, (char *) NULL) : NULL;
+    // read up to the last line shown, not the whole file
+    fp = file != NULL ? fopen (file, "r") : NULL;
+    if (fp != NULL)
+    {
+        const long first = MAX (1, f->line - PROJECT_FIND_VIEW_BEFORE);
+        const long last = f->line + PROJECT_FIND_VIEW_AFTER;
+        GString *text = g_string_new (NULL);
+        long n = 1;
+        int c = 0;
+
+        while (n <= last && c != EOF)
+        {
+            g_string_truncate (text, 0);
+            while ((c = fgetc (fp)) != EOF && c != '\n')
+                if (n >= first && text->len < PROJECT_FIND_LABEL_MAX)
+                    g_string_append_c (text, c == '\t' ? ' ' : (char) c);
+            if (n >= first && (c != EOF || text->len > 0))
+                listbox_add_item (find_view, LISTBOX_APPEND_AT_END, 0, text->str, NULL, FALSE);
+            n++;
+        }
+        g_string_free (text, TRUE);
+        fclose (fp);
+        listbox_set_current (find_view, (int) (f->line - first));
+    }
+    g_free (file);
+    widget_draw (WIDGET (find_view));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The list made again for the text of the line, when it is another one: grep run, from
+   PROJECT_FIND_MIN letters on */
+static void
+project_find_refill (WDialog *dlg)
+{
+    const char *text = input_get_ctext (find_input);
+    GPtrArray *labels;
+    char *title;
+    guint i;
+
+    if (find_last != NULL && strcmp (find_last, text) == 0)
+        return;
+    g_free (find_last);
+    find_last = g_strdup (text);
+    listbox_remove_list (find_list);
+    g_ptr_array_set_size (find_found, 0);
+    labels = g_ptr_array_new_with_free_func (g_free);
+    if (str_length (text) < PROJECT_FIND_MIN)
+        title = g_strdup (_ ("Find in project"));
+    else if (!project_find_lines (find_project, text, labels, find_found))
+        title = g_strdup (_ ("Find in project: cannot run grep"));
+    else if (find_found->len >= PROJECT_FIND_MAX)
+        title = g_strdup_printf (_ ("Find in project: the first %u lines"), find_found->len);
+    else
+        title = g_strdup_printf (
+            ngettext ("Find in project: %u line", "Find in project: %u lines", find_found->len),
+            find_found->len);
+    for (i = 0; i < find_found->len; i++)
+        listbox_add_item (find_list, LISTBOX_APPEND_AT_END, 0, g_ptr_array_index (labels, i),
+                          g_ptr_array_index (find_found, i), FALSE);
+    g_ptr_array_unref (labels);
+    frame_set_title (FRAME (dlg->bg), title);
+    g_free (title);
+    listbox_select_first (find_list);
+    // the view of the list before is gone with it
+    listbox_remove_list (find_view);
+    find_shown = NULL;
+    project_find_view ();
+    widget_draw (WIDGET (dlg));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static cb_ret_t
+project_find_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    switch (msg)
+    {
+    case MSG_INIT:
+    {
+        cb_ret_t ret = dlg_default_callback (w, sender, msg, parm, data);
+
+        widget_select (WIDGET (find_input));
+        return ret;
+    }
+    case MSG_KEY:
+        // the keys that go through the list, the focus staying in the line
+        if (parm == KEY_UP || parm == KEY_DOWN || parm == KEY_PPAGE || parm == KEY_NPAGE)
+        {
+            send_message (WIDGET (find_list), w, MSG_KEY, parm, data);
+            return MSG_HANDLED;
+        }
+        return dlg_default_callback (w, sender, msg, parm, data);
+    case MSG_NOTIFY:
+        if (sender != WIDGET (find_list))
+            return MSG_NOT_HANDLED;
+        // Enter in the list, the focus there after a click: the line chosen
+        if (parm == CK_Enter)
+        {
+            DIALOG (w)->ret_value = B_ENTER;
+            dlg_close (DIALOG (w));
+            return MSG_HANDLED;
+        }
+        // its cursor moved
+        if (parm == 0)
+        {
+            project_find_view ();
+            return MSG_HANDLED;
+        }
+        return MSG_NOT_HANDLED;
+    case MSG_POST_KEY:
+        // grep runs once the typing stops, not at each letter
+        if (strcmp (find_last != NULL ? find_last : "", input_get_ctext (find_input)) != 0)
+            widget_idle (w, TRUE);
+        return MSG_HANDLED;
+    case MSG_IDLE:
+        widget_idle (w, FALSE);
+        project_find_refill (DIALOG (w));
+        return MSG_HANDLED;
+    default:
+        return dlg_default_callback (w, sender, msg, parm, data);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static lcback_ret_t
+project_find_activate (WListbox *l)
+{
+    (void) l;
+    return LISTBOX_DONE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Find in project: the lines of the files of the project that have the text of the line, the word
+   of the cursor first, listed as it is typed, the file around the one of the cursor under them;
+   Enter goes to the one chosen */
+static void
+project_find (project_t *project, void *edit)
+{
+    char *word;
+    WDialog *dlg;
+    int dlg_h, dlg_w, list_h;
+    const project_found_t *chosen = NULL;
+
+    if (project->root == NULL)
+    {
+        project->host->message (project->host, D_NORMAL, _ ("Project"),
+                                _ ("Open a file of the project first."));
+        return;
+    }
+    if (edit == NULL)
+        edit = project->host->window_top_file (project->host);
+    word = edit != NULL && project->host->get_cursor_word != NULL
+        ? project->host->get_cursor_word (project->host, edit)
+        : NULL;
+
+    // the line, the list, a line, the view, a line, the buttons, the frame
+    dlg_w = COLS - 4;
+    list_h = MAX (4, MIN (PROJECT_FIND_LIST_MAX, LINES - 2 - PROJECT_FIND_VIEW - 7));
+    dlg_h = list_h + PROJECT_FIND_VIEW + 7;
+    dlg = dlg_create (TRUE, MAX (0, (LINES - dlg_h) / 2), (COLS - dlg_w) / 2, dlg_h, dlg_w,
+                      WPOS_KEEP_DEFAULT, TRUE, dialog_colors, project_find_callback, NULL,
+                      "[Project]", _ ("Find in project"));
+    dlg->help_file = "project.md";
+
+    find_input = input_new (1, 1, input_colors, dlg_w - 2, word != NULL ? word : "", "project-find",
+                            INPUT_COMPLETE_NONE);
+    // the word offered is added to, not typed over
+    if (word != NULL && *word != '\0')
+        find_input->first = FALSE;
+    g_free (word);
+    group_add_widget (GROUP (dlg), find_input);
+    find_list = listbox_new (3, 1, list_h, dlg_w - 2, FALSE, project_find_activate);
+    group_add_widget (GROUP (dlg), find_list);
+    group_add_widget (GROUP (dlg), hline_new (list_h + 3, -1, -1));
+    find_view = listbox_new (list_h + 4, 1, PROJECT_FIND_VIEW, dlg_w - 2, FALSE, NULL);
+    widget_set_options (WIDGET (find_view), WOP_SELECTABLE, FALSE);
+    group_add_widget (GROUP (dlg), find_view);
+    group_add_widget (GROUP (dlg), hline_new (dlg_h - 3, -1, -1));
+    group_add_widget (
+        GROUP (dlg),
+        button_new (dlg_h - 2, dlg_w / 2 - 10, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL));
+    group_add_widget (
+        GROUP (dlg),
+        button_new (dlg_h - 2, dlg_w / 2 + 1, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL));
+
+    find_project = project;
+    find_found = g_ptr_array_new_with_free_func (project_found_free);
+    g_clear_pointer (&find_last, g_free);
+    find_shown = NULL;
+    project_find_refill (dlg);
+
+    if (dlg_run (dlg) == B_ENTER)
+    {
+        // Enter typed with the text, before the list was made for it
+        project_find_refill (dlg);
+        listbox_get_current (find_list, NULL, (void **) &chosen);
+    }
+    if (chosen != NULL)
+    {
+        char *file = g_build_filename (project->root, chosen->rel, (char *) NULL);
+
+        (void) project->host->show_location_at (project->host, file, chosen->line, chosen->column,
+                                                0);
+        g_free (file);
+    }
+
+    widget_destroy (WIDGET (dlg));
+    find_input = NULL;
+    find_list = NULL;
+    find_view = NULL;
+    find_shown = NULL;
+    find_project = NULL;
+    g_clear_pointer (&find_last, g_free);
+    g_clear_pointer (&find_found, g_ptr_array_unref);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static gboolean
 project_run_command (project_t *project, int cmd, void *edit)
 {
@@ -1684,6 +2135,9 @@ project_run_command (project_t *project, int cmd, void *edit)
         return TRUE;
     case PROJECT_CMD_ALTERNATE:
         project_alternate (project, edit);
+        return TRUE;
+    case PROJECT_CMD_FIND:
+        project_find (project, edit);
         return TRUE;
     default:
         return FALSE;
@@ -1925,6 +2379,12 @@ static mc_ep_result_t
 project_act_alternate (void *data, void *edit)
 {
     return project_run_command (data, PROJECT_CMD_ALTERNATE, edit) ? MC_EPR_OK : MC_EPR_FAILED;
+}
+
+static mc_ep_result_t
+project_act_find (void *data, void *edit)
+{
+    return project_run_command (data, PROJECT_CMD_FIND, edit) ? MC_EPR_OK : MC_EPR_FAILED;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2186,6 +2646,7 @@ static const mc_ep_action_t project_actions[] = {
     { "Recent files", project_act_recent },
     { "Tree", project_act_tree },
     { "Header or source", project_act_alternate },
+    { "Find in project", project_act_find },
     { "Open project", project_act_open_project },
     { "Close project", project_act_close_project },
 };
@@ -2197,6 +2658,7 @@ static const mc_ep_cmd_menu_entry_t project_menu[] = {
     { MC_EP_MENU_PROJECT, N_ ("&Recent files of project..."), PROJECT_ACT_RECENT, NULL },
     { MC_EP_MENU_PROJECT, N_ ("Project &tree"), PROJECT_ACT_TREE, NULL },
     { MC_EP_MENU_NAVIGATE, N_ ("Header or source"), PROJECT_ACT_ALTERNATE, NULL },
+    { MC_EP_MENU_PROJECT, N_ ("Fin&d in project..."), PROJECT_ACT_FIND, NULL },
 };
 
 /* The key of a menu entry, that of the command of its action */
@@ -2218,6 +2680,9 @@ project_menu_shortcut (int action_index)
         break;
     case PROJECT_ACT_ALTERNATE:
         cmd = PROJECT_CMD_ALTERNATE;
+        break;
+    case PROJECT_ACT_FIND:
+        cmd = PROJECT_CMD_FIND;
         break;
     default:
         return NULL;
