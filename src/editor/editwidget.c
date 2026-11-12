@@ -3053,9 +3053,16 @@ edit_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data
         return MSG_HANDLED;
 
     case MSG_DRAW:
+    {
+        // the window was drawn over, or its frame filled: its text goes back whole
+        const gboolean was = edit_drawing_whole;
+
         e->force |= REDRAW_COMPLETELY;
+        edit_drawing_whole = TRUE;
         edit_update_screen (e);
+        edit_drawing_whole = was;
         return MSG_HANDLED;
+    }
 
     case MSG_KEY:
     {
@@ -3502,8 +3509,9 @@ edit_update_screen (WEdit *e)
     edit_update_curs_col (e);
     edit_status (e, widget_get_state (WIDGET (e), WST_FOCUSED));
 
-    // pop all events for this window for internal handling
-    if (!is_idle ())
+    /* pop all events for this window for internal handling; drawn whole, the text is drawn at
+       once, or the screen would show the window without it till the keys are done */
+    if (!is_idle () && !edit_drawing_whole)
         e->force |= REDRAW_PAGE;
     else
     {
