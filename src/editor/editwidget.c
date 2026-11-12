@@ -95,6 +95,7 @@ typedef struct
     mc_editor_host_t *host;
     GPtrArray *instances; /* editor_plugin_instance_t* */
     GArray *later;        /* editor_later_t: the calls of the plugins for when the editor is idle */
+    gboolean marks_draw;  /* the markers changed: the editor is drawn again once it is idle */
     GPtrArray *window_kinds; /* editor_window_kind_t: the windows of the plugins, menu Window */
 } editor_plugin_ctx_t;
 
@@ -120,6 +121,8 @@ static gboolean edit_class_is_modified (const WEditWindow *win);
 static gboolean edit_class_close (WEditWindow *win);
 static gboolean edit_class_ok_to_quit (WEditWindow *win);
 static void edit_quit (WDialog *h);
+static void editor_host_call_later_impl (mc_editor_host_t *host, void (*fn) (void *data),
+                                         void *data);
 
 /*** global variables ****************************************************************************/
 
@@ -940,6 +943,32 @@ edit_marker_gutter_forget (void)
 /* --------------------------------------------------------------------------------------------- */
 
 static void
+editor_host_marks_drawn (void *data)
+{
+    mc_editor_host_t *host = (mc_editor_host_t *) data;
+    editor_plugin_ctx_t *ctx = (editor_plugin_ctx_t *) DIALOG (host->host_data)->data.p;
+
+    ctx->marks_draw = FALSE;
+    editor_host_marker_gutter (host);
+    editor_host_draw (host);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The markers changed: a plugin sets them one by one, dozens of them at a time, so the editor is
+   drawn again once, when it is idle, not after each */
+static void
+editor_host_marks_draw (mc_editor_host_t *host)
+{
+    editor_plugin_ctx_t *ctx = (editor_plugin_ctx_t *) DIALOG (host->host_data)->data.p;
+
+    if (ctx == NULL || ctx->marks_draw)
+        return;
+    ctx->marks_draw = TRUE;
+    editor_host_call_later_impl (host, editor_host_marks_drawn, host);
+}
+
+static void
 editor_host_set_marker_impl (mc_editor_host_t *host, const char *file, long line, int kind,
                              gboolean enabled)
 {
@@ -962,8 +991,7 @@ editor_host_set_marker_impl (mc_editor_host_t *host, const char *file, long line
             book_mark_insert (edit, line - 1, EDIT_MARKER_BASE + kind);
         edit->force |= REDRAW_COMPLETELY;
     }
-    editor_host_marker_gutter (host);
-    editor_host_draw (host);
+    editor_host_marks_draw (host);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -986,8 +1014,7 @@ editor_host_clear_markers_impl (mc_editor_host_t *host, const char *file, int ki
             continue;
         book_mark_flush (edit, EDIT_MARKER_BASE + kind);
     }
-    editor_host_marker_gutter (host);
-    editor_host_draw (host);
+    editor_host_marks_draw (host);
 }
 
 /* --------------------------------------------------------------------------------------------- */
