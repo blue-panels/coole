@@ -73,6 +73,31 @@ static gboolean edit_window_above = FALSE;
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
+/* Whether a window over @w, of the same screen and shown, hides it whole: a file window over the
+   screen hides the tree and the panels docked under it */
+static gboolean
+edit_window_hidden (const Widget *w)
+{
+    const WGroup *g = w->owner;
+    GList *l;
+
+    if (g == NULL || !widget_get_state (w, WST_VISIBLE))
+        return FALSE;
+    l = g_list_find (g->widgets, w);
+    for (l = l != NULL ? g_list_next (l) : NULL; l != NULL; l = g_list_next (l))
+    {
+        const Widget *o = CONST_WIDGET (l->data);
+
+        if (edit_window_is_window (o) && widget_get_state (o, WST_VISIBLE) && o->rect.y <= w->rect.y
+            && o->rect.x <= w->rect.x && o->rect.y + o->rect.lines >= w->rect.y + w->rect.lines
+            && o->rect.x + o->rect.cols >= w->rect.x + w->rect.cols)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
@@ -115,6 +140,11 @@ edit_window_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, voi
        none of them, its class may give its own */
     if (msg == MSG_FOCUS && w->owner != NULL && !edit_widget_is_editor (w))
         buttonbar_set_modifier_labels (buttonbar_find (DIALOG (w->owner)), NULL, NULL, NULL, NULL);
+
+    /* A window hidden whole by one over it is not drawn: drawn alone, by a change of its own,
+       it would be seen over that one till that one is drawn again */
+    if (msg == MSG_DRAW && !edit_widget_is_editor (w) && edit_window_hidden (w))
+        return MSG_HANDLED;
 
     ret = win->klass->callback (w, sender, msg, parm, data);
 
