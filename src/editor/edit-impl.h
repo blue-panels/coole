@@ -231,6 +231,9 @@ gboolean eval_marks (WEdit *edit, off_t *start_mark, off_t *end_mark);
 void edit_status (WEdit *edit, gboolean active);
 void edit_execute_key_command (WEdit *edit, long command, int char_for_insertion);
 void edit_update_screen (WEdit *edit);
+/* A file window drawn whole, by MSG_DRAW: what was under its text is gone, so the text is drawn
+   at once and to its end, a key waiting or not */
+extern gboolean edit_drawing_whole;
 void edit_move_to_line (WEdit *e, long line);
 void edit_move_display (WEdit *e, long line);
 void edit_word_wrap (WEdit *edit);

@@ -62,6 +62,10 @@
 
 /*** global variables ****************************************************************************/
 
+/* MSG_DRAW of a file window: its text is drawn to its end, key_pending () or not, since what was
+   under it is gone from the screen */
+gboolean edit_drawing_whole = FALSE;
+
 /*** file scope macro definitions ****************************************************************/
 
 /* A line in view longer than this is not measured to its end for the horizontal scrollbar */
@@ -78,7 +82,7 @@
 
 #define edit_move(x, y)               widget_gotoyx (edit, y, x);
 
-#define key_pending(x)                (!is_idle ())
+#define key_pending(x)                (!edit_drawing_whole && !is_idle ())
 
 #define EDITOR_MINIMUM_TERMINAL_WIDTH 30
 
