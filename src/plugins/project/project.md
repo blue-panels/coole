@@ -59,6 +59,15 @@ says so.
 : Switch between a source and its header: *calc.c* and *calc.h*, next to it
 or anywhere in the project.
 
+**Alt-F7**
+: Find a text in the files of the project, **Project → Find in project...**
+too. The word of the cursor is offered, and the list follows the line as it
+is typed, from two letters: *src/calc.c:42: the line*, the first 5000 of
+them, the file around the line of the cursor under it. The text is looked
+for as it is, not as a pattern; with no capital letter in it, in any case.
+**Up**, **Down**, **PgUp** and **PgDn** move in the list; Enter goes to the
+line chosen, to the text in it. Binary files and *.coole* are skipped.
+
 **The tree**
 
 The title of the tree is the root of the project, the home as *~*:
