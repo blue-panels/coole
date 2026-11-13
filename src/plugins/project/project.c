@@ -29,9 +29,13 @@
 
 #include <config.h>
 
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <glib/gstdio.h>
@@ -1747,131 +1751,6 @@ project_find_column (const char *line, const char *text, gboolean any_case)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The lines of the files of the project that have @text, as grep finds them, at most
-   PROJECT_FIND_MAX: the labels in @labels, "src/calc.c:42: the line", and where they are in
-   @found.  A text with no capital letter is found in any case.  FALSE when grep cannot be run */
-static gboolean
-project_find_lines (project_t *project, const char *text, GPtrArray *labels, GPtrArray *found)
-{
-    const GPtrArray *files = project_files (project);
-    char *list_path = NULL;
-    int fd;
-    FILE *list, *fp;
-    char *cmd, *q_root, *q_text, *q_list;
-    GString *line;
-    guint i;
-    int c;
-    const char *p;
-    gboolean any_case = TRUE;
-
-    if (files == NULL || files->len == 0)
-        return TRUE;
-    // a capital letter of any script, as grep -i folds them all
-    if (g_utf8_validate (text, -1, NULL))
-    {
-        for (p = text; *p != '\0'; p = g_utf8_next_char (p))
-            if (g_unichar_isupper (g_utf8_get_char (p)))
-                any_case = FALSE;
-    }
-    else
-        for (p = text; *p != '\0'; p++)
-            if (g_ascii_isupper (*p))
-                any_case = FALSE;
-    fd = g_file_open_tmp ("coole-find-XXXXXX", &list_path, NULL);
-    if (fd < 0)
-        return FALSE;
-    list = fdopen (fd, "w");
-    if (list == NULL)
-    {
-        close (fd);
-        unlink (list_path);
-        g_free (list_path);
-        return FALSE;
-    }
-    // the names separated by NUL for xargs -0: no shell quoting, no limit of the command line
-    for (i = 0; i < files->len; i++)
-    {
-        const char *rel = (const char *) g_ptr_array_index (files, i);
-
-        // what coole keeps of the project, its tags among them, is no text of it
-        if (strncmp (rel, ".coole/", 7) == 0)
-            continue;
-        fputs (rel, list);
-        fputc ('\0', list);
-    }
-    fclose (list);
-
-    q_root = g_shell_quote (project->root);
-    q_text = g_shell_quote (text);
-    q_list = g_shell_quote (list_path);
-    // -F: the text as it is, no pattern; -I: binary files skipped; -H: the name with one file too;
-    // -Z: a NUL after the name, which may have a colon in it
-    cmd = g_strdup_printf ("cd %s && xargs -0 grep -n -H -Z -I -F %s-e %s -- < %s 2>/dev/null",
-                           q_root, any_case ? "-i " : "", q_text, q_list);
-    g_free (q_root);
-    g_free (q_text);
-    g_free (q_list);
-    fp = popen (cmd, "r");
-    g_free (cmd);
-    if (fp == NULL)
-    {
-        unlink (list_path);
-        g_free (list_path);
-        return FALSE;
-    }
-
-    line = g_string_new (NULL);
-    while (found->len < PROJECT_FIND_MAX)
-    {
-        char *name_end;
-        char *colon, *rest;
-        long number;
-        project_found_t *f;
-
-        g_string_truncate (line, 0);
-        while ((c = fgetc (fp)) != EOF && c != '\n')
-            g_string_append_c (line, (char) c);
-        if (c == EOF && line->len == 0)
-            break;
-        // name NUL line:text
-        name_end = memchr (line->str, '\0', line->len);
-        if (name_end == NULL)
-            continue;
-        colon = strchr (name_end + 1, ':');
-        if (colon == NULL)
-            continue;
-        *colon = '\0';
-        number = strtol (name_end + 1, NULL, 10);
-        if (number <= 0)
-            continue;
-        rest = colon + 1;
-        f = g_new (project_found_t, 1);
-        f->rel = g_strdup (line->str);
-        f->line = number;
-        f->column = project_find_column (rest, text, any_case);
-        g_ptr_array_add (found, f);
-        // the line as it shows: no indent, tabs as spaces, a long one cut
-        g_strdelimit (rest, "\t", ' ');
-        rest = g_strchug (rest);
-        if (strlen (rest) > PROJECT_FIND_LABEL_MAX)
-        {
-            char *cut = rest + PROJECT_FIND_LABEL_MAX;
-
-            if (g_utf8_validate (rest, -1, NULL))
-                cut = g_utf8_find_prev_char (rest, cut + 1);
-            *cut = '\0';
-        }
-        g_ptr_array_add (labels, g_strdup_printf ("%s:%ld: %s", line->str, number, rest));
-    }
-    g_string_free (line, TRUE);
-    pclose (fp);
-    unlink (list_path);
-    g_free (list_path);
-    return TRUE;
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 /* the dialog of Find in project while it runs: the text, the lines found, a view of the one the
    cursor is on */
 static project_t *find_project = NULL;
@@ -1881,6 +1760,14 @@ static WListbox *find_view = NULL;
 static char *find_last = NULL;        // the text the list is of
 static GPtrArray *find_found = NULL;  // project_found_t, what the items of the list go to
 static const project_found_t *find_shown = NULL;  // the line find_view shows
+static WDialog *find_dlg = NULL;
+// grep, running while the dialog does: its output read as it comes, not waited for
+static GPid find_pid = 0;
+static int find_fd = -1;
+static GString *find_pending = NULL;  // what grep wrote after the last whole line
+static char *find_files = NULL;       // the files of the project by NUL, for xargs -0
+static gboolean find_failed = FALSE;  // grep could not be run
+static gboolean find_any_case = FALSE;
 
 /* --------------------------------------------------------------------------------------------- */
 
@@ -1928,45 +1815,289 @@ project_find_view (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The list made again for the text of the line, when it is another one: grep run, from
-   PROJECT_FIND_MIN letters on */
 static void
-project_find_refill (WDialog *dlg)
+project_find_child_setup (gpointer data)
+{
+    (void) data;
+    (void) setsid ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether @text is looked for in any case: it has no capital letter, of any script, as grep -i
+   folds them all */
+static gboolean
+project_find_any_case (const char *text)
+{
+    const char *p;
+
+    if (!g_utf8_validate (text, -1, NULL))
+    {
+        for (p = text; *p != '\0'; p++)
+            if (g_ascii_isupper (*p))
+                return FALSE;
+        return TRUE;
+    }
+    for (p = text; *p != '\0'; p = g_utf8_next_char (p))
+        if (g_unichar_isupper (g_utf8_get_char (p)))
+            return FALSE;
+    return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The file of the names of the files of the project, separated by NUL, for xargs -0: no shell
+   quoting, no limit of the command line; written once for the dialog.  NULL when it cannot be */
+static const char *
+project_find_files (void)
+{
+    const GPtrArray *files;
+    FILE *list;
+    int fd;
+    guint i;
+
+    if (find_files != NULL)
+        return find_files;
+    fd = g_file_open_tmp ("coole-find-XXXXXX", &find_files, NULL);
+    if (fd < 0)
+        return NULL;
+    list = fdopen (fd, "w");
+    if (list == NULL)
+    {
+        close (fd);
+        unlink (find_files);
+        g_clear_pointer (&find_files, g_free);
+        return NULL;
+    }
+    files = project_files (find_project);
+    for (i = 0; files != NULL && i < files->len; i++)
+    {
+        const char *rel = (const char *) g_ptr_array_index (files, i);
+
+        // what coole keeps of the project, its tags among them, is no text of it
+        if (strncmp (rel, ".coole/", 7) == 0)
+            continue;
+        fputs (rel, list);
+        fputc ('\0', list);
+    }
+    fclose (list);
+    return find_files;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* grep stopped, it and the xargs that runs it, its output no longer read */
+static void
+project_find_stop (void)
+{
+    if (find_fd >= 0)
+    {
+        delete_select_channel (find_fd);
+        close (find_fd);
+        find_fd = -1;
+    }
+    if (find_pid != 0)
+    {
+        (void) kill (-find_pid, SIGTERM);
+        (void) waitpid (find_pid, NULL, 0);
+        g_spawn_close_pid (find_pid);
+        find_pid = 0;
+    }
+    if (find_pending != NULL)
+        g_string_truncate (find_pending, 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The title of the dialog: the lines found so far, and whether grep still looks */
+static void
+project_find_title (void)
+{
+    const guint n = find_found->len;
+    char *title;
+
+    if (find_failed)
+        title = g_strdup (_ ("Find in project: cannot run grep"));
+    else if (find_last == NULL || str_length (find_last) < PROJECT_FIND_MIN)
+        title = g_strdup (_ ("Find in project"));
+    else if (n >= PROJECT_FIND_MAX)
+        title = g_strdup_printf (_ ("Find in project: the first %u lines"), n);
+    else if (find_fd >= 0)
+        title = g_strdup_printf (
+            ngettext ("Find in project: %u line...", "Find in project: %u lines...", n), n);
+    else
+        title = g_strdup_printf (
+            ngettext ("Find in project: %u line", "Find in project: %u lines", n), n);
+    frame_set_title (FRAME (find_dlg->bg), title);
+    g_free (title);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A line of grep, "name NUL number:text", added to the list */
+static void
+project_find_add (char *line, gsize len)
+{
+    char *name_end, *colon, *rest;
+    long number;
+    project_found_t *f;
+
+    name_end = memchr (line, '\0', len);
+    if (name_end == NULL)
+        return;
+    colon = strchr (name_end + 1, ':');
+    if (colon == NULL)
+        return;
+    *colon = '\0';
+    number = strtol (name_end + 1, NULL, 10);
+    if (number <= 0)
+        return;
+    rest = colon + 1;
+    f = g_new (project_found_t, 1);
+    f->rel = g_strdup (line);
+    f->line = number;
+    f->column = project_find_column (rest, find_last, find_any_case);
+    g_ptr_array_add (find_found, f);
+    // the line as it shows: no indent, tabs as spaces, a long one cut
+    g_strdelimit (rest, "\t", ' ');
+    rest = g_strchug (rest);
+    if (strlen (rest) > PROJECT_FIND_LABEL_MAX)
+    {
+        char *cut = rest + PROJECT_FIND_LABEL_MAX;
+
+        if (g_utf8_validate (rest, -1, NULL))
+            cut = g_utf8_find_prev_char (rest, cut + 1);
+        *cut = '\0';
+    }
+    listbox_add_item_take (find_list, LISTBOX_APPEND_AT_END, 0,
+                           g_strdup_printf ("%s:%ld: %s", line, number, rest), f, FALSE);
+    // the first line found: the cursor on it, the file around it shown
+    if (find_found->len == 1)
+    {
+        listbox_select_first (find_list);
+        project_find_view ();
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* grep has written: its whole lines go to the list; at its end, or at PROJECT_FIND_MAX lines, it
+   is done */
+static int
+project_find_ready (int fd, void *data)
+{
+    char buf[8192];
+    const ssize_t n = read (fd, buf, sizeof (buf));
+    const char *nl;
+
+    (void) data;
+    if (n < 0 && (errno == EAGAIN || errno == EINTR))
+        return 0;
+    if (n > 0)
+        g_string_append_len (find_pending, buf, n);
+    while (find_found->len < PROJECT_FIND_MAX
+           && (nl = memchr (find_pending->str, '\n', find_pending->len)) != NULL)
+    {
+        const gsize len = (gsize) (nl - find_pending->str);
+        // copied whole: a NUL is in it, after the name
+        char *line = g_malloc (len + 1);
+
+        memcpy (line, find_pending->str, len);
+        line[len] = '\0';
+        project_find_add (line, len);
+        g_free (line);
+        g_string_erase (find_pending, 0, (gssize) len + 1);
+    }
+    if (n <= 0 && find_pending->len > 0 && find_found->len < PROJECT_FIND_MAX)
+    {
+        char *line = g_malloc (find_pending->len + 1);
+
+        memcpy (line, find_pending->str, find_pending->len + 1);
+        project_find_add (line, find_pending->len);
+        g_free (line);
+    }
+    if (n <= 0 || find_found->len >= PROJECT_FIND_MAX)
+        project_find_stop ();
+    project_find_title ();
+    widget_draw (WIDGET (find_dlg));
+    widget_update_cursor (WIDGET (find_dlg));
+    tty_refresh ();
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The list made again for the text of the line, when it is another one: grep started for it, from
+   PROJECT_FIND_MIN letters on, the one before stopped */
+static void
+project_find_refill (void)
 {
     const char *text = input_get_ctext (find_input);
-    GPtrArray *labels;
-    char *title;
-    guint i;
+    const char *files;
+    char *script;
+    char *argv[7];
+    int out = -1;
 
     if (find_last != NULL && strcmp (find_last, text) == 0)
         return;
+    project_find_stop ();
     g_free (find_last);
     find_last = g_strdup (text);
     listbox_remove_list (find_list);
     g_ptr_array_set_size (find_found, 0);
-    labels = g_ptr_array_new_with_free_func (g_free);
-    if (str_length (text) < PROJECT_FIND_MIN)
-        title = g_strdup (_ ("Find in project"));
-    else if (!project_find_lines (find_project, text, labels, find_found))
-        title = g_strdup (_ ("Find in project: cannot run grep"));
-    else if (find_found->len >= PROJECT_FIND_MAX)
-        title = g_strdup_printf (_ ("Find in project: the first %u lines"), find_found->len);
-    else
-        title = g_strdup_printf (
-            ngettext ("Find in project: %u line", "Find in project: %u lines", find_found->len),
-            find_found->len);
-    for (i = 0; i < find_found->len; i++)
-        listbox_add_item (find_list, LISTBOX_APPEND_AT_END, 0, g_ptr_array_index (labels, i),
-                          g_ptr_array_index (find_found, i), FALSE);
-    g_ptr_array_unref (labels);
-    frame_set_title (FRAME (dlg->bg), title);
-    g_free (title);
-    listbox_select_first (find_list);
     // the view of the list before is gone with it
     listbox_remove_list (find_view);
     find_shown = NULL;
-    project_find_view ();
-    widget_draw (WIDGET (dlg));
+    find_failed = FALSE;
+    if (str_length (text) >= PROJECT_FIND_MIN)
+    {
+        files = project_find_files ();
+        find_any_case = project_find_any_case (text);
+        /* -F: the text as it is, no pattern; -I: binary files skipped; -H: the name with one file
+           too; -Z: a NUL after the name, which may have a colon in it; the text and the list as
+           arguments of sh, no quoting */
+        script = g_strdup_printf ("exec xargs -0 grep -n -H -Z -I -F %s-e \"$1\" -- < \"$2\"",
+                                  find_any_case ? "-i " : "");
+        argv[0] = (char *) "/bin/sh";
+        argv[1] = (char *) "-c";
+        argv[2] = script;
+        argv[3] = (char *) "sh";
+        argv[4] = (char *) text;
+        argv[5] = (char *) files;
+        argv[6] = NULL;
+        // a session of its own: xargs and its greps stopped as a whole
+        if (files == NULL
+            || !g_spawn_async_with_pipes (find_project->root, argv, NULL,
+                                          G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_STDERR_TO_DEV_NULL,
+                                          project_find_child_setup, NULL, &find_pid, NULL, &out,
+                                          NULL, NULL))
+        {
+            find_failed = TRUE;
+            find_pid = 0;
+        }
+        else
+        {
+            find_fd = out;
+            (void) fcntl (out, F_SETFL, fcntl (out, F_GETFL) | O_NONBLOCK);
+            add_select_channel (out, project_find_ready, NULL);
+        }
+        g_free (script);
+    }
+    project_find_title ();
+    widget_draw (WIDGET (find_dlg));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Enter typed before grep found a line for the text: it is waited for, the first line or its end */
+static void
+project_find_wait (void)
+{
+    if (find_fd < 0)
+        return;
+    (void) fcntl (find_fd, F_SETFL, fcntl (find_fd, F_GETFL) & ~O_NONBLOCK);
+    while (find_fd >= 0 && find_found->len == 0)
+        (void) project_find_ready (find_fd, NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2015,7 +2146,7 @@ project_find_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, vo
         return MSG_HANDLED;
     case MSG_IDLE:
         widget_idle (w, FALSE);
-        project_find_refill (DIALOG (w));
+        project_find_refill ();
         return MSG_HANDLED;
     default:
         return dlg_default_callback (w, sender, msg, parm, data);
@@ -2087,17 +2218,21 @@ project_find (project_t *project, void *edit)
         button_new (dlg_h - 2, dlg_w / 2 + 1, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL));
 
     find_project = project;
+    find_dlg = dlg;
     find_found = g_ptr_array_new_with_free_func (project_found_free);
+    find_pending = g_string_new (NULL);
     g_clear_pointer (&find_last, g_free);
     find_shown = NULL;
-    project_find_refill (dlg);
+    project_find_refill ();
 
     if (dlg_run (dlg) == B_ENTER)
     {
         // Enter typed with the text, before the list was made for it
-        project_find_refill (dlg);
+        project_find_refill ();
+        project_find_wait ();
         listbox_get_current (find_list, NULL, (void **) &chosen);
     }
+    project_find_stop ();
     if (chosen != NULL)
     {
         char *file = g_build_filename (project->root, chosen->rel, (char *) NULL);
@@ -2113,8 +2248,15 @@ project_find (project_t *project, void *edit)
     find_view = NULL;
     find_shown = NULL;
     find_project = NULL;
+    find_dlg = NULL;
+    if (find_files != NULL)
+        unlink (find_files);
+    g_clear_pointer (&find_files, g_free);
     g_clear_pointer (&find_last, g_free);
     g_clear_pointer (&find_found, g_ptr_array_unref);
+    if (find_pending != NULL)
+        g_string_free (find_pending, TRUE);
+    find_pending = NULL;
 }
 
 /* --------------------------------------------------------------------------------------------- */

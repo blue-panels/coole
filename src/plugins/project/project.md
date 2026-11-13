@@ -67,6 +67,9 @@ them, the file around the line of the cursor under it. The text is looked
 for as it is, not as a pattern; with no capital letter in it, in any case.
 **Up**, **Down**, **PgUp** and **PgDn** move in the list; Enter goes to the
 line chosen, to the text in it. Binary files and *.coole* are skipped.
+The lines come as grep finds them, and the editor does not wait for it:
+while it looks, the title ends in *...*; typing on starts it anew. Enter
+typed before a line is there waits for the first one.
 
 **The tree**
 
