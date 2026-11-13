@@ -76,6 +76,10 @@ symbols. A mark of *%e* is the first letter of the extension: *c* for
 *calc.c*, *h* for *calc.h*. A skin without them shows no marks; *darkfar*
 has them.
 
+What a file or a symbol is, by the name, the extension or the kind from
+ctags, is in *project-marks.ini*; *~/.config/coole/project-marks.ini* adds
+to it, and a key there replaces the same key of coole.
+
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move in the tree.
 

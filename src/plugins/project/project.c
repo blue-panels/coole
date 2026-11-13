@@ -35,6 +35,7 @@
 #include <glib/gstdio.h>
 
 #include "lib/global.h"
+#include "lib/mcconfig.h"
 #include "lib/skin.h"
 #include "lib/strutil.h"
 #include "lib/util.h"
@@ -61,7 +62,9 @@
 #define PROJECT_RECENT_MAX     30
 // a larger file, or one with a NUL, shows its size at the right of the tree, not its lines
 #define PROJECT_LINES_MAX_SIZE (1024 * 1024)
-#define PROJECT_LIST_MAX       500
+// what the marks of the tree stand for: by the names of the files, the kinds of the symbols
+#define PROJECT_MARKS_FILE "project-marks.ini"
+#define PROJECT_LIST_MAX   500
 
 /*** file scope type declarations ****************************************************************/
 
@@ -136,6 +139,8 @@ typedef struct
     GHashTable *sizes;
     // the marks of the tree and their colors, from the skin while the tree is shown
     char *icons[PROJECT_ICON_COUNT];
+    // what a file or a symbol is, from project-marks.ini: "n:name", "e:ext", "s:stem", "k:kind"
+    GHashTable *marks;
     int icon_colors[PROJECT_ICON_COUNT];
 } project_t;
 
@@ -207,43 +212,12 @@ static char *pick_last = NULL;
 static mc_editor_host_t *pick_host = NULL;
 static GPtrArray *pick_targets = NULL;  // project_target_t, what the items of the list go to
 
-/* the keys of [project] of the skin, by project_icon_t: "source-char = x", "source = green" */
+/* the groups of project-marks.ini and the keys of [project] of the skin, by project_icon_t:
+ * "source-char = x", "source = green" */
 static const char *const project_icon_names[PROJECT_ICON_COUNT] = {
     NULL,     "file",     "source",    "header", "build", "doc",   "config",   "script",
     "binary", "function", "prototype", "type",   "enum",  "macro", "variable",
 };
-
-static const char *const project_source_exts[] = {
-    "c",  "cc",  "cpp", "cxx",  "c++", "m",   "mm",  "py", "go",  "rs",   "lua",   "js",    "mjs",
-    "ts", "tsx", "jsx", "java", "kt",  "rb",  "pl",  "pm", "php", "cs",   "swift", "scala", "hs",
-    "ml", "zig", "el",  "vim",  "sql", "tcl", "awk", "d",  "nim", "dart", NULL,
-};
-
-static const char *const project_header_exts[] = { "h", "hh", "hpp", "hxx", "h++", NULL };
-
-static const char *const project_doc_exts[] = { "md",  "txt", "rst", "adoc", "org", "tex",
-                                                "pod", "1",   "2",   "3",    "4",   "5",
-                                                "6",   "7",   "8",   "9",    NULL };
-
-static const char *const project_config_exts[] = { "ini",    "json",   "toml",    "yaml",
-                                                   "yml",    "xml",    "conf",    "cfg",
-                                                   "keymap", "syntax", "desktop", NULL };
-
-static const char *const project_script_exts[] = { "sh", "bash", "zsh", "fish", "ksh", NULL };
-
-static const char *const project_build_names[] = {
-    "meson.build",  "meson_options.txt", "meson.options",  "Makefile",
-    "makefile",     "GNUmakefile",       "CMakeLists.txt", "configure.ac",
-    "Makefile.am",  "Makefile.in",       "Cargo.toml",     "go.mod",
-    "package.json", "setup.py",          "pyproject.toml", "Dockerfile",
-    NULL,
-};
-
-static const char *const project_build_exts[] = { "mk", "cmake", "mak", NULL };
-
-static const char *const project_doc_names[] = { "README",    "LICENSE", "COPYING", "NEWS",
-                                                 "ChangeLog", "AUTHORS", "INSTALL", "TODO",
-                                                 "HACKING",   NULL };
 
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -1121,83 +1095,117 @@ project_tree_reveal (project_t *project, const char *file)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static gboolean
-project_in_list (const char *const *list, const char *s)
+/* What makes a file or a symbol one of the groups of project-marks.ini: those of coole, then
+   those of the user over them */
+static GHashTable *
+project_marks (project_t *project)
 {
+    static const char *const keys[] = { "names", "extensions", "stems", "kinds" };
+    const char *dirs[] = { g_getenv ("COOLE_MISC_DIR"), mc_global.sysconfig_dir,
+                           mc_global.share_data_dir };
+    mc_config_t *cfg;
+    char *path;
     int i;
+    guint d;
 
-    for (i = 0; list[i] != NULL; i++)
-        if (strcmp (list[i], s) == 0)
-            return TRUE;
-    return FALSE;
+    if (project->marks != NULL)
+        return project->marks;
+    project->marks = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    cfg = mc_config_init (NULL, TRUE);
+    for (d = 0; d < G_N_ELEMENTS (dirs); d++)
+        if (dirs[d] != NULL)
+        {
+            path = g_build_filename (dirs[d], PROJECT_MARKS_FILE, (char *) NULL);
+            if (mc_config_read_file (cfg, path, TRUE, FALSE))
+                d = G_N_ELEMENTS (dirs);
+            g_free (path);
+        }
+    path = g_build_filename (mc_config_get_path (), PROJECT_MARKS_FILE, (char *) NULL);
+    (void) mc_config_read_file (cfg, path, TRUE, TRUE);
+    g_free (path);
+    for (i = 1; i < PROJECT_ICON_COUNT; i++)
+    {
+        guint k;
+
+        for (k = 0; k < G_N_ELEMENTS (keys); k++)
+        {
+            gsize n, j;
+            gchar **list = mc_config_get_string_list (cfg, project_icon_names[i], keys[k], &n);
+
+            for (j = 0; j < n; j++)
+            {
+                char *word = g_strstrip (list[j]);
+
+                // an extension in any case: CALC.C is calc.c
+                if (k == 1)
+                    word = g_ascii_strdown (word, -1);
+                else
+                    word = g_strdup (word);
+                if (*word != '\0')
+                    g_hash_table_insert (project->marks,
+                                         g_strdup_printf ("%c:%s", keys[k][0], word),
+                                         GINT_TO_POINTER (i));
+                g_free (word);
+            }
+            g_strfreev (list);
+        }
+    }
+    mc_config_deinit (cfg);
+    return project->marks;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* What a file is by its name; @script: it starts with "#!" */
+/* The group of project-marks.ini that has @word under @key ('n', 'e', 's' or 'k') */
 static project_icon_t
-project_file_icon (const char *rel, gboolean script)
+project_mark (project_t *project, char key, const char *word)
+{
+    char *k = g_strdup_printf ("%c:%s", key, word);
+    const gpointer icon = g_hash_table_lookup (project_marks (project), k);
+
+    g_free (k);
+    return (project_icon_t) GPOINTER_TO_INT (icon);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What a file is by its name: its whole name, its extension, its name before the extension
+   (README.ru); @script: it starts with "#!" */
+static project_icon_t
+project_file_icon (project_t *project, const char *rel, gboolean script)
 {
     const char *base = strrchr (rel, '/');
     const char *dot;
-    project_icon_t icon = PROJECT_ICON_FILE;
-    char *ext;
+    project_icon_t icon;
 
     base = base != NULL ? base + 1 : rel;
-    if (project_in_list (project_build_names, base))
-        return PROJECT_ICON_BUILD;
     dot = strrchr (base, '.');
-    ext = dot != NULL && dot != base ? g_ascii_strdown (dot + 1, -1) : NULL;
-    if (ext == NULL)
+    icon = project_mark (project, 'n', base);
+    if (icon == PROJECT_ICON_NONE && dot != NULL && dot != base)
     {
-        if (project_in_list (project_doc_names, base))
-            icon = PROJECT_ICON_DOC;
-    }
-    else if (project_in_list (project_source_exts, ext))
-        icon = PROJECT_ICON_SOURCE;
-    else if (project_in_list (project_header_exts, ext))
-        icon = PROJECT_ICON_HEADER;
-    else if (project_in_list (project_build_exts, ext))
-        icon = PROJECT_ICON_BUILD;
-    else if (project_in_list (project_script_exts, ext))
-        icon = PROJECT_ICON_SCRIPT;
-    else if (project_in_list (project_config_exts, ext))
-        icon = PROJECT_ICON_CONFIG;
-    else if (project_in_list (project_doc_exts, ext))
-        icon = PROJECT_ICON_DOC;
-    else
-    {
-        // README.md is caught above; README.ru, LICENSE.GPL are documents too
+        char *ext = g_ascii_strdown (dot + 1, -1);
         char *stem = g_strndup (base, (gsize) (dot - base));
 
-        if (project_in_list (project_doc_names, stem))
-            icon = PROJECT_ICON_DOC;
+        icon = project_mark (project, 'e', ext);
+        if (icon == PROJECT_ICON_NONE)
+            icon = project_mark (project, 's', stem);
         g_free (stem);
+        g_free (ext);
     }
-    g_free (ext);
-    if (icon == PROJECT_ICON_FILE && script)
-        icon = PROJECT_ICON_SCRIPT;
+    if (icon == PROJECT_ICON_NONE)
+        icon = script ? PROJECT_ICON_SCRIPT : PROJECT_ICON_FILE;
     return icon;
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* What a symbol is by the kind ctags gives it */
+/* What a symbol is by the kind ctags gives it; a variable when project-marks.ini does not say */
 static project_icon_t
-project_symbol_icon (const char *kind)
+project_symbol_icon (project_t *project, const char *kind)
 {
-    if (strcmp (kind, "func") == 0)
-        return PROJECT_ICON_FUNCTION;
-    if (strcmp (kind, "proto") == 0)
-        return PROJECT_ICON_PROTOTYPE;
-    if (strcmp (kind, "enum") == 0)
-        return PROJECT_ICON_ENUM;
-    if (strcmp (kind, "struct") == 0 || strcmp (kind, "union") == 0 || strcmp (kind, "class") == 0
-        || strcmp (kind, "typedef") == 0)
-        return PROJECT_ICON_TYPE;
-    if (strcmp (kind, "macro") == 0)
-        return PROJECT_ICON_MACRO;
-    return PROJECT_ICON_VARIABLE;
+    const project_icon_t icon = project_mark (project, 'k', kind);
+
+    return icon != PROJECT_ICON_NONE ? icon : PROJECT_ICON_VARIABLE;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1232,6 +1240,7 @@ project_icons_free (project_t *project)
 
     for (i = 0; i < PROJECT_ICON_COUNT; i++)
         g_clear_pointer (&project->icons[i], g_free);
+    g_clear_pointer (&project->marks, g_hash_table_destroy);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1329,14 +1338,15 @@ project_file_size (project_t *project, const char *rel)
         if (len > 0 && contents[len - 1] != '\n')
             lines++;
         size->text = g_strdup_printf ("%" G_GSIZE_FORMAT, lines);
-        size->icon = project_file_icon (rel, len > 1 && contents[0] == '#' && contents[1] == '!');
+        size->icon =
+            project_file_icon (project, rel, len > 1 && contents[0] == '#' && contents[1] == '!');
     }
     else
     {
         size->text = project_size_text ((goffset) st.st_size);
         // a large file, or one that cannot be read, is still what its name says; a small one
         // with a NUL is binary
-        size->icon = read ? PROJECT_ICON_BINARY : project_file_icon (rel, FALSE);
+        size->icon = read ? PROJECT_ICON_BINARY : project_file_icon (project, rel, FALSE);
     }
     g_free (contents);
     g_free (file);
@@ -1406,7 +1416,7 @@ project_tree_icon (edit_tree_t *tree, const mctree_node_t *node, GString *icon, 
         // the row of the node, drawn just before, looked at the file: no stat again
         const project_size_t *size = project_file_size_known (project, data->rel);
 
-        kind = size != NULL ? size->icon : project_file_icon (data->rel, FALSE);
+        kind = size != NULL ? size->icon : project_file_icon (project, data->rel, FALSE);
     }
     if (kind == PROJECT_ICON_NONE || project->icons[kind] == NULL
         || project->icons[kind][0] == '\0')
@@ -1826,7 +1836,7 @@ project_outline_update (project_t *project, void *edit, gboolean edited)
                     project_symbol_t *sym = g_new (project_symbol_t, 1);
 
                     sym->label = project_symbol_label (name, kind);
-                    sym->icon = project_symbol_icon (kind);
+                    sym->icon = project_symbol_icon (project, kind);
                     sym->line = line;
                     g_ptr_array_add (outline, sym);
                 }

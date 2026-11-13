@@ -42,6 +42,9 @@ install_data('git-menu.ini', 'ai.ini', install_dir: pkgsysconfdir)
 # how a project is built and debugged by its language; ~/.config/coole/presets.ini adds and
 # replaces
 install_data('presets.ini', install_dir: pkgsysconfdir)
+# what the marks of the tree of the project stand for; ~/.config/coole/project-marks.ini adds
+# and replaces
+install_data('project-marks.ini', install_dir: pkgsysconfdir)
 
 # the JavaScript of mongosh and the SQL of PostgreSQL the query plugin runs, read when it runs;
 # ~/.config/coole/query/ and /etc/coole/query/ have the user's and the system's in their place
