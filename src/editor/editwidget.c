@@ -1199,6 +1199,7 @@ editor_host_show_location_window (mc_editor_host_t *host, const char *file, long
     edit_arg_t arg;
     char *path;
     gboolean opened;
+    int rows;
 
     if (file == NULL || line <= 0)
         return NULL;
@@ -1212,6 +1213,12 @@ editor_host_show_location_window (mc_editor_host_t *host, const char *file, long
         if (!editor_host_same_file (edit->filename, file))
             continue;
         edit_window_show (EDIT_WINDOW (edit));
+        // a line off the screen comes to its middle, not to an edge where it is hard to find; the
+        // frame of a window takes two of its lines
+        rows = WIDGET (edit)->rect.lines - (EDIT_WINDOW (edit)->fullscreen != 0 ? 0 : 2)
+            - EDIT_TEXT_VERTICAL_OFFSET;
+        if (line - 1 < edit->start_line || line - 1 >= edit->start_line + rows)
+            edit_move_display (edit, line - 1 - rows / 2);
         edit_move_to_line (edit, line - 1);
         edit->force |= REDRAW_COMPLETELY;
         widget_draw (WIDGET (dialog));

@@ -30,8 +30,12 @@
 #include <config.h>
 
 #include <string.h>
+#include <sys/stat.h>
+
+#include <glib/gstdio.h>
 
 #include "lib/global.h"
+#include "lib/mcconfig.h"
 #include "lib/skin.h"
 #include "lib/strutil.h"
 #include "lib/util.h"
@@ -56,7 +60,11 @@
 #define PROJECT_SERVICE        "project"
 #define PROJECT_KEYMAP_SECTION "project"
 #define PROJECT_RECENT_MAX     30
-#define PROJECT_LIST_MAX       500
+// a larger file, or one with a NUL, shows its size at the right of the tree, not its lines
+#define PROJECT_LINES_MAX_SIZE (1024 * 1024)
+// what the marks of the tree stand for: by the names of the files, the kinds of the symbols
+#define PROJECT_MARKS_FILE "project-marks.ini"
+#define PROJECT_LIST_MAX   500
 
 /*** file scope type declarations ****************************************************************/
 
@@ -70,6 +78,27 @@ enum
     PROJECT_CMD_ALTERNATE,
     PROJECT_CMD_COUNT
 };
+
+/* what a file or a symbol of the tree is: its mark and its color in [project] of the skin */
+typedef enum
+{
+    PROJECT_ICON_NONE = 0,
+    PROJECT_ICON_FILE,
+    PROJECT_ICON_SOURCE,
+    PROJECT_ICON_HEADER,
+    PROJECT_ICON_BUILD,
+    PROJECT_ICON_DOC,
+    PROJECT_ICON_CONFIG,
+    PROJECT_ICON_SCRIPT,
+    PROJECT_ICON_BINARY,
+    PROJECT_ICON_FUNCTION,
+    PROJECT_ICON_PROTOTYPE,
+    PROJECT_ICON_TYPE,
+    PROJECT_ICON_ENUM,
+    PROJECT_ICON_MACRO,
+    PROJECT_ICON_VARIABLE,
+    PROJECT_ICON_COUNT
+} project_icon_t;
 
 /* the actions of the menus */
 enum
@@ -106,13 +135,31 @@ typedef struct
     gboolean outline_closed;
     // ctags took long over the outline of the file: made again when it is saved, not at each edit
     gboolean outline_slow;
+    // what the tree shows at the right of a file, by its absolute name: project_size_t
+    GHashTable *sizes;
+    // the marks of the tree and their colors, from the skin while the tree is shown
+    char *icons[PROJECT_ICON_COUNT];
+    // what a file or a symbol is, from project-marks.ini: "n:name", "e:ext", "s:stem", "k:kind"
+    GHashTable *marks;
+    int icon_colors[PROJECT_ICON_COUNT];
 } project_t;
+
+/* the lines or the size of a file at the right of the tree, kept till the file changes */
+typedef struct
+{
+    gint64 mtime;
+    long mtime_ns;  // a change saved within the same second, the size kept, is seen too
+    goffset size;
+    char *text;
+    project_icon_t icon;
+} project_size_t;
 
 /* a symbol of the outline */
 typedef struct
 {
     char *label;
     long line;
+    project_icon_t icon;
 } project_symbol_t;
 
 /* a node of the tree: its data */
@@ -164,6 +211,13 @@ static const char *pick_root = NULL;
 static char *pick_last = NULL;
 static mc_editor_host_t *pick_host = NULL;
 static GPtrArray *pick_targets = NULL;  // project_target_t, what the items of the list go to
+
+/* the groups of project-marks.ini and the keys of [project] of the skin, by project_icon_t:
+ * "source-char = x", "source = green" */
+static const char *const project_icon_names[PROJECT_ICON_COUNT] = {
+    NULL,     "file",     "source",    "header", "build", "doc",   "config",   "script",
+    "binary", "function", "prototype", "type",   "enum",  "macro", "variable",
+};
 
 /*** file scope functions ************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -1024,24 +1078,366 @@ project_tree_reveal (project_t *project, const char *file)
     }
     path = g_strdelimit (g_strdup (rel), "/", MCTREE_PATH_SEP[0]);
     mctree_view_rebuild (project->tree->view);
-    (void) mctree_view_goto_path (project->tree->view, path);
+    {
+        // the cursor on a symbol of the file stays there: the click on it shows the file
+        const mctree_node_t *current = edit_tree_current (project->tree);
+        char *at_path = current != NULL ? mctree_node_path (current) : NULL;
+        const gsize path_len = strlen (path);
+
+        if (at_path == NULL || strncmp (at_path, path, path_len) != 0
+            || at_path[path_len] != MCTREE_PATH_SEP[0])
+            (void) mctree_view_goto_path (project->tree->view, path);
+        g_free (at_path);
+    }
     g_free (path);
     widget_draw (WIDGET (project->tree));
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The row of a node: a directory with a slash after its name */
+/* What makes a file or a symbol one of the groups of project-marks.ini: those of coole, then
+   those of the user over them */
+static GHashTable *
+project_marks (project_t *project)
+{
+    static const char *const keys[] = { "names", "extensions", "stems", "kinds" };
+    const char *dirs[] = { g_getenv ("COOLE_MISC_DIR"), mc_global.sysconfig_dir,
+                           mc_global.share_data_dir };
+    mc_config_t *cfg;
+    char *path;
+    int i;
+    guint d;
+
+    if (project->marks != NULL)
+        return project->marks;
+    project->marks = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    cfg = mc_config_init (NULL, TRUE);
+    for (d = 0; d < G_N_ELEMENTS (dirs); d++)
+        if (dirs[d] != NULL)
+        {
+            path = g_build_filename (dirs[d], PROJECT_MARKS_FILE, (char *) NULL);
+            if (mc_config_read_file (cfg, path, TRUE, FALSE))
+                d = G_N_ELEMENTS (dirs);
+            g_free (path);
+        }
+    path = g_build_filename (mc_config_get_path (), PROJECT_MARKS_FILE, (char *) NULL);
+    (void) mc_config_read_file (cfg, path, TRUE, TRUE);
+    g_free (path);
+    for (i = 1; i < PROJECT_ICON_COUNT; i++)
+    {
+        guint k;
+
+        for (k = 0; k < G_N_ELEMENTS (keys); k++)
+        {
+            gsize n, j;
+            gchar **list = mc_config_get_string_list (cfg, project_icon_names[i], keys[k], &n);
+
+            for (j = 0; j < n; j++)
+            {
+                char *word = g_strstrip (list[j]);
+
+                // an extension in any case: CALC.C is calc.c
+                if (k == 1)
+                    word = g_ascii_strdown (word, -1);
+                else
+                    word = g_strdup (word);
+                if (*word != '\0')
+                    g_hash_table_insert (project->marks,
+                                         g_strdup_printf ("%c:%s", keys[k][0], word),
+                                         GINT_TO_POINTER (i));
+                g_free (word);
+            }
+            g_strfreev (list);
+        }
+    }
+    mc_config_deinit (cfg);
+    return project->marks;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The group of project-marks.ini that has @word under @key ('n', 'e', 's' or 'k') */
+static project_icon_t
+project_mark (project_t *project, char key, const char *word)
+{
+    char *k = g_strdup_printf ("%c:%s", key, word);
+    const gpointer icon = g_hash_table_lookup (project_marks (project), k);
+
+    g_free (k);
+    return (project_icon_t) GPOINTER_TO_INT (icon);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What a file is by its name: its whole name, its extension, its name before the extension
+   (README.ru); @script: it starts with "#!" */
+static project_icon_t
+project_file_icon (project_t *project, const char *rel, gboolean script)
+{
+    const char *base = strrchr (rel, '/');
+    const char *dot;
+    project_icon_t icon;
+
+    base = base != NULL ? base + 1 : rel;
+    dot = strrchr (base, '.');
+    icon = project_mark (project, 'n', base);
+    if (icon == PROJECT_ICON_NONE && dot != NULL && dot != base)
+    {
+        char *ext = g_ascii_strdown (dot + 1, -1);
+        char *stem = g_strndup (base, (gsize) (dot - base));
+
+        icon = project_mark (project, 'e', ext);
+        if (icon == PROJECT_ICON_NONE)
+            icon = project_mark (project, 's', stem);
+        g_free (stem);
+        g_free (ext);
+    }
+    if (icon == PROJECT_ICON_NONE)
+        icon = script ? PROJECT_ICON_SCRIPT : PROJECT_ICON_FILE;
+    return icon;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What a symbol is by the kind ctags gives it; a variable when project-marks.ini does not say */
+static project_icon_t
+project_symbol_icon (project_t *project, const char *kind)
+{
+    const project_icon_t icon = project_mark (project, 'k', kind);
+
+    return icon != PROJECT_ICON_NONE ? icon : PROJECT_ICON_VARIABLE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The marks of the tree and their colors from the skin; none by default, as UTF-8 may not be
+   there */
+static void
+project_icons_load (project_t *project)
+{
+    int i;
+
+    for (i = 1; i < PROJECT_ICON_COUNT; i++)
+    {
+        char *key = g_strconcat (project_icon_names[i], "-char", (char *) NULL);
+        char *fg = mc_skin_get ("project", project_icon_names[i], "");
+
+        g_free (project->icons[i]);
+        project->icons[i] = mc_skin_get ("project", key, "");
+        project->icon_colors[i] =
+            fg != NULL && *fg != '\0' ? mc_skin_color_on ("editor", "_default_", fg) : -1;
+        g_free (fg);
+        g_free (key);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+project_icons_free (project_t *project)
+{
+    int i;
+
+    for (i = 0; i < PROJECT_ICON_COUNT; i++)
+        g_clear_pointer (&project->icons[i], g_free);
+    g_clear_pointer (&project->marks, g_hash_table_destroy);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+project_size_free (gpointer p)
+{
+    project_size_t *size = (project_size_t *) p;
+
+    g_free (size->text);
+    g_free (size);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The size of a file the way the tree shows it: 512B, 12K, 3M */
+static char *
+project_size_text (goffset size)
+{
+    if (size < 1024)
+        return g_strdup_printf ("%dB", (int) size);
+    if (size < 1024 * 1024)
+        return g_strdup_printf ("%" G_GINT64_FORMAT "K", (gint64) ((size + 1023) / 1024));
+    return g_strdup_printf ("%" G_GINT64_FORMAT "M",
+                            (gint64) ((size + 1024 * 1024 - 1) / (1024 * 1024)));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The nanoseconds of the time a file was changed, where the system keeps them */
+static long
+project_mtime_ns (const GStatBuf *st)
+{
+#if defined(HAVE_STRUCT_STAT_ST_MTIM)
+    return (long) st->st_mtim.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
+    return (long) st->st_mtimespec.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
+    return (long) st->st_mtimensec;
+#else
+    (void) st;
+    return 0;
+#endif
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What the tree shows of a file: its lines at the right, or its size when it is large or not
+   text, and what it is; read again only when its time or its size changes.  NULL when it cannot
+   be read */
+static const project_size_t *
+project_file_size (project_t *project, const char *rel)
+{
+    char *file = g_build_filename (project->root, rel, (char *) NULL);
+    GStatBuf st;
+    project_size_t *size;
+    char *contents = NULL;
+    gsize len = 0;
+    gboolean read = FALSE;
+
+    if (g_stat (file, &st) != 0 || !S_ISREG (st.st_mode))
+    {
+        g_free (file);
+        return NULL;
+    }
+    if (project->sizes == NULL)
+        project->sizes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, project_size_free);
+    size = g_hash_table_lookup (project->sizes, file);
+    if (size != NULL && size->mtime == (gint64) st.st_mtime
+        && size->mtime_ns == project_mtime_ns (&st) && size->size == (goffset) st.st_size)
+    {
+        g_free (file);
+        return size;
+    }
+    if (size == NULL)
+    {
+        size = g_new0 (project_size_t, 1);
+        g_hash_table_insert (project->sizes, g_strdup (file), size);
+    }
+    size->mtime = (gint64) st.st_mtime;
+    size->mtime_ns = project_mtime_ns (&st);
+    size->size = (goffset) st.st_size;
+    g_free (size->text);
+    size->text = NULL;
+    if (st.st_size <= PROJECT_LINES_MAX_SIZE)
+        read = g_file_get_contents (file, &contents, &len, NULL);
+    if (read && memchr (contents, '\0', len) == NULL)
+    {
+        gsize i, lines = 0;
+
+        for (i = 0; i < len; i++)
+            if (contents[i] == '\n')
+                lines++;
+        // the last line without a newline is a line too
+        if (len > 0 && contents[len - 1] != '\n')
+            lines++;
+        size->text = g_strdup_printf ("%" G_GSIZE_FORMAT, lines);
+        size->icon =
+            project_file_icon (project, rel, len > 1 && contents[0] == '#' && contents[1] == '!');
+    }
+    else
+    {
+        size->text = project_size_text ((goffset) st.st_size);
+        // a large file, or one that cannot be read, is still what its name says; a small one
+        // with a NUL is binary
+        size->icon = read ? PROJECT_ICON_BINARY : project_file_icon (project, rel, FALSE);
+    }
+    g_free (contents);
+    g_free (file);
+    return size;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What project_file_size () last found of a file, without looking at it again */
+static const project_size_t *
+project_file_size_known (const project_t *project, const char *rel)
+{
+    char *file;
+    const project_size_t *size;
+
+    if (project->sizes == NULL)
+        return NULL;
+    file = g_build_filename (project->root, rel, (char *) NULL);
+    size = g_hash_table_lookup (project->sizes, file);
+    g_free (file);
+    return size;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The row of a node: a directory with a slash after its name; a file with its lines at the
+   right, or its size */
 static void
 project_tree_row (edit_tree_t *tree, const mctree_node_t *node, GString *name, GString *info)
 {
+    project_t *project = (project_t *) tree->data;
     const project_node_t *data = (const project_node_t *) node->data;
 
-    (void) tree;
-    (void) info;
     g_string_append (name, node->key);
     if (data != NULL && data->dir)
         g_string_append_c (name, '/');
+    else if (project != NULL && project->root != NULL && data != NULL && data->symbol < 0
+             && data->rel != NULL)
+    {
+        const project_size_t *size = project_file_size (project, data->rel);
+
+        if (size != NULL)
+            g_string_append (info, size->text);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The mark of a file or of a symbol, from [project] of the skin; none for a directory */
+static void
+project_tree_icon (edit_tree_t *tree, const mctree_node_t *node, GString *icon, int *color)
+{
+    project_t *project = (project_t *) tree->data;
+    const project_node_t *data = (const project_node_t *) node->data;
+    project_icon_t kind = PROJECT_ICON_NONE;
+
+    if (project == NULL || project->root == NULL || data == NULL || data->dir)
+        return;
+    if (data->symbol >= 0)
+    {
+        if (project->outline != NULL && (guint) data->symbol < project->outline->len)
+            kind = ((const project_symbol_t *) g_ptr_array_index (project->outline, data->symbol))
+                       ->icon;
+    }
+    else if (data->rel != NULL)
+    {
+        // the row of the node, drawn just before, looked at the file: no stat again
+        const project_size_t *size = project_file_size_known (project, data->rel);
+
+        kind = size != NULL ? size->icon : project_file_icon (project, data->rel, FALSE);
+    }
+    if (kind == PROJECT_ICON_NONE || project->icons[kind] == NULL
+        || project->icons[kind][0] == '\0')
+        return;
+    if (strcmp (project->icons[kind], "%e") == 0)
+    {
+        // the first letter of the extension: c for calc.c, h for calc.h, p for calc.py
+        const char *base = data->symbol < 0 && data->rel != NULL ? strrchr (data->rel, '/') : NULL;
+        const char *dot;
+
+        if (data->symbol >= 0 || data->rel == NULL)
+            return;
+        base = base != NULL ? base + 1 : data->rel;
+        dot = strrchr (base, '.');
+        if (dot == NULL || dot == base || !g_ascii_isalnum (dot[1]))
+            return;
+        g_string_append_c (icon, g_ascii_tolower (dot[1]));
+    }
+    else
+        g_string_append (icon, project->icons[kind]);
+    *color = project->icon_colors[kind];
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1135,6 +1531,7 @@ project_tree_closed (edit_tree_t *tree)
 
 static const edit_tree_ops_t project_tree_ops = {
     .row = project_tree_row,
+    .icon = project_tree_icon,
     .activate = project_tree_activate,
     .bold = project_tree_bold,
     .colors = project_tree_colors,
@@ -1179,6 +1576,7 @@ project_tree_toggle (project_t *project)
     top_file = project->host->window_top_file (project->host);
     project->host->window_area (project->host, &area);
     title = project_tree_title (project);
+    project_icons_load (project);
     project->tree = edit_tree_new (title, &project_tree_ops, project);
     g_free (title);
     project->host->window_add (project->host, project->tree);
@@ -1438,6 +1836,7 @@ project_outline_update (project_t *project, void *edit, gboolean edited)
                     project_symbol_t *sym = g_new (project_symbol_t, 1);
 
                     sym->label = project_symbol_label (name, kind);
+                    sym->icon = project_symbol_icon (project, kind);
                     sym->line = line;
                     g_ptr_array_add (outline, sym);
                 }
@@ -1766,6 +2165,8 @@ project_close (void *data)
         project->tree->data = NULL;
     g_clear_pointer (&project->model, mctree_model_free);
     g_clear_pointer (&project->paths, g_hash_table_destroy);
+    g_clear_pointer (&project->sizes, g_hash_table_destroy);
+    project_icons_free (project);
     if (project->service)
         project->host->service_unregister (project->host, PROJECT_SERVICE);
     project_files_drop (project);
