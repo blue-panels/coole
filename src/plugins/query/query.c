@@ -162,7 +162,7 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { "Help", NULL, "f1" },
     { "QueryRun", N_ ("Run the selection, else the part between \"// ---\", else the file"), "f5" },
     { "QueryRunAll", N_ ("Run the whole file, even with a selection"), "ctrl-f5" },
-    { "QueryStop", N_ ("Stop the query"), NULL },
+    { "QueryStop", N_ ("Stop the query"), "esc" },
     { "QueryHistoryInsert", N_ ("Put the version of the query of History into the file"), "enter" },
     { "QueryHistoryShow", N_ ("Compare the version of the query of History with the file"), "f3" },
     { "QueryRollback", N_ ("Roll the transaction of the session back"), NULL },
@@ -375,8 +375,141 @@ query_script (const char *name, char **why)
 void
 query_redraw (query_t *q)
 {
-    widget_draw (WIDGET (q->host->host_data));
+    // the dialogs over the editor drawn again after it: a question asked while a run goes on
+    // stays over it at each second
+    if (q->host->redraw != NULL)
+        q->host->redraw (q->host);
+    else
+        widget_draw (WIDGET (q->host->host_data));
     tty_refresh ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/* The time of a run */
+/* --------------------------------------------------------------------------------------------- */
+
+/* Output says what the run does and how long it has taken: "Running... 12 s"; @front brings the
+   tab forward, the tab made again when it is closed, else a closed tab stays closed */
+static void
+query_running_show (query_t *q, gboolean front)
+{
+    const gint64 seconds = (g_get_monotonic_time () - q->started) / G_USEC_PER_SEC;
+    const size_t len = strlen (q->running);
+    // the line is said without its newline, the time after it
+    const int say = (int) (len > 0 && q->running[len - 1] == '\n' ? len - 1 : len);
+    char *text;
+
+    if (!front && q->tabs[QUERY_TAB_OUTPUT] == 0)
+        return;
+    if (seconds < 1)
+        text = g_strdup (q->running);
+    else if (seconds < 60)
+        text = g_strdup_printf ("%.*s %" G_GINT64_FORMAT " s\n", say, q->running, seconds);
+    else
+        text = g_strdup_printf ("%.*s %" G_GINT64_FORMAT ":%02" G_GINT64_FORMAT "\n", say,
+                                q->running, seconds / 60, seconds % 60);
+    query_tab_set (q, QUERY_TAB_OUTPUT, text, front);
+    g_free (text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+query_running (query_t *q, const char *say)
+{
+    g_free (q->running);
+    q->running = g_strdup (say != NULL ? say : q->run_line != NULL ? q->run_line : "");
+    query_running_show (q, TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A second has gone: the time of the run on in Output, while it goes on */
+static int
+query_tick_ready (int fd, void *data)
+{
+    query_t *q = (query_t *) data;
+    char buf[64];
+
+    while (read (fd, buf, sizeof (buf)) > 0)
+        ;
+    if (q->running == NULL)
+        return 0;
+    // the run is over: what it gave is in Output, not the time
+    if (q->backend == NULL || !q->backend->running (q->backend_data))
+    {
+        g_clear_pointer (&q->running, g_free);
+        return 0;
+    }
+    query_running_show (q, FALSE);
+    query_redraw (q);
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A second, written to the pipe; a full pipe has a tick waiting already */
+static gpointer
+query_ticker (gpointer data)
+{
+    query_t *q = (query_t *) data;
+    int i = 0;
+
+    while (g_atomic_int_get (&q->ticker_stop) == 0)
+    {
+        // a tenth at a time: the close does not wait a second for the thread
+        g_usleep (G_USEC_PER_SEC / 10);
+        if (++i == 10)
+        {
+            const ssize_t written = write (q->tick_pipe[1], "t", 1);
+
+            (void) written;
+            i = 0;
+        }
+    }
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_ticker_start (query_t *q)
+{
+    int i;
+
+    q->tick_pipe[0] = q->tick_pipe[1] = -1;
+    if (pipe (q->tick_pipe) != 0)
+        return;
+    for (i = 0; i < 2; i++)
+    {
+        (void) fcntl (q->tick_pipe[i], F_SETFL, fcntl (q->tick_pipe[i], F_GETFL) | O_NONBLOCK);
+        (void) fcntl (q->tick_pipe[i], F_SETFD, FD_CLOEXEC);
+    }
+    add_select_channel (q->tick_pipe[0], query_tick_ready, q);
+    q->ticker = g_thread_new ("query-ticker", query_ticker, q);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_ticker_stop (query_t *q)
+{
+    int i;
+
+    if (q->ticker != NULL)
+    {
+        g_atomic_int_set (&q->ticker_stop, 1);
+        g_thread_join (q->ticker);
+        q->ticker = NULL;
+    }
+    if (q->tick_pipe[0] >= 0)
+        delete_select_channel (q->tick_pipe[0]);
+    for (i = 0; i < 2; i++)
+        if (q->tick_pipe[i] >= 0)
+        {
+            close (q->tick_pipe[i]);
+            q->tick_pipe[i] = -1;
+        }
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1054,15 +1187,11 @@ query_run_text (query_t *q, char *text, char *file, long first, char *use, char 
     q->stopped = FALSE;
     q->started = g_get_monotonic_time ();
     q->host->clear_markers (q->host, NULL, q->mark);
-    if (q->export != NULL)
-    {
-        char *line = g_strdup_printf (_ ("Running, the rows written to %s...\n"), q->export->path);
-
-        query_tab_set (q, QUERY_TAB_OUTPUT, line, TRUE);
-        g_free (line);
-    }
-    else
-        query_tab_set (q, QUERY_TAB_OUTPUT, _ ("Running...\n"), TRUE);
+    g_free (q->run_line);
+    q->run_line = q->export != NULL
+        ? g_strdup_printf (_ ("Running, the rows written to %s...\n"), q->export->path)
+        : g_strdup (_ ("Running...\n"));
+    query_running (q, NULL);
     query_table_say (q, _ ("Running...\n"));
     q->backend->start (q->backend_data);
     // a backend that could not start it: no file
@@ -2181,6 +2310,18 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
         query_run (q, edit, FALSE, TRUE);
         return TRUE;
     case QUERY_CMD_STOP:
+        // Esc: with no query running it is the editor's, Quit; with one, a slip of the hand must
+        // not stop it
+        if (key)
+        {
+            if (!q->backend->running (q->backend_data))
+                return FALSE;
+            if (query_dialog (_ ("Query"), _ ("A query is running. Stop it?"), D_NORMAL, 2,
+                              _ ("&Stop"), _ ("&Cancel"))
+                == 0)
+                query_stop (q);
+            return TRUE;
+        }
         query_stop (q);
         return TRUE;
     case QUERY_CMD_ROLLBACK:
@@ -2391,6 +2532,7 @@ query_open (mc_editor_host_t *host, void *editor_dialog)
                                  N_ ("ButtonBar|Export"));
         query_extension = q->backend->extension;
         q->viewer_signal = host->service_connect (host, "viewer", query_viewer_signal, q);
+        query_ticker_start (q);
         host->call_later (host, query_startup, q);
     }
     return q;
@@ -2403,6 +2545,8 @@ query_close (void *data)
 {
     query_t *q = (query_t *) data;
 
+    if (q->on)
+        query_ticker_stop (q);
     query_ai_free (q);
     // the key is gone with the plugin: the bar shows the editor's there again
     if (q->on && q->host->command_label != NULL)
@@ -2427,6 +2571,8 @@ query_close (void *data)
     g_free (q->file);
     g_free (q->use);
     g_free (q->version);
+    g_free (q->run_line);
+    g_free (q->running);
     g_free (q);
 }
 

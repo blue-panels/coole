@@ -225,6 +225,13 @@ query_redraw (query_t *qq)
     (void) qq;
 }
 
+/* Output says what the run does, as query.c has it, with no time after it */
+void
+query_running (query_t *qq, const char *say)
+{
+    query_tab_set (qq, QUERY_TAB_OUTPUT, say != NULL ? say : "Running...\n", TRUE);
+}
+
 void
 query_output_head (query_t *qq, GString *text, double seconds, const char *when)
 {

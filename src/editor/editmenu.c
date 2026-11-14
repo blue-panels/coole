@@ -647,7 +647,7 @@ void
 edit_init_menu (WMenuBar *menubar)
 {
     GList *file_entries;
-    GList *navigate_entries;
+    GList *navigate_entries = NULL;
     const GSList *plugins;
     int idx = 0;
     guint i;
@@ -692,8 +692,13 @@ edit_init_menu (WMenuBar *menubar)
         }
     }
 
-    navigate_entries = create_plugin_menu_entries (MC_EP_MENU_NAVIGATE);
-    navigate_entries = append_runtime_menu_entries (navigate_entries, "Navigate");
+    /* coole -Q has no tags: Navigate would have the prototype of a function alone, of no use in a
+       query; its keys stay */
+    if (edit_startup_option ("query") == NULL)
+    {
+        navigate_entries = create_plugin_menu_entries (MC_EP_MENU_NAVIGATE);
+        navigate_entries = append_runtime_menu_entries (navigate_entries, "Navigate");
+    }
     if (navigate_entries != NULL)
     {
         menubar_add_menu (menubar,

@@ -84,7 +84,9 @@ db.orders.find({ status: 1 })
 db.orders.countDocuments({ status: 1 })
 ```
 
-**F5** while a query runs asks whether to stop it.
+**F5** or **Esc** while a query runs asks whether to stop it; with none
+running, **Esc** quits, as in a file. Output says how long it
+has run, once a second: *Running... 12 s*, *1:05* after a minute.
 
 A line *// @limit 20* in a query limits its documents, to 100 without a
 number: a chain of *find()* gets *.limit(20)* on a line after it, unless it
@@ -363,7 +365,7 @@ commands of psql, *\d*, *\copy*, are none of PostgreSQL.
 **Ctrl-F5**
 : Run the whole file, even with a selection.
 
-**F5** while a query runs asks whether to stop it: the server is asked to
+**F5** or **Esc** while a query runs asks whether to stop it: the server is asked to
 cancel it, and Output tells how it ended. A connection that does not come
 is stopped so too.
 
