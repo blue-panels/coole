@@ -551,7 +551,6 @@ Shift со стрелками выделяет текст (если термин
 2) переменная окружения COOLE_KEYMAP
 3) параметр keymap секции [coole] ini\-файла
 4) файл ~/.config/coole/keymap.ini
-
 .EE
 
 .PP
@@ -563,7 +562,6 @@ Shift со стрелками выделяет текст (если термин
 .EX
 1) ~/.config/coole/
 2) {{pkgdatadir}}/
-
 .EE
 
 .PP
@@ -577,7 +575,6 @@ Shift со стрелками выделяет текст (если термин
 .EX
 ln \-s {{sysconfdir}}/coole/keymap.vim.ini \e
       ~/.config/coole/keymap.ini
-
 .EE
 
 .PP
@@ -592,7 +589,6 @@ ln \-s {{sysconfdir}}/coole/keymap.vim.ini \e
 [editor]
 Save = f2
 SaveAs = f12; ctrl\-f2
-
 .EE
 
 .SH Клавиши строк ввода
@@ -1178,7 +1174,6 @@ Ctrl\-X для редактора; Диалог, Меню, Ввод, Списо�
 Действие       действие клавиши в раскладке редактора
 Последов.      управляющая последовательность и ее байты
 Код клавиши    внутренний числовой код
-
 .EE
 
 .PP
@@ -1304,7 +1299,6 @@ Lua\-скрипты\&.
 .EX
 [editor]
 ctrl\-W=ExecuteScript:25;
-
 .EE
 
 .PP
@@ -1339,7 +1333,6 @@ l       comment selection
 	echo #endif >> $TMPFILE
 	cat $TMPFILE > %b
 	rm \-f $TMPFILE
-
 .EE
 
 .SH Обозреватель макросов
@@ -1375,7 +1368,6 @@ l       comment selection
 3) ~/coole.menu
 4) {{sysconfdir}}/coole/coole.menu
 5) {{pkgdatadir}}/coole.menu
-
 .EE
 
 .PP
@@ -1470,7 +1462,6 @@ w       Count the words of the file
 
 m       Run make in the directory of the file
 	make
-
 .EE
 
 .PP
@@ -1494,7 +1485,6 @@ m       Run make in the directory of the file
   t <тип>       текущий файл этого типа?
   x <имя>       этот файл исполняемый?
   ! <подусл.>   отрицание подусловия
-
 .EE
 
 .PP
@@ -1517,7 +1507,6 @@ m       Run make in the directory of the file
   f   FIFO (канал)
   s   сокет
   x   исполняемый файл
-
 .EE
 
 .PP
@@ -1532,7 +1521,6 @@ m       Run make in the directory of the file
 
 .EX
 	= f *.c | f *.h & y C
-
 .EE
 
 .PP
@@ -1540,7 +1528,6 @@ m       Run make in the directory of the file
 
 .EX
 	( (f *.c) | (f *.h) ) & (y C)
-
 .EE
 
 .PP
@@ -1572,7 +1559,6 @@ m       Run make in the directory of the file
 
 .EX
 ctags \-e \-\-language\-force=C \-R ./
-
 .EE
 
 .PP
@@ -1859,7 +1845,6 @@ context " " green
   keyword  %s    brightgreen
   keyword  %c    brightgreen
   keyword  \e\e"   brightgreen
-
 .EE
 
 .PP
@@ -1954,7 +1939,6 @@ context " " green
 .EX
   context <SCRIPT*> </SCRIPT> brightcyan
       embed JavaScript\esProgram
-
 .EE
 
 .PP
@@ -1991,7 +1975,6 @@ Jinja2 первые }} остаются частью строки, а в ${x/\e}
   context {\e* \e*} brown
   context { } brightcyan
       embed soft Smarty\esTag
-
 .EE
 
 .PP
@@ -2014,7 +1997,6 @@ Jinja2 первые }} остаются частью строки, а в ${x/\e}
 
 .EX
   keyword         '*'      green
-
 .EE
 
 .PP
@@ -2022,7 +2004,6 @@ Jinja2 первые }} остаются частью строки, а в ${x/\e}
 
 .EX
   keyword         "*"      green
-
 .EE
 
 .PP
@@ -2035,7 +2016,6 @@ Jinja2 первые }} остаются частью строки, а в ${x/\e}
 
 .EX
   keyword  \e\e\en  brightgreen
-
 .EE
 
 .PP
@@ -2063,7 +2043,6 @@ keyword  whole  if   KEYWORD_CONTROL
 context  " " STRING_QUOTED_DOUBLE
     keyword  \e\e"   CONSTANT_CHARACTER_ESCAPE
 keyword  linestart TODO  KEYWORD_OTHER_TODO black
-
 .EE
 
 .PP
@@ -2093,7 +2072,6 @@ define и в строках number, string и symbols правил line\-local. 
 
 .EX
 keyword  #include  red/Orange
-
 .EE
 
 .PP
@@ -2170,7 +2148,6 @@ coole пытается определить, поддерживает ли те�
 [Colors]
 color_terminals=linux,xterm
 color_terminals=terminal\-name1,terminal\-name2...
-
 .EE
 
 .PP
@@ -2198,7 +2175,6 @@ color_terminals=terminal\-name1,terminal\-name2...
 2) переменная окружения COOLE_SKIN
 3) параметр skin секции [coole] ini\-файла
 4) скин с именем default
-
 .EE
 
 .PP
@@ -2209,7 +2185,6 @@ color_terminals=terminal\-name1,terminal\-name2...
 1) ~/.local/share/coole/skins/
 2) {{sysconfdir}}/coole/skins/
 3) {{pkgdatadir}}/skins/
-
 .EE
 
 .PP
@@ -2230,7 +2205,6 @@ color_terminals=terminal\-name1,terminal\-name2...
     string = green
     string constant.character.escape = white;red
     invalid = white;red;bold
-
 .EE
 
 .PP
@@ -2281,7 +2255,6 @@ pgup          page up
 insert        клавиша insert
 delete        клавиша delete
 complete      автодополнение
-
 .EE
 
 .PP
@@ -2290,7 +2263,6 @@ ini\-файл:
 
 .EX
 insert=\ee[Op
-
 .EE
 
 .PP
@@ -2299,7 +2271,6 @@ insert=\ee[Op
 .EX
     ctrl\-alt\-right=\ee[[1;6C
     ctrl\-alt\-left=\ee[[1;6D
-
 .EE
 
 .PP
