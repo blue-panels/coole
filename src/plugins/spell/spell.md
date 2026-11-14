@@ -49,13 +49,13 @@ prints them as well. The language
 switches the checking off. The settings are kept in the
 **[EditorPluginSpell]**
 section of
-*~/.config/coole/ini*,
+*~/.config/bluerig/ini*,
 as
 *engine*
 and
 *language*.
 The keys of the plugin are read from
 *spell.keymap*
-of the system configuration directory of coole, and then from
-*~/.config/coole/spell.keymap*,
+of the system configuration directory of bluerig, and then from
+*~/.config/bluerig/spell.keymap*,
 which overrides it.

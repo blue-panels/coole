@@ -20,12 +20,12 @@
 
 /*** declarations of public functions ************************************************************/
 
-/* The root of the project of a file or a directory: the nearest directory up with .coole in it,
+/* The root of the project of a file or a directory: the nearest directory up with .bluerig in it,
    else with .git, else the outermost one with a build file (meson.build, CMakeLists.txt,
    Makefile...) up to the home directory, else the directory of the file itself. */
 char *project_find_root (const char *path);
 
-/* Whether a directory is the root of a project by a mark of its own: .coole, .git or a build
+/* Whether a directory is the root of a project by a mark of its own: .bluerig, .git or a build
    file, not only the directory of a file found by nothing else */
 gboolean project_is_project (const char *root);
 /* The name of a file to show: from the root of its project, @project (that of -D, may be NULL)

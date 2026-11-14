@@ -1,4 +1,4 @@
-# >>> coole: LSP > Project setup writes what is down to the line "<<< coole"
+# >>> bluerig: LSP > Project setup writes what is down to the line "<<< bluerig"
 # a header is read alone: it gets what the files that include it include first
 If:
   PathMatch: .*\.(h|hh|hpp|hxx)
@@ -10,4 +10,4 @@ If:
   PathMatch: (debian/tests|tests)/.*
 Index:
   Background: Skip
-# <<< coole
+# <<< bluerig

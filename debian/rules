@@ -16,13 +16,13 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
 override_dh_auto_configure:
 	dh_auto_configure -- \
 		-Dscreen=slang \
-		-Dplugins_dir=/usr/lib/coole/plugins \
-		-Druntime_plugins_dir=/usr/lib/coole/runtime-plugins \
+		-Dplugins_dir=/usr/lib/bluerig/plugins \
+		-Druntime_plugins_dir=/usr/lib/bluerig/runtime-plugins \
 		-Dlua=enabled
 
 override_dh_installchangelogs:
 	# Ours, not the ChangeLog inherited from upstream mc, which dh_installchangelogs
-	# would find on its own and which stops where coole begins.
+	# would find on its own and which stops where bluerig begins.
 	dh_installchangelogs CHANGELOG.md
 
 override_dh_missing:

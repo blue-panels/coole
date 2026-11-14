@@ -3,16 +3,16 @@
 #
 # usage: packaging/prepare.sh VERSION [ARCHIVE]
 #   packaging/prepare.sh 1.0.0
-#   packaging/prepare.sh 1.0.0 dist/coole-1.0.0.tar.gz
+#   packaging/prepare.sh 1.0.0 dist/bluerig-1.0.0.tar.gz
 #
 # The recipes in this repository carry no version of their own: it comes from
 # the release tag, so nothing has to be edited after tagging. This script
 # writes the files that name a version, from the committed templates:
 #
-#   debian/changelog                      from the coole-* tags
-#   packaging/rpm/coole.spec              from coole.spec.in
+#   debian/changelog                      from the bluerig-* tags
+#   packaging/rpm/bluerig.spec              from bluerig.spec.in
 #   packaging/arch/PKGBUILD               from PKGBUILD.in
-#   packaging/gentoo/coole-VERSION.ebuild from coole.ebuild.in
+#   packaging/gentoo/bluerig-VERSION.ebuild from bluerig.ebuild.in
 #
 # Both changelogs are meant for a real upload, so their entries come from the
 # annotated tag messages and their dates from the tags themselves: the same
@@ -66,14 +66,14 @@ else
     checksum=SKIP
 fi
 
-tags=$(git tag --list 'coole-*' --sort=-version:refname 2>/dev/null || true)
+tags=$(git tag --list 'bluerig-*' --sort=-version:refname 2>/dev/null || true)
 
 # Only what came before: a source package for one version must not lead with the
 # changelog of a release made after it, and dpkg takes the version it is
 # building from the top of that file.
 tags=$(for tag in $tags; do
-    newest=$(printf '%s\n%s\n' "${tag#coole-}" "$version" | sort -Vr | head -n 1)
-    if test "$newest" = "${tag#coole-}" && test "${tag#coole-}" != "$version"; then
+    newest=$(printf '%s\n%s\n' "${tag#bluerig-}" "$version" | sort -Vr | head -n 1)
+    if test "$newest" = "${tag#bluerig-}" && test "${tag#bluerig-}" != "$version"; then
         continue
     fi
     printf '%s\n' "$tag"
@@ -146,8 +146,8 @@ entry_body() {
 deb_entry() {
     # The suffix belongs to the Debian revision, not to the upstream version:
     # X.Y.Z-1~ubuntu24.04.1 keeps the orig tarball named
-    # coole_X.Y.Z.orig.tar.gz, so every series of a release shares one.
-    printf 'coole (%s-1%s) %s; urgency=medium\n\n' "$1" "$4" "$3"
+    # bluerig_X.Y.Z.orig.tar.gz, so every series of a release shares one.
+    printf 'bluerig (%s-1%s) %s; urgency=medium\n\n' "$1" "$4" "$3"
     if test -n "$5"; then
         printf '%s\n' "$5" | wrap_entries '  * ' '    '
     else
@@ -167,28 +167,28 @@ rpm_entry() {
     printf '\n'
 }
 
-tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/coole-prepare.XXXXXX")
+tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/bluerig-prepare.XXXXXX")
 trap 'rm -rf "$tmpdir"' EXIT HUP INT TERM
 
 untagged=yes
-printf '%s\n' $tags | grep -qx "coole-$version" && untagged=no
+printf '%s\n' $tags | grep -qx "bluerig-$version" && untagged=no
 
 {
     test "$untagged" = no ||
         deb_entry "$version" "$(date -R)" UNRELEASED "$suffix" \
-            "$(entry_body "$version" "coole-$version")"
+            "$(entry_body "$version" "bluerig-$version")"
 
     for tag in $tags; do
         tag_date=$(git for-each-ref --format='%(creatordate:rfc2822)' "refs/tags/$tag")
         test -n "$tag_date" || tag_date=$(date -R)
 
-        if test "$tag" = "coole-$version"; then
+        if test "$tag" = "bluerig-$version"; then
             deb_entry "$version" "$tag_date" "$distribution" "$suffix" \
                 "$(entry_body "$version" "$tag")"
         else
             # Older releases keep the plain revision: only the entry being
             # prepared is aimed at a series.
-            deb_entry "${tag#coole-}" "$tag_date" unstable '' "$(entry_body "${tag#coole-}" "$tag")"
+            deb_entry "${tag#bluerig-}" "$tag_date" unstable '' "$(entry_body "${tag#bluerig-}" "$tag")"
         fi
     done
 } > debian/changelog
@@ -197,27 +197,27 @@ test -s debian/changelog || die "generated an empty debian/changelog"
 
 {
     test "$untagged" = no ||
-        rpm_entry "$version" "$(date -R)" "$(entry_body "$version" "coole-$version")"
+        rpm_entry "$version" "$(date -R)" "$(entry_body "$version" "bluerig-$version")"
 
     for tag in $tags; do
         tag_date=$(git for-each-ref --format='%(creatordate:rfc2822)' "refs/tags/$tag")
         test -n "$tag_date" || tag_date=$(date -R)
-        rpm_entry "${tag#coole-}" "$tag_date" "$(entry_body "${tag#coole-}" "$tag")"
+        rpm_entry "${tag#bluerig-}" "$tag_date" "$(entry_body "${tag#bluerig-}" "$tag")"
     done
 } > "$tmpdir/rpm-changelog"
 
-sed -e "s/@VERSION@/$version/g" packaging/rpm/coole.spec.in |
+sed -e "s/@VERSION@/$version/g" packaging/rpm/bluerig.spec.in |
     sed -e "/^@CHANGELOG@\$/r $tmpdir/rpm-changelog" -e "/^@CHANGELOG@\$/d" \
-        > packaging/rpm/coole.spec
+        > packaging/rpm/bluerig.spec
 
 sed -e "s/@VERSION@/$version/g" -e "s/@B2SUMS@/$checksum/g" \
     packaging/arch/PKGBUILD.in > packaging/arch/PKGBUILD
 
-rm -f packaging/gentoo/coole-*.ebuild
-cp packaging/gentoo/coole.ebuild.in "packaging/gentoo/coole-$version.ebuild"
+rm -f packaging/gentoo/bluerig-*.ebuild
+cp packaging/gentoo/bluerig.ebuild.in "packaging/gentoo/bluerig-$version.ebuild"
 
 echo "prepared $version"
 echo "  debian/changelog ($distribution)"
-echo "  packaging/rpm/coole.spec"
+echo "  packaging/rpm/bluerig.spec"
 echo "  packaging/arch/PKGBUILD (b2sums: $checksum)"
-echo "  packaging/gentoo/coole-$version.ebuild"
+echo "  packaging/gentoo/bluerig-$version.ebuild"

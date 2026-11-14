@@ -1,4 +1,4 @@
-# Only the code of others. Each entry says why it is not a bug of coole.
+# Only the code of others. Each entry says why it is not a bug of bluerig.
 
 # valgrind checks sizeof (char *) bytes for TIOCLINUX; the call passes one byte, initialized
 {

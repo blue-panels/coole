@@ -1,7 +1,7 @@
 Scope tokens in syntax files
 ============================
 
-The rules of the syntax files installed with coole name, where a color
+The rules of the syntax files installed with bluerig name, where a color
 stood, what the text is:
 
     keyword  whole  if      KEYWORD_CONTROL
@@ -12,7 +12,7 @@ How the text looks is the skin's: the same file is drawn in the colors of
 every skin, and the same kind of text looks the same in every language.
 Rules that name colors, yellow or rgb345, keep working as they always did,
 in the syntax files of the user above all.  The syntax highlighting section
-of coole(1) describes the rules themselves.
+of bluerig(1) describes the rules themselves.
 
 
 How tokens work
@@ -210,4 +210,4 @@ as check_tokens.
 
 The idea of the tokens, the converted syntax files and check-tokens.py
 come from mc pull request #5189 by Henady Zakalusky (hza), which took the
-scope names over from Sublime Text; in coole the colors are the skin's.
+scope names over from Sublime Text; in bluerig the colors are the skin's.

@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -293,7 +293,7 @@ git_commit_again (const char *root, const char *gitdir, const char *sha, GPtrArr
 {
     char *env[4] = { NULL, NULL, NULL, NULL };
     char *tree = g_strconcat (sha, "^{tree}", (char *) NULL);
-    char *file = g_build_filename (gitdir, "COOLE_REWORD_MSG", (char *) NULL);
+    char *file = g_build_filename (gitdir, "BLUERIG_REWORD_MSG", (char *) NULL);
     GPtrArray *args = g_ptr_array_new ();
     git_output_t o;
     char *made = NULL;
@@ -712,7 +712,7 @@ git_run_shell (const char *dir, const char *command, const char *input, const ch
     output->status = -1;
     envp = git_environment (env);
     // written through the descriptor of the file made for us alone: a diff is nobody else's
-    fd = g_file_open_tmp ("coole-git-XXXXXX", &file, NULL);
+    fd = g_file_open_tmp ("bluerig-git-XXXXXX", &file, NULL);
     if (fd >= 0)
     {
         const char *data = input != NULL ? input : "";
@@ -1805,7 +1805,7 @@ git_reword (const char *root, const char *sha, const char *message, char **new_h
     // the branch moves when nobody has moved it meanwhile
     if (made != NULL)
     {
-        char *reason = g_strconcat ("reword (coole): ", sha, (char *) NULL);
+        char *reason = g_strconcat ("reword (bluerig): ", sha, (char *) NULL);
         const char *ref_args[] = { "update-ref", "-m", reason, "HEAD", made, head, NULL };
         git_output_t o;
 

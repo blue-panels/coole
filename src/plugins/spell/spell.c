@@ -180,12 +180,12 @@ spell_debug_log (const char *fmt, ...)
     if (msg == NULL)
         return;
 
-    /* COOLE_SPELL_LOG=<file> turns the trail on in a release build: which engine
+    /* BLUERIG_SPELL_LOG=<file> turns the trail on in a release build: which engine
        was chosen, which dictionary was looked for and what came of it. */
     {
         const char *path;
 
-        path = g_getenv ("COOLE_SPELL_LOG");
+        path = g_getenv ("BLUERIG_SPELL_LOG");
         if (path != NULL && *path != '\0')
         {
             FILE *fp;

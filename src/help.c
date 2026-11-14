@@ -6,14 +6,14 @@
    Copyright (C) 2026
    Ilia Maslakov <il.smind@gmail.com>
 
-   This file is part of coole, a text editor based on GNU Midnight Commander.
+   This file is part of bluerig, a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -67,7 +67,7 @@
 #define HELP_WINDOW_WIDTH MIN (80, COLS - 16)
 
 // the help of the program, the file every other one falls back to
-#define HELP_MAIN_FILE      "coole.md"
+#define HELP_MAIN_FILE      "bluerig.md"
 
 #define STRING_LINK_START   "\01"
 #define STRING_LINK_POINTER "\02"

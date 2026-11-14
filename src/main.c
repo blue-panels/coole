@@ -1,5 +1,5 @@
 /*
-   Main program of coole
+   Main program of bluerig
 
    Copyright (C) 1994-2025
    Free Software Foundation, Inc.
@@ -9,15 +9,15 @@
    Janne Kukonlehto, 1994, 1995
    Norbert Warmuth, 1997
 
-   This file is part of coole,
+   This file is part of bluerig,
    a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -85,9 +85,9 @@ OS_Setup (void)
 {
     mc_shell_init ();
 
-    // This is the directory, where coole was installed, on Unix this is DATADIR
-    // and can be overridden by the COOLE_DATADIR environment variable
-    const char *datadir_env = g_getenv ("COOLE_DATADIR");
+    // This is the directory, where bluerig was installed, on Unix this is DATADIR
+    // and can be overridden by the BLUERIG_DATADIR environment variable
+    const char *datadir_env = g_getenv ("BLUERIG_DATADIR");
 
     if (datadir_env != NULL)
         mc_global.sysconfig_dir = g_strdup (datadir_env);

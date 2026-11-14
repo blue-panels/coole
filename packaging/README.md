@@ -1,12 +1,12 @@
-# Packaging coole
+# Packaging bluerig
 
-`coole` is the package name.  It installs one program, `/usr/bin/coole`, with
-its data in `/usr/share/coole`, its system configuration in `/etc/coole` and
-its runtime plugin in `/usr/lib/coole` (`/usr/lib64/coole` on Fedora).  No file
+`bluerig` is the package name.  It installs one program, `/usr/bin/bluerig`, with
+its data in `/usr/share/bluerig`, its system configuration in `/etc/bluerig` and
+its runtime plugin in `/usr/lib/bluerig` (`/usr/lib64/bluerig` on Fedora).  No file
 is shared with the distribution `mc` package, so the two can be installed side
 by side.
 
-Two packages come out of it: `coole`, the editor, and `coole-lua` with the Lua
+Two packages come out of it: `bluerig`, the editor, and `bluerig-lua` with the Lua
 runtime plugin and the editor scripts.  The ctags, etags and spell plugins are
 built into the editor, so there is no separate plugins package.  Gentoo builds
 one package and puts Lua behind the `lua` USE flag.
@@ -14,15 +14,15 @@ one package and puts Lua behind the `lua` USE flag.
 ## Nothing to edit for a release
 
 No recipe here names a version.  The version comes from the release tag, which
-is named `coole-X.Y.Z`, and `packaging/prepare.sh` writes the files that have to
+is named `bluerig-X.Y.Z`, and `packaging/prepare.sh` writes the files that have to
 name one:
 
 | Generated | From |
 | --- | --- |
-| `debian/changelog` | the `coole-*` tags |
-| `packaging/rpm/coole.spec` | `coole.spec.in` and the `coole-*` tags |
+| `debian/changelog` | the `bluerig-*` tags |
+| `packaging/rpm/bluerig.spec` | `bluerig.spec.in` and the `bluerig-*` tags |
 | `packaging/arch/PKGBUILD` | `PKGBUILD.in` |
-| `packaging/gentoo/coole-<version>.ebuild` | `coole.ebuild.in` |
+| `packaging/gentoo/bluerig-<version>.ebuild` | `bluerig.ebuild.in` |
 
 All four are in `.gitignore`.  Making a release is therefore: tag, and let the
 `release` workflow build.  Nothing is committed afterwards.
@@ -33,7 +33,7 @@ their dates come from the tag, so the same tag always yields the same source
 package:
 
 ```sh
-git tag -a coole-X.Y.Z -m "coole X.Y.Z"
+git tag -a bluerig-X.Y.Z -m "bluerig X.Y.Z"
 ```
 
 Sign it with `-s` instead if you keep a signing key; the packaging reads the
@@ -51,16 +51,16 @@ is built, `prepare.sh` refuses such a version rather than quietly producing a
 package that outranks the release.  To rehearse the release workflow, run it
 from Actions against a tag that already exists.
 
-Do not replace the exact version dependency of `coole-lua` on `coole` with
+Do not replace the exact version dependency of `bluerig-lua` on `bluerig` with
 `>=`: the runtime plugin ABI is not stable.
 
 ## Release source
 
 `packaging/release-source.sh` creates the archive that every recipe consumes,
-and that is uploaded as the GitHub release asset `coole-<version>.tar.gz`:
+and that is uploaded as the GitHub release asset `bluerig-<version>.tar.gz`:
 
 ```sh
-packaging/release-source.sh X.Y.Z coole-X.Y.Z
+packaging/release-source.sh X.Y.Z bluerig-X.Y.Z
 ```
 
 The archive is the tree of the tag as `git archive` gives it, with one file
@@ -99,21 +99,21 @@ Debian and Ubuntu.  The source package is built from the release archive with
 patches, since the archive carries `.tarball-version` and no `debian` directory.
 
 ```sh
-packaging/release-source.sh X.Y.Z coole-X.Y.Z
-packaging/prepare.sh X.Y.Z dist/coole-X.Y.Z.tar.gz
-tar -xf dist/coole-X.Y.Z.tar.gz -C /tmp
-cp dist/coole-X.Y.Z.tar.gz /tmp/coole_X.Y.Z.orig.tar.gz
-cp -r debian /tmp/coole-X.Y.Z/
-cd /tmp/coole-X.Y.Z && dpkg-buildpackage -us -uc
+packaging/release-source.sh X.Y.Z bluerig-X.Y.Z
+packaging/prepare.sh X.Y.Z dist/bluerig-X.Y.Z.tar.gz
+tar -xf dist/bluerig-X.Y.Z.tar.gz -C /tmp
+cp dist/bluerig-X.Y.Z.tar.gz /tmp/bluerig_X.Y.Z.orig.tar.gz
+cp -r debian /tmp/bluerig-X.Y.Z/
+cd /tmp/bluerig-X.Y.Z && dpkg-buildpackage -us -uc
 ```
 
-`sudo apt install ../coole_*.deb ../coole-lua_*.deb` installs the result; use
+`sudo apt install ../bluerig_*.deb ../bluerig-lua_*.deb` installs the result; use
 `apt install ./file.deb`, never `dpkg -i`.  For a PPA, set the target series and
 a series suffix:
 
 ```sh
 DEB_DISTRIBUTION=noble DEB_VERSION_SUFFIX='~ubuntu24.04.1' \
-    packaging/prepare.sh X.Y.Z dist/coole-X.Y.Z.tar.gz
+    packaging/prepare.sh X.Y.Z dist/bluerig-X.Y.Z.tar.gz
 ```
 
 ## Launchpad PPA
@@ -122,9 +122,9 @@ A PPA builds the binaries itself, so what it takes is a signed **source**
 package per Ubuntu series.  `packaging/ppa-source.sh` builds them:
 
 ```sh
-packaging/release-source.sh X.Y.Z coole-X.Y.Z
-packaging/ppa-source.sh X.Y.Z dist/coole-X.Y.Z.tar.gz resolute:26.04 noble:24.04 jammy:22.04
-UPLOAD=yes PPA=ppa:OWNER/NAME packaging/ppa-source.sh X.Y.Z dist/coole-X.Y.Z.tar.gz noble:24.04
+packaging/release-source.sh X.Y.Z bluerig-X.Y.Z
+packaging/ppa-source.sh X.Y.Z dist/bluerig-X.Y.Z.tar.gz resolute:26.04 noble:24.04 jammy:22.04
+UPLOAD=yes PPA=ppa:OWNER/NAME packaging/ppa-source.sh X.Y.Z dist/bluerig-X.Y.Z.tar.gz noble:24.04
 ```
 
 `NOSIGN=yes` builds unsigned packages for a dry run, `SIGN_KEY` picks the key,
@@ -140,7 +140,7 @@ a newer series is an upgrade.  Codenames cannot do that, having wrapped the
 alphabet in 2017.
 
 The series lives in the Debian revision, not in the upstream version, so all
-series of a release share one `coole_<version>.orig.tar.gz`.  Only the first
+series of a release share one `bluerig_<version>.orig.tar.gz`.  Only the first
 upload carries it; the rest refer to the one already in the PPA.  Use one
 archive for every series of a release, the published one: Launchpad compares
 what a later upload refers to against the copy it already has.
@@ -152,28 +152,28 @@ through the encrypted mail it sends, then create the PPA.  `debhelper-compat
 RPM.  Put the archive in the RPM source directory:
 
 ```sh
-packaging/prepare.sh X.Y.Z dist/coole-X.Y.Z.tar.gz
-cp dist/coole-X.Y.Z.tar.gz ~/rpmbuild/SOURCES/
-rpmbuild -ba packaging/rpm/coole.spec
+packaging/prepare.sh X.Y.Z dist/bluerig-X.Y.Z.tar.gz
+cp dist/bluerig-X.Y.Z.tar.gz ~/rpmbuild/SOURCES/
+rpmbuild -ba packaging/rpm/bluerig.spec
 ```
 
-For a downloaded RPM use `dnf install ./coole-*.rpm`, never `rpm -i`.
+For a downloaded RPM use `dnf install ./bluerig-*.rpm`, never `rpm -i`.
 
 Arch.  `makepkg` finds the archive next to the `PKGBUILD` instead of
 downloading it:
 
 ```sh
-packaging/prepare.sh X.Y.Z dist/coole-X.Y.Z.tar.gz
-cp dist/coole-X.Y.Z.tar.gz packaging/arch/
+packaging/prepare.sh X.Y.Z dist/bluerig-X.Y.Z.tar.gz
+cp dist/bluerig-X.Y.Z.tar.gz packaging/arch/
 cd packaging/arch && makepkg -si
 ```
 
-Gentoo.  Copy `packaging/gentoo` into a personal overlay as `app-editors/coole`,
+Gentoo.  Copy `packaging/gentoo` into a personal overlay as `app-editors/bluerig`,
 together with the generated ebuild, and run `ebuild ... manifest`.  It is a
 single package; Lua, gpm, X11 and the screen library are USE flags:
 
 ```sh
-emerge app-editors/coole
+emerge app-editors/bluerig
 ```
 
 Gentoo is the one distribution the workflow does not build: that needs a full

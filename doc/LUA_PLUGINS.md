@@ -1,13 +1,13 @@
 # Lua runtime and scripts
 
-coole can load optional Lua 5.3+ support.  Lua is not linked into the
-`coole` executable: `mc-lua.so` is a runtime extension loaded through
+bluerig can load optional Lua 5.3+ support.  Lua is not linked into the
+`bluerig` executable: `mc-lua.so` is a runtime extension loaded through
 `dlopen` only when it is available and enabled.  That extension discovers and
 runs Lua scripts, which extend the editor: actions bound to keys and menus,
 reactions to editor events, dialogs and full-screen views.
 
-The extension is looked up in `${libdir}/coole/runtime-plugins/` and, before
-that, in `~/.local/lib/coole/runtime-plugins/`.
+The extension is looked up in `${libdir}/bluerig/runtime-plugins/` and, before
+that, in `~/.local/lib/bluerig/runtime-plugins/`.
 
 Build it with:
 
@@ -25,7 +25,7 @@ compatible Lua development package is unavailable.
 ## Enabling and disabling
 
 Lua is enabled by default in a Lua-enabled build.  Put this in
-`~/.config/coole/ini` to disable it persistently:
+`~/.config/bluerig/ini` to disable it persistently:
 
 ```ini
 [Lua]
@@ -34,7 +34,7 @@ user_scripts_dir=
 ```
 
 `user_scripts_dir` may override the user script directory, but must be an
-absolute path.  `coole --no-lua` and `COOLE_NO_LUA=1 coole` prevent Lua code from
+absolute path.  `bluerig --no-lua` and `BLUERIG_NO_LUA=1 bluerig` prevent Lua code from
 being loaded for one run.
 
 **Manage Plugins** shows one native runtime, `runtime / lua / Lua engine`.
@@ -44,13 +44,13 @@ list, F4 opens the selected package's declared `entry` file in the internal
 editor; **Run** lists and invokes only actions registered by the selected
 package.  Event-only packages have no runnable action.  Individual script
 choices are stored as `lua/<id>=true` in
-`[DisabledPlugins]` of `~/.config/coole/plugins.ini`.  No Lua script is hot-reloaded
+`[DisabledPlugins]` of `~/.config/bluerig/plugins.ini`.  No Lua script is hot-reloaded
 during a session.
 
 ## Script layout
 
-System scripts live in `${datadir}/coole/lua/scripts/`; user scripts live in
-`${XDG_DATA_HOME:-~/.local/share}/coole/lua/scripts/`.  A script is a directory
+System scripts live in `${datadir}/bluerig/lua/scripts/`; user scripts live in
+`${XDG_DATA_HOME:-~/.local/share}/bluerig/lua/scripts/`.  A script is a directory
 right below `scripts/`:
 
 ```text
@@ -87,9 +87,9 @@ Each script has its own Lua state.  `require("a.b")` searches the script's
 `lib/a/b.lua` and then the shared library directory from the same origin.  C
 modules are disabled for these lookups.
 
-The shared directories are `${datadir}/coole/lua/lib/` for system scripts and
-`${XDG_DATA_HOME:-~/.local/share}/coole/lua/lib/` for user scripts.  A system script
-never searches the user shared directory.  coole ships one shared module,
+The shared directories are `${datadir}/bluerig/lua/lib/` for system scripts and
+`${XDG_DATA_HOME:-~/.local/share}/bluerig/lua/lib/` for user scripts.  A system script
+never searches the user shared directory.  bluerig ships one shared module,
 `base64text`: what a string of base64 holds, told short enough for a line
 (`inspect(s, want)` and `note(info, width)`); the renderers of JSON and XML
 show it beside such a string.  A copy of a renderer among the user scripts
@@ -99,7 +99,7 @@ strings as they are.
 ## API
 
 The whole API lives in the global table `mc`; the name is kept from the
-program coole grew out of, and scripts written for it keep working.  The
+program bluerig grew out of, and scripts written for it keep working.  The
 generated reference of every function is `doc/LUA_API_REFERENCE.md`
 (`doc/lua-api.json` for tools).
 
@@ -354,14 +354,14 @@ current row).
 `mc.ui.dialog(spec)` and `mc.ui.screen(spec)` accept
 `help = { file = "help.hlp", node = "[Node]" }`: F1 opens that node.  A relative `file` is
 taken from the script's directory, so a script ships its help next to its `init.lua` in the
-help format of coole (`[Node]` headings); without `file` the node is looked up in the help of
-coole itself.
+help format of bluerig (`[Node]` headings); without `file` the node is looked up in the help of
+bluerig itself.
 
 An `input` control in `mc.ui.dialog()` accepts an optional `history` name and
 an optional `completion` array.  `complete_on_tab = true` makes `Tab` invoke
 completion while that input has focus; `Shift-Tab` still moves to the previous
 control.  Completion providers are `files`, `hosts`, `commands`, `variables`,
-`users`, `cd`, and `shell`; they use the input completion engine of coole and
+`users`, `cd`, and `shell`; they use the input completion engine of bluerig and
 may be combined.  For example:
 
 ```lua
@@ -377,8 +377,8 @@ may be combined.  For example:
 script ID.
 
 The teaching example `notify-editor-save` is installed under
-`PREFIX/share/coole/lua/examples/`; coole never loads scripts from
-there.  Copy an example into `~/.local/share/coole/lua/scripts/` to try
+`PREFIX/share/bluerig/lua/examples/`; bluerig never loads scripts from
+there.  Copy an example into `~/.local/share/bluerig/lua/scripts/` to try
 it, and copy an installed script before adapting it, so system updates do not
 overwrite local changes.
 
@@ -441,8 +441,8 @@ end)
 
 ## Trust boundary
 
-Lua scripts run with the permissions of the current coole process.  Install
-only scripts you trust.  coole rejects a script or loaded Lua module if its directory
+Lua scripts run with the permissions of the current bluerig process.  Install
+only scripts you trust.  bluerig rejects a script or loaded Lua module if its directory
 tree is symbolic-linked, owned by neither the current user nor root, or is
 group/world writable.  A Lua callback error is isolated to that callback;
 after three errors in one session the callback is disabled.

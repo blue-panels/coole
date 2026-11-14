@@ -12,15 +12,15 @@
    Andrew Borodin <aborodin@vmail.ru>, 2010-2021
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole,
+   This file is part of bluerig,
    a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -558,11 +558,11 @@ load_setup_get_keymap_profile_config (gboolean load_from_file)
 
     // load and merge global keymaps
 
-    // 1) /usr/share/coole (mc_global.share_data_dir)
+    // 1) /usr/share/bluerig (mc_global.share_data_dir)
     share_keymap = g_build_filename (mc_global.share_data_dir, GLOBAL_KEYMAP_FILE, (char *) NULL);
     load_setup_init_config_from_file (&keymap_config, share_keymap, TRUE);
 
-    // 2) /etc/coole (mc_global.sysconfig_dir)
+    // 2) /etc/bluerig (mc_global.sysconfig_dir)
     sysconfig_keymap =
         g_build_filename (mc_global.sysconfig_dir, GLOBAL_KEYMAP_FILE, (char *) NULL);
     load_setup_init_config_from_file (&keymap_config, sysconfig_keymap, TRUE);
@@ -578,8 +578,8 @@ load_setup_get_keymap_profile_config (gboolean load_from_file)
     }
     g_free (fname);
 
-    // 4) getenv("COOLE_KEYMAP")
-    fname = load_setup_get_full_config_name (NULL, g_getenv ("COOLE_KEYMAP"));
+    // 4) getenv("BLUERIG_KEYMAP")
+    fname = load_setup_get_full_config_name (NULL, g_getenv ("BLUERIG_KEYMAP"));
     if (fname != NULL && strcmp (fname, sysconfig_keymap) != 0 && strcmp (fname, share_keymap) != 0)
     {
         load_setup_init_config_from_file (&keymap_config, fname, TRUE);
@@ -588,7 +588,7 @@ load_setup_get_keymap_profile_config (gboolean load_from_file)
 
     MC_PTR_FREE (fname);
 
-    // 5) main config; [coole] -> keymap
+    // 5) main config; [bluerig] -> keymap
     fname2 = mc_config_get_string (mc_global.main_config, CONFIG_APP_SECTION, "keymap", NULL);
     if (fname2 != NULL && *fname2 != '\0')
         fname = load_setup_get_full_config_name (NULL, fname2);
@@ -600,7 +600,7 @@ load_setup_get_keymap_profile_config (gboolean load_from_file)
     }
     g_free (fname);
 
-    // 6) ${XDG_CONFIG_HOME}/coole/coole.keymap
+    // 6) ${XDG_CONFIG_HOME}/bluerig/bluerig.keymap
     fname = mc_config_get_full_path (GLOBAL_KEYMAP_FILE);
     load_setup_init_config_from_file (&keymap_config, fname, TRUE);
 
@@ -826,8 +826,8 @@ void
 keymap_load (gboolean load_from_file)
 {
     /*
-     * Load keymap from GLOBAL_KEYMAP_FILE before ${XDG_CONFIG_HOME}/coole/coole.keymap, so that the
-     * user definitions override global settings.
+     * Load keymap from GLOBAL_KEYMAP_FILE before ${XDG_CONFIG_HOME}/bluerig/bluerig.keymap, so that
+     * the user definitions override global settings.
      */
     mc_config_t *mc_global_keymap;
 

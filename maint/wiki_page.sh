@@ -2,7 +2,7 @@
 # Write the release page for the wiki.
 #
 # usage: wiki_page.sh <version> [<out>]
-#   maint/wiki_page.sh coole-1.0.0 ~/dev/coole.wiki/Release-coole-1.0.0.md
+#   maint/wiki_page.sh bluerig-1.0.0 ~/dev/bluerig.wiki/Release-bluerig-1.0.0.md
 #
 # This is the long form. Where CHANGELOG.md gets one line per change and the tag
 # gets a headline, here each change gets a paragraph: what it does, how it is
@@ -60,7 +60,7 @@ ask() {
 payload=$(jq '[.[] | select((.labels | index("infra")) | not)]' "$work/prs.json")
 test "$(printf '%s' "$payload" | jq 'length')" != 0 || die "nothing to write about"
 
-paragraph_system='You write the release page for coole, a text-mode text editor
+paragraph_system='You write the release page for bluerig, a text-mode text editor
 based on the internal editor of GNU Midnight Commander (mcedit): syntax
 highlighting, code folding, an undo history browser, macros, ctags/etags
 navigation, spell checking, editor plugins and Lua scripts.
@@ -117,7 +117,7 @@ test "$(jq 'length' "$work/paragraphs.json")" != 0 ||
 "$here/release_notes.sh" "$version" --milestone \
     --titles-from "$work/paragraphs.json" > "$work/body.md"
 
-intro_system='You are given the body of a release page for coole, a text-mode text editor
+intro_system='You are given the body of a release page for bluerig, a text-mode text editor
 based on the internal editor of GNU Midnight Commander (mcedit): syntax
 highlighting, code folding, an undo history browser, macros, ctags/etags
 navigation, spell checking, editor plugins and Lua scripts.
@@ -208,8 +208,8 @@ date=$(git -C "$here/.." for-each-ref --format='%(creatordate:short)' "refs/tags
 test -n "$date" || date=$(date +%Y-%m-%d)
 
 {
-    # The tag is coole-X.Y.Z; the heading names the program once.
-    printf '# coole %s (%s)\n\n' "${version#coole-}" "$date"
+    # The tag is bluerig-X.Y.Z; the heading names the program once.
+    printf '# bluerig %s (%s)\n\n' "${version#bluerig-}" "$date"
     cat "$work/intro.md"
     # Its own heading is dropped: the page has one already, and so are the blank
     # lines that would otherwise pile up before the first rule.

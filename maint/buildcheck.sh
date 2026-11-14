@@ -16,7 +16,7 @@ set -eu
 
 REF=${1:-HEAD}
 IMAGE=${BUILDCHECK_IMAGE:-ubuntu:24.04}
-NAME=coole-buildcheck-$$
+NAME=bluerig-buildcheck-$$
 
 srcdir=$(cd "$(dirname "$0")/.." && pwd)
 test -d "$srcdir/.git" || { echo "buildcheck: $srcdir is not a git checkout" >&2; exit 1; }

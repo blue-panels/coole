@@ -5,4 +5,4 @@
 # entries, one per byte. Recoded to UTF-8 the class would cover 0xC2, 0xC3 and
 # 0x80 to 0xBF instead, so it would lose 0xC4 to 0xFF, and Cyrillic, Greek and
 # everything else outside Latin-1 would stop matching.
-coole: national-encoding [usr/share/coole/syntax/*.syntax]
+bluerig: national-encoding [usr/share/bluerig/syntax/*.syntax]

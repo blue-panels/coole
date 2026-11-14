@@ -3,7 +3,7 @@ name: Build release packages
 on:
   push:
     tags:
-      - 'coole-*'
+      - 'bluerig-*'
   workflow_dispatch:
     inputs:
       tag:
@@ -30,7 +30,7 @@ jobs:
   archive:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.repository == 'blue-panels/coole'
+    if: github.repository == 'blue-panels/bluerig'
     outputs:
       version: ${{ steps.build.outputs.version }}
 
@@ -46,8 +46,8 @@ jobs:
       - name: Build the release archive
         id: build
         run: |
-          version="${TAG#coole-}"
-          packaging/release-source.sh "$version" "$TAG" "dist/coole-$version.tar.gz"
+          version="${TAG#bluerig-}"
+          packaging/release-source.sh "$version" "$TAG" "dist/bluerig-$version.tar.gz"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
@@ -63,7 +63,7 @@ jobs:
           # A draft: the notes are written by hand. The archive is attached now
           # so that its download link, and its checksum, are settled.
           version="${{ steps.build.outputs.version }}"
-          archive="dist/coole-$version.tar.gz"
+          archive="dist/bluerig-$version.tar.gz"
           notes="Release notes pending. b2: $(b2sum "$archive" | cut -d' ' -f1)"
 
           # A rerun, after a failure in one of the builds, must not stop here.
@@ -144,17 +144,17 @@ jobs:
       - name: Build the source and binary packages
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          packaging/prepare.sh "$VERSION" "dist/coole-$VERSION.tar.gz"
+          packaging/prepare.sh "$VERSION" "dist/bluerig-$VERSION.tar.gz"
 
           # Built from the release archive with debian/ copied in, not from the
           # checkout: that keeps the source package free of patches, since the
           # archive carries .tarball-version and no debian directory of its own.
           build=$(mktemp -d)
-          cp "dist/coole-$VERSION.tar.gz" "$build/coole_$VERSION.orig.tar.gz"
-          tar -xf "dist/coole-$VERSION.tar.gz" -C "$build"
-          cp -r debian "$build/coole-$VERSION/"
+          cp "dist/bluerig-$VERSION.tar.gz" "$build/bluerig_$VERSION.orig.tar.gz"
+          tar -xf "dist/bluerig-$VERSION.tar.gz" -C "$build"
+          cp -r debian "$build/bluerig-$VERSION/"
 
-          cd "$build/coole-$VERSION"
+          cd "$build/bluerig-$VERSION"
           # build-dep reads debian/control directly and names a dependency it
           # cannot satisfy. mk-build-deps went through equivs, where apt simply
           # removed its stub package again and said nothing about the cause.
@@ -164,7 +164,7 @@ jobs:
           # and a build that only passes as root is a build that is broken.
           useradd -m build
           chown -R build "$build"
-          su build -c "cd '$build/coole-$VERSION' && dpkg-buildpackage -us -uc"
+          su build -c "cd '$build/bluerig-$VERSION' && dpkg-buildpackage -us -uc"
 
           cd ..
           # The series of the changes file is known to the vendor data of its
@@ -220,15 +220,15 @@ jobs:
       - name: Build the RPMs
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          packaging/prepare.sh "$VERSION" "dist/coole-$VERSION.tar.gz"
-          dnf builddep -y packaging/rpm/coole.spec
+          packaging/prepare.sh "$VERSION" "dist/bluerig-$VERSION.tar.gz"
+          dnf builddep -y packaging/rpm/bluerig.spec
 
           # Not as root: rpmbuild as root is discouraged.
           useradd -m build
           su build -c 'mkdir -p ~/rpmbuild/SOURCES'
-          install -o build -g build "dist/coole-$VERSION.tar.gz" /home/build/rpmbuild/SOURCES/
-          install -o build -g build packaging/rpm/coole.spec /home/build/coole.spec
-          su build -c 'rpmbuild -ba ~/coole.spec'
+          install -o build -g build "dist/bluerig-$VERSION.tar.gz" /home/build/rpmbuild/SOURCES/
+          install -o build -g build packaging/rpm/bluerig.spec /home/build/bluerig.spec
+          su build -c 'rpmbuild -ba ~/bluerig.spec'
 
           rpmlint /home/build/rpmbuild/RPMS/*/*.rpm || true
           mkdir -p out
@@ -267,12 +267,12 @@ jobs:
       - name: Build the packages
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          packaging/prepare.sh "$VERSION" "dist/coole-$VERSION.tar.gz"
+          packaging/prepare.sh "$VERSION" "dist/bluerig-$VERSION.tar.gz"
 
           # makepkg refuses to run as root, and finds the archive next to the
           # PKGBUILD instead of downloading it. Its -s installs the dependencies
           # through sudo, so that user needs to use it without a password.
-          cp "dist/coole-$VERSION.tar.gz" packaging/arch/
+          cp "dist/bluerig-$VERSION.tar.gz" packaging/arch/
           useradd -m build
           echo 'build ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/build
           chown -R build packaging/arch
@@ -310,12 +310,12 @@ jobs:
         run: |
           pacman -Syu --noconfirm >/dev/null
           pacman -U --noconfirm \
-            "out/coole-${VERSION}-"*.pkg.tar.zst \
-            "out/coole-lua-${VERSION}-"*.pkg.tar.zst
+            "out/bluerig-${VERSION}-"*.pkg.tar.zst \
+            "out/bluerig-lua-${VERSION}-"*.pkg.tar.zst
           # Grep rather than run and hope: without a usable TERM the program
           # says so and still exits 0, which would pass on nothing at all.
-          coole --version | grep -qF "coole ${VERSION}"
-          test -d /usr/lib/coole/runtime-plugins
+          bluerig --version | grep -qF "bluerig ${VERSION}"
+          test -d /usr/lib/bluerig/runtime-plugins
 
   fedora-install:
     needs: [archive, fedora]
@@ -348,12 +348,12 @@ jobs:
       - name: Install the packages the way a user would
         run: |
           dnf install -y \
-            "out/coole-${VERSION}-"*.rpm \
-            "out/coole-lua-${VERSION}-"*.rpm
+            "out/bluerig-${VERSION}-"*.rpm \
+            "out/bluerig-lua-${VERSION}-"*.rpm
           # Grep rather than run and hope: without a usable TERM the program
           # says so and still exits 0, which would pass on nothing at all.
-          coole --version | grep -qF "coole ${VERSION}"
-          test -d /usr/lib64/coole/runtime-plugins
+          bluerig --version | grep -qF "bluerig ${VERSION}"
+          test -d /usr/lib64/bluerig/runtime-plugins
 
   debian-install:
     needs: [archive, debian]
@@ -404,10 +404,10 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            "./out/coole_${VERSION}-"*_"${DEB_ARCH}.deb" \
-            "./out/coole-lua_${VERSION}-"*_"${DEB_ARCH}.deb"
-          coole --version | grep -qF "coole ${VERSION}"
-          test -d /usr/lib/coole/runtime-plugins
+            "./out/bluerig_${VERSION}-"*_"${DEB_ARCH}.deb" \
+            "./out/bluerig-lua_${VERSION}-"*_"${DEB_ARCH}.deb"
+          bluerig --version | grep -qF "bluerig ${VERSION}"
+          test -d /usr/lib/bluerig/runtime-plugins
 
   macos:
     needs: archive
@@ -439,21 +439,21 @@ jobs:
           export LDFLAGS="-L$brew_prefix/lib -L$gettext_prefix/lib"
           export PKG_CONFIG_PATH="$brew_prefix/lib/pkgconfig"
 
-          tar -xf "dist/coole-$VERSION.tar.gz"
-          cd "coole-$VERSION"
+          tar -xf "dist/bluerig-$VERSION.tar.gz"
+          cd "bluerig-$VERSION"
           meson setup build --prefix="$brew_prefix" -Dscreen=slang -Dlua=enabled
           meson compile -C build
 
           # A runner has no TERM, and the program sets up its terminal before it
           # gets to printing a version.
-          TERM=xterm ./build/src/coole --version
+          TERM=xterm ./build/src/bluerig --version
 
       - name: Keep the meson log of a failed build
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: macos-config-log
-          path: coole-*/build/meson-logs/meson-log.txt
+          path: bluerig-*/build/meson-logs/meson-log.txt
           if-no-files-found: warn
           overwrite: true
 
@@ -508,22 +508,22 @@ jobs:
           export LDFLAGS="-L$brew_prefix/lib -L$gettext_prefix/lib"
           export PKG_CONFIG_PATH="$brew_prefix/lib/pkgconfig"
 
-          tar -xf "dist/coole-$VERSION.tar.gz"
-          cd "coole-$VERSION"
+          tar -xf "dist/bluerig-$VERSION.tar.gz"
+          cd "bluerig-$VERSION"
           # Keep the package out of Homebrew's prefixes on both architectures.
-          # DESTDIR stages the tree; pkgbuild puts stage/opt/coole at /opt/coole.
-          meson setup build --prefix=/opt/coole -Dscreen=slang -Dlua=enabled
+          # DESTDIR stages the tree; pkgbuild puts stage/opt/bluerig at /opt/bluerig.
+          meson setup build --prefix=/opt/bluerig -Dscreen=slang -Dlua=enabled
           meson compile -C build
           meson install -C build --destdir "$(pwd)/stage"
 
           # The Lua runtime is a required part of the package.
-          ls stage/opt/coole/lib/coole/runtime-plugins/*.so
+          ls stage/opt/bluerig/lib/bluerig/runtime-plugins/*.so
 
       - name: Bundle and verify runtime dependencies
         run: |
-          source_dir="coole-$VERSION"
+          source_dir="bluerig-$VERSION"
           cd "$source_dir"
-          stage_prefix="stage/opt/coole"
+          stage_prefix="stage/opt/bluerig"
           bundled_libs="$stage_prefix/lib"
 
           # Use one install name for every dependency. LC_RPATH is relative to
@@ -535,11 +535,11 @@ jobs:
             -p '@rpath/'
             -i /usr/lib
             -i /System/Library
-            -x "$stage_prefix/bin/coole"
+            -x "$stage_prefix/bin/bluerig"
           )
           while IFS= read -r -d '' plugin; do
               bundle_args+=(-x "$plugin")
-          done < <(find "$stage_prefix/lib/coole/runtime-plugins" -name '*.so' -type f -print0)
+          done < <(find "$stage_prefix/lib/bluerig/runtime-plugins" -name '*.so' -type f -print0)
           if ! dylibbundler "${bundle_args[@]}" > dylibbundler.log 2>&1; then
               tail -n 200 dylibbundler.log
               exit 1
@@ -573,11 +573,11 @@ jobs:
               done
           done < <(find "$stage_prefix" -type f -print0)
 
-          add_rpath "$stage_prefix/bin/coole" '@loader_path/../lib'
-          # lib/coole/runtime-plugins/*.so: the bundled libraries are two up.
+          add_rpath "$stage_prefix/bin/bluerig" '@loader_path/../lib'
+          # lib/bluerig/runtime-plugins/*.so: the bundled libraries are two up.
           while IFS= read -r -d '' plugin; do
               add_rpath "$plugin" '@loader_path/../..'
-          done < <(find "$stage_prefix/lib/coole/runtime-plugins" -name '*.so' -type f -print0)
+          done < <(find "$stage_prefix/lib/bluerig/runtime-plugins" -name '*.so' -type f -print0)
           while IFS= read -r -d '' library; do
               add_rpath "$library" '@loader_path'
           done < <(find "$bundled_libs" -maxdepth 1 -name '*.dylib' -type f -print0)
@@ -613,7 +613,7 @@ jobs:
 
           # Prove that dyld does not fall back to the runner's Homebrew tree.
           brew_prefix=$(brew --prefix)
-          brew_off="${brew_prefix}.coole-off"
+          brew_off="${brew_prefix}.bluerig-off"
           test ! -e "$brew_off"
           restore_brew() {
               if test -e "$brew_off" && test ! -e "$brew_prefix"; then
@@ -622,7 +622,7 @@ jobs:
           }
           trap restore_brew EXIT HUP INT TERM
           sudo /bin/mv "$brew_prefix" "$brew_off"
-          TERM=xterm "$stage_prefix/bin/coole" --version
+          TERM=xterm "$stage_prefix/bin/bluerig" --version
           restore_brew
           trap - EXIT HUP INT TERM
 
@@ -633,35 +633,35 @@ jobs:
           # The installer is not Developer ID signed or notarized. The bundled
           # Mach-O files carry ad-hoc signatures so arm64 can execute them.
           pkgbuild \
-            --root "coole-$VERSION/stage" \
-            --identifier "com.github.blue-panels.coole" \
+            --root "bluerig-$VERSION/stage" \
+            --identifier "com.github.blue-panels.bluerig" \
             --version "$VERSION" \
-            "out/coole-$VERSION-macos-$SUFFIX.pkg"
+            "out/bluerig-$VERSION-macos-$SUFFIX.pkg"
 
-          cp "out/coole-$VERSION-macos-$SUFFIX.pkg" dmg/
+          cp "out/bluerig-$VERSION-macos-$SUFFIX.pkg" dmg/
           printf '%s\n' \
-            "coole $VERSION - $NAME" \
+            "bluerig $VERSION - $NAME" \
             '' \
             'Double-click the .pkg and follow the installer.' \
-            'It installs the coole text editor under /opt/coole.' \
-            'Run /opt/coole/bin/coole, or add /opt/coole/bin to your PATH.' \
+            'It installs the bluerig text editor under /opt/bluerig.' \
+            'Run /opt/bluerig/bin/bluerig, or add /opt/bluerig/bin to your PATH.' \
             'The package includes its runtime libraries; Homebrew is not required.' \
             '' \
             'This package is not Developer ID signed or notarized.' \
             'macOS may block it until you allow it in Privacy & Security.' \
             > dmg/README.txt
           hdiutil create \
-            -volname "coole-$VERSION-macos-$SUFFIX" \
+            -volname "bluerig-$VERSION-macos-$SUFFIX" \
             -srcfolder dmg \
             -ov -format UDZO \
-            "out/coole-$VERSION-macos-$SUFFIX.dmg"
+            "out/bluerig-$VERSION-macos-$SUFFIX.dmg"
 
       - name: Keep the meson log of a failed build
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.suffix }}-config-log
-          path: coole-*/build/meson-logs/meson-log.txt
+          path: bluerig-*/build/meson-logs/meson-log.txt
           if-no-files-found: warn
           overwrite: true
 
@@ -729,7 +729,7 @@ jobs:
           fi
 
           UPLOAD="$upload" packaging/ppa-source.sh \
-              "$VERSION" "dist/coole-$VERSION.tar.gz" $SERIES
+              "$VERSION" "dist/bluerig-$VERSION.tar.gz" $SERIES
 
       - uses: actions/upload-artifact@v4
         with:

@@ -10,13 +10,13 @@
 ```
  a console text editor, a continuation of cooledit
 
-This is the main help screen of **coole**, a console text editor.
+This is the main help screen of **bluerig**, a console text editor.
 
 To learn how to use the interactive help, just press [Enter](#how-to-use-help). You may want to go directly to the help [contents](#contents), or to the chapter on [the editor](#internal-file-editor).
 
-coole continues cooledit by Paul Sheer; see its [authors](#authors).
+bluerig continues cooledit by Paul Sheer; see its [authors](#authors).
 
-coole comes with ABSOLUTELY NO [WARRANTY](gnu-gpl-v3.0.md#warranty). This is free software, and you are welcome to redistribute it under the terms of the [GNU General Public License](gnu-gpl-v3.0.md#license).
+bluerig comes with ABSOLUTELY NO [WARRANTY](gnu-gpl-v3.0.md#warranty). This is free software, and you are welcome to redistribute it under the terms of the [GNU General Public License](gnu-gpl-v3.0.md#license).
 
 # Query boxes <a id="querybox"></a>
 

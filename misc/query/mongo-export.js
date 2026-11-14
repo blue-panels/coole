@@ -1,6 +1,6 @@
-// Run after mongo-prefix.js for QueryExport: the query of the user is given ".forEach(__cooleRow)"
+// Run after mongo-prefix.js for QueryExport: the query of the user is given ".forEach(__bluerigRow)"
 // after it, which prints each document of its cursor, or of its array, as relaxed Extended JSON
-// on a line of its own after "\x1e coole-row " (QUERY_EXPORT_LINE); coole writes them to the
+// on a line of its own after "\x1e bluerig-row " (QUERY_EXPORT_LINE); bluerig writes them to the
 // file as they come, the other lines going to Output.  Relaxed JSON makes a Long a number of
 // JavaScript, which has 53 bits: a bigger one stays {"$numberLong": "..."}, as it is
 {
@@ -14,6 +14,6 @@
         for (const k of Object.keys(v)) o[k] = exact(v[k]);
         return o;
     };
-    globalThis.__cooleRow = (d) =>
-        print('\x1e' + 'coole-row ' + EJSON.stringify(exact(d), { relaxed: true }));
+    globalThis.__bluerigRow = (d) =>
+        print('\x1e' + 'bluerig-row ' + EJSON.stringify(exact(d), { relaxed: true }));
 }

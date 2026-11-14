@@ -5,20 +5,20 @@ date: septiembre de 2026
 <!-- help:topics "Índice de Contenidos:" -->
 # NOMBRE <!-- help:skip -->
 
-coole - un editor de textos.
+bluerig - un editor de textos.
 
 # SINOPSIS <!-- help:skip -->
 
-**coole**
+**bluerig**
 [opciones] [+línea] [arch1[:línea]] [arch2[:línea]] ...
 
 # DESCRIPCIÓN <a id="description"></a>
 
-**coole**
+**bluerig**
 es un editor de textos para la consola. Continúa
 **cooledit**,
 el editor de Paul Sheer, cuya versión para terminal se desarrolló durante
-muchos años como el editor interno de GNU Midnight Commander; coole sigue
+muchos años como el editor interno de GNU Midnight Commander; bluerig sigue
 desarrollándolo como un programa propio.
 
 Edita varios archivos a la vez, cada uno en su propia ventana, y también
@@ -41,10 +41,10 @@ grep.
 : Mostrar la versión del programa.
 
 *-f, --datadir*
-: Mostrar las rutas de búsqueda compiladas para los archivos de datos de coole.
+: Mostrar las rutas de búsqueda compiladas para los archivos de datos de bluerig.
 
 *-F, --datadir-info*
-: Mostrar información ampliada sobre los directorios que usa coole.
+: Mostrar información ampliada sobre los directorios que usa bluerig.
 
 *--configure-options*
 : Mostrar las opciones con las que se configuró el programa.
@@ -121,7 +121,7 @@ aunque podemos recuperar su funcionamiento habitual en terminales (copiar
 y pegar) manteniendo pulsada la tecla mayúsculas.
 **Ctrl-Ins**
 copia al archivo de intercambio
-**~/.local/share/coole/clipboard**,
+**~/.local/share/bluerig/clipboard**,
 **Mayús-Ins**
 pega desde él,
 **Mayús-Supr**
@@ -138,7 +138,7 @@ de nuevo al finalizar y asignaremos la macro a una tecla pulsando sobre
 ella. La macro se ejecuta con esa tecla. Las macros se guardan en la sección
 **[editor]**
 del archivo
-**~/.local/share/coole/macros**,
+**~/.local/share/bluerig/macros**,
 y se borra una macro eliminando su línea en ese archivo; cómo una macro
 llama a un guion propio se explica en el manual en inglés.
 
@@ -297,7 +297,7 @@ Opciones, "Asociaciones de teclas...").
 
 **Guardar**
 : Escribir los cambios en
-*~/.config/coole/keymap.ini*.
+*~/.config/bluerig/keymap.ini*.
 
 **Editar archivo de teclas**
 : Abrir
@@ -324,37 +324,37 @@ Código        Código numérico interno
 
 # ENTORNO <a id="environment"></a>
 
-**COOLE_DATADIR**
+**BLUERIG_DATADIR**
 : El directorio de los archivos de datos, en lugar de {{pkgdatadir}}.
 
-**COOLE_PROFILE_ROOT**
+**BLUERIG_PROFILE_ROOT**
 : La raíz de los archivos del usuario, en lugar del directorio personal.
 
-**COOLE_SKIN**
+**BLUERIG_SKIN**
 : El tema que usar.
 
-**COOLE_KEYMAP**
+**BLUERIG_KEYMAP**
 : El archivo de teclas que usar.
 
-**COOLE_TMPDIR**, **TMPDIR**
+**BLUERIG_TMPDIR**, **TMPDIR**
 : El directorio de los archivos temporales.
 
-**COOLE_NO_LUA**
+**BLUERIG_NO_LUA**
 : Con el valor 1, arrancar sin el entorno Lua.
 
-**COOLE_LOG_ENABLE**, **COOLE_LOG_FILE**, **COOLE_SPELL_LOG**
+**BLUERIG_LOG_ENABLE**, **BLUERIG_LOG_FILE**, **BLUERIG_SPELL_LOG**
 : Los registros de depuración.
 
 # ARCHIVOS <a id="files"></a>
 
-*{{pkgdatadir}}/help/coole.md*
+*{{pkgdatadir}}/help/bluerig.md*
 : El archivo de ayuda del programa.
 
-*{{sysconfdir}}/coole/coole.ini*, *{{pkgdatadir}}/coole.ini*
+*{{sysconfdir}}/bluerig/bluerig.ini*, *{{pkgdatadir}}/bluerig.ini*
 : La configuración general, que se usa solo si el usuario no tiene
-~/.config/coole/ini.
+~/.config/bluerig/ini.
 
-*{{sysconfdir}}/coole/keymap.ini*, *{{sysconfdir}}/coole/coole.menu*
+*{{sysconfdir}}/bluerig/keymap.ini*, *{{sysconfdir}}/bluerig/bluerig.menu*
 : Las teclas y el menú de usuario generales.
 
 *{{pkgdatadir}}/syntax/\**
@@ -363,19 +363,19 @@ Código        Código numérico interno
 *{{plugins_dir}}/*
 : Los complementos del editor.
 
-*~/.config/coole/ini*, *~/.config/coole/keymap.ini*, *~/.config/coole/menu*
+*~/.config/bluerig/ini*, *~/.config/bluerig/keymap.ini*, *~/.config/bluerig/menu*
 : La configuración, las teclas y el menú de usuario propios.
 
-*~/.local/share/coole/*
+*~/.local/share/bluerig/*
 : El historial, las posiciones de los archivos, el portapapeles
 (clipboard), las macros (macros, macros.d/), la sintaxis (syntax/Syntax), los
 temas (skins/) y los guiones Lua (lua/scripts/) del usuario.
 
-*~/.cache/coole/*
+*~/.cache/bluerig/*
 : El archivo de bloque (block) y los temporales del editor.
 
 # VÉASE TAMBIÉN <a id="see-also"></a>
 
 cooledit(1), aspell(1), ctags(1).
 
-El manual en inglés, coole(1), describe todas las funciones del editor.
+El manual en inglés, bluerig(1), describe todas las funciones del editor.

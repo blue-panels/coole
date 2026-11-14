@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -26,7 +26,7 @@
 /** \file query.c
  *  \brief Source: the query plugin
  *
- *  A module the editor loads from its directory of plugins; it works in coole -Q alone.  F5 gives
+ *  A module the editor loads from its directory of plugins; it works in bluerig -Q alone.  F5 gives
  *  the selection, else the part of the file between lines "// ---", else the whole file, to the
  *  backend of the database, and its answer comes in the tabs at the bottom: Output, what it
  *  printed; Table, the documents or the rows in columns; History, the queries run.  The backend
@@ -74,7 +74,7 @@
 #define QUERY_MENU      N_ ("&Query")
 #define QUERY_HELP_FILE "query.md"
 #define QUERY_HELP_NODE "[Query]"
-// the menu of a file of queries, F11: in ~/.config/coole/query, else in the queries of coole
+// the menu of a file of queries, F11: in ~/.config/bluerig/query, else in the queries of bluerig
 #define QUERY_MENU_FILE "query-menu.ini"
 // a column of the text is not what the menu works on: lines are
 #define QUERY_MENU_NO_COLUMN _ ("A column selection is not taken: select whole lines.")
@@ -355,7 +355,7 @@ query_tab_title (query_t *q, int tab, const char *title)
 char *
 query_script (const char *name, char **why)
 {
-    const char *misc = g_getenv ("COOLE_MISC_DIR");
+    const char *misc = g_getenv ("BLUERIG_MISC_DIR");
     char *dirs[] = {
         g_build_filename (mc_config_get_path (), "query", (char *) NULL),
         misc != NULL ? g_build_filename (misc, "query", (char *) NULL) : NULL,
@@ -373,7 +373,7 @@ query_script (const char *name, char **why)
             ? g_strdup_printf (_ ("The script %s\nof the queries is a part of itself."),
                                error->message)
             : g_strdup_printf (_ ("The script %s\nof the queries is not there:\nit is in %s,\n"
-                                  "or in ~/.config/coole/query."),
+                                  "or in ~/.config/bluerig/query."),
                                error->message, dirs[3]);
         g_error_free (error);
     }
@@ -534,7 +534,7 @@ query_history_path_of (const char *file)
 {
     char *hash = g_compute_checksum_for_string (G_CHECKSUM_SHA256, file, -1);
     char *name = g_strconcat (hash, ".history", (char *) NULL);
-    char *path = g_build_filename (g_get_user_data_dir (), "coole", "query", name, (char *) NULL);
+    char *path = g_build_filename (g_get_user_data_dir (), "bluerig", "query", name, (char *) NULL);
 
     g_free (name);
     g_free (hash);
@@ -555,11 +555,11 @@ query_version_cmp_ptr (const void *a, const void *b)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The directory of the versions of @file: ~/.local/share/coole/queries/.history/<its name> */
+/* The directory of the versions of @file: ~/.local/share/bluerig/queries/.history/<its name> */
 static char *
 query_versions_dir_of (const char *file)
 {
-    char *queries = g_build_filename (g_get_user_data_dir (), "coole", "queries", (char *) NULL);
+    char *queries = g_build_filename (g_get_user_data_dir (), "bluerig", "queries", (char *) NULL);
     char *versions = g_build_filename (queries, QUERY_VERSIONS_DIR, (char *) NULL);
     char *dir = query_versions_dir (versions, queries, file);
 
@@ -574,7 +574,7 @@ query_versions_dir_of (const char *file)
 static gboolean
 query_in_versions (const char *file)
 {
-    char *root = g_build_filename (g_get_user_data_dir (), "coole", "queries", QUERY_VERSIONS_DIR,
+    char *root = g_build_filename (g_get_user_data_dir (), "bluerig", "queries", QUERY_VERSIONS_DIR,
                                    (char *) NULL);
     char *prefix = g_strconcat (root, G_DIR_SEPARATOR_S, (char *) NULL);
     const gboolean in = g_str_has_prefix (file, prefix);
@@ -1584,7 +1584,7 @@ query_export_ask (query_t *q, const char *base, const char *table)
     // new one
     f.create_table = table == NULL && o->create_table;
 
-    // "orders-20261108-101500.csv" in the directory of coole
+    // "orders-20261108-101500.csv" in the directory of bluerig
     stamp = g_date_time_format (now, "%Y%m%d-%H%M%S");
     g_date_time_unref (now);
     name = g_strdup_printf ("%s-%s.", base, stamp);
@@ -1913,7 +1913,7 @@ query_current_drop (query_t *q, const char *keep, const char *also)
 /* --------------------------------------------------------------------------------------------- */
 
 /* One "current" of the history: the newest of those never run, the others taken away, as an
-   older coole left them, one at each going from version to version */
+   older bluerig left them, one at each going from version to version */
 static void
 query_current_one (query_t *q)
 {
@@ -2239,7 +2239,7 @@ query_history_diff (query_t *q, const char *version)
     }
     // the text of the window, saved or not, in a file of the user's alone
     {
-        char *pattern = g_strconcat ("coole-query-XXXXXX", query_extension, (char *) NULL);
+        char *pattern = g_strconcat ("bluerig-query-XXXXXX", query_extension, (char *) NULL);
 
         fd = g_file_open_tmp (pattern, &tmp, NULL);
         g_free (pattern);
@@ -2411,13 +2411,13 @@ query_menu_command (query_t *q, WEdit *e, const query_menu_item_t *item)
     }
     file = q->host->get_current_file (q->host, e);
     dir = file != NULL ? g_path_get_dirname (file) : NULL;
-    envp = g_environ_setenv (g_get_environ (), "COOLE_QUERY_KIND", q->backend->id, TRUE);
+    envp = g_environ_setenv (g_get_environ (), "BLUERIG_QUERY_KIND", q->backend->id, TRUE);
     argv[0] = (char *) "/bin/sh";
     argv[1] = (char *) "-c";
     argv[2] = item->command;
     argv[3] = NULL;
     // the query in a file of ours alone, the stdin of the command
-    fd = g_file_open_tmp ("coole-query-XXXXXX", &path, NULL);
+    fd = g_file_open_tmp ("bluerig-query-XXXXXX", &path, NULL);
     if (fd >= 0)
     {
         const size_t n = strlen (block);
@@ -2539,12 +2539,12 @@ query_menu_path (void)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The text of the menu as it is, not as a script: that of the user when @user, else that of
-   coole, of a build run by meson devenv, of /etc/coole/query, of the data of coole; NULL when
+   bluerig, of a build run by meson devenv, of /etc/bluerig/query, of the data of bluerig; NULL when
    there is none.  @path the file it is of */
 static char *
 query_menu_text (gboolean user, char **path)
 {
-    const char *misc = g_getenv ("COOLE_MISC_DIR");
+    const char *misc = g_getenv ("BLUERIG_MISC_DIR");
     char *dirs[] = {
         user ? g_build_filename (mc_config_get_path (), "query", (char *) NULL) : NULL,
         misc != NULL ? g_build_filename (misc, "query", (char *) NULL) : NULL,
@@ -2576,7 +2576,7 @@ query_menu_text (gboolean user, char **path)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The menu of the user to edit, made from that of coole when there is none */
+/* The menu of the user to edit, made from that of bluerig when there is none */
 static void
 query_menu_edit (query_t *q)
 {
@@ -2600,7 +2600,7 @@ query_menu_edit (query_t *q)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The menu: that of the user, else that of coole; NULL, and why said, when there is none */
+/* The menu: that of the user, else that of bluerig; NULL, and why said, when there is none */
 static GPtrArray *
 query_menu_load (query_t *q)
 {
@@ -2612,8 +2612,8 @@ query_menu_load (query_t *q)
     if (text == NULL)
     {
         char *said = g_strdup_printf (_ ("The menu %s of the queries is not there:\n"
-                                         "it is in the queries of coole, or in\n"
-                                         "~/.config/coole/query."),
+                                         "it is in the queries of bluerig, or in\n"
+                                         "~/.config/bluerig/query."),
                                       QUERY_MENU_FILE);
 
         q->host->message (q->host, D_ERROR, _ ("Query"), said);
@@ -2623,7 +2623,7 @@ query_menu_load (query_t *q)
     menu = query_menu_parse (text, &error);
     if (menu == NULL)
     {
-        // the file that was read, of the user or of coole
+        // the file that was read, of the user or of bluerig
         char *said = g_strdup_printf ("%s:\n%s", path, error->message);
 
         q->host->message (q->host, D_ERROR, _ ("Query"), said);
@@ -2761,7 +2761,7 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
 {
     const char *version;
 
-    // the editor's F5, Copy, but in coole -Q
+    // the editor's F5, Copy, but in bluerig -Q
     if (!q->on)
         return FALSE;
     switch (cmd)
@@ -2955,7 +2955,7 @@ query_handle_action (void *data, long command, void *edit)
 {
     query_t *q = (query_t *) data;
 
-    // the menu of the user from the menu Command: that of the queries in coole -Q
+    // the menu of the user from the menu Command: that of the queries in bluerig -Q
     if (command == CK_UserMenu && query_is_query_file (q, edit))
     {
         query_user_menu (q, EDIT (edit));
@@ -2986,7 +2986,7 @@ query_viewer_signal (const char *name, const char *signal, GVariant *args, void 
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* coole -Q, once the editor runs: the tabs at the bottom, the history of the file */
+/* bluerig -Q, once the editor runs: the tabs at the bottom, the history of the file */
 static void
 query_startup (void *data)
 {

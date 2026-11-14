@@ -6,15 +6,15 @@
    Copyright (C) 2026
    Ilia Maslakov <il.smind@gmail.com>
 
-   This file is part of coole,
+   This file is part of bluerig,
    a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -103,7 +103,7 @@ GArray *macros_list = NULL;
 
 /*** file scope variables ************************************************************************/
 
-static char *profile_name = NULL; /* ${XDG_CONFIG_HOME}/coole/ini */
+static char *profile_name = NULL; /* ${XDG_CONFIG_HOME}/bluerig/ini */
 
 static const struct
 {
@@ -344,7 +344,7 @@ save_config (void)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Load learned keys from ~/.config/coole/term/<TERM>
+ * Load learned keys from ~/.config/bluerig/term/<TERM>
  */
 
 static void
@@ -413,7 +413,7 @@ setup_init (void)
         {
             char *inifile;
 
-            inifile = mc_build_filename (mc_global.sysconfig_dir, "coole.ini", (char *) NULL);
+            inifile = mc_build_filename (mc_global.sysconfig_dir, "bluerig.ini", (char *) NULL);
             if (exist_file (inifile))
             {
                 g_free (profile);
@@ -422,7 +422,8 @@ setup_init (void)
             else
             {
                 g_free (inifile);
-                inifile = mc_build_filename (mc_global.share_data_dir, "coole.ini", (char *) NULL);
+                inifile =
+                    mc_build_filename (mc_global.share_data_dir, "bluerig.ini", (char *) NULL);
                 if (!exist_file (inifile))
                     g_free (inifile);
                 else
@@ -452,7 +453,7 @@ load_setup (void)
     profile = setup_init ();
 
     /* defaults.ini is common for all users, but has priority lower than
-       ${XDG_CONFIG_HOME}/coole/ini.  It is only used for keys now */
+       ${XDG_CONFIG_HOME}/bluerig/ini.  It is only used for keys now */
     mc_global.profile_name =
         g_build_filename (mc_global.sysconfig_dir, MC_GLOBAL_CONFIG_FILE, (char *) NULL);
     if (!exist_file (mc_global.profile_name))
@@ -639,7 +640,7 @@ void
 load_key_defs (void)
 {
     /*
-     * Load keys from defaults.ini before ${XDG_CONFIG_HOME}/coole/ini, so that the user
+     * Load keys from defaults.ini before ${XDG_CONFIG_HOME}/bluerig/ini, so that the user
      * definitions override global settings.
      */
     mc_config_t *mc_global_config;
@@ -655,7 +656,7 @@ load_key_defs (void)
     load_keys_from_section ("general", mc_global.main_config);
     load_keys_for_terminal (getenv ("TERM"), mc_global.main_config);
 
-    // load learned keys from ~/.config/coole/term/<TERM>
+    // load learned keys from ~/.config/bluerig/term/<TERM>
     load_term_keys_file ();
 }
 

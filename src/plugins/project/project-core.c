@@ -277,7 +277,7 @@ project_find_root (const char *path)
     {
         char *parent;
 
-        if (project_dir_has (dir, ".coole") || project_dir_has (dir, ".git"))
+        if (project_dir_has (dir, ".bluerig") || project_dir_has (dir, ".git"))
         {
             found = g_strdup (dir);
             break;
@@ -317,7 +317,7 @@ gboolean
 project_is_project (const char *root)
 {
     return root != NULL
-        && (project_dir_has (root, ".coole") || project_dir_has (root, ".git")
+        && (project_dir_has (root, ".bluerig") || project_dir_has (root, ".git")
             || project_dir_has_build_file (root));
 }
 

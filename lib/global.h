@@ -106,7 +106,7 @@ typedef struct
     gboolean shutdown;
 
     /* sysconfig_dir: Area for default settings from maintainers of distributuves
-       default is /etc/coole or may be defined by COOLE_DATADIR */
+       default is /etc/bluerig or may be defined by BLUERIG_DATADIR */
     char *sysconfig_dir;
     // share_data_dir: Area for default settings from developers
     char *share_data_dir;

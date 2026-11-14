@@ -8,14 +8,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -97,7 +97,7 @@ debug_config_path (const debugger_t *debug)
         return NULL;
     hash = g_compute_checksum_for_string (G_CHECKSUM_SHA256, debug->project_dir, -1);
     filename = g_strconcat (hash, ".ini", NULL);
-    path = g_build_filename (g_get_user_config_dir (), "coole", "debug", filename, NULL);
+    path = g_build_filename (g_get_user_config_dir (), "bluerig", "debug", filename, NULL);
     g_free (filename);
     g_free (hash);
     return path;
@@ -108,7 +108,7 @@ static char *
 debug_project_config_path (const debugger_t *debug)
 {
     return debug->project_dir != NULL
-        ? g_build_filename (debug->project_dir, ".coole", "debug.ini", (char *) NULL)
+        ? g_build_filename (debug->project_dir, ".bluerig", "debug.ini", (char *) NULL)
         : NULL;
 }
 
@@ -499,7 +499,7 @@ debug_config_load (debugger_t *debug)
     // the configurations of the project go before the user's own
     shared_path = debug_project_config_path (debug);
     shared = g_key_file_new ();
-    // a project new to the debugger keeps them in it, in .coole/debug.ini
+    // a project new to the debugger keeps them in it, in .bluerig/debug.ini
     debug->launches_in_project = !own_launches && debug->launches->len == 0;
     if (!own_launches && g_key_file_load_from_file (shared, shared_path, G_KEY_FILE_NONE, NULL))
     {
@@ -839,7 +839,7 @@ debug_check_program (debugger_t *debug, const char *program, const char *system,
 }
 
 /* The language of the project of @root, else of the file @path, as the build plugin has it: the
-   copy of the project, .coole/project.ini, else presets.ini; its id, gdb, program, hide,
+   copy of the project, .bluerig/project.ini, else presets.ini; its id, gdb, program, hide,
    adapter, address and launch; NULL when it has none */
 static GVariant *
 debug_preset (debugger_t *debug, const char *root, const char *path)
@@ -1431,7 +1431,7 @@ debug_launch_form (debugger_t *debug, debug_launch_t *launch, const debug_launch
                 QUICK_CHECKBOX (_ ("&Build the project before the start"), &build, NULL),
                 QUICK_CHECKBOX (_ ("Run in a &terminal window: its screen and keys"), &terminal,
                                 NULL),
-                QUICK_CHECKBOX (_ ("&Keep in the project, in .coole/debug.ini"), &keep, NULL),
+                QUICK_CHECKBOX (_ ("&Keep in the project, in .bluerig/debug.ini"), &keep, NULL),
                 QUICK_BUTTONS_OK_CANCEL,
                 QUICK_END,
             };
@@ -1816,7 +1816,8 @@ debug_adapter_check (debugger_t *debug, const debug_launch_t *launch)
     (void) argv;
     (void) found;
     (void) error;
-    debug_error (debug, _ ("This coole is built without the debug adapters: they need json-glib."));
+    debug_error (debug,
+                 _ ("This bluerig is built without the debug adapters: they need json-glib."));
     return NULL;
 #else
     if (launch->adapter == NULL || *launch->adapter == '\0')

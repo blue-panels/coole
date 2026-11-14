@@ -118,7 +118,7 @@ libforplugins = static_library('forplugins',
 libinternal_dep = declare_dependency(link_with: [libinternal, libforplugins],
                                      dependencies: [libmc_dep, intl, terminal_dep])
 
-coole = executable('coole',
+bluerig = executable('bluerig',
   'main.c',
   c_args: src_c_args,
   dependencies: libinternal_dep,
@@ -178,12 +178,12 @@ if have_gmodule
   endif
 endif
 
-# "meson devenv -C BUILDDIR coole": the program of the build with the plugins of the build, not
+# "meson devenv -C BUILDDIR bluerig": the program of the build with the plugins of the build, not
 # those installed
 devenv = environment()
-devenv.set('COOLE_PLUGINS_DIR', plugin_build_dirs, separator: ':')
+devenv.set('BLUERIG_PLUGINS_DIR', plugin_build_dirs, separator: ':')
 # and the presets of the languages of the source, the build maybe not installed
-devenv.set('COOLE_MISC_DIR', meson.project_source_root() / 'misc')
+devenv.set('BLUERIG_MISC_DIR', meson.project_source_root() / 'misc')
 meson.add_devenv(devenv)
 
 if lua.found()

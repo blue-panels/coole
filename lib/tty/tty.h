@@ -177,10 +177,10 @@ extern void tty_painter_remove (tty_painter_fn fn, void *data);
 extern void tty_probe_terminal (void);
 /* Bytes read past the keyboard's back go back to it, in order. */
 extern void tty_unget_input (const unsigned char *data, size_t len);
-/* Whether the terminal draws sixel pictures. coole does not ask the terminal
+/* Whether the terminal draws sixel pictures. bluerig does not ask the terminal
    yet, so it takes that it does not. */
 extern gboolean tty_has_sixel (void);
-/* The terminal answered CSI ? u. COOLE_KITTY_KEYBOARD=0 turns the question off. */
+/* The terminal answered CSI ? u. BLUERIG_KITTY_KEYBOARD=0 turns the question off. */
 extern gboolean tty_has_kitty_keyboard (void);
 /* The terminal knows the Win32 input mode (DECSET 9001) of Windows Terminal */
 extern gboolean tty_has_win32_input (void);

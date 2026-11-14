@@ -1,13 +1,13 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR Free Software Foundation, Inc.
-# This file is distributed under the same license as the coole package.
+# This file is distributed under the same license as the bluerig package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: coole a4e9c21e2\n"
-"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"Project-Id-Version: bluerig a4e9c21e2\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/bluerig/issues\n"
 "POT-Creation-Date: 2026-09-29 13:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
@@ -3206,7 +3206,7 @@ msgid "No global or user Lua scripts were found."
 msgstr ""
 
 #: src/manage_plugins.c:445
-msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgid "Lua runtime is disabled. Enable Lua engine and restart bluerig."
 msgstr ""
 
 #: src/manage_plugins.c:511

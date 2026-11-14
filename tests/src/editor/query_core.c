@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -802,7 +802,7 @@ test_scripts (void)
     s = check_script ("mongo-export.js", NULL);
     // each document after the line QUERY_EXPORT_LINE has, by the function the export calls
     g_assert_nonnull (strstr (s, "'\\x1e' + '" QUERY_EXPORT_TAG " '"));
-    g_assert_nonnull (strstr (s, "globalThis.__cooleRow ="));
+    g_assert_nonnull (strstr (s, "globalThis.__bluerigRow ="));
     g_free (s);
     s = check_script ("pg-details.sql", "oid", "16384", NULL);
     g_assert_nonnull (strstr (s, "a.attrelid = 16384"));
@@ -943,7 +943,7 @@ test_menu_parse (void)
     g_assert_nonnull (error);
     g_clear_error (&error);
 
-    // the menu of coole: an item for each action
+    // the menu of bluerig: an item for each action
     text = query_script_read (dirs, G_N_ELEMENTS (dirs), "query-menu.ini", &error);
     g_assert_no_error (error);
     menu = query_menu_parse (text, &error);

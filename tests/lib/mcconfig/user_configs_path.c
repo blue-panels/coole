@@ -72,7 +72,7 @@ static const struct test_user_config_paths_ds
     { CONF_DATA, EDIT_SYNTAX_FILE },     { CONF_MAIN, EDIT_HOME_MENU },
     { CONF_DATA, MC_SKINS_DIR },         { CONF_DATA, MC_HISTORY_FILE },
     { CONF_DATA, MC_FILEPOS_FILE },      { CONF_DATA, EDIT_HOME_CLIP_FILE },
-    { CONF_DATA, MC_MACRO_FILE },        { CONF_CACHE, "coole.log" },
+    { CONF_DATA, MC_MACRO_FILE },        { CONF_CACHE, "bluerig.log" },
     { CONF_CACHE, EDIT_HOME_TEMP_FILE }, { CONF_CACHE, EDIT_HOME_BLOCK_FILE },
 };
 

@@ -20,7 +20,7 @@
 #define QUERY_LIMIT_DEFAULT 100
 
 /* The line printjson () prints with a copy of an array for the tab Table: "\x1e" and the tag */
-#define QUERY_TABLE_TAG  "coole-table"
+#define QUERY_TABLE_TAG  "bluerig-table"
 #define QUERY_TABLE_LINE "\x1e" QUERY_TABLE_TAG " "
 
 /* The programs of AI MC_QUERY_AI names by a word, with what they are run with: the request on

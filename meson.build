@@ -1,4 +1,4 @@
-project('coole', 'c',
+project('bluerig', 'c',
   version: run_command('version.sh', meson.project_source_root(), '--short',
                        check: true).stdout().strip(),
   license: 'GPL-3.0-or-later',
@@ -14,7 +14,7 @@ cc = meson.get_compiler('c')
 fs = import('fs')
 
 package = meson.project_name()
-bugreport = 'https://github.com/blue-panels/coole/issues'
+bugreport = 'https://github.com/blue-panels/bluerig/issues'
 
 # ---------------------------------------------------------------------------------------------
 # Directories

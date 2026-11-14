@@ -10,13 +10,13 @@
 ```
  based on GNU Midnight Commander
 
-Questa è la principale schermata della guida interattiva del **coole**.
+Questa è la principale schermata della guida interattiva del **bluerig**.
 
 Per saperne di più su come usare la guida interattiva, premere semplicemente [invio](#how-to-use-help). Se lo si desidera, è possibile  consultare direttamente il [sommario](#contents) della guida.
 
 Il Midnight Commander è stato scritto dai suoi [autori](#authors).
 
-Il coole NON E' COPERTO DA ALCUNA [GARANZIA](gnu-gpl-v3.0.md#warranty). Questo è software libero, lo si può ridistribuire sotto  certe [condizioni](gnu-gpl-v3.0.md#license).
+Il bluerig NON E' COPERTO DA ALCUNA [GARANZIA](gnu-gpl-v3.0.md#warranty). Questo è software libero, lo si può ridistribuire sotto  certe [condizioni](gnu-gpl-v3.0.md#license).
 
 # Finestre di dialogo di richiesta dati <a id="querybox"></a>
 

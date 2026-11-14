@@ -9,15 +9,15 @@
 
 /* history section names */
 
-#define MC_HISTORY_EDIT_LOAD            "coole.edit.load"
-#define MC_HISTORY_EDIT_SAVE_BLOCK      "coole.edit.save-block"
-#define MC_HISTORY_EDIT_INSERT_FILE     "coole.edit.insert-file"
-#define MC_HISTORY_EDIT_GOTO_LINE       "coole.edit.goto-line"
-#define MC_HISTORY_EDIT_REPEAT          "coole.edit.repeat-action"
-#define MC_HISTORY_EDIT_SPELL_ADD       "coole.edit.spell-add-word"
-#define MC_HISTORY_EDIT_MENU_EXEC_PARAM "coole.edit.menu.exec.parameter"
+#define MC_HISTORY_EDIT_LOAD            "bluerig.edit.load"
+#define MC_HISTORY_EDIT_SAVE_BLOCK      "bluerig.edit.save-block"
+#define MC_HISTORY_EDIT_INSERT_FILE     "bluerig.edit.insert-file"
+#define MC_HISTORY_EDIT_GOTO_LINE       "bluerig.edit.goto-line"
+#define MC_HISTORY_EDIT_REPEAT          "bluerig.edit.repeat-action"
+#define MC_HISTORY_EDIT_SPELL_ADD       "bluerig.edit.spell-add-word"
+#define MC_HISTORY_EDIT_MENU_EXEC_PARAM "bluerig.edit.menu.exec.parameter"
 
-#define MC_HISTORY_SHARED_SEARCH        "coole.shared.search"
+#define MC_HISTORY_SHARED_SEARCH        "bluerig.shared.search"
 
 /*** enums ***************************************************************************************/
 

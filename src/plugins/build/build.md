@@ -29,37 +29,37 @@ and is an error when the file it names is there.
 
 **Presets of the languages**
 
-*presets.ini* of coole, in its directory of configuration, has a group for
+*presets.ini* of bluerig, in its directory of configuration, has a group for
 each language: the files in the root of a project that tell it (*markers*),
 the endings of its files (*extensions*), the command that builds it
 (*build*), and how it is debugged (see the help of the debugger). The
 language of a project is that of a marker in its root, else that of the file
 in front, by its ending, when the file is in the project.
-*~/.config/coole/presets.ini* has groups of its own: they come first, and a
-group of it replaces that of coole of its name, all of it. A mistake in it
+*~/.config/bluerig/presets.ini* has groups of its own: they come first, and a
+group of it replaces that of bluerig of its name, all of it. A mistake in it
 is told once, with its line.
 
 **The settings of a project**
 
-A project opened as one, with *coole -D* or **Open project**, takes a copy
-of the preset of its language: *.coole/project.ini* in the project, its
+A project opened as one, with *bluerig -D* or **Open project**, takes a copy
+of the preset of its language: *.bluerig/project.ini* in the project, its
 group *[project]*, with the keys of *presets.ini* and *language*, the name of
 the language. From then on the project has it: what is changed there stays.
 A key the copy has not is that of the language in *presets.ini*, of the user
-first, so that what coole adds to a preset later reaches the projects copied
+first, so that what bluerig adds to a preset later reaches the projects copied
 before; a key left empty, *build=*, has none. A project with a build
 system of its own, meson, cmake or a *Makefile*, has no *build* in its copy.
 A file opened alone, without a project, leaves no file in its directory. A
-*.coole/project.ini* that cannot be read is told of, with its line, and left
+*.bluerig/project.ini* that cannot be read is told of, with its line, and left
 as it is until it is put right.
 
 **Project → Build command...** gives a project a command of its own,
-*command* in *.coole/project.ini*, which then goes before what was found.
+*command* in *.bluerig/project.ini*, which then goes before what was found.
 With nothing found the plugin asks for one the first time. A command given
 before there was this file, kept with the settings of the user, goes into
 it with the copy.
 
-**Project → Language defaults of the project...** makes *.coole/project.ini*
+**Project → Language defaults of the project...** makes *.bluerig/project.ini*
 the preset of the language again, without the command given to the project.
 The debug configurations stay as they are, until they are made anew.
 

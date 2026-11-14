@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole, a text editor based on GNU Midnight Commander.
+   This file is part of bluerig, a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -48,7 +48,7 @@
 /*** file scope macro definitions ****************************************************************/
 
 #ifndef MC_RUNTIME_PLUGINS_DIR
-#define MC_RUNTIME_PLUGINS_DIR "/usr/lib/coole/runtime-plugins"
+#define MC_RUNTIME_PLUGINS_DIR "/usr/lib/bluerig/runtime-plugins"
 #endif
 
 #define MC_RUNTIME_HOST_SERVICES_OBJECTS_SIZE                                                      \
@@ -1500,7 +1500,7 @@ mc_runtime_plugin_is_disabled (const char *runtime_name)
     if (runtime_name == NULL)
         return FALSE;
 
-    if (g_strcmp0 (runtime_name, "lua") == 0 && g_strcmp0 (g_getenv ("COOLE_NO_LUA"), "1") == 0)
+    if (g_strcmp0 (runtime_name, "lua") == 0 && g_strcmp0 (g_getenv ("BLUERIG_NO_LUA"), "1") == 0)
         return TRUE;
 
     return mc_runtime_disabled_plugin_names != NULL

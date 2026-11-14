@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -64,7 +64,7 @@
 // what the program of AI printed on stderr shown at most, its end
 #define QUERY_AI_ERR_MAX 4000
 
-// the program of AI in the configuration of coole, when MC_QUERY_AI does not name one
+// the program of AI in the configuration of bluerig, when MC_QUERY_AI does not name one
 #define QUERY_AI_CONFIG_GROUP "Query"
 #define QUERY_AI_CONFIG_KEY   "ai"
 
@@ -108,11 +108,11 @@ struct query_ai_t
 
 /*** file scope variables ************************************************************************/
 
-// what the program of AI is not given of the environment of coole: the secrets of the database
+// what the program of AI is not given of the environment of bluerig: the secrets of the database
 static const char *const query_ai_secrets[] = {
     "PGPASSWORD",
     "MC_MONGO_URI",
-    "COOLE_PG_URI",
+    "BLUERIG_PG_URI",
 };
 
 /* --------------------------------------------------------------------------------------------- */
@@ -251,7 +251,7 @@ query_proc_ready (int fd, void *data)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The environment of coole without its secrets */
+/* The environment of bluerig without its secrets */
 static char **
 query_ai_environ (void)
 {
@@ -436,7 +436,7 @@ query_proc_start (const char *const *argv, char **envp, const char *dir, const c
     const gsize len = strlen (input);
 
     // the input in a file of its own, gone once open: a pipe would take 64 KB of it at most
-    in = g_file_open_tmp ("coole-query-XXXXXX", &path, error);
+    in = g_file_open_tmp ("bluerig-query-XXXXXX", &path, error);
     if (in < 0)
         return NULL;
     (void) g_unlink (path);

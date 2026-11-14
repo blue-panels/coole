@@ -1,5 +1,5 @@
 # This file describes which highlighting scheme is applied to a particular
-# file in coole.
+# file in bluerig.
 #
 #
 # System-wide files (this and syntax definitions) are located in
@@ -39,13 +39,13 @@
 file [Ss]yntax$ Syntax\sHighlighting\sdefinitions ^#\ssyntax\srules\sversion\s
 include syntax.syntax
 
-file .\*/(\\.?(coole|mc)\\.menu|(coole|mc)/menu)$ User\smenu
+file .\*/(\\.?(bluerig|mc)\\.menu|(bluerig|mc)/menu)$ User\smenu
 include usermenu.syntax
 
 file ..\*\\.e$ Eiffel\sSource\sFile
 include eiffel.syntax
 
-file .\*/(COMMIT_EDITMSG|COOLE_(AMEND_|REWORD_)?EDITMSG|MERGE_MSG|TAG_EDITMSG)$ Git\scommit\smessage
+file .\*/(COMMIT_EDITMSG|BLUERIG_(AMEND_|REWORD_)?EDITMSG|MERGE_MSG|TAG_EDITMSG)$ Git\scommit\smessage
 include gitcommit.syntax
 
 file ..\*\\.(diff|rej|patch)$ Diff\sOutput ^(diff|Index:)\s

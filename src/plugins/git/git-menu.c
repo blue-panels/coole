@@ -8,14 +8,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -398,10 +398,10 @@ git_msg_show_diff (git_t *git, const git_msg_target_t *t)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A file of coole: in the directory of its configuration, else in that of its data; NULL when
+/* A file of bluerig: in the directory of its configuration, else in that of its data; NULL when
    there is none */
 static char *
-git_coole_file (const char *name)
+git_bluerig_file (const char *name)
 {
     char *path = g_build_filename (mc_global.sysconfig_dir, name, (char *) NULL);
 
@@ -417,11 +417,11 @@ git_coole_file (const char *name)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* What a file of coole has, NULL when there is none */
+/* What a file of bluerig has, NULL when there is none */
 static char *
-git_coole_text (const char *name)
+git_bluerig_text (const char *name)
 {
-    char *path = git_coole_file (name);
+    char *path = git_bluerig_file (name);
     char *text = NULL;
 
     if (path != NULL && !g_file_get_contents (path, &text, NULL, NULL))
@@ -433,7 +433,7 @@ git_coole_text (const char *name)
 /* --------------------------------------------------------------------------------------------- */
 
 /* A key of [commit-message] in ai.ini of the user; the prompts and the input of the project, in
-   its .coole/ai.ini, first, and those of coole last.  A repository gives no command: it would
+   its .bluerig/ai.ini, first, and those of bluerig last.  A repository gives no command: it would
    run whatever whoever made it wrote */
 static char *
 git_ai_value (const char *root, const char *key)
@@ -443,9 +443,9 @@ git_ai_value (const char *root, const char *key)
     char *value = NULL;
     int i;
 
-    paths[0] = asked ? g_build_filename (root, ".coole", GIT_AI_FILE, (char *) NULL) : NULL;
-    paths[1] = g_build_filename (g_get_user_config_dir (), "coole", GIT_AI_FILE, (char *) NULL);
-    paths[2] = asked ? git_coole_file (GIT_AI_FILE) : NULL;
+    paths[0] = asked ? g_build_filename (root, ".bluerig", GIT_AI_FILE, (char *) NULL) : NULL;
+    paths[1] = g_build_filename (g_get_user_config_dir (), "bluerig", GIT_AI_FILE, (char *) NULL);
+    paths[2] = asked ? git_bluerig_file (GIT_AI_FILE) : NULL;
     for (i = 0; i < 3 && value == NULL; i++)
     {
         GKeyFile *kf = g_key_file_new ();
@@ -546,7 +546,7 @@ git_msg_generate (git_t *git, WEdit *edit, const git_msg_target_t *t)
     if (command == NULL)
     {
         char *user =
-            g_build_filename (g_get_user_config_dir (), "coole", GIT_AI_FILE, (char *) NULL);
+            g_build_filename (g_get_user_config_dir (), "bluerig", GIT_AI_FILE, (char *) NULL);
 
         message (D_ERROR, _ ("Generate"),
                  _ ("No command to write messages with: give one in [%s] of\n%s"), GIT_AI_GROUP,
@@ -626,9 +626,9 @@ git_msg_generate (git_t *git, WEdit *edit, const git_msg_target_t *t)
         g_free (shown);
     }
     mc_refresh ();
-    // the command knows what it writes: COOLE_GIT_COMMIT^ is the history before the commit
-    env[0] = g_strconcat ("COOLE_GIT_MODE=", mode, (char *) NULL);
-    env[1] = g_strconcat ("COOLE_GIT_COMMIT=", t->sha != NULL ? t->sha : "", (char *) NULL);
+    // the command knows what it writes: BLUERIG_GIT_COMMIT^ is the history before the commit
+    env[0] = g_strconcat ("BLUERIG_GIT_MODE=", mode, (char *) NULL);
+    env[1] = g_strconcat ("BLUERIG_GIT_COMMIT=", t->sha != NULL ? t->sha : "", (char *) NULL);
     env[2] = NULL;
     ran = git_run_shell (t->root, command, input->str, (const char *const *) env, &o);
     g_free (env[0]);
@@ -725,12 +725,12 @@ git_open_over (git_t *git, const char *path, long line)
 static char *
 git_menu_path (void)
 {
-    return g_build_filename (g_get_user_config_dir (), "coole", GIT_MENU_FILE, (char *) NULL);
+    return g_build_filename (g_get_user_config_dir (), "bluerig", GIT_MENU_FILE, (char *) NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The menu of the message: that of the user, else that of coole */
+/* The menu of the message: that of the user, else that of bluerig */
 static GPtrArray *
 git_menu_load (void)
 {
@@ -749,7 +749,7 @@ git_menu_load (void)
         }
     }
     g_free (text);
-    text = menu == NULL ? git_coole_text (GIT_MENU_FILE) : NULL;
+    text = menu == NULL ? git_bluerig_text (GIT_MENU_FILE) : NULL;
     if (text != NULL)
         menu = git_menu_parse (text, NULL);
     if (menu == NULL)
@@ -761,7 +761,7 @@ git_menu_load (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The menu of the user to edit, made from that of coole when there is none */
+/* The menu of the user to edit, made from that of bluerig when there is none */
 static void
 git_menu_edit (git_t *git)
 {
@@ -770,7 +770,7 @@ git_menu_edit (git_t *git)
     if (!g_file_test (path, G_FILE_TEST_EXISTS))
     {
         char *dir = g_path_get_dirname (path);
-        char *text = git_coole_text (GIT_MENU_FILE);
+        char *text = git_bluerig_text (GIT_MENU_FILE);
 
         (void) g_mkdir_with_parents (dir, 0700);
         (void) g_file_set_contents (path, text != NULL ? text : "", -1, NULL);
@@ -783,14 +783,14 @@ git_menu_edit (git_t *git)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The prompt of the AI in a window of the editor, on the whole screen: in .coole/ai.ini of the
-   project when it has one there, else in ai.ini of the user, made from that of coole when there
+/* The prompt of the AI in a window of the editor, on the whole screen: in .bluerig/ai.ini of the
+   project when it has one there, else in ai.ini of the user, made from that of bluerig when there
    is none */
 static void
 git_msg_edit_prompt (git_t *git, const git_msg_target_t *t)
 {
-    char *project = g_build_filename (t->root, ".coole", GIT_AI_FILE, (char *) NULL);
-    char *user = g_build_filename (g_get_user_config_dir (), "coole", GIT_AI_FILE, (char *) NULL);
+    char *project = g_build_filename (t->root, ".bluerig", GIT_AI_FILE, (char *) NULL);
+    char *user = g_build_filename (g_get_user_config_dir (), "bluerig", GIT_AI_FILE, (char *) NULL);
     // the prompt of the mode of the message when there is one, else that of all
     char *key = g_strconcat ("prompt-",
                              t->amend             ? "amend"
@@ -808,7 +808,7 @@ git_msg_edit_prompt (git_t *git, const git_msg_target_t *t)
     if (path == user && !g_file_test (user, G_FILE_TEST_EXISTS))
     {
         char *dir = g_path_get_dirname (user);
-        char *text = git_coole_text (GIT_AI_FILE);
+        char *text = git_bluerig_text (GIT_AI_FILE);
 
         (void) g_mkdir_with_parents (dir, 0700);
         (void) g_file_set_contents (user, text != NULL ? text : "", -1, NULL);
@@ -869,8 +869,8 @@ git_menu_run (git_t *git, WEdit *edit, const git_menu_item_t *item, const git_ms
     git_output_t o;
     gboolean ran;
 
-    env[0] = g_strconcat ("COOLE_GIT_MODE=", mode, (char *) NULL);
-    env[1] = g_strconcat ("COOLE_GIT_COMMIT=", t->sha != NULL ? t->sha : "", (char *) NULL);
+    env[0] = g_strconcat ("BLUERIG_GIT_MODE=", mode, (char *) NULL);
+    env[1] = g_strconcat ("BLUERIG_GIT_COMMIT=", t->sha != NULL ? t->sha : "", (char *) NULL);
     env[2] = NULL;
     ran = git_run_shell (t->root, item->command, text, (const char *const *) env, &o);
     g_free (env[0]);

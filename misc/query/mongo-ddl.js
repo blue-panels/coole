@@ -1,5 +1,5 @@
 // F4: the DDL of a collection or a view, as the queries write it, printed as Extended JSON after
-// "\x1e coole-schema ": its drop, commented, its create with its options, its indexes.  A value
+// "\x1e bluerig-schema ": its drop, commented, its create with its options, its indexes.  A value
 // with a type of BSON in it, a date, an ObjectId, a Long, is put in EJSON.deserialize () as
 // canonical Extended JSON, so that it is that value again when it runs: not an object of "$date",
 // nor a Long rounded to a number.
@@ -59,5 +59,5 @@
         }
         __out.ddl = __s;
     }
-    print('\x1e' + 'coole-schema ' + EJSON.stringify(__out));
+    print('\x1e' + 'bluerig-schema ' + EJSON.stringify(__out));
 }

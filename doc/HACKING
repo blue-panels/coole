@@ -1,7 +1,7 @@
 This document
 =============
 
-This document is a guide how to develop coole, a console text editor,
+This document is a guide how to develop bluerig, a console text editor,
 a continuation of cooledit.  It's
 quite incomplete, but may be worth reading anyway.
 
@@ -15,7 +15,7 @@ Compiling from GIT
 
 The full list of requirements is listed in the INSTALL file.
 
-coole is built with meson in a build directory outside the source tree:
+bluerig is built with meson in a build directory outside the source tree:
 
 meson setup build
 meson compile -C build
@@ -24,11 +24,11 @@ The distribution archive is created by `meson dist -C build', which also
 builds and tests what it packs.  This command can take a while.
 
 The version is taken from the Git tags: version.sh runs
-`git describe --match 'coole-*'', and the build writes it into
+`git describe --match 'bluerig-*'', and the build writes it into
 mc-version.h.  A release archive keeps it in .tarball-version.
 
 
-Working with coole
+Working with bluerig
 ==================
 
 Please use the GIT version.  It may be quite different from the released
@@ -89,7 +89,7 @@ src - the program.
                  key bindings and the dialogs that edit and learn them
     help.c, help_md.c
                  the help window, which reads the markdown of the manual
-    usermenu.c   the user menu (coole.menu, .coole.menu)
+    usermenu.c   the user menu (bluerig.menu, .bluerig.menu)
     manage_plugins.c
                  the Manage Plugins dialog
     runtime-host.c, runtime-screen.c
@@ -103,7 +103,7 @@ src - the program.
 The editor code has been written by Paul Sheer, the author of
 Cooledit, and developed further by many contributors over the years.
 
-misc - data: skins, syntax files, keymaps, coole.menu.in,
+misc - data: skins, syntax files, keymaps, bluerig.menu.in,
 defaults.ini, macros.d examples.
 
 tests - unit tests.
@@ -116,7 +116,7 @@ and mc_mkstemps() make the temporary directory and files.
 Code structure - details
 ========================
 
-coole uses extensively the dialog manager written by
+bluerig uses extensively the dialog manager written by
 Radek Doulik.  To understand how the dialog manager works, please read
 lib/widget/dialog.c and lib/widget/group.c.  You will find the basic
 widgets in the other files of lib/widget.  Some more high-level
@@ -148,7 +148,7 @@ menu and the button bar.
 Input handling
 ==============
 
-The routines for input handling in coole are:
+The routines for input handling in bluerig are:
 getch, get_key_code, mi_getch and get_event.
 
 getch is an interface to the low level system input mechanism.  It
@@ -162,7 +162,7 @@ does not deal with the mouse.
     load a set of extra definitions.
 
 The get_key_code routine converts the data from getch to the
-constants coole uses.
+constants bluerig uses.
 
     In the case of S-Lang, it will actually do all the jobs that getch
     does for curses.  In the case of curses it patches a couple of
@@ -186,7 +186,7 @@ available.
 Mouse support
 =============
 
-The mouse support in coole is based on the get_event
+The mouse support in bluerig is based on the get_event
 routine.  The core of the mouse event dispatching is in
 lib/widget/dialog.c and lib/widget/mouse.c.
 
@@ -238,7 +238,7 @@ Where to Find Bug Reports
 
 The place for bug reports is:
 
-    https://github.com/blue-panels/coole/issues
+    https://github.com/blue-panels/bluerig/issues
 
 
 

@@ -34,7 +34,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Midnight Commander\n"
-"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/bluerig/issues\n"
 "POT-Creation-Date: 2026-09-29 13:14+0200\n"
 "PO-Revision-Date: 2026-09-25 22:53+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
@@ -2576,7 +2576,7 @@ msgid "No global or user Lua scripts were found."
 msgstr "Глобальные или пользовательские скрипты редактора Lua не найдены."
 
 #, fuzzy
-msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgid "Lua runtime is disabled. Enable Lua engine and restart bluerig."
 msgstr "Среда Lua отключена. Включите движок Lua и перезапустите MC."
 
 #, fuzzy
@@ -2833,11 +2833,11 @@ msgid ""
 "The script %s\n"
 "of the queries is not there:\n"
 "it is in %s,\n"
-"or in ~/.config/coole/query."
+"or in ~/.config/bluerig/query."
 msgstr ""
 "Скрипта запросов %s нет:\n"
 "он лежит в %s\n"
-"или в ~/.config/coole/query."
+"или в ~/.config/bluerig/query."
 
 #: src/plugins/query/query.c:597
 #, c-format
@@ -3464,8 +3464,8 @@ msgstr ""
 "RETURNING.\n"
 
 #: src/plugins/query/query-postgres.c:796
-msgid "COPY FROM STDIN: coole -Q has nothing to send"
-msgstr "COPY FROM STDIN: coole -Q нечего отправить"
+msgid "COPY FROM STDIN: bluerig -Q has nothing to send"
+msgstr "COPY FROM STDIN: bluerig -Q нечего отправить"
 
 #: src/plugins/query/query-postgres.c:845
 msgid ""
@@ -3919,5 +3919,5 @@ msgstr "В меню нет вывода \"%s\": insert, replace, show или non
 
 #: src/plugins/query/query.c
 #, c-format
-msgid "The menu %s of the queries is not there:\nit is in the queries of coole, or in\n~/.config/coole/query."
-msgstr "Меню запросов %s не найдено:\nоно лежит в запросах coole или в\n~/.config/coole/query."
+msgid "The menu %s of the queries is not there:\nit is in the queries of bluerig, or in\n~/.config/bluerig/query."
+msgstr "Меню запросов %s не найдено:\nоно лежит в запросах bluerig или в\n~/.config/bluerig/query."

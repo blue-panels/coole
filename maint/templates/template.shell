@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# coole - <one line comment what the file is for>
+# bluerig - <one line comment what the file is for>
 #
 # Copyright (C) <YEARS>
 # The Free Software Foundation, Inc.
@@ -8,14 +8,14 @@
 # Written by:
 #  Firstname Secondname <your@email.in.net>, <YEARS>
 #
-# This file is part of coole.
+# This file is part of bluerig.
 #
-# coole is free software: you can redistribute it
+# bluerig is free software: you can redistribute it
 # and/or modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation, either version 3 of the License,
 # or (at your option) any later version.
 #
-# coole is distributed in the hope that it will be useful,
+# bluerig is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.

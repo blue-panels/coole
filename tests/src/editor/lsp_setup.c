@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -173,8 +173,8 @@ test_clangd (void)
     // a file of the user's, kept around the block, the block written again in its place
     rules = lsp_setup_rules (includes, skip, NULL);
     file = lsp_setup_clangd ("CompileFlags:\n  Add: [-Wall]\n", rules);
-    g_assert_true (g_str_has_prefix (file, "CompileFlags:\n  Add: [-Wall]\n---\n# >>> coole"));
-    g_assert_true (g_str_has_suffix (file, "# <<< coole\n"));
+    g_assert_true (g_str_has_prefix (file, "CompileFlags:\n  Add: [-Wall]\n---\n# >>> bluerig"));
+    g_assert_true (g_str_has_suffix (file, "# <<< bluerig\n"));
     again = lsp_setup_clangd (file, rules);
     g_assert_cmpstr (again, ==, file);
     g_free (again);
@@ -185,7 +185,7 @@ test_clangd (void)
     g_free (file);
     // nothing before: the block alone; after it, kept
     file = lsp_setup_clangd (NULL, rules);
-    g_assert_true (g_str_has_prefix (file, "# >>> coole"));
+    g_assert_true (g_str_has_prefix (file, "# >>> bluerig"));
     again = g_strconcat (file, "---\nDiagnostics:\n  Suppress: x\n", (char *) NULL);
     g_free (file);
     file = lsp_setup_clangd (again, NULL);
@@ -193,9 +193,9 @@ test_clangd (void)
     g_free (file);
     g_free (again);
     // a block that lost its end: what follows its first line is the user's, kept
-    file = lsp_setup_clangd ("A: 1\n---\n# >>> coole: x\nIf:\n  PathMatch: y\n", rules);
-    g_assert_true (g_str_has_prefix (file, "A: 1\n---\n# >>> coole"));
-    g_assert_true (g_str_has_suffix (file, "# <<< coole\n---\nIf:\n  PathMatch: y\n"));
+    file = lsp_setup_clangd ("A: 1\n---\n# >>> bluerig: x\nIf:\n  PathMatch: y\n", rules);
+    g_assert_true (g_str_has_prefix (file, "A: 1\n---\n# >>> bluerig"));
+    g_assert_true (g_str_has_suffix (file, "# <<< bluerig\n---\nIf:\n  PathMatch: y\n"));
     g_free (file);
     g_free (rules);
 }

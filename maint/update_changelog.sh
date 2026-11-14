@@ -2,8 +2,8 @@
 # Put a version's entries into CHANGELOG.md.
 #
 # usage: update_changelog.sh <version> <entries-file> [<changelog>]
-#   maint/release_notes.sh coole-1.0.0 --milestone --flat > entries.txt
-#   maint/update_changelog.sh coole-1.0.0 entries.txt
+#   maint/release_notes.sh bluerig-1.0.0 --milestone --flat > entries.txt
+#   maint/update_changelog.sh bluerig-1.0.0 entries.txt
 #
 # The entries are plain lines, one per change, as release_notes.sh --flat writes
 # them. This file is what the package changelogs are made of: prepare.sh takes
@@ -29,9 +29,9 @@ entries=${2:?usage: update_changelog.sh <version> <entries-file> [<changelog>]}
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 changelog=${3:-$root/CHANGELOG.md}
 
-# The tag and the milestone carry the coole- prefix, the section does not: a
+# The tag and the milestone carry the bluerig- prefix, the section does not: a
 # version is a number.
-version=${version#coole-}
+version=${version#bluerig-}
 case "$version" in
     *[!0-9.]* | '' | .* | *.)
         die "not a release version: $version"
@@ -44,7 +44,7 @@ grep -q '^- ' "$entries" || die "$entries has no entries: expected lines startin
 date=${DATE:-$(date +%Y-%m-%d)}
 
 if ! test -f "$changelog"; then
-    printf '# Changelog\n\nThe releases of coole, newest first.\n\n' > "$changelog"
+    printf '# Changelog\n\nThe releases of bluerig, newest first.\n\n' > "$changelog"
 fi
 
 new=$(mktemp) || die "cannot create a temporary file"

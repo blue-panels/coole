@@ -1,6 +1,6 @@
                      Solving keyboard related problems
                                with XTERM
-                                 and coole
+                                 and bluerig
                        (and other programs as well).
 
 Xterm brings a handful of problems with input keys and their translations.
@@ -56,7 +56,7 @@ tic will compile it and place it into your TERMINFO directory.
 xterm.tcap is the xterm (and xterm-color) termcap entry. It is based on the
 newest termcap database from http://www.ccil.org/~esr/ncurses.html, but
 contains a bunch of changes to make all the above mentioned keys work. Even
-if coole is compiled so that it uses terminfo, you need to install the termcap
+if bluerig is compiled so that it uses terminfo, you need to install the termcap
 entry so that other programs which use termcap will behave correctly. You
 have to edit your /etc/termcap and replace xterm and xterm-color entries
 with those from xterm.tcap.
@@ -68,7 +68,7 @@ keys in every different database, so xterm.ad works as a standard to make
 xterm.ti and termcap happy). If you find that xterm works well even if you
 delete some lines from the translations, feel free to do it.
 
-By default,  Alt+character keys received by coole are generated in xterm.ad by
+By default,  Alt+character keys received by bluerig are generated in xterm.ad by
 Alt modifier plus the key. On some systems, you may want to change this to
 the Meta modifier (e.g. if the Alt modifier is missing). You do it by
 replacing a letter s at the beginning of table lines with letter m.
@@ -101,7 +101,7 @@ This is a subset of all the translation table features. If you want a
 complete reference, see xterm(1) and X Toolkit Intrinsics manual Appendix B.
 
 Please, if you find any problems or errors in this stuff, report them at
-https://github.com/blue-panels/coole/issues.
+https://github.com/blue-panels/bluerig/issues.
 
 
 

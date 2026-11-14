@@ -2,9 +2,9 @@
 # Rewrite pull request titles into sentences a user of the program would read.
 #
 # usage: rewrite_titles.sh <prs.json> <titles.json>
-#   maint/release_notes.sh coole-1.0.0 --milestone --raw > prs.json
+#   maint/release_notes.sh bluerig-1.0.0 --milestone --raw > prs.json
 #   maint/rewrite_titles.sh prs.json titles.json
-#   maint/release_notes.sh coole-1.0.0 --milestone --titles-from titles.json -o notes.md
+#   maint/release_notes.sh bluerig-1.0.0 --milestone --titles-from titles.json -o notes.md
 #
 # Input is what release_notes.sh --raw produces: number, title, labels and the
 # description its author wrote. Output maps the number to one sentence.
@@ -44,7 +44,7 @@ here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 payload=$(jq '[.[] | select((.labels | index("infra")) | not)]' "$input")
 test "$(printf '%s' "$payload" | jq 'length')" != 0 || die "nothing to rewrite"
 
-system='You write release notes for coole, a text-mode text editor
+system='You write release notes for bluerig, a text-mode text editor
 based on the internal editor of GNU Midnight Commander (mcedit): syntax
 highlighting, code folding, an undo history browser, macros, ctags/etags
 navigation, spell checking, editor plugins and Lua scripts.

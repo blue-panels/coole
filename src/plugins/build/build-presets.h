@@ -2,11 +2,11 @@
  *  \brief Header: the defaults of a project by its language, from presets.ini
  *
  *  How a project of a language is built and debugged when it says nothing of its own: a group
- *  of presets.ini for each language, the groups of the user first, those of coole of the same
+ *  of presets.ini for each language, the groups of the user first, those of bluerig of the same
  *  name left out.  The language of a project is told by a file in its root, a marker, else by
  *  the ending of a file.
  *
- *  A project opened as one takes a copy of the preset of its language, .coole/project.ini, its
+ *  A project opened as one takes a copy of the preset of its language, .bluerig/project.ini, its
  *  group [project]: the project has it from then on, whatever presets.ini becomes.
  */
 
@@ -19,7 +19,7 @@
 
 #define BUILD_PRESETS_FILE "presets.ini"
 /* The copy of a project, from its root */
-#define BUILD_PROJECT_DIR   ".coole"
+#define BUILD_PROJECT_DIR   ".bluerig"
 #define BUILD_PROJECT_FILE  "project.ini"
 #define BUILD_PROJECT_GROUP "project"
 
@@ -59,7 +59,7 @@ GPtrArray *build_presets_parse (const char *project_text, const char *user_text,
 /* The language of the project of @root: its copy, else by the markers; else, when @path is not
    NULL, that of the file @path by its ending; NULL when none */
 const build_preset_t *build_presets_find (GPtrArray *presets, const char *root, const char *path);
-/* The text of .coole/project.ini of a project of the language of @preset; its build command
+/* The text of .bluerig/project.ini of a project of the language of @preset; its build command
    only when @with_build: a project with a build system of its own builds with it */
 char *build_presets_project_text (const build_preset_t *preset, gboolean with_build);
 /* @value with ${package} put as the name of the package of the Cargo.toml of @root; NULL when

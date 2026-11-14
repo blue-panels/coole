@@ -27,7 +27,7 @@
 /** ile
  *  rief Source: the cells of the terminal drawn on the screen
  *
- *  In mc these functions are a part of the viewer (ascii.c and display.c); coole has the
+ *  In mc these functions are a part of the viewer (ascii.c and display.c); bluerig has the
  *  terminal without the viewer.
  */
 

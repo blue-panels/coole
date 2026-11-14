@@ -1,26 +1,26 @@
-.\" Generated from coole.md by maint/update-man-in.sh. Do not edit.
-.TH COOLE 1 "2026. szeptember" "coole {{MAN_VERSION}}" "coole"
+.\" Generated from bluerig.md by maint/update-man-in.sh. Do not edit.
+.TH BLUERIG 1 "2026. szeptember" "bluerig {{MAN_VERSION}}" "bluerig"
 
 .SH NÉV
 .PP
-coole \- szövegszerkesztő.
+bluerig \- szövegszerkesztő.
 
 
 .SH ALKALMAZÁSA
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 [kapcsolók] [+sor] [fájl1[:sor]] [fájl2[:sor]] ...
 
 
 .SH LEÍRÁS
 .PP
 A
-\fBcoole\fP
+\fBbluerig\fP
 konzolos szövegszerkesztő, a
 \fBcooledit\fP
 folytatása. A cooledit Paul Sheer szerkesztője, amelynek terminálos változatát
 sok éven át a GNU Midnight Commander belső szerkesztőjeként fejlesztették; a
-coole önálló programként fejleszti tovább.
+bluerig önálló programként fejleszti tovább.
 
 .PP
 Egyszerre több fájlt szerkeszt, mindegyiket a saját ablakában, bináris
@@ -47,11 +47,11 @@ A program verziójának kiírása.
 
 .TP
 \fI\-f, \-\-datadir\fP
-A coole adatfájljainak beépített keresési útvonalainak kiírása.
+A bluerig adatfájljainak beépített keresési útvonalainak kiírása.
 
 .TP
 \fI\-F, \-\-datadir\-info\fP
-Részletes adatok a coole által használt könyvtárakról.
+Részletes adatok a bluerig által használt könyvtárakról.
 
 .TP
 \fI\-\-configure\-options\fP
@@ -142,7 +142,7 @@ melyik billentyű mit csinál, az a legördülő menükben látszik. Ezenkívül
 Shift és a kurzorbillentyűk szöveget jelölnek ki. A
 \fBCtrl\-Ins\fP
 a csereállományba másol
-(\fB~/.local/share/coole/clipboard\fP),
+(\fB~/.local/share/bluerig/clipboard\fP),
 a
 \fBShift\-Ins\fP
 onnan illeszt be, a
@@ -161,7 +161,7 @@ nyomd le újra a
 \fBCtrl\-R\fP\-t,
 és rendeld a makrót egy billentyűhöz annak lenyomásával. A makró ezzel a
 billentyűvel fut le. A makrók a
-\fB~/.local/share/coole/macros\fP
+\fB~/.local/share/bluerig/macros\fP
 fájl
 \fB[editor]\fP
 szakaszában vannak, és a hozzájuk tartozó sor törlésével szűnnek meg.
@@ -355,7 +355,7 @@ A társítás eltávolítása.
 .TP
 \fBMentés\fP
 A változtatások kiírása a
-\fI~/.config/coole/keymap.ini\fP
+\fI~/.config/bluerig/keymap.ini\fP
 fájlba.
 
 .TP
@@ -389,46 +389,46 @@ Hasznos a terminál billentyűivel kapcsolatos gondok felderítéséhez.
 
 .SH KÖRNYEZET
 .TP
-\fBCOOLE_DATADIR\fP
+\fBBLUERIG_DATADIR\fP
 Az adatfájlok könyvtára a {{pkgdatadir}} helyett.
 
 .TP
-\fBCOOLE_PROFILE_ROOT\fP
+\fBBLUERIG_PROFILE_ROOT\fP
 A felhasználói fájlok gyökere a saját könyvtár helyett.
 
 .TP
-\fBCOOLE_SKIN\fP
+\fBBLUERIG_SKIN\fP
 A használandó téma.
 
 .TP
-\fBCOOLE_KEYMAP\fP
+\fBBLUERIG_KEYMAP\fP
 A használandó billentyűfájl.
 
 .TP
-\fBCOOLE_TMPDIR\fP, \fBTMPDIR\fP
+\fBBLUERIG_TMPDIR\fP, \fBTMPDIR\fP
 Az ideiglenes fájlok könyvtára.
 
 .TP
-\fBCOOLE_NO_LUA\fP
+\fBBLUERIG_NO_LUA\fP
 1 értékkel a program Lua nélkül indul.
 
 .TP
-\fBCOOLE_LOG_ENABLE\fP, \fBCOOLE_LOG_FILE\fP, \fBCOOLE_SPELL_LOG\fP
+\fBBLUERIG_LOG_ENABLE\fP, \fBBLUERIG_LOG_FILE\fP, \fBBLUERIG_SPELL_LOG\fP
 A hibakeresési naplók.
 
 
 .SH FÁJLOK
 .TP
-\fI{{pkgdatadir}}/help/coole.md\fP
+\fI{{pkgdatadir}}/help/bluerig.md\fP
 A program súgófájlja.
 
 .TP
-\fI{{sysconfdir}}/coole/coole.ini\fP, \fI{{pkgdatadir}}/coole.ini\fP
+\fI{{sysconfdir}}/bluerig/bluerig.ini\fP, \fI{{pkgdatadir}}/bluerig.ini\fP
 A rendszerszintű beállítások; csak akkor használatosak, ha a felhasználónak
-nincs ~/.config/coole/ini fájlja.
+nincs ~/.config/bluerig/ini fájlja.
 
 .TP
-\fI{{sysconfdir}}/coole/keymap.ini\fP, \fI{{sysconfdir}}/coole/coole.menu\fP
+\fI{{sysconfdir}}/bluerig/keymap.ini\fP, \fI{{sysconfdir}}/bluerig/bluerig.menu\fP
 A rendszerszintű billentyűk és felhasználói menü.
 
 .TP
@@ -440,17 +440,17 @@ A rendszerszintű szintaxisfájlok.
 A szerkesztő bővítményei.
 
 .TP
-\fI~/.config/coole/ini\fP, \fI~/.config/coole/keymap.ini\fP, \fI~/.config/coole/menu\fP
+\fI~/.config/bluerig/ini\fP, \fI~/.config/bluerig/keymap.ini\fP, \fI~/.config/bluerig/menu\fP
 A felhasználó saját beállításai, billentyűi és menüje.
 
 .TP
-\fI~/.local/share/coole/\fP
+\fI~/.local/share/bluerig/\fP
 A felhasználó előzményei, fájlpozíciói, vágólapja (clipboard), makrói
 (macros, macros.d/), szintaxisa (syntax/Syntax), témái (skins/) és
 Lua\-szkriptjei (lua/scripts/).
 
 .TP
-\fI~/.cache/coole/\fP
+\fI~/.cache/bluerig/\fP
 A blokkfájl (block) és a szerkesztő ideiglenes fájljai.
 
 
@@ -459,4 +459,4 @@ A blokkfájl (block) és a szerkesztő ideiglenes fájljai.
 cooledit(1), aspell(1), ctags(1).
 
 .PP
-Az angol nyelvű kézikönyv, a coole(1), a szerkesztő minden funkcióját leírja.
+Az angol nyelvű kézikönyv, a bluerig(1), a szerkesztő minden funkcióját leírja.

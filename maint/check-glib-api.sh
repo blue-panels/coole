@@ -1,18 +1,18 @@
 #!/bin/sh
 #
-# coole - check the GLib 2.58 API baseline.
+# bluerig - check the GLib 2.58 API baseline.
 #
 # Copyright (C) 2026
 # Ilia Maslakov <il.smind@gmail.com>
 #
-# This file is part of coole.
+# This file is part of bluerig.
 #
-# coole is free software: you can redistribute it and/or modify it
+# bluerig is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
 # Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# coole is distributed in the hope that it will be useful,
+# bluerig is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
@@ -27,12 +27,12 @@
 set -eu
 
 srcdir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-builddir=$(mktemp -d "${TMPDIR:-/tmp}/coole-glib-api.XXXXXX")
+builddir=$(mktemp -d "${TMPDIR:-/tmp}/bluerig-glib-api.XXXXXX")
 printf 'Checking against GLib 2.58; build and logs: %s\n' "$builddir"
 
 # The image is described here rather than in a Dockerfile of the tree: it
 # needs no build context, so docker reads it from standard input.
-if ! docker build -t coole-glib-api-258 - > "$builddir/image.log" 2>&1 <<'DOCKERFILE'
+if ! docker build -t bluerig-glib-api-258 - > "$builddir/image.log" 2>&1 <<'DOCKERFILE'
 # Debian 10 provides the project's minimum GLib, 2.58.3.
 FROM debian@sha256:bb3dc79fddbca7e8903248ab916bb775c96ec61014b3d02b4f06043b604726dc
 
@@ -66,7 +66,7 @@ fi
 docker run --rm --user "$(id -u):$(id -g)" \
     -e GLIB_API_CHECK_JOBS="${GLIB_API_CHECK_JOBS:-4}" \
     -v "$srcdir:/src:ro" -v "$builddir:/work" \
-    coole-glib-api-258 sh -eu -c '
+    bluerig-glib-api-258 sh -eu -c '
         version=$(pkg-config --modversion glib-2.0)
         case "$version" in
             2.58.*) printf "GLib: %s\n" "$version" ;;

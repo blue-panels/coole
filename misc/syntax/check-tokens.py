@@ -2,7 +2,7 @@
 """Reject literal foreground colors in *.syntax files; only scope tokens are allowed.
 
 A token is an upper-case name such as KEYWORD_CONTROL or STRING_QUOTED_DOUBLE.
-Backgrounds may stay literal (see coole(1)), so a literal color is only an error
+Backgrounds may stay literal (see bluerig(1)), so a literal color is only an error
 when it is the foreground color of a keyword or context rule, of the number, string and
 symbols lines of line-local rules, or the value of a define.
 The special foregrounds "default" and "base" are allowed, for highlights that only set a
@@ -20,7 +20,7 @@ meson test runs it as check_tokens, with --strict.
 
 Written by Henady Zakalusky (hza) for mc PR #5189; the oneline flag, the
 line-local directives and the numbered colors of 256-color terminals are
-coole's.
+bluerig's.
 Exit status: 0 when clean, 1 when violations were found.
 """
 

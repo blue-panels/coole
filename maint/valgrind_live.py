@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Drive coole in a pty under valgrind and report the errors of each scenario.
+"""Drive bluerig in a pty under valgrind and report the errors of each scenario.
 
     meson devenv -C <builddir> python3 <srcdir>/maint/valgrind_live.py [scenario ...]
 
@@ -77,7 +77,7 @@ class Session:
         for supp in ("/usr/share/glib-2.0/valgrind/glib.supp", "/usr/lib/valgrind/ncurses.supp"):
             if os.path.exists(supp):
                 command.append(f"--suppressions={supp}")
-        command += [shutil.which("coole"), *args]
+        command += [shutil.which("bluerig"), *args]
 
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
@@ -435,8 +435,8 @@ def prepare(work, name):
         subprocess.run([name, "b.c"], cwd=work, check=False)
     if name == "debugger_run" and shutil.which("cc"):
         subprocess.run(["cc", "-g", "-O0", "-o", "prog", "b.c"], cwd=work, check=False)
-        (work / ".coole").mkdir(exist_ok=True)
-        (work / ".coole/debug.ini").write_text(
+        (work / ".bluerig").mkdir(exist_ok=True)
+        (work / ".bluerig/debug.ini").write_text(
             "[Debug]\nlaunch_count=1\nactive_launch=0\n\n[Launch 0]\nname=prog\n"
             f"executable={work}/prog\narguments=\ndirectory={work}\nenvironment=\ngdb_path=gdb\n")
 
@@ -493,7 +493,7 @@ def report(log):
 
 def main():
     names = sys.argv[1:] or list(SCENARIOS)
-    logs = pathlib.Path(tempfile.mkdtemp(prefix="coole-valgrind-"))
+    logs = pathlib.Path(tempfile.mkdtemp(prefix="bluerig-valgrind-"))
     failed = 0
     print(f"{'scenario':14} {'result':26} {'errors':>6} {'in use':>10} {'blocks':>7} {'allocs':>9}")
     for name in names:
@@ -502,7 +502,7 @@ def main():
         if not available(needs):
             print(f"{name:14} skipped: no {needs}")
             continue
-        work = pathlib.Path(tempfile.mkdtemp(prefix="coole-work-"))
+        work = pathlib.Path(tempfile.mkdtemp(prefix="bluerig-work-"))
         prepare(work, name)
         session = Session(work, log, args, ENV.get(name))
         try:

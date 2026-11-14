@@ -19,7 +19,7 @@ Another project chosen there, or the project closed, the debugger follows.
 2. The program is the one the build has made, found by the build plugin
 among the programs of the project with debug information; of several, the
 newest come first in a list to choose from. The language of the project,
-as its copy in *.coole/project.ini* has it, else *presets.ini* (see the help
+as its copy in *.bluerig/project.ini* has it, else *presets.ini* (see the help
 of the build), gives the rest: the programs not to choose from (*hide*), the
 program before the first build (*program*) and GDB (*gdb*, the first of the
 list that is there). In a
@@ -56,7 +56,7 @@ the file it stops in. A quick step leaves the focus where it is.
 While it is stopped, the keys that run it on, Continue, the steps and Stop,
 work in the tab too; while it runs, every key there is the program's.
 A program that takes the whole screen, an editor or
-coole itself, runs there as in any terminal. A click on the tab, or
+bluerig itself, runs there as in any terminal. A click on the tab, or
 **Window → Program**, goes to it; **Alt-F5** leaves it for the panel of
 the debugger. The tab stays when the program ends, to be read, and is
 cleared when it starts again. Without the plugin terminal, or unchecked,
@@ -69,7 +69,7 @@ but no shell runs them: an entry of the environment with spaces is
 
 **Debug mode**
 
-*coole --debug DIR* (or *-D DIR*) opens the project of that directory to
+*bluerig --debug DIR* (or *-D DIR*) opens the project of that directory to
 debug it: its latest file instead of an empty one, and at the right the tree
 of the project with the panel of the debugger under it. The panel says what
 to do next while nothing runs.
@@ -147,7 +147,7 @@ A project may have several. **Project → Debug configurations...** lists
 them, the one **Start** runs marked with a star: **Select** makes the one of
 the cursor that one, **New** guesses another one, **Edit** changes the one of
 the cursor and **Delete** deletes it; the list comes back after them. They
-are kept, when **Keep in the project** is checked, in *.coole/debug.ini* in the project, with the names relative to it,
+are kept, when **Keep in the project** is checked, in *.bluerig/debug.ini* in the project, with the names relative to it,
 for everyone who works on it; else with the settings of the user. A project
 new to the debugger has it checked. The breakpoints
 and the watches are one's own: they stay with the settings of the user.
@@ -220,7 +220,7 @@ them: the tree of the project at the right, the panel of the debugger under
 it, the console coming at the bottom when there is something in it. When
 it stops, they are put back as they were, the console staying to be read.
 **Window → Layout...** says which windows *Debug* has (save another as
-*Debug*), and turns this off. *coole --debug* starts with the layout *Debug*
+*Debug*), and turns this off. *bluerig --debug* starts with the layout *Debug*
 and does not keep it as the windows of the project: a file of the project
 opened by itself has the windows it had before.
 

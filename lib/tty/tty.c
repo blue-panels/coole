@@ -11,15 +11,15 @@
    Andrew Borodin <aborodin@vmail.ru>, 2009.
    Ilia Maslakov <il.smind@gmail.com>, 2011, 2026.
 
-   This file is part of coole,
+   This file is part of bluerig,
    a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -265,8 +265,8 @@ tty_parse_terminal_reply (char *buf, size_t *len, gboolean *da1_seen)
 void
 tty_probe_terminal (void)
 {
-    const char *kitty_env = getenv ("COOLE_KITTY_KEYBOARD");
-    const char *win32_env = getenv ("COOLE_WIN32_INPUT");
+    const char *kitty_env = getenv ("BLUERIG_KITTY_KEYBOARD");
+    const char *win32_env = getenv ("BLUERIG_WIN32_INPUT");
     const char *term = getenv ("TERM");
     char buf[512];
     size_t len = 0;
@@ -359,7 +359,7 @@ tty_cell_size (int *width, int *height)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Check terminal type. If $TERM is not set or value is empty, coole finishes with EXIT_FAILURE.
+ * Check terminal type. If $TERM is not set or value is empty, bluerig finishes with EXIT_FAILURE.
  *
  * @param force_xterm Set forced the XTerm type
  *

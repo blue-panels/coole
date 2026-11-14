@@ -403,7 +403,7 @@ extension (const char *filename)
 
 /* --------------------------------------------------------------------------------------------- */
 /** The name a file of a given language has: the tag goes before the extension where there is
- * one, so that coole.md becomes coole.ru.md and a file without one, say TAGS, becomes TAGS.ru.
+ * one, so that bluerig.md becomes bluerig.ru.md and a file without one, say TAGS, becomes TAGS.ru.
  */
 
 static char *
@@ -883,7 +883,7 @@ guess_message_value (void)
  * settings are stored.
  *
  * It defaults to the user's home dir. The user may override this default
- * with the environment variable $COOLE_PROFILE_ROOT.
+ * with the environment variable $BLUERIG_PROFILE_ROOT.
  */
 const char *
 mc_get_profile_root (void)
@@ -892,7 +892,7 @@ mc_get_profile_root (void)
 
     if (profile_root == NULL)
     {
-        profile_root = g_getenv ("COOLE_PROFILE_ROOT");
+        profile_root = g_getenv ("BLUERIG_PROFILE_ROOT");
         if (profile_root == NULL || *profile_root == '\0')
             profile_root = mc_config_get_home_dir ();
     }

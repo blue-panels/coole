@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -30,7 +30,7 @@
  *  printjson () and print () printed are the tables of Table.  A query with a line "// @table" is
  *  run with --json, its value made a table too.
  *
- *  mongosh is given what to connect to by the environment of coole, which it inherits:
+ *  mongosh is given what to connect to by the environment of bluerig, which it inherits:
  *  MC_MONGO_URI, MC_MONGO_DB; MC_MONGOSH is the program, else mongosh of PATH.  Neither the URI
  *  nor the password in it goes anywhere else: not to the screen, not to the history.
  */
@@ -501,7 +501,7 @@ query_mongo_start (void *data)
     }
     else if (q->export != NULL)
     {
-        char *each = query_mongo_for_export (text, "__cooleRow");
+        char *each = query_mongo_for_export (text, "__bluerigRow");
 
         g_free (text);
         if (each == NULL)
@@ -539,7 +539,7 @@ query_mongo_start (void *data)
     argv[n] = NULL;
 
     m->cut = FALSE;
-    // nothing to read from the terminal of coole
+    // nothing to read from the terminal of bluerig
     m->proc = query_proc_start (argv, NULL, NULL, "", query_mongo_proc_done, m, &error);
     if (m->proc != NULL && q->export != NULL)
         query_proc_lines (m->proc, query_mongo_row);

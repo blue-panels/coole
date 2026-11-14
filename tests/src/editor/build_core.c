@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -182,9 +182,10 @@ test_diagnostic (void)
 {
     build_diagnostic_t *d;
 
-    d = build_parse_diagnostic ("../coole/src/a.c:12:5: error: 'x' undeclared", "/b/coole-build");
+    d = build_parse_diagnostic ("../bluerig/src/a.c:12:5: error: 'x' undeclared",
+                                "/b/bluerig-build");
     g_assert_nonnull (d);
-    g_assert_cmpstr (d->file, ==, "/b/coole/src/a.c");
+    g_assert_cmpstr (d->file, ==, "/b/bluerig/src/a.c");
     g_assert_cmpint (d->line, ==, 12);
     g_assert_cmpint (d->column, ==, 5);
     g_assert_true (d->error);
@@ -244,7 +245,7 @@ test_presets (void)
 
     g_assert_true (g_file_get_contents (PRESETS_INI, &system, NULL, NULL));
 
-    // those of coole alone
+    // those of bluerig alone
     presets = build_presets_parse (NULL, NULL, system, NULL, &error);
     g_assert_no_error (error);
     root = at ("presets");
@@ -272,7 +273,7 @@ test_presets (void)
     g_assert_null (build_presets_find (presets, "/nowhere", NULL));
     g_ptr_array_free (presets, TRUE);
 
-    // the user first: a group of the name replaces that of coole, a new one is added
+    // the user first: a group of the name replaces that of bluerig, a new one is added
     presets = build_presets_parse (NULL, user, system, NULL, &error);
     g_assert_no_error (error);
     p = build_presets_find (presets, root, NULL);
@@ -320,7 +321,7 @@ test_presets (void)
         g_assert_cmpstr (build_presets_find (presets, "/nowhere", "/x/a.py")->id, ==, "python");
         g_ptr_array_free (presets, TRUE);
 
-        // a copy made before coole had a key: the key of its language, the user's first; one
+        // a copy made before bluerig had a key: the key of its language, the user's first; one
         // the copy has, empty too, stays
         presets = build_presets_parse ("[project]\nlanguage=go\nadapter=my-dlv\nbuild=\n", NULL,
                                        system, NULL, NULL);

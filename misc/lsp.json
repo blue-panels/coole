@@ -73,7 +73,7 @@
         {"method": "INITIALIZE_MONGODB_SERVICE",
          "params": {"extensionPath": "${command_dir}/..", "connectionId": null}},
         {"method": "ACTIVE_CONNECTION_CHANGED",
-         "params": {"connectionId": "coole", "connectionString": "${env:MC_MONGO_URI}",
+         "params": {"connectionId": "bluerig", "connectionString": "${env:MC_MONGO_URI}",
                     "connectionOptions": {}}}
       ]
     },
@@ -86,8 +86,8 @@
       "requests": [
         {"method": "pgls/set_configuration_overrides",
          "params": {"overrides": {
-           "db": {"connectionString": "${env:COOLE_PG_URI}", "allowStatementExecutionsAgainst": []},
-           "typecheck": {"searchPath": ["${env:COOLE_PG_SCHEMA}"]}}}}
+           "db": {"connectionString": "${env:BLUERIG_PG_URI}", "allowStatementExecutionsAgainst": []},
+           "typecheck": {"searchPath": ["${env:BLUERIG_PG_SCHEMA}"]}}}}
       ]
     }
   ]

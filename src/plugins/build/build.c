@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -198,7 +198,8 @@ build_config_path (const char *root)
 {
     char *hash = g_compute_checksum_for_string (G_CHECKSUM_SHA256, root, -1);
     char *name = g_strconcat (hash, ".ini", (char *) NULL);
-    char *path = g_build_filename (g_get_user_config_dir (), "coole", "build", name, (char *) NULL);
+    char *path =
+        g_build_filename (g_get_user_config_dir (), "bluerig", "build", name, (char *) NULL);
 
     g_free (name);
     g_free (hash);
@@ -207,7 +208,7 @@ build_config_path (const char *root)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The file of the project, .coole/project.ini */
+/* The file of the project, .bluerig/project.ini */
 static char *
 build_project_path (const char *root)
 {
@@ -216,7 +217,7 @@ build_project_path (const char *root)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The command coole kept for the project before it had .coole/project.ini, in the configuration
+/* The command bluerig kept for the project before it had .bluerig/project.ini, in the configuration
    of the user; NULL when none */
 static char *
 build_legacy_command (const char *root)
@@ -237,7 +238,7 @@ build_legacy_command (const char *root)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The command the user gave the project, NULL when none: in the project; without the file of the
-   project, where coole kept it before */
+   project, where bluerig kept it before */
 static char *
 build_saved_command (const char *root)
 {
@@ -271,7 +272,7 @@ build_tell_once (build_t *build, const char *text_value)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* .coole/project.ini of @root into @keyfile, @there whether it is there; FALSE, the user told,
+/* .bluerig/project.ini of @root into @keyfile, @there whether it is there; FALSE, the user told,
    when it is there but cannot be read: what the user wrote in it is not written over */
 static gboolean
 build_project_read (build_t *build, const char *root, GKeyFile *keyfile, gboolean *there)
@@ -298,7 +299,7 @@ build_project_read (build_t *build, const char *root, GKeyFile *keyfile, gboolea
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* .coole/project.ini written as @keyfile has it; FALSE, the user told, when it cannot be */
+/* .bluerig/project.ini written as @keyfile has it; FALSE, the user told, when it cannot be */
 static gboolean
 build_project_write (build_t *build, const char *root, GKeyFile *keyfile)
 {
@@ -345,13 +346,13 @@ build_save_command (build_t *build, const char *root, const char *command)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* What a file of coole of @name has: in the directory of its configuration, else in that of
+/* What a file of bluerig of @name has: in the directory of its configuration, else in that of
    its data; NULL when there is none.  A build run by meson devenv, maybe not installed, has
    those of its source. */
 static char *
-build_coole_text (const char *name)
+build_bluerig_text (const char *name)
 {
-    const char *dirs[] = { g_getenv ("COOLE_MISC_DIR"), mc_global.sysconfig_dir,
+    const char *dirs[] = { g_getenv ("BLUERIG_MISC_DIR"), mc_global.sysconfig_dir,
                            mc_global.share_data_dir };
     char *text = NULL;
     guint i;
@@ -371,15 +372,15 @@ build_coole_text (const char *name)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The copy of the project of @root, when it has one and @root is not NULL, then the presets of
-   the user and of coole, read each time: a change to them is there at once.  A mistake in the
+   the user and of bluerig, read each time: a change to them is there at once.  A mistake in the
    copy or in the presets of the user is said once. */
 static GPtrArray *
 build_presets_load (build_t *build, const char *root)
 {
     char *path =
-        g_build_filename (g_get_user_config_dir (), "coole", BUILD_PRESETS_FILE, (char *) NULL);
+        g_build_filename (g_get_user_config_dir (), "bluerig", BUILD_PRESETS_FILE, (char *) NULL);
     char *project_path = root != NULL ? build_project_path (root) : NULL;
-    char *user = NULL, *project = NULL, *system = build_coole_text (BUILD_PRESETS_FILE);
+    char *user = NULL, *project = NULL, *system = build_bluerig_text (BUILD_PRESETS_FILE);
     GError *project_error = NULL, *user_error = NULL;
     GPtrArray *presets;
 
@@ -1237,8 +1238,8 @@ build_act_configure (void *data, void *edit)
     return MC_EPR_OK;
 }
 
-/* The project of @root takes a copy of the preset of its language, .coole/project.ini, when it
-   has none, or again when @again; the command the user gave it stays but @again, that coole kept
+/* The project of @root takes a copy of the preset of its language, .bluerig/project.ini, when it
+   has none, or again when @again; the command the user gave it stays but @again, that bluerig kept
    before in the configuration of the user too.  FALSE when no preset fits it, or when the file is
    there but cannot be read: it is left as it is. */
 static gboolean
@@ -1330,7 +1331,7 @@ build_act_defaults (void *data, void *edit)
         return MC_EPR_FAILED;
     }
     if (query_dialog (_ ("Build"),
-                      _ ("Make .coole/project.ini of the project the preset of its language\n"
+                      _ ("Make .bluerig/project.ini of the project the preset of its language\n"
                          "again, as presets.ini has it?  The build command given to the project\n"
                          "goes; its debug configurations stay, until they are made anew."),
                       D_NORMAL, 2, _ ("&Yes"), _ ("&No"))
@@ -1545,7 +1546,7 @@ build_open (mc_editor_host_t *host, void *editor_dialog)
             host->service_connect (host, "project", build_project_changed, build);
         build->viewer_signal = host->service_connect (host, "viewer", build_viewer_signal, build);
     }
-    // coole -D: the project is there before this plugin hears of it; once the editor runs, which
+    // bluerig -D: the project is there before this plugin hears of it; once the editor runs, which
     // can tell what is wrong
     if (host->startup_option (host, "debug") != NULL)
         host->call_later (host, build_project_startup, build);

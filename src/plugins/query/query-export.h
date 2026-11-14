@@ -15,7 +15,7 @@
 
 /* The line mongosh prints with a document of the export: "\x1e" and the tag, its Extended JSON
    after it */
-#define QUERY_EXPORT_TAG  "coole-row"
+#define QUERY_EXPORT_TAG  "bluerig-row"
 #define QUERY_EXPORT_LINE "\x1e" QUERY_EXPORT_TAG " "
 
 /*** enums ***************************************************************************************/

@@ -5,26 +5,26 @@
 -- other type is somebody else's, or the viewer shows the text as it is.
 --
 -- The rendering is lua-markdown of mc: lib/ is taken from mc as it is, so
--- that a fix there comes over by a diff.  What coole needs of it otherwise
+-- that a fix there comes over by a diff.  What bluerig needs of it otherwise
 -- is done here.
 
 local cfg = require("config")
 local md = require("document")
 local settings = require("settings")
 
--- The settings are kept with the configuration of coole, not of mc.
+-- The settings are kept with the configuration of bluerig, not of mc.
 settings.path = function()
     local xdg = os.getenv("XDG_CONFIG_HOME")
     local dir
 
     if xdg ~= nil and xdg ~= "" then
-        dir = xdg .. "/coole"
+        dir = xdg .. "/bluerig"
     else
         local home = os.getenv("HOME")
         if home == nil or home == "" then
             return nil
         end
-        dir = home .. "/.config/coole"
+        dir = home .. "/.config/bluerig"
     end
     return dir .. "/render-markdown.ini"
 end

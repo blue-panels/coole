@@ -60,7 +60,7 @@ test -s "$input" || die "no notes to summarise: $input"
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 
-system='You are given the release notes of coole, a text-mode text editor
+system='You are given the release notes of bluerig, a text-mode text editor
 based on the internal editor of GNU Midnight Commander (mcedit): syntax
 highlighting, code folding, an undo history browser, macros, ctags/etags
 navigation, spell checking, editor plugins and Lua scripts.

@@ -32,7 +32,7 @@ jobs:
           meson compile -C build-full
           meson test -C build-full --print-errorlogs
           meson install -C build-full
-          TERM=xterm ./install/bin/coole --version
+          TERM=xterm ./install/bin/bluerig --version
 
       - name: Build ncurses configuration
         run: |
@@ -83,5 +83,5 @@ jobs:
         with:
           name: glib-258-logs
           path: |
-            /tmp/coole-glib-api.*/*.log
-            /tmp/coole-glib-api.*/build/meson-logs/*.txt
+            /tmp/bluerig-glib-api.*/*.log
+            /tmp/bluerig-glib-api.*/build/meson-logs/*.txt

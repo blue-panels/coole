@@ -1,7 +1,7 @@
-Editor Plugin Development Guide for coole
+Editor Plugin Development Guide for bluerig
 =========================================
 
-This document describes how to write an editor plugin for coole: a
+This document describes how to write an editor plugin for bluerig: a
 module that registers with the editor and adds commands, menu entries
 and key handling of its own.
 
@@ -35,7 +35,7 @@ doc/LUA_API_REFERENCE.md.
 2. In-tree Plugins
 ------------------
 
-The plugins that come with coole are built into the program (see
+The plugins that come with bluerig are built into the program (see
 src/meson.build, which compiles them into the internal library):
 
   src/plugins/ctags/      self-registered menu entries, named
@@ -60,7 +60,7 @@ src/editor/editcmd.c) holds their descriptors (and that
 of the "scripts" entry) and registers them with
 mc_editor_plugin_add() from editor_plugins_register_all().
 
-Three plugins come with coole as modules, loaded the way any other
+Three plugins come with bluerig as modules, loaded the way any other
 module is (section 3), and are examples of one:
 
   src/plugins/debugger/   debugger.so: the Debug menu, the marks of
@@ -117,18 +117,18 @@ program.
 
 When the editor starts, it first registers the built-in plugins and
 then calls mc_editor_plugins_load(), which scans the directories of the
-environment variable COOLE_PLUGINS_DIR, separated by ':', then two
+environment variable BLUERIG_PLUGINS_DIR, separated by ':', then two
 directories:
 
-    $(libdir)/coole/plugins          (MC_PLUGINS_DIR)
-    ~/.local/lib/coole/plugins
+    $(libdir)/bluerig/plugins          (MC_PLUGINS_DIR)
+    ~/.local/lib/bluerig/plugins
 
 A plugin whose name is registered already is not loaded again, so the
-first directory that has it wins.  The build sets COOLE_PLUGINS_DIR to
+first directory that has it wins.  The build sets BLUERIG_PLUGINS_DIR to
 the directories the modules are built in, for the program of the build
 to run with them rather than with those installed:
 
-    meson devenv -C build coole
+    meson devenv -C build bluerig
 
 The system directory is set at build time:
 
@@ -157,7 +157,7 @@ no instance in that dialog.  close() receives the value open()
 returned.
 
 Options -> Manage plugins switches plugins on and off; the state is
-kept in ~/.config/coole/plugins.ini, section [DisabledPlugins], one key
+kept in ~/.config/bluerig/plugins.ini, section [DisabledPlugins], one key
 "editor/<name>" per disabled plugin.  Options -> Plugin info lists the
 registered plugins and the callbacks each one has.
 
@@ -297,7 +297,7 @@ What the editor provides to the plugin, passed to open():
   clear_line_notes(host, file)
                              all the notes off a file, or off all files
   startup_option(host, name)  an option the program was started with:
-                             "debug", the directory of coole --debug
+                             "debug", the directory of bluerig --debug
   call_later(host, fn, data)  fn(data) once the editor is idle: what a
                              plugin opens when it starts, windows and
                              files, goes so, not from open() or an event
@@ -627,13 +627,13 @@ tree in $BUILD, a module can be compiled like this:
 
 The program is linked with -export-dynamic when GModule is available,
 so the module can use the functions of the editor without linking
-against them.  Copy myedit.so into ~/.local/lib/coole/plugins
-and start coole again: the plugin appears in the Plugins menu, and
+against them.  Copy myedit.so into ~/.local/lib/bluerig/plugins
+and start bluerig again: the plugin appears in the Plugins menu, and
 selecting it calls my_activate().
 
 The descriptor is checked against MC_EDITOR_PLUGIN_API_VERSION, and a
 module built against headers of another API version is not loaded.
-Rebuild plugins when coole is upgraded.
+Rebuild plugins when bluerig is upgraded.
 
 
 13. Testing Checklist
@@ -657,7 +657,7 @@ Rebuild plugins when coole is upgraded.
     directories, with a .so suffix
   - verify the exported symbol name (mc_editor_plugin_register)
   - verify api_version matches the header constant
-  - run coole from a terminal and read what the loader writes to
+  - run bluerig from a terminal and read what the loader writes to
     stderr
   - check that the plugin is not disabled in Options -> Manage plugins
   - check that no other plugin, built-in or not, has the same name

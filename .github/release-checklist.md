@@ -1,5 +1,5 @@
 - [ ] Actions -> **l10n-pot** -> **Run workflow**, a week before the tag so that
-      translators have time. It rebuilds `po/coole.pot` and, if the strings
+      translators have time. It rebuilds `po/bluerig.pot` and, if the strings
       changed, pushes the `l10n/pot` branch and prints a link in the job
       summary. Open that pull request and merge it: Weblate reads the template
       from master and puts the new strings into the po files by itself.
@@ -9,9 +9,9 @@
       summary. Open that pull request and merge it, do not squash it, the
       commits carry the names of the translators.
 
-- [ ] Rename the open milestone to `coole-X.Y.Z`.
+- [ ] Rename the open milestone to `bluerig-X.Y.Z`.
 
-- [ ] Actions -> **Create release notes** -> **Run workflow**: milestone `coole-X.Y.Z`, all three
+- [ ] Actions -> **Create release notes** -> **Run workflow**: milestone `bluerig-X.Y.Z`, all three
       boxes clear.
 
 - [ ] Read the notes on the Summary page of that run: every merged pull request
@@ -19,17 +19,17 @@
       says what the release is. The same text is in the `release-notes`
       artifact.
 
-- [ ] Actions -> **Create release notes** -> **Run workflow**: milestone `coole-X.Y.Z`, tick
+- [ ] Actions -> **Create release notes** -> **Run workflow**: milestone `bluerig-X.Y.Z`, tick
       **Also commit the CHANGELOG.md section to the default branch**.
 
 - [ ] Create the release tag:
 
       git checkout master && git pull --ff-only
-      git tag -a coole-X.Y.Z -m "coole X.Y.Z"
-      git push origin coole-X.Y.Z
+      git tag -a bluerig-X.Y.Z -m "bluerig X.Y.Z"
+      git push origin bluerig-X.Y.Z
 
-- [ ] Actions -> **Create release notes** -> **Run workflow**: milestone `coole-X.Y.Z`, tick
+- [ ] Actions -> **Create release notes** -> **Run workflow**: milestone `bluerig-X.Y.Z`, tick
       **Also publish: notes into the release, summary onto the milestone** and
       **Also publish the page to the wiki**.
 
-- [ ] Releases -> the `coole-X.Y.Z` draft -> **Publish release**.
+- [ ] Releases -> the `bluerig-X.Y.Z` draft -> **Publish release**.

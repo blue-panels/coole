@@ -1,5 +1,5 @@
 /*
-   The PostgreSQL backend of coole -Q run on a live server: queries, errors, transactions, COPY,
+   The PostgreSQL backend of bluerig -Q run on a live server: queries, errors, transactions, COPY,
    the cancel.
 
    Copyright (C) 2026
@@ -8,14 +8,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -24,12 +24,12 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/* Skipped unless COOLE_TEST_PG is set; the server is that of the PG* variables, with a password,
+/* Skipped unless BLUERIG_TEST_PG is set; the server is that of the PG* variables, with a password,
    and only temporary tables are made in it (PGSERVICE is not taken):
 
-     docker run --rm -d --name coole-pg-test -e POSTGRES_PASSWORD=secret \
+     docker run --rm -d --name bluerig-pg-test -e POSTGRES_PASSWORD=secret \
          -p 127.0.0.1:55434:5432 postgres:16
-     COOLE_TEST_PG=1 PGHOST=127.0.0.1 PGPORT=55434 PGUSER=postgres PGPASSWORD=secret \
+     BLUERIG_TEST_PG=1 PGHOST=127.0.0.1 PGPORT=55434 PGUSER=postgres PGPASSWORD=secret \
          meson test -C build query_pg query_pg_old
 
    The editor is not there: the functions of the plugin the backend calls are those below, and the
@@ -524,7 +524,7 @@ test_copy (void)
     // there is nothing to send: the server ends it with an error, the session goes on
     run ("CREATE TEMP TABLE c (id int); COPY c FROM STDIN");
     g_assert_cmpint (history_status, ==, 1);
-    assert_has (tab_text[QUERY_TAB_OUTPUT], "coole -Q has nothing to send");
+    assert_has (tab_text[QUERY_TAB_OUTPUT], "bluerig -Q has nothing to send");
     run ("SELECT 7 AS seven");
     g_assert_cmpint (history_status, ==, 0);
     assert_has (tab_text[QUERY_TAB_TABLE], "seven");
@@ -732,10 +732,10 @@ main (int argc, char **argv)
     int ret, i;
 
     g_test_init (&argc, &argv, NULL);
-    if (g_getenv ("COOLE_TEST_PG") == NULL)
+    if (g_getenv ("BLUERIG_TEST_PG") == NULL)
         return 77;  // skipped: no server
     /* the variables of the plugin would change what it does, and a service another server: a
-       shell of coole -Q has them */
+       shell of bluerig -Q has them */
     g_unsetenv ("MC_PG_RELATION");
     g_unsetenv ("MC_QUERY_READ_ONLY");
     g_unsetenv ("MC_PG_CONNECTION");

@@ -6,9 +6,9 @@ EAPI=8
 inherit meson optfeature
 
 DESCRIPTION="Console text editor, a continuation of cooledit"
-HOMEPAGE="https://github.com/blue-panels/coole"
-SRC_URI="https://github.com/blue-panels/coole/releases/download/coole-${PV}/coole-${PV}.tar.gz"
-S="${WORKDIR}/coole-${PV}"
+HOMEPAGE="https://github.com/blue-panels/bluerig"
+SRC_URI="https://github.com/blue-panels/bluerig/releases/download/bluerig-${PV}/bluerig-${PV}.tar.gz"
+S="${WORKDIR}/bluerig-${PV}"
 
 LICENSE="GPL-3+"
 SLOT="0"
@@ -37,8 +37,8 @@ BDEPEND="
 src_configure() {
 	local emesonargs=(
 		-Dscreen="$(usex slang slang ncurses)"
-		-Dplugins_dir="/usr/$(get_libdir)/coole/plugins"
-		-Druntime_plugins_dir="/usr/$(get_libdir)/coole/runtime-plugins"
+		-Dplugins_dir="/usr/$(get_libdir)/bluerig/plugins"
+		-Druntime_plugins_dir="/usr/$(get_libdir)/bluerig/runtime-plugins"
 		$(meson_feature gpm)
 		$(meson_feature lua)
 		$(meson_feature test tests)

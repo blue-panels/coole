@@ -8,14 +8,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -199,7 +199,7 @@ typedef struct
     // the glyphs of the marks, from the skin: the panel shows them as the gutter does
     char *glyphs[DEBUG_MARK_COUNT];
     long commands[DEBUG_CMD_COUNT];
-    // the configurations are kept in the project, .coole/debug.ini, for all who work on it
+    // the configurations are kept in the project, .bluerig/debug.ini, for all who work on it
     gboolean launches_in_project;
     // the tokens of breakpoints removed before GDB said their numbers: deleted when it does
     GArray *dropped_tokens;
@@ -209,7 +209,7 @@ typedef struct
     guint build_signal;
     guint project_signal;  // the project chosen or closed by the project plugin
     // debug mode: the file windows take the keys of the debugger, F3 to F8, whether the program
-    // runs or not (coole --debug, or Window > Debug keys in files)
+    // runs or not (bluerig --debug, or Window > Debug keys in files)
     gboolean debug_mode;
     gboolean layout_pushed;       // the editor keeps the windows of before debugging
     edit_tree_t *session_window;  // the panel, a tree window; NULL when it is closed

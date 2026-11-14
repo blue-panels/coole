@@ -8,14 +8,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -1328,7 +1328,7 @@ debug_stop (void *data, void *edit)
     return MC_EPR_OK;
 }
 
-/* coole --debug, the editor up: the panel, with the focus, where F5 starts */
+/* bluerig --debug, the editor up: the panel, with the focus, where F5 starts */
 /* The build before a start is done: the start goes on, or the errors are shown */
 static void
 debug_build_finished (const char *name, const char *signal, GVariant *args, void *user_data)
@@ -1507,7 +1507,7 @@ debug_ok_to_quit (void *data)
         return query_dialog (_ ("Debug"), _ ("Stop the debug session and quit?"), D_NORMAL, 2,
                              _ ("&Stop"), _ ("&Cancel"))
             == 0;
-    // debug mode, coole --debug: the project and its windows are not left by a slip of F10
+    // debug mode, bluerig --debug: the project and its windows are not left by a slip of F10
     if (debug->debug_mode)
         return query_dialog (_ ("Debug"), _ ("Quit the editor?"), D_NORMAL, 2, _ ("&Yes"),
                              _ ("&No"))

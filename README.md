@@ -1,11 +1,11 @@
-# coole
+# bluerig
 
-coole is a console text editor. It runs full screen in any terminal, from
+bluerig is a console text editor. It runs full screen in any terminal, from
 the Linux console to tmux and a remote session over ssh.
 
-coole continues cooledit, the editor written by Paul Sheer, whose terminal
+bluerig continues cooledit, the editor written by Paul Sheer, whose terminal
 version lived on for many years as the internal editor of GNU Midnight
-Commander. coole takes that editor with the fixes and features it gained
+Commander. bluerig takes that editor with the fixes and features it gained
 there and develops it as a program of its own.
 
 ## Features
@@ -28,7 +28,7 @@ there and develops it as a program of its own.
 - **Search and replace** with regular expressions, and a line filter that hides
   the lines that do not match.
 - **User menu** (`F11`) of commands run on the file or the selection, from
-  `coole.menu` in the system configuration or `.coole.menu` in the current
+  `bluerig.menu` in the system configuration or `.bluerig.menu` in the current
   directory.
 - **Multiple windows**: several files open at once, moved, resized, shown full
   screen and listed.
@@ -57,13 +57,13 @@ there and develops it as a program of its own.
   right (`Alt+Shift+C`); the log with the files and the diff of each commit
   (`Alt+Shift+L`). The message is written in an editor window: a new commit,
   an amend, or another message for any commit of the branch, with a menu of
-  trailers, checks and a message written by AI (`F11`). `coole -G DIR` opens
+  trailers, checks and a message written by AI (`F11`). `bluerig -G DIR` opens
   it alone, for the panel of git of mc. See
   [`git.md`](src/plugins/git/git.md).
 - **Debugger**: run a local program under GDB, set line breakpoints, step through
   source, and inspect the call stack and local variables from the Debug menu.
   See [`debugger.md`](src/plugins/debugger/debugger.md).
-  `coole --debug DIR` opens a project ready to debug: its latest file, its
+  `bluerig --debug DIR` opens a project ready to debug: its latest file, its
   tree and the panel of the debugger; `Ctrl+B` puts a breakpoint and
   `Alt+Shift+R` builds and runs.
 - **Editor plugins**: a plugin framework the project, build, debugger, git, ctags, etags and spell plugins are
@@ -79,7 +79,7 @@ there and develops it as a program of its own.
 
 ## Building
 
-coole is built with [meson](https://mesonbuild.com) (0.61 or newer) and
+bluerig is built with [meson](https://mesonbuild.com) (0.61 or newer) and
 ninja. See [`INSTALL`](INSTALL) for all the options and for cross compiling.
 
 ### Dependencies
@@ -135,7 +135,7 @@ The build happens in a directory of its own; the source tree stays clean.
 meson setup build
 meson compile -C build
 meson test -C build            # the unit tests, needs the check library
-./build/src/coole file.c       # run it without installing
+./build/src/bluerig file.c       # run it without installing
 sudo meson install -C build    # into /usr/local
 ```
 
@@ -184,7 +184,7 @@ error fails the test that caused it.
 ## Usage
 
 ```sh
-coole [options] [+lineno] file1[:lineno] [file2[:lineno] ...]
+bluerig [options] [+lineno] file1[:lineno] [file2[:lineno] ...]
 ```
 
 `+lineno` or `file:lineno` opens a file at that line. Each file opens in a
@@ -210,15 +210,15 @@ window of its own. The options:
 | `-c`, `--color` | Force colour |
 | `-S NAME`, `--skin=NAME` | Use the skin NAME |
 
-The user configuration is in `~/.config/coole`, the data (history, macros,
-the positions in files) in `~/.local/share/coole` and temporary files in
-`~/.cache/coole`. The system configuration is in `/etc/coole` for a build
+The user configuration is in `~/.config/bluerig`, the data (history, macros,
+the positions in files) in `~/.local/share/bluerig` and temporary files in
+`~/.cache/bluerig`. The system configuration is in `/etc/bluerig` for a build
 with `--sysconfdir=/etc`.
 
 ## Packages
 
-The packages are **`coole`** and **`coole-lua`**, the Lua runtime and the
-editor scripts. They install one program, `coole`.
+The packages are **`bluerig`** and **`bluerig-lua`**, the Lua runtime and the
+editor scripts. They install one program, `bluerig`.
 
 There are no releases yet. The recipes for Debian and Ubuntu, Fedora, Arch and
 Gentoo are in [`packaging/`](packaging/README.md), and a release builds them
@@ -227,8 +227,8 @@ from its tag.
 ## Documentation
 
 - Built-in help: press `F1` in the editor
-- Manual page: `coole(1)`
-- [Wiki](https://github.com/blue-panels/coole/wiki)
+- Manual page: `bluerig(1)`
+- [Wiki](https://github.com/blue-panels/bluerig/wiki)
 
 ## Translations
 
@@ -237,19 +237,19 @@ requests that edit `po/*.po` by hand.
 
 An ordinary build compiles the checked-in translations without updating the
 `.po` files. Maintainers remake the template with
-`meson compile -C build coole-pot` and merge the `.po` files with it using
-`meson compile -C build coole-update-po`.
+`meson compile -C build bluerig-pot` and merge the `.po` files with it using
+`meson compile -C build bluerig-update-po`.
 
 ## Reporting problems
 
-Open an issue: <https://github.com/blue-panels/coole/issues>
+Open an issue: <https://github.com/blue-panels/bluerig/issues>
 
-Include `coole --version`, your OS and distribution, and the compiler and
-build options if you know them (`coole --configure-options`). For a crash,
-attach a `gdb` backtrace (`gdb coole core`, then `where`).
+Include `bluerig --version`, your OS and distribution, and the compiler and
+build options if you know them (`bluerig --configure-options`). For a crash,
+attach a `gdb` backtrace (`gdb bluerig core`, then `where`).
 
 ## License
 
 GNU General Public License, version 3 or any later version. See
-[`COPYING`](COPYING). The authors of cooledit and of the code coole took
+[`COPYING`](COPYING). The authors of cooledit and of the code bluerig took
 over are listed in [`AUTHORS`](AUTHORS).

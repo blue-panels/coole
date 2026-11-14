@@ -13,9 +13,9 @@ pyright for Python, rust-analyzer, gopls and so on; they have to be installed.
 A file whose language has a server in
 **lsp.json**
 is served by it. The server starts by itself when the file is opened, if
-coole was started on a project with -D; else LSP Start in the LSP menu starts
+bluerig was started on a project with -D; else LSP Start in the LSP menu starts
 it. One server serves all the files of a project: the directory with
-**.coole**,
+**.bluerig**,
 else the nearest one with a file the server names, compile_commands.json for
 clangd for one, else the root of the git, hg or svn repository. A file in no
 project is served from its own directory.
@@ -156,7 +156,7 @@ left with the ones that help. It finds the functions the tests define again,
 whose copies take the place of the real ones in Go to definition, and offers
 to leave the directories of the tests out of the index. Show the file shows
 what it would write; Apply writes it in .clangd at the root of the project, in
-a block of its own between the lines "# >>> coole" and "# <<< coole", the
+a block of its own between the lines "# >>> bluerig" and "# <<< bluerig", the
 rest of the file kept, and starts the server again. The checks take a few
 seconds to a minute; Cancel stops them.
 
@@ -166,15 +166,15 @@ servers: the list says which are installed, Enter opens one, its command, the
 files it serves, the files that mark the root of a project, whether it is on,
 whether it serves files in no project, and when it starts. Reset sets a server
 of the system back as the system has it, Delete takes away one of the user's,
-New server adds one. OK writes ~/.config/coole/lsp.json, with only what is
+New server adds one. OK writes ~/.config/bluerig/lsp.json, with only what is
 not as the system has it, and the servers start again as it says. The same
 dialog is Configure of the plugin in Options > Manage plugins.
 
 **lsp.json**
 
 LSP Settings changes them; what it does not have is in the files. The servers
-are those of the lsp.json of the system, /etc/coole/lsp.json, and of
-**~/.config/coole/lsp.json**.
+are those of the lsp.json of the system, /etc/bluerig/lsp.json, and of
+**~/.config/bluerig/lsp.json**.
 A server of the user's file takes the place of the one of the same id, and a
 setting of the file that of the system's. For example
 
@@ -239,7 +239,7 @@ when it starts; and the settings it asks for.
 : false: the server is there and serves nothing; true by default.
 
 **startup**
-: The option coole was started with for the server to serve: "query", for
+: The option bluerig was started with for the server to serve: "query", for
 -Q. It serves then alone, before the other servers of its files, and not
 otherwise.
 
@@ -247,7 +247,7 @@ otherwise.
 : Requests of the server's own, sent once it is initialized, each a
 *method* and its *params*; the log tells how each was answered, not its
 params. In a string of the params ${env:NAME} is the variable of the
-environment of coole, empty when it has none, and ${command_dir} the real
+environment of bluerig, empty when it has none, and ${command_dir} the real
 directory of the program, a link from PATH followed.
 
 **words**
@@ -274,5 +274,5 @@ line *use("name")* above them. Out of *db.* it completes *db*, *sp* and *use*
 alone: its words are the keywords of JavaScript and the names of mongosh,
 *print*, *ObjectId*, *ISODate* and the like.
 
-The file is read when coole starts, and again when the settings dialog writes
+The file is read when bluerig starts, and again when the settings dialog writes
 it.

@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -558,7 +558,7 @@ lsp_setup_clangd (const char *old, const char *rules)
 
     // the block: its first line and its last; a block that lost its end is but its first line
     for (i = 0; lines[i] != NULL && end < 0; i++)
-        if (begin < 0 && g_str_has_prefix (lines[i], "# >>> coole"))
+        if (begin < 0 && g_str_has_prefix (lines[i], "# >>> bluerig"))
             begin = i;
         else if (begin >= 0 && g_str_has_prefix (lines[i], LSP_SETUP_END))
             end = i;

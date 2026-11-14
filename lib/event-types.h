@@ -28,9 +28,9 @@ typedef struct
 /* MCEVENT_GROUP_CORE:help */
 typedef struct
 {
-    const char *filename;  // a help file of its own (a script's), NULL for coole.md
+    const char *filename;  // a help file of its own (a script's), NULL for bluerig.md
     const char *node;
-    const char *parent_node;  // the node of coole.md the file stands in for, gets linked to
+    const char *parent_node;  // the node of bluerig.md the file stands in for, gets linked to
 } ev_help_t;
 
 /* MCEVENT_GROUP_CORE:background_parent_call */

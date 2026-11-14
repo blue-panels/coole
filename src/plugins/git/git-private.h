@@ -17,9 +17,9 @@
 
 /*** typedefs(not structures) and defined constants **********************************************/
 /* the message files: that of a commit is kept when git refuses it, for the next commit */
-#define GIT_MESSAGE_FILE "COOLE_EDITMSG"
-#define GIT_AMEND_FILE   "COOLE_AMEND_EDITMSG"
-#define GIT_REWORD_FILE  "COOLE_REWORD_EDITMSG"
+#define GIT_MESSAGE_FILE "BLUERIG_EDITMSG"
+#define GIT_AMEND_FILE   "BLUERIG_AMEND_EDITMSG"
+#define GIT_REWORD_FILE  "BLUERIG_REWORD_EDITMSG"
 #define GIT_LOG_STEP     2000 /* the commits read at a time, more as the cursor gets to the last */
 #define GIT_CONFIG_GROUP "Git"
 #define GIT_CONFIG_GRAPH "graph_refs"
@@ -142,7 +142,7 @@ typedef struct
     void *opened;                  // the file window F4 opened from the window Git, NULL when none
     gboolean opened_from_message;  // the file opened was opened from it: back to it
 
-    // coole --git: the work tree it names, the editor ending with the window Git; with
+    // bluerig --git: the work tree it names, the editor ending with the window Git; with
     // --git-commit and the like, once the message is done
     char *home;
     gboolean standalone;

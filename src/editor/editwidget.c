@@ -3659,7 +3659,7 @@ edit_window_kind_at (WDialog *h, guint index, void **data)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* An option the program was started with: "debug" for coole --debug; NULL when it was not */
+/* An option the program was started with: "debug" for bluerig --debug; NULL when it was not */
 const char *
 edit_startup_option (const char *name)
 {
@@ -3668,8 +3668,8 @@ edit_startup_option (const char *name)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* coole -G is there for git, coole -Q for the queries of a database: the plugins of a project are
-   not started, their menus and windows not shown; Manage plugins is not touched */
+/* bluerig -G is there for git, bluerig -Q for the queries of a database: the plugins of a project
+   are not started, their menus and windows not shown; Manage plugins is not touched */
 gboolean
 edit_plugin_off_for_session (const char *name)
 {
@@ -3684,7 +3684,7 @@ edit_plugin_off_for_session (const char *name)
 
     if (name == NULL)
         return FALSE;
-    // the queries are of coole -Q alone: its menu Query is not there without it
+    // the queries are of bluerig -Q alone: its menu Query is not there without it
     if (strcmp (name, "query") == 0)
         return edit_startup_option ("query") == NULL;
     if (edit_startup_option ("query") != NULL)
