@@ -198,8 +198,9 @@ gboolean query_menu_item_for (const query_menu_item_t *item, const char *kind);
    first word, so that the lines stay.  NULL when it has no word but comments */
 char *query_pg_explain (const char *text);
 /* The rows of the query of PostgreSQL @text counted: SELECT count(*) FROM (...) around a SELECT,
-   VALUES, TABLE or WITH, the ';' at its end left out.  NULL for another query */
-char *query_pg_count (const char *text);
+   VALUES, TABLE or WITH, its ';' and the comments after it left out.  NULL for another query, and
+   for more than one, @many then TRUE */
+char *query_pg_count (const char *text, gboolean *many);
 /* The query of mongosh @text explained: .explain("executionStats") on a line after it when it
    ends with a chain of find () or aggregate (); NULL when it does not */
 char *query_mongo_explain (const char *text);

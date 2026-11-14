@@ -3899,3 +3899,25 @@ msgstr "Править это меню"
 #, c-format
 msgid "No action %s in the menu."
 msgstr "В меню нет действия %s."
+
+#: src/plugins/query/query.c
+msgid "The rows of one query alone are counted:\nselect it, or part the queries by lines \"// ---\"."
+msgstr "Считаются строки только одного запроса:\nвыделите его или разделите запросы строками \"// ---\"."
+
+#: src/plugins/query/query.c
+msgid "A column selection is not taken: select whole lines."
+msgstr "Выделение колонкой не годится: выделите строки целиком."
+
+#: src/plugins/query/query.c
+msgid "The command printed nothing: the query stays as it is."
+msgstr "Команда ничего не напечатала: запрос остаётся как есть."
+
+#: src/plugins/query/query.c
+#, c-format
+msgid "No output \"%s\" in the menu: insert, replace, show or none."
+msgstr "В меню нет вывода \"%s\": insert, replace, show или none."
+
+#: src/plugins/query/query.c
+#, c-format
+msgid "The menu %s of the queries is not there:\nit is in the queries of coole, or in\n~/.config/coole/query."
+msgstr "Меню запросов %s не найдено:\nоно лежит в запросах coole или в\n~/.config/coole/query."

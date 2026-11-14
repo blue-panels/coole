@@ -862,6 +862,8 @@ check_string (char *got, const char *want)
 static void
 test_menu_queries (void)
 {
+    gboolean many;
+
     // EXPLAIN on the line of the first word, ANALYZE only for what reads
     check_string (query_pg_explain ("-- the users\nselect * from users;"),
                   "-- the users\nEXPLAIN (ANALYZE, BUFFERS) select * from users;");
@@ -874,12 +876,25 @@ test_menu_queries (void)
     g_assert_null (query_pg_explain ("-- nothing\n  "));
 
     // count: the ';' left out, the closing on a line of its own
-    check_string (query_pg_count ("select a\nfrom t;\n"),
+    check_string (query_pg_count ("select a\nfrom t;\n", &many),
                   "SELECT count(*) FROM (select a\nfrom t\n) AS counted");
-    check_string (query_pg_count ("-- c\nWITH x AS (select 1) select * from x"),
+    g_assert_false (many);
+    check_string (query_pg_count ("-- c\nWITH x AS (select 1) select * from x", &many),
                   "-- c\nSELECT count(*) FROM (WITH x AS (select 1) select * from x\n) AS counted");
-    g_assert_null (query_pg_count ("update t set a = 1"));
-    g_assert_null (query_pg_count (""));
+    // the comments after its ';' left out; a ';' in a string, a comment or $$ is no end
+    check_string (query_pg_count ("select * from t; -- recent\n/* more */\n", &many),
+                  "SELECT count(*) FROM (select * from t\n) AS counted");
+    check_string (query_pg_count ("select ';', 'it''s;' -- a;b\nfrom t", &many),
+                  "SELECT count(*) FROM (select ';', 'it''s;' -- a;b\nfrom t\n) AS counted");
+    check_string (query_pg_count ("select $f$ a; b $f$, \"x;\" from t;", &many),
+                  "SELECT count(*) FROM (select $f$ a; b $f$, \"x;\" from t\n) AS counted");
+    g_assert_false (many);
+    // two statements: none counted
+    g_assert_null (query_pg_count ("select 1; select 2", &many));
+    g_assert_true (many);
+    g_assert_null (query_pg_count ("update t set a = 1", &many));
+    g_assert_false (many);
+    g_assert_null (query_pg_count ("", &many));
 
     // mongo: explain a find or an aggregate, nothing else
     check_string (query_mongo_explain ("db.users.find({ a: 1 }).sort({ b: 1 })"),
@@ -903,7 +918,7 @@ test_menu_parse (void)
     menu = query_menu_parse ("[e]\naction = explain\n\n[c]\naction = count\nkinds = postgres\n\n"
                              "[x]\nlabel = nothing\n\n"
                              "[f]\nlabel = Format\ncommand = pg_format \\\\\n"
-                             "output = replace\nkinds = postgres;mongo\n",
+                             "output = replace\nkinds = postgres ; mongo \n",
                              &error);
     g_assert_no_error (error);
     g_assert_cmpuint (menu->len, ==, 3);
