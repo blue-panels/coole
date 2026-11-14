@@ -2743,6 +2743,9 @@ project_open (mc_editor_host_t *host, void *editor_dialog)
     project->host = host;
     project->recent = g_ptr_array_new_with_free_func (g_free);
     host->commands_register (host, PROJECT_KEYMAP_SECTION, N_ ("&Project"), project_commands);
+    // Alt held, the bar says what Alt-F7 does
+    if (host->command_label != NULL)
+        host->command_label (host, project_commands[PROJECT_CMD_FIND].name, N_ ("ButtonBar|Find"));
     if (host->window_kind != NULL)
         host->window_kind (host, &project_tree_kind, project);
     for (i = 0; i < PROJECT_CMD_COUNT; i++)
@@ -2763,6 +2766,8 @@ project_close (void *data)
 {
     project_t *project = (project_t *) data;
 
+    if (project->host->command_label != NULL)
+        project->host->command_label (project->host, project_commands[PROJECT_CMD_FIND].name, NULL);
     if (project->tree != NULL)
         project->tree->data = NULL;
     g_clear_pointer (&project->model, mctree_model_free);
