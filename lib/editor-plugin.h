@@ -17,7 +17,7 @@
 #define MC_EDITOR_PLUGIN_ACTION_BASE 31000L /* per-action menu commands           */
 #define MC_EDITOR_PLUGIN_ACTIONS_MAX 256    /* max named actions per plugin        */
 #ifndef MC_PLUGINS_DIR
-#define MC_PLUGINS_DIR "/usr/lib/coole/plugins"
+#define MC_PLUGINS_DIR "/usr/lib/bluerig/plugins"
 #endif
 
 /* Well-known target menu names for mc_ep_cmd_menu_entry_t.menu_name.  Any other name is a menu of

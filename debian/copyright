@@ -1,8 +1,8 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: coole
-Source: https://github.com/blue-panels/coole
+Upstream-Name: bluerig
+Source: https://github.com/blue-panels/bluerig
 Comment:
- coole is a console text editor, a continuation of cooledit.  Most of the
+ bluerig is a console text editor, a continuation of cooledit.  Most of the
  code is copyright the Free Software Foundation, to which its authors
  assigned their copyright.  The list of authors and contributors is in the
  file AUTHORS.

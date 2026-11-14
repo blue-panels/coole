@@ -1,4 +1,4 @@
--- Select text in coole and press F11 to encode or decode it as Base64.
+-- Select text in bluerig and press F11 to encode or decode it as Base64.
 
 local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local value = {}

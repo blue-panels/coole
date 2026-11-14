@@ -254,7 +254,7 @@ edit_plugin_menu_free (gpointer data)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* coole -D is for a project, its build and its debugging, coole -Q for the queries of a
+/* bluerig -D is for a project, its build and its debugging, bluerig -Q for the queries of a
    database: the menus of drawing, of the format of the text and of the plugins are not in the
    menubar; their scripts keep their keys, and Options keeps Manage plugins */
 static gboolean
@@ -692,7 +692,7 @@ edit_init_menu (WMenuBar *menubar)
         }
     }
 
-    /* coole -Q has no tags: Navigate would have the prototype of a function alone, of no use in a
+    /* bluerig -Q has no tags: Navigate would have the prototype of a function alone, of no use in a
        query; its keys stay */
     if (edit_startup_option ("query") == NULL)
     {

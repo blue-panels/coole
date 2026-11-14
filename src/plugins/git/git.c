@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -298,7 +298,7 @@ git_kind_state (git_t *git, int kind)
 
     if (window == NULL)
         return MC_EP_WINDOW_CLOSED;
-    // coole -G ends with the window Git: its entries bring it to the front, and never close it,
+    // bluerig -G ends with the window Git: its entries bring it to the front, and never close it,
     // which the entry of a window in front does
     if (git->standalone || git->once)
         return MC_EP_WINDOW_OPEN;
@@ -444,7 +444,7 @@ git_close_empty_files (git_t *git)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* coole --git, the editor up: what the options ask for */
+/* bluerig --git, the editor up: what the options ask for */
 static void
 git_startup_open (git_t *git)
 {
@@ -837,7 +837,7 @@ git_quit_now (void *data)
     (void) send_message (WIDGET (git->host->host_data), NULL, MSG_ACTION, CK_Quit, NULL);
 }
 
-/* coole --git: the editor ends, back to whoever started it */
+/* bluerig --git: the editor ends, back to whoever started it */
 void
 git_quit (git_t *git)
 {

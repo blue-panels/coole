@@ -79,7 +79,7 @@ mc_skin_get_default_name (void)
         return g_strdup (mc_global.tty.skin);
 
     // from environment variable
-    tmp_str = getenv ("COOLE_SKIN");
+    tmp_str = getenv ("BLUERIG_SKIN");
     if (tmp_str != NULL)
         return g_strdup (tmp_str);
 

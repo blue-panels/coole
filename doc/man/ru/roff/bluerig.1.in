@@ -1,24 +1,24 @@
-.\" Generated from coole.md by maint/update-man-in.sh. Do not edit.
-.TH COOLE 1 "сентября 2026" "coole {{MAN_VERSION}}" "coole"
+.\" Generated from bluerig.md by maint/update-man-in.sh. Do not edit.
+.TH BLUERIG 1 "сентября 2026" "bluerig {{MAN_VERSION}}" "bluerig"
 
 .SH НАИМЕНОВАНИЕ
 .PP
-coole \- текстовый редактор.
+bluerig \- текстовый редактор.
 
 
 .SH СИНТАКСИС
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 [ключи] [+строка] [файл1[:строка]] [файл2[:строка]] ...
 
 
 .SH ОПИСАНИЕ
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 \- консольный текстовый редактор. Он продолжает
 \fBcooledit\fP,
 редактор Пола Шира (Paul Sheer), терминальная версия которого много лет
-развивалась как встроенный редактор GNU Midnight Commander; coole развивает
+развивалась как встроенный редактор GNU Midnight Commander; bluerig развивает
 этот редактор дальше как самостоятельную программу.
 
 .PP
@@ -60,11 +60,11 @@ grep. Если существует файл с таким полным имен
 
 .TP
 \fI\-f, \-\-datadir\fP
-Показать вкомпилированные пути поиска файлов данных coole.
+Показать вкомпилированные пути поиска файлов данных bluerig.
 
 .TP
 \fI\-F, \-\-datadir\-info\fP
-Показать подробные сведения о каталогах, с которыми работает coole: о
+Показать подробные сведения о каталогах, с которыми работает bluerig: о
 файлах данных, файлах пользователя и плагинах.
 
 .TP
@@ -106,7 +106,7 @@ xterm: два режима экрана и последовательности 
 .TP
 \fI\-t, \-\-termcap\fP
 Брать сведения о терминале из termcap, а не из terminfo. Ключ есть только
-тогда, когда coole собран с библиотекой S\-Lang.
+тогда, когда bluerig собран с библиотекой S\-Lang.
 
 .TP
 \fI\-s, \-\-slow\fP
@@ -145,7 +145,7 @@ xterm: два режима экрана и последовательности 
 
 .SH Общий вид
 .PP
-Вверху экрана coole находится
+Вверху экрана bluerig находится
 строка меню,
 под ней окна редактора, а внизу \- надписи функциональных клавиш. Строка меню
 может быть скрыта: F9 или щелчок по верхней строке экрана вызывают ее.
@@ -209,7 +209,7 @@ xterm: два режима экрана и последовательности 
 Shift со стрелками выделяет текст (если терминал их различает).
 \fBCtrl\-Ins\fP
 копирует в файл обмена
-\fB~/.local/share/coole/clipboard\fP,
+\fB~/.local/share/bluerig/clipboard\fP,
 \fBShift\-Ins\fP
 вставляет из него,
 \fBShift\-Del\fP
@@ -217,7 +217,7 @@ Shift со стрелками выделяет текст (если термин
 \fBCtrl\-Del\fP
 удаляет выделенный текст. Работает и выделение мышью, а если при
 протягивании держать Shift, то выделение делает сам терминал; такое
-выделение не попадает в файл обмена coole.
+выделение не попадает в файл обмена bluerig.
 
 .PP
 \fBCtrl\-o\fP
@@ -514,7 +514,7 @@ Shift со стрелками выделяет текст (если термин
 Привязки клавиш
 меню "Настройки" показывает каждое действие с клавишами, на которые оно
 отвечает, меняет их и записывает результат в
-\fB~/.config/coole/keymap.ini\fP\&.
+\fB~/.config/bluerig/keymap.ini\fP\&.
 Диалог
 Распознавание клавиш
 решает задачу с другого конца: он учит программу последовательностям,
@@ -529,10 +529,10 @@ Shift со стрелками выделяет текст (если термин
 раскладки, встроенной в ее исходный код. Затем всегда загружаются файлы
 \fB{{pkgdatadir}}/keymap.ini\fP
 и
-\fB{{sysconfdir}}/coole/keymap.ini\fP,
+\fB{{sysconfdir}}/bluerig/keymap.ini\fP,
 каждый переназначает клавиши, заданные раньше. Пакет кладет свои раскладки
 в
-\fB{{sysconfdir}}/coole\fP:
+\fB{{sysconfdir}}/bluerig\fP:
 \fBkeymap.default.ini\fP,
 \fBkeymap.emacs.ini\fP
 и
@@ -548,9 +548,9 @@ Shift со стрелками выделяет текст (если термин
 
 .EX
 1) ключ командной строки \-K <раскладка>, \-\-keymap=<раскладка>
-2) переменная окружения COOLE_KEYMAP
-3) параметр keymap секции [coole] ini\-файла
-4) файл ~/.config/coole/keymap.ini
+2) переменная окружения BLUERIG_KEYMAP
+3) параметр keymap секции [bluerig] ini\-файла
+4) файл ~/.config/bluerig/keymap.ini
 .EE
 
 .PP
@@ -560,7 +560,7 @@ Shift со стрелками выделяет текст (если термин
 добавляется это расширение, и файл ищется в (до первого найденного):
 
 .EX
-1) ~/.config/coole/
+1) ~/.config/bluerig/
 2) {{pkgdatadir}}/
 .EE
 
@@ -569,12 +569,12 @@ Shift со стрелками выделяет текст (если термин
 \fB\&.ini\fP,
 так выбрать нельзя. Чтобы взять одну из них, скопируйте ее или сделайте на
 нее ссылку
-\fB~/.config/coole/keymap.ini\fP,
+\fB~/.config/bluerig/keymap.ini\fP,
 который читается последним и не требует ключей:
 
 .EX
-ln \-s {{sysconfdir}}/coole/keymap.vim.ini \e
-      ~/.config/coole/keymap.ini
+ln \-s {{sysconfdir}}/bluerig/keymap.vim.ini \e
+      ~/.config/bluerig/keymap.ini
 .EE
 
 .PP
@@ -730,7 +730,7 @@ SaveAs = f12; ctrl\-f2
 
 .SH Поддержка мыши
 .PP
-coole поддерживает мышь. Она работает всегда, когда программа запущена в
+bluerig поддерживает мышь. Она работает всегда, когда программа запущена в
 терминале
 \fBxterm(1)\fP
 (даже если из xterm открыто соединение telnet или ssh с другой машиной) или
@@ -751,7 +751,7 @@ ini\-файла, а время, в пределах которого два ще
 \fIdouble_click_speed\fP\&.
 
 .PP
-Если coole работает с поддержкой мыши, обычное поведение мыши терминала
+Если bluerig работает с поддержкой мыши, обычное поведение мыши терминала
 (выделение и вставка текста) получается при нажатой клавише Shift.
 
 
@@ -937,13 +937,13 @@ ini\-файла, а время, в пределах которого два ще
 
 .TP
 \fBLua\-скрипты...\fP
-Смотрите Lua\-скрипты\&. Пункт есть только тогда, когда coole
+Смотрите Lua\-скрипты\&. Пункт есть только тогда, когда bluerig
 собран с Lua.
 
 .TP
 \fBФайл синтаксиса\fP
 Открыть в редакторе файл синтаксиса пользователя,
-\fI~/.local/share/coole/syntax/Syntax\fP;
+\fI~/.local/share/bluerig/syntax/Syntax\fP;
 если его нет, он создается с коротким комментарием о том, что в нем хранить, а
 не копией системного, который по\-прежнему читается после него. Смотрите
 Подсветка синтаксиса\&.
@@ -955,7 +955,7 @@ ini\-файла, а время, в пределах которого два ще
 .TP
 \fBСохранить настройки\fP
 Записать настройки в
-\fI~/.config/coole/ini\fP\&.
+\fI~/.config/bluerig/ini\fP\&.
 При включенном параметре
 \fIauto_save_setup\fP
 они записываются при каждом выходе из редактора.
@@ -1098,7 +1098,7 @@ ini\-файла. О самих файлах скинов говорит разд
 
 .SS Распознавание клавиш
 .PP
-Этот диалог учит coole управляющим последовательностям, которые терминал
+Этот диалог учит bluerig управляющим последовательностям, которые терминал
 посылает для функциональных клавиш, стрелок и клавиш перемещения. В его
 заголовке стоит имя терминала из переменной
 \fBTERM\fP\&.
@@ -1117,7 +1117,7 @@ ini\-файла. О самих файлах скинов говорит разд
 .TP
 \fBСохранить\fP
 Записать выученные клавиши в
-\fI~/.config/coole/term/<TERM>\fP\&.
+\fI~/.config/bluerig/term/<TERM>\fP\&.
 
 .TP
 \fBПравка файла терминала\fP
@@ -1146,7 +1146,7 @@ Ctrl\-X для редактора; Диалог, Меню, Ввод, Списо�
 .TP
 \fBСохранить\fP
 Записать изменения в
-\fI~/.config/coole/keymap.ini\fP\&.
+\fI~/.config/bluerig/keymap.ini\fP\&.
 
 .TP
 \fBПравка файла раскладки\fP
@@ -1187,12 +1187,12 @@ Ctrl\-X для редактора; Диалог, Меню, Ввод, Списо�
 .SS Управление плагинами
 .PP
 Плагины, которые загрузила программа, в таблице: вид, имя и то, что плагин
-говорит о себе. Здесь перечислены плагины редактора, а если coole собран с
+говорит о себе. Здесь перечислены плагины редактора, а если bluerig собран с
 Lua, то и движок Lua как плагин вида
 \fIruntime\fP\&.
 Плагин выключается и включается флажком в своей строке, и выключенный
 плагин не загружается и в следующий раз; выбор хранится в
-\fI~/.config/coole/plugins.ini\fP\&.
+\fI~/.config/bluerig/plugins.ini\fP\&.
 Выключенный плагин остается в списке, чтобы его можно было включить снова.
 
 .TP
@@ -1213,7 +1213,7 @@ Lua\-скрипты\&.
 Найденные Lua\-скрипты, системные и пользователя, в таблице: включен ли
 скрипт, где он лежит (global или user), его идентификатор, рабочая область,
 что он предоставляет и что делает. Скрипт выключается и включается флажком в
-своей строке; изменение вступает в силу при следующем запуске coole.
+своей строке; изменение вступает в силу при следующем запуске bluerig.
 
 .TP
 \fBНастройки\fP
@@ -1281,7 +1281,7 @@ Lua\-скрипты\&.
 Макросы хранятся в секции
 \fB[editor]\fP
 файла
-\fB~/.local/share/coole/macros\fP,
+\fB~/.local/share/bluerig/macros\fP,
 и удаляются удалением своей строки в нем или в
 Обозревателе макросов\&.
 
@@ -1305,9 +1305,9 @@ ctrl\-W=ExecuteScript:25;
 Это значит, что Ctrl\-W запускает действие
 \fIExecuteScript(25)\fP,
 которое выполняет скрипт оболочки
-\fB~/.local/share/coole/macros.d/macro.25.sh\fP\&.
+\fB~/.local/share/bluerig/macros.d/macro.25.sh\fP\&.
 Скрипты лежат в каталоге
-\fB~/.local/share/coole/macros.d/\fP
+\fB~/.local/share/bluerig/macros.d/\fP
 и называются
 \fBmacro.XXXX.sh\fP,
 где
@@ -1327,7 +1327,7 @@ ctrl\-W=ExecuteScript:25;
 
 .EX
 l       comment selection
-	TMPFILE=`mktemp ${COOLE_TMPDIR:\-/tmp}/up.XXXXXX` || exit 1
+	TMPFILE=`mktemp ${BLUERIG_TMPDIR:\-/tmp}/up.XXXXXX` || exit 1
 	echo #if 0 > $TMPFILE
 	cat %b >> $TMPFILE
 	echo #endif >> $TMPFILE
@@ -1363,11 +1363,11 @@ l       comment selection
 Меню читается из первого найденного файла:
 
 .EX
-1) ./.coole.menu в текущем каталоге
-2) ~/.config/coole/menu
-3) ~/coole.menu
-4) {{sysconfdir}}/coole/coole.menu
-5) {{pkgdatadir}}/coole.menu
+1) ./.bluerig.menu в текущем каталоге
+2) ~/.config/bluerig/menu
+3) ~/bluerig.menu
+4) {{sysconfdir}}/bluerig/bluerig.menu
+5) {{pkgdatadir}}/bluerig.menu
 .EE
 
 .PP
@@ -1421,7 +1421,7 @@ root и никто другой не может в него писать, пот
 .TP
 \fI%b\fP
 Файл блока: выделенный текст записывается в
-\fI~/.cache/coole/block\fP
+\fI~/.cache/bluerig/block\fP
 перед запуском команды, а то, что команда оставит там, после нее заменяет
 блок.
 
@@ -1642,7 +1642,7 @@ markdown\-файл выходит с заголовками, списками, �
 кода в цветах редактора, формулами символами и диаграммами mermaid рисунками;
 этот рендер — Lua\-скрипт render\-markdown, lua\-markdown из Midnight
 Commander, его настройки, из диалога "Управление плагинами", хранятся в
-\fB~/.config/coole/render\-markdown.ini\fP\&.
+\fB~/.config/bluerig/render\-markdown.ini\fP\&.
 JSON\-файл, и JSON Lines тоже, выходит по значению на строку в тех цветах,
 которыми редактор раскрашивает JSON, с размером каждого объекта и массива,
 длинный массив уложен по ширине или сокращён, массив однотипных объектов
@@ -1748,7 +1748,7 @@ base64, в которой нет ни текста, ни известного в
 которой стоит курсор, Esc оставляет строку как была, а
 \fBF8, Del\fP
 удаляют запись под курсором из истории. Истории хранятся в
-\fI~/.local/share/coole/history\fP;
+\fI~/.local/share/bluerig/history\fP;
 параметр
 \fInum_history_items_recorded\fP
 задает, сколько записей хранит каждая.
@@ -1756,11 +1756,11 @@ base64, в которой нет ни текста, ни известного в
 
 .SH Подсветка синтаксиса
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 умеет подсвечивать синтаксис: ключевые слова и контексты (комментарии C,
 строковые константы и прочее) показываются разными цветами. Ниже описан
 формат файла
-\fB~/.local/share/coole/syntax/Syntax\fP\&.
+\fB~/.local/share/bluerig/syntax/Syntax\fP\&.
 После него читается общесистемный
 \fB{{pkgdatadir}}/syntax/Syntax\fP
 для всех типов файлов, которые в нем не названы: файл пользователя хранит
@@ -1768,12 +1768,12 @@ base64, в которой нет ни текста, ни известного в
 установленной для файлов, к которым подходит.  Файлы из его строк
 \fBinclude\fP
 ищутся сначала в
-\fI~/.local/share/coole/syntax/\fP,
+\fI~/.local/share/bluerig/syntax/\fP,
 а потом среди установленных.  Полная копия системного файла, какую делали
 прежние версии, закрывает все типы файлов, установленные позже: оставьте в ней
 только те записи, которые меняли.
 Файл
-\fB~/.local/share/coole/syntax/Syntax\fP
+\fB~/.local/share/bluerig/syntax/Syntax\fP
 перечитывается при открытии каждого нового файла в редакторе. В нем лежат
 правила подсветки, по одному в строке, и каждое говорит, какие слова каким
 цветом подсвечивать.
@@ -1792,7 +1792,7 @@ base64, в которой нет ни текста, ни известного в
 файла; оно используется в
 \fBcooledit\fP,
 а будущие версии
-\fBcoole\fP
+\fBbluerig\fP
 тоже могут им воспользоваться. Третий, необязательный, \- регулярное
 выражение для первой строки текста файла. Правила раздела применяются, если
 совпало имя файла или первая строка.
@@ -1874,7 +1874,7 @@ context " " green
 
 .PP
 иначе
-\fBcoole\fP
+\fBbluerig\fP
 сообщит об ошибке. Параметр
 \fBlinestart\fP
 требует, чтобы
@@ -1928,7 +1928,7 @@ context " " green
 \fIтип\fP
 \- имя правил так, как его называет строка file в файле Syntax, с \es
 вместо пробела.  Он ищется в файле Syntax, из которого читаются правила, а
-затем в установленном вместе с coole, так что и копия файла Syntax старше
+затем в установленном вместе с bluerig, так что и копия файла Syntax старше
 правил его находит; если типа нет ни там, ни там, контекст остаётся таким,
 будто ничего не вкладывает, в своих собственных цветах.  Разделители остаются в цветах контекста.  Правый
 разделитель заканчивает вложенный текст, где бы он ни встретился, в том
@@ -2057,7 +2057,7 @@ keyword  linestart TODO  KEYWORD_OTHER_TODO black
 токена перекрывают цвета mcedit, как black выше, но не фон или атрибуты,
 которые этому токену дает сам скин. Токен можно указать в
 define и в строках number, string и symbols правил line\-local. Файлы
-синтаксиса, установленные с coole, используют только токены; список токенов
+синтаксиса, установленные с bluerig, используют только токены; список токенов
 с цветами mcedit лежит в
 \fB{{pkgdatadir}}/syntax/README.txt\fP\&.
 
@@ -2065,7 +2065,7 @@ define и в строках number, string и symbols правил line\-local. 
 Если файл синтаксиса общий с
 \fBcooledit\fP,
 цвета для
-\fBcoole\fP
+\fBbluerig\fP
 и для
 \fBcooledit\fP
 можно задать по отдельности через косую черту:
@@ -2075,7 +2075,7 @@ keyword  #include  red/Orange
 .EE
 
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 берет цвет до косой черты. Цвета, которые понимает
 \fBcooledit\fP,
 описаны в cooledit(1).
@@ -2127,7 +2127,7 @@ keyword  #include  red/Orange
 
 .SH Цвета
 .PP
-coole пытается определить, поддерживает ли терминал цвет, по базе данных
+bluerig пытается определить, поддерживает ли терминал цвет, по базе данных
 терминалов и имени терминала. Иногда он ошибается, поэтому цветной режим
 можно включить ключом \-c или выключить ключом \-b.
 
@@ -2141,7 +2141,7 @@ coole пытается определить, поддерживает ли те�
 Терминалы, для которых цветной режим включается всегда, можно перечислить в
 переменной
 \fIcolor_terminals\fP
-секции Colors ini\-файла. Тогда coole не будет пытаться определить, есть ли у
+секции Colors ini\-файла. Тогда bluerig не будет пытаться определить, есть ли у
 терминала цвет. Пример:
 
 .EX
@@ -2172,8 +2172,8 @@ color_terminals=terminal\-name1,terminal\-name2...
 
 .EX
 1) ключ командной строки \-S <скин>, \-\-skin=<скин>
-2) переменная окружения COOLE_SKIN
-3) параметр skin секции [coole] ini\-файла
+2) переменная окружения BLUERIG_SKIN
+3) параметр skin секции [bluerig] ini\-файла
 4) скин с именем default
 .EE
 
@@ -2182,8 +2182,8 @@ color_terminals=terminal\-name1,terminal\-name2...
 него). Иначе файл скина ищется в (до первого найденного):
 
 .EX
-1) ~/.local/share/coole/skins/
-2) {{sysconfdir}}/coole/skins/
+1) ~/.local/share/bluerig/skins/
+2) {{sysconfdir}}/bluerig/skins/
 3) {{pkgdatadir}}/skins/
 .EE
 
@@ -2216,21 +2216,21 @@ color_terminals=terminal\-name1,terminal\-name2...
 
 .SH Базы данных терминалов
 .PP
-coole позволяет поправить системную базу данных терминалов без прав root.
+bluerig позволяет поправить системную базу данных терминалов без прав root.
 Диалог
 Распознавание клавиш
 записывает выученное в
-\fB~/.config/coole/term/<TERM>\fP,
+\fB~/.config/bluerig/term/<TERM>\fP,
 по строке на клавишу в секции
 \fB[keys]\fP\&.
-Кроме того, coole ищет в системном файле
+Кроме того, bluerig ищет в системном файле
 \fBdefaults.ini\fP
 (в
-\fB{{sysconfdir}}/coole\fP
+\fB{{sysconfdir}}/bluerig\fP
 или
 \fB{{pkgdatadir}}\fP)
 и в файле
-\fB~/.config/coole/ini\fP
+\fB~/.config/bluerig/ini\fP
 секцию "terminal:имя\-вашего\-терминала", а затем секцию "terminal:general".
 Каждая строка секции содержит обозначение клавиши, знак равенства и
 определение клавиши. Символ escape записывается как \ee, а control\-x \- как
@@ -2275,7 +2275,7 @@ insert=\ee[Op
 
 .PP
 Это значит, что ctrl+alt+left посылает последовательность \ee[[1;6D, и
-coole понимает "\ee[[1;6D" как Ctrl\-Alt\-Left.
+bluerig понимает "\ee[[1;6D" как Ctrl\-Alt\-Left.
 
 .PP
 Обозначение
@@ -2287,7 +2287,7 @@ coole понимает "\ee[[1;6D" как Ctrl\-Alt\-Left.
 
 .SH Скрипты на Lua
 .PP
-Если coole собран с Lua, он выполняет Lua\-скрипты, которые расширяют
+Если bluerig собран с Lua, он выполняет Lua\-скрипты, которые расширяют
 редактор: действия, привязанные к клавишам и меню, реакции на события
 редактора (файл открыт, записан, нажата клавиша), диалоги и полноэкранные
 окна. Несколько команд редактора \- такие скрипты: сортировка строк,
@@ -2298,7 +2298,7 @@ coole понимает "\ee[[1;6D" как Ctrl\-Alt\-Left.
 Системные скрипты лежат в
 \fB{{pkgdatadir}}/lua/scripts/\fP,
 а скрипты пользователя \- в
-\fB~/.local/share/coole/lua/scripts/\fP,
+\fB~/.local/share/bluerig/lua/scripts/\fP,
 по каталогу на скрипт, со своими
 \fBlua.ini\fP
 и
@@ -2311,7 +2311,7 @@ Lua\-скрипты
 Ключ
 \fB\-\-no\-lua\fP
 или переменная
-\fBCOOLE_NO_LUA\fP,
+\fBBLUERIG_NO_LUA\fP,
 равная 1, запускают редактор без Lua\-скриптов, а
 \fIenabled=false\fP
 в секции
@@ -2323,13 +2323,13 @@ ini\-файла делает это насовсем.
 \fBLUA_PLUGINS.md\fP
 и
 \fBLUA_API_REFERENCE.md\fP,
-которые устанавливаются вместе с документацией coole.
+которые устанавливаются вместе с документацией bluerig.
 
 
 .SH Общие параметры
 .PP
 Эти параметры секции
-\fB[coole]\fP
+\fB[bluerig]\fP
 ini\-файла относятся к программе, а не к редактору. Если не сказано иное, 1
 включает параметр, а 0 выключает.
 
@@ -2402,7 +2402,7 @@ old_esc_mode_timeout микросекунд, без ожидания следу�
 \fIkeybar_modifiers\fP
 Если включено, линейка клавиш показывает команды Shift, Ctrl или Alt с
 F\-клавишами, пока этот модификатор нажат. Нужен терминал с протоколом
-клавиатуры kitty: coole тогда просит у него каждую клавишу с её отпусканием и
+клавиатуры kitty: bluerig тогда просит у него каждую клавишу с её отпусканием и
 события фокуса. На другие терминалы не влияет. По умолчанию выключено.
 
 .TP
@@ -2423,9 +2423,9 @@ F\-клавишами, пока этот модификатор нажат. Ну
 а
 \fBСохранить настройки\fP
 записывает их в секцию
-\fB[coole]\fP
+\fB[bluerig]\fP
 файла
-\fB~/.config/coole/ini\fP\&.
+\fB~/.config/bluerig/ini\fP\&.
 Файл можно править и вручную; ниже перечислены имена, которые там носят
 настройки редактора. Если не сказано иное, 1 включает параметр, а 0
 выключает.
@@ -2596,35 +2596,35 @@ editor_show_control_chars=0 каждый из них занимает одну �
 
 .SH ОКРУЖЕНИЕ
 .PP
-Ниже перечислены переменные, которые читает coole. Переменные вроде
+Ниже перечислены переменные, которые читает bluerig. Переменные вроде
 \fBTERM\fP, \fBSHELL\fP, \fBHOME\fP или \fBPATH\fP здесь не перечислены: программа
 читает их, чтобы узнать, где она работает, а не для настройки.
 
 .TP
-\fBCOOLE_DATADIR\fP
+\fBBLUERIG_DATADIR\fP
 Каталог, из которого берутся файлы данных, вместо {{pkgdatadir}}. Смотрите
 ФАЙЛЫ\&.
 
 .TP
-\fBCOOLE_PROFILE_ROOT\fP
+\fBBLUERIG_PROFILE_ROOT\fP
 Корень файлов пользователя, абсолютным путем, вместо домашнего каталога.
 Смотрите ФАЙЛЫ\&.
 
 .TP
-\fBCOOLE_SKIN\fP
+\fBBLUERIG_SKIN\fP
 Скин, по имени или по пути. Смотрите Скины\&.
 
 .TP
-\fBCOOLE_KEYMAP\fP
+\fBBLUERIG_KEYMAP\fP
 Файл раскладки. Смотрите Переопределение клавиш\&.
 
 .TP
-\fBCOOLE_TMPDIR\fP, \fBTMPDIR\fP
+\fBBLUERIG_TMPDIR\fP, \fBTMPDIR\fP
 Каталог для временных файлов программы \- первая заданная из двух; если не
 задана ни одна, /tmp.
 
 .TP
-\fBCOOLE_NO_LUA\fP
+\fBBLUERIG_NO_LUA\fP
 Значение 1 запускает программу без среды Lua. Ни один Lua\-скрипт не
 загружается.
 
@@ -2637,13 +2637,13 @@ editor_show_control_chars=0 каждый из них занимает одну �
 Читается при выборе цветов. Смотрите Цвета\&.
 
 .TP
-\fBCOOLE_LOG_ENABLE\fP, \fBCOOLE_LOG_FILE\fP
-Отладочный журнал пишется, когда COOLE_LOG_ENABLE равна 1. Без
-\fBCOOLE_LOG_FILE\fP используется файл, заданный параметром \fIlogfile\fP секции
-\fI[Logging]\fP ini\-файла, а без него \- \fI~/.cache/coole/coole.log\fP\&.
+\fBBLUERIG_LOG_ENABLE\fP, \fBBLUERIG_LOG_FILE\fP
+Отладочный журнал пишется, когда BLUERIG_LOG_ENABLE равна 1. Без
+\fBBLUERIG_LOG_FILE\fP используется файл, заданный параметром \fIlogfile\fP секции
+\fI[Logging]\fP ini\-файла, а без него \- \fI~/.cache/bluerig/bluerig.log\fP\&.
 
 .TP
-\fBCOOLE_SPELL_LOG\fP
+\fBBLUERIG_SPELL_LOG\fP
 Файл, в который проверка правописания пишет отладочный журнал. Своего
 выключателя у нее нет: журнал пишется, когда переменная называет файл.
 
@@ -2652,7 +2652,7 @@ editor_show_control_chars=0 каждый из них занимает одну �
 .PP
 Полные пути, приведенные ниже, в разных установках могут отличаться. На
 файлы данных влияет еще и переменная окружения
-\fBCOOLE_DATADIR\fP:
+\fBBLUERIG_DATADIR\fP:
 если она задана, ее значение используется в путях ниже вместо
 {{pkgdatadir}}. Файлы пользователя следуют каталогам XDG:
 \fI~/.config\fP,
@@ -2667,44 +2667,44 @@ editor_show_control_chars=0 каждый из них занимает одну �
 если они заданы.
 
 .TP
-\fI{{pkgdatadir}}/help/coole.md\fP
-Файл помощи программы (переводы \- coole.ru.md и т. д.); рядом лежат
+\fI{{pkgdatadir}}/help/bluerig.md\fP
+Файл помощи программы (переводы \- bluerig.ru.md и т. д.); рядом лежат
 файлы помощи плагинов редактора.
 
 .TP
-\fI{{sysconfdir}}/coole/coole.ini\fP, \fI{{pkgdatadir}}/coole.ini\fP
+\fI{{sysconfdir}}/bluerig/bluerig.ini\fP, \fI{{pkgdatadir}}/bluerig.ini\fP
 Общесистемные файлы настроек; используются, только если у пользователя нет
 своего файла
-\fB~/.config/coole/ini\fP\&.
-Если есть {{sysconfdir}}/coole/coole.ini, {{pkgdatadir}}/coole.ini не
+\fB~/.config/bluerig/ini\fP\&.
+Если есть {{sysconfdir}}/bluerig/bluerig.ini, {{pkgdatadir}}/bluerig.ini не
 используется.
 
 .TP
-\fI{{sysconfdir}}/coole/defaults.ini\fP, \fI{{pkgdatadir}}/defaults.ini\fP
+\fI{{sysconfdir}}/bluerig/defaults.ini\fP, \fI{{pkgdatadir}}/defaults.ini\fP
 Общие настройки, которые действуют на всех пользователей, независимо от
-того, есть у них ~/.config/coole/ini или нет. Сейчас из него загружаются
+того, есть у них ~/.config/bluerig/ini или нет. Сейчас из него загружаются
 только
 настройки терминалов\&.
 
 .TP
-\fI{{sysconfdir}}/coole/keymap.ini\fP, \fI{{pkgdatadir}}/keymap.ini\fP
+\fI{{sysconfdir}}/bluerig/keymap.ini\fP, \fI{{pkgdatadir}}/keymap.ini\fP
 Общесистемные привязки клавиш. Смотрите
 Переопределение клавиш\&.
 
 .TP
-\fI{{sysconfdir}}/coole/coole.menu\fP, \fI{{pkgdatadir}}/coole.menu\fP
+\fI{{sysconfdir}}/bluerig/bluerig.menu\fP, \fI{{pkgdatadir}}/bluerig.menu\fP
 Общесистемное меню пользователя\&.
 
 .TP
-\fI{{sysconfdir}}/coole/spell.keymap, ctags.keymap\fP
+\fI{{sysconfdir}}/bluerig/spell.keymap, ctags.keymap\fP
 Клавиши плагинов проверки правописания и ctags; одноименный файл в
-~/.config/coole переопределяет их.
+~/.config/bluerig переопределяет их.
 
 .TP
 \fI{{pkgdatadir}}/syntax/*\fP
 Общесистемные файлы синтаксиса; используются, только если у пользователя
 нет своего такого файла в
-\fB~/.local/share/coole/syntax/\fP\&.
+\fB~/.local/share/bluerig/syntax/\fP\&.
 
 .TP
 \fI{{pkgdatadir}}/skins/*\fP
@@ -2727,76 +2727,76 @@ Lua\-скрипты, которые поставляются с программ
 Плагины редактора, загружаемые при работе.
 
 .TP
-\fI~/.config/coole/ini\fP
+\fI~/.config/bluerig/ini\fP
 Собственные настройки пользователя. Если этот файл есть, настройки
 читаются из него, а не из общесистемного файла.
 
 .TP
-\fI~/.config/coole/keymap.ini\fP
+\fI~/.config/bluerig/keymap.ini\fP
 Собственные привязки клавиш пользователя.
 
 .TP
-\fI~/.config/coole/menu\fP
+\fI~/.config/bluerig/menu\fP
 Собственное меню пользователя\&.
 
 .TP
-\fI~/.config/coole/plugins.ini\fP
+\fI~/.config/bluerig/plugins.ini\fP
 Выключенные плагины и Lua\-скрипты.
 
 .TP
-\fI~/.config/coole/term/<TERM>\fP
+\fI~/.config/bluerig/term/<TERM>\fP
 Клавиши, выученные в диалоге Распознавание клавиш\&.
 
 .TP
-\fI\&./.coole.menu\fP
+\fI\&./.bluerig.menu\fP
 Меню пользователя текущего каталога. Если этот файл есть в текущем
 каталоге, он используется вместо меню пользователя и общесистемного меню.
 
 .TP
-\fI~/.local/share/coole/history\fP
+\fI~/.local/share/bluerig/history\fP
 Истории строк ввода.
 
 .TP
-\fI~/.local/share/coole/filepos\fP
+\fI~/.local/share/bluerig/filepos\fP
 Места, на которых были оставлены файлы, для
 \fIeditor_option_save_position\fP\&.
 
 .TP
-\fI~/.local/share/coole/clipboard\fP
+\fI~/.local/share/bluerig/clipboard\fP
 Файл обмена редактора.
 
 .TP
-\fI~/.local/share/coole/macros\fP
+\fI~/.local/share/bluerig/macros\fP
 Записанные макросы\&.
 
 .TP
-\fI~/.local/share/coole/macros.d/macro.N.sh\fP
+\fI~/.local/share/bluerig/macros.d/macro.N.sh\fP
 Скрипты оболочки для макросов.
 
 .TP
-\fI~/.local/share/coole/syntax/Syntax\fP
+\fI~/.local/share/bluerig/syntax/Syntax\fP
 Собственный файл синтаксиса пользователя.
 
 .TP
-\fI~/.local/share/coole/skins/\fP
+\fI~/.local/share/bluerig/skins/\fP
 Собственные скины пользователя.
 
 .TP
-\fI~/.local/share/coole/lua/scripts/\fP
+\fI~/.local/share/bluerig/lua/scripts/\fP
 Собственные Lua\-скрипты пользователя.
 
 .TP
-\fI~/.cache/coole/block\fP
+\fI~/.cache/bluerig/block\fP
 Файл блока, с которым работают меню пользователя и скрипты макросов.
 
 .TP
-\fI~/.cache/coole/temp\fP
+\fI~/.cache/bluerig/temp\fP
 Временный файл редактора.
 
 .PP
 Корневой каталог файлов пользователя можно поменять переменной окружения
-\fBCOOLE_PROFILE_ROOT\fP\&.
-Ее значение должно быть абсолютным путем. Если COOLE_PROFILE_ROOT не задана
+\fBBLUERIG_PROFILE_ROOT\fP\&.
+Ее значение должно быть абсолютным путем. Если BLUERIG_PROFILE_ROOT не задана
 или пуста, используется переменная HOME. Если не задана или пуста и HOME,
 каталоги берутся у библиотеки GLib.
 
@@ -2812,7 +2812,7 @@ Lua\-скрипты, которые поставляются с программ
 .SH ГДЕ ВЗЯТЬ
 .PP
 Последнюю версию программы можно найти на
-\X'tty: link https://github.com/blue\-panels/coole/releases'https://github.com/blue\-panels/coole/releases\X'tty: link' .
+\X'tty: link https://github.com/blue\-panels/bluerig/releases'https://github.com/blue\-panels/bluerig/releases\X'tty: link' .
 
 
 .SH СМОТРИТЕ ТАКЖЕ
@@ -2824,17 +2824,17 @@ terminfo(5), sh(1).
 .SH АВТОРЫ
 .PP
 Paul Sheer (psheer@obsidian.co.za) \- первоначальный автор cooledit,
-продолжением которого является coole. Авторы и
+продолжением которого является bluerig. Авторы и
 участники перечислены в файле AUTHORS в исходных текстах.
 
 
 .SH ОШИБКИ
 .PP
 О найденных ошибках сообщайте на
-\X'tty: link https://github.com/blue\-panels/coole/issues'https://github.com/blue\-panels/coole/issues\X'tty: link' .
+\X'tty: link https://github.com/blue\-panels/bluerig/issues'https://github.com/blue\-panels/bluerig/issues\X'tty: link' .
 
 .PP
 Опишите ошибку подробно и укажите версию программы
-\fI(ее показывает coole \-V)\fP
+\fI(ее показывает bluerig \-V)\fP
 и операционную систему, на которой она работает. Если программа падает,
 очень пригодится трассировка стека.

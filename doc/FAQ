@@ -1,14 +1,14 @@
-coole
+bluerig
 Frequently Asked Questions
 
      * 1 Getting started
-          + 1.1 What is coole?
+          + 1.1 What is bluerig?
           + 1.2 Where does it come from?
           + 1.3 Does it run on my machine?
           + 1.4 Does it work with my terminal?
           + 1.5 What else do I need to run it?
-          + 1.6 Is coole Public Domain?  Copyrighted?
-          + 1.7 Where can I get coole?
+          + 1.6 Is bluerig Public Domain?  Copyrighted?
+          + 1.7 Where can I get bluerig?
           + 1.8 I cannot compile it.  What should I do?
 
      * 2 Keyboard
@@ -73,34 +73,34 @@ Frequently Asked Questions
 
 1 Getting started
 
-1.1 What is coole?
+1.1 What is bluerig?
 
-   coole is a console text editor, a continuation of cooledit by Paul
+   bluerig is a console text editor, a continuation of cooledit by Paul
    Sheer.  It has syntax highlighting, code
    folding, an undo history browser, macros and a macro explorer,
    ctags and etags navigation, spell checking, a user menu, multiple
    windows, editor plugins and Lua scripting.
 
-   The program and the package are called coole.  Run it as
+   The program and the package are called bluerig.  Run it as
 
-     coole [+lineno] file1[:lineno] [file2[:lineno]...]
+     bluerig [+lineno] file1[:lineno] [file2[:lineno]...]
 
 1.2 Where does it come from?
 
-   coole continues cooledit, the editor written by Paul Sheer.  The
+   bluerig continues cooledit, the editor written by Paul Sheer.  The
    terminal version of cooledit was developed for many years as the
-   internal editor of GNU Midnight Commander; coole takes it with the
+   internal editor of GNU Midnight Commander; bluerig takes it with the
    fixes and features it gained there and develops it as a program of
    its own.  It is not an official GNU package.
 
    It keeps the keys and the file formats of that editor.
 
-   Report problems with coole here, not to the upstream project, and do
+   Report problems with bluerig here, not to the upstream project, and do
    not report problems of the original program to us.
 
 1.3 Does it run on my machine?
 
-   coole runs on POSIX (Unix-like) operating systems, such as
+   bluerig runs on POSIX (Unix-like) operating systems, such as
    GNU/Linux, FreeBSD, macOS, Solaris and others.
 
    It uses GNU Autoconf, which should configure it for every Unix
@@ -124,11 +124,11 @@ Frequently Asked Questions
    need nothing extra to use the mouse on xterm.
 
    The screen is drawn through the S-Lang library or through ncurses;
-   "coole -V" says which one this build uses.  Editor plugins and the
+   "bluerig -V" says which one this build uses.  Editor plugins and the
    Lua runtime need GModule, which comes with glib.  Everything else is
    optional and is listed in the INSTALL file.
 
-1.6 Is coole Public Domain? Copyrighted?
+1.6 Is bluerig Public Domain? Copyrighted?
 
    It is under the GNU General Public License, which basically means
    that you may freely copy, change and distribute it, but that you may
@@ -139,14 +139,14 @@ Frequently Asked Questions
 
    Most of the code belongs to the Free Software Foundation, to which
    its authors gave their rights.  The
-   code written for coole belongs to its own authors, listed in the
+   code written for bluerig belongs to its own authors, listed in the
    AUTHORS file.
 
-1.7 Where can I get coole?
+1.7 Where can I get bluerig?
 
    The development version is in the master branch of
 
-     https://github.com/blue-panels/coole
+     https://github.com/blue-panels/bluerig
 
 1.8 I cannot compile it.  What should I do?
 
@@ -180,7 +180,7 @@ Frequently Asked Questions
 2.2 Why don't function keys (or some other key) work?
 
    Your terminfo or termcap database has missing or incorrect
-   definitions for function keys.  Type "coole -V" to see what terminal
+   definitions for function keys.  Type "bluerig -V" to see what terminal
    database is being used.
 
    Up-to-date termcap and terminfo databases are available here:
@@ -191,7 +191,7 @@ Frequently Asked Questions
    If you don't have permission to edit terminal databases, teach the
    program the key instead: Options -> Learn keys, press the key and
    save.  What it learns is kept per terminal type in
-   ~/.config/coole/term/$TERM, so a key learned in one terminal does not
+   ~/.config/bluerig/term/$TERM, so a key learned in one terminal does not
    disturb another.
 
    Options -> Key sniffer shows the bytes your terminal really sends,
@@ -225,7 +225,7 @@ Frequently Asked Questions
    If you want to use ESC to cancel things you have to press it twice,
    i.e. ESC-ESC.  If you find this cumbersome you can generally use F10
    to cancel.  Alternatively turn on the old_esc_mode setting in the
-   ~/.config/coole/ini file.  The old_esc_mode setting makes ESC work as a
+   ~/.config/bluerig/ini file.  The old_esc_mode setting makes ESC work as a
    prefix only if another key is pressed within 0.5 seconds.  After 0.5
    seconds the ESC key cancels.  There is no way to make ESC cancel
    immediately (if we want to be able to use arrow keys and function
@@ -252,10 +252,10 @@ Frequently Asked Questions
 
    Options -> Key bindings lists every command with the keys it answers
    to, and rebinds them on the spot.  What you change there is written
-   to ~/.config/coole/keymap.ini.
+   to ~/.config/bluerig/keymap.ini.
 
    The same file can be written by hand, and so can the system-wide
-   /etc/coole/keymap.ini; the coole(1) man page describes the format.
+   /etc/bluerig/keymap.ini; the bluerig(1) man page describes the format.
 
 2.8 What does my terminal really send for this key?
 
@@ -268,7 +268,7 @@ Frequently Asked Questions
 
 3.1 How do I enable mouse support?
 
-   Invoke coole like this (without quotes): "coole -x".  If this doesn't
+   Invoke bluerig like this (without quotes): "bluerig -x".  If this doesn't
    work upgrade to a terminal which is compatible with the Xterm mouse
    sequences.
 
@@ -350,7 +350,7 @@ Frequently Asked Questions
 
 4.4 How can I get colors?
 
-   Invoke coole like this (without quotes): "coole -c".
+   Invoke bluerig like this (without quotes): "bluerig -c".
 
    If you get colors, be happy.
 
@@ -396,7 +396,7 @@ Frequently Asked Questions
    ncurses/terminfo maintainers (bug-ncurses@gnu.org) and ask them to
    add one.
 
-   With the S-Lang library (you can check by 'coole -V'), you can force
+   With the S-Lang library (you can check by 'bluerig -V'), you can force
    color support by setting the environment variable COLORTERM to any
    value, and specifically force true color support by setting it to
    'truecolor'.
@@ -455,10 +455,10 @@ anymore!
 
    Colors come from a skin file.  Options -> Appearance lists the skins
    that are installed and applies one at once; the choice is kept in
-   ~/.config/coole/ini.  "coole -S name" picks a skin for one run.
+   ~/.config/bluerig/ini.  "bluerig -S name" picks a skin for one run.
 
-   System skins live in /usr/share/coole/skins, your own in
-   ~/.local/share/coole/skins.  A skin is a plain ini file, so copying
+   System skins live in /usr/share/bluerig/skins, your own in
+   ~/.local/share/bluerig/skins.  A skin is a plain ini file, so copying
    one of the system skins into your own directory and editing it is the
    usual way to make your own.
 
@@ -467,8 +467,8 @@ anymore!
    It reads key modifiers from the X server, which helps to tell apart
    keys that the terminal emulator reports in the same way, e.g. PgUp
    and Ctrl-PgUp.  The libraries are loaded dynamically on the systems
-   that support it, and "coole -V" says whether this build has the
-   support at all.  "coole -X" turns it off for one run.
+   that support it, and "bluerig -V" says whether this build has the
+   support at all.  "bluerig -X" turns it off for one run.
 
 
 5 Editing
@@ -481,10 +481,10 @@ line!
 
 5.2 How do I add syntax highlighting for my language?
 
-   The rules are in /usr/share/coole/syntax, one file per language, and
+   The rules are in /usr/share/bluerig/syntax, one file per language, and
    the file Syntax there says which of them a file name gets.  To add or
    change a rule, copy the syntax directory to
-   ~/.local/share/coole/syntax, edit your copy, and the editor takes it
+   ~/.local/share/bluerig/syntax, edit your copy, and the editor takes it
    instead of the system one.
 
    The editor also has code folding (Command -> Fold / Unfold block),
@@ -495,9 +495,9 @@ line!
 5.3 Is there any way to include additional commands?
 
    Yes, F11 invokes a user menu, which is fully configurable.  You can
-   add any shell commands to it.  The editor reads .coole.menu in the
-   current directory, then ~/.config/coole/menu, then the system-wide
-   /etc/coole/coole.menu; Options -> Menu file edits it.  The coole(1)
+   add any shell commands to it.  The editor reads .bluerig.menu in the
+   current directory, then ~/.config/bluerig/menu, then the system-wide
+   /etc/bluerig/bluerig.menu; Options -> Menu file edits it.  The bluerig(1)
    man page describes the format.
 
    Editor plugins and Lua scripts add commands too, see 5.4.
@@ -512,21 +512,21 @@ line!
    An editor plugin is a shared library that adds commands to the
    editor menus, for example the ctags source navigator.  The ctags,
    etags and spell plugins are built into the program; others are
-   loaded from $libdir/coole/plugins and from
-   ~/.local/lib/coole/plugins.  doc/PLUGINS in the source
+   loaded from $libdir/bluerig/plugins and from
+   ~/.local/lib/bluerig/plugins.  doc/PLUGINS in the source
    distribution describes how to write one.
 
    Lua scripts are smaller and need no compiler.  They live in
-   /usr/share/coole/lua/scripts and in ~/.local/share/coole/lua/scripts,
+   /usr/share/bluerig/lua/scripts and in ~/.local/share/bluerig/lua/scripts,
    and a script with the same name in your own directory shadows the
    system one.  doc/LUA_PLUGINS.md and doc/LUA_API_REFERENCE.md describe
-   what they can do.  "coole --no-lua" starts without them.
+   what they can do.  "bluerig --no-lua" starts without them.
 
 5.5 How do I turn a plugin off, or configure it?
 
    Options -> Manage plugins lists the plugins, with a switch for each.
    What you turn off there is not loaded at the next start; the state
-   is kept in ~/.config/coole/plugins.ini.
+   is kept in ~/.config/bluerig/plugins.ini.
 
    A plugin that has settings of its own opens them from that same
    dialog with Enter or F4.
@@ -538,12 +538,12 @@ line!
 
    In three directories, following the XDG layout:
 
-     ~/.config/coole        ini, keymap.ini, menu, learned keys,
+     ~/.config/bluerig        ini, keymap.ini, menu, learned keys,
                             plugin settings
-     ~/.local/share/coole   skins, syntax, Lua scripts, editor files
-     ~/.cache/coole         data that can be thrown away
+     ~/.local/share/bluerig   skins, syntax, Lua scripts, editor files
+     ~/.cache/bluerig         data that can be thrown away
 
-   Editor plugins of your own live in ~/.local/lib/coole.  "coole -F"
+   Editor plugins of your own live in ~/.local/lib/bluerig.  "bluerig -F"
    prints every one of these paths, which is the quickest way to see
    where a particular file went.
 
@@ -558,7 +558,7 @@ line!
 
    Also, if you have the DISPLAY environment variable set, but the X
    server is unreachable (e.g. it's firewalled), this can also cause a
-   delay at startup.  Unset DISPLAY, or run "coole -X", to see if that's
+   delay at startup.  Unset DISPLAY, or run "bluerig -X", to see if that's
    the case.
 
 
@@ -566,7 +566,7 @@ line!
 
 8.1 Who has written this?
 
-   coole is maintained by Ilia Maslakov.  It continues cooledit, written
+   bluerig is maintained by Ilia Maslakov.  It continues cooledit, written
    by Paul Sheer, and the work of the many people who developed that
    editor since.  The AUTHORS file lists them all.
 
@@ -574,7 +574,7 @@ line!
 
    Yes, of course.  The master branch of
 
-     https://github.com/blue-panels/coole
+     https://github.com/blue-panels/bluerig
 
    is where the work happens; check it out and build it as the INSTALL
    file describes.
@@ -590,24 +590,24 @@ line!
 
    If this is not the case, open a ticket at
 
-     https://github.com/blue-panels/coole/issues
+     https://github.com/blue-panels/bluerig/issues
 
-   Bugs of coole do not belong to the upstream project, and bugs of
+   Bugs of bluerig do not belong to the upstream project, and bugs of
    the upstream program do not belong here.
 
    Give as many details as possible.  A too long message is a lot better
-   than a too short message.  Say which version you run ("coole -V"),
+   than a too short message.  Say which version you run ("bluerig -V"),
    which terminal and which operating system.
 
    For segmentation faults a stack backtrace is appreciated.  You can
    produce a stack backtrace as follows:
      * If the segmentation fault produced a core file:
-         1. Load the core file by typing "gdb coole core".
+         1. Load the core file by typing "gdb bluerig core".
          2. Type "where".
          3. Cut and paste the results into your report.
      * If the segmentation fault didn't produce a core file:
-         1. Load coole by typing "gdb coole".
-         2. Start coole by typing "run".
+         1. Load bluerig by typing "gdb bluerig".
+         2. Start bluerig by typing "run".
          3. Try to reproduce the segmentation fault by doing whatever
             you did last time when the segmentation fault occurred.
          4. Type "where".
@@ -623,7 +623,7 @@ line!
    might be that your feature has already been implemented.  The HACKING
    file describes how the source is laid out and how it is formatted.
 
-   The code you write stays yours.  coole asks for no copyright
+   The code you write stays yours.  bluerig asks for no copyright
    assignment.
 
 8.5 How can I help with translations?
@@ -640,19 +640,19 @@ for an answer?
    Press F1: the built-in help is the manual page, and it covers nearly
    everything.  The wiki has the longer guides:
 
-     https://github.com/blue-panels/coole/wiki
+     https://github.com/blue-panels/bluerig/wiki
 
    Upgrade to a newer version.  Many problems are fixed in the new
    versions.
 
    If you still can't find an answer, ask in a ticket at
-   https://github.com/blue-panels/coole/issues .
+   https://github.com/blue-panels/bluerig/issues .
 
 9.2 Where should I look on the World Wide Web?
 
    The project lives at
 
-     https://github.com/blue-panels/coole
+     https://github.com/blue-panels/bluerig
 
 
 10 Legal issues
@@ -662,13 +662,13 @@ for an answer?
    Questions and Answers was written by Janne Kukonlehto for GNU
    Midnight Commander.  Parts of it originate from Ian Jackson, Miguel
    de Icaza, Dugan Porter, Norbert Warmuth and Paul Sheer.  It was
-   rewritten for coole, keeping the answers that concern the editor and
+   rewritten for bluerig, keeping the answers that concern the editor and
    the terminal.
 
 10.2 Feedback is invited
 
    Send your comments about this document and about the program to
-   https://github.com/blue-panels/coole/issues .
+   https://github.com/blue-panels/bluerig/issues .
 
 10.3 Disclaimer and copyright
 

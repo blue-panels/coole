@@ -69,7 +69,7 @@ if json_glib.found()
                                   '../../../src/plugins/query/query-export.c',
                                   '../../../src/plugins/query/query-core.c',
                                   dependencies: [glib_dep, json_glib]), suite: 'src/editor')
-  # the backend of PostgreSQL on a live server, skipped unless COOLE_TEST_PG is set: see
+  # the backend of PostgreSQL on a live server, skipped unless BLUERIG_TEST_PG is set: see
   # query_pg.c; libpq is loaded by gmodule, as in the plugin
   if have_gmodule
     query_pg = executable('query_pg', 'query_pg.c',
@@ -82,7 +82,7 @@ if json_glib.found()
                           dependencies: [glib_dep, intl, screen_headers, json_glib])
     test('query_pg', query_pg, suite: 'src/editor', timeout: 120)
     # the way of a libpq older than 17, with libpq 17 too: rows one by one, the cancel by a thread
-    test('query_pg_old', query_pg, env: ['COOLE_PQ_FORCE_OLD=1'], suite: 'src/editor',
+    test('query_pg_old', query_pg, env: ['BLUERIG_PQ_FORCE_OLD=1'], suite: 'src/editor',
          timeout: 120)
   endif
   test('lsp_client', executable('lsp_client', 'lsp_client.c', lsp_test_sources,
@@ -94,7 +94,7 @@ if json_glib.found()
        suite: 'src/editor', timeout: 120)
 endif
 
-# the values query-pq.h writes for libpq, which coole loads without its headers, are those of
+# the values query-pq.h writes for libpq, which bluerig loads without its headers, are those of
 # libpq-fe.h: only its headers are taken, nothing is linked
 libpq_headers = dependency('libpq', required: false)
 if libpq_headers.found()
@@ -126,11 +126,11 @@ test('git_core', executable('git_core', 'git_core.c',
 
 # the debugger plugin loads only when the program gives it every function it calls
 if have_gmodule and module_symbols_sh.found()
-  test('debugger_module_symbols', module_symbols_sh, args: [coole, debugger_module],
+  test('debugger_module_symbols', module_symbols_sh, args: [bluerig, debugger_module],
        suite: 'src/editor')
   if json_glib.found()
-    test('lsp_module_symbols', module_symbols_sh, args: [coole, lsp_module], suite: 'src/editor')
-    test('query_module_symbols', module_symbols_sh, args: [coole, query_module],
+    test('lsp_module_symbols', module_symbols_sh, args: [bluerig, lsp_module], suite: 'src/editor')
+    test('query_module_symbols', module_symbols_sh, args: [bluerig, query_module],
          suite: 'src/editor')
   endif
 endif

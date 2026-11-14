@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -148,7 +148,7 @@ typedef struct
 struct query_t
 {
     mc_editor_host_t *host;
-    gboolean on;  // coole -Q
+    gboolean on;  // bluerig -Q
     const query_backend_t *backend;
     void *backend_data;
     char *endpoint;  // what is connected to, for the head of Output: "host:port/db"
@@ -201,8 +201,9 @@ void query_table_say (query_t *q, const char *text);
    itself; the seconds it has taken come after it, once a second */
 void query_running (query_t *q, const char *say);
 void query_redraw (query_t *q);
-/* The script @name of the queries, mongo-list.js, pg-list.sql: of ~/.config/coole/query, else of
-   the source of a build run by meson devenv, of /etc/coole/query, of the data of coole; NULL with
+/* The script @name of the queries, mongo-list.js, pg-list.sql: of ~/.config/bluerig/query, else of
+   the source of a build run by meson devenv, of /etc/bluerig/query, of the data of bluerig; NULL
+   with
    @why, what Output and Schema tell, when there is none */
 char *query_script (const char *name, char **why);
 
@@ -225,7 +226,7 @@ void query_ai_context (query_t *q, const char *context, const char *error);
 void query_ai_startup (query_t *q, GString *text);
 void query_ai_free (query_t *q);
 
-/* Run @argv in @dir with @envp, NULL for that of coole, @input on its stdin: @done is called
+/* Run @argv in @dir with @envp, NULL for that of bluerig, @input on its stdin: @done is called
    when it ends, unless it is killed first; NULL with @error when it does not start */
 query_proc_t *query_proc_start (const char *const *argv, char **envp, const char *dir,
                                 const char *input, query_proc_done_fn done, void *data,

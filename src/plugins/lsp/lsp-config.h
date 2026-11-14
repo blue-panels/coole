@@ -20,7 +20,7 @@ typedef enum
 {
     LSP_WHEN_UNSET = -1,  // a backend that has the setting of the file
     LSP_WHEN_NEVER = 0,   // by the command only: LSP Start, LSP Completion
-    LSP_WHEN_IDE,         // when coole was started on a project, with -D
+    LSP_WHEN_IDE,         // when bluerig was started on a project, with -D
     LSP_WHEN_ALWAYS
 } lsp_when_t;
 
@@ -39,7 +39,7 @@ typedef struct
     JsonObject *environment;           // the variables to set, a null one taken away; NULL: none
     JsonNode *initialization_options;  // NULL: none
     JsonNode *settings;                // NULL: none
-    char *startup;       // serves only when coole was started with this option, "query" for -Q,
+    char *startup;       // serves only when bluerig was started with this option, "query" for -Q,
                          // then before the others; NULL: whatever the option
     JsonNode *requests;  // sent after initialized, an array of {method, params}; NULL: none
     char **words;        // completed with what the server says, not after a dot; NULL: none
@@ -84,7 +84,7 @@ const lsp_backend_t *lsp_config_backend (const lsp_config_t *config, const char 
 /* Whether the program of @backend can be run */
 gboolean lsp_backend_runnable (const lsp_backend_t *backend);
 lsp_when_t lsp_backend_autostart (const lsp_config_t *config, const lsp_backend_t *backend);
-/* The backends for how coole was started, @started telling whether it was with an option: one
+/* The backends for how bluerig was started, @started telling whether it was with an option: one
    with "startup" serves only then, and comes before the others */
 void lsp_config_for_startup (lsp_config_t *config,
                              gboolean (*started) (const char *option, void *data), void *data);
@@ -93,7 +93,7 @@ void lsp_config_for_startup (lsp_config_t *config,
 JsonNode *lsp_config_expand (JsonNode *node, const char *command_dir);
 
 /* The root the server of @backend has for @path: @project when it holds the file, else the
-   nearest directory with .coole, else with a root marker of the backend, else with .git, .hg or
+   nearest directory with .bluerig, else with a root marker of the backend, else with .git, .hg or
    .svn, else the directory of the file when the backend serves single files; NULL when none. */
 char *lsp_find_root (const lsp_backend_t *backend, const char *path, const char *project);
 

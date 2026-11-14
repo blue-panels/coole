@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -66,7 +66,7 @@ static query_pq_t query_pq;
 static void
 query_pq_load_17 (void)
 {
-    const char *old = g_getenv ("COOLE_PQ_FORCE_OLD");
+    const char *old = g_getenv ("BLUERIG_PQ_FORCE_OLD");
 
     if (old != NULL && *old != '\0' && strcmp (old, "0") != 0)
         return;
@@ -160,7 +160,7 @@ PGconn *
 query_pq_start (const query_pq_t *pq, gboolean read_only)
 {
     const char *keywords[4] = { "client_encoding", "application_name", NULL, NULL };
-    const char *values[4] = { "UTF8", "coole", NULL, NULL };
+    const char *values[4] = { "UTF8", "bluerig", NULL, NULL };
 
     if (read_only)
     {

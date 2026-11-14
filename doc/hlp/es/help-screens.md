@@ -10,13 +10,13 @@
 ```
  based on GNU Midnight Commander
 
-Esta es la pantalla principal de ayuda de **coole**.
+Esta es la pantalla principal de ayuda de **bluerig**.
 
 Puede pulsar la tecla [«Intro»](#how-to-use-help) para aprender a navegar por el sistema de ayuda, o acceder directamente a los [contenidos](#contents).
 
 GNU Midnight Commander es obra de sus [autores](#authors).
 
-coole NO INCLUYE NINGÚN TIPO DE [GARANTÍA](gnu-gpl-v3.0.md#warranty). Es un producto de software libre, y su redistribución es bienvenida en los términos y condiciones establecidas por la [Licencia Pública General de GNU (GPL)](gnu-gpl-v3.0.md#license), de la que existe una [traducción no oficial al español](#licencia-gnu-español).
+bluerig NO INCLUYE NINGÚN TIPO DE [GARANTÍA](gnu-gpl-v3.0.md#warranty). Es un producto de software libre, y su redistribución es bienvenida en los términos y condiciones establecidas por la [Licencia Pública General de GNU (GPL)](gnu-gpl-v3.0.md#license), de la que existe una [traducción no oficial al español](#licencia-gnu-español).
 
 # Licencia GNU (Español) <!-- help:notitle --><a id="licencia-gnu-español"></a>
 

@@ -2,7 +2,7 @@
 ! if you are using enclosed xterm.tcap and xterm.ti.
 ! Some keys would never normally work if they weren't here (like Alt
 ! something), some key definitions differ from one termcap/terminfo
-! to the other. You may delete any line if you find out that coole
+! to the other. You may delete any line if you find out that bluerig
 ! sends exactly that string which is mentioned here.
 ! See xterm(1).
 ! Either put this into your ~/.Xdefaults, or to app-defaults/XTerm

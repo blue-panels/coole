@@ -6,6 +6,6 @@
     <name>Ilia Maslakov</name>
   </maintainer>
   <upstream>
-    <remote-id type="github">blue-panels/coole</remote-id>
+    <remote-id type="github">blue-panels/bluerig</remote-id>
   </upstream>
 </pkgmetadata>

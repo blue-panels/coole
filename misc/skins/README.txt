@@ -11,7 +11,7 @@ Header section
         Skin files should define this header section.
 
         description
-            A brief text description of the skin. Currently not used by coole.
+            A brief text description of the skin. Currently not used by bluerig.
 
         256colors
             Set the value to "true" if the skin uses 256 color extension, but
@@ -277,7 +277,7 @@ applies individually to each of these three properties.
 
 
     [lines]
-        Frame characters used all throughout coole.
+        Frame characters used all throughout bluerig.
 
         horiz
         vert
@@ -358,7 +358,7 @@ applies individually to each of these three properties.
         breakpoint-condition-char
             Marks of a breakpoint in the gutter and in the panel of the
             debugger: taken by GDB, not taken yet or refused, disabled,
-            with a condition (default: o ? - c; the skins of coole give a
+            with a condition (default: o ? - c; the skins of bluerig give a
             filled circle, a lozenge, an empty circle and a circle with a
             dot)
 
@@ -366,24 +366,24 @@ applies individually to each of these three properties.
         exec-breakpoint-char
             Mark of the line where the debugged program stopped, and of
             that line when it has a breakpoint (default: > @; the skins of
-            coole give > and a diamond)
+            bluerig give > and a diamond)
 
         tree-closed-char
         tree-open-char
             Marks of a closed and an open node of a tree window: the tree
             of the project, the panel of the debugger, Schema of the
-            queries (default: + -; the skins of coole give > and a
+            queries (default: + -; the skins of bluerig give > and a
             triangle)
 
         build-error-char
         build-warning-char
             Marks of a line the compiler has named an error or a warning
-            of (default: E !; the skins of coole give a multiplication
+            of (default: E !; the skins of bluerig give a multiplication
             sign and !)
 
         query-error-char
             Mark of the line of a query the database has refused, in a
-            file run by coole -Q (default: E; the skins of coole give a
+            file run by bluerig -Q (default: E; the skins of bluerig give a
             multiplication sign)
 
         A mark the terminal cannot show, a character of UTF-8 on one
@@ -450,7 +450,7 @@ Git graph section
         commit
         merge
             A commit and a merge on the line of their branch (default: *
-            and o; the skins of coole have a filled and an empty circle)
+            and o; the skins of bluerig have a filled and an empty circle)
 
         rail
             Puts a commit beside the line of its branch, after this
@@ -462,7 +462,7 @@ Git graph section
             How far a branch is from another, in the title of the window
             Git and in the list of the branches: the commits it has that the
             other has not, and the other way (default: + and -; the skins
-            of coole have arrows up and down)
+            of bluerig have arrows up and down)
 
         arrow-left
         arrow-right
@@ -592,7 +592,7 @@ technical one referring to their color index.
     lightgray = color7            white = color15
 
 With 8 color terminal settings (such as TERM=linux or TERM=xterm), bright
-foreground colors (second column) are emulated in coole by enabling the bold
+foreground colors (second column) are emulated in bluerig by enabling the bold
 attribute, and the colors are mapped to their darker counterpart (first
 column). In turn, the terminal may (or may not) interpret the bold flag as
 brighter foreground color, thus reverting to the originally specified bright
@@ -601,7 +601,7 @@ foreground.
 Even in terminals that support more colors (such as TERM=xterm-256color), the
 first 8 foreground colors combined with the bold attribute might be converted
 to their brighter counterpart. This depends on choice of the terminal or a
-setting thereof, coole having no control over it.
+setting thereof, bluerig having no control over it.
 
 Plus, the exact color values heavily depend on the user's chosen palette.
 

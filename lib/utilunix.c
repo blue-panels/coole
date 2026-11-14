@@ -18,15 +18,15 @@
    The mc_realpath routine is mostly from uClibc package, written
    by Rick Sladkey <jrs@world.std.com>
 
-   This file is part of coole,
+   This file is part of bluerig,
    a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -1098,8 +1098,8 @@ mc_path_absolute (const char *path)
 
 /* --------------------------------------------------------------------------------------------- */
 /**
- * Return the directory where coole should keep its temporary files.
- * This directory is (in Bourne shell terms) "${TMPDIR=/tmp}/coole-XXXXXX"
+ * Return the directory where bluerig should keep its temporary files.
+ * This directory is (in Bourne shell terms) "${TMPDIR=/tmp}/bluerig-XXXXXX"
  * When called the first time, the directory is created if needed.
  * The first call should be done early, since we are using fprintf()
  * and not message() to report possible problems.
@@ -1123,7 +1123,7 @@ mc_tmpdir (void)
             return tmpdir;
     }
 
-    sys_tmp = getenv ("COOLE_TMPDIR");
+    sys_tmp = getenv ("BLUERIG_TMPDIR");
     if (sys_tmp == NULL || !IS_PATH_SEP (sys_tmp[0]))
     {
         sys_tmp = getenv ("TMPDIR");
@@ -1131,13 +1131,13 @@ mc_tmpdir (void)
             sys_tmp = TMPDIR_DEFAULT;
     }
 
-    template = g_build_filename (sys_tmp, "coole-XXXXXX", (char *) NULL);
+    template = g_build_filename (sys_tmp, "bluerig-XXXXXX", (char *) NULL);
     g_strlcpy (buffer, template, sizeof (buffer));
     g_free (template);
 
     tmpdir = g_mkdtemp (buffer);
     if (tmpdir != NULL)
-        g_setenv ("COOLE_TMPDIR", tmpdir, TRUE);
+        g_setenv ("BLUERIG_TMPDIR", tmpdir, TRUE);
     else
     {
         fprintf (stderr,

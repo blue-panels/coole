@@ -20,10 +20,10 @@ option('assert', type: 'boolean', value: true,
        description: 'Keep the GLib assertions')
 
 option('plugins_dir', type: 'string', value: '',
-       description: 'Directory of the plugin modules [LIBDIR/coole/plugins]')
+       description: 'Directory of the plugin modules [LIBDIR/bluerig/plugins]')
 option('runtime_plugins_dir', type: 'string', value: '',
-       description: 'Directory of the runtime plugins [LIBDIR/coole/runtime-plugins]')
+       description: 'Directory of the runtime plugins [LIBDIR/bluerig/runtime-plugins]')
 option('lua_scripts_dir', type: 'string', value: '',
-       description: 'Directory of the system Lua scripts [DATADIR/coole/lua/scripts]')
+       description: 'Directory of the system Lua scripts [DATADIR/bluerig/lua/scripts]')
 option('lua_modules_dir', type: 'string', value: '',
-       description: 'Directory of the shared Lua modules [DATADIR/coole/lua/lib]')
+       description: 'Directory of the shared Lua modules [DATADIR/bluerig/lua/lib]')

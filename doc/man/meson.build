@@ -13,16 +13,16 @@ man_sed_args = [
   '-e', 's|{{bindir}}|@0@|g'.format(bindir),
 ]
 
-custom_target('coole.1',
-  input: 'roff/coole.1.in',
-  output: 'coole.1',
+custom_target('bluerig.1',
+  input: 'roff/bluerig.1.in',
+  output: 'bluerig.1',
   command: [sed, man_sed_args, '@INPUT@'],
   capture: true,
   install: true,
   install_dir: mandir / 'man1',
 )
 
-# the translated pages, each in a directory of its own for the one name coole.1
+# the translated pages, each in a directory of its own for the one name bluerig.1
 if have_nls
   foreach lang : doc_languages
     subdir(lang)

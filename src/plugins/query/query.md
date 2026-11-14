@@ -6,10 +6,10 @@ Runs the queries of a file in a database and shows its answer at the bottom
 of the screen: what the database said, and the documents or the rows in
 columns. MongoDB is run by *mongosh*, its shell; PostgreSQL by *libpq*, its
 client library, as the part **PostgreSQL** at the end tells. It works in
-*coole -Q* alone. *MC_QUERY_KIND*, *mongo* or *postgres*, tells which;
+*bluerig -Q* alone. *MC_QUERY_KIND*, *mongo* or *postgres*, tells which;
 without it *MC_MONGO_URI* means MongoDB, and a file *.sql* PostgreSQL.
 Without a file named, the file of queries is that of the database,
-*~/.local/share/coole/queries/* with the name of *MC_MONGO_DB* and *.js*:
+*~/.local/share/bluerig/queries/* with the name of *MC_MONGO_DB* and *.js*:
 the queries of a database stay for the next time.
 
 **What it needs**
@@ -27,7 +27,7 @@ Output tell whether both are found.
 
 **What it connects to**
 
-mongosh is told by the environment of coole, which it inherits; coole reads
+mongosh is told by the environment of bluerig, which it inherits; bluerig reads
 none of it but the name of the server for the header of the output:
 
 *MC_MONGO_URI*
@@ -61,7 +61,7 @@ These are the default keys; they can be changed in **Options → Key
 bindings → Editor → Query**, or in the *[query]* section of the keymap.
 The menu **Query** has the commands of a file, with their keys: Run, Run
 the whole file, Stop, Export the rows, Write the query by AI, Roll back,
-Schema, Read the schema again. It is there in *coole -Q* alone.
+Schema, Read the schema again. It is there in *bluerig -Q* alone.
 
 **F5**
 : Run the selection, else the part of the file the cursor is in between
@@ -79,9 +79,9 @@ of the menu of the user: EXPLAIN the query, *.explain()* in mongosh; count
 the rows of one query, in PostgreSQL; put a line *// @table* or
 *// @limit 20* before that of the cursor, in mongosh; the selection in
 capitals or in small letters; edit this menu. It is *query-menu.ini* of the
-queries of coole; *~/.config/coole/query/query-menu.ini*, which **Edit this
+queries of bluerig; *~/.config/bluerig/query/query-menu.ini*, which **Edit this
 menu** makes from it, takes its place. An item there may run a command of
-its own: the query on its stdin, *COOLE_QUERY_KIND* in its environment, what
+its own: the query on its stdin, *BLUERIG_QUERY_KIND* in its environment, what
 it prints put at the cursor, in place of the query or in Output. EXPLAIN
 ANALYZE runs a SELECT, VALUES or TABLE; another query gets EXPLAIN alone,
 which does not run it.
@@ -140,7 +140,7 @@ it was run and how its last run ended, the lines it put and took away since
 the version before, the first line of the query it ran last. Each run keeps
 the file, saved or not, as a version, unless it is as at the run before:
 another run of it counts on its line. They are in the data of the user,
-*~/.local/share/coole/queries/.history/*, a directory for each file, a
+*~/.local/share/bluerig/queries/.history/*, a directory for each file, a
 version named by its time, *20261024-173750.js*; the newest 200 stay. The
 line of the cursor chooses a version:
 
@@ -203,7 +203,7 @@ all the rows of the relation of the node, all the documents of the
 collection. A dialog has a page for each format, the buttons at its top
 going from one to another: the page seen is the format written. Each has
 the file, by default the name of the file of queries, or of the relation,
-and the time, *orders-20261108-101500.csv*, in the directory of coole; a
+and the time, *orders-20261108-101500.csv*, in the directory of bluerig; a
 name left as it was takes the extension of the page.
 
 *CSV*
@@ -232,7 +232,7 @@ The rows are written as they come, to the file and *.part* beside it, which
 takes its place once all of them are there: a query stopped, failed or that
 gave no rows leaves no file, and a file that cannot be written stops it.
 Output tells how many rows went to the file; a file that is there already
-is asked about. The dialog keeps what it was given until coole ends.
+is asked about. The dialog keeps what it was given until bluerig ends.
 
 Of MongoDB the query ends with a cursor or an array, *find()*,
 *aggregate()*, *toArray()*: each document goes to the file as relaxed
@@ -273,7 +273,7 @@ nothing.
 
 *MC_QUERY_AI*
 : The program of AI, else the key *ai* of the section *[Query]* of
-*~/.config/coole/ini*, the environment choosing another than the
+*~/.config/bluerig/ini*, the environment choosing another than the
 configuration for a run:
 
 ```
@@ -292,11 +292,11 @@ Output tell whether it is found.
 
 The scripts the plugin runs to read the schema and what AI is told, and
 the one mongosh runs before each query, are files of
-*/usr/share/coole/query*: *mongo-list.js*, *mongo-details.js*,
+*/usr/share/bluerig/query*: *mongo-list.js*, *mongo-details.js*,
 *mongo-ai.js*, *mongo-ddl.js*, *mongo-prefix.js*, *mongo-export.js*,
 *pg-list.sql*, *pg-details.sql*, *pg-ai.sql*, *pg-ddl-relation.sql*,
-*pg-ddl-function.sql*. One of the same name in *~/.config/coole/query*, or
-in */etc/coole/query*, is run in its place. In them *{{> name}}* is the
+*pg-ddl-function.sql*. One of the same name in *~/.config/bluerig/query*, or
+in */etc/bluerig/query*, is run in its place. In them *{{> name}}* is the
 part *name* of the same extension, read from the same directories,
 *{{name}}* a value the plugin puts there, the database, the collection,
 the oid, and a line that is a comment alone is left out. When one is not
@@ -335,12 +335,12 @@ a row; none by default:
 
 **PostgreSQL**
 
-*coole -Q* with *MC_QUERY_KIND=postgres*, or a file *.sql*, runs the queries
+*bluerig -Q* with *MC_QUERY_KIND=postgres*, or a file *.sql*, runs the queries
 in PostgreSQL. It keeps one connection while it runs: a transaction, the
 temporary tables and what *SET* sets stay from one F5 to the next.
 
 *libpq5*
-: The client library of PostgreSQL. coole loads it as -Q starts, and needs
+: The client library of PostgreSQL. bluerig loads it as -Q starts, and needs
 it for PostgreSQL alone; libpq 17 or later gives the rows by chunks and a
 cancel of its own, an older one gives them one by one.
 
@@ -354,17 +354,17 @@ The first lines of Output tell whether both are found.
 libpq takes what to connect to from the environment, as *psql* does:
 *PGHOST*, *PGPORT*, *PGUSER*, *PGDATABASE*, *PGSERVICE* and
 *~/.pg_service.conf*, *PGSSLMODE*. The password is better in *~/.pgpass*,
-which libpq and the language server read, than in *PGPASSWORD*. coole adds
+which libpq and the language server read, than in *PGPASSWORD*. bluerig adds
 to the connection its encoding, UTF8, and with *MC_QUERY_READ_ONLY=1*
 transactions that write nothing, *[RO]* in the header: a guard against a
 slip, not a right, a *SET* undoing it; what may be written is the role's.
 
 Without a file named, the file of queries is
-*~/.local/share/coole/queries/postgres/*, the name of the connection,
+*~/.local/share/bluerig/queries/postgres/*, the name of the connection,
 *MC_PG_CONNECTION* or *PGSERVICE*, and that of the database with *.sql*.
 
 With *MC_PG_RELATION*, a table or a view, and *MC_PG_SCHEMA* its schema,
-as the panel of PostgreSQL starts coole, a *SELECT* of its first 100 rows
+as the panel of PostgreSQL starts bluerig, a *SELECT* of its first 100 rows
 runs once connected, the file left as it is; a file with nothing in it gets
 that query, changed, not saved.
 
@@ -391,7 +391,7 @@ Then what each command did, *SELECT 12*, *UPDATE 4*, the notices of the
 server among them, a notice at times before the command it follows; an
 error with its code, *ERROR [23505]*, its *DETAIL* and *HINT*, its line marked
 in the file and the cursor there. *COPY ... TO STDOUT* prints its rows here;
-*COPY ... FROM STDIN* is ended, coole having nothing to send.
+*COPY ... FROM STDIN* is ended, bluerig having nothing to send.
 
 *Table*
 : A table of the rows of each command that has some, *SELECT* and
@@ -406,7 +406,7 @@ and its versions are *.sql*.
 
 **QueryRollback**
 : Run *ROLLBACK*. It has no key of its own: one is given it in
-*~/.config/coole/keymap.ini*, section *[query]*.
+*~/.config/bluerig/keymap.ini*, section *[query]*.
 
 **Ctrl-Alt-S**
 : The window Schema at the right, QuerySchema: shown when it is not, given

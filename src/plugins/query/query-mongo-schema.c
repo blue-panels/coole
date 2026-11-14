@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -54,7 +54,7 @@
 // the line mongosh prints what it read on, after this
 #define QUERY_MS_TAG                                                                               \
     "\x1e"                                                                                         \
-    "coole-schema "
+    "bluerig-schema "
 
 /* The scripts mongosh runs, those of misc/query: mongo-list.js, mongo-details.js, mongo-ai.js,
    mongo-ddl.js; what they read printed after QUERY_MS_TAG */

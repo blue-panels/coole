@@ -7,8 +7,8 @@ from pathlib import Path
 
 MC_SOURCE_ROOT = Path(__file__).parent.parent
 
-if not (MC_SOURCE_ROOT / "doc/man/roff/coole.1.in").exists():
-    raise FileNotFoundError("cannot read doc/man/roff/coole.1.in")
+if not (MC_SOURCE_ROOT / "doc/man/roff/bluerig.1.in").exists():
+    raise FileNotFoundError("cannot read doc/man/roff/bluerig.1.in")
 
 warnings = []
 

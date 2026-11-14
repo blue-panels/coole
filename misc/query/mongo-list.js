@@ -1,4 +1,4 @@
-// The databases and their collections, printed as Extended JSON after "\x1e coole-schema ":
+// The databases and their collections, printed as Extended JSON after "\x1e bluerig-schema ":
 // those of the system left out, but that of the connection; listDatabases not allowed, that alone
 {{> mongo-connect}}
 {
@@ -27,5 +27,5 @@
         __c.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
         __out.dbs.push({ name: __n, colls: __c });
     }
-    print('\x1e' + 'coole-schema ' + EJSON.stringify(__out));
+    print('\x1e' + 'bluerig-schema ' + EJSON.stringify(__out));
 }

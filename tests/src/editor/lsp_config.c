@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -253,22 +253,22 @@ test_root (void)
     g_free (make ("r/vcs/pat/a.proj", "x"));
     g_free (make ("r/vcs/pat/in/f.c", NULL));
     g_free (make ("r/vcs/other/f.c", NULL));
-    g_free (make ("r/coole/.coole", "x"));
-    g_free (make ("r/coole/sub/compile_commands.json", "[]"));
-    g_free (make ("r/coole/sub/f.c", NULL));
+    g_free (make ("r/bluerig/.bluerig", "x"));
+    g_free (make ("r/bluerig/sub/compile_commands.json", "[]"));
+    g_free (make ("r/bluerig/sub/f.c", NULL));
     g_free (make ("r/alone/f.c", NULL));
 
     // a marker of the backend before the repository
     check_root (backend, "r/vcs/sub/deep/f.c", NULL, "r/vcs/sub");
     check_root (backend, "r/vcs/pat/in/f.c", NULL, "r/vcs/pat");
     check_root (backend, "r/vcs/other/f.c", NULL, "r/vcs");
-    // .coole before a marker nearer to the file
-    check_root (backend, "r/coole/sub/f.c", NULL, "r/coole");
+    // .bluerig before a marker nearer to the file
+    check_root (backend, "r/bluerig/sub/f.c", NULL, "r/bluerig");
     // the project of -D before all
-    check_root (backend, "r/coole/sub/f.c", "r", "r");
+    check_root (backend, "r/bluerig/sub/f.c", "r", "r");
     // a project that does not hold the file is no root of it, nor one with a longer name
     check_root (backend, "r/vcs/other/f.c", "r/vc", "r/vcs");
-    check_root (backend, "r/vcs/other/f.c", "r/coole", "r/vcs");
+    check_root (backend, "r/vcs/other/f.c", "r/bluerig", "r/vcs");
     lsp_config_free (config);
 
     // a single file: its directory, or none.  Under the temporary directory there may be a
@@ -345,7 +345,7 @@ test_startup (void)
     lsp_config_t *config;
     const lsp_backend_t *backend;
 
-    // coole -Q: the backend of the option first
+    // bluerig -Q: the backend of the option first
     config = lsp_config_parse (json, -1, &error);
     g_assert_no_error (error);
     lsp_config_for_startup (config, started_query, NULL);

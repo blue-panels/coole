@@ -20,7 +20,7 @@ commit message**, **Git: status and log**, **Git: staged changes** and
 the keys. It is windows frame to frame where the windows of the files are:
 
 ```
- ┌─[COOLE_EDITMSG]────────────────────┐┌─[Diff]────────────────┐
+ ┌─[BLUERIG_EDITMSG]────────────────────┐┌─[Diff]────────────────┐
  │ the message of                     ││ the diff of the file  │
  │ the next commit                    ││ or of the commit      │
  └────────────────────────────────────┘│                       │
@@ -112,7 +112,7 @@ way, and the files it changes since they went apart. **Esc** closes it.
 
 **Esc**, **F10**
 : Back out of the diff, out of the files of a commit, else close the window
-Git; under *coole -G* the editor ends with it.
+Git; under *bluerig -G* the editor ends with it.
 
 **The tab Status**
 
@@ -231,9 +231,9 @@ taken, the frames of the skin being used.
 
 **The message of a commit**
 
-It is written in a window of the editor, the file *COOLE_EDITMSG* in the git
-directory of the repository (*COOLE_AMEND_EDITMSG* for an amend,
-*COOLE_REWORD_EDITMSG* for a reword). The window Git has the message of the
+It is written in a window of the editor, the file *BLUERIG_EDITMSG* in the git
+directory of the repository (*BLUERIG_AMEND_EDITMSG* for an amend,
+*BLUERIG_REWORD_EDITMSG* for a reword). The window Git has the message of the
 next commit at all times: it can be written whenever, the files staged
 before or after. An amend or a reword takes its place till it is done, and
 what was written of the message of the commit comes back after it; it is
@@ -264,9 +264,9 @@ be reworded here. Commits made again lose their signatures.
 
 In the window of a message, one of those files, or *COMMIT_EDITMSG* when the
 editor is the editor of *git commit*, **F11** opens a menu of its own instead
-of the menu of the user. Its items are those of *~/.config/coole/git-menu.ini*,
-else those of *git-menu.ini* of coole in the directory of its configuration
-(*/etc/coole*), those below; **m** in it makes the file of the user from it and
+of the menu of the user. Its items are those of *~/.config/bluerig/git-menu.ini*,
+else those of *git-menu.ini* of bluerig in the directory of its configuration
+(*/etc/bluerig*), those below; **m** in it makes the file of the user from it and
 opens it. The
 trailers go to the end of the message, before the lines git leaves out,
 after an empty line or into the block of trailers there is, once; **Ctrl-U**
@@ -303,12 +303,12 @@ no diff at all the command is not run.
 : Edit the prompt of the AI: *ai.ini* in a window of the editor, at the
 prompt of the kind of the message (*prompt-reword* for a reword) or else at
 *prompt*, on the whole screen, **Esc** back; that of the project when it has a
-prompt, else that of the user, made from the *ai.ini* of coole when there is
+prompt, else that of the user, made from the *ai.ini* of bluerig when there is
 none.
 
 **m**
-: Edit this menu: *~/.config/coole/git-menu.ini* in a window of the editor,
-made from the menu of coole when there is none; **Esc** back to the message.
+: Edit this menu: *~/.config/bluerig/git-menu.ini* in a window of the editor,
+made from the menu of bluerig when there is none; **Esc** back to the message.
 
 **git-menu.ini**
 
@@ -334,7 +334,7 @@ output = trailer
 
 *command*
 : Instead of an action, a command run by *sh* in the work tree: the message
-on its standard input, *COOLE_GIT_MODE* and *COOLE_GIT_COMMIT* in its
+on its standard input, *BLUERIG_GIT_MODE* and *BLUERIG_GIT_COMMIT* in its
 environment as for the command of *ai.ini*. It is taken as it is written: a
 backslash in it is one for *sh*.
 
@@ -354,7 +354,7 @@ wrote.
 **ai.ini**
 
 The command that writes messages is given in the group *[commit-message]*
-of *~/.config/coole/ai.ini*:
+of *~/.config/bluerig/ai.ini*:
 
 ```
 [commit-message]
@@ -368,12 +368,12 @@ else. The command may give more than the diff, the last messages of the
 repository for their style:
 
 ```
-command = { cat; echo; echo 'The last messages:'; git log -n 8 --format='%B---' ${COOLE_GIT_COMMIT:+$COOLE_GIT_COMMIT^}; } | claude -p --tools ""
+command = { cat; echo; echo 'The last messages:'; git log -n 8 --format='%B---' ${BLUERIG_GIT_COMMIT:+$BLUERIG_GIT_COMMIT^}; } | claude -p --tools ""
 ```
 
-The command gets *COOLE_GIT_MODE*, *commit*, *amend* or *reword*, and
-*COOLE_GIT_COMMIT*, the commit of an amend or a reword, empty for a commit:
-*${COOLE_GIT_COMMIT:+$COOLE_GIT_COMMIT^}* above is the history before that
+The command gets *BLUERIG_GIT_MODE*, *commit*, *amend* or *reword*, and
+*BLUERIG_GIT_COMMIT*, the commit of an amend or a reword, empty for a commit:
+*${BLUERIG_GIT_COMMIT:+$BLUERIG_GIT_COMMIT^}* above is the history before that
 commit, so that its own message is no example of style.
 
 The values of *ai.ini* are read as GLib reads its key files: a backslash
@@ -385,22 +385,22 @@ standard input and prints the message: *claude -p*, another agent run the
 same way, or a script of your own.
 
 *prompt*
-: What the command is asked first; without it, the prompt of coole, for a
+: What the command is asked first; without it, the prompt of bluerig, for a
 subject of 50 characters and a body wrapped at 72 columns.
 
 *prompt-reword*, *prompt-amend*, *prompt-commit*
 : The prompt for that kind of message, before *prompt*. For a reword the
 command gets the commit with its message as it is now; without either of
-the two, the prompt of coole for a reword asks for a better message for it.
+the two, the prompt of bluerig for a reword asks for a better message for it.
 
 *input*
 : *diff*, the default: the diff after the prompt; *none*: the prompt alone.
 
 A project can have prompts and an input of its own, in the group
-*[commit-message]* of *.coole/ai.ini* in its work tree, which go first. It
+*[commit-message]* of *.bluerig/ai.ini* in its work tree, which go first. It
 gives no command: a command written in a repository would run whatever
-whoever made it wrote. The prompts of coole are in its *ai.ini*, in the
-directory of its configuration (*/etc/coole*), and go last; it gives no
+whoever made it wrote. The prompts of bluerig are in its *ai.ini*, in the
+directory of its configuration (*/etc/bluerig*), and go last; it gives no
 command either.
 
 The editor waits for the command, with a message on the screen that shows
@@ -410,7 +410,7 @@ gets the environment of the editor. A key is kept in the environment or in a
 file the command reads, never in *ai.ini*. The diff goes to whatever service
 the command calls.
 
-The files *COMMIT_EDITMSG*, those of coole, *MERGE_MSG* and *TAG_EDITMSG*
+The files *COMMIT_EDITMSG*, those of bluerig, *MERGE_MSG* and *TAG_EDITMSG*
 are colored as messages of git: the lines git leaves out, the trailers such
 as *Signed-off-by:*, and the numbers of issues.
 
@@ -419,16 +419,16 @@ as *Signed-off-by:*, and the numbers of issues.
 The panel of git of mc, or a menu of the user, starts the editor for one
 thing and gets it back when it ends:
 
-*coole -G* directory
+*bluerig -G* directory
 : The window Git; closing it (**F10**) ends the editor.
 
-*coole -G* directory *--git-log*
+*bluerig -G* directory *--git-log*
 : The same, on the log.
 
-*coole -G* directory *--git-show* commit
+*bluerig -G* directory *--git-show* commit
 : The same, on the files and the diffs of that commit.
 
-*coole -G* directory *--git-commit*
+*bluerig -G* directory *--git-commit*
 : The window Git with the message of a commit of what is staged; the editor
 ends once it is committed, or when the window of the message is closed.
 *--git-amend* amends the last commit, *--git-reword* commit gives that

@@ -1,5 +1,5 @@
 #! /bin/sh
-# *** External Formatter (Indenter) for coole.
+# *** External Formatter (Indenter) for bluerig.
 # arguments:
 #    $1 - Name of the file being edited
 #    $2 - Name of the file to be processed

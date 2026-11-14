@@ -115,7 +115,7 @@ show_version (void)
 #endif
     printf (_ (" (using %s)\n"), curses_version ());
 #else
-#error "Cannot compile coole without S-Lang or ncurses"
+#error "Cannot compile bluerig without S-Lang or ncurses"
 #endif
 
     for (i = 0; features[i] != NULL; i++)

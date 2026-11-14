@@ -2,9 +2,9 @@
 # Put a release page into the wiki, and name it in the index.
 #
 # usage: publish_wiki.sh <version> <page.md> [<summary.txt>]
-#   maint/publish_wiki.sh coole-1.0.0 Release-coole-1.0.0.md summary.txt
+#   maint/publish_wiki.sh bluerig-1.0.0 Release-bluerig-1.0.0.md summary.txt
 #
-# The wiki is a repository of its own, coole.wiki.git, so it is cloned, written
+# The wiki is a repository of its own, bluerig.wiki.git, so it is cloned, written
 # to and pushed rather than committed alongside the source.
 #
 # The release page goes in under its own name and is then left alone. Releases.md
@@ -83,7 +83,7 @@ if test -f "$template"; then
     {
         printf '%s\n' "$line"
         test ! -f "$index" ||
-            grep -E '^- \[coole-[0-9]' "$index" | grep -v "^- \[$version\](" || true
+            grep -E '^- \[bluerig-[0-9]' "$index" | grep -v "^- \[$version\](" || true
     } | sort -Vr > "$wiki/list"
 
     awk -v list="$wiki/list" '

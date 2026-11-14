@@ -65,7 +65,7 @@ is_logging_enabled_from_env (void)
 {
     const char *env_is_enabled;
 
-    env_is_enabled = g_getenv ("COOLE_LOG_ENABLE");
+    env_is_enabled = g_getenv ("BLUERIG_LOG_ENABLE");
     if (env_is_enabled == NULL)
         return FALSE;
 
@@ -100,7 +100,7 @@ get_log_filename (void)
 {
     const char *env_filename;
 
-    env_filename = g_getenv ("COOLE_LOG_FILE");
+    env_filename = g_getenv ("BLUERIG_LOG_FILE");
     if (env_filename != NULL)
         return g_strdup (env_filename);
 
@@ -108,7 +108,7 @@ get_log_filename (void)
         return mc_config_get_string (mc_global.main_config, CONFIG_GROUP_NAME, CONFIG_KEY_NAME_FILE,
                                      NULL);
 
-    return mc_config_get_full_path ("coole.log");
+    return mc_config_get_full_path ("bluerig.log");
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -1662,7 +1662,7 @@ query_blank_line (const char *p, const char *end)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Whether the line at @p, after its blanks, is a directive of coole, @mark of @len bytes and "@":
+/* Whether the line at @p, after its blanks, is a directive of bluerig, @mark of @len bytes and "@":
    "// @table", "// @limit 20", which is of the query */
 static gboolean
 query_ai_directive (const char *p, const char *mark, gsize len)

@@ -227,7 +227,7 @@ ctags_keymap_parse_line (GArray *keymap, char *line)
         return;
 
     /* Later definitions override earlier ones: drop any existing bindings for this action.
-     * This makes ~/.config/coole/ctags.keymap (loaded last) override the system file, and
+     * This makes ~/.config/bluerig/ctags.keymap (loaded last) override the system file, and
      * "Action =" with an empty value unbind the action. */
     {
         guint i = 0;
@@ -306,7 +306,7 @@ ctags_keymap_load (void)
         g_free (fname);
     }
 
-    /* User override: ~/.config/coole/ctags.keymap (mc_config_get_full_path doesn't
+    /* User override: ~/.config/bluerig/ctags.keymap (mc_config_get_full_path doesn't
      * work for unregistered filenames, so build the path from the config dir). */
     if (mc_config_get_path () != NULL)
     {
@@ -471,7 +471,7 @@ ctags_project_root (ctags_data_t *d, const char *file_path)
 /* --------------------------------------------------------------------------------------------- */
 
 /* The index of a project: the tags file of its root when it has one, the user's; else
-   .coole/tags, the plugin's own */
+   .bluerig/tags, the plugin's own */
 static char *
 ctags_index_path (const char *root, gboolean *own)
 {
@@ -481,7 +481,7 @@ ctags_index_path (const char *root, gboolean *own)
     if (*own)
     {
         g_free (tags);
-        tags = g_build_filename (root, ".coole", "tags", (char *) NULL);
+        tags = g_build_filename (root, ".bluerig", "tags", (char *) NULL);
     }
     return tags;
 }
@@ -604,7 +604,8 @@ ctags_project_options_path (const char *root)
 {
     char *hash = g_compute_checksum_for_string (G_CHECKSUM_SHA256, root, -1);
     char *name = g_strconcat (hash, ".ini", (char *) NULL);
-    char *path = g_build_filename (g_get_user_config_dir (), "coole", "ctags", name, (char *) NULL);
+    char *path =
+        g_build_filename (g_get_user_config_dir (), "bluerig", "ctags", name, (char *) NULL);
 
     g_free (name);
     g_free (hash);
@@ -771,7 +772,7 @@ ctags_index_start (ctags_data_t *d, const char *root, const char *tags_path, gbo
         g_string_append_c (names, '\n');
     }
     g_ptr_array_free (files, TRUE);
-    fd = g_file_open_tmp ("coole-ctags-XXXXXX", &list, NULL);
+    fd = g_file_open_tmp ("bluerig-ctags-XXXXXX", &list, NULL);
     if (fd < 0 || write (fd, names->str, names->len) != (ssize_t) names->len)
     {
         if (fd >= 0)
@@ -882,7 +883,7 @@ ctags_ensure_repo (ctags_data_t *d, const char *file_path)
             g_free (root);
             return;
         }
-        // a directory that is no project gets no .coole of the plugin's
+        // a directory that is no project gets no .bluerig of the plugin's
         if (!ctags_root_too_wide (root) && project_is_project (root))
         {
             (void) ctags_index_start (d, root, tags, FALSE);
@@ -2257,7 +2258,7 @@ ctags_outline (ctags_data_t *d, const char *file, const char *text, gsize len)
     const char *cmd =
         d->cfg.ctags_cmd != NULL && *d->cfg.ctags_cmd != '\0' ? d->cfg.ctags_cmd : "ctags";
     char *base = g_path_get_basename (file);
-    char *src_template = g_strconcat ("coole-outline-XXXXXX-", base, (char *) NULL);
+    char *src_template = g_strconcat ("bluerig-outline-XXXXXX-", base, (char *) NULL);
     char *src = NULL, *tags = NULL, *root, *options, *program;
     char **args = NULL;
     GPtrArray *argv, *entries;
@@ -2288,7 +2289,7 @@ ctags_outline (ctags_data_t *d, const char *file, const char *text, gsize len)
         return NULL;
     }
     close (fd);
-    fd = g_file_open_tmp ("coole-outline-XXXXXX.tags", &tags, NULL);
+    fd = g_file_open_tmp ("bluerig-outline-XXXXXX.tags", &tags, NULL);
     if (fd >= 0)
         close (fd);
 
@@ -2581,7 +2582,7 @@ ctags_plugin_handle_event (void *plugin_data, void *edit, int event_id, void *pa
     repo = ctags_repos_find_for_file (d->repos, path);
     if (repo == NULL || repo->root_dir == NULL)
         return MC_EPR_NOT_SUPPORTED;
-    own = g_build_filename (repo->root_dir, ".coole", "tags", (char *) NULL);
+    own = g_build_filename (repo->root_dir, ".bluerig", "tags", (char *) NULL);
     if (repo->tags_path != NULL && strcmp (repo->tags_path, own) == 0)
     {
         d->quiet = TRUE;
@@ -2604,7 +2605,7 @@ ctags_plugin_on_file_open (void *plugin_data, void *edit)
     if (d == NULL || e == NULL)
         return MC_EPR_OK;
 
-    /* the index of the project is loaded with the file in coole --debug alone; else with the
+    /* the index of the project is loaded with the file in bluerig --debug alone; else with the
        first command that needs it, a file opened is not slowed by a big project */
     if (!d->cfg.auto_discover || d->host->startup_option == NULL
         || d->host->startup_option (d->host, "debug") == NULL)

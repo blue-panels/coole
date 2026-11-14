@@ -14,5 +14,5 @@ endforeach
 
 # the terminal plugin loads only when the program gives it every function it calls
 if module_symbols_sh.found()
-  test('module_symbols', module_symbols_sh, args: [coole, terminal_module], suite: 'src/mcterm')
+  test('module_symbols', module_symbols_sh, args: [bluerig, terminal_module], suite: 'src/mcterm')
 endif

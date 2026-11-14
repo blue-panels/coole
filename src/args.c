@@ -11,15 +11,15 @@
    Andrew Borodin <aborodin@vmail.ru>, 2011, 2012.
    Ilia Maslakov <il.smind@gmail.com>, 2026.
 
-   This file is part of coole,
+   This file is part of bluerig,
    a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -626,7 +626,7 @@ mc_query_name (const char *name, const char *fallback)
 
 /* --query: the database is what the environment has to connect to: MC_QUERY_KIND, else mongo by
    MC_MONGO_URI, else postgres by a file .sql; the file, when none is named, that of the queries
-   of the database, ~/.local/share/coole/queries/<database>.js for mongo,
+   of the database, ~/.local/share/bluerig/queries/<database>.js for mongo,
    queries/postgres/<connection>/<database>.sql for postgres */
 static gboolean
 mc_setup_query_by_args (GError **mcerror)
@@ -676,7 +676,7 @@ mc_setup_query_by_args (GError **mcerror)
             const char *db = g_getenv ("MC_MONGO_DB");
 
             name = g_strconcat (db != NULL && *db != '\0' ? db : "queries", ".js", (char *) NULL);
-            dir = g_build_filename (g_get_user_data_dir (), "coole", "queries", (char *) NULL);
+            dir = g_build_filename (g_get_user_data_dir (), "bluerig", "queries", (char *) NULL);
         }
         else
         {
@@ -689,7 +689,7 @@ mc_setup_query_by_args (GError **mcerror)
                                               mc_query_name (g_get_user_name (), "postgres")));
 
             name = g_strconcat (db, ".sql", (char *) NULL);
-            dir = g_build_filename (g_get_user_data_dir (), "coole", "queries", "postgres",
+            dir = g_build_filename (g_get_user_data_dir (), "bluerig", "queries", "postgres",
                                     connection, (char *) NULL);
         }
         path = g_build_filename (dir, name, (char *) NULL);

@@ -8,8 +8,8 @@
 set -eu
 
 version=${1:?usage: packaging/release-source.sh VERSION [TAG [OUTPUT]]}
-tag=${2:-coole-${version}}
-output=${3:-dist/coole-${version}.tar.gz}
+tag=${2:-bluerig-${version}}
+output=${3:-dist/bluerig-${version}.tar.gz}
 
 case "$version" in
     *[!0-9A-Za-z.+~:-]* | '')
@@ -29,16 +29,16 @@ if [ -e "$output" ]; then
 fi
 
 mkdir -p "$output_dir"
-stage=$(mktemp -d "${TMPDIR:-/tmp}/coole-release.XXXXXX")
+stage=$(mktemp -d "${TMPDIR:-/tmp}/bluerig-release.XXXXXX")
 trap 'rm -rf "$stage"' EXIT HUP INT TERM
 
-git -C "$root" archive --format=tar --prefix="coole-${version}/" "$tag" |
+git -C "$root" archive --format=tar --prefix="bluerig-${version}/" "$tag" |
     tar -xf - -C "$stage"
 
 # outside a Git checkout version.sh has nothing else to go by
-printf '%s\n' "${version}" > "$stage/coole-${version}/.tarball-version"
+printf '%s\n' "${version}" > "$stage/bluerig-${version}/.tarball-version"
 
 # one timestamp and one owner for everything: the same tag, the same bytes
 tar --sort=name --mtime="@${commit_time}" --owner=0 --group=0 --numeric-owner \
-    -C "$stage" -cf - "coole-${version}" | gzip -n > "$output"
+    -C "$stage" -cf - "bluerig-${version}" | gzip -n > "$output"
 printf '%s\n' "created $output"

@@ -121,7 +121,7 @@ jobs:
               if (!messages) return "";
 
               const system = [
-                "You write the summary that opens a pull request in coole, a console text",
+                "You write the summary that opens a pull request in bluerig, a console text",
                 "editor, a continuation of cooledit, with",
                 "syntax highlighting, code folding, macros, ctags navigation, spell checking,",
                 "editor plugins and Lua scripts.",

@@ -2,9 +2,9 @@
 # belong to the help alone (the main screen, how to use the help) appended.
 cat = find_program('cat')
 
-custom_target('coole.md',
-  input: ['../man/coole.md', 'help-screens.md'],
-  output: 'coole.md',
+custom_target('bluerig.md',
+  input: ['../man/bluerig.md', 'help-screens.md'],
+  output: 'bluerig.md',
   command: [cat, '@INPUT@'],
   capture: true,
   install: true,
@@ -15,9 +15,9 @@ install_data('gnu-gpl-v3.0.md', install_dir: pkgdatadir / 'help')
 
 if have_nls
   foreach lang : doc_languages
-    custom_target('coole.@0@.md'.format(lang),
-      input: ['../man' / lang / 'coole.md', lang / 'help-screens.md'],
-      output: 'coole.@0@.md'.format(lang),
+    custom_target('bluerig.@0@.md'.format(lang),
+      input: ['../man' / lang / 'bluerig.md', lang / 'help-screens.md'],
+      output: 'bluerig.@0@.md'.format(lang),
       command: [cat, '@INPUT@'],
       capture: true,
       install: true,

@@ -5,20 +5,20 @@ date: wrzesień 2026
 <!-- help:topics "Spis treści:" -->
 # NAZWA <!-- help:skip -->
 
-coole - edytor tekstu.
+bluerig - edytor tekstu.
 
 # UŻYTKOWANIE <!-- help:skip -->
 
-**coole**
+**bluerig**
 [opcje] [+wiersz] [plik1[:wiersz]] [plik2[:wiersz]] ...
 
 # OPIS <a id="description"></a>
 
-**coole**
+**bluerig**
 to konsolowy edytor tekstu. Jest kontynuacją
 **cooledit**,
 edytora Paula Sheera, którego terminalowa wersja przez wiele lat była rozwijana
-jako wbudowany edytor GNU Midnight Commandera; coole rozwija go dalej jako
+jako wbudowany edytor GNU Midnight Commandera; bluerig rozwija go dalej jako
 osobny program.
 
 Edytuje kilka plików naraz, każdy w osobnym oknie, także pliki binarne. Każdy
@@ -41,10 +41,10 @@ grep.
 : Pokazać wersję programu.
 
 *-f, --datadir*
-: Pokazać wkompilowane ścieżki wyszukiwania plików danych coole.
+: Pokazać wkompilowane ścieżki wyszukiwania plików danych bluerig.
 
 *-F, --datadir-info*
-: Pokazać rozszerzone informacje o katalogach używanych przez coole.
+: Pokazać rozszerzone informacje o katalogach używanych przez bluerig.
 
 *--configure-options*
 : Pokazać opcje, z którymi program został skonfigurowany.
@@ -115,7 +115,7 @@ co robią klawisze, wystarczy obejrzeć odpowiednie menu rozwijalne. Poza tym
 strzałki z Shiftem zaznaczają tekst.
 **Ctrl-Ins**
 kopiuje do pliku wymiany
-**~/.local/share/coole/clipboard**,
+**~/.local/share/bluerig/clipboard**,
 **Shift-Ins**
 wkleja z niego,
 **Shift-Del**
@@ -132,7 +132,7 @@ kiedy skończysz, i przypisz makro do klawisza, naciskając go. Makro wykonuje
 się tym klawiszem. Makra są przechowywane w sekcji
 **[editor]**
 pliku
-**~/.local/share/coole/macros**,
+**~/.local/share/bluerig/macros**,
 a kasuje się je, usuwając ich wiersz z tego pliku.
 
 Zestaw znaków wyświetlanego tekstu zmienia Alt-e (M-e). Przekodowanie idzie z
@@ -285,7 +285,7 @@ Przeglądanie i zmiana skrótów klawiszowych dla działań programu (menu Opcje
 
 **Zapisz**
 : Zapisuje zmiany w pliku
-*~/.config/coole/keymap.ini*.
+*~/.config/bluerig/keymap.ini*.
 
 **Edytuj plik klawiszy**
 : Otwiera
@@ -312,37 +312,37 @@ Przydatne przy szukaniu przyczyn kłopotów z klawiszami terminala.
 
 # ŚRODOWISKO <a id="environment"></a>
 
-**COOLE_DATADIR**
+**BLUERIG_DATADIR**
 : Katalog plików danych, zamiast {{pkgdatadir}}.
 
-**COOLE_PROFILE_ROOT**
+**BLUERIG_PROFILE_ROOT**
 : Korzeń plików użytkownika, zamiast katalogu domowego.
 
-**COOLE_SKIN**
+**BLUERIG_SKIN**
 : Skórka do użycia.
 
-**COOLE_KEYMAP**
+**BLUERIG_KEYMAP**
 : Plik klawiszy do użycia.
 
-**COOLE_TMPDIR**, **TMPDIR**
+**BLUERIG_TMPDIR**, **TMPDIR**
 : Katalog plików tymczasowych.
 
-**COOLE_NO_LUA**
+**BLUERIG_NO_LUA**
 : Wartość 1 uruchamia program bez środowiska Lua.
 
-**COOLE_LOG_ENABLE**, **COOLE_LOG_FILE**, **COOLE_SPELL_LOG**
+**BLUERIG_LOG_ENABLE**, **BLUERIG_LOG_FILE**, **BLUERIG_SPELL_LOG**
 : Dzienniki diagnostyczne.
 
 # PLIKI <a id="files"></a>
 
-*{{pkgdatadir}}/help/coole.md*
+*{{pkgdatadir}}/help/bluerig.md*
 : Plik pomocy programu.
 
-*{{sysconfdir}}/coole/coole.ini*, *{{pkgdatadir}}/coole.ini*
+*{{sysconfdir}}/bluerig/bluerig.ini*, *{{pkgdatadir}}/bluerig.ini*
 : Ustawienia systemowe, używane tylko wtedy, gdy użytkownik nie ma pliku
-~/.config/coole/ini.
+~/.config/bluerig/ini.
 
-*{{sysconfdir}}/coole/keymap.ini*, *{{sysconfdir}}/coole/coole.menu*
+*{{sysconfdir}}/bluerig/keymap.ini*, *{{sysconfdir}}/bluerig/bluerig.menu*
 : Systemowe klawisze i menu użytkownika.
 
 *{{pkgdatadir}}/syntax/\**
@@ -351,19 +351,19 @@ Przydatne przy szukaniu przyczyn kłopotów z klawiszami terminala.
 *{{plugins_dir}}/*
 : Wtyczki edytora.
 
-*~/.config/coole/ini*, *~/.config/coole/keymap.ini*, *~/.config/coole/menu*
+*~/.config/bluerig/ini*, *~/.config/bluerig/keymap.ini*, *~/.config/bluerig/menu*
 : Własne ustawienia, klawisze i menu użytkownika.
 
-*~/.local/share/coole/*
+*~/.local/share/bluerig/*
 : Historia, pozycje w plikach, schowek (clipboard), makra (macros,
 macros.d/), składnia (syntax/Syntax), skórki (skins/) i skrypty Lua
 (lua/scripts/) użytkownika.
 
-*~/.cache/coole/*
+*~/.cache/bluerig/*
 : Plik bloku (block) i pliki tymczasowe edytora.
 
 # ZOBACZ TAKŻE <a id="see-also"></a>
 
 cooledit(1), aspell(1), ctags(1).
 
-Angielski podręcznik, coole(1), opisuje wszystkie funkcje edytora.
+Angielski podręcznik, bluerig(1), opisuje wszystkie funkcje edytora.

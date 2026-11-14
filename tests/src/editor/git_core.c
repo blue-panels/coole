@@ -223,7 +223,7 @@ test_menu (void)
     const git_menu_item_t *item;
     GError *error = NULL;
 
-    // the menu of coole has the items of the plugin, in their order
+    // the menu of bluerig has the items of the plugin, in their order
     g_assert_true (g_file_get_contents (GIT_MENU_INI, &text, NULL, NULL));
     menu = git_menu_parse (text, &error);
     g_free (text);

@@ -19,7 +19,7 @@
 /*** declarations of public functions ************************************************************/
 
 /* The editor is up: the windows of the project of the file as they were the last time, or
-   those of the layout Debug for coole --debug */
+   those of the layout Debug for bluerig --debug */
 void edit_layout_startup (void *dialog);
 /* The editor ends: the windows of the project are kept for the next time */
 void edit_layout_quit (WDialog *h);

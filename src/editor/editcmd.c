@@ -11,15 +11,15 @@
    Andrew Borodin <aborodin@vmail.ru>, 2012-2022
    Ilia Maslakov <il.smind@gmail.com>, 2012, 2026
 
-   This file is part of coole,
+   This file is part of bluerig,
    a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -1408,7 +1408,7 @@ editcmd_create_user_syntax_file (const char *path)
     static const char text[] =
         "# The Syntax file of your own.\n"
         "#\n"
-        "# It is read before the Syntax file installed with coole, which is still\n"
+        "# It is read before the Syntax file installed with bluerig, which is still\n"
         "# used for every file type not named here.  An entry here wins over the\n"
         "# installed ones for the files it matches.  The rules an entry includes are\n"
         "# looked for in this directory first, and among the installed ones after.\n"

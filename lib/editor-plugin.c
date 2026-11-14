@@ -7,15 +7,15 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2025-2026.
 
-   This file is part of coole,
+   This file is part of bluerig,
    a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -27,8 +27,8 @@
 /** \file editor-plugin.c
  *  \brief Source: editor plugins: the registry and the loader of the dynamic ones
  *
- *  Scans the directories of COOLE_PLUGINS_DIR, then MC_PLUGINS_DIR and
- *  ~/.local/lib/coole/plugins for shared objects exporting
+ *  Scans the directories of BLUERIG_PLUGINS_DIR, then MC_PLUGINS_DIR and
+ *  ~/.local/lib/bluerig/plugins for shared objects exporting
  *  MC_EDITOR_PLUGIN_ENTRY, loads them, and registers the returned
  *  mc_editor_plugin_t descriptor via mc_editor_plugin_add(); a plugin of a
  *  name already registered is not loaded again.
@@ -214,12 +214,12 @@ mc_editor_plugins_load (void)
     editor_plugins_loaded = TRUE;
     editor_plugin_modules = g_ptr_array_new ();
 
-    /* first the directories of COOLE_PLUGINS_DIR, separated by ':': the program run from its
+    /* first the directories of BLUERIG_PLUGINS_DIR, separated by ':': the program run from its
        build directory takes the plugins built with it (meson devenv sets it), not those
        installed */
-    if (g_getenv ("COOLE_PLUGINS_DIR") != NULL)
+    if (g_getenv ("BLUERIG_PLUGINS_DIR") != NULL)
     {
-        gchar **dirs = g_strsplit (g_getenv ("COOLE_PLUGINS_DIR"), G_SEARCHPATH_SEPARATOR_S, -1);
+        gchar **dirs = g_strsplit (g_getenv ("BLUERIG_PLUGINS_DIR"), G_SEARCHPATH_SEPARATOR_S, -1);
         gchar **d;
 
         for (d = dirs; *d != NULL; d++)
@@ -231,7 +231,7 @@ mc_editor_plugins_load (void)
     // load from system plugin directory
     mc_editor_plugins_load_from_dir (MC_PLUGINS_DIR);
 
-    // load from user plugin directory (~/.local/lib/coole/plugins)
+    // load from user plugin directory (~/.local/lib/bluerig/plugins)
     user_dir = g_build_filename (g_get_home_dir (), ".local", "lib", MC_USERCONF_DIR, "plugins",
                                  (char *) NULL);
     mc_editor_plugins_load_from_dir (user_dir);

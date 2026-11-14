@@ -1,24 +1,24 @@
-.\" Generated from coole.md by maint/update-man-in.sh. Do not edit.
-.TH COOLE 1 "settembre 2026" "coole {{MAN_VERSION}}" "coole"
+.\" Generated from bluerig.md by maint/update-man-in.sh. Do not edit.
+.TH BLUERIG 1 "settembre 2026" "bluerig {{MAN_VERSION}}" "bluerig"
 
 .SH NOME
 .PP
-coole \- un editor di testo.
+bluerig \- un editor di testo.
 
 
 .SH USO
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 [opzioni] [+riga] [file1[:riga]] [file2[:riga]] ...
 
 
 .SH DESCRIZIONE
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 è un editor di testo per la console. Continua
 \fBcooledit\fP,
 l'editor di Paul Sheer, la cui versione per terminale è stata sviluppata per
-molti anni come editor interno di GNU Midnight Commander; coole lo porta avanti
+molti anni come editor interno di GNU Midnight Commander; bluerig lo porta avanti
 come programma a sé.
 
 .PP
@@ -45,11 +45,11 @@ Mostrare la versione del programma.
 
 .TP
 \fI\-f, \-\-datadir\fP
-Mostrare i percorsi di ricerca compilati per i file di dati di coole.
+Mostrare i percorsi di ricerca compilati per i file di dati di bluerig.
 
 .TP
 \fI\-F, \-\-datadir\-info\fP
-Mostrare informazioni estese sulle directory usate da coole.
+Mostrare informazioni estese sulle directory usate da bluerig.
 
 .TP
 \fI\-\-configure\-options\fP
@@ -141,7 +141,7 @@ cosa fanno i tasti, basta consultare il menu a discesa appropriato. Gli altri
 tasti sono: maiuscole più i tasti freccia selezionano il testo.
 \fBCtrl\-Ins\fP
 copia nel file di scambio
-\fB~/.local/share/coole/clipboard\fP,
+\fB~/.local/share/bluerig/clipboard\fP,
 \fBShift\-Ins\fP
 incolla da esso,
 \fBShift\-Del\fP
@@ -161,7 +161,7 @@ quando si ha finito e assegnare la macro a un tasto premendolo. La macro
 viene eseguita con quel tasto. Le macro stanno nella sezione
 \fB[editor]\fP
 del file
-\fB~/.local/share/coole/macros\fP,
+\fB~/.local/share/bluerig/macros\fP,
 e si cancella una macro cancellando la sua riga in quel file.
 
 .PP
@@ -354,7 +354,7 @@ Toglie la combinazione.
 .TP
 \fBSalva\fP
 Scrive le modifiche in
-\fI~/.config/coole/keymap.ini\fP\&.
+\fI~/.config/bluerig/keymap.ini\fP\&.
 
 .TP
 \fBModifica file dei tasti\fP
@@ -387,46 +387,46 @@ Utile per capire i problemi con i tasti del terminale.
 
 .SH AMBIENTE
 .TP
-\fBCOOLE_DATADIR\fP
+\fBBLUERIG_DATADIR\fP
 La directory dei file di dati, al posto di {{pkgdatadir}}.
 
 .TP
-\fBCOOLE_PROFILE_ROOT\fP
+\fBBLUERIG_PROFILE_ROOT\fP
 La radice dei file dell'utente, al posto della directory personale.
 
 .TP
-\fBCOOLE_SKIN\fP
+\fBBLUERIG_SKIN\fP
 Il tema da usare.
 
 .TP
-\fBCOOLE_KEYMAP\fP
+\fBBLUERIG_KEYMAP\fP
 Il file dei tasti da usare.
 
 .TP
-\fBCOOLE_TMPDIR\fP, \fBTMPDIR\fP
+\fBBLUERIG_TMPDIR\fP, \fBTMPDIR\fP
 La directory dei file temporanei.
 
 .TP
-\fBCOOLE_NO_LUA\fP
+\fBBLUERIG_NO_LUA\fP
 Con il valore 1, avviare senza l'ambiente Lua.
 
 .TP
-\fBCOOLE_LOG_ENABLE\fP, \fBCOOLE_LOG_FILE\fP, \fBCOOLE_SPELL_LOG\fP
+\fBBLUERIG_LOG_ENABLE\fP, \fBBLUERIG_LOG_FILE\fP, \fBBLUERIG_SPELL_LOG\fP
 I registri di debug.
 
 
 .SH FILE
 .TP
-\fI{{pkgdatadir}}/help/coole.md\fP
+\fI{{pkgdatadir}}/help/bluerig.md\fP
 Il file della guida del programma.
 
 .TP
-\fI{{sysconfdir}}/coole/coole.ini\fP, \fI{{pkgdatadir}}/coole.ini\fP
+\fI{{sysconfdir}}/bluerig/bluerig.ini\fP, \fI{{pkgdatadir}}/bluerig.ini\fP
 Le impostazioni di sistema, usate solo se l'utente non ha
-~/.config/coole/ini.
+~/.config/bluerig/ini.
 
 .TP
-\fI{{sysconfdir}}/coole/keymap.ini\fP, \fI{{sysconfdir}}/coole/coole.menu\fP
+\fI{{sysconfdir}}/bluerig/keymap.ini\fP, \fI{{sysconfdir}}/bluerig/bluerig.menu\fP
 I tasti e il menu utente di sistema.
 
 .TP
@@ -438,17 +438,17 @@ I file di sintassi di sistema.
 I componenti aggiuntivi dell'editor.
 
 .TP
-\fI~/.config/coole/ini\fP, \fI~/.config/coole/keymap.ini\fP, \fI~/.config/coole/menu\fP
+\fI~/.config/bluerig/ini\fP, \fI~/.config/bluerig/keymap.ini\fP, \fI~/.config/bluerig/menu\fP
 Le impostazioni, i tasti e il menu utente propri.
 
 .TP
-\fI~/.local/share/coole/\fP
+\fI~/.local/share/bluerig/\fP
 La cronologia, le posizioni dei file, gli appunti (clipboard), le macro
 (macros, macros.d/), la sintassi (syntax/Syntax), i temi (skins/) e gli script
 Lua (lua/scripts/) dell'utente.
 
 .TP
-\fI~/.cache/coole/\fP
+\fI~/.cache/bluerig/\fP
 Il file del blocco (block) e i file temporanei dell'editor.
 
 
@@ -457,4 +457,4 @@ Il file del blocco (block) e i file temporanei dell'editor.
 cooledit(1), aspell(1), ctags(1).
 
 .PP
-Il manuale in inglese, coole(1), descrive tutte le funzioni dell'editor.
+Il manuale in inglese, bluerig(1), descrive tutte le funzioni dell'editor.

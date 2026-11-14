@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -26,13 +26,13 @@
 /** \file query-postgres.c
  *  \brief Source: the backend of the query plugin for PostgreSQL
  *
- *  One connection for the whole of coole -Q, made when it starts: a transaction, the temporary
+ *  One connection for the whole of bluerig -Q, made when it starts: a transaction, the temporary
  *  tables and what SET sets stay from one F5 to the next.  Nothing of it waits: libpq is told not
  *  to block, and its socket is a select channel of the editor, for a read and, while libpq has
  *  something to send, for a write.
  *
- *  coole reads nothing of the connection: libpq takes it from the environment, PGHOST,
- *  PGDATABASE, PGSERVICE and the like, the password from ~/.pgpass.  What coole adds are
+ *  bluerig reads nothing of the connection: libpq takes it from the environment, PGHOST,
+ *  PGDATABASE, PGSERVICE and the like, the password from ~/.pgpass.  What bluerig adds are
  *  parameters of the connection, not queries after it, which would block: the encoding, its
  *  name, and with MC_QUERY_READ_ONLY=1 transactions read-only.
  */
@@ -57,8 +57,8 @@
 /*** file scope macro definitions ****************************************************************/
 
 // what the language server of lsp.json is told to connect to, by its "requests"
-#define QUERY_PG_LSP_URI    "COOLE_PG_URI"
-#define QUERY_PG_LSP_SCHEMA "COOLE_PG_SCHEMA"
+#define QUERY_PG_LSP_URI    "BLUERIG_PG_URI"
+#define QUERY_PG_LSP_SCHEMA "BLUERIG_PG_SCHEMA"
 // the language server of SQL lsp.json has, and where it comes from
 #define QUERY_PG_LANGUAGE_SERVER "postgres-language-server"
 #define QUERY_PG_LANGUAGE_SERVER_URL                                                               \
@@ -982,7 +982,7 @@ query_pg_read (query_pg_t *p)
         query_pg_flush (p);
     if (p->copy_in
         && pq->PQputCopyEnd (p->link.conn,
-                             _ ("COPY FROM STDIN: coole -Q has nothing to "
+                             _ ("COPY FROM STDIN: bluerig -Q has nothing to "
                                 "send"))
             != 0)
     {
@@ -1231,7 +1231,7 @@ query_pg_option (const PQconninfoOption *options, const char *keyword)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* What the language server connects to, in the environment of coole for the "requests" of
+/* What the language server connects to, in the environment of bluerig for the "requests" of
    lsp.json to tell it: a server of postgres-language-server is shared by all who use it, and
    reads the environment of the first one, without PGSERVICE.  It is what libpq takes from the
    environment, PGSERVICE and its file too, without the password: the server reads ~/.pgpass. */

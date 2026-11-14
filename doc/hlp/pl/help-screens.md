@@ -10,13 +10,13 @@
 ```
  based on GNU Midnight Commander
 
-Główny ekran pomocy programu **coole**.
+Główny ekran pomocy programu **bluerig**.
 
 Aby dowiedzieć się, jak używać interaktywnej pomocy, należy nacisnąć klawisz [Enter](#how-to-use-help). Można też przejść bezpośrednio do [spisu treści](#contents).
 
 Program GNU Midnight Commander został napisany przez jego [autorów](#authors).
 
-Program coole jest dostarczany BEZ JAKIEJKOLWIEK [GWARANCJI](gnu-gpl-v3.0.md#warranty). Niniejszy program jest wolnym oprogramowaniem; można go rozprowadzać dalej na warunkach [GNU General Public License](gnu-gpl-v3.0.md#license).
+Program bluerig jest dostarczany BEZ JAKIEJKOLWIEK [GWARANCJI](gnu-gpl-v3.0.md#warranty). Niniejszy program jest wolnym oprogramowaniem; można go rozprowadzać dalej na warunkach [GNU General Public License](gnu-gpl-v3.0.md#license).
 
 # Okna zapytań <a id="querybox"></a>
 

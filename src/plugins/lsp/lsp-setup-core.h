@@ -17,8 +17,8 @@
 
 /* the lines of .clangd around what the setup writes */
 #define LSP_SETUP_BEGIN                                                                            \
-    "# >>> coole: LSP > Project setup writes what is down to the line \"<<< coole\""
-#define LSP_SETUP_END "# <<< coole"
+    "# >>> bluerig: LSP > Project setup writes what is down to the line \"<<< bluerig\""
+#define LSP_SETUP_END "# <<< bluerig"
 
 /*** enums ***************************************************************************************/
 

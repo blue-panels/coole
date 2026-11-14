@@ -1,4 +1,4 @@
-Source: coole
+Source: bluerig
 Section: editors
 Priority: optional
 Maintainer: Ilia Maslakov <il.smind@gmail.com>
@@ -16,18 +16,18 @@ Build-Depends: debhelper-compat (= 13),
                check <!nocheck>
 Standards-Version: 4.7.2
 Rules-Requires-Root: no
-Homepage: https://github.com/blue-panels/coole
-Vcs-Git: https://github.com/blue-panels/coole.git
-Vcs-Browser: https://github.com/blue-panels/coole
+Homepage: https://github.com/blue-panels/bluerig
+Vcs-Git: https://github.com/blue-panels/bluerig.git
+Vcs-Browser: https://github.com/blue-panels/bluerig
 
-Package: coole
+Package: bluerig
 Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: coole-lua
+Recommends: bluerig-lua
 Suggests: libx11-6, libaspell15 | libhunspell-1.7-0, universal-ctags, mongodb-mongosh, mongolsp, libpq5
 Description: console text editor, a continuation of cooledit
- coole is a console text editor that continues cooledit by Paul Sheer.  It
+ bluerig is a console text editor that continues cooledit by Paul Sheer.  It
  has syntax highlighting, code folding, an
  undo history browser, keyboard macros with a macro explorer, ctags and
  etags navigation, spell checking, a user menu, multiple windows, skins and
@@ -36,20 +36,20 @@ Description: console text editor, a continuation of cooledit
  Spell checking uses aspell or hunspell, whichever is installed; the
  library is loaded at run time.
  .
- coole -Q runs the queries of a file in MongoDB, by mongosh, or in
+ bluerig -Q runs the queries of a file in MongoDB, by mongosh, or in
  PostgreSQL, by libpq, which is loaded at run time too.
  .
- The coole-lua package adds the Lua runtime, which runs editor scripts.
+ The bluerig-lua package adds the Lua runtime, which runs editor scripts.
 
-Package: coole-lua
+Package: bluerig-lua
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         coole (= ${binary:Version})
-Description: Lua runtime and scripts for the coole text editor
- The Lua runtime plugin that coole loads at run time, and the editor
+         bluerig (= ${binary:Version})
+Description: Lua runtime and scripts for the bluerig text editor
+ The Lua runtime plugin that bluerig loads at run time, and the editor
  scripts that come with it, such as inserting the date and time, sorting
  the selection, formatting a paragraph, drawing a table or inserting the
  output of a command.
  .
- Without this package coole runs, and the features written in Lua are
+ Without this package bluerig runs, and the features written in Lua are
  absent.

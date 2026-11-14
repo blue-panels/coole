@@ -9,7 +9,7 @@ stands at the left of the screen.
 **The project**
 
 The project of a file is found from the directory of the file up: the nearest
-directory with a *.coole* or a *.git* in it, else the outermost one with a
+directory with a *.bluerig* or a *.git* in it, else the outermost one with a
 build file (*meson.build*, *CMakeLists.txt*, *Makefile* and the like) up to
 the home directory, else the directory of the file itself. The first file
 opened gives the project; **Project → Open project...** chooses another.
@@ -66,7 +66,7 @@ is typed, from two letters: *src/calc.c:42: the line*, the first 5000 of
 them, the file around the line of the cursor under it. The text is looked
 for as it is, not as a pattern; with no capital letter in it, in any case.
 **Up**, **Down**, **PgUp** and **PgDn** move in the list; Enter goes to the
-line chosen, to the text in it. Binary files and *.coole* are skipped.
+line chosen, to the text in it. Binary files and *.bluerig* are skipped.
 The lines come as grep finds them, and the editor does not wait for it:
 while it looks, the title ends in *...*; typing on starts it anew. Enter
 typed before a line is there waits for the first one, the dialog open;
@@ -90,8 +90,8 @@ symbols. A mark of *%e* is the first letter of the extension: *c* for
 has them.
 
 What a file or a symbol is, by the name, the extension or the kind from
-ctags, is in *project-marks.ini*; *~/.config/coole/project-marks.ini* adds
-to it, and a key there replaces the same key of coole.
+ctags, is in *project-marks.ini*; *~/.config/bluerig/project-marks.ini* adds
+to it, and a key there replaces the same key of bluerig.
 
 **Up**, **Down**, **PgUp**, **PgDn**, **Home**, **End**
 : Move in the tree.

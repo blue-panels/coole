@@ -2,7 +2,7 @@
 # Build the source packages a Launchpad PPA takes, one per Ubuntu series.
 #
 # usage: packaging/ppa-source.sh VERSION ARCHIVE SERIES:UBUNTU_VERSION...
-#   packaging/ppa-source.sh 1.0.0 dist/coole-1.0.0.tar.gz noble:24.04 jammy:22.04
+#   packaging/ppa-source.sh 1.0.0 dist/bluerig-1.0.0.tar.gz noble:24.04 jammy:22.04
 #
 # A PPA builds the binaries itself, so what is uploaded is a signed source
 # package per series. Every series shares one orig tarball: the series lives in
@@ -54,14 +54,14 @@ fi
 mkdir -p "$outdir"
 outdir=$(CDPATH= cd -- "$outdir" && pwd)
 
-stage=$(mktemp -d "${TMPDIR:-/tmp}/coole-ppa.XXXXXX")
+stage=$(mktemp -d "${TMPDIR:-/tmp}/bluerig-ppa.XXXXXX")
 trap 'rm -rf "$stage"' EXIT HUP INT TERM
 
 # One shared orig tarball, and one unpacked tree per series next to it. The
 # copy in the output directory is made here rather than at the end: dput reads
 # the tarball named in the .changes from beside it, and dput runs per series.
-cp "$archive" "$stage/coole_$version.orig.tar.gz"
-cp "$archive" "$outdir/coole_$version.orig.tar.gz"
+cp "$archive" "$stage/bluerig_$version.orig.tar.gz"
+cp "$archive" "$outdir/bluerig_$version.orig.tar.gz"
 
 first=yes
 for pair in "$@"; do
@@ -73,9 +73,9 @@ for pair in "$@"; do
     DEB_DISTRIBUTION="$series" DEB_VERSION_SUFFIX="~ubuntu$ubuntu_version.$revision" \
         "$root/packaging/prepare.sh" "$version" "$archive" >/dev/null
 
-    rm -rf "$stage/coole-$version"
+    rm -rf "$stage/bluerig-$version"
     tar -xf "$archive" -C "$stage"
-    cp -r debian "$stage/coole-$version/"
+    cp -r debian "$stage/bluerig-$version/"
 
     # -sa carries the tarball, -sd refers to the one uploaded before it.
     if test "$first" = yes; then
@@ -95,10 +95,10 @@ for pair in "$@"; do
         set -- "$@" "-k${SIGN_KEY}"
     fi
 
-    (cd "$stage/coole-$version" && dpkg-buildpackage "$@")
+    (cd "$stage/bluerig-$version" && dpkg-buildpackage "$@")
 
-    changes=$(ls "$stage"/coole_*~ubuntu"$ubuntu_version"."$revision"_source.changes)
-    cp "$stage"/coole_*~ubuntu"$ubuntu_version"."$revision"* "$outdir/"
+    changes=$(ls "$stage"/bluerig_*~ubuntu"$ubuntu_version"."$revision"_source.changes)
+    cp "$stage"/bluerig_*~ubuntu"$ubuntu_version"."$revision"* "$outdir/"
 
     echo "built $series: $(basename "$changes")"
 

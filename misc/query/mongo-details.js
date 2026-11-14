@@ -1,4 +1,4 @@
-// What a collection unfolded shows, printed as Extended JSON after "\x1e coole-schema ": the
+// What a collection unfolded shows, printed as Extended JSON after "\x1e bluerig-schema ": the
 // fields of a sample of its documents, its indexes, its validator, the pipeline of a view.
 // {{db}}, {{collection}}: its database and its name, strings of JavaScript
 {{> mongo-connect}}
@@ -24,5 +24,5 @@
             if (__i.options.pipeline) __out.pipeline = EJSON.stringify(__i.options.pipeline);
         }
     } catch (e) {}
-    print('\x1e' + 'coole-schema ' + EJSON.stringify(__out));
+    print('\x1e' + 'bluerig-schema ' + EJSON.stringify(__out));
 }

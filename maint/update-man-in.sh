@@ -24,8 +24,8 @@ done
 # Every page is of section 1 and of this manual; only the date is its own,
 # and it stands in the markdown, in front of the text it belongs to.
 SECTION=1
-SOURCE="coole {{MAN_VERSION}}"
-MANUAL="coole"
+SOURCE="bluerig {{MAN_VERSION}}"
+MANUAL="bluerig"
 
 for md in "$top"/doc/man/*.md "$top"/doc/man/*/*.md; do
     [ -f "$md" ] || continue

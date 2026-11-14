@@ -10,13 +10,13 @@
 ```
  based on GNU Midnight Commander
 
-Ez a **coole** súgója.
+Ez a **bluerig** súgója.
 
 Az interaktív súgó használatának megismeréséhez csak üss egy [entert](#how-to-use-help). Itt közvetlenül a súgó [tartalomjegyzékébe](#contents) juthatsz.
 
 A Midnight Commander-t a következő [szerzők](#authors) készítették.
 
-A coole mindenféle [garancia](gnu-gpl-v3.0.md#warranty) nélkül kerül kiadásra. Ez szabad szoftver, így továbbadhatod azt a [Felhasználási engedélyben](gnu-gpl-v3.0.md#license) meghatározott feltételekkel.
+A bluerig mindenféle [garancia](gnu-gpl-v3.0.md#warranty) nélkül kerül kiadásra. Ez szabad szoftver, így továbbadhatod azt a [Felhasználási engedélyben](gnu-gpl-v3.0.md#license) meghatározott feltételekkel.
 
 # Lekérdező box <a id="querybox"></a>
 

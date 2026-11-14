@@ -19,7 +19,7 @@ jobs:
   open:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: github.repository == 'blue-panels/coole'
+    if: github.repository == 'blue-panels/bluerig'
 
     steps:
       - uses: actions/checkout@v7
@@ -31,8 +31,8 @@ jobs:
           # command line.
           VERSION: ${{ inputs.version }}
         run: |
-          # coole-1.0.0 and 1.0.0 are the same thing to a person
-          VERSION="${VERSION#coole-}"
+          # bluerig-1.0.0 and 1.0.0 are the same thing to a person
+          VERSION="${VERSION#bluerig-}"
 
           case "$VERSION" in
               *[!0-9.]*) echo "the version takes digits and dots only" >&2; exit 1 ;;
@@ -40,6 +40,6 @@ jobs:
 
           sed "s/X\.Y\.Z/$VERSION/g" .github/release-checklist.md > body.md
           gh issue create \
-              --title "Release coole-$VERSION" \
+              --title "Release bluerig-$VERSION" \
               --label infra \
               --body-file body.md

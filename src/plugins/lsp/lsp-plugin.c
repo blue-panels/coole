@@ -8,14 +8,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -82,7 +82,7 @@
 // the CompletionItemKind of a word of lsp.json
 #define LSP_KIND_KEYWORD 14
 // the member that marks such a word among the items of the server
-#define LSP_WORD_MEMBER "coole-word"
+#define LSP_WORD_MEMBER "bluerig-word"
 
 /* the lines of the source of a definition Hover shows at most */
 #define LSP_HOVER_SOURCE_LINES 10
@@ -3730,7 +3730,7 @@ lsp_config_files (char **system, char **user)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* Whether coole was started with the option @name: "query" for -Q */
+/* Whether bluerig was started with the option @name: "query" for -Q */
 static gboolean
 lsp_started_with (const char *name, void *data)
 {

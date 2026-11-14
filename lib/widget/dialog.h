@@ -66,7 +66,7 @@ struct WDialog
     // Set by the user
     gboolean compact;       // Suppress spaces around the frame
     const char *help_ctx;   // Name of the help entry
-    const char *help_file;  // Path to help file (NULL = default coole.md)
+    const char *help_file;  // Path to help file (NULL = default bluerig.md)
     const int *colors;      // Color set. Unused in editor
 
     // Set and received by the user

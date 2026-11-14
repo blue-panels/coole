@@ -1,5 +1,5 @@
-# The message of a git commit: COMMIT_EDITMSG, the file the git plugin of coole writes for
-# one (COOLE_EDITMSG, COOLE_AMEND_EDITMSG, COOLE_REWORD_EDITMSG), MERGE_MSG and TAG_EDITMSG.  The lines git leaves out are dimmed, the
+# The message of a git commit: COMMIT_EDITMSG, the file the git plugin of bluerig writes for
+# one (BLUERIG_EDITMSG, BLUERIG_AMEND_EDITMSG, BLUERIG_REWORD_EDITMSG), MERGE_MSG and TAG_EDITMSG.  The lines git leaves out are dimmed, the
 # trailers stand out.
 
 context default

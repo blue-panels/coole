@@ -20,8 +20,8 @@ if nroff.found() and run_command('sh', '-c', '"$0" -c < /dev/null', nroff.full_p
   man_flags = '-c'
 endif
 configure_file(
-  input: 'coole.menu.in',
-  output: 'coole.menu',
+  input: 'bluerig.menu.in',
+  output: 'bluerig.menu',
   configuration: {'MAN_FLAGS': man_flags},
   install_dir: pkgsysconfdir,
 )
@@ -39,18 +39,18 @@ install_symlink('keymap.ini', pointing_to: 'keymap.default.ini', install_dir: pk
 install_data('edit.indent.rc', install_dir: pkgsysconfdir, install_mode: 'rwxr-xr-x')
 # the menu of a message of the git plugin and what it asks the AI
 install_data('git-menu.ini', 'ai.ini', install_dir: pkgsysconfdir)
-# how a project is built and debugged by its language; ~/.config/coole/presets.ini adds and
+# how a project is built and debugged by its language; ~/.config/bluerig/presets.ini adds and
 # replaces
 install_data('presets.ini', install_dir: pkgsysconfdir)
-# what the marks of the tree of the project stand for; ~/.config/coole/project-marks.ini adds
+# what the marks of the tree of the project stand for; ~/.config/bluerig/project-marks.ini adds
 # and replaces
 install_data('project-marks.ini', install_dir: pkgsysconfdir)
 
 # the JavaScript of mongosh and the SQL of PostgreSQL the query plugin runs, read when it runs;
-# ~/.config/coole/query/ and /etc/coole/query/ have the user's and the system's in their place
+# ~/.config/bluerig/query/ and /etc/bluerig/query/ have the user's and the system's in their place
 install_subdir('query', install_dir: pkgdatadir)
 
-# the language servers the LSP plugin knows; ~/.config/coole/lsp.json adds and replaces
+# the language servers the LSP plugin knows; ~/.config/bluerig/lsp.json adds and replaces
 if have_gmodule and json_glib.found()
   install_data('lsp.json', install_dir: pkgsysconfdir)
 endif

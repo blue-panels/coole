@@ -8,14 +8,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -904,7 +904,7 @@ lsp_setup_run (const char *root, const char *program)
     setup->failing = g_array_new (FALSE, FALSE, sizeof (guint));
     setup->sample = g_array_new (FALSE, FALSE, sizeof (guint));
     setup->chosen = g_ptr_array_new_with_free_func (g_free);
-    setup->tmp = g_dir_make_tmp ("coole-lsp-setup-XXXXXX", NULL);
+    setup->tmp = g_dir_make_tmp ("bluerig-lsp-setup-XXXXXX", NULL);
     if (setup->build_dir != NULL)
     {
         char *file = g_build_filename (setup->build_dir, "compile_commands.json", (char *) NULL);

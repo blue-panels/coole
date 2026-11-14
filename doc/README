@@ -1,13 +1,13 @@
-The documentation of coole
+The documentation of bluerig
 --------------------------
 
-coole is a console text editor, a continuation of cooledit.  The
+bluerig is a console text editor, a continuation of cooledit.  The
 top-level README.md says what it does and how to start it.
 
 This directory holds:
 
 * INSTALL
-    What is needed to build coole, the configure options, and how to
+    What is needed to build bluerig, the configure options, and how to
     build and install it.  The file INSTALL at the top of the tree
     points here.
 
@@ -29,8 +29,8 @@ This directory holds:
     installed into the documentation directory.
 
 * man/
-    The manual page, coole.1, and its translations.  The page is
-    written in markdown (coole.md); the roff under roff/ is made from
+    The manual page, bluerig.1, and its translations.  The page is
+    written in markdown (bluerig.md); the roff under roff/ is made from
     it by maint/update-man-in.sh.
 
 * hlp/
@@ -44,19 +44,19 @@ This directory holds:
 Reporting problems
 ------------------
 
-Report bugs in coole on its issue tracker:
+Report bugs in bluerig on its issue tracker:
 
-https://github.com/blue-panels/coole/issues
+https://github.com/blue-panels/bluerig/issues
 
-Include the output of "coole --version", the operating system and the
+Include the output of "bluerig --version", the operating system and the
 distribution (if applicable) you are using, the compiler and the
 configure flags used to compile the program (if you know them;
-"coole --configure-options" prints them).
+"bluerig --configure-options" prints them).
 
 If the program crashed and produced a core dump, please provide a
 stack trace of the program.
 
 You can do this by running gdb like this:
 
-gdb coole core
+gdb bluerig core
 (gdb) where

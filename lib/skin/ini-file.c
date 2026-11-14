@@ -171,11 +171,11 @@ mc_skin_ini_file_load (mc_skin_t *mc_skin)
     if (mc_skin_ini_file_load_search_in_dir (mc_skin, mc_config_get_data_path ()))
         return TRUE;
 
-    // /etc/coole/skins/
+    // /etc/bluerig/skins/
     if (mc_skin_ini_file_load_search_in_dir (mc_skin, mc_global.sysconfig_dir))
         return TRUE;
 
-    // /usr/share/coole/skins/
+    // /usr/share/bluerig/skins/
     return mc_skin_ini_file_load_search_in_dir (mc_skin, mc_global.share_data_dir);
 }
 

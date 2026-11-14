@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026.
 
-   This file is part of coole, a text editor based on GNU Midnight Commander.
+   This file is part of bluerig, a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -1419,7 +1419,7 @@ setup (void)
     };
 
     error = NULL;
-    g_unsetenv ("COOLE_NO_LUA");
+    g_unsetenv ("BLUERIG_NO_LUA");
     g_unsetenv ("MC_LUA_TEST_EVENT_SHAPES");
     g_unsetenv ("MC_LUA_TEST_UI");
     g_unsetenv ("MC_LUA_TEST_ERROR");
@@ -2226,7 +2226,7 @@ START_TEST (test_lua_runtime_honors_disable_environment)
 {
     mc_runtime_event_snapshot_t *snapshot;
 
-    g_setenv ("COOLE_NO_LUA", "1", TRUE);
+    g_setenv ("BLUERIG_NO_LUA", "1", TRUE);
     mctest_assert_true (mc_runtime_plugins_load (&error));
     ck_assert_int_eq ((int) mc_runtime_plugins_count (), 0);
 
@@ -2320,7 +2320,7 @@ test_count_action (const char *runtime_name, const char *id, const char *label,
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* The scripts that come with coole, and the example, load in the editor
+/* The scripts that come with bluerig, and the example, load in the editor
    workspace and register their actions without a single error. */
 START_TEST (test_lua_runtime_loads_the_shipped_editor_scripts)
 {
@@ -2351,7 +2351,7 @@ main (void)
     int result;
 
     str_init_strings ("UTF-8");
-    test_root = g_dir_make_tmp ("coole-lua-runtime.XXXXXX", &error);
+    test_root = g_dir_make_tmp ("bluerig-lua-runtime.XXXXXX", &error);
     if (test_root == NULL)
     {
         fprintf (stderr, "Could not create test directory: %s\n",
@@ -2402,7 +2402,7 @@ main (void)
 
     result = mctest_run_all (tc_core);
 
-    g_unsetenv ("COOLE_NO_LUA");
+    g_unsetenv ("BLUERIG_NO_LUA");
     g_unsetenv ("MC_LUA_TEST_EVENT_SHAPES");
     g_unsetenv ("MC_LUA_TEST_UI");
     g_unsetenv ("MC_LUA_TEST_ERROR");

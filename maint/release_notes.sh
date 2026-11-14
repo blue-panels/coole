@@ -2,7 +2,7 @@
 # Generate release notes from merged PRs, grouped by type and area.
 #
 # usage: release_notes.sh <version> [<git-range>]
-#   release_notes.sh coole-1.0.1 coole-1.0.0..HEAD
+#   release_notes.sh bluerig-1.0.1 bluerig-1.0.0..HEAD
 #
 # Without a git range all merged PRs are included (first release).
 # PR numbers are taken from merge/squash commit subjects in the range,
@@ -11,7 +11,7 @@
 # Top level is the type of change (Features, Fixes, Internal); inside a
 # type entries are grouped by area, and plugin entries by plugin name.
 #
-# The version and the milestone are named like the tag, coole-X.Y.Z.
+# The version and the milestone are named like the tag, bluerig-X.Y.Z.
 #
 # Type labels: Feature, "Bug fix"; everything else goes to Internal.
 # Area labels: editor (mcedit is read as editor too), core, Plugin.
@@ -26,15 +26,15 @@
 # user sees, and why it changed) before committing the wiki page.
 #
 # Output goes to stdout; redirect into the wiki page, e.g.:
-#   maint/release_notes.sh coole-1.0.1 coole-1.0.0..HEAD \
-#       > ../coole.wiki/Release-coole-1.0.1.md
+#   maint/release_notes.sh bluerig-1.0.1 bluerig-1.0.0..HEAD \
+#       > ../bluerig.wiki/Release-bluerig-1.0.1.md
 #
 # Requires: gh (authenticated or GH_TOKEN set), jq, gawk.
 
 set -e
 
-REPO="blue-panels/coole"
-PRODUCT="coole"
+REPO="blue-panels/bluerig"
+PRODUCT="bluerig"
 VERSION="$1"
 shift || true
 
@@ -211,9 +211,9 @@ function has_label(labels, name,   i, n, parts) {
     }
 }
 END {
-    # The heading names the version once: coole-1.0.0 reads as coole 1.0.0.
+    # The heading names the version once: bluerig-1.0.0 reads as bluerig 1.0.0.
     shown = version
-    sub(/^coole-/, "", shown)
+    sub(/^bluerig-/, "", shown)
     printf "# %s %s (%s)\n", product, shown, date
 
     na = split("Editor Core", areas, " ")

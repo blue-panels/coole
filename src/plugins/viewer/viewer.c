@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -1054,7 +1054,7 @@ viewer_plugin_open (mc_editor_host_t *host, void *editor_dialog)
         g_free (key_label);
         return NULL;
     }
-    // coole -G is there for git: the windows of the viewer are for what it shows, no Preview of
+    // bluerig -G is there for git: the windows of the viewer are for what it shows, no Preview of
     // the files, nor its key
     if (host->startup_option != NULL && host->startup_option (host, "git") != NULL)
         v->key = 0;

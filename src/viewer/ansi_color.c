@@ -27,7 +27,7 @@
 /** \file
  *  \brief Source: the colors of ANSI text, in the colors of the skin
  *
- *  In mc this is a part of the viewer (ascii.c); coole has it in the program, for the terminal
+ *  In mc this is a part of the viewer (ascii.c); bluerig has it in the program, for the terminal
  *  and for the windows that show text with ANSI colors.
  */
 

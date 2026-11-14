@@ -90,7 +90,7 @@ typedef struct
     const mc_runtime_dialog_control_t *controls;
     guint controls_count;
     /* What F1 opens over the dialog.  @help_node is the node, "[Name]", and
-       @help_file the file it lives in; NULL for the help of coole itself.  A
+       @help_file the file it lives in; NULL for the help of bluerig itself.  A
        dialog without a node has no help, as before. */
     const char *help_node;
     const char *help_file;

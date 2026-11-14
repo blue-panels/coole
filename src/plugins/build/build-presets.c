@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -165,7 +165,7 @@ build_presets_add (GPtrArray *presets, const char *text, gboolean project, GErro
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A key the copy of a project has not is that of @base, the preset of its language: what coole
+/* A key the copy of a project has not is that of @base, the preset of its language: what bluerig
    adds to its presets later comes to the projects it has copied before */
 static void
 build_preset_inherit (build_preset_t *copy, const build_preset_t *base)
@@ -203,7 +203,7 @@ build_presets_parse (const char *project_text, const char *user_text, const char
         (void) build_presets_add (presets, user_text, FALSE, user_error);
     if (system_text != NULL)
         (void) build_presets_add (presets, system_text, FALSE, NULL);
-    // the copy, first, takes what it has not from its language, the user's before coole's
+    // the copy, first, takes what it has not from its language, the user's before bluerig's
     if (presets->len > 0 && ((build_preset_t *) g_ptr_array_index (presets, 0))->project)
     {
         build_preset_t *copy = g_ptr_array_index (presets, 0);
@@ -291,10 +291,10 @@ build_presets_project_text (const build_preset_t *preset, gboolean with_build)
     g_key_file_set_string (keyfile, group, "language", preset->id);
     g_key_file_set_comment (
         keyfile, group, NULL,
-        " How coole builds and debugs this project: a copy of the preset of its language in\n"
+        " How bluerig builds and debugs this project: a copy of the preset of its language in\n"
         " presets.ini, made when the project was first opened, the keys of presets.ini.\n"
         " What is changed here stays; a key not here is that of presets.ini, an empty one\n"
-        " is none.  command is the build command given in coole.\n"
+        " is none.  command is the build command given in bluerig.\n"
         " Command > Language defaults of the project copies the preset again.",
         NULL);
     for (i = 0; i < G_N_ELEMENTS (strings); i++)

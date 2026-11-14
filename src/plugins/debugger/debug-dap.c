@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -1062,8 +1062,8 @@ dap_launch (dap_backend_t *dap)
         return;
     dap->launched = TRUE;
     node = dap_args (&args);
-    json_object_set_string_member (args, "name", "coole");
-    json_object_set_string_member (args, "type", "coole");
+    json_object_set_string_member (args, "name", "bluerig");
+    json_object_set_string_member (args, "type", "bluerig");
     json_object_set_string_member (args, "request", "launch");
     json_object_set_string_member (args, "program", dap->program);
     for (i = 0; dap->args != NULL && dap->args[i] != NULL; i++)
@@ -1141,10 +1141,10 @@ dap_initialize_args (const dap_backend_t *dap)
     JsonObject *args;
     JsonNode *node = dap_args (&args);
 
-    json_object_set_string_member (args, "clientID", "coole");
-    json_object_set_string_member (args, "clientName", "coole");
+    json_object_set_string_member (args, "clientID", "bluerig");
+    json_object_set_string_member (args, "clientName", "bluerig");
     json_object_set_string_member (
-        args, "adapterID", dap->argv != NULL && dap->argv[0] != NULL ? dap->argv[0] : "coole");
+        args, "adapterID", dap->argv != NULL && dap->argv[0] != NULL ? dap->argv[0] : "bluerig");
     json_object_set_string_member (args, "pathFormat", "path");
     json_object_set_boolean_member (args, "linesStartAt1", TRUE);
     json_object_set_boolean_member (args, "columnsStartAt1", TRUE);

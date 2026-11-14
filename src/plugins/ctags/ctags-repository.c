@@ -132,7 +132,7 @@ ctags_repo_load (const char *tags_path)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* A tags file whose names are from @root_dir, which need not be its directory: .coole/tags of a
+/* A tags file whose names are from @root_dir, which need not be its directory: .bluerig/tags of a
    project names the files from the project */
 ctags_repo_t *
 ctags_repo_load_root (const char *tags_path, const char *root_dir)

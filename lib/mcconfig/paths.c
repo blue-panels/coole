@@ -73,7 +73,7 @@ static const struct
     { &mc_data_str, MC_MACRO_FILE },
 
     // cache
-    { &mc_cache_str, "coole.log" },
+    { &mc_cache_str, "bluerig.log" },
     { &mc_cache_str, EDIT_HOME_TEMP_FILE },
     { &mc_cache_str, EDIT_HOME_BLOCK_FILE },
 

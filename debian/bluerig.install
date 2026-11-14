@@ -1,0 +1,16 @@
+usr/bin/bluerig
+usr/lib/bluerig/plugins/
+etc/bluerig/
+usr/share/doc/bluerig/LUA_API_REFERENCE.md
+usr/share/doc/bluerig/LUA_PLUGINS.md
+usr/share/doc/bluerig/lua-api.json
+usr/share/bluerig/charsets
+usr/share/bluerig/defaults.ini
+usr/share/bluerig/examples/
+usr/share/bluerig/help/
+usr/share/bluerig/query/
+usr/share/bluerig/skins/
+usr/share/bluerig/syntax/
+usr/share/man/man1/bluerig.1
+usr/share/man/*/man1/
+usr/share/locale/

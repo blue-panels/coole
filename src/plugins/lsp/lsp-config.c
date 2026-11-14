@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -668,7 +668,7 @@ lsp_backend_autostart (const lsp_config_t *config, const lsp_backend_t *backend)
 char *
 lsp_find_root (const lsp_backend_t *backend, const char *path, const char *project)
 {
-    static const char *const coole[] = { ".coole", NULL };
+    static const char *const bluerig[] = { ".bluerig", NULL };
     static const char *const vcs[] = { ".git", ".hg", ".svn", NULL };
     char *dir, *root;
 
@@ -687,7 +687,7 @@ lsp_find_root (const lsp_backend_t *backend, const char *path, const char *proje
             return g_strdup (project);
         }
     }
-    root = lsp_find_up (dir, coole);
+    root = lsp_find_up (dir, bluerig);
     if (root == NULL)
         root = lsp_find_up (dir, (const char *const *) backend->root_markers);
     if (root == NULL)

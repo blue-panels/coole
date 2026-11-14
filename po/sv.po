@@ -23,7 +23,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Midnight Commander\n"
-"Report-Msgid-Bugs-To: https://github.com/blue-panels/coole/issues\n"
+"Report-Msgid-Bugs-To: https://github.com/blue-panels/bluerig/issues\n"
 "POT-Creation-Date: 2026-09-29 13:14+0200\n"
 "PO-Revision-Date: 2026-09-25 22:53+0000\n"
 "Last-Translator: yeager <user-6596@noreply.codeberg.org>\n"
@@ -2545,7 +2545,7 @@ msgstr ""
 "Inga globala eller användarspecifika Lua-skript för redigeraren hittades."
 
 #, fuzzy
-msgid "Lua runtime is disabled. Enable Lua engine and restart coole."
+msgid "Lua runtime is disabled. Enable Lua engine and restart bluerig."
 msgstr "Lua-körmiljön är inaktiverad. Aktivera Lua-motorn och starta om MC."
 
 #, fuzzy

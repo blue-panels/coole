@@ -1,25 +1,25 @@
-.\" Generated from coole.md by maint/update-man-in.sh. Do not edit.
-.TH COOLE 1 "септембар 2026." "coole {{MAN_VERSION}}" "coole"
+.\" Generated from bluerig.md by maint/update-man-in.sh. Do not edit.
+.TH BLUERIG 1 "септембар 2026." "bluerig {{MAN_VERSION}}" "bluerig"
 
 .SH НАЗИВ
 .PP
-coole \- уређивач текста.
+bluerig \- уређивач текста.
 
 
 .SH УПОТРЕБА
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 [опције] [+брлиније] [дато1[:брлиније]] [дато2[:брлиније]] ...
 
 
 .SH ОПИС
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 је конзолни уређивач текста, наставак
 \fBcooledit\fP\-а,
 уређивача Пола Шира (Paul Sheer), чија је терминалска верзија много година
 развијана као уграђени уређивач ГНУ\-овог Поноћног наредника (GNU Midnight
-Commander); coole га развија даље као засебан програм.
+Commander); bluerig га развија даље као засебан програм.
 
 .PP
 Истовремено уређује више датотека, сваку у засебном прозору, а може да уређује
@@ -46,11 +46,11 @@ Commander); coole га развија даље као засебан прогр�
 
 .TP
 \fI\-f, \-\-datadir\fP
-Приказује укомпајлиране путање за претрагу датотека са подацима coole\-а.
+Приказује укомпајлиране путање за претрагу датотека са подацима bluerig\-а.
 
 .TP
 \fI\-F, \-\-datadir\-info\fP
-Приказује проширене податке о директоријумима које coole користи.
+Приказује проширене податке о директоријумима које bluerig користи.
 
 .TP
 \fI\-\-configure\-options\fP
@@ -83,7 +83,7 @@ Commander); coole га развија даље као засебан прогр�
 
 .TP
 \fI\-t, \-\-termcap\fP
-Намеће употребу базе termcap уместо terminfo. Опција постоји само ако је coole
+Намеће употребу базе termcap уместо terminfo. Опција постоји само ако је bluerig
 компајлиран са библиотеком S\-Lang.
 
 .TP
@@ -146,7 +146,7 @@ Commander); coole га развија даље као засебан прогр�
 са тастером Shift за означавање текста.
 \fBC\-Ins\fP
 копира у датотеку размене
-\fB~/.local/share/coole/clipboard\fP,
+\fB~/.local/share/bluerig/clipboard\fP,
 \fBS\-Ins\fP
 лепи из ње,
 \fBS\-Del\fP
@@ -167,7 +167,7 @@ Commander); coole га развија даље као засебан прогр�
 тастером. Макрои се чувају у одељку
 \fB[editor]\fP
 датотеке
-\fB~/.local/share/coole/macros\fP,
+\fB~/.local/share/bluerig/macros\fP,
 а макро се брише брисањем његовог реда у тој датотеци; како макро позива
 сопствену скрипту, описано је у енглеском упутству.
 
@@ -350,11 +350,11 @@ Commander); coole га развија даље као засебан прогр�
 
 .SH ИСТИЦАЊЕ СИНТАКСЕ
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 подржава истицање синтаксе. То значи да ће кључне речи и контексти (нпр.
 коментари у C\-у, константне ниске, итд.) бити истакнути у различитим бојама.
 Следећи одељак објашњава формат датотеке
-\fB~/.local/share/coole/syntax/Syntax\fP\&.
+\fB~/.local/share/bluerig/syntax/Syntax\fP\&.
 После ње се чита системска
 \fB{{pkgdatadir}}/syntax/Syntax\fP
 за све типове датотека које она не наводи: датотека корисника садржи само оно
@@ -362,12 +362,12 @@ Commander); coole га развија даље као засебан прогр�
 инсталираним за датотеке на које се односи.  Датотеке из њених линија
 \fBinclude\fP
 траже се прво у
-\fI~/.local/share/coole/syntax/\fP,
+\fI~/.local/share/bluerig/syntax/\fP,
 а затим међу инсталиранима.  Потпуна копија системске датотеке, какву су
 правиле старије верзије, скрива све типове датотека инсталиране касније:
 задржите у њој само уносе које сте мењали.
 Датотека
-\fB~/.local/share/coole/syntax/Syntax\fP
+\fB~/.local/share/bluerig/syntax/Syntax\fP
 ће бити поновно учитана при отварању сваке нове датотеке у уређивачу. Она садржи
 правила за истицање, од којих је свако у засебној линији, и дефинише које кључне
 речи ће бити истакнуте којом бојом.
@@ -386,7 +386,7 @@ Commander); coole га развија даље као засебан прогр�
 аргумент је опис врсте датотеке. Он се користи у
 \fBcooledit\fP\-у;
 и будуће верзије
-\fBcoole\fP\-а
+\fBbluerig\fP\-а
 га могу користити. Трећи опциони аргумент је регуларни израз који одговара првој
 линији текста датотеке. Правила у следећем одељку се примењују ако их
 задовољавају било назив датотеке било прва линија датотеке.
@@ -467,7 +467,7 @@ context " " green
 
 .PP
 иначе ће
-\fBcoole\fP
+\fBbluerig\fP
 пријавити грешку. Опција
 \fBlinestart\fP
 налаже да
@@ -521,7 +521,7 @@ context " " green
 \fIтип\fP
 име правила онако како га наводи линија file у датотеци Syntax, са \es
 уместо размака.  Тражи се у датотеци Syntax из које се правила читају, а
-затим у оној инсталираној са coole, па га налази и копија датотеке Syntax
+затим у оној инсталираној са bluerig, па га налази и копија датотеке Syntax
 старија од правила; ако типа нема ни у једној, контекст остаје као да
 ништа не угњеждава, у својим бојама.  Раздвајачи задржавају боје контекста.  Десни раздвајач
 завршава угњеждени текст где год да се појави, и унутар ниске или
@@ -633,7 +633,7 @@ gray0 до gray23.
 Ако се датотеке синтаксе дели са програмом
 \fBcooledit\fP,
 могу се задати различите боје за
-\fBcoole\fP
+\fBbluerig\fP
 и
 \fBcooledit\fP
 раздвајањем косом цртом, нпр.
@@ -643,7 +643,7 @@ keyword  #include  red/Orange
 .EE
 
 .PP
-\fBcoole\fP
+\fBbluerig\fP
 користи боју пре косе црте. Видети cooledit(1) за боје које подржава
 \fBcooledit\fP\&.
 
@@ -684,7 +684,7 @@ blink, уз додат знак плус ако се жели више од је
 Већина опција се може подесити из дијалога Опције. Видети мени
 \fBОпције\fP\&.
 Следеће опције су дефинисане у
-\fB~/.config/coole/ini\fP
+\fB~/.config/bluerig/ini\fP
 и имају очигледне парњаке у дијалогу. Можете их изменити да бисте променили
 начин понашања уређивача, изменом датотеке. Осим уколико је другачије наведено,
 1 укључује опцију, а 0 је искључује, као и обично.
@@ -844,7 +844,7 @@ M\-n смењује ову опцију.
 .TP
 \fBСачувај\fP
 Уписује измене у
-\fI~/.config/coole/keymap.ini\fP\&.
+\fI~/.config/bluerig/keymap.ini\fP\&.
 
 .TP
 \fBУреди датотеку распореда\fP
@@ -877,80 +877,80 @@ M\-n смењује ову опцију.
 
 .SH ОКРУЖЕЊЕ
 .TP
-\fBCOOLE_DATADIR\fP
+\fBBLUERIG_DATADIR\fP
 Директоријум датотека са подацима, уместо {{pkgdatadir}}.
 
 .TP
-\fBCOOLE_PROFILE_ROOT\fP
+\fBBLUERIG_PROFILE_ROOT\fP
 Корен корисничких датотека, уместо личног директоријума.
 
 .TP
-\fBCOOLE_SKIN\fP
+\fBBLUERIG_SKIN\fP
 Скин који се користи.
 
 .TP
-\fBCOOLE_KEYMAP\fP
+\fBBLUERIG_KEYMAP\fP
 Датотека распореда тастера која се користи.
 
 .TP
-\fBCOOLE_TMPDIR\fP, \fBTMPDIR\fP
+\fBBLUERIG_TMPDIR\fP, \fBTMPDIR\fP
 Директоријум привремених датотека.
 
 .TP
-\fBCOOLE_NO_LUA\fP
+\fBBLUERIG_NO_LUA\fP
 Вредност 1 покреће програм без Lua окружења.
 
 .TP
-\fBCOOLE_LOG_ENABLE\fP, \fBCOOLE_LOG_FILE\fP, \fBCOOLE_SPELL_LOG\fP
+\fBBLUERIG_LOG_ENABLE\fP, \fBBLUERIG_LOG_FILE\fP, \fBBLUERIG_SPELL_LOG\fP
 Дневници за исправљање грешака.
 
 
 .SH ДАТОТЕКЕ
 .TP
-\fI{{pkgdatadir}}/help/coole.md\fP
+\fI{{pkgdatadir}}/help/bluerig.md\fP
 Датотека помоћи за овај програм.
 
 .TP
-\fI{{sysconfdir}}/coole/coole.ini\fP, \fI{{pkgdatadir}}/coole.ini\fP
+\fI{{sysconfdir}}/bluerig/bluerig.ini\fP, \fI{{pkgdatadir}}/bluerig.ini\fP
 Системска подешавања, која се користе само ако не постоји корисничка
-датотека ~/.config/coole/ini.
+датотека ~/.config/bluerig/ini.
 
 .TP
-\fI{{sysconfdir}}/coole/defaults.ini\fP, \fI{{pkgdatadir}}/defaults.ini\fP
+\fI{{sysconfdir}}/bluerig/defaults.ini\fP, \fI{{pkgdatadir}}/defaults.ini\fP
 Глобална подешавања која утичу на све кориснике, без обзира на то да ли
-имају ~/.config/coole/ini или не.
+имају ~/.config/bluerig/ini или не.
 
 .TP
-\fI{{sysconfdir}}/coole/keymap.ini\fP, \fI{{sysconfdir}}/coole/coole.menu\fP
+\fI{{sysconfdir}}/bluerig/keymap.ini\fP, \fI{{sysconfdir}}/bluerig/bluerig.menu\fP
 Системски распоред тастера и кориснички мени.
 
 .TP
 \fI{{pkgdatadir}}/syntax/*\fP
 Подразумеване системске датотеке синтаксе, које се користе само ако не
 постоји корисничка датотека у
-\fB~/.local/share/coole/syntax/\fP\&.
+\fB~/.local/share/bluerig/syntax/\fP\&.
 
 .TP
 \fI{{plugins_dir}}/\fP
 Прикључци уређивача.
 
 .TP
-\fI~/.config/coole/ini\fP
+\fI~/.config/bluerig/ini\fP
 Корисничка подешавања. Ако је ова датотека присутна, онда се подешавања
 учитавају одавде уместо из системске датотеке са подешавањима.
 
 .TP
-\fI~/.config/coole/keymap.ini\fP, \fI~/.config/coole/menu\fP
+\fI~/.config/bluerig/keymap.ini\fP, \fI~/.config/bluerig/menu\fP
 Кориснички распоред тастера и кориснички мени.
 
 .TP
-\fI~/.local/share/coole/\fP
+\fI~/.local/share/bluerig/\fP
 Корисничка историја, положаји у датотекама, клипборд (clipboard), макрои
 (macros, macros.d/), синтакса (syntax/Syntax), скинови (skins/) и Lua
 скриптови (lua/scripts/).
 
 .TP
-\fI~/.cache/coole/\fP
+\fI~/.cache/bluerig/\fP
 Блок датотека (block) и привремене датотеке уређивача.
 
 
@@ -964,7 +964,7 @@ M\-n смењује ову опцију.
 .SH ДОСТУПНОСТ
 .PP
 Најновија верзија овог програма се може наћи на адреси
-\X'tty: link https://github.com/blue\-panels/coole/releases'https://github.com/blue\-panels/coole/releases\X'tty: link' .
+\X'tty: link https://github.com/blue\-panels/bluerig/releases'https://github.com/blue\-panels/bluerig/releases\X'tty: link' .
 
 
 .SH ВИДЕТИ И
@@ -972,16 +972,16 @@ M\-n смењује ову опцију.
 cooledit(1), aspell(1), ctags(1), gpm(1), terminfo(5).
 
 .PP
-Енглеско упутство, coole(1), описује све могућности уређивача.
+Енглеско упутство, bluerig(1), описује све могућности уређивача.
 
 
 .SH АУТОРИ
 .PP
 Пол Шир (Paul Sheer, psheer@obsidian.co.za) је првобитни аутор уграђеног
-уређивача Поноћног наредника, од кога је направљен coole.
+уређивача Поноћног наредника, од кога је направљен bluerig.
 
 
 .SH ГРЕШКЕ
 .PP
 Грешке пријављивати на
-\X'tty: link https://github.com/blue\-panels/coole/issues'https://github.com/blue\-panels/coole/issues\X'tty: link' .
+\X'tty: link https://github.com/blue\-panels/bluerig/issues'https://github.com/blue\-panels/bluerig/issues\X'tty: link' .

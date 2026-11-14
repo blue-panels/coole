@@ -1,259 +1,213 @@
-.\" Generated from coole.md by maint/update-man-in.sh. Do not edit.
-.TH COOLE 1 "September 2026" "coole {{MAN_VERSION}}" "coole"
+---
+date: September 2026
+---
 
-.SH NAME
-.PP
-coole \- a text editor.
+<!-- help:topics "Topics:" -->
+# NAME <!-- help:skip -->
 
+bluerig - a text editor.
 
-.SH SYNOPSIS
-.PP
-\fBcoole\fP
+# SYNOPSIS <!-- help:skip -->
+
+**bluerig**
 [options] [+lineno] [file1[:lineno]] [file2[:lineno]] ...
 
+# DESCRIPTION
 
-.SH DESCRIPTION
-.PP
-\fBcoole\fP
+**bluerig**
 is a console text editor. It continues
-\fBcooledit\fP,
+**cooledit**,
 the editor by Paul Sheer, whose terminal version was developed for many years
-as the internal editor of GNU Midnight Commander; coole carries that editor on
+as the internal editor of GNU Midnight Commander; bluerig carries that editor on
 as a program of its own.
 
-.PP
 It edits several files at once, each in a window of its own, and it can edit
 binary files. It has block copy, move, delete, cut and paste; key for key
-undo and redo; pull\-down menus; file insertion; macros; regular expression
-search and replace; a line filter; folding; bookmarks; shift\-arrow text
+undo and redo; pull-down menus; file insertion; macros; regular expression
+search and replace; a line filter; folding; bookmarks; shift-arrow text
 highlighting (where the terminal supports it); column blocks; insert and
 overwrite modes; autoindent; word wrap and paragraph formatting; a tunable
 tab size; syntax highlighting for many file types; a user menu that pipes the
 text through shell commands; editor plugins (tags navigation, spell
 checking) and Lua scripts.
 
-.PP
 Every file named on the command line is opened in a window of its own. With
 no file, the editor opens an empty window. A file larger than
-\fIeditor_filesize_threshold\fP
+*editor_filesize_threshold*
 (64 MB by default) is opened after a question, not refused.
 
+# OPTIONS
 
-.SH OPTIONS
-.TP
-\fI+lineno\fP
-Go to the line specified by number (do not put a space between the
-\fI+\fP
+*+lineno*
+: Go to the line specified by number (do not put a space between the
+*+*
 sign and the number). Several line numbers are allowed but only the last one
 is used, and it is applied to the first file only.
 
-.TP
-\fIfile:lineno[:]\fP
-Open the file at that line, the way compilers and grep print a place in a
+*file:lineno[:]*
+: Open the file at that line, the way compilers and grep print a place in a
 file. When a file of the whole name, colon and number included, exists, that
 file is opened instead.
 
-.TP
-\fI\-V, \-\-version\fP
-Display the version of the program.
+*-V, --version*
+: Display the version of the program.
 
-.TP
-\fI\-f, \-\-datadir\fP
-Display the compiled\-in search path for the data files of coole.
+*-f, --datadir*
+: Display the compiled-in search path for the data files of bluerig.
 
-.TP
-\fI\-F, \-\-datadir\-info\fP
-Display extended information about the directories coole uses: the data
+*-F, --datadir-info*
+: Display extended information about the directories bluerig uses: the data
 files, the user files and the plugins.
 
-.TP
-\fI\-\-configure\-options\fP
-Display the options the program was configured with.
+*--configure-options*
+: Display the options the program was configured with.
 
-.TP
-\fI\-\-no\-lua\fP
-Start without the Lua runtime: no Lua script is loaded.
+*--no-lua*
+: Start without the Lua runtime: no Lua script is loaded.
 
-.TP
-\fI\-D, \-\-debug=directory\fP
-Open the project of that directory to debug it: the latest file of the
+*-D, --debug=directory*
+: Open the project of that directory to debug it: the latest file of the
 project, the tree of the project and the panel of the debugger at
 the right. The file windows take the keys of the debugger: F6 puts a
 breakpoint, F5 builds the program and runs it, making its debug
 configuration the first time, F7 and F8 step, F3 indexes the symbols of the
-project; F2, F9 and F10 stay Save, the menu and Quit, and Alt\-F5 goes
+project; F2, F9 and F10 stay Save, the menu and Quit, and Alt-F5 goes
 to the panel and back. It needs the project, build and debugger plugins,
 and ctags for F3. The menus Drawing, Format and Plugins are not in the
 menubar; their keys stay, and Options keeps Manage plugins.
 
-.TP
-\fI\-Q, \-\-query\fP
-Run the queries of the file in a database, MongoDB by mongosh or
+*-Q, --query*
+: Run the queries of the file in a database, MongoDB by mongosh or
 PostgreSQL by libpq; the answer comes in the tabs Output, Table and History
-at the bottom. \fIMC_QUERY_KIND\fP is \fImongo\fP or \fIpostgres\fP; without it,
-\fIMC_MONGO_URI\fP means MongoDB and a file \fI\&.sql\fP PostgreSQL. For MongoDB
-\fIMC_MONGO_URI\fP and \fIMC_MONGO_DB\fP tell what to connect to, \fIMC_MONGOSH\fP the
-program; F5 runs the selection, else the part between lines \fI// \-\-\-\fP
+at the bottom. *MC_QUERY_KIND* is *mongo* or *postgres*; without it,
+*MC_MONGO_URI* means MongoDB and a file *.sql* PostgreSQL. For MongoDB
+*MC_MONGO_URI* and *MC_MONGO_DB* tell what to connect to, *MC_MONGOSH* the
+program; F5 runs the selection, else the part between lines *// ---*
 around the cursor, else the whole file. For PostgreSQL libpq takes the
-connection from \fIPGHOST\fP, \fIPGDATABASE\fP, \fIPGSERVICE\fP and the like, the
-password from \fI~/.pgpass\fP; F5 runs the selection, else the whole file.
-Ctrl\-F5 runs the whole file. Without a file named, the file is
-\fI~/.local/share/coole/queries/\fP, with the name of the database and \fI\&.js\fP,
-or \fIpostgres/\fP, the name of the connection, and that of the database and
-\fI\&.sql\fP\&. The windows the project had last time are
+connection from *PGHOST*, *PGDATABASE*, *PGSERVICE* and the like, the
+password from *~/.pgpass*; F5 runs the selection, else the whole file.
+Ctrl-F5 runs the whole file. Without a file named, the file is
+*~/.local/share/bluerig/queries/*, with the name of the database and *.js*,
+or *postgres/*, the name of the connection, and that of the database and
+*.sql*. The windows the project had last time are
 not shown, and the plugins of a project and of code (project, build,
 debugger, ctags, etags, git, terminal, spell) are not started; the
 scripts stay, and the language server of the queries when lsp.json has one.
-The menus Drawing, Format and Plugins are not in the menubar, as with \-D.
+The menus Drawing, Format and Plugins are not in the menubar, as with -D.
 It needs the query plugin.
 
-.TP
-\fI\-G, \-\-git=directory\fP
-Open the window Git of the git plugin on the work tree of that
+*-G, --git=directory*
+: Open the window Git of the git plugin on the work tree of that
 directory; closing it ends the editor. The windows the project had last
 time are not shown, and the plugins of a project (project, build, debugger,
 ctags, etags) are not started. For a panel of git in a file
 manager, with one of these after it, or alone for the current directory:
 
-.TP
-\fI\-\-git\-log\fP
-The window Git on the log.
+*--git-log*
+: The window Git on the log.
 
-.TP
-\fI\-\-git\-show=commit\fP
-The window Git on that commit: its files and their diffs.
+*--git-show=commit*
+: The window Git on that commit: its files and their diffs.
 
-.TP
-\fI\-\-git\-commit\fP, \fI\-\-git\-amend\fP
-The window Git with the message of a commit of what is staged, or of the
+*--git-commit*, *--git-amend*
+: The window Git with the message of a commit of what is staged, or of the
 last commit amended with it; the editor ends once it is saved and
 committed, or its window closed.
 
-.TP
-\fI\-\-git\-reword=commit\fP
-Another message for that commit, the same way, the files of the commit
+*--git-reword=commit*
+: Another message for that commit, the same way, the files of the commit
 under it.
 
-.TP
-\fI\-h, \-?, \-\-help\fP
-Show the options and what they do.
+*-h, -?, --help*
+: Show the options and what they do.
 
-.TP
-\fI\-\-help\-terminal, \-\-help\-color\fP
-Show the terminal options or the color options below.
+*--help-terminal, --help-color*
+: Show the terminal options or the color options below.
 
-.PP
 The terminal options:
 
-.TP
-\fI\-x, \-\-xterm\fP
-Force xterm mode. Used when running on xterm\-capable terminals (two
+*-x, --xterm*
+: Force xterm mode. Used when running on xterm-capable terminals (two
 screen modes, and able to send mouse escape sequences).
 
-.TP
-\fI\-X, \-\-no\-x11\fP
-Do not use the X Window System to get the state of the modifier keys.
+*-X, --no-x11*
+: Do not use the X Window System to get the state of the modifier keys.
 
-.TP
-\fI\-g, \-\-oldmouse\fP
-Use the old highlight mouse tracking of the terminal.
+*-g, --oldmouse*
+: Use the old highlight mouse tracking of the terminal.
 
-.TP
-\fI\-d, \-\-nomouse\fP
-Disable mouse support.
+*-d, --nomouse*
+: Disable mouse support.
 
-.TP
-\fI\-t, \-\-termcap\fP
-Use the termcap database instead of terminfo. The option exists only when
-coole was built with the S\-Lang library.
+*-t, --termcap*
+: Use the termcap database instead of terminfo. The option exists only when
+bluerig was built with the S-Lang library.
 
-.TP
-\fI\-s, \-\-slow\fP
-Run on a slow terminal: the screen is drawn with fewer updates.
+*-s, --slow*
+: Run on a slow terminal: the screen is drawn with fewer updates.
 
-.TP
-\fI\-a, \-\-stickchars\fP
-Draw the frames with plain characters instead of the line drawing
+*-a, --stickchars*
+: Draw the frames with plain characters instead of the line drawing
 characters of the terminal.
 
-.TP
-\fI\-K file, \-\-keymap=file\fP
-Load the key bindings from that file. See
-Redefine key bindings\&.
+*-K file, --keymap=file*
+: Load the key bindings from that file. See
+[Redefine key bindings](#keys_redefine).
 
-.TP
-\fI\-\-nokeymap\fP
-Do not load any keymap file: use the key bindings built into the program.
+*--nokeymap*
+: Do not load any keymap file: use the key bindings built into the program.
 
-.PP
 The color options:
 
-.TP
-\fI\-b, \-\-nocolor\fP
-Force black and white display.
+*-b, --nocolor*
+: Force black and white display.
 
-.TP
-\fI\-c, \-\-color\fP
-Force color mode on terminals that don't seem to have color support.
+*-c, --color*
+: Force color mode on terminals that don't seem to have color support.
 
-.TP
-\fI\-S skin, \-\-skin=skin\fP
-Use the named skin. See
-Skins\&.
+*-S skin, --skin=skin*
+: Use the named skin. See
+[Skins](#skins).
 
+# Overview
 
-.SH Overview
-.PP
-The screen of coole has the
-menu bar
+The screen of bluerig has the
+[menu bar](#menu-bar)
 at the top, the editor windows under it and the labels of the function keys at
 the bottom. The menu bar may be hidden: F9 or a click on the top line of the
 screen brings it up.
 
-.PP
 Every window shows one file: its name, the state of the file and the place of
 the cursor stand in the status line at its top. Several windows may be open
 at a time; the
-Window menu
+[Window menu](#window-menu)
 moves between them, and each of them can be moved and resized.
 
+# The editor <a id="internal-file-editor"></a>
 
-.SH The editor
-.PP
-The editor is easy to use and can be used without learning. The pull\-down
+The editor is easy to use and can be used without learning. The pull-down
 menu is invoked by pressing F9, and the keys of the commands stand next to
 them in the menus and in the labels of the function keys.
 
-.TP
 Sections:
-The keys
+: [The keys](#keys)
+: [The menus](#menu-bar)
+: [Search, replace and the line filter](#search-and-replace)
+: [Folding](#folding)
+: [Macros](#macros)
+: [The user menu](#edit-menu-file)
+: [Code navigation](#code-navigation)
+: [Syntax highlighting](#syntax-highlighting)
+: [Editor options](#editor-options)
+: [Settings in the ini file](#internal-file-editor-options)
 
-The menus
-
-Search, replace and the line filter
-
-Folding
-
-Macros
-
-The user menu
-
-Code navigation
-
-Syntax highlighting
-
-Editor options
-
-Settings in the ini file
-
-.PP
-Each file is opened in its own window in full\-screen mode. Window control is
-similar to the window control of other multi\-window programs: a double click
+Each file is opened in its own window in full-screen mode. Window control is
+similar to the window control of other multi-window programs: a double click
 on the window title maximizes the window to full screen or restores its size
 and position; a left click on the title and a mouse drag move the window; a
 left click on the lower right corner of the frame and a mouse drag resize it.
 The same is done from the
-Window menu\&.
+[Window menu](#window-menu).
 A window that is not full screen has a scrollbar down the right side of its
 frame and one along the bottom, after the position of the cursor: an arrow
 scrolls a line or a few columns, the bar beside the thumb a page, and the thumb
@@ -261,1350 +215,1140 @@ is dragged. Up and down the cursor goes along with the view; sideways the view
 moves alone, as far as the widest line on the screen, and the next key or a
 click on the text brings it back to the cursor. The bars are drawn as the
 section
-\fB[scrollbar]\fP
+**[scrollbar]**
 of the skin has them: the vertical thumb six cells long and the horizontal one
 four, when they fit, by default. The horizontal bar
 measures the lines in view, not the whole file. The wheel tilted, or turned
 with Shift, scrolls sideways.
 
-.PP
 Shift combined with the arrows highlights text (if the terminal supports it).
-\fBCtrl\-Ins\fP
+**Ctrl-Ins**
 copies to the clipboard file
-\fB~/.local/share/coole/clipboard\fP,
-\fBShift\-Ins\fP
+**~/.local/share/bluerig/clipboard**,
+**Shift-Ins**
 pastes from it,
-\fBShift\-Del\fP
+**Shift-Del**
 cuts to it, and
-\fBCtrl\-Del\fP
+**Ctrl-Del**
 deletes the highlighted text. Mouse highlighting also works, and the mouse of
 the terminal itself is had by holding down the Shift key while dragging; that
-selection is not shared with the clipboard file of coole.
+selection is not shared with the clipboard file of bluerig.
 
-.PP
-\fBCtrl\-o\fP
+**Ctrl-o**
 shows a window with your shell at the bottom of the screen, the file in a
 window above it, and hides it again as it is, the file taking the whole screen
-back; see Terminal\&.
+back; see [Terminal](#terminal).
 
+# Keys
 
-.SH Keys
-.PP
 Some commands involve the use of the
-\fIControl\fP
+*Control*
 (sometimes labeled CTRL or CTL) and the
-\fIMeta\fP
+*Meta*
 (sometimes labeled ALT or even Compose) keys. In this manual we will
 use the following abbreviations:
 
-.TP
-\fBCtrl\-<chr>\fP
-means hold the Control key while typing the character <chr>.
-Thus Ctrl\-f would be: hold the Control key and type f.
+**Ctrl-\<chr>**
+: means hold the Control key while typing the character \<chr>.
+Thus Ctrl-f would be: hold the Control key and type f.
 
-.TP
-\fBAlt\-<chr>\fP
-means hold the Meta or Alt key down while typing <chr>.
+**Alt-\<chr>**
+: means hold the Meta or Alt key down while typing \<chr>.
 If there is no Meta or Alt key, type
-\fIEsc,\fP
-release it, then type the character <chr>.
+*Esc,*
+release it, then type the character \<chr>.
 
-.TP
-\fBShift\-<chr>\fP
-means hold the Shift key down while typing <chr>.
+**Shift-\<chr>**
+: means hold the Shift key down while typing \<chr>.
 
-.PP
 These are the default keys of the editor. Every one of them can be changed:
 see
-Redefine key bindings\&.
+[Redefine key bindings](#keys_redefine).
 
-.SH Files and windows
-.TP
-\fBF2\fP
-Save the file.
+## Files and windows
 
-.TP
-\fBF12, Ctrl\-F2\fP
-Save the file under another name. See
-Save As\&.
+**F2**
+: Save the file.
 
-.TP
-\fBCtrl\-n\fP
-Open a new, empty window.
+**F12, Ctrl-F2**
+: Save the file under another name. See
+[Save As](#save-file-as).
 
-.TP
-\fBF15\fP
-Insert a file at the cursor.
+**Ctrl-n**
+: Open a new, empty window.
 
-.TP
-\fBCtrl\-f\fP
-Copy the highlighted block to a file.
+**F15**
+: Insert a file at the cursor.
 
-.TP
-\fBAlt\-Shift\-e\fP
-The history of the files that were edited, to open one of them again.
+**Ctrl-f**
+: Copy the highlighted block to a file.
 
-.TP
-\fBAlt\-e\fP
-Choose the encoding of the text. See
-Choose codepage\&.
+**Alt-Shift-e**
+: The history of the files that were edited, to open one of them again.
 
-.TP
-\fBF10, Esc\fP
-Close the window; the editor ends with its last window.
+**Alt-e**
+: Choose the encoding of the text. See
+[Choose codepage](#codepages-translation).
 
-.TP
-\fBF1\fP
-This help.
+**F10, Esc**
+: Close the window; the editor ends with its last window.
 
-.TP
-\fBF9\fP
-The menu bar.
+**F1**
+: This help.
 
-.TP
-\fBF11\fP
-The user menu\&.
+**F9**
+: The menu bar.
 
-.TP
-\fBCtrl\-o\fP
-Show or hide the window of the terminal. See Terminal\&.
+**F11**
+: The [user menu](#edit-menu-file).
 
-.TP
-\fBCtrl\-Alt\-p\fP
-Show or hide the Preview of the file. See Preview\&.
+**Ctrl-o**
+: Show or hide the window of the terminal. See [Terminal](#terminal).
 
-.TP
-\fBCtrl\-l\fP
-Redraw the screen.
+**Ctrl-Alt-p**
+: Show or hide the Preview of the file. See [Preview](#preview).
 
-.SH Moving around
-.TP
-\fBCtrl\-Left, Ctrl\-Right\fP
-One word to the left or to the right.
+**Ctrl-l**
+: Redraw the screen.
 
-.TP
-\fBHome, End\fP
-The beginning or the end of the line.
+## Moving around
 
-.TP
-\fBPgUp, PgDn\fP
-One page up or down.
+**Ctrl-Left, Ctrl-Right**
+: One word to the left or to the right.
 
-.TP
-\fBCtrl\-Home, Ctrl\-End\fP
-The beginning or the end of the file.
+**Home, End**
+: The beginning or the end of the line.
 
-.TP
-\fBCtrl\-PgUp, Ctrl\-PgDn\fP
-The top or the bottom line of the screen.
+**PgUp, PgDn**
+: One page up or down.
 
-.TP
-\fBCtrl\-Up, Ctrl\-Down\fP
-Scroll the text one line, leaving the cursor where it is in the text.
+**Ctrl-Home, Ctrl-End**
+: The beginning or the end of the file.
 
-.TP
-\fBAlt\-l\fP
-Go to a line, given by its number.
+**Ctrl-PgUp, Ctrl-PgDn**
+: The top or the bottom line of the screen.
 
-.TP
-\fBAlt\-b\fP
-Go to the bracket matching the one under the cursor.
+**Ctrl-Up, Ctrl-Down**
+: Scroll the text one line, leaving the cursor where it is in the text.
 
-.TP
-\fBAlt\-k\fP
-Set or clear a bookmark on the current line.
+**Alt-l**
+: Go to a line, given by its number.
 
-.TP
-\fBAlt\-j, Alt\-i\fP
-Go to the next or the previous bookmark.
+**Alt-b**
+: Go to the bracket matching the one under the cursor.
 
-.TP
-\fBAlt\-o\fP
-Clear all the bookmarks.
+**Alt-k**
+: Set or clear a bookmark on the current line.
 
-.SH Editing
-.TP
-\fBInsert\fP
-Switch between insert and overwrite mode.
+**Alt-j, Alt-i**
+: Go to the next or the previous bookmark.
 
-.TP
-\fBCtrl\-u\fP
-Undo.
+**Alt-o**
+: Clear all the bookmarks.
 
-.TP
-\fBAlt\-r\fP
-Redo.
+## Editing
 
-.TP
-\fBCtrl\-t, Alt\-Shift\-u\fP
-The undo history, to take back several changes at once.
+**Insert**
+: Switch between insert and overwrite mode.
 
-.TP
-\fBCtrl\-y\fP
-Delete the line.
+**Ctrl-u**
+: Undo.
 
-.TP
-\fBCtrl\-k\fP
-Delete to the end of the line.
+**Alt-r**
+: Redo.
 
-.TP
-\fBAlt\-Backspace, Alt\-d\fP
-Delete to the beginning or to the end of the word.
+**Ctrl-t, Alt-Shift-u**
+: The undo history, to take back several changes at once.
 
-.TP
-\fBAlt\-Tab\fP
-Complete the word before the cursor from the words of the file (and of the
-other open files). See Completion\&.
+**Ctrl-y**
+: Delete the line.
 
-.TP
-\fBAlt\-n\fP
-Show or hide the line numbers.
+**Ctrl-k**
+: Delete to the end of the line.
 
-.TP
-\fBAlt\-_\fP
-Show or hide the tabs and the trailing spaces.
+**Alt-Backspace, Alt-d**
+: Delete to the beginning or to the end of the word.
 
-.TP
-\fBCtrl\-s\fP
-Switch the syntax highlighting on or off.
+**Alt-Tab**
+: Complete the word before the cursor from the words of the file (and of the
+other open files). See [Completion](#completion).
 
-.SH Blocks
-.TP
-\fBF3\fP
-Start or end the highlighting of a block.
+**Alt-n**
+: Show or hide the line numbers.
 
-.TP
-\fBF13\fP
-Start a column block.
+**Alt-\_**
+: Show or hide the tabs and the trailing spaces.
 
-.TP
-\fBCtrl\-a\fP
-Highlight the whole text.
+**Ctrl-s**
+: Switch the syntax highlighting on or off.
 
-.TP
-\fBShift\-arrows, Shift\-PgUp, Shift\-PgDn, Shift\-Home, Shift\-End\fP
-Highlight the text the cursor goes over.
+## Blocks
 
-.TP
-\fBAlt\-arrows, Alt\-PgUp, Alt\-PgDn\fP
-Highlight a column block.
+**F3**
+: Start or end the highlighting of a block.
 
-.TP
-\fBF5\fP
-Copy the block to the cursor.
+**F13**
+: Start a column block.
 
-.TP
-\fBF6\fP
-Move the block to the cursor.
+**Ctrl-a**
+: Highlight the whole text.
 
-.TP
-\fBF8\fP
-Delete the block.
+**Shift-arrows, Shift-PgUp, Shift-PgDn, Shift-Home, Shift-End**
+: Highlight the text the cursor goes over.
 
-.TP
-\fBCtrl\-Ins, Shift\-Ins, Shift\-Del, Ctrl\-Del\fP
-Copy to the clipboard file, paste from it, cut to it, and delete the block.
+**Alt-arrows, Alt-PgUp, Alt-PgDn**
+: Highlight a column block.
 
-.SH Search keys
-.TP
-\fBF7\fP
-Search.
+**F5**
+: Copy the block to the cursor.
 
-.TP
-\fBF17, Ctrl\-F7\fP
-Search again.
+**F6**
+: Move the block to the cursor.
 
-.TP
-\fBF4\fP
-Replace.
+**F8**
+: Delete the block.
 
-.TP
-\fBF14, Ctrl\-F4\fP
-Replace again.
+**Ctrl-Ins, Shift-Ins, Shift-Del, Ctrl-Del**
+: Copy to the clipboard file, paste from it, cut to it, and delete the block.
 
-.TP
-\fBAlt\-s\fP
-Lift the line filter, or put the last search back on as a filter.
+## Search keys
 
-.TP
-\fBAlt\-Shift\-s\fP
-Filter by the highlighted text or by the word under the cursor.
+**F7**
+: Search.
 
-.TP
-\fBAlt\-Shift\-f\fP
-Fold the block, or the lines between a bracket and its match, or unfold.
+**F17, Ctrl-F7**
+: Search again.
 
-.SH Macros and plugins
-.TP
-\fBCtrl\-r\fP
-Start and stop recording a macro. See Macros\&.
+**F4**
+: Replace.
 
-.TP
-\fBAlt\-Shift\-m\fP
-The Macro Explorer\&.
+**F14, Ctrl-F4**
+: Replace again.
 
-.TP
-\fBAlt\-Enter\fP
-Look up the definitions of the name under the cursor in the TAGS file. See
-Code navigation\&.
+**Alt-s**
+: Lift the line filter, or put the last search back on as a filter.
 
-.TP
-\fBAlt\-Minus, Alt\-Plus\fP
-Go back and forward in the list of places the tags lookup went to.
+**Alt-Shift-s**
+: Filter by the highlighted text or by the word under the cursor.
 
-.PP
+**Alt-Shift-f**
+: Fold the block, or the lines between a bracket and its match, or unfold.
+
+## Macros and plugins
+
+**Ctrl-r**
+: Start and stop recording a macro. See [Macros](#macros).
+
+**Alt-Shift-m**
+: The [Macro Explorer](#macro-explorer).
+
+**Alt-Enter**
+: Look up the definitions of the name under the cursor in the TAGS file. See
+[Code navigation](#code-navigation).
+
+**Alt-Minus, Alt-Plus**
+: Go back and forward in the list of places the tags lookup went to.
+
 These commands have keys but no menu entry of their own:
-\fBAlt\-t\fP
+**Alt-t**
 sorts the selected lines,
-\fBAlt\-u\fP
+**Alt-u**
 runs a shell command and puts its output in,
-\fBAlt\-p\fP
+**Alt-p**
 formats the paragraph the cursor is in,
-\fBCtrl\-q\fP
+**Ctrl-q**
 inserts the next key, or a code point written as U+XXXX, as it stands, and
-\fBCtrl\-p\fP
+**Ctrl-p**
 checks the spelling of the word under the cursor. The first four are Lua
 scripts of the editor and go away with them; the last one belongs to the
-spell plugin,
+[spell plugin](#spell-checking),
 which also has an entry in the Plugins menu, as every editor plugin that
 carries one does.
 
-.SH Redefine key bindings
-.PP
+## Redefine key bindings <a id="keys_redefine"></a>
+
 The
-Key bindings
+[Key bindings](#key-bindings)
 dialog of the Options menu lists every action with the keys it answers to,
 changes them and writes the result to
-\fB~/.config/coole/keymap.ini\fP\&.
+**~/.config/bluerig/keymap.ini**.
 The
-Learn keys
+[Learn keys](#learn-keys)
 dialog is about the other end of the problem: it teaches the program the
 sequences a terminal sends for keys it gets wrong. The
-Key sniffer
+[Key sniffer](#key-sniffer)
 shows what arrives for a key that is pressed, with the action it is bound to
 in the current keymap, which is what to look at when a binding seems to do
 nothing.
 
-.PP
 The key bindings may be read from a keymap file as well. The program starts
 from the keymap built into its source. Then the files
-\fB{{pkgdatadir}}/keymap.ini\fP
+**{{pkgdatadir}}/keymap.ini**
 and
-\fB{{sysconfdir}}/coole/keymap.ini\fP
+**{{sysconfdir}}/bluerig/keymap.ini**
 are always loaded, each reassigning the keys the one before defined. The
 package puts its own keymaps in
-\fB{{sysconfdir}}/coole\fP:
-\fBkeymap.default.ini\fP,
-\fBkeymap.emacs.ini\fP
+**{{sysconfdir}}/bluerig**:
+**keymap.default.ini**,
+**keymap.emacs.ini**
 and
-\fBkeymap.vim.ini\fP,
+**keymap.vim.ini**,
 with
-\fBkeymap.ini\fP
+**keymap.ini**
 a link to the default one.
 The option
-\fB\-\-nokeymap\fP
+**--nokeymap**
 leaves every file out and keeps the bindings of the source code.
 
-.PP
 The keymap file of the user is the first one found of:
 
-.EX
-1) command line option \-K <keymap>, \-\-keymap=<keymap>
-2) environment variable COOLE_KEYMAP
-3) setting keymap of the [coole] section of the ini file
-4) file ~/.config/coole/keymap.ini
-.EE
+```
+1) command line option -K <keymap>, --keymap=<keymap>
+2) environment variable BLUERIG_KEYMAP
+3) setting keymap of the [bluerig] section of the ini file
+4) file ~/.config/bluerig/keymap.ini
+```
 
-.PP
 The first three take a name or an absolute path. A name that does not end in
-\fB\&.keymap\fP
+**.keymap**
 gets that extension added, and is looked for in (to the first one found):
 
-.EX
-1) ~/.config/coole/
+```
+1) ~/.config/bluerig/
 2) {{pkgdatadir}}/
-.EE
+```
 
-.PP
 Because of that extension the keymaps of the package, whose names end in
-\fB\&.ini\fP,
+**.ini**,
 cannot be chosen this way. To take one of them, copy or link it to
-\fB~/.config/coole/keymap.ini\fP,
+**~/.config/bluerig/keymap.ini**,
 which is read last and needs no option:
 
-.EX
-ln \-s {{sysconfdir}}/coole/keymap.vim.ini \e
-      ~/.config/coole/keymap.ini
-.EE
+```
+ln -s {{sysconfdir}}/bluerig/keymap.vim.ini \
+      ~/.config/bluerig/keymap.ini
+```
 
-.PP
 A keymap file has a section for the editor,
-\fB[editor]\fP,
-one for the keys that follow Ctrl\-x,
-\fB[editor:xmap]\fP,
+**[editor]**,
+one for the keys that follow Ctrl-x,
+**[editor:xmap]**,
 and one each for the dialogs, the menus, the input lines, the lists, the radio
 buttons and the help window. A line of a section names an action and the keys
 it answers to:
 
-.EX
+```
 [editor]
 Save = f2
-SaveAs = f12; ctrl\-f2
-.EE
+SaveAs = f12; ctrl-f2
+```
 
-.SH Input Line Keys
-.PP
+## Input Line Keys
+
 The input lines of the dialogs accept these keys:
 
-.TP
-\fBCtrl\-a, Home\fP
-puts the cursor at the beginning of line.
+**Ctrl-a, Home**
+: puts the cursor at the beginning of line.
 
-.TP
-\fBCtrl\-e, End\fP
-puts the cursor at the end of the line.
+**Ctrl-e, End**
+: puts the cursor at the end of the line.
 
-.TP
-\fBCtrl\-b, Left\fP
-move the cursor one position left.
+**Ctrl-b, Left**
+: move the cursor one position left.
 
-.TP
-\fBCtrl\-f, Right\fP
-move the cursor one position right.
+**Ctrl-f, Right**
+: move the cursor one position right.
 
-.TP
-\fBAlt\-f, Ctrl\-Right\fP
-moves one word forward.
+**Alt-f, Ctrl-Right**
+: moves one word forward.
 
-.TP
-\fBAlt\-b, Ctrl\-Left\fP
-moves one word backward.
+**Alt-b, Ctrl-Left**
+: moves one word backward.
 
-.TP
-\fBCtrl\-h, Backspace\fP
-delete the previous character.
+**Ctrl-h, Backspace**
+: delete the previous character.
 
-.TP
-\fBCtrl\-d, Delete\fP
-delete the character in the point (over the cursor).
+**Ctrl-d, Delete**
+: delete the character in the point (over the cursor).
 
-.TP
-\fBCtrl\-@\fP
-sets the mark for cutting.
+**Ctrl-@**
+: sets the mark for cutting.
 
-.TP
-\fBCtrl\-w\fP
-copies the text between the cursor and the mark to a kill buffer and
+**Ctrl-w**
+: copies the text between the cursor and the mark to a kill buffer and
 removes the text from the input line.
 
-.TP
-\fBAlt\-w\fP
-copies the text between the cursor and the mark to a kill buffer.
+**Alt-w**
+: copies the text between the cursor and the mark to a kill buffer.
 
-.TP
-\fBCtrl\-y\fP
-yanks back the contents of the kill buffer.
+**Ctrl-y**
+: yanks back the contents of the kill buffer.
 
-.TP
-\fBCtrl\-k\fP
-kills the text from the cursor to the end of the line.
+**Ctrl-k**
+: kills the text from the cursor to the end of the line.
 
-.TP
-\fBCtrl\-Insert\fP
-copies the selected text, or else the whole line, to the clipboard file.
+**Ctrl-Insert**
+: copies the selected text, or else the whole line, to the clipboard file.
 
-.TP
-\fBShift\-Delete\fP
-cuts the selected text to the clipboard file.
+**Shift-Delete**
+: cuts the selected text to the clipboard file.
 
-.TP
-\fBShift\-Insert\fP
-pastes the clipboard file into the line as one line: line breaks and other
+**Shift-Insert**
+: pastes the clipboard file into the line as one line: line breaks and other
 control characters become spaces.
 
-.TP
-\fBAlt\-p, Alt\-n\fP
-browse through the history of the line: Alt\-p takes you to the previous
-entry, Alt\-n to the next one.
+**Alt-p, Alt-n**
+: browse through the history of the line: Alt-p takes you to the previous
+entry, Alt-n to the next one.
 
-.TP
-\fBAlt\-h\fP
-shows the history of the line in a list.
+**Alt-h**
+: shows the [history](#history-query) of the line in a list.
 
-.TP
-\fBAlt\-Backspace\fP
-delete one word backward.
+**Alt-Backspace**
+: delete one word backward.
 
-.TP
-\fBAlt\-Tab\fP
-does the file name, variable and user name
-completion
+**Alt-Tab**
+: does the file name, variable and user name
+[completion](#completion)
 for you.
 
-.SH General Movement Keys
-.PP
+## General Movement Keys
+
 The help window and the lists of the program share the code that moves in
 them, so they accept the same keys:
 
-.TP
-\fBUp, Ctrl\-p\fP
-moves one line backward.
+**Up, Ctrl-p**
+: moves one line backward.
 
-.TP
-\fBDown, Ctrl\-n\fP
-moves one line forward.
+**Down, Ctrl-n**
+: moves one line forward.
 
-.TP
-\fBPage Up, Alt\-v\fP
-moves one page up.
+**Page Up, Alt-v**
+: moves one page up.
 
-.TP
-\fBPage Down, Ctrl\-v\fP
-moves one page down.
+**Page Down, Ctrl-v**
+: moves one page down.
 
-.TP
-\fBHome, A1\fP
-moves to the beginning.
+**Home, A1**
+: moves to the beginning.
 
-.TP
-\fBEnd, C1\fP
-move to the end.
+**End, C1**
+: move to the end.
 
-.PP
 The help window accepts the following keys in addition to the ones mentioned
 above:
 
-.TP
-\fBb, Backspace\fP
-moves one page up.
+**b, Backspace**
+: moves one page up.
 
-.TP
-\fBSpace bar, f\fP
-moves one page down.
+**Space bar, f**
+: moves one page down.
 
-.TP
-\fBu, d\fP
-moves one half of a page up or down.
+**u, d**
+: moves one half of a page up or down.
 
-.TP
-\fBg, G\fP
-moves to the beginning or to the end.
+**g, G**
+: moves to the beginning or to the end.
 
+# Mouse Support
 
-.SH Mouse Support
-.PP
-coole comes with mouse support. It is activated whenever you are running on
+bluerig comes with mouse support. It is activated whenever you are running on
 an
-\fBxterm(1)\fP
+**xterm(1)**
 terminal (it even works if you take a telnet or ssh connection to another
 machine from the xterm) or if you are running on a Linux console and have the
-\fBgpm\fP
+**gpm**
 mouse server running.
 
-.PP
 A click puts the cursor where it is, a drag highlights text, and a click on a
 menu, a button or a function key label chooses it. The wheel scrolls the
 text.
 
-.PP
 The default auto repeat rate for the mouse buttons is 400 milliseconds. This
 may be changed with the
-\fImouse_repeat_rate\fP
+*mouse_repeat_rate*
 setting of the ini file, and the time within which two clicks are a double
 click with
-\fIdouble_click_speed\fP\&.
+*double_click_speed*.
 
-.PP
-If you are running coole with the mouse support, you can get the default mouse
+If you are running bluerig with the mouse support, you can get the default mouse
 behavior of the terminal (cutting and pasting text) by holding down the Shift
 key.
 
+# Menu Bar
 
-.SH Menu Bar
-.PP
 The menu bar pops up when you press F9 or click the mouse on the top row of
 the screen. Its menus are File, Edit, Search, Command, Navigate (where a
 plugin or a script puts something in it), Window, Plugins and Options. A Lua
 script may add entries to any of them, or menus of its own.
 
-.SH File menu
-.TP
-\fBOpen file...\fP
-Open a file in a new window.
+## File menu
 
-.TP
-\fBNew\fP
-Open an empty window.
+**Open file...**
+: Open a file in a new window.
 
-.TP
-\fBClose\fP
-Close the window.
+**New**
+: Open an empty window.
 
-.TP
-\fBHistory...\fP
-The files that were edited before, to open one of them again.
+**Close**
+: Close the window.
 
-.TP
-\fBSave, Save as...\fP
-Write the file, under its name or another one. See
-Save As\&.
+**History...**
+: The files that were edited before, to open one of them again.
 
-.TP
-\fBInsert file..., Copy to file...\fP
-Insert a file at the cursor, or write the highlighted block to a file.
+**Save, Save as...**
+: Write the file, under its name or another one. See
+[Save As](#save-file-as).
 
-.TP
-\fBUser menu...\fP
-The user menu\&.
+**Insert file..., Copy to file...**
+: Insert a file at the cursor, or write the highlighted block to a file.
 
-.TP
-\fBAbout...\fP
-The version of the program.
+**User menu...**
+: The [user menu](#edit-menu-file).
 
-.TP
-\fBQuit\fP
-Leave the editor, asking about the files that are not saved.
+**About...**
+: The version of the program.
 
-.SH Edit menu
-.PP
+**Quit**
+: Leave the editor, asking about the files that are not saved.
+
+## Edit menu
+
 Undo, Redo and the Undo history; the switch between insert and overwrite
 mode; the commands that highlight a block, a column block or the whole file,
 and remove the highlighting; copy, move and delete of the block; copy to, cut
 to and paste from the clipboard file; and the moves to the beginning and to
 the end of the file.
 
-.SH Search menu
-.PP
+## Search menu
+
 Search, Search again and Replace; the line filter (Toggle line filter, Filter
-by word; see Search, replace and the line filter); and
+by word; see [Search, replace and the line filter](#search-and-replace)); and
 the bookmarks: toggle a bookmark on the current line, go to the next or to
 the previous one, and clear them all.
 
-.SH Command menu
-.TP
-\fBGo to line...\fP
-Go to a line, given by its number.
+## Command menu
 
-.TP
-\fBToggle line state\fP
-Show or hide the column of line numbers.
+**Go to line...**
+: Go to a line, given by its number.
 
-.TP
-\fBGo to matching bracket\fP
-Go to the bracket that matches the one under the cursor.
+**Toggle line state**
+: Show or hide the column of line numbers.
 
-.TP
-\fBToggle syntax highlighting, Toggle right margin, Toggle control characters\fP
-Switch these on and off.
+**Go to matching bracket**
+: Go to the bracket that matches the one under the cursor.
 
-.TP
-\fBEncoding...\fP
-The codepage the text is written in. See
-Choose codepage\&.
+**Toggle syntax highlighting, Toggle right margin, Toggle control characters**
+: Switch these on and off.
 
-.TP
-\fBFold / Unfold block, Unfold all\fP
-See Folding\&.
+**Encoding...**
+: The codepage the text is written in. See
+[Choose codepage](#codepages-translation).
 
-.TP
-\fBRefresh screen\fP
-Redraw the screen.
+**Fold / Unfold block, Unfold all**
+: See [Folding](#folding).
 
-.TP
-\fBStart/Stop record macro, Macro explorer..., Record/Repeat actions\fP
-See Macros\&.
+**Refresh screen**
+: Redraw the screen.
 
-.SH Navigate menu
-.PP
+**Start/Stop record macro, Macro explorer..., Record/Repeat actions**
+: See [Macros](#macros).
+
+## Navigate menu
+
 The commands of the tags plugins, where one of them is loaded: go to the
 declaration of the name under the cursor, find its references, the history of
 the jumps, back and forward, the symbols of the file and so on. See
-Code navigation\&.
+[Code navigation](#code-navigation).
 
-.SH Window menu
-.TP
-\fBMove, Resize\fP
-Move or resize the window with the arrow keys; Enter ends it.
+## Window menu <a id="window-menu"></a>
 
-.TP
-\fBToggle fullscreen\fP
-Switch the window between full screen and its own size.
+**Move, Resize**
+: Move or resize the window with the arrow keys; Enter ends it.
 
-.TP
-\fBToggle sticky windows\fP
-With sticky windows, windows whose frames stand next to each other resize
+**Toggle fullscreen**
+: Switch the window between full screen and its own size.
+
+**Toggle sticky windows**
+: With sticky windows, windows whose frames stand next to each other resize
 together: the corner of a window moves the edge it is on with all the windows
 along it, on both sides, and no gap opens between them. Where four windows
 meet, the corner moves both edges. A side that is on the edge of the screen
 when the resize begins stays there, a window keeps its smallest size, and an
 edge stops at a window in its way, which from then on resizes along. Esc puts
 every window back. A window moved by its title goes alone. The setting is kept as
-\fBeditor_sticky_windows\fP
+**editor_sticky_windows**
 in the ini file.
 
-.TP
-\fBNext, Previous\fP
-Go to the next or to the previous window.
+**Next, Previous**
+: Go to the next or to the previous window.
 
-.TP
-\fBList...\fP
-The windows that are open, to go to one of them. See
-Open files\&.
+**List...**
+: The windows that are open, to go to one of them. See
+[Open files](#open-files).
 
-.PP
 Under them come the windows of the plugins: the tree of the project, the
 output of the build, the panel and the console of the debugger, the
 terminal, the terminal of the program the debugger runs, the Preview. An entry opens its window, brings it to the front
 when it is behind another, and closes it when it is in front already; an
-open one is marked with \fI*\fP\&. A plugin that is switched off has no entry.
+open one is marked with *\**. A plugin that is switched off has no entry.
 
-.PP
 The windows of the plugins stand in docks. The tree, the panel of the
 debugger and the Preview go in the column at the right, one above the other,
 all the height of the screen. The console, the output of the build and the
 terminal go in the row at the bottom, under the windows of the files: they
 are tabs, one of them seen, their names on its title. A click on a name, or
-\fBCtrl\-Alt\-PgDn\fP and \fBCtrl\-Alt\-PgUp\fP (\fIWindowTabNext\fP and \fIWindowTabPrev\fP
+**Ctrl-Alt-PgDn** and **Ctrl-Alt-PgUp** (*WindowTabNext* and *WindowTabPrev*
 in the keymap), shows another. A file window that was fullscreen takes the
 rest of the screen, and the screen again when the docks are empty. A window
 of a dock resized gives the dock its size; moved, it leaves the dock.
 
-.TP
-\fBLayout...\fP
-The layouts of the windows: which windows of the plugins are open, in
-which dock, and how big the docks are. \fIEdit\fP has the files alone,
-\fIProject\fP the tree of the project, \fIDebug\fP the tree and the panel of the
-debugger. \fBUse\fP puts the windows so; \fBSave as...\fP keeps them as they are
-under a name, the name of one of these too; \fBDelete\fP forgets a layout
-kept, the one of the editor of that name coming back. With \fBDebug layout
-while debugging\fP the start of the debugger puts the windows as \fIDebug\fP has
+**Layout...**
+: The layouts of the windows: which windows of the plugins are open, in
+which dock, and how big the docks are. *Edit* has the files alone,
+*Project* the tree of the project, *Debug* the tree and the panel of the
+debugger. **Use** puts the windows so; **Save as...** keeps them as they are
+under a name, the name of one of these too; **Delete** forgets a layout
+kept, the one of the editor of that name coming back. With **Debug layout
+while debugging** the start of the debugger puts the windows as *Debug* has
 them, and its stop puts them back, the tabs of the bottom staying to be
 read.
 
-.PP
 The windows of a project are kept when the editor ends, and come back when
 it starts with a file of the project.
-\fIcoole \-\-debug\fP starts with the layout \fIDebug\fP\&. The layouts are kept in
-\fIlayouts.ini\fP of the settings.
+*bluerig --debug* starts with the layout *Debug*. The layouts are kept in
+*layouts.ini* of the settings.
 
-.SH Plugins menu
-.PP
+## Plugins menu
+
 The editor plugins that carry an entry of their own, the spell checker for
-one; their windows are in the Window menu\&. A plugin that is switched off in
-Manage plugins
+one; their windows are in the [Window menu](#window-menu). A plugin that is switched off in
+[Manage plugins](#manage-plugins)
 is not in the menu.
 
-.SH Options menu
-.TP
-\fBGeneral...\fP
-The editor options\&.
+## Options menu
 
-.TP
-\fBSave mode...\fP
-How a file is written. See Edit Save Mode\&.
+**General...**
+: The [editor options](#editor-options).
 
-.TP
-\fBSyntax highlighting...\fP
-Choose the syntax rules for the file by hand, or leave them to the name and
+**Save mode...**
+: How a file is written. See [Edit Save Mode](#edit-save-mode).
+
+**Syntax highlighting...**
+: Choose the syntax rules for the file by hand, or leave them to the name and
 the first line of the file.
 
-.TP
-\fBAppearance...\fP
-The skin and the shadows. See Appearance\&.
+**Appearance...**
+: The skin and the shadows. See [Appearance](#appearance).
 
-.TP
-\fBLearn keys...\fP
-See Learn keys\&.
+**Learn keys...**
+: See [Learn keys](#learn-keys).
 
-.TP
-\fBKey bindings...\fP
-See Key bindings\&.
+**Key bindings...**
+: See [Key bindings](#key-bindings).
 
-.TP
-\fBKey sniffer...\fP
-See Key sniffer\&.
+**Key sniffer...**
+: See [Key sniffer](#key-sniffer).
 
-.TP
-\fBManage plugins...\fP
-See Manage plugins\&.
+**Manage plugins...**
+: See [Manage plugins](#manage-plugins).
 
-.TP
-\fBPlugin info...\fP
-See Plugin info\&.
+**Plugin info...**
+: See [Plugin info](#plugin-info).
 
-.TP
-\fBLua scripts...\fP
-See Lua scripts\&. The entry is there only where coole was
+**Lua scripts...**
+: See [Lua scripts](#lua-scripts). The entry is there only where bluerig was
 built with Lua.
 
-.TP
-\fBSyntax file\fP
-Open the syntax file of the user,
-\fI~/.local/share/coole/syntax/Syntax\fP,
+**Syntax file**
+: Open the syntax file of the user,
+*~/.local/share/bluerig/syntax/Syntax*,
 in the editor. Where it does not exist, it is made with a short comment on what
 it holds, not as a copy of the system file, which is still read after it. See
-Syntax Highlighting\&.
+[Syntax Highlighting](#syntax-highlighting).
 
-.TP
-\fBMenu file\fP
-Open the user menu file in the editor.
+**Menu file**
+: Open the [user menu](#edit-menu-file) file in the editor.
 
-.TP
-\fBSave setup\fP
-Write the settings to
-\fI~/.config/coole/ini\fP\&.
+**Save setup**
+: Write the settings to
+*~/.config/bluerig/ini*.
 With the
-\fIauto_save_setup\fP
+*auto_save_setup*
 setting on, they are written whenever the editor ends.
 
-.SS Editor options
-.PP
+### Editor options <a id="editor-options"></a>
+
 The settings of the editor, which the
-\fBGeneral...\fP
+**General...**
 item of the Options menu opens. They are written to the ini file under the
 names the
-Settings in the ini file
+[Settings in the ini file](#internal-file-editor-options)
 section describes.
 
-.PP
-\fIWrap mode.\fP
+*Wrap mode.*
 Off, dynamic paragraph formatting, or the typewriter wrap that breaks a line
 at the word wrap line length while it is typed.
 
-.PP
-\fIFake half tabs.\fP
+*Fake half tabs.*
 Move and indent by half a tab between the text and the left margin, with
 spaces, while a tab stays a tab everywhere else.
 
-.PP
-\fIBackspace through tabs.\fP
+*Backspace through tabs.*
 One backspace deletes all the space to the left margin when there is no text
 between the cursor and the margin.
 
-.PP
-\fIFill tabs with spaces.\fP
+*Fill tabs with spaces.*
 Insert spaces up to the next tab stop instead of a tab character.
 
-.PP
-\fITab spacing.\fP
+*Tab spacing.*
 The width a tab character stands for. 8 by default, and other editors and
 viewers assume 8 as well.
 
-.PP
-\fIReturn does autoindent.\fP
+*Return does autoindent.*
 A new line starts at the indentation of the line above.
 
-.PP
-\fIConfirm before saving.\fP
+*Confirm before saving.*
 Ask before the file is written.
 
-.PP
-\fISave file position.\fP
+*Save file position.*
 Open a file at the place it was left the last time.
 
-.PP
-\fIVisible trailing spaces.\fP
+*Visible trailing spaces.*
 Mark the spaces at the end of a line.
 
-.PP
-\fIVisible tabs.\fP
+*Visible tabs.*
 Mark the tab characters.
 
-.PP
-\fIShow control characters.\fP
+*Show control characters.*
 Print the control characters of the text instead of hiding them.
 
-.PP
-\fISyntax highlighting.\fP
+*Syntax highlighting.*
 Color the text by the syntax rules of its file type.
 
-.PP
-\fICursor after inserted block.\fP
+*Cursor after inserted block.*
 Leave the cursor at the end of a block that was just inserted, not at its
 start.
 
-.PP
-\fIPersistent selection.\fP
+*Persistent selection.*
 A selection stays when the cursor moves, instead of being dropped.
 
-.PP
-\fICursor beyond end of line.\fP
+*Cursor beyond end of line.*
 The cursor may stand past the last character of a line.
 
-.PP
-\fIGroup undo.\fP
+*Group undo.*
 One undo takes back a run of the same kind of change, not a single key.
 
-.PP
-\fIWord wrap line length.\fP
+*Word wrap line length.*
 The column the wrap modes break a line at. 72 by default.
 
-.PP
-\fIEsc timeout, ms.\fP
+*Esc timeout, ms.*
 How long a single Esc waits for the rest of a key before it counts as Esc,
 in milliseconds. 1000 by default. It is written to the ini file as
-\fIold_esc_mode_timeout\fP,
+*old_esc_mode_timeout*,
 in microseconds, and the
-\fBKEYBOARD_KEY_TIMEOUT_US\fP
+**KEYBOARD_KEY_TIMEOUT_US**
 variable overrides it when the editor starts.
 
-.SS Edit Save Mode
-.PP
+### Edit Save Mode <a id="edit-save-mode"></a>
+
 How a file is written, the same three modes the
-\fIeditor_option_save_mode\fP
+*editor_option_save_mode*
 setting takes:
 
-.TP
-\fBQuick save\fP
-Write over the file at once. Fast, and a failure in the middle leaves the
+**Quick save**
+: Write over the file at once. Fast, and a failure in the middle leaves the
 file half written.
 
-.TP
-\fBSafe save\fP
-Write a temporary file first and rename it over the original when it is
+**Safe save**
+: Write a temporary file first and rename it over the original when it is
 whole, so a failure leaves the original untouched.
 
-.TP
-\fBDo backups with following extension\fP
-Safe save, and the original is kept under its name with the extension of the
+**Do backups with following extension**
+: Safe save, and the original is kept under its name with the extension of the
 input line added, "~" by default. Saving twice replaces the backup as well.
 
-.TP
-\fBCheck POSIX new line\fP
-Ask about the missing newline at the end of the file before it is written.
+**Check POSIX new line**
+: Ask about the missing newline at the end of the file before it is written.
 
-.SS Appearance
-.PP
-The skin the program is drawn with, and whether the dialogs and the drop\-down
+### Appearance
+
+The skin the program is drawn with, and whether the dialogs and the drop-down
 menus have a shadow.
 
-.TP
-\fBSkin\fP
-The button opens the list of the skins that are installed and those of the
+**Skin**
+: The button opens the list of the skins that are installed and those of the
 user; the one chosen is applied at once.
 
-.TP
-\fBShadows\fP
-Draw a shadow under every dialog and drop\-down menu. Without colors there
+**Shadows**
+: Draw a shadow under every dialog and drop-down menu. Without colors there
 are no shadows.
 
-.PP
 The choice is written to the
-\fIskin\fP
+*skin*
 and
-\fIshadows\fP
+*shadows*
 settings of the ini file. See the
-Skins
+[Skins](#skins)
 section for the skin files themselves.
 
-.SS Learn keys
-.PP
-This dialog teaches coole the escape sequences your terminal sends for the
+### Learn keys
+
+This dialog teaches bluerig the escape sequences your terminal sends for the
 function keys, the arrows and the navigation keys. Its title names the
 terminal, from the
-\fBTERM\fP
+**TERM**
 variable.
 
-.PP
 Select a modifier combination (Ctrl, Alt, Shift) using the checkboxes, then
 press the button of a key. Press the key on the keyboard and wait for the
 capture message to disappear. The learned sequence appears next to the button.
 A sequence that another key has already is reported as a conflict.
 
-.TP
-\fBDel\fP
-Clear the learned key the cursor is on.
+**Del**
+: Clear the learned key the cursor is on.
 
-.TP
-\fBSave\fP
-Write the learned keys to
-\fI~/.config/coole/term/<TERM>\fP\&.
+**Save**
+: Write the learned keys to
+*~/.config/bluerig/term/\<TERM>*.
 
-.TP
-\fBEdit term file\fP
-Open that file in the editor.
+**Edit term file**
+: Open that file in the editor.
 
-.SS Key bindings
-.PP
+### Key bindings <a id="key-bindings"></a>
+
 The actions of the program with the keys they answer to, in a table. The
 buttons at the top choose the group, Editor or Widgets, and then the part of
-it: Main and Ctrl\-X for the editor; Dialog, Menu, Input, Listbox, Radio and
-Help for the widgets. Back returns to the groups. Actions marked with * have
+it: Main and Ctrl-X for the editor; Dialog, Menu, Input, Listbox, Radio and
+Help for the widgets. Back returns to the groups. Actions marked with \* have
 keys that differ from the defaults.
 
-.TP
-\fBEnter\fP
-Replace the key of the action: press the key to assign.
+**Enter**
+: Replace the key of the action: press the key to assign.
 
-.TP
-\fBF5\fP
-Add another key to the action.
+**F5**
+: Add another key to the action.
 
-.TP
-\fBF8, Del\fP
-Remove the key.
+**F8, Del**
+: Remove the key.
 
-.TP
-\fBSave\fP
-Write the changes to
-\fI~/.config/coole/keymap.ini\fP\&.
+**Save**
+: Write the changes to
+*~/.config/bluerig/keymap.ini*.
 
-.TP
-\fBEdit keymap file\fP
-Open
-\fIkeymap.ini\fP
+**Edit keymap file**
+: Open
+*keymap.ini*
 in the editor.
 
-.TP
-\fBEdit term file\fP
-Open the key sequences of the terminal, the file
-Learn keys
+**Edit term file**
+: Open the key sequences of the terminal, the file
+[Learn keys](#learn-keys)
 writes.
 
-.PP
 A key that is taken by another action is reported, and the question is
 whether to take it from there.
 
-.SS Key sniffer
-.PP
+### Key sniffer <a id="key-sniffer"></a>
+
 Press
-\fBCapture key\fP,
+**Capture key**,
 then any key. The dialog shows what arrived:
 
-.EX
-Shortcut   the symbolic name, e.g. Ctrl\-F5
+```
+Shortcut   the symbolic name, e.g. Ctrl-F5
 Action     the action of the key in the editor keymap
 Raw        the escape sequence and its bytes in hex
 Keycode    the internal numeric code
-.EE
+```
 
-.PP
 It is the place to look when a key does nothing or the wrong thing: a key
 that arrives as a sequence the program does not recognize is to be taught in
-Learn keys,
+[Learn keys](#learn-keys),
 and one that arrives but has no action is to be bound in
-Key bindings\&.
+[Key bindings](#key-bindings).
 
-.SS Manage plugins
-.PP
+### Manage plugins <a id="manage-plugins"></a>
+
 The plugins the program has loaded, in a table: the kind, the name and what the
-plugin says about itself. The editor plugins are listed here, and, where coole
+plugin says about itself. The editor plugins are listed here, and, where bluerig
 was built with Lua, the Lua engine as a plugin of the kind
-\fIruntime\fP\&.
+*runtime*.
 A plugin is switched off and on with the checkbox of its row, and what is
 switched off is not loaded the next time either; the choice is kept in
-\fI~/.config/coole/plugins.ini\fP\&.
+*~/.config/bluerig/plugins.ini*.
 A plugin that is switched off stays in the list, so that it can be switched
 on again.
 
-.TP
-\fBEnter, F4\fP
-Open the settings of the plugin the cursor is on. A plugin that has none says
+**Enter, F4**
+: Open the settings of the plugin the cursor is on. A plugin that has none says
 so. On the row of the Lua engine it opens the
-Lua scripts\&.
+[Lua scripts](#lua-scripts).
 
-.TP
-\fBIDE: project, build, debugger\fP
-Switch the three plugins that make an IDE of the editor on together, or off
+**IDE: project, build, debugger**
+: Switch the three plugins that make an IDE of the editor on together, or off
 together when all of them are on: the project and its files, the build, and
 the debugger. Each of them works without the others too.
 
-.SS Plugin info
-.PP
+### Plugin info <a id="plugin-info"></a>
+
 The plugins the editor has loaded: the name, whether it is on, what it
 provides and what it does. It is a list to look at; a plugin is switched off
 and its settings are opened in the
-Manage plugins
+[Manage plugins](#manage-plugins)
 dialog.
 
-.SS Lua scripts
-.PP
+### Lua scripts <a id="lua-scripts"></a>
+
 The Lua scripts that were found, the system ones and those of the user, in a
 table: whether it is on, where the script lives (global or user), its
 identifier, its workspace, what it provides and what it does. A script is
 switched off and on with the checkbox of its row; the change takes effect the
-next time coole starts.
+next time bluerig starts.
 
-.TP
-\fBSettings\fP
-Run the script that carries the settings of the package, where it has one.
+**Settings**
+: Run the script that carries the settings of the package, where it has one.
 
-.PP
-See Lua scripting for the scripts themselves.
+See [Lua scripting](#lua-scripting) for the scripts themselves.
 
+# Search, replace and the line filter <a id="search-and-replace"></a>
 
-.SH Search, replace and the line filter
-.PP
 The search dialog
-(\fBF7\fP)
+(**F7**)
 takes the text to look for and the type of the search: a plain string, a
 regular expression, hexadecimal bytes or a shell pattern; whether the case
 matters; whether it looks backwards, only in the highlighted block, or for
 whole words; and whether it looks in every encoding the file might be in.
-\fBFind all\fP
+**Find all**
 sets a bookmark on every line that matches. The replace dialog
-(\fBF4\fP)
+(**F4**)
 takes the text to put in as well, and asks at every match unless it is told to
-replace them all. In a regular expression replacement, \e1 to \e9 stand for
+replace them all. In a regular expression replacement, \\1 to \\9 stand for
 the groups of the match.
 
-.PP
 The
-\fBFilter\fP
+**Filter**
 button of the search dialog hides every line that does not match the search
-string, using the same type, case and whole\-word settings as the search. Line
+string, using the same type, case and whole-word settings as the search. Line
 numbers keep their original values and the line state gutter marks each
 hidden run. The set of hidden lines is fixed at the moment the button is
-pressed: editing never re\-applies the match, so a shown line that is split or
+pressed: editing never re-applies the match, so a shown line that is split or
 joined stays shown, and lines typed afterwards stay shown even if they do not
 match.
-\fBAlt\-s\fP
+**Alt-s**
 lifts the filter; pressed again it puts the last search back on as a filter.
-\fBAlt\-Shift\-s\fP
+**Alt-Shift-s**
 filters by the highlighted text, or by the word under the cursor, at once.
 "Unfold all" in the Command menu lifts the filter as well.
 
+# Folding
 
-.SH Folding
-.PP
 A fold hides a run of lines behind its first line, which stays on the screen
 with a mark in the line state gutter.
-\fBAlt\-Shift\-f\fP
+**Alt-Shift-f**
 (Fold / Unfold block in the Command menu) folds the highlighted lines, or,
 with nothing highlighted, the lines from a bracket on the current line to the
 bracket that matches it. On the first line of a fold it unfolds it.
-\fBUnfold all\fP
+**Unfold all**
 opens every fold of the file, and lifts the line filter.
 
+# Macros
 
-.SH Macros
-.PP
 To define a macro, press
-\fBCtrl\-r\fP
+**Ctrl-r**
 and then type out the keys you want to be executed. Press
-\fBCtrl\-r\fP
+**Ctrl-r**
 again when finished, and assign the macro to a key by pressing that key. The
 macro is executed by that key.
 
-.PP
 The macros are kept in the section
-\fB[editor]\fP
+**[editor]**
 of the file
-\fB~/.local/share/coole/macros\fP,
+**~/.local/share/bluerig/macros**,
 and a macro is deleted by deleting its line there, or in the
-Macro Explorer\&.
+[Macro Explorer](#macro-explorer).
 
-.PP
-\fBRecord/Repeat actions\fP
+**Record/Repeat actions**
 in the Command menu records the actions that follow until it is chosen again,
 and then asks how many times to repeat them.
 
-.PP
 A shell script can be assigned to a key as well, by a line of the
-\fBmacros\fP
+**macros**
 file like this:
 
-.EX
+```
 [editor]
-ctrl\-W=ExecuteScript:25;
-.EE
+ctrl-W=ExecuteScript:25;
+```
 
-.PP
-This means that Ctrl\-W runs the
-\fIExecuteScript(25)\fP
+This means that Ctrl-W runs the
+*ExecuteScript(25)*
 action, which runs the shell script
-\fB~/.local/share/coole/macros.d/macro.25.sh\fP\&.
+**~/.local/share/bluerig/macros.d/macro.25.sh**.
 The scripts are kept in the directory
-\fB~/.local/share/coole/macros.d/\fP
+**~/.local/share/bluerig/macros.d/**
 and must be named
-\fBmacro.XXXX.sh\fP,
+**macro.XXXX.sh**,
 where
-\fBXXXX\fP
+**XXXX**
 is a number from 0 to 9999. Examples are installed in
-\fB{{pkgdatadir}}/examples/macros.d/\fP\&.
+**{{pkgdatadir}}/examples/macros.d/**.
 A script has the format of the entries of the
-user menu
+[user menu](#edit-menu-file)
 and takes the same macros. Its first line may be
 
-.TP
-\fI#silent\fP
-The script is run without asking for its parameters.
+*#silent*
+: The script is run without asking for its parameters.
 
-.PP
 Here is a sample script:
 
-.EX
+```
 l       comment selection
-	TMPFILE=`mktemp ${COOLE_TMPDIR:\-/tmp}/up.XXXXXX` || exit 1
+	TMPFILE=`mktemp ${BLUERIG_TMPDIR:-/tmp}/up.XXXXXX` || exit 1
 	echo #if 0 > $TMPFILE
 	cat %b >> $TMPFILE
 	echo #endif >> $TMPFILE
 	cat $TMPFILE > %b
-	rm \-f $TMPFILE
-.EE
+	rm -f $TMPFILE
+```
 
-.SH Macro Explorer
-.PP
+## Macro Explorer <a id="macro-explorer"></a>
+
 The macros that are recorded, with the key each one answers to and what it
 does. The buttons are
 
-.TP
-\fBRun\fP
-Play the macro the cursor is on.
+**Run**
+: Play the macro the cursor is on.
 
-.TP
-\fBDelete\fP
-Remove it, after a question.
+**Delete**
+: Remove it, after a question.
 
-.TP
-\fBEdit file\fP
-Open the file the macros live in, which the
-Macros
+**Edit file**
+: Open the file the macros live in, which the
+[Macros](#macros)
 section describes.
 
+# User menu <a id="edit-menu-file"></a>
 
-.SH User menu
-.PP
 The user menu
-(\fBF11\fP)
+(**F11**)
 is a menu of useful actions that can be customized by the user: each entry is
 a shell script that is run with the text of the editor at hand. The menu is
 read from the first one found of:
 
-.EX
-1) ./.coole.menu in the current directory
-2) ~/.config/coole/menu
-3) ~/coole.menu
-4) {{sysconfdir}}/coole/coole.menu
-5) {{pkgdatadir}}/coole.menu
-.EE
+```
+1) ./.bluerig.menu in the current directory
+2) ~/.config/bluerig/menu
+3) ~/bluerig.menu
+4) {{sysconfdir}}/bluerig/bluerig.menu
+5) {{pkgdatadir}}/bluerig.menu
+```
 
-.PP
 The file of the current directory is read only where it belongs to the user or
 to root and nobody else can write it, because its entries run commands. The
-\fBMenu file\fP
+**Menu file**
 item of the Options menu opens the menu file in the editor.
 
-.PP
 The format of the menu file is very simple. Lines that start with anything but
 space or tab are considered entries for the menu (in order to be able to use
 it like a hot key, the first character should be a letter). All the lines that
 start with a space or a tab are the commands that will be executed when the
 entry is selected. Comments are started with '#'.
 
-.PP
 When an entry is selected all its command lines are copied to a temporary file
 and then that file is executed by the shell. This allows the user to put
 normal shell constructs in the menus. Also simple macro substitution takes
 place before executing the menu code:
 
-.TP
-\fI%f, %p\fP
-The name of the current file.
+*%f, %p*
+: The name of the current file.
 
-.TP
-\fI%n\fP
-The current file name without extension.
+*%n*
+: The current file name without extension.
 
-.TP
-\fI%x\fP
-The extension of the current file name.
+*%x*
+: The extension of the current file name.
 
-.TP
-\fI%d\fP
-The current directory.
+*%d*
+: The current directory.
 
-.TP
-\fI%c\fP
-The position of the cursor in the file.
+*%c*
+: The position of the cursor in the file.
 
-.TP
-\fI%i\fP
-The indent of blank space, equal to the cursor column.
+*%i*
+: The indent of blank space, equal to the cursor column.
 
-.TP
-\fI%y\fP
-The syntax type of the current file.
+*%y*
+: The syntax type of the current file.
 
-.TP
-\fI%b\fP
-The block file: the highlighted text is written to
-\fI~/.cache/coole/block\fP
+*%b*
+: The block file: the highlighted text is written to
+*~/.cache/bluerig/block*
 before the command runs, and what the command leaves there replaces the
 block afterwards.
 
-.TP
-\fI%m\fP
-The name of the menu file.
+*%m*
+: The name of the menu file.
 
-.TP
-\fI%%\fP
-The % character.
+*%%*
+: The % character.
 
-.TP
-\fI%{some text}\fP
-Prompt for the substitution. An input box is shown and the text inside the
+*%{some text}*
+: Prompt for the substitution. An input box is shown and the text inside the
 braces is used as a prompt. The macro is substituted by the text typed by the
 user. The user can press Esc or F10 to cancel.
 
-.TP
-\fI%view\fP
-Run the commands and open their standard output in a new editor window. The
+*%view*
+: Run the commands and open their standard output in a new editor window. The
 words in braces after %view, as in %view{ascii}, are accepted and ignored.
 
-.PP
 Uppercase and lowercase macros are the same. With a number after the %
 character quoting is turned on (the default) and off: %f and %1f quote the
 expanded macro, %0f does not.
 
-.PP
 Here is a sample menu file:
 
-.EX
+```
 s       Sort the block
-	sort %b > %b.tmp && mv \-f %b.tmp %b
+	sort %b > %b.tmp && mv -f %b.tmp %b
 
 w       Count the words of the file
 	%view wc %f
 
 m       Run make in the directory of the file
 	make
-.EE
+```
 
-.PP
-\fBDefault Conditions\fP
+**Default Conditions**
 
-.PP
 Each menu entry may be preceded by a condition. The condition must start from
 the first column with a '=' character. If the condition is true, the menu
 entry will be the default entry.
 
-.EX
-Condition syntax:   = <sub\-cond>
-  or:               = <sub\-cond> | <sub\-cond> ...
-  or:               = <sub\-cond> & <sub\-cond> ...
+```
+Condition syntax:   = <sub-cond>
+  or:               = <sub-cond> | <sub-cond> ...
+  or:               = <sub-cond> & <sub-cond> ...
 
-Sub\-condition is one of following:
+Sub-condition is one of following:
 
   y <pattern>   syntax of current file matching pattern?
   f <pattern>   current file matching pattern?
   d <pattern>   current directory matching pattern?
   t <type>      current file of type?
   x <filename>  is it executable filename?
-  ! <sub\-cond>  negate the result of sub\-condition
-.EE
+  ! <sub-cond>  negate the result of sub-condition
+```
 
-.PP
 Pattern is a normal shell pattern or a regular expression, according to the
-\fIshell_patterns\fP
+*shell_patterns*
 setting. You can override the global value of that setting by writing
 "shell_patterns=x" on the first line of the menu file (where "x" is either 0
 or 1).
 
-.PP
 Type is one or more of the following characters:
 
-.EX
+```
   n   not a directory
   r   regular file
   d   directory
@@ -1614,102 +1358,87 @@ Type is one or more of the following characters:
   f   FIFO (pipe)
   s   socket
   x   executable file
-.EE
+```
 
-.PP
 For example 'rlf' means either regular file, link or fifo.
 
-.PP
 If the condition starts with '=?' instead of '=' a debug trace will be shown
 whenever the value of the condition is calculated.
 
-.PP
 The conditions are calculated from left to right. This means
 
-.EX
+```
 	= f *.c | f *.h & y C
-.EE
+```
 
-.PP
 is calculated as
 
-.EX
+```
 	( (f *.c) | (f *.h) ) & (y C)
-.EE
+```
 
-.PP
-\fBAddition Conditions\fP
+**Addition Conditions**
 
-.PP
 If the condition begins with '+' (or '+?') instead of '=' (or '=?') it is an
 addition condition. If the condition is true the menu entry will be included
 in the menu. If the condition is false the menu entry will not be included in
 the menu.
 
-.PP
 You can combine default and addition conditions by starting condition with
-\&'+=' or '=+' (or '+=?' or '=+?' if you want debug trace). If you want to use
+'+=' or '=+' (or '+=?' or '=+?' if you want debug trace). If you want to use
 two different conditions, one for adding and another for defaulting, you can
 precede a menu entry with two condition lines, one starting with '+' and
 another starting with '='.
 
+# Code navigation
 
-.SH Code navigation
-.PP
 The editor finds the definition of a name in a tags file, with one of two
 plugins.
 
-.PP
 The etags plugin reads the
-\fBTAGS\fP
+**TAGS**
 file of the project, in the Emacs format, which etags or
-\fIctags \-e\fP
-builds. For example, with exuberant\-ctags for the C language:
+*ctags -e*
+builds. For example, with exuberant-ctags for the C language:
 
-.EX
-ctags \-e \-\-language\-force=C \-R ./
-.EE
+```
+ctags -e --language-force=C -R ./
+```
 
-.PP
-\fBAlt\-Enter\fP
+**Alt-Enter**
 shows the list of the definitions of the name under the cursor (the cursor
 should stand at the end of the word); with a single one it goes there at
 once. See
-Definitions\&.
+[Definitions](etags.md#definitions).
 
-.PP
-\fBAlt\-Minus\fP
+**Alt-Minus**
 goes to the previous place in the navigation list (like the Back button of a
 browser), and
-\fBAlt\-Plus\fP
+**Alt-Plus**
 to the next one (like its Forward button).
 
-.PP
 The ctags plugin reads the
-\fBtags\fP
+**tags**
 file of ctags, and fills the Navigate menu: go to the declaration, find the
 references, complete a symbol, the symbols of the file, the members of a class
 or structure, and more. See
-Ctags\&.
+[Ctags](ctags.md#ctags).
 
-.PP
 Both plugins can be switched off in
-Manage plugins,
+[Manage plugins](#manage-plugins),
 and then their keys do nothing.
 
+# Spell checking
 
-.SH Spell checking
-.PP
 The spell plugin checks the text with aspell or hunspell.
-\fBCtrl\-p\fP
+**Ctrl-p**
 checks the word under the cursor, and the Plugins menu checks the whole file.
-See Spell\&.
+See [Spell](spell.md#spell).
 
+# Terminal
 
-.SH Terminal
-.PP
 The terminal plugin runs your shell in a window of the editor.
-\fBCtrl\-o\fP
+**Ctrl-o**
 shows the window at the bottom of the screen, a file shown full screen going
 into a window above it, and the windows already there, a file beside the
 Preview for one, going up out of its way; in the terminal it hides it again,
@@ -1717,61 +1446,59 @@ and each of them goes back where it was. The shell goes on running while the
 window is hidden.
 The window is moved, resized, shown full screen and closed like the window of
 a file. The scrollbar on the right of its frame scrolls the history of the
-output. See Terminal\&.
+output. See [Terminal](terminal.md#terminal).
 
+# Preview
 
-.SH Preview
-.PP
 The viewer plugin shows the file the way it is meant to read, whatever the
 file is, in a window named Preview at the right of it.
-\fBCtrl\-Alt\-p\fP,
+**Ctrl-Alt-p**,
 or Preview in the Window menu, shows and hides it. The file keeps the
 focus; the Preview is drawn again as the text changes, follows the cursor,
 and shows the file window that comes to the front. The window is moved,
 resized and closed like the window of a file. Once it has the focus, it has
 a cursor of its own, which the keys of the editor move as in a file: the
 arrows, Home and End, the pages, the top and the bottom of the text; the keys
-of the words, Ctrl\-Left and Ctrl\-Right, move it eight columns. The view
+of the words, Ctrl-Left and Ctrl-Right, move it eight columns. The view
 follows it, sideways too for what is wider than it. A click
 on the text puts the cursor there.
 Text is marked as in a file: the mouse drawn over it, a word by a double
 click, a line by a triple one, Shift and the arrows, F3 at the start and
-again at the end, Ctrl\-A all of it. Ctrl\-Ins, or Enter, copies what is
+again at the end, Ctrl-A all of it. Ctrl-Ins, or Enter, copies what is
 marked to the clipboard, without the colors. The windows of the build and
 of the query plugin are such windows too; in History, a list of queries,
-Enter and F3 are its own, and Ctrl\-Ins copies.
+Enter and F3 are its own, and Ctrl-Ins copies.
 The mouse wheel scrolls it without the focus, sideways when it is tilted or
 turned with Shift. Its frame has a scrollbar on the right and one at the
 bottom: an arrow scrolls a step, the bar beside the thumb a page, and the
 thumb is dragged. The key is set in
-\fBviewer.ini\fP,
+**viewer.ini**,
 section
-\fB[Preview]\fP,
+**[Preview]**,
 entry
-\fBkey\fP\&.
+**key**.
 
-.PP
 The renderers tell the viewer what files they draw, by the ends of their names
 or how their texts start, and the viewer has the file drawn by the renderer of
 its type: a markdown file comes out with its headings, lists,
 tables with rules, blocks of code in the colors of the editor, formulas as
 symbols and mermaid diagrams as drawings; that renderer is the Lua script
-render\-markdown, lua\-markdown of Midnight Commander, whose settings, from
+render-markdown, lua-markdown of Midnight Commander, whose settings, from
 Manage plugins, are kept in
-\fB~/.config/coole/render\-markdown.ini\fP\&.
+**~/.config/bluerig/render-markdown.ini**.
 A JSON file, and JSON Lines, comes out one value to a line in the colors the
 editor gives JSON, the size of every object and array beside it, a long array
 packed to the width or cut short, and an array of objects of one kind as a
 table; comments and a comma before a closing bracket are taken. While it does
 not read, halfway through a change, the error and its place are shown above
-the last view that read. That renderer is the Lua script render\-json.
+the last view that read. That renderer is the Lua script render-json.
 An XML file, by the end of its name or by a text that starts with <?xml, comes
 out an element to a line in the colors the editor gives XML: a short text on
 the line of its element, a long one wrapped under it, the attributes one to a
 line when they do not fit, the number of the elements an element holds beside
 it, a long run of elements of one name cut short, and a run of elements of one
 name that hold attributes and plain text as a table. That renderer is the Lua
-script render\-xml, and it shows its errors the way render\-json does.
+script render-xml, and it shows its errors the way render-json does.
 A string of base64 in JSON or XML, a text, a value or a data: URI, is cut to
 its first letters, and what it holds is shown beside it in parentheses: the
 start of the text, or the kind of file its bytes start like, and the size.
@@ -1780,157 +1507,147 @@ short one; a string of the letters of base64 that holds neither text nor a
 known kind of file, a hash for one, is left as it is.
 A file of a type no renderer knows is shown as its text.
 
+# Dialogs
 
-.SH Dialogs
-.SH Save As
-.PP
+## Save As <a id="save-file-as"></a>
+
 The name to write the file under, and the line breaks to write it with: as the
 file has them, Unix (LF), Windows and DOS (CR LF), or Macintosh (CR). The
 choice holds for that save; the file keeps what it is given.
 
-.SH Open files
-.PP
+## Open files <a id="open-files"></a>
+
 The files the editor has open, one to a line. Enter goes to the file the
 cursor is on, Esc leaves the file that is shown where it is. The same list is
 the
-\fBList...\fP
+**List...**
 item of the Window menu.
 
-.SH Screen selector
-.PP
-Besides the editor, a Lua script may open screens of its own, full\-screen
+## Screen selector
+
+Besides the editor, a Lua script may open screens of its own, full-screen
 views that stay open while you go back to the editor. There are three ways to
 switch between the screens:
 
-.TP
-\fBAlt\-}\fP
-switch to the next screen;
+**Alt-}**
+: switch to the next screen;
 
-.TP
-\fBAlt\-{\fP
-switch to the previous screen;
+**Alt-{**
+: switch to the previous screen;
 
-.TP
-\fBAlt\-`\fP
-open a dialog window with the list of the screens that are open, to choose
+**Alt-\`**
+: open a dialog window with the list of the screens that are open, to choose
 one.
 
-.SH Completion
-.PP
+## Completion
+
 Let the program type for you.
 
-.PP
 In the editor,
-\fBAlt\-Tab\fP
+**Alt-Tab**
 completes the word before the cursor from the words of the file, and, with the
-\fIeditor_wordcompletion_collect_all_files\fP
+*editor_wordcompletion_collect_all_files*
 setting on (the default), of the other open files as well. Where more than one
 word fits, a list of them pops up to choose from.
 
-.PP
 In an input line of a dialog,
-\fBAlt\-Tab\fP
+**Alt-Tab**
 attempts completion treating the text as a variable (if the text begins with
-\fB$\fP),
+**$**),
 a user name (if the text begins with
-\fB~\fP)
+**~**)
 or a file name. If the completion is ambiguous, the program beeps, and with
 the
-\fIshow_all_if_ambiguous\fP
+*show_all_if_ambiguous*
 setting on, a list of all the possibilities pops up next to the current
 position: select one with the arrow keys and
-\fBEnter\fP,
+**Enter**,
 or type the first letters in which the possibilities differ to narrow the
 list. As soon as there is no ambiguity, the list disappears; Esc, F10 and the
 left and right arrow keys hide it as well.
 
-.SH Choose codepage
-.PP
+## Choose codepage <a id="codepages-translation"></a>
+
 The list of the codepages the program knows, from
-\fB{{pkgdatadir}}/charsets\fP\&.
+**{{pkgdatadir}}/charsets**.
 Choosing one tells the editor in which codepage the text of the file is
 written, and the text is recoded from it into the codepage of the terminal
 for the screen;
-\fB<No translation>\fP
+**\<No translation>**
 leaves it as bytes. The list is opened by
-\fBAlt\-e\fP
+**Alt-e**
 and by the Encoding item of the Command menu.
 
-.SH History
-.PP
+## History <a id="history-query"></a>
+
 The list of what was typed into an input line before, newest first, which
-\fBAlt\-h\fP
+**Alt-h**
 opens for the line the cursor is in. Enter takes the entry the cursor is on
 into the line, Esc leaves the line as it was, and
-\fBF8, Del\fP
+**F8, Del**
 removes the entry the cursor is on from the history. The histories are kept in
-\fI~/.local/share/coole/history\fP;
-\fInum_history_items_recorded\fP
+*~/.local/share/bluerig/history*;
+*num_history_items_recorded*
 says how many entries each of them keeps.
 
+# Syntax Highlighting
 
-.SH Syntax Highlighting
-.PP
-\fBcoole\fP
+**bluerig**
 supports syntax highlighting.  This means that keywords and contexts
 (like C comments, string constants, etc) are highlighted in different
 colors.  The following section explains the format of the file
-\fB~/.local/share/coole/syntax/Syntax\fP\&.
-The system\-wide
-\fB{{pkgdatadir}}/syntax/Syntax\fP
+**~/.local/share/bluerig/syntax/Syntax**.
+The system-wide
+**{{pkgdatadir}}/syntax/Syntax**
 is read after it, for every file type it does not name: the file of the user
 holds only what the user added or wants otherwise, and an entry of its own
 wins over an installed one for the files it matches.  The files its
-\fBinclude\fP
+**include**
 lines name are looked for in
-\fI~/.local/share/coole/syntax/\fP
+*~/.local/share/bluerig/syntax/*
 first and among the installed ones after.  A full copy of the system file, as
 older versions made, hides every file type installed after it: keep in it only
 the entries you changed.
 The file
-\fB~/.local/share/coole/syntax/Syntax\fP
+**~/.local/share/bluerig/syntax/Syntax**
 is rescanned on opening of every new editor file.  The file contains
 rules for highlighting, each of which is given on a separate line, and
 define which keywords will be highlighted with what color.
 
-.PP
 The file is divided into sections, each beginning with a line with the
-\fBfile\fP
+**file**
 command.  The sections are normally put into separate files using the
-\fBinclude\fP
+**include**
 command.
 
-.PP
 The
-\fBfile\fP
+**file**
 command has three arguments.  The first argument is a regular expression
 that is applied to the file name to determine if the following section
 applies to the file.  The second argument is the description of the file
 type.  It is used in
-\fBcooledit\fP;
+**cooledit**;
 future versions of
-\fBcoole\fP
+**bluerig**
 may use it as well.  The third optional argument is a regular expression
 to match the first line of text of the file.  The rules in the following
 section apply if either the file name or the first line of text matches.
 
-.PP
 A section ends with the start of another section.  Each section is
 divided into contexts, and each context contains rules.  A context is a
 scope within the text that a particular set of rules belongs to.  For
 instance, the text within a C style comment (i.e. between
-\fB/*\fP
+**/\***
 and
-\fB*/\fP)
+**\*/**)
 has its own color.  This is a context, although it has no further rules
 inside it because there is probably nothing that we want highlighted
 within a C comment.
 
-.PP
 A trivial C programming section might look like this:
 
-.EX
-file .\e*\e\e.c C\esProgram\esFile (#include|/\e\e\e*)
+```
+file .\*\\.c C\sProgram\sFile (#include|/\\\*)
 
 wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_
 
@@ -1951,104 +1668,92 @@ context default
   keyword         '*'      green
 
 # C comments
-context /\e* \e*/ comment
+context /\* \*/ comment
 
 # C preprocessor directives
-context linestart # \en red
-  keyword  \e\e\en  brightred
+context linestart # \n red
+  keyword  \\\n  brightred
 
 # C string constants
 context " " green
   keyword  %d    brightgreen
   keyword  %s    brightgreen
   keyword  %c    brightgreen
-  keyword  \e\e"   brightgreen
-.EE
+  keyword  \\"   brightgreen
+```
 
-.PP
 Each context starts with a line of the form:
 
-.PP
-\fBcontext\fP
-[\fBexclusive\fP]
-[\fBoneline\fP]
-[\fBwhole\fP|\fBwholeright\fP|\fBwholeleft\fP]
-[\fBlinestart\fP]
-\fIdelim\fP
-[\fBlinestart\fP]
-\fIdelim\fP
-\fI[foreground]\fP
-\fI[background]\fP
-\fI[attributes]\fP
+**context**
+[**exclusive**]
+[**oneline**]
+[**whole**|**wholeright**|**wholeleft**]
+[**linestart**]
+*delim*
+[**linestart**]
+*delim*
+*[foreground]*
+*[background]*
+*[attributes]*
 
-.PP
 The first context is an exception.  It must start with the command
 
-.PP
-\fBcontext default\fP
-\fI[foreground]\fP
-\fI[background]\fP
-\fI[attributes]\fP
+**context default**
+*[foreground]*
+*[background]*
+*[attributes]*
 
-.PP
 otherwise
-\fBcoole\fP
+**bluerig**
 will report an error.  The
-\fBlinestart\fP
+**linestart**
 option specifies that
-\fIdelim\fP
+*delim*
 must start at the beginning of a line.  The
-\fBwhole\fP
+**whole**
 option tells that
-\fIdelim\fP
+*delim*
 must be a whole word.  To specify that a word must begin on the word
 boundary only on the left side, you can use the
-\fBwholeleft\fP
+**wholeleft**
 option, and similarly a word that must end on the word boundary is specified by
-\fBwholeright\fP\&.
+**wholeright**.
 
-.PP
 The set of characters that constitute a whole word can be changed at any
 point in the file with the
-\fBwholechars\fP
+**wholechars**
 command.  The left and right set of characters can be set separately
 with
 
-.PP
-\fBwholechars\fP
-[\fBleft\fP|\fBright\fP]
-\fIcharacters\fP
+**wholechars**
+[**left**|**right**]
+*characters*
 
-.PP
 The
-\fBexclusive\fP
+**exclusive**
 option causes the text between the delimiters to be highlighted, but not
 the delimiters themselves.
 
-.PP
 The
-\fBoneline\fP
+**oneline**
 option, after
-\fBexclusive\fP
+**exclusive**
 if both are given, ends the context at the end of its line when the right
 delimiter is not there, so that a delimiter left open colors no more than
 the rest of its line.
 
-.PP
 A context can hand the text between its delimiters to the rules of
 another syntax, with a line right below it:
 
-.PP
-\fBembed\fP
-[\fBsoft\fP]
-\fItype\fP
+**embed**
+[**soft**]
+*type*
 
-.PP
 where
-\fItype\fP
+*type*
 is the name of the rules as the file line of the Syntax file gives it,
-with \es for a space.  It is looked up in the Syntax file the rules are
-read from, and then in the one installed with coole, so that a copy of the
+with \\s for a space.  It is looked up in the Syntax file the rules are
+read from, and then in the one installed with bluerig, so that a copy of the
 Syntax file older than the rules still finds it; a type found in neither
 leaves the context as if it embedded nothing, in its own colors.  The delimiters keep the colors of the context.  The
 right delimiter ends the embedded text wherever it stands, inside a string
@@ -2056,30 +1761,26 @@ or a comment of the embedded rules as well.  An embedded syntax can embed
 another one in turn, a few levels deep.  For example, HTML hands scripts to
 JavaScript:
 
-.EX
+```
   context <SCRIPT*> </SCRIPT> brightcyan
-      embed JavaScript\esProgram
-.EE
+      embed JavaScript\sProgram
+```
 
-.PP
 With
-\fBsoft\fP
+**soft**
 the right delimiter ends the embedded text only outside the strings,
 comments and keywords of the embedded rules, so that in {{ "}}" }} of a
-Jinja2 template the first }} is part of the string, and in ${x/\e}/y} of a
+Jinja2 template the first }} is part of the string, and in ${x/\\}/y} of a
 shell script the first } is part of the escape.
 
-.PP
 A whole syntax can instead be a layer over another one, with a line
 
-.PP
-\fBoverlay\fP
-\fItype\fP
+**overlay**
+*type*
 
-.PP
 anywhere among its rules.  Its contexts then color what they hold wherever it
 stands, and the rest of the text is read by the rules of
-\fItype\fP,
+*type*,
 which see what the contexts hold as blanks and never know it was there.  This
 is how the tags of a template language are colored in the text, inside an HTML
 tag, in a string of an attribute and in a script alike, while HTML colors the
@@ -2087,66 +1788,58 @@ rest.  The default context of a layer colors nothing: a keyword there only
 keeps a context from starting.  A type found in no Syntax file leaves the
 layer over plain text.  For example, Smarty over HTML:
 
-.EX
-  overlay HTML\esFile
+```
+  overlay HTML\sFile
   context default
-      keyword {\es
-  context {\e* \e*} brown
+      keyword {\s
+  context {\* \*} brown
   context { } brightcyan
-      embed soft Smarty\esTag
-.EE
+      embed soft Smarty\sTag
+```
 
-.PP
 Each rule is a line of the form:
 
-.PP
-\fBkeyword\fP
-[\fBwhole\fP|\fBwholeright\fP|\fBwholeleft\fP]
-[\fBlinestart\fP]
-\fIstring foreground\fP
-\fI[background]\fP
-\fI[attributes]\fP
+**keyword**
+[**whole**|**wholeright**|**wholeleft**]
+[**linestart**]
+*string foreground*
+*[background]*
+*[attributes]*
 
-.PP
 Context or keyword strings are interpreted, so that you can include tabs
-and spaces with the sequences \et and \es.  Newlines and backslashes are
-specified with \en and \e\e respectively.  Since whitespace is used as a
-separator, it may not be used as is.  Also, \e* must be used to specify
-an asterisk.  The * itself is a wildcard that matches any length of
+and spaces with the sequences \\t and \\s.  Newlines and backslashes are
+specified with \\n and \\\\ respectively.  Since whitespace is used as a
+separator, it may not be used as is.  Also, \\\* must be used to specify
+an asterisk.  The \* itself is a wildcard that matches any length of
 characters.  For example,
 
-.EX
+```
   keyword         '*'      green
-.EE
+```
 
-.PP
 colors all C single character constants green.  You also could use
 
-.EX
+```
   keyword         "*"      green
-.EE
+```
 
-.PP
 to color string constants, but the matched string would not be allowed
 to span across multiple newlines.  The wildcard may be used within
 context delimiters as well, but you cannot have a wildcard as the last
 or first character.
 
-.PP
 Important to note is the line
 
-.EX
-  keyword  \e\e\en  brightgreen
-.EE
+```
+  keyword  \\\n  brightgreen
+```
 
-.PP
 This line defines a keyword containing the backslash and newline
 characters.  Since the keywords are matched before the context
 delimiters, this keyword prevents the context from ending at the end of
 the lines that end in a backslash, thus allowing C preprocessor
 directive to continue across multiple lines.
 
-.PP
 The possible colors are: black, gray, red, brightred, green,
 brightgreen, brown, yellow, blue, brightblue, magenta, brightmagenta,
 cyan, brightcyan, lightgray and white. The special keyword "default" means
@@ -2156,21 +1849,19 @@ without modifying the background color. When 256 colors are available,
 they can be specified either as color16 to color255, or as rgb000 to rgb555
 and gray0 to gray23.
 
-.PP
 Instead of a color, the foreground may be a scope token, a word in capitals
 that says what the text is rather than how it looks:
 
-.EX
+```
 keyword  whole  if   KEYWORD_CONTROL
 context  " " STRING_QUOTED_DOUBLE
-    keyword  \e\e"   CONSTANT_CHARACTER_ESCAPE
+    keyword  \\"   CONSTANT_CHARACTER_ESCAPE
 keyword  linestart TODO  KEYWORD_OTHER_TODO black
-.EE
+```
 
-.PP
 The color of a token comes from the skin, so that one skin colors the
 program and the text alike, and every language in the same way; see
-Skins\&.
+[Skins](#skins).
 A token is read as a scope, the token in lower case with dots for its
 underscores: KEYWORD_CONTROL_IMPORT is keyword.control.import, a kind of
 keyword.control, which is a kind of keyword. The names are those of the
@@ -2179,42 +1870,36 @@ colors mcedit gave that kind of text. A background or attributes after a
 token stand over the colors of mcedit, as black does above, but not over a
 background or attributes the skin gives that token itself. A token may
 stand in a define, and on the number, string and symbols lines of
-line\-local rules. The syntax files installed with coole use tokens alone;
+line-local rules. The syntax files installed with bluerig use tokens alone;
 the list of the tokens they use, with the colors of mcedit, is in
-\fB{{pkgdatadir}}/syntax/README.txt\fP\&.
+**{{pkgdatadir}}/syntax/README.txt**.
 
-.PP
 If the syntax file is shared with
-\fBcooledit\fP,
+**cooledit**,
 it is possible to specify different colors for
-\fBcoole\fP
+**bluerig**
 and
-\fBcooledit\fP
+**cooledit**
 by separating them with a slash, e.g.
 
-.EX
+```
 keyword  #include  red/Orange
-.EE
+```
 
-.PP
-\fBcoole\fP
+**bluerig**
 uses the color before the slash.  See cooledit(1) for supported
-\fBcooledit\fP
+**cooledit**
 colors.
 
-.PP
 Attributes can be any of bold, italic, underline, reverse and blink, appended by a
 plus sign if more than one are desired.
 
-.PP
 Comments may be put on a separate line starting with the hash sign (#).
 
-.PP
 If you are describing case insensitive language you need to use
-\fBcaseinsensitive\fP
+**caseinsensitive**
 directive. It should be specified at the beginning of syntax file.
 
-.PP
 Because of the simplicity of the implementation, there are a few
 intricacies that will not be dealt with correctly but these are a minor
 irritation.  On the whole, a broad spectrum of quite complicated
@@ -2225,107 +1910,95 @@ have coded, and you think you have a rule that would be useful, please
 email me with your request.  However, do not ask for regular expression
 support, because this is flatly impossible.
 
-.PP
 The special
-\fBline\-local\fP
+**line-local**
 syntax mode is intended for plain text.  It resets at every newline and
 screen boundary, and only scans the displayed text.  It supports
-\fBnumber\fP
-\fImax foreground\fP
+**number**
+*max foreground*
 for decimal numbers up to
-\fImax\fP
+*max*
 digits,
-\fBstring\fP
-\fIquote foreground\fP
-for single\- or double\-quoted strings, and
-\fBsymbols\fP
-\fIcharacters foreground\fP
+**string**
+*quote foreground*
+for single- or double-quoted strings, and
+**symbols**
+*characters foreground*
 for individually colored punctuation characters.
 
-.PP
 A useful hint is to work with as much as possible with the things you
 can do rather than try to do things that this implementation cannot deal
 with.  Also remember that the aim of syntax highlighting is to make
 programming less prone to error, not to make code look pretty.
 
-.PP
-The syntax highlighting can be toggled using Ctrl\-s shortcut.
+The syntax highlighting can be toggled using Ctrl-s shortcut.
 
+# Colors
 
-.SH Colors
-.PP
-coole will try to detect if your terminal supports color using the terminal
+bluerig will try to detect if your terminal supports color using the terminal
 database and your terminal name. Sometimes it gets confused, so you may force
-color mode or disable color mode using the \-c and \-b flag respectively.
+color mode or disable color mode using the -c and -b flag respectively.
 
-.PP
-If the program is compiled with the S\-Lang screen manager instead of ncurses,
+If the program is compiled with the S-Lang screen manager instead of ncurses,
 it will also check the variable
-\fBCOLORTERM,\fP
-if it is set, it has the same effect as the \-c flag.
+**COLORTERM,**
+if it is set, it has the same effect as the -c flag.
 
-.PP
 You may specify terminals that always force color mode by adding the
-\fIcolor_terminals\fP
+*color_terminals*
 variable to the Colors section of the initialization file. This will prevent
-coole from trying to detect if your terminal supports color. Example:
+bluerig from trying to detect if your terminal supports color. Example:
 
-.EX
+```
 [Colors]
 color_terminals=linux,xterm
-color_terminals=terminal\-name1,terminal\-name2...
-.EE
+color_terminals=terminal-name1,terminal-name2...
+```
 
-.PP
-The program can be compiled with both ncurses and S\-Lang, ncurses does not
+The program can be compiled with both ncurses and S-Lang, ncurses does not
 provide a way to force color mode: ncurses uses just the information in the
 terminal database.
 
+# Skins
 
-.SH Skins
-.PP
 The colors of the program and the lines of its frames are taken from a skin
 file. The
-Appearance
+[Appearance](#appearance)
 dialog chooses one from a list.
 
-.PP
-If your skin contains any true\-color definitions, you should define the
-\&'truecolors' key set to TRUE value in [skin] section. If true\-color is not
-used but 256\-color is, you should define '256colors' instead.
+If your skin contains any true-color definitions, you should define the
+'truecolors' key set to TRUE value in [skin] section. If true-color is not
+used but 256-color is, you should define '256colors' instead.
 
-.PP
 The skin is the first one named by:
 
-.EX
-1) command line option \-S <skin>, \-\-skin=<skin>
-2) environment variable COOLE_SKIN
-3) setting skin of the [coole] section of the ini file
+```
+1) command line option -S <skin>, --skin=<skin>
+2) environment variable BLUERIG_SKIN
+3) setting skin of the [bluerig] section of the ini file
 4) the skin called default
-.EE
+```
 
-.PP
 A name may be the absolute path of a skin file (with the extension .ini or
 without it). Otherwise the skin file is looked for in (to the first one
 found):
 
-.EX
-1) ~/.local/share/coole/skins/
-2) {{sysconfdir}}/coole/skins/
+```
+1) ~/.local/share/bluerig/skins/
+2) {{sysconfdir}}/bluerig/skins/
 3) {{pkgdatadir}}/skins/
-.EE
+```
 
-.PP
 The format of skin files is described in
-\fB{{pkgdatadir}}/skins/README.txt\fP\&.
+**{{pkgdatadir}}/skins/README.txt**.
 The colors of the syntax highlighting come from the section
-\fB[syntax]\fP
+**[syntax]**
 of the skin: there a scope names the colors of a kind of text, and a scope
 and the scope of the context it stands in, the two with a blank between
 them, name the colors of that kind of text in that context. The longest
 scope the skin names wins:
 
-.EX
+```
 [syntax]
     comment = gray
     keyword = yellow
@@ -2333,45 +2006,42 @@ scope the skin names wins:
     string = green
     string constant.character.escape = white;red
     invalid = white;red;bold
-.EE
+```
 
-.PP
 A kind of text the skin does not name keeps the colors mcedit gave it, so a
 skin may name a few kinds and leave the rest. The rules that name colors
 instead of scope tokens keep their colors whatever the skin; see
-Syntax Highlighting\&.
+[Syntax Highlighting](#syntax-highlighting).
 
+# Terminal databases
 
-.SH Terminal databases
-.PP
-coole provides a way to fix your system terminal database without requiring
+bluerig provides a way to fix your system terminal database without requiring
 root privileges. The
-Learn keys
+[Learn keys](#learn-keys)
 dialog writes what it learns to
-\fB~/.config/coole/term/<TERM>\fP,
+**~/.config/bluerig/term/\<TERM>**,
 one line for every key in its
-\fB[keys]\fP
-section. coole also searches the system file
-\fBdefaults.ini\fP
+**[keys]**
+section. bluerig also searches the system file
+**defaults.ini**
 (in
-\fB{{sysconfdir}}/coole\fP
+**{{sysconfdir}}/bluerig**
 or
-\fB{{pkgdatadir}}\fP)
+**{{pkgdatadir}}**)
 and the
-\fB~/.config/coole/ini\fP
-file for the section "terminal:your\-terminal\-name" and then for the section
+**~/.config/bluerig/ini**
+file for the section "terminal:your-terminal-name" and then for the section
 "terminal:general". Each line of the section contains a key symbol that you
 want to define, followed by an equal sign and the definition for the key. You
-can use the special \ee form to represent the escape character and the ^x to
-represent the control\-x character. A line
-\fIcopy=other\fP
+can use the special \\e form to represent the escape character and the ^x to
+represent the control-x character. A line
+*copy=other*
 takes every key of the section "terminal:other" as well.
 
-.PP
 The possible key symbols are:
 
-.EX
-f0 to f20     Function keys f0\-f20
+```
+f0 to f20     Function keys f0-f20
 bs            backspace
 home          home key
 end           end key
@@ -2384,210 +2054,177 @@ pgup          page up key
 insert        the insert character
 delete        the delete character
 complete      to do completion
-.EE
+```
 
-.PP
 For example, to define the key insert to be the Escape + [ + O + p, you set
 this in the ini file:
 
-.EX
-insert=\ee[Op
-.EE
+```
+insert=\e[Op
+```
 
-.PP
 A key symbol may take modifiers:
 
-.EX
-    ctrl\-alt\-right=\ee[[1;6C
-    ctrl\-alt\-left=\ee[[1;6D
-.EE
+```
+    ctrl-alt-right=\e[[1;6C
+    ctrl-alt-left=\e[[1;6D
+```
 
-.PP
-This means that ctrl+alt+left sends a \ee[[1;6D escape sequence and therefore
-coole interprets "\ee[[1;6D" as Ctrl\-Alt\-Left.
+This means that ctrl+alt+left sends a \\e[[1;6D escape sequence and therefore
+bluerig interprets "\\e[[1;6D" as Ctrl-Alt-Left.
 
-.PP
 The
-\fIcomplete\fP
+*complete*
 key symbol represents the escape sequences used to invoke the completion
-process, this is invoked with Alt\-tab, but you can define other keys to do the
+process, this is invoked with Alt-tab, but you can define other keys to do the
 same work (on those keyboard with tons of nice and unused keys everywhere).
 
+# Lua scripting
 
-.SH Lua scripting
-.PP
-Where coole was built with Lua, it runs Lua scripts that extend the editor:
+Where bluerig was built with Lua, it runs Lua scripts that extend the editor:
 actions bound to keys and to menus, reactions to the events of the editor
-(a file is opened, saved, a key is pressed), dialogs and full\-screen views.
+(a file is opened, saved, a key is pressed), dialogs and full-screen views.
 Several commands of the editor are such scripts: sorting the lines, formatting
 the paragraph, inserting the output of a command, inserting a character by its
 code point, inserting the date, decoding base64 and drawing tables.
 
-.PP
 The system scripts are in
-\fB{{pkgdatadir}}/lua/scripts/\fP,
+**{{pkgdatadir}}/lua/scripts/**,
 and the scripts of the user in
-\fB~/.local/share/coole/lua/scripts/\fP,
+**~/.local/share/bluerig/lua/scripts/**,
 one directory for every script, with its
-\fBlua.ini\fP
+**lua.ini**
 and its
-\fBinit.lua\fP\&.
+**init.lua**.
 The
-Lua scripts
+[Lua scripts](#lua-scripts)
 dialog switches them on and off.
 
-.PP
 The option
-\fB\-\-no\-lua\fP,
+**--no-lua**,
 or the variable
-\fBCOOLE_NO_LUA\fP
+**BLUERIG_NO_LUA**
 set to 1, starts the editor without any Lua script, and
-\fIenabled=false\fP
+*enabled=false*
 in the
-\fB[Lua]\fP
+**[Lua]**
 section of the ini file does so for good.
 
-.PP
 How to write a script, and the functions a script can call, is described in
-\fBLUA_PLUGINS.md\fP
+**LUA_PLUGINS.md**
 and
-\fBLUA_API_REFERENCE.md\fP,
-which are installed with the documentation of coole.
+**LUA_API_REFERENCE.md**,
+which are installed with the documentation of bluerig.
 
+# General settings
 
-.SH General settings
-.PP
 These settings of the
-\fB[coole]\fP
+**[bluerig]**
 section of the ini file concern the program rather than the editor. Unless
 said otherwise, 1 turns a setting on and 0 turns it off.
 
-.TP
-\fIauto_save_setup\fP
-Write the settings to the ini file whenever the editor ends.
+*auto_save_setup*
+: Write the settings to the ini file whenever the editor ends.
 
-.TP
-\fIskin\fP
-The name of the skin. See Skins\&.
+*skin*
+: The name of the skin. See [Skins](#skins).
 
-.TP
-\fIshadows\fP
-Draw a shadow under the dialogs and the drop\-down menus.
+*shadows*
+: Draw a shadow under the dialogs and the drop-down menus.
 
-.TP
-\fIkeymap\fP
-The keymap file to use. See Redefine key bindings\&.
+*keymap*
+: The keymap file to use. See [Redefine key bindings](#keys_redefine).
 
-.TP
-\fIdrop_menus\fP
-Open the first menu at once when F9 is pressed, instead of only the menu
+*drop_menus*
+: Open the first menu at once when F9 is pressed, instead of only the menu
 bar.
 
-.TP
-\fImouse_close_dialog\fP
-A click outside a dialog closes it.
+*mouse_close_dialog*
+: A click outside a dialog closes it.
 
-.TP
-\fImouse_repeat_rate, double_click_speed\fP
-The auto repeat rate of the mouse buttons, and the time within which two
+*mouse_repeat_rate, double_click_speed*
+: The auto repeat rate of the mouse buttons, and the time within which two
 clicks make a double click, in milliseconds.
 
-.TP
-\fIold_esc_mode, old_esc_mode_timeout\fP
-With old_esc_mode on, a single Esc is taken as Esc after
+*old_esc_mode, old_esc_mode_timeout*
+: With old_esc_mode on, a single Esc is taken as Esc after
 old_esc_mode_timeout microseconds, instead of waiting for the next key.
 
-.TP
-\fIshow_all_if_ambiguous\fP
-Show the list of the possible completions at once where the completion is
-ambiguous. See Completion\&.
+*show_all_if_ambiguous*
+: Show the list of the possible completions at once where the completion is
+ambiguous. See [Completion](#completion).
 
-.TP
-\fIshell_patterns\fP
-The patterns of the user menu conditions are shell patterns (1) or regular
+*shell_patterns*
+: The patterns of the user menu conditions are shell patterns (1) or regular
 expressions (0).
 
-.TP
-\fInum_history_items_recorded\fP
-How many entries every history of an input line keeps.
+*num_history_items_recorded*
+: How many entries every history of an input line keeps.
 
-.TP
-\fIconfirm_history_cleanup\fP
-Ask before a history is cleared.
+*confirm_history_cleanup*
+: Ask before a history is cleared.
 
-.TP
-\fIclear_before_exec\fP
-Clear the screen before a command of the user menu runs.
+*clear_before_exec*
+: Clear the screen before a command of the user menu runs.
 
-.TP
-\fIpause_after_run\fP
-Wait for a key after a command of the user menu ran: never (0), on dumb
+*pause_after_run*
+: Wait for a key after a command of the user menu ran: never (0), on dumb
 terminals only (1, the default) or always (2).
 
-.TP
-\fIalternate_plus_minus\fP
-Keep the plus and the minus keys of the numeric keypad as plus and minus.
+*alternate_plus_minus*
+: Keep the plus and the minus keys of the numeric keypad as plus and minus.
 
-.TP
-\fIkeybar_modifiers\fP
-If true, the key bar shows the commands of Shift, Ctrl or Alt with the F keys
+*keybar_modifiers*
+: If true, the key bar shows the commands of Shift, Ctrl or Alt with the F keys
 while that modifier is held. This needs a terminal with the kitty keyboard
-protocol: coole then asks it for every key with its release, and for focus
+protocol: bluerig then asks it for every key with its release, and for focus
 events. Other terminals are not affected. False by default.
 
-.TP
-\fIverbose\fP
-Show the progress of long operations.
+*verbose*
+: Show the progress of long operations.
 
-.TP
-\fIkeybar_visible\fP
-In the
-\fB[Layout]\fP
+*keybar_visible*
+: In the
+**[Layout]**
 section: show the labels of the function keys at the bottom of the screen.
 
+# Settings in the ini file <a id="internal-file-editor-options"></a>
 
-.SH Settings in the ini file
-.PP
 Most settings are made in the dialogs of the
-\fBOptions\fP
+**Options**
 menu, and
-\fBSave setup\fP
+**Save setup**
 writes them to the
-\fB[coole]\fP
+**[bluerig]**
 section of
-\fB~/.config/coole/ini\fP\&.
+**~/.config/bluerig/ini**.
 The file can be edited by hand as well; these are the names the editor
 settings have there. Unless said otherwise, 1 turns a setting on and 0 turns
 it off.
 
-.TP
-\fIeditor_tab_spacing\fP
-Interpret the tab character as being of this length.
+*editor_tab_spacing*
+: Interpret the tab character as being of this length.
 Default is 8. You should avoid using
 other than 8 since most other editors and text viewers
 assume a tab spacing of 8. Use
-\fBeditor_fake_half_tabs\fP
+**editor_fake_half_tabs**
 to simulate a smaller tab spacing.
 
-.TP
-\fIeditor_fill_tabs_with_spaces\fP
-Never insert a tab character. Rather insert spaces (ascii 32) to fill to the
+*editor_fill_tabs_with_spaces*
+: Never insert a tab character. Rather insert spaces (ascii 32) to fill to the
 desired tab size.
 
-.TP
-\fIeditor_return_does_auto_indent\fP
-Pressing return will tab across to match the indentation
+*editor_return_does_auto_indent*
+: Pressing return will tab across to match the indentation
 of the first line above that has text on it.
 
-.TP
-\fIeditor_backspace_through_tabs\fP
-Make a single backspace delete all the space to the left
+*editor_backspace_through_tabs*
+: Make a single backspace delete all the space to the left
 margin if there is no text between the cursor and the left
 margin.
 
-.TP
-\fIeditor_fake_half_tabs\fP
-This will emulate a half tab for those who want to program
+*editor_fake_half_tabs*
+: This will emulate a half tab for those who want to program
 with a tab spacing of 4, but do not want the tab size changed
 from 8 (so that the code will be formatted the same when displayed
 by other programs). When editing between text and the left
@@ -2595,9 +2232,8 @@ margin, moving and tabbing will be as though a tab space were
 4, while actually using spaces and normal tabs for an optimal fill.
 When editing anywhere else, a normal tab is inserted.
 
-.TP
-\fIeditor_option_save_mode\fP
-Possible values 0, 1 and 2.  The save mode (see the options menu also)
+*editor_option_save_mode*
+: Possible values 0, 1 and 2.  The save mode (see the options menu also)
 allows you to change the method of saving a file.  Quick save (0) saves
 the file immediately, truncating the disk file to zero length (i.e.
 erasing it) and then writing the editor contents to the file.  This
@@ -2612,366 +2248,295 @@ original file, thus replacing it.  The safest method is create backups
 can specify your own backup file extension in the dialog.  Note that
 saving twice will replace your backup as well as your original file.
 
-.TP
-\fIeditor_word_wrap_line_length\fP
-Line length to wrap at. Default is 72.
+*editor_word_wrap_line_length*
+: Line length to wrap at. Default is 72.
 
-.TP
-\fIeditor_backup_extension\fP
-Symbol to add to name of backup files. Default is "~".
+*editor_backup_extension*
+: Symbol to add to name of backup files. Default is "~".
 
-.TP
-\fIeditor_line_state\fP
-Show the line state column of the editor: the line numbers, and the marks of
-the folds and of the lines the filter hides. Alt\-n toggles this option.
+*editor_line_state*
+: Show the line state column of the editor: the line numbers, and the marks of
+the folds and of the lines the filter hides. Alt-n toggles this option.
 
-.TP
-\fIeditor_visible_spaces\fP
-Toggle "show visible trailing spaces".  If editor_visible_spaces=1, they are shown
+*editor_visible_spaces*
+: Toggle "show visible trailing spaces".  If editor_visible_spaces=1, they are shown
 as '.'
 
-.TP
-\fIeditor_visible_tabs\fP
-Toggle "show visible tabs".  If editor_visible_tabs=1, tabs are shown as '<\-\-\-\->'
+*editor_visible_tabs*
+: Toggle "show visible tabs".  If editor_visible_tabs=1, tabs are shown as '<---->'
 
-.TP
-\fIeditor_show_control_chars\fP
-Show control characters in caret notation, for example '^M' or '^L'.
+*editor_show_control_chars*
+: Show control characters in caret notation, for example '^M' or '^L'.
 If editor_show_control_chars=0, each of them takes one blank cell instead.
 The "Toggle control characters" item of the Command menu switches this option.
 
-.TP
-\fIeditor_persistent_selections\fP
-Do not remove block selection after cursor movement.
+*editor_persistent_selections*
+: Do not remove block selection after cursor movement.
 
-.TP
-\fIeditor_drop_selection_on_copy\fP
-Reset selection after copy to clipboard.
+*editor_drop_selection_on_copy*
+: Reset selection after copy to clipboard.
 
-.TP
-\fIeditor_cursor_beyond_eol\fP
-Allow moving cursor beyond the end of line.
+*editor_cursor_beyond_eol*
+: Allow moving cursor beyond the end of line.
 
-.TP
-\fIeditor_cursor_after_inserted_block\fP
-Allow moving cursor after inserted block.
+*editor_cursor_after_inserted_block*
+: Allow moving cursor after inserted block.
 
-.TP
-\fIeditor_syntax_highlighting\fP
-enable syntax highlighting.
+*editor_syntax_highlighting*
+: enable syntax highlighting.
 
-.TP
-\fIeditor_edit_confirm_save\fP
-Show confirmation dialog on save.
+*editor_edit_confirm_save*
+: Show confirmation dialog on save.
 
-.TP
-\fIeditor_option_typewriter_wrap\fP
-Break the line at
-\fBeditor_word_wrap_line_length\fP
+*editor_option_typewriter_wrap*
+: Break the line at
+**editor_word_wrap_line_length**
 while it is typed, the way a typewriter does. One of the three wrap modes of
 the options dialog.
 
-.TP
-\fIeditor_option_auto_para_formatting\fP
-Format the paragraph the cursor is in while it is typed. The other of the
+*editor_option_auto_para_formatting*
+: Format the paragraph the cursor is in while it is typed. The other of the
 three wrap modes; off means no wrapping at all.
 
-.TP
-\fIeditor_option_save_position\fP
-Save file position on exit.
+*editor_option_save_position*
+: Save file position on exit.
 
-.TP
-\fIeditor_group_undo\fP
-Combine UNDO actions for several of the same type of action (inserting/overwriting,
+*editor_group_undo*
+: Combine UNDO actions for several of the same type of action (inserting/overwriting,
 deleting, navigating, typing)
 
-.TP
-\fIeditor_wordcompletion_collect_entire_file\fP
-Search autocomplete candidates in entire file (1) or just from
+*editor_wordcompletion_collect_entire_file*
+: Search autocomplete candidates in entire file (1) or just from
 beginning of file to cursor position (0).
 
-.TP
-\fIeditor_wordcompletion_collect_all_files\fP
-Search autocomplete candidates from all loaded files (1, default), not only from
+*editor_wordcompletion_collect_all_files*
+: Search autocomplete candidates from all loaded files (1, default), not only from
 the currently edited one (0).
 
-.TP
-\fIeditor_stop_format_chars\fP
-Set of characters to stop paragraph formatting. If one of those characters
+*editor_stop_format_chars*
+: Set of characters to stop paragraph formatting. If one of those characters
 is found in the beginning of line, that line and all following lines of paragraph
 will be untouched. Default value is
-"\fB\-+*\e,.;:&>\fP".
+"**-+\*\\,.;:&>**".
 
-.TP
-\fIeditor_state_full_filename\fP
-Show full path name in the status line. If disabled (default), only base name of the
+*editor_state_full_filename*
+: Show full path name in the status line. If disabled (default), only base name of the
 file is shown.
 
-.TP
-\fIeditor_filesize_threshold\fP
-The size above which a file is opened only after a question. The value takes
+*editor_filesize_threshold*
+: The size above which a file is opened only after a question. The value takes
 a suffix, as in 64M or 512K. Default is 64M.
 
-.TP
-\fIeditor_show_right_margin\fP
-Mark the column of
-\fBeditor_word_wrap_line_length\fP
+*editor_show_right_margin*
+: Mark the column of
+**editor_word_wrap_line_length**
 as the right margin. The "Toggle right margin" item of the Command menu
 switches this option. Disabled by default.
 
-.TP
-\fIeditor_simple_statusbar\fP
-Show a shorter status line, without the offset and the character under the
+*editor_simple_statusbar*
+: Show a shorter status line, without the offset and the character under the
 cursor. Disabled by default.
 
-.TP
-\fIeditor_check_new_line\fP
-Ask about the missing newline at the end of the file when it is saved. The
+*editor_check_new_line*
+: Ask about the missing newline at the end of the file when it is saved. The
 "Check POSIX new line" option of the save mode dialog switches it. Disabled
 by default.
 
+# ENVIRONMENT
 
-.SH ENVIRONMENT
-.PP
-The variables below are the ones coole reads. Variables such as \fBTERM\fP,
-\fBSHELL\fP, \fBHOME\fP or \fBPATH\fP are not listed here: the program reads them
+The variables below are the ones bluerig reads. Variables such as **TERM**,
+**SHELL**, **HOME** or **PATH** are not listed here: the program reads them
 to find out where it runs, not to be configured by them.
 
-.TP
-\fBCOOLE_DATADIR\fP
-The directory the data files are taken from, in place of
-{{pkgdatadir}}. See FILES\&.
+**BLUERIG_DATADIR**
+: The directory the data files are taken from, in place of
+{{pkgdatadir}}. See [FILES](#files).
 
-.TP
-\fBCOOLE_PROFILE_ROOT\fP
-The root of the user files, as an absolute path, in place of the home
-directory. See FILES\&.
+**BLUERIG_PROFILE_ROOT**
+: The root of the user files, as an absolute path, in place of the home
+directory. See [FILES](#files).
 
-.TP
-\fBCOOLE_SKIN\fP
-The skin to use, by name or by path. See Skins\&.
+**BLUERIG_SKIN**
+: The skin to use, by name or by path. See [Skins](#skins).
 
-.TP
-\fBCOOLE_KEYMAP\fP
-The keymap file to use. See Redefine key bindings\&.
+**BLUERIG_KEYMAP**
+: The keymap file to use. See [Redefine key bindings](#keys_redefine).
 
-.TP
-\fBCOOLE_TMPDIR\fP, \fBTMPDIR\fP
-The directory for the temporary files of the program, the first of the two
+**BLUERIG_TMPDIR**, **TMPDIR**
+: The directory for the temporary files of the program, the first of the two
 that is set; /tmp without either.
 
-.TP
-\fBCOOLE_NO_LUA\fP
-Set to 1 to start without the Lua runtime. No Lua script is loaded.
+**BLUERIG_NO_LUA**
+: Set to 1 to start without the Lua runtime. No Lua script is loaded.
 
-.TP
-\fBKEYBOARD_KEY_TIMEOUT_US\fP
-How long to wait for the rest of an escape sequence, in microseconds.
+**KEYBOARD_KEY_TIMEOUT_US**
+: How long to wait for the rest of an escape sequence, in microseconds.
 
-.TP
-\fBCOLORTERM\fP
-Read when the colors are chosen. See Colors\&.
+**COLORTERM**
+: Read when the colors are chosen. See [Colors](#colors).
 
-.TP
-\fBCOOLE_LOG_ENABLE\fP, \fBCOOLE_LOG_FILE\fP
-A debug log is written when COOLE_LOG_ENABLE is 1. Without \fBCOOLE_LOG_FILE\fP the
-file named by \fIlogfile\fP in the \fI[Logging]\fP section of the \fIini\fP file is used,
-and without that entry \fI~/.cache/coole/coole.log\fP\&.
+**BLUERIG_LOG_ENABLE**, **BLUERIG_LOG_FILE**
+: A debug log is written when BLUERIG_LOG_ENABLE is 1. Without **BLUERIG_LOG_FILE** the
+file named by *logfile* in the *[Logging]* section of the *ini* file is used,
+and without that entry *~/.cache/bluerig/bluerig.log*.
 
-.TP
-\fBCOOLE_SPELL_LOG\fP
-The file the spell checker writes its debug log to. It has no switch of its
+**BLUERIG_SPELL_LOG**
+: The file the spell checker writes its debug log to. It has no switch of its
 own: the log is written when the variable names a file.
 
+# FILES
 
-.SH FILES
-.PP
 Full paths below may vary between installations. The data files are also
 affected by the
-\fBCOOLE_DATADIR\fP
+**BLUERIG_DATADIR**
 environment variable: if it's set, its value is used instead of
 {{pkgdatadir}} in the paths below. The user files follow the XDG base
 directories:
-\fI~/.config\fP,
-\fI~/.local/share\fP
+*~/.config*,
+*~/.local/share*
 and
-\fI~/.cache\fP
+*~/.cache*
 stand for
-\fBXDG_CONFIG_HOME\fP,
-\fBXDG_DATA_HOME\fP
+**XDG_CONFIG_HOME**,
+**XDG_DATA_HOME**
 and
-\fBXDG_CACHE_HOME\fP
+**XDG_CACHE_HOME**
 where these are set.
 
-.TP
-\fI{{pkgdatadir}}/help/coole.md\fP
-The help file of the program, and the help files of the editor plugins
+*{{pkgdatadir}}/help/bluerig.md*
+: The help file of the program, and the help files of the editor plugins
 beside it.
 
-.TP
-\fI{{sysconfdir}}/coole/coole.ini\fP, \fI{{pkgdatadir}}/coole.ini\fP
-System\-wide setup files, used only if the user doesn't have his own
-\fB~/.config/coole/ini\fP
-file. If {{sysconfdir}}/coole/coole.ini exists, {{pkgdatadir}}/coole.ini isn't
+*{{sysconfdir}}/bluerig/bluerig.ini*, *{{pkgdatadir}}/bluerig.ini*
+: System-wide setup files, used only if the user doesn't have his own
+**~/.config/bluerig/ini**
+file. If {{sysconfdir}}/bluerig/bluerig.ini exists, {{pkgdatadir}}/bluerig.ini isn't
 used.
 
-.TP
-\fI{{sysconfdir}}/coole/defaults.ini\fP, \fI{{pkgdatadir}}/defaults.ini\fP
-Global settings, which affect all users, whether they have
-~/.config/coole/ini or not. Currently, only
-terminal settings
+*{{sysconfdir}}/bluerig/defaults.ini*, *{{pkgdatadir}}/defaults.ini*
+: Global settings, which affect all users, whether they have
+~/.config/bluerig/ini or not. Currently, only
+[terminal settings](#terminal-databases)
 are loaded from it.
 
-.TP
-\fI{{sysconfdir}}/coole/keymap.ini\fP, \fI{{pkgdatadir}}/keymap.ini\fP
-The system\-wide key bindings. See
-Redefine key bindings\&.
+*{{sysconfdir}}/bluerig/keymap.ini*, *{{pkgdatadir}}/keymap.ini*
+: The system-wide key bindings. See
+[Redefine key bindings](#keys_redefine).
 
-.TP
-\fI{{sysconfdir}}/coole/coole.menu\fP, \fI{{pkgdatadir}}/coole.menu\fP
-The system\-wide user menu\&.
+*{{sysconfdir}}/bluerig/bluerig.menu*, *{{pkgdatadir}}/bluerig.menu*
+: The system-wide [user menu](#edit-menu-file).
 
-.TP
-\fI{{sysconfdir}}/coole/spell.keymap, ctags.keymap\fP
-The keys of the spell and the ctags plugins; a file of the same name in
-~/.config/coole overrides them.
+*{{sysconfdir}}/bluerig/spell.keymap, ctags.keymap*
+: The keys of the spell and the ctags plugins; a file of the same name in
+~/.config/bluerig overrides them.
 
-.TP
-\fI{{pkgdatadir}}/syntax/*\fP
-The system\-wide syntax files, used only if the corresponding user's own
+*{{pkgdatadir}}/syntax/\**
+: The system-wide syntax files, used only if the corresponding user's own
 file in
-\fB~/.local/share/coole/syntax/\fP
+**~/.local/share/bluerig/syntax/**
 is missing.
 
-.TP
-\fI{{pkgdatadir}}/skins/*\fP
-The skins that come with the program.
+*{{pkgdatadir}}/skins/\**
+: The skins that come with the program.
 
-.TP
-\fI{{pkgdatadir}}/charsets\fP
-The list of the codepages.
+*{{pkgdatadir}}/charsets*
+: The list of the codepages.
 
-.TP
-\fI{{pkgdatadir}}/lua/scripts/*\fP
-The Lua scripts that come with the program.
+*{{pkgdatadir}}/lua/scripts/\**
+: The Lua scripts that come with the program.
 
-.TP
-\fI{{pkgdatadir}}/examples/macros.d/*\fP
-Example scripts for the macros.
+*{{pkgdatadir}}/examples/macros.d/\**
+: Example scripts for the macros.
 
-.TP
-\fI{{plugins_dir}}/\fP
-The editor plugins that are loaded at run time.
+*{{plugins_dir}}/*
+: The editor plugins that are loaded at run time.
 
-.TP
-\fI~/.config/coole/ini\fP
-User's own setup. If this file is present then the setup is loaded
-from here instead of the system\-wide setup file.
+*~/.config/bluerig/ini*
+: User's own setup. If this file is present then the setup is loaded
+from here instead of the system-wide setup file.
 
-.TP
-\fI~/.config/coole/keymap.ini\fP
-User's own key bindings.
+*~/.config/bluerig/keymap.ini*
+: User's own key bindings.
 
-.TP
-\fI~/.config/coole/menu\fP
-User's own user menu\&.
+*~/.config/bluerig/menu*
+: User's own [user menu](#edit-menu-file).
 
-.TP
-\fI~/.config/coole/plugins.ini\fP
-The plugins and the Lua scripts that are switched off.
+*~/.config/bluerig/plugins.ini*
+: The plugins and the Lua scripts that are switched off.
 
-.TP
-\fI~/.config/coole/term/<TERM>\fP
-The keys taught in Learn keys\&.
+*~/.config/bluerig/term/\<TERM>*
+: The keys taught in [Learn keys](#learn-keys).
 
-.TP
-\fI\&./.coole.menu\fP
-The user menu of the current directory. If this file is present in the
-current directory, it is used instead of the home or system\-wide menu.
+*./.bluerig.menu*
+: The user menu of the current directory. If this file is present in the
+current directory, it is used instead of the home or system-wide menu.
 
-.TP
-\fI~/.local/share/coole/history\fP
-The histories of the input lines.
+*~/.local/share/bluerig/history*
+: The histories of the input lines.
 
-.TP
-\fI~/.local/share/coole/filepos\fP
-The places the files were left at, for
-\fIeditor_option_save_position\fP\&.
+*~/.local/share/bluerig/filepos*
+: The places the files were left at, for
+*editor_option_save_position*.
 
-.TP
-\fI~/.local/share/coole/clipboard\fP
-The clipboard file of the editor.
+*~/.local/share/bluerig/clipboard*
+: The clipboard file of the editor.
 
-.TP
-\fI~/.local/share/coole/macros\fP
-The recorded macros\&.
+*~/.local/share/bluerig/macros*
+: The recorded [macros](#macros).
 
-.TP
-\fI~/.local/share/coole/macros.d/macro.N.sh\fP
-The shell scripts of the macros.
+*~/.local/share/bluerig/macros.d/macro.N.sh*
+: The shell scripts of the macros.
 
-.TP
-\fI~/.local/share/coole/syntax/Syntax\fP
-User's own syntax file.
+*~/.local/share/bluerig/syntax/Syntax*
+: User's own syntax file.
 
-.TP
-\fI~/.local/share/coole/skins/\fP
-User's own skins.
+*~/.local/share/bluerig/skins/*
+: User's own skins.
 
-.TP
-\fI~/.local/share/coole/lua/scripts/\fP
-User's own Lua scripts.
+*~/.local/share/bluerig/lua/scripts/*
+: User's own Lua scripts.
 
-.TP
-\fI~/.cache/coole/block\fP
-The block file the user menu and the macro scripts work on.
+*~/.cache/bluerig/block*
+: The block file the user menu and the macro scripts work on.
 
-.TP
-\fI~/.cache/coole/temp\fP
-A temporary file of the editor.
+*~/.cache/bluerig/temp*
+: A temporary file of the editor.
 
-.PP
 To change the root directory of the user files, you can use the
-\fBCOOLE_PROFILE_ROOT\fP
-environment variable. The value of COOLE_PROFILE_ROOT must be an absolute path.
-If COOLE_PROFILE_ROOT is unset or empty, the HOME variable is used. If HOME is
+**BLUERIG_PROFILE_ROOT**
+environment variable. The value of BLUERIG_PROFILE_ROOT must be an absolute path.
+If BLUERIG_PROFILE_ROOT is unset or empty, the HOME variable is used. If HOME is
 unset or empty, the directories are taken from the GLib library.
 
+# LICENSE <!-- help:skip -->
 
-.SH LICENSE
-.PP
 This program is distributed under the terms of the GNU General Public
-License as published by the Free Software Foundation. See the built\-in
+License as published by the Free Software Foundation. See the built-in
 help for details on the License and the lack of warranty.
 
+# AVAILABILITY
 
-.SH AVAILABILITY
-.PP
 The latest version of this program can be found at
-\X'tty: link https://github.com/blue\-panels/coole/releases'https://github.com/blue\-panels/coole/releases\X'tty: link' .
+<https://github.com/blue-panels/bluerig/releases> .
 
+# SEE ALSO
 
-.SH SEE ALSO
-.PP
 cooledit(1), aspell(1), hunspell(1), ctags(1), etags(1), gpm(1),
 terminfo(5), sh(1).
 
+# AUTHORS
 
-.SH AUTHORS
-.PP
 Paul Sheer (psheer@obsidian.co.za) is the original author of cooledit, which
-coole continues. The authors and
+bluerig continues. The authors and
 contributors are listed in the AUTHORS file in the source distribution.
 
+# BUGS
 
-.SH BUGS
-.PP
 Bugs should be reported at
-\X'tty: link https://github.com/blue\-panels/coole/issues'https://github.com/blue\-panels/coole/issues\X'tty: link' .
+<https://github.com/blue-panels/bluerig/issues> .
 
-.PP
 Provide a detailed description of the bug, the version of the program you are
 running
-\fI(coole \-V\fP
+*(bluerig -V*
 displays this information), and the operating system you are running the
 program on. If the program crashes, we would appreciate a stack trace.

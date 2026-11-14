@@ -1,5 +1,5 @@
 /*
-   Lua runtime extension for coole.
+   Lua runtime extension for bluerig.
 
    Copyright (C) 2026
    Free Software Foundation, Inc.
@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole, a text editor based on GNU Midnight Commander.
+   This file is part of bluerig, a text editor based on GNU Midnight Commander.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -51,11 +51,11 @@
 /*** file scope macro definitions ****************************************************************/
 
 #ifndef MC_LUA_SYSTEM_SCRIPTS_DIR
-#define MC_LUA_SYSTEM_SCRIPTS_DIR "/usr/share/coole/lua/scripts"
+#define MC_LUA_SYSTEM_SCRIPTS_DIR "/usr/share/bluerig/lua/scripts"
 #endif
 
 #ifndef MC_LUA_SYSTEM_MODULES_DIR
-#define MC_LUA_SYSTEM_MODULES_DIR "/usr/share/coole/lua/lib"
+#define MC_LUA_SYSTEM_MODULES_DIR "/usr/share/bluerig/lua/lib"
 #endif
 
 #define MC_LUA_API_VERSION    1
@@ -5201,7 +5201,7 @@ mc_lua_config_enabled (mc_lua_runtime_t *runtime)
         g_build_filename (g_get_user_data_dir (), MC_USERCONF_DIR, "lua", "scripts", (char *) NULL);
     runtime->user_modules_dir =
         g_build_filename (g_get_user_data_dir (), MC_USERCONF_DIR, "lua", "lib", (char *) NULL);
-    if (g_strcmp0 (g_getenv ("COOLE_NO_LUA"), "1") == 0)
+    if (g_strcmp0 (g_getenv ("BLUERIG_NO_LUA"), "1") == 0)
         return FALSE;
 
     ini_path = g_build_filename (g_get_user_config_dir (), MC_USERCONF_DIR, "ini", (char *) NULL);

@@ -1,4 +1,4 @@
-Build requirements for coole
+Build requirements for bluerig
 ----------------------------
 
 - glibc or uClibc or musl
@@ -43,10 +43,10 @@ built-in spell plugin opens libaspell or libhunspell at run time through
 gmodule, and its settings dialog selects the engine and the language.
 
 
-Installation instructions for coole
+Installation instructions for bluerig
 -----------------------------------
 
-coole is built with meson, always in a build directory of its own,
+bluerig is built with meson, always in a build directory of its own,
 outside the source tree.  A Git checkout and a release archive are built
 the same way.
 
@@ -65,7 +65,7 @@ configuration:
     meson setup build-asan    -Db_sanitize=address
 
 The default build type is debugoptimized.  A debug build also turns on
-the debug log (see COOLE_LOG_ENABLE in the manual page).
+the debug log (see BLUERIG_LOG_ENABLE in the manual page).
 
 By default, "meson install" installs the files under /usr/local.  Use
 --prefix to choose another place, and --sysconfdir for the system
@@ -91,15 +91,15 @@ another directory, as packages do.
 
 "meson install" installs:
 
-    $(bindir)/coole                       the program
-    $(sysconfdir)/coole/                  keymaps, coole.menu, edit.indent.rc
-    $(datadir)/coole/                     defaults.ini, charsets, help,
+    $(bindir)/bluerig                       the program
+    $(sysconfdir)/bluerig/                  keymaps, bluerig.menu, edit.indent.rc
+    $(datadir)/bluerig/                     defaults.ini, charsets, help,
                                           skins, syntax, examples
-    $(libdir)/coole/runtime-plugins/      the Lua runtime plugin
-    $(datadir)/coole/lua/                 the Lua scripts
-    $(mandir)/man1/coole.1                the manual page
+    $(libdir)/bluerig/runtime-plugins/      the Lua runtime plugin
+    $(datadir)/bluerig/lua/                 the Lua scripts
+    $(mandir)/man1/bluerig.1                the manual page
 
-The options of coole are given to "meson setup" as -Dname=value, and
+The options of bluerig are given to "meson setup" as -Dname=value, and
 can be changed later with "meson configure build -Dname=value".
 "meson configure build" lists them all with their current values; the
 meson built-in options (buildtype, prefix, b_sanitize, werror, ...) are
@@ -110,12 +110,12 @@ listed there as well.
      S-Lang is the default, and it is tested better than ncurses.
 
 -Dgpm=auto|enabled|disabled
-     On GNU/Linux, coole uses the gpm library if it is found.  `enabled'
+     On GNU/Linux, bluerig uses the gpm library if it is found.  `enabled'
      makes a missing gpm an error, and `disabled' turns gpm mouse
      support off (e.g. to use the mouse only in terminal emulators).
 
 -Dx11=auto|enabled|disabled
-     By default, coole connects to the X Window System to query the
+     By default, bluerig connects to the X Window System to query the
      status of the keyboard modifiers, such as Control, Shift and Alt,
      when it runs in a terminal emulator under X11.  This is necessary
      (but not always sufficient) to recognize some optional but handy
@@ -148,22 +148,22 @@ listed there as well.
      Keep the GLib assertions (on by default).
 
 -Dplugins_dir=DIR
-     The directory where coole looks for dynamic editor plugins at run
-     time [default=LIBDIR/coole/plugins].  A dynamic editor
+     The directory where bluerig looks for dynamic editor plugins at run
+     time [default=LIBDIR/bluerig/plugins].  A dynamic editor
      plugin is a shared object that exports the
      mc_editor_plugin_register symbol; see doc/PLUGINS.
 
 -Druntime_plugins_dir=DIR
      The directory of the runtime plugins, such as the Lua runtime
-     [default=LIBDIR/coole/runtime-plugins].
+     [default=LIBDIR/bluerig/runtime-plugins].
 
 -Dlua_scripts_dir=DIR
      The directory of the system Lua scripts
-     [default=DATADIR/coole/lua/scripts].
+     [default=DATADIR/bluerig/lua/scripts].
 
 -Dlua_modules_dir=DIR
      The directory of the system shared Lua modules
-     [default=DATADIR/coole/lua/lib].
+     [default=DATADIR/bluerig/lua/lib].
 
 -Dwerror=true
      Handle all compiler warnings as errors (a meson built-in option).
@@ -177,8 +177,8 @@ into -Dc_args and -Dc_link_args.
 Maintainer targets
 ------------------
 
-    meson compile -C build coole-pot         remake po/coole.pot
-    meson compile -C build coole-update-po   merge the po/*.po files with it
+    meson compile -C build bluerig-pot         remake po/bluerig.pot
+    meson compile -C build bluerig-update-po   merge the po/*.po files with it
     meson compile -C build indent            format the sources (clang-format)
     meson compile -C build man-in            remake doc/man/**/roff/*.1.in
                                              from the markdown (go-md2man)
@@ -220,5 +220,5 @@ There are many incomplete terminal databases out there, however, a
 complete terminfo is bundled with ncurses.  (It is simple to generate
 the termcap database using the infocmp utility in ncurses).
 
-If you want to run coole on xterm/color_xterm/ansi_xterm (not rxvt),
+If you want to run bluerig on xterm/color_xterm/ansi_xterm (not rxvt),
 then you might read contrib/README.xterm for further information.

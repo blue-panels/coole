@@ -589,8 +589,8 @@ layout_project_root (WDialog *h)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* coole --git and its --git-*, coole --query: the editor is there for git, or for the queries of
-   a file, alone; the layout of the project is neither shown nor overwritten */
+/* bluerig --git and its --git-*, bluerig --query: the editor is there for git, or for the queries
+   of a file, alone; the layout of the project is neither shown nor overwritten */
 static gboolean
 layout_set_aside (void)
 {
@@ -664,7 +664,7 @@ edit_layout_quit (WDialog *h)
 
     if (root == NULL)
         return;
-    /* coole --debug put the layout Debug up at the start, not over the windows of the project:
+    /* bluerig --debug put the layout Debug up at the start, not over the windows of the project:
        those of a file opened by itself are not to become the windows of debugging */
     if (layout_set_aside () || edit_startup_option ("debug") != NULL)
     {

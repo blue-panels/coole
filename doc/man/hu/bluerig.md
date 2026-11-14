@@ -5,22 +5,22 @@ date: 2026. szeptember
 <!-- help:topics "Tartalomjegyzék" -->
 # NÉV <!-- help:skip -->
 
-coole - szövegszerkesztő.
+bluerig - szövegszerkesztő.
 
 # ALKALMAZÁSA <!-- help:skip -->
 
-**coole**
+**bluerig**
 [kapcsolók] [+sor] [fájl1[:sor]] [fájl2[:sor]] ...
 
 # LEÍRÁS <a id="description"></a>
 
 A
-**coole**
+**bluerig**
 konzolos szövegszerkesztő, a
 **cooledit**
 folytatása. A cooledit Paul Sheer szerkesztője, amelynek terminálos változatát
 sok éven át a GNU Midnight Commander belső szerkesztőjeként fejlesztették; a
-coole önálló programként fejleszti tovább.
+bluerig önálló programként fejleszti tovább.
 
 Egyszerre több fájlt szerkeszt, mindegyiket a saját ablakában, bináris
 fájlokat is. A parancssorban megadott minden fájl a saját ablakában nyílik
@@ -42,10 +42,10 @@ a helyet.
 : A program verziójának kiírása.
 
 *-f, --datadir*
-: A coole adatfájljainak beépített keresési útvonalainak kiírása.
+: A bluerig adatfájljainak beépített keresési útvonalainak kiírása.
 
 *-F, --datadir-info*
-: Részletes adatok a coole által használt könyvtárakról.
+: Részletes adatok a bluerig által használt könyvtárakról.
 
 *--configure-options*
 : A program konfigurálásakor használt kapcsolók kiírása.
@@ -117,7 +117,7 @@ melyik billentyű mit csinál, az a legördülő menükben látszik. Ezenkívül
 Shift és a kurzorbillentyűk szöveget jelölnek ki. A
 **Ctrl-Ins**
 a csereállományba másol
-(**~/.local/share/coole/clipboard**),
+(**~/.local/share/bluerig/clipboard**),
 a
 **Shift-Ins**
 onnan illeszt be, a
@@ -135,7 +135,7 @@ nyomd le újra a
 **Ctrl-R**-t,
 és rendeld a makrót egy billentyűhöz annak lenyomásával. A makró ezzel a
 billentyűvel fut le. A makrók a
-**~/.local/share/coole/macros**
+**~/.local/share/bluerig/macros**
 fájl
 **[editor]**
 szakaszában vannak, és a hozzájuk tartozó sor törlésével szűnnek meg.
@@ -292,7 +292,7 @@ Beállítások menü "Billentyűtársítások..." pontja).
 
 **Mentés**
 : A változtatások kiírása a
-*~/.config/coole/keymap.ini*
+*~/.config/bluerig/keymap.ini*
 fájlba.
 
 **Billentyűfájl szerkesztése**
@@ -320,37 +320,37 @@ Hasznos a terminál billentyűivel kapcsolatos gondok felderítéséhez.
 
 # KÖRNYEZET <a id="environment"></a>
 
-**COOLE_DATADIR**
+**BLUERIG_DATADIR**
 : Az adatfájlok könyvtára a {{pkgdatadir}} helyett.
 
-**COOLE_PROFILE_ROOT**
+**BLUERIG_PROFILE_ROOT**
 : A felhasználói fájlok gyökere a saját könyvtár helyett.
 
-**COOLE_SKIN**
+**BLUERIG_SKIN**
 : A használandó téma.
 
-**COOLE_KEYMAP**
+**BLUERIG_KEYMAP**
 : A használandó billentyűfájl.
 
-**COOLE_TMPDIR**, **TMPDIR**
+**BLUERIG_TMPDIR**, **TMPDIR**
 : Az ideiglenes fájlok könyvtára.
 
-**COOLE_NO_LUA**
+**BLUERIG_NO_LUA**
 : 1 értékkel a program Lua nélkül indul.
 
-**COOLE_LOG_ENABLE**, **COOLE_LOG_FILE**, **COOLE_SPELL_LOG**
+**BLUERIG_LOG_ENABLE**, **BLUERIG_LOG_FILE**, **BLUERIG_SPELL_LOG**
 : A hibakeresési naplók.
 
 # FÁJLOK <a id="files"></a>
 
-*{{pkgdatadir}}/help/coole.md*
+*{{pkgdatadir}}/help/bluerig.md*
 : A program súgófájlja.
 
-*{{sysconfdir}}/coole/coole.ini*, *{{pkgdatadir}}/coole.ini*
+*{{sysconfdir}}/bluerig/bluerig.ini*, *{{pkgdatadir}}/bluerig.ini*
 : A rendszerszintű beállítások; csak akkor használatosak, ha a felhasználónak
-nincs ~/.config/coole/ini fájlja.
+nincs ~/.config/bluerig/ini fájlja.
 
-*{{sysconfdir}}/coole/keymap.ini*, *{{sysconfdir}}/coole/coole.menu*
+*{{sysconfdir}}/bluerig/keymap.ini*, *{{sysconfdir}}/bluerig/bluerig.menu*
 : A rendszerszintű billentyűk és felhasználói menü.
 
 *{{pkgdatadir}}/syntax/\**
@@ -359,19 +359,19 @@ nincs ~/.config/coole/ini fájlja.
 *{{plugins_dir}}/*
 : A szerkesztő bővítményei.
 
-*~/.config/coole/ini*, *~/.config/coole/keymap.ini*, *~/.config/coole/menu*
+*~/.config/bluerig/ini*, *~/.config/bluerig/keymap.ini*, *~/.config/bluerig/menu*
 : A felhasználó saját beállításai, billentyűi és menüje.
 
-*~/.local/share/coole/*
+*~/.local/share/bluerig/*
 : A felhasználó előzményei, fájlpozíciói, vágólapja (clipboard), makrói
 (macros, macros.d/), szintaxisa (syntax/Syntax), témái (skins/) és
 Lua-szkriptjei (lua/scripts/).
 
-*~/.cache/coole/*
+*~/.cache/bluerig/*
 : A blokkfájl (block) és a szerkesztő ideiglenes fájljai.
 
 # Lásd még... <a id="see-also"></a>
 
 cooledit(1), aspell(1), ctags(1).
 
-Az angol nyelvű kézikönyv, a coole(1), a szerkesztő minden funkcióját leírja.
+Az angol nyelvű kézikönyv, a bluerig(1), a szerkesztő minden funkcióját leírja.

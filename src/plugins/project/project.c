@@ -7,14 +7,14 @@
    Written by:
    Ilia Maslakov <il.smind@gmail.com>, 2026
 
-   This file is part of coole.
+   This file is part of bluerig.
 
-   coole is free software: you can redistribute it
+   bluerig is free software: you can redistribute it
    and/or modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation, either version 3 of the License,
    or (at your option) any later version.
 
-   coole is distributed in the hope that it will be useful,
+   bluerig is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -287,7 +287,7 @@ project_state_path (const project_t *project)
 
     hash = g_compute_checksum_for_string (G_CHECKSUM_SHA256, project->root, -1);
     name = g_strconcat (hash, ".ini", (char *) NULL);
-    path = g_build_filename (g_get_user_config_dir (), "coole", "projects", name, (char *) NULL);
+    path = g_build_filename (g_get_user_config_dir (), "bluerig", "projects", name, (char *) NULL);
     g_free (name);
     g_free (hash);
     return path;
@@ -1115,13 +1115,13 @@ project_tree_reveal (project_t *project, const char *file)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* What makes a file or a symbol one of the groups of project-marks.ini: those of coole, then
+/* What makes a file or a symbol one of the groups of project-marks.ini: those of bluerig, then
    those of the user over them */
 static GHashTable *
 project_marks (project_t *project)
 {
     static const char *const keys[] = { "names", "extensions", "stems", "kinds" };
-    const char *dirs[] = { g_getenv ("COOLE_MISC_DIR"), mc_global.sysconfig_dir,
+    const char *dirs[] = { g_getenv ("BLUERIG_MISC_DIR"), mc_global.sysconfig_dir,
                            mc_global.share_data_dir };
     mc_config_t *cfg;
     char *path;
@@ -1861,7 +1861,7 @@ project_find_files (void)
 
     if (find_files != NULL)
         return find_files;
-    fd = g_file_open_tmp ("coole-find-XXXXXX", &find_files, NULL);
+    fd = g_file_open_tmp ("bluerig-find-XXXXXX", &find_files, NULL);
     if (fd < 0)
         return NULL;
     list = fdopen (fd, "w");
@@ -1878,8 +1878,8 @@ project_find_files (void)
     {
         const char *rel = (const char *) g_ptr_array_index (files, i);
 
-        // what coole keeps of the project, its tags among them, is no text of it
-        if (strncmp (rel, ".coole/", 7) == 0)
+        // what bluerig keeps of the project, its tags among them, is no text of it
+        if (strncmp (rel, ".bluerig/", 7) == 0)
             continue;
         fputs (rel, list);
         fputc ('\0', list);
@@ -2365,7 +2365,7 @@ project_handle_action (void *data, long command, void *edit)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/* coole --debug, the editor up: the latest file of the project instead of an empty one, and the
+/* bluerig --debug, the editor up: the latest file of the project instead of an empty one, and the
    tree */
 static void
 project_startup (void *data)

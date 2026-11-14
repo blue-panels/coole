@@ -1,4 +1,4 @@
-# The query plugin, coole -Q: a module the editor loads at run time from plugins_dir, as the
+# The query plugin, bluerig -Q: a module the editor loads at run time from plugins_dir, as the
 # debugger.  It reads the documents of mongosh --json, so it is there when json-glib is.
 query_module = shared_module('query',
   'query.c', 'query-core.c', 'query-mongo.c', 'query-postgres.c', 'query-pq.c', 'query-pg-schema.c',
