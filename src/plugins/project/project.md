@@ -69,7 +69,8 @@ for as it is, not as a pattern; with no capital letter in it, in any case.
 line chosen, to the text in it. Binary files and *.coole* are skipped.
 The lines come as grep finds them, and the editor does not wait for it:
 while it looks, the title ends in *...*; typing on starts it anew. Enter
-typed before a line is there waits for the first one.
+typed before a line is there waits for the first one, the dialog open;
+**Esc** gives up.
 
 **The tree**
 

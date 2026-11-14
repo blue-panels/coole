@@ -1766,7 +1766,10 @@ static GPid find_pid = 0;
 static int find_fd = -1;
 static GString *find_pending = NULL;  // what grep wrote after the last whole line
 static char *find_files = NULL;       // the files of the project by NUL, for xargs -0
-static gboolean find_failed = FALSE;  // grep could not be run
+static guint find_files_count = 0;    // the names in it
+static const char *find_failed =
+    NULL;                            // why there is no search: the list not written, grep not run
+static gboolean find_enter = FALSE;  // Enter typed before a line came: the first one is gone to
 static gboolean find_any_case = FALSE;
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1870,6 +1873,7 @@ project_find_files (void)
         return NULL;
     }
     files = project_files (find_project);
+    find_files_count = 0;
     for (i = 0; files != NULL && i < files->len; i++)
     {
         const char *rel = (const char *) g_ptr_array_index (files, i);
@@ -1879,6 +1883,7 @@ project_find_files (void)
             continue;
         fputs (rel, list);
         fputc ('\0', list);
+        find_files_count++;
     }
     fclose (list);
     return find_files;
@@ -1898,7 +1903,23 @@ project_find_stop (void)
     }
     if (find_pid != 0)
     {
+        int i;
+
+        siginfo_t info;
+
+        /* xargs and its greps, then whatever of them is left: xargs ends at once and a grep on a
+           file that does not answer may not.  xargs is not reaped before: till then the number
+           of the group is its own, no other process has it */
         (void) kill (-find_pid, SIGTERM);
+        for (i = 0; i < 50; i++)
+        {
+            info.si_pid = 0;
+            if (waitid (P_PID, (id_t) find_pid, &info, WEXITED | WNOHANG | WNOWAIT) != 0
+                || info.si_pid != 0)
+                break;
+            g_usleep (10000);
+        }
+        (void) kill (-find_pid, SIGKILL);
         (void) waitpid (find_pid, NULL, 0);
         g_spawn_close_pid (find_pid);
         find_pid = 0;
@@ -1916,8 +1937,8 @@ project_find_title (void)
     const guint n = find_found->len;
     char *title;
 
-    if (find_failed)
-        title = g_strdup (_ ("Find in project: cannot run grep"));
+    if (find_failed != NULL)
+        title = g_strdup_printf ("%s: %s", _ ("Find in project"), find_failed);
     else if (find_last == NULL || str_length (find_last) < PROJECT_FIND_MIN)
         title = g_strdup (_ ("Find in project"));
     else if (n >= PROJECT_FIND_MAX)
@@ -1988,6 +2009,7 @@ project_find_ready (int fd, void *data)
 {
     char buf[8192];
     const ssize_t n = read (fd, buf, sizeof (buf));
+    const guint before = find_found->len;
     const char *nl;
 
     (void) data;
@@ -2018,10 +2040,26 @@ project_find_ready (int fd, void *data)
     }
     if (n <= 0 || find_found->len >= PROJECT_FIND_MAX)
         project_find_stop ();
-    project_find_title ();
-    widget_draw (WIDGET (find_dlg));
-    widget_update_cursor (WIDGET (find_dlg));
-    tty_refresh ();
+    // Enter waited for a line: it is there, or none will come
+    if (find_enter && (find_found->len > 0 || find_fd < 0))
+    {
+        find_enter = FALSE;
+        if (find_found->len > 0)
+        {
+            find_dlg->ret_value = B_ENTER;
+            dlg_close (find_dlg);
+            // not 0: the wait for a key ends, and the dialog sees it is closed
+            return 1;
+        }
+    }
+    // drawn when the list grew or grep is done, not at each read
+    if (find_found->len != before || find_fd < 0)
+    {
+        project_find_title ();
+        widget_draw (WIDGET (find_dlg));
+        widget_update_cursor (WIDGET (find_dlg));
+        tty_refresh ();
+    }
     return 0;
 }
 
@@ -2048,15 +2086,19 @@ project_find_refill (void)
     // the view of the list before is gone with it
     listbox_remove_list (find_view);
     find_shown = NULL;
-    find_failed = FALSE;
-    if (str_length (text) >= PROJECT_FIND_MIN)
+    find_failed = NULL;
+    find_enter = FALSE;
+    files = str_length (text) >= PROJECT_FIND_MIN ? project_find_files () : NULL;
+    if (str_length (text) >= PROJECT_FIND_MIN && files == NULL)
+        find_failed = _ ("cannot write the list of the files");
+    // no file to look in: grep is not run for nothing
+    else if (files != NULL && find_files_count > 0)
     {
-        files = project_find_files ();
         find_any_case = project_find_any_case (text);
         /* -F: the text as it is, no pattern; -I: binary files skipped; -H: the name with one file
-           too; -Z: a NUL after the name, which may have a colon in it; the text and the list as
-           arguments of sh, no quoting */
-        script = g_strdup_printf ("exec xargs -0 grep -n -H -Z -I -F %s-e \"$1\" -- < \"$2\"",
+           too; --null: a NUL after the name, which may have a colon in it, the same in GNU and BSD
+           grep (-Z of BSD unpacks); the text and the list as arguments of sh, no quoting */
+        script = g_strdup_printf ("exec xargs -0 grep -n -H --null -I -F %s-e \"$1\" -- < \"$2\"",
                                   find_any_case ? "-i " : "");
         argv[0] = (char *) "/bin/sh";
         argv[1] = (char *) "-c";
@@ -2066,13 +2108,12 @@ project_find_refill (void)
         argv[5] = (char *) files;
         argv[6] = NULL;
         // a session of its own: xargs and its greps stopped as a whole
-        if (files == NULL
-            || !g_spawn_async_with_pipes (find_project->root, argv, NULL,
-                                          G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_STDERR_TO_DEV_NULL,
-                                          project_find_child_setup, NULL, &find_pid, NULL, &out,
-                                          NULL, NULL))
+        if (!g_spawn_async_with_pipes (find_project->root, argv, NULL,
+                                       G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_STDERR_TO_DEV_NULL,
+                                       project_find_child_setup, NULL, &find_pid, NULL, &out, NULL,
+                                       NULL))
         {
-            find_failed = TRUE;
+            find_failed = _ ("cannot run grep");
             find_pid = 0;
         }
         else
@@ -2085,19 +2126,6 @@ project_find_refill (void)
     }
     project_find_title ();
     widget_draw (WIDGET (find_dlg));
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
-/* Enter typed before grep found a line for the text: it is waited for, the first line or its end */
-static void
-project_find_wait (void)
-{
-    if (find_fd < 0)
-        return;
-    (void) fcntl (find_fd, F_SETFL, fcntl (find_fd, F_GETFL) & ~O_NONBLOCK);
-    while (find_fd >= 0 && find_found->len == 0)
-        (void) project_find_ready (find_fd, NULL);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2147,6 +2175,22 @@ project_find_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, vo
     case MSG_IDLE:
         widget_idle (w, FALSE);
         project_find_refill ();
+        return MSG_HANDLED;
+    case MSG_VALIDATE:
+        // Enter typed with the text, before grep found a line for it: the dialog stays, the first
+        // line found is gone to; Esc still closes it
+        if (DIALOG (w)->ret_value == B_ENTER)
+        {
+            project_find_refill ();
+            if (find_fd >= 0 && find_found->len == 0)
+            {
+                find_enter = TRUE;
+                widget_set_state (w, WST_ACTIVE, TRUE);
+                // drawn now it is open again: closed, it was not
+                project_find_title ();
+                widget_draw (w);
+            }
+        }
         return MSG_HANDLED;
     default:
         return dlg_default_callback (w, sender, msg, parm, data);
@@ -2226,12 +2270,7 @@ project_find (project_t *project, void *edit)
     project_find_refill ();
 
     if (dlg_run (dlg) == B_ENTER)
-    {
-        // Enter typed with the text, before the list was made for it
-        project_find_refill ();
-        project_find_wait ();
         listbox_get_current (find_list, NULL, (void **) &chosen);
-    }
     project_find_stop ();
     if (chosen != NULL)
     {
@@ -2249,6 +2288,7 @@ project_find (project_t *project, void *edit)
     find_shown = NULL;
     find_project = NULL;
     find_dlg = NULL;
+    find_enter = FALSE;
     if (find_files != NULL)
         unlink (find_files);
     g_clear_pointer (&find_files, g_free);
