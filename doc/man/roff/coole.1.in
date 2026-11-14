@@ -613,7 +613,6 @@ The keymap file of the user is the first one found of:
 2) environment variable COOLE_KEYMAP
 3) setting keymap of the [coole] section of the ini file
 4) file ~/.config/coole/keymap.ini
-
 .EE
 
 .PP
@@ -624,7 +623,6 @@ gets that extension added, and is looked for in (to the first one found):
 .EX
 1) ~/.config/coole/
 2) {{pkgdatadir}}/
-
 .EE
 
 .PP
@@ -637,7 +635,6 @@ which is read last and needs no option:
 .EX
 ln \-s {{sysconfdir}}/coole/keymap.vim.ini \e
       ~/.config/coole/keymap.ini
-
 .EE
 
 .PP
@@ -653,7 +650,6 @@ it answers to:
 [editor]
 Save = f2
 SaveAs = f12; ctrl\-f2
-
 .EE
 
 .SH Input Line Keys
@@ -1280,7 +1276,6 @@ Shortcut   the symbolic name, e.g. Ctrl\-F5
 Action     the action of the key in the editor keymap
 Raw        the escape sequence and its bytes in hex
 Keycode    the internal numeric code
-
 .EE
 
 .PP
@@ -1412,7 +1407,6 @@ file like this:
 .EX
 [editor]
 ctrl\-W=ExecuteScript:25;
-
 .EE
 
 .PP
@@ -1447,7 +1441,6 @@ l       comment selection
 	echo #endif >> $TMPFILE
 	cat $TMPFILE > %b
 	rm \-f $TMPFILE
-
 .EE
 
 .SH Macro Explorer
@@ -1484,7 +1477,6 @@ read from the first one found of:
 3) ~/coole.menu
 4) {{sysconfdir}}/coole/coole.menu
 5) {{pkgdatadir}}/coole.menu
-
 .EE
 
 .PP
@@ -1577,7 +1569,6 @@ w       Count the words of the file
 
 m       Run make in the directory of the file
 	make
-
 .EE
 
 .PP
@@ -1601,7 +1592,6 @@ Sub\-condition is one of following:
   t <type>      current file of type?
   x <filename>  is it executable filename?
   ! <sub\-cond>  negate the result of sub\-condition
-
 .EE
 
 .PP
@@ -1624,7 +1614,6 @@ Type is one or more of the following characters:
   f   FIFO (pipe)
   s   socket
   x   executable file
-
 .EE
 
 .PP
@@ -1639,7 +1628,6 @@ The conditions are calculated from left to right. This means
 
 .EX
 	= f *.c | f *.h & y C
-
 .EE
 
 .PP
@@ -1647,7 +1635,6 @@ is calculated as
 
 .EX
 	( (f *.c) | (f *.h) ) & (y C)
-
 .EE
 
 .PP
@@ -1681,7 +1668,6 @@ builds. For example, with exuberant\-ctags for the C language:
 
 .EX
 ctags \-e \-\-language\-force=C \-R ./
-
 .EE
 
 .PP
@@ -1977,7 +1963,6 @@ context " " green
   keyword  %s    brightgreen
   keyword  %c    brightgreen
   keyword  \e\e"   brightgreen
-
 .EE
 
 .PP
@@ -2074,7 +2059,6 @@ JavaScript:
 .EX
   context <SCRIPT*> </SCRIPT> brightcyan
       embed JavaScript\esProgram
-
 .EE
 
 .PP
@@ -2110,7 +2094,6 @@ layer over plain text.  For example, Smarty over HTML:
   context {\e* \e*} brown
   context { } brightcyan
       embed soft Smarty\esTag
-
 .EE
 
 .PP
@@ -2134,7 +2117,6 @@ characters.  For example,
 
 .EX
   keyword         '*'      green
-
 .EE
 
 .PP
@@ -2142,7 +2124,6 @@ colors all C single character constants green.  You also could use
 
 .EX
   keyword         "*"      green
-
 .EE
 
 .PP
@@ -2156,7 +2137,6 @@ Important to note is the line
 
 .EX
   keyword  \e\e\en  brightgreen
-
 .EE
 
 .PP
@@ -2185,7 +2165,6 @@ keyword  whole  if   KEYWORD_CONTROL
 context  " " STRING_QUOTED_DOUBLE
     keyword  \e\e"   CONSTANT_CHARACTER_ESCAPE
 keyword  linestart TODO  KEYWORD_OTHER_TODO black
-
 .EE
 
 .PP
@@ -2215,7 +2194,6 @@ by separating them with a slash, e.g.
 
 .EX
 keyword  #include  red/Orange
-
 .EE
 
 .PP
@@ -2296,7 +2274,6 @@ coole from trying to detect if your terminal supports color. Example:
 [Colors]
 color_terminals=linux,xterm
 color_terminals=terminal\-name1,terminal\-name2...
-
 .EE
 
 .PP
@@ -2325,7 +2302,6 @@ The skin is the first one named by:
 2) environment variable COOLE_SKIN
 3) setting skin of the [coole] section of the ini file
 4) the skin called default
-
 .EE
 
 .PP
@@ -2337,7 +2313,6 @@ found):
 1) ~/.local/share/coole/skins/
 2) {{sysconfdir}}/coole/skins/
 3) {{pkgdatadir}}/skins/
-
 .EE
 
 .PP
@@ -2358,7 +2333,6 @@ scope the skin names wins:
     string = green
     string constant.character.escape = white;red
     invalid = white;red;bold
-
 .EE
 
 .PP
@@ -2410,7 +2384,6 @@ pgup          page up key
 insert        the insert character
 delete        the delete character
 complete      to do completion
-
 .EE
 
 .PP
@@ -2419,7 +2392,6 @@ this in the ini file:
 
 .EX
 insert=\ee[Op
-
 .EE
 
 .PP
@@ -2428,7 +2400,6 @@ A key symbol may take modifiers:
 .EX
     ctrl\-alt\-right=\ee[[1;6C
     ctrl\-alt\-left=\ee[[1;6D
-
 .EE
 
 .PP
