@@ -175,6 +175,35 @@ char *query_table (const char *json, guint max, guint *rows, GError **error);
    lines that start with QUERY_TABLE_LINE; their Extended JSON added to @tables, in their order */
 char *query_take_tables (const char *out, GPtrArray *tables);
 
+/* An item of the menu of a file of queries (F11), from query-menu.ini: a group for each, named
+   by its key */
+typedef struct
+{
+    char key;
+    char *label;    // NULL: that of the action
+    char *action;   // one of the plugin: explain, count, table, limit, upper, lower, menu; NULL for
+                    // a command
+    char *command;  // run by sh in the directory of the file, the query on its stdin
+    char *output;   // what is done with what the command prints: insert, replace, show, none
+    char **kinds;   // postgres, mongo: the databases it is in the menu for; NULL for all
+} query_menu_item_t;
+
+/* The menu as query-menu.ini gives it, @text; the groups of no item, without an action or a
+   command, are left out.  NULL with @error when it is no key file */
+GPtrArray *query_menu_parse (const char *text, GError **error);
+/* Whether @item is in the menu of the database @kind */
+gboolean query_menu_item_for (const query_menu_item_t *item, const char *kind);
+/* The query of PostgreSQL @text explained: EXPLAIN (ANALYZE, BUFFERS) before a SELECT, VALUES or
+   TABLE, which it runs; EXPLAIN alone before the others, which it does not.  On the line of its
+   first word, so that the lines stay.  NULL when it has no word but comments */
+char *query_pg_explain (const char *text);
+/* The rows of the query of PostgreSQL @text counted: SELECT count(*) FROM (...) around a SELECT,
+   VALUES, TABLE or WITH, the ';' at its end left out.  NULL for another query */
+char *query_pg_count (const char *text);
+/* The query of mongosh @text explained: .explain("executionStats") on a line after it when it
+   ends with a chain of find () or aggregate (); NULL when it does not */
+char *query_mongo_explain (const char *text);
+
 /*** inline functions ****************************************************************************/
 
 #endif /* MC__QUERY_CORE_H */

@@ -849,6 +849,97 @@ test_scripts (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+check_string (char *got, const char *want)
+{
+    g_assert_cmpstr (got, ==, want);
+    g_free (got);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The menu of a file of queries: what its items run */
+static void
+test_menu_queries (void)
+{
+    // EXPLAIN on the line of the first word, ANALYZE only for what reads
+    check_string (query_pg_explain ("-- the users\nselect * from users;"),
+                  "-- the users\nEXPLAIN (ANALYZE, BUFFERS) select * from users;");
+    check_string (query_pg_explain ("/* c */ VALUES (1)"),
+                  "/* c */ EXPLAIN (ANALYZE, BUFFERS) VALUES (1)");
+    check_string (query_pg_explain ("delete from t"), "EXPLAIN delete from t");
+    check_string (query_pg_explain ("with d as (delete from t returning *) select * from d"),
+                  "EXPLAIN with d as (delete from t returning *) select * from d");
+    check_string (query_pg_explain ("selected_rows"), "EXPLAIN selected_rows");
+    g_assert_null (query_pg_explain ("-- nothing\n  "));
+
+    // count: the ';' left out, the closing on a line of its own
+    check_string (query_pg_count ("select a\nfrom t;\n"),
+                  "SELECT count(*) FROM (select a\nfrom t\n) AS counted");
+    check_string (query_pg_count ("-- c\nWITH x AS (select 1) select * from x"),
+                  "-- c\nSELECT count(*) FROM (WITH x AS (select 1) select * from x\n) AS counted");
+    g_assert_null (query_pg_count ("update t set a = 1"));
+    g_assert_null (query_pg_count (""));
+
+    // mongo: explain a find or an aggregate, nothing else
+    check_string (query_mongo_explain ("db.users.find({ a: 1 }).sort({ b: 1 })"),
+                  "db.users.find({ a: 1 }).sort({ b: 1 })\n.explain(\"executionStats\")");
+    check_string (query_mongo_explain ("db.users.aggregate([{ $match: {} }]);"),
+                  "db.users.aggregate([{ $match: {} }])\n.explain(\"executionStats\")");
+    g_assert_null (query_mongo_explain ("db.users.countDocuments({})"));
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+test_menu_parse (void)
+{
+    GError *error = NULL;
+    GPtrArray *menu;
+    const query_menu_item_t *item;
+    char *text;
+    const char *dirs[] = { QUERY_SCRIPTS_DIR };
+
+    menu = query_menu_parse ("[e]\naction = explain\n\n[c]\naction = count\nkinds = postgres\n\n"
+                             "[x]\nlabel = nothing\n\n"
+                             "[f]\nlabel = Format\ncommand = pg_format \\\\\n"
+                             "output = replace\nkinds = postgres;mongo\n",
+                             &error);
+    g_assert_no_error (error);
+    g_assert_cmpuint (menu->len, ==, 3);
+    item = g_ptr_array_index (menu, 0);
+    g_assert_cmpint (item->key, ==, 'e');
+    g_assert_cmpstr (item->action, ==, "explain");
+    g_assert_null (item->command);
+    g_assert_true (query_menu_item_for (item, "mongo"));
+    item = g_ptr_array_index (menu, 1);
+    g_assert_true (query_menu_item_for (item, "postgres"));
+    g_assert_false (query_menu_item_for (item, "mongo"));
+    // the group of no action and no command is no item; a command as it is written
+    item = g_ptr_array_index (menu, 2);
+    g_assert_cmpint (item->key, ==, 'f');
+    g_assert_null (item->action);
+    g_assert_cmpstr (item->command, ==, "pg_format \\\\");
+    g_assert_cmpstr (item->output, ==, "replace");
+    g_assert_true (query_menu_item_for (item, "mongo"));
+    g_ptr_array_free (menu, TRUE);
+
+    g_assert_null (query_menu_parse ("no group\n", &error));
+    g_assert_nonnull (error);
+    g_clear_error (&error);
+
+    // the menu of coole: an item for each action
+    text = query_script_read (dirs, G_N_ELEMENTS (dirs), "query-menu.ini", &error);
+    g_assert_no_error (error);
+    menu = query_menu_parse (text, &error);
+    g_assert_no_error (error);
+    g_assert_cmpuint (menu->len, ==, 7);
+    g_ptr_array_free (menu, TRUE);
+    g_free (text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (int argc, char **argv)
 {
@@ -863,5 +954,7 @@ main (int argc, char **argv)
     g_test_add_func ("/query/ai", test_ai);
     g_test_add_func ("/query/mongo-changes-schema", test_mongo_changes_schema);
     g_test_add_func ("/query/scripts", test_scripts);
+    g_test_add_func ("/query/menu-queries", test_menu_queries);
+    g_test_add_func ("/query/menu-parse", test_menu_parse);
     return g_test_run ();
 }

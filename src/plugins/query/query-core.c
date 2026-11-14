@@ -777,6 +777,27 @@ query_mongo_for_table (const char *text)
 /* --------------------------------------------------------------------------------------------- */
 
 char *
+query_mongo_explain (const char *text)
+{
+    const char *end;
+    GArray *chain = query_chain (text, &end);
+    char *explained = NULL;
+
+    if (chain->len > 0 && query_is_cursor_call (&g_array_index (chain, query_call_t, 0)))
+    {
+        char *body = g_strndup (text, (gsize) (end - text));
+
+        // on a line of its own: the lines of the query stay those of the file
+        explained = g_strconcat (body, "\n.explain(\"executionStats\")", (char *) NULL);
+        g_free (body);
+    }
+    g_array_free (chain, TRUE);
+    return explained;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
 query_mongo_for_export (const char *text, const char *each)
 {
     const char *end;
@@ -2025,5 +2046,167 @@ query_mongo_changes_schema (const char *text)
                     || strstr (text, "$merge") != NULL;
         p = end > name ? end - 1 : name;
     }
+    return FALSE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The first word of the SQL @text, past its blanks and comments; NULL when it has none */
+static const char *
+query_pg_first_word (const char *text)
+{
+    const char *p = text;
+
+    while (*p != '\0')
+    {
+        if (g_ascii_isspace (*p))
+            p++;
+        else if (p[0] == '-' && p[1] == '-')
+        {
+            while (*p != '\0' && *p != '\n')
+                p++;
+        }
+        else if (p[0] == '/' && p[1] == '*')
+        {
+            const char *close = strstr (p + 2, "*/");
+
+            p = close != NULL ? close + 2 : p + strlen (p);
+        }
+        else
+            return p;
+    }
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Whether the word at @p is @word, in any case */
+static gboolean
+query_pg_word_is (const char *p, const char *word)
+{
+    const size_t n = strlen (word);
+
+    return g_ascii_strncasecmp (p, word, n) == 0 && !g_ascii_isalnum (p[n]) && p[n] != '_';
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_pg_explain (const char *text)
+{
+    const char *word = query_pg_first_word (text);
+    // ANALYZE runs it: a query that only reads; a WITH may change the data in it
+    const gboolean reads = word != NULL
+        && (query_pg_word_is (word, "select") || query_pg_word_is (word, "values")
+            || query_pg_word_is (word, "table"));
+
+    if (word == NULL)
+        return NULL;
+    return g_strdup_printf ("%.*s%s%s", (int) (word - text), text,
+                            reads ? "EXPLAIN (ANALYZE, BUFFERS) " : "EXPLAIN ", word);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+char *
+query_pg_count (const char *text)
+{
+    const char *word = query_pg_first_word (text);
+    const char *end;
+
+    if (word == NULL
+        || !(query_pg_word_is (word, "select") || query_pg_word_is (word, "values")
+             || query_pg_word_is (word, "table") || query_pg_word_is (word, "with")))
+        return NULL;
+    end = word + strlen (word);
+    while (end > word && (g_ascii_isspace (end[-1]) || end[-1] == ';'))
+        end--;
+    // the closing on a line of its own: a comment that ends the query does not take it
+    return g_strdup_printf ("%.*sSELECT count(*) FROM (%.*s\n) AS counted", (int) (word - text),
+                            text, (int) (end - word), word);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_menu_item_free (gpointer p)
+{
+    query_menu_item_t *item = (query_menu_item_t *) p;
+
+    g_free (item->label);
+    g_free (item->action);
+    g_free (item->command);
+    g_free (item->output);
+    g_strfreev (item->kinds);
+    g_free (item);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+GPtrArray *
+query_menu_parse (const char *text, GError **error)
+{
+    GKeyFile *kf = g_key_file_new ();
+    GPtrArray *menu;
+    char **groups, **g;
+
+    if (!g_key_file_load_from_data (kf, text, (gsize) -1, G_KEY_FILE_NONE, error))
+    {
+        g_key_file_free (kf);
+        return NULL;
+    }
+    menu = g_ptr_array_new_with_free_func (query_menu_item_free);
+    groups = g_key_file_get_groups (kf, NULL);
+    for (g = groups; *g != NULL; g++)
+    {
+        query_menu_item_t *item;
+        char *action = g_key_file_get_string (kf, *g, "action", NULL);
+        // a command as it is written, its backslashes those of sh and not escapes of GLib
+        char *command = g_key_file_get_value (kf, *g, "command", NULL);
+
+        if (action != NULL)
+            g_strstrip (action);
+        if ((action == NULL || *action == '\0') && (command == NULL || *command == '\0'))
+        {
+            g_free (action);
+            g_free (command);
+            continue;
+        }
+        item = g_new0 (query_menu_item_t, 1);
+        item->key = **g;
+        item->label = g_key_file_get_string (kf, *g, "label", NULL);
+        if (action != NULL && *action != '\0')
+        {
+            item->action = action;
+            g_free (command);
+        }
+        else
+        {
+            g_free (action);
+            item->command = command;
+        }
+        item->output = g_key_file_get_string (kf, *g, "output", NULL);
+        if (item->output != NULL)
+            g_strstrip (item->output);
+        item->kinds = g_key_file_get_string_list (kf, *g, "kinds", NULL, NULL);
+        g_ptr_array_add (menu, item);
+    }
+    g_strfreev (groups);
+    g_key_file_free (kf);
+    return menu;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+gboolean
+query_menu_item_for (const query_menu_item_t *item, const char *kind)
+{
+    char **k;
+
+    if (item->kinds == NULL || item->kinds[0] == NULL)
+        return TRUE;
+    for (k = item->kinds; *k != NULL; k++)
+        if (strcmp (g_strstrip (*k), kind) == 0)
+            return TRUE;
     return FALSE;
 }

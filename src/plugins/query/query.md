@@ -73,6 +73,18 @@ dashes naming it if need be. The separator heads the part after it.
 **Ctrl-F5**
 : Run the whole file, even with a selection or separators.
 
+**F11**
+: The menu of the queries, in place of the menu of the user: EXPLAIN the
+query, *.explain()* in mongosh; count its rows, in PostgreSQL; put a line
+*// @table* or *// @limit 20* before that of the cursor, in mongosh; the
+selection in capitals or in small letters; edit this menu. It is
+*query-menu.ini* of the queries of coole; *~/.config/coole/query/query-menu.ini*,
+which **Edit this menu** makes from it, takes its place. An item there may
+run a command of its own: the query on its stdin, *COOLE_QUERY_KIND* in its
+environment, what it prints put at the cursor, in place of the query or in
+Output. EXPLAIN ANALYZE runs a SELECT, VALUES or TABLE; another query gets
+EXPLAIN alone, which does not run it.
+
 ```
 // --- the last orders
 // @table
