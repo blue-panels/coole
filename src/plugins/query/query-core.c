@@ -2108,18 +2108,80 @@ query_pg_explain (const char *text)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* Past the quoted text at @p, '...', "..." or $tag$...$tag$, or the comment, -- or slash-star;
+   @p itself when there is none there */
+static const char *
+query_pg_skip_quoted (const char *p)
+{
+    if (*p == '\'' || *p == '"')
+    {
+        const char q = *p;
+
+        // a quote twice is one in it
+        for (p++; *p != '\0'; p++)
+            if (*p == q && *++p != q)
+                return p;
+        return p;
+    }
+    if (p[0] == '-' && p[1] == '-')
+    {
+        while (*p != '\0' && *p != '\n')
+            p++;
+        return p;
+    }
+    if (p[0] == '/' && p[1] == '*')
+    {
+        const char *close = strstr (p + 2, "*/");
+
+        return close != NULL ? close + 2 : p + strlen (p);
+    }
+    if (*p == '$')
+    {
+        const char *t = p + 1;
+
+        while (g_ascii_isalnum (*t) || *t == '_')
+            t++;
+        if (*t == '$')
+        {
+            char *tag = g_strndup (p, (gsize) (t - p + 1));
+            const char *close = strstr (t + 1, tag);
+            const char *after = close != NULL ? close + strlen (tag) : t + strlen (t);
+
+            g_free (tag);
+            return after;
+        }
+    }
+    return p;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 char *
-query_pg_count (const char *text)
+query_pg_count (const char *text, gboolean *many)
 {
     const char *word = query_pg_first_word (text);
-    const char *end;
+    const char *end, *p;
 
+    *many = FALSE;
     if (word == NULL
         || !(query_pg_word_is (word, "select") || query_pg_word_is (word, "values")
              || query_pg_word_is (word, "table") || query_pg_word_is (word, "with")))
         return NULL;
-    end = word + strlen (word);
-    while (end > word && (g_ascii_isspace (end[-1]) || end[-1] == ';'))
+    // the end of the statement: its ';', not one in a string or a comment
+    for (p = word; *p != '\0' && *p != ';';)
+    {
+        const char *past = query_pg_skip_quoted (p);
+
+        p = past != p ? past : p + 1;
+    }
+    end = p;
+    // after it, comments may come, not another statement
+    if (*p == ';' && query_pg_first_word (p + 1) != NULL)
+    {
+        *many = TRUE;
+        return NULL;
+    }
+    while (end > word && g_ascii_isspace (end[-1]))
         end--;
     // the closing on a line of its own: a comment that ends the query does not take it
     return g_strdup_printf ("%.*sSELECT count(*) FROM (%.*s\n) AS counted", (int) (word - text),
@@ -2189,6 +2251,13 @@ query_menu_parse (const char *text, GError **error)
         if (item->output != NULL)
             g_strstrip (item->output);
         item->kinds = g_key_file_get_string_list (kf, *g, "kinds", NULL, NULL);
+        if (item->kinds != NULL)
+        {
+            char **k;
+
+            for (k = item->kinds; *k != NULL; k++)
+                g_strstrip (*k);
+        }
         g_ptr_array_add (menu, item);
     }
     g_strfreev (groups);
@@ -2206,7 +2275,7 @@ query_menu_item_for (const query_menu_item_t *item, const char *kind)
     if (item->kinds == NULL || item->kinds[0] == NULL)
         return TRUE;
     for (k = item->kinds; *k != NULL; k++)
-        if (strcmp (g_strstrip (*k), kind) == 0)
+        if (strcmp (*k, kind) == 0)
             return TRUE;
     return FALSE;
 }
