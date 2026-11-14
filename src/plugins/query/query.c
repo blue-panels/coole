@@ -162,7 +162,7 @@ static const mc_ep_command_t query_commands[QUERY_CMD_COUNT + 1] = {
     { "Help", NULL, "f1" },
     { "QueryRun", N_ ("Run the selection, else the part between \"// ---\", else the file"), "f5" },
     { "QueryRunAll", N_ ("Run the whole file, even with a selection"), "ctrl-f5" },
-    { "QueryStop", N_ ("Stop the query"), NULL },
+    { "QueryStop", N_ ("Stop the query"), "esc" },
     { "QueryHistoryInsert", N_ ("Put the version of the query of History into the file"), "enter" },
     { "QueryHistoryShow", N_ ("Compare the version of the query of History with the file"), "f3" },
     { "QueryRollback", N_ ("Roll the transaction of the session back"), NULL },
@@ -2310,6 +2310,18 @@ query_run_command (query_t *q, int cmd, void *edit, gboolean key)
         query_run (q, edit, FALSE, TRUE);
         return TRUE;
     case QUERY_CMD_STOP:
+        // Esc: with no query running it is the editor's, Quit; with one, a slip of the hand must
+        // not stop it
+        if (key)
+        {
+            if (!q->backend->running (q->backend_data))
+                return FALSE;
+            if (query_dialog (_ ("Query"), _ ("A query is running. Stop it?"), D_NORMAL, 2,
+                              _ ("&Stop"), _ ("&Cancel"))
+                == 0)
+                query_stop (q);
+            return TRUE;
+        }
         query_stop (q);
         return TRUE;
     case QUERY_CMD_ROLLBACK:
