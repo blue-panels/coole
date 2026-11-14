@@ -162,6 +162,12 @@ struct query_t
                         // middle of a line
     char *use;  // the context of a part run alone, of query_backend_t.context; NULL for none
     gint64 started;
+    char *run_line;  // what Output says of the run while it goes on: "Running...\n"
+    char *running;   // what it says now, the time taken after it; NULL when the run is over
+    // a second ticks while a run goes on: a thread writes to the pipe, its end read in the loop
+    int tick_pipe[2];
+    GThread *ticker;
+    gint ticker_stop;
 
     gint64 tabs[QUERY_TAB_COUNT];  // the windows of the viewer, 0 when none
     query_ai_t *ai;                // F6
@@ -191,6 +197,9 @@ void query_tab_set (query_t *q, int tab, const char *text, gboolean front);
 /* The title of a tab, its own when @title is NULL */
 void query_tab_title (query_t *q, int tab, const char *title);
 void query_table_say (query_t *q, const char *text);
+/* What Output says while the run goes on, @say ("Connecting...\n"), NULL for the line of the run
+   itself; the seconds it has taken come after it, once a second */
+void query_running (query_t *q, const char *say);
 void query_redraw (query_t *q);
 /* The script @name of the queries, mongo-list.js, pg-list.sql: of ~/.config/coole/query, else of
    the source of a build run by meson devenv, of /etc/coole/query, of the data of coole; NULL with

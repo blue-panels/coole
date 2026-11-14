@@ -1022,6 +1022,8 @@ query_pg_send (query_pg_t *p)
 {
     const query_pq_t *pq = p->pq;
 
+    // connected, or the cancel before sent: Output says the run itself
+    query_running (p->q, NULL);
     g_string_truncate (p->out, 0);
     g_string_truncate (p->tables, 0);
     p->ntables = 0;
@@ -1440,13 +1442,13 @@ query_pg_start (void *data)
     case QUERY_PG_CONNECTING:
         // it runs once the connection is made
         p->pending = TRUE;
-        query_tab_set (p->q, QUERY_TAB_OUTPUT, _ ("Connecting...\n"), TRUE);
+        query_running (p->q, _ ("Connecting...\n"));
         return;
     case QUERY_PG_OFF:
     case QUERY_PG_BROKEN:
         p->reconnect = p->made;
         p->pending = TRUE;
-        query_tab_set (p->q, QUERY_TAB_OUTPUT, _ ("Connecting...\n"), TRUE);
+        query_running (p->q, _ ("Connecting...\n"));
         query_pg_connect (p);
         return;
     default:
@@ -1456,8 +1458,7 @@ query_pg_start (void *data)
     if (p->canceling)
     {
         p->pending = TRUE;
-        query_tab_set (p->q, QUERY_TAB_OUTPUT, _ ("Running... once the cancel before is sent.\n"),
-                       TRUE);
+        query_running (p->q, _ ("Running... once the cancel before is sent.\n"));
         return;
     }
     query_pg_send (p);
@@ -1487,7 +1488,7 @@ query_pg_stop (void *data)
     else if (p->state == QUERY_PG_BUSY && !p->canceling)
     {
         p->q->stopped = TRUE;
-        query_tab_set (p->q, QUERY_TAB_OUTPUT, _ ("Running... the cancel is sent.\n"), TRUE);
+        query_running (p->q, _ ("Running... the cancel is sent.\n"));
         query_pg_cancel (p);
         query_redraw (p->q);
     }

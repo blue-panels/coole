@@ -84,7 +84,8 @@ db.orders.find({ status: 1 })
 db.orders.countDocuments({ status: 1 })
 ```
 
-**F5** while a query runs asks whether to stop it.
+**F5** while a query runs asks whether to stop it. Output says how long it
+has run, once a second: *Running... 12 s*, *1:05* after a minute.
 
 A line *// @limit 20* in a query limits its documents, to 100 without a
 number: a chain of *find()* gets *.limit(20)* on a line after it, unless it
