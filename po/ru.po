@@ -3842,3 +3842,60 @@ msgstr "С&хема"
 #: src/plugins/query/query.c
 msgid "Read the schema a&gain"
 msgstr "Прочитать схему &заново"
+
+#: src/plugins/query/query.c
+msgid "The query has nothing but comments."
+msgstr "В запросе нет ничего, кроме комментариев."
+
+#: src/plugins/query/query.c
+msgid "Only a query that ends with find () or aggregate ()\nis explained."
+msgstr "Объясняется только запрос, который кончается\nfind () или aggregate ()."
+
+#: src/plugins/query/query.c
+msgid "Only the rows of a SELECT, VALUES, TABLE or WITH\nare counted."
+msgstr "Считаются только строки SELECT, VALUES, TABLE\nили WITH."
+
+#: src/plugins/query/query.c
+msgid "The command failed."
+msgstr "Команда завершилась с ошибкой."
+
+#: src/plugins/query/query.c
+msgid "Select the text first."
+msgstr "Сначала выделите текст."
+
+#: src/plugins/query/query.c
+msgid "EXPLAIN the query, ANALYZE a SELECT"
+msgstr "EXPLAIN запроса, ANALYZE для SELECT"
+
+#: src/plugins/query/query.c
+msgid "Explain the query, .explain (\"executionStats\")"
+msgstr "План запроса, .explain (\"executionStats\")"
+
+#: src/plugins/query/query.c
+msgid "Count the rows of the query"
+msgstr "Посчитать строки запроса"
+
+#: src/plugins/query/query.c
+msgid "Put // @table before the line: a table of the result"
+msgstr "Вставить // @table перед строкой: результат таблицей"
+
+#: src/plugins/query/query.c
+msgid "Put // @limit 20 before the line: 20 documents"
+msgstr "Вставить // @limit 20 перед строкой: 20 документов"
+
+#: src/plugins/query/query.c
+msgid "The selection in capitals"
+msgstr "Выделенное заглавными"
+
+#: src/plugins/query/query.c
+msgid "The selection in small letters"
+msgstr "Выделенное строчными"
+
+#: src/plugins/query/query.c
+msgid "Edit this menu"
+msgstr "Править это меню"
+
+#: src/plugins/query/query.c
+#, c-format
+msgid "No action %s in the menu."
+msgstr "В меню нет действия %s."

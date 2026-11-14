@@ -71,9 +71,11 @@
 
 #define QUERY_KEYMAP_SECTION "query"
 // the menu of the plugin, in the menubar before Window
-#define QUERY_MENU        N_ ("&Query")
-#define QUERY_HELP_FILE   "query.md"
-#define QUERY_HELP_NODE   "[Query]"
+#define QUERY_MENU      N_ ("&Query")
+#define QUERY_HELP_FILE "query.md"
+#define QUERY_HELP_NODE "[Query]"
+// the menu of a file of queries, F11: in ~/.config/coole/query, else in the queries of coole
+#define QUERY_MENU_FILE   "query-menu.ini"
 #define QUERY_HISTORY_MAX 100
 // the versions of a file of queries, as it was run, in the data of the user; the newest kept
 #define QUERY_VERSIONS_DIR ".history"
@@ -151,6 +153,14 @@ static void query_run_text (query_t *q, char *text, char *file, long first, char
                             char *version);
 static gboolean query_blank (const char *text);
 static void query_current_one (query_t *q);
+/* A query run as it is, or made another first by the menu of the file */
+typedef enum
+{
+    QUERY_AS_IS,
+    QUERY_AS_EXPLAIN,
+    QUERY_AS_COUNT
+} query_as_t;
+
 static void query_run (query_t *q, void *edit, gboolean all, gboolean export);
 static query_export_run_t *query_export_ask (query_t *q, const char *base, const char *table);
 static char *query_history_file_text (query_t *q);
@@ -1072,10 +1082,41 @@ query_blank (const char *text)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The query @block as the menu of the file wants it run: explained, its rows counted; NULL, and
+   why said, when this one cannot be */
+static char *
+query_as (query_t *q, const char *block, query_as_t as)
+{
+    const gboolean pg = strcmp (q->backend->id, "postgres") == 0;
+    char *changed = NULL;
+
+    if (as == QUERY_AS_EXPLAIN)
+    {
+        changed = pg ? query_pg_explain (block) : query_mongo_explain (block);
+        if (changed == NULL)
+            q->host->message (q->host, D_NORMAL, _ ("Query"),
+                              pg ? _ ("The query has nothing but comments.")
+                                 : _ ("Only a query that ends with find () or aggregate ()\n"
+                                      "is explained."));
+    }
+    else if (as == QUERY_AS_COUNT)
+    {
+        changed = pg ? query_pg_count (block) : NULL;
+        if (changed == NULL)
+            q->host->message (q->host, D_NORMAL, _ ("Query"),
+                              _ ("Only the rows of a SELECT, VALUES, TABLE or WITH\n"
+                                 "are counted."));
+    }
+    return changed;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* Run the selection of @edit, else the section of its cursor between lines "// ---", else all of
-   it; all of it when @all; its rows written to a file asked for when @export */
+   it; all of it when @all; its rows written to a file asked for when @export; made another first
+   as @as says */
 static void
-query_run (query_t *q, void *edit, gboolean all, gboolean export)
+query_run_as (query_t *q, void *edit, gboolean all, gboolean export, query_as_t as)
 {
     WEdit *e;
     char *text, *block = NULL, *use = NULL, *file, *version;
@@ -1136,6 +1177,18 @@ query_run (query_t *q, void *edit, gboolean all, gboolean export)
         g_free (text);
         return;
     }
+    if (as != QUERY_AS_IS)
+    {
+        char *changed = query_as (q, block, as);
+
+        g_free (block);
+        if (changed == NULL)
+        {
+            g_free (text);
+            return;
+        }
+        block = changed;
+    }
     file = q->host->get_current_file (q->host, edit);
     if (export)
     {
@@ -1162,6 +1215,14 @@ query_run (query_t *q, void *edit, gboolean all, gboolean export)
     g_free (text);
     q->first_column = column;
     query_run_text (q, block, file, first + 1, use, version);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_run (query_t *q, void *edit, gboolean all, gboolean export)
+{
+    query_run_as (q, edit, all, export, QUERY_AS_IS);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -2263,6 +2324,337 @@ query_command (const query_t *q, long command)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* The menu of a file of queries, F11 */
+/* --------------------------------------------------------------------------------------------- */
+
+/* The query of @e a command of the menu is given, of its @text: the selection, else the part
+   between the lines "// ---" around the cursor, else the file; its bytes @from to @to in @text */
+static char *
+query_menu_block (query_t *q, WEdit *e, const char *text, gsize len, gsize *from, gsize *to)
+{
+    off_t start, end;
+    long first = 0;
+    char *block;
+
+    if (eval_marks (e, &start, &end) && end > start && (gsize) end <= len)
+    {
+        *from = (gsize) start;
+        *to = (gsize) end;
+        return g_strndup (text + start, (gsize) (end - start));
+    }
+    block = q->backend->sections ? query_section (text, e->buffer.curs_line, &first) : NULL;
+    if (block != NULL)
+    {
+        const char *p = text;
+        long line;
+
+        // the part is lines first.. of the text: where its first one starts
+        for (line = 0; line < first && *p != '\0'; line++)
+        {
+            p = query_line_end (p);
+            if (*p == '\n')
+                p++;
+        }
+        if (strncmp (p, block, strlen (block)) == 0)
+        {
+            *from = (gsize) (p - text);
+            *to = *from + strlen (block);
+            return block;
+        }
+        g_free (block);
+    }
+    *from = 0;
+    *to = len;
+    return g_strndup (text, len);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+query_menu_child_setup (gpointer data)
+{
+    // the query on the stdin of the command
+    (void) dup2 (GPOINTER_TO_INT (data), STDIN_FILENO);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A command of the menu: the query on its stdin; what it prints goes where @item says */
+static void
+query_menu_command (query_t *q, WEdit *e, const query_menu_item_t *item)
+{
+    const char *output = item->output != NULL ? item->output : "insert";
+    gsize len = 0, from, to;
+    char *text = q->host->get_text (q->host, e, &len);
+    char *block, *file, *dir, *path = NULL, *out = NULL, *err = NULL;
+    char *argv[4];
+    char **envp;
+    int fd, status = -1;
+    gboolean ran = FALSE;
+
+    if (text == NULL)
+        return;
+    block = query_menu_block (q, e, text, len, &from, &to);
+    file = q->host->get_current_file (q->host, e);
+    dir = file != NULL ? g_path_get_dirname (file) : NULL;
+    envp = g_environ_setenv (g_get_environ (), "COOLE_QUERY_KIND", q->backend->id, TRUE);
+    argv[0] = (char *) "/bin/sh";
+    argv[1] = (char *) "-c";
+    argv[2] = item->command;
+    argv[3] = NULL;
+    // the query in a file of ours alone, the stdin of the command
+    fd = g_file_open_tmp ("coole-query-XXXXXX", &path, NULL);
+    if (fd >= 0)
+    {
+        const size_t n = strlen (block);
+
+        // through the descriptor: g_file_set_contents () would put another file in its place
+        if (write (fd, block, n) == (ssize_t) n && lseek (fd, 0, SEEK_SET) == 0)
+            ran = g_spawn_sync (dir, argv, envp, G_SPAWN_DEFAULT, query_menu_child_setup,
+                                GINT_TO_POINTER (fd), &out, &err, &status, NULL);
+        close (fd);
+        unlink (path);
+    }
+    if (!ran || !g_spawn_check_wait_status (status, NULL))
+        q->host->message (q->host, D_ERROR, _ ("Query"),
+                          err != NULL && *g_strstrip (err) != '\0' ? err
+                                                                   : _ ("The command failed."));
+    else if (strcmp (output, "replace") == 0)
+        (void) query_edit_put (q, e, from, to, out);
+    else if (strcmp (output, "show") == 0)
+        query_tab_set (q, QUERY_TAB_OUTPUT, out, TRUE);
+    else if (strcmp (output, "insert") == 0 && *out != '\0')
+    {
+        const size_t n = strlen (out);
+
+        // the last newline is the end of the output, not a line to insert
+        if (out[n - 1] == '\n')
+            out[n - 1] = '\0';
+        q->host->insert_text (q->host, e, out, 0);
+    }
+    g_strfreev (envp);
+    g_free (path);
+    g_free (out);
+    g_free (err);
+    g_free (dir);
+    g_free (file);
+    g_free (block);
+    g_free (text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* A line @line put before the line of the cursor: a directive, "// @table" */
+static void
+query_menu_directive (query_t *q, WEdit *e, const char *line)
+{
+    gsize len = 0, at;
+    char *text = q->host->get_text (q->host, e, &len);
+
+    if (text == NULL)
+        return;
+    at = MIN ((gsize) e->buffer.curs1, len);
+    while (at > 0 && text[at - 1] != '\n')
+        at--;
+    (void) query_edit_put (q, e, at, at, line);
+    g_free (text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The selection in capitals, @upper, or in small letters */
+static void
+query_menu_case (query_t *q, WEdit *e, gboolean upper)
+{
+    gsize len = 0;
+    char *text = q->host->get_text (q->host, e, &len);
+    off_t start, end;
+
+    if (text == NULL)
+        return;
+    if (!eval_marks (e, &start, &end) || end <= start || (gsize) end > len)
+        q->host->message (q->host, D_NORMAL, _ ("Query"), _ ("Select the text first."));
+    else
+    {
+        const char *s = text + start;
+        const gssize n = (gssize) (end - start);
+        char *changed;
+
+        if (g_utf8_validate (s, n, NULL))
+            changed = upper ? g_utf8_strup (s, n) : g_utf8_strdown (s, n);
+        else
+            changed = upper ? g_ascii_strup (s, n) : g_ascii_strdown (s, n);
+        (void) query_edit_put (q, e, (gsize) start, (gsize) end, changed);
+        g_free (changed);
+    }
+    g_free (text);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static char *
+query_menu_path (void)
+{
+    return g_build_filename (mc_config_get_path (), "query", QUERY_MENU_FILE, (char *) NULL);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The menu of the user to edit, made from that of coole when there is none */
+static void
+query_menu_edit (query_t *q)
+{
+    char *path = query_menu_path ();
+
+    if (!g_file_test (path, G_FILE_TEST_EXISTS))
+    {
+        char *dir = g_path_get_dirname (path);
+        char *why = NULL;
+        char *text = query_script (QUERY_MENU_FILE, &why);
+
+        (void) g_mkdir_with_parents (dir, 0700);
+        (void) g_file_set_contents (path, text != NULL ? text : "", -1, NULL);
+        g_free (text);
+        g_free (why);
+        g_free (dir);
+    }
+    (void) q->host->open_file (q->host, path);
+    g_free (path);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* The menu: that of the user, else that of coole; NULL, and why said, when there is none */
+static GPtrArray *
+query_menu_load (query_t *q)
+{
+    char *why = NULL;
+    char *text = query_script (QUERY_MENU_FILE, &why);
+    GPtrArray *menu = NULL;
+    GError *error = NULL;
+
+    if (text == NULL)
+    {
+        q->host->message (q->host, D_ERROR, _ ("Query"), why);
+        g_free (why);
+        return NULL;
+    }
+    menu = query_menu_parse (text, &error);
+    if (menu == NULL)
+    {
+        char *path = query_menu_path ();
+        char *said = g_strdup_printf ("%s:\n%s", path, error->message);
+
+        q->host->message (q->host, D_ERROR, _ ("Query"), said);
+        g_free (said);
+        g_free (path);
+        g_error_free (error);
+    }
+    g_free (text);
+    return menu;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* What the menu shows of @item */
+static const char *
+query_menu_label (const query_t *q, const query_menu_item_t *item)
+{
+    const char *a = item->action;
+
+    if (item->label != NULL)
+        return item->label;
+    if (a == NULL)
+        return item->command;
+    if (strcmp (a, "explain") == 0)
+        return strcmp (q->backend->id, "postgres") == 0
+            ? _ ("EXPLAIN the query, ANALYZE a SELECT")
+            : _ ("Explain the query, .explain (\"executionStats\")");
+    if (strcmp (a, "count") == 0)
+        return _ ("Count the rows of the query");
+    if (strcmp (a, "table") == 0)
+        return _ ("Put // @table before the line: a table of the result");
+    if (strcmp (a, "limit") == 0)
+        return _ ("Put // @limit 20 before the line: 20 documents");
+    if (strcmp (a, "upper") == 0)
+        return _ ("The selection in capitals");
+    if (strcmp (a, "lower") == 0)
+        return _ ("The selection in small letters");
+    if (strcmp (a, "menu") == 0)
+        return _ ("Edit this menu");
+    return a;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* F11 in a file of queries: the menu of the queries, not the menu of the user */
+static void
+query_user_menu (query_t *q, WEdit *e)
+{
+    GPtrArray *menu = query_menu_load (q);
+    GPtrArray *shown;
+    const query_menu_item_t *item = NULL;
+    Listbox *l;
+    int choice, width = 40;
+    guint i;
+
+    if (menu == NULL)
+        return;
+    shown = g_ptr_array_new ();
+    for (i = 0; i < menu->len; i++)
+    {
+        const query_menu_item_t *it = g_ptr_array_index (menu, i);
+
+        if (query_menu_item_for (it, q->backend->id))
+        {
+            g_ptr_array_add (shown, (gpointer) it);
+            width = MAX (width, str_term_width1 (query_menu_label (q, it)) + 8);
+        }
+    }
+    l = listbox_window_new (MAX (1, MIN ((int) shown->len, LINES - 6)), MIN (width, COLS - 6),
+                            _ ("Query"), "[Query]");
+    for (i = 0; i < shown->len; i++)
+    {
+        const query_menu_item_t *it = g_ptr_array_index (shown, i);
+        char *label = g_strdup_printf ("%c   %s", it->key, query_menu_label (q, it));
+
+        LISTBOX_APPEND_TEXT (l, it->key, label, NULL, FALSE);
+        g_free (label);
+    }
+    choice = listbox_run (l);
+    if (choice >= 0 && choice < (int) shown->len)
+        item = g_ptr_array_index (shown, choice);
+    g_ptr_array_free (shown, TRUE);
+
+    if (item == NULL)
+        ;
+    else if (item->command != NULL)
+        query_menu_command (q, e, item);
+    else if (strcmp (item->action, "explain") == 0)
+        query_run_as (q, e, FALSE, FALSE, QUERY_AS_EXPLAIN);
+    else if (strcmp (item->action, "count") == 0)
+        query_run_as (q, e, FALSE, FALSE, QUERY_AS_COUNT);
+    else if (strcmp (item->action, "table") == 0)
+        query_menu_directive (q, e, "// @table\n");
+    else if (strcmp (item->action, "limit") == 0)
+        query_menu_directive (q, e, "// @limit 20\n");
+    else if (strcmp (item->action, "upper") == 0 || strcmp (item->action, "lower") == 0)
+        query_menu_case (q, e, strcmp (item->action, "upper") == 0);
+    else if (strcmp (item->action, "menu") == 0)
+        query_menu_edit (q);
+    else
+    {
+        char *said = g_strdup_printf (_ ("No action %s in the menu."), item->action);
+
+        q->host->message (q->host, D_ERROR, _ ("Query"), said);
+        g_free (said);
+    }
+    g_ptr_array_free (menu, TRUE);
+    query_redraw (q);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 /* @cmd, by its key when @key: the keys of History only when it has the focus */
 static gboolean
 query_run_command (query_t *q, int cmd, void *edit, gboolean key)
@@ -2390,6 +2782,13 @@ query_handle_key (void *data, int key, void *edit)
     query_t *q = (query_t *) data;
     const int cmd = query_command (q, q->host->command_lookup (q->host, QUERY_KEYMAP_SECTION, key));
 
+    // the key of the menu of the user, before the scripts that take it: the menu of the queries
+    if (q->on && edit != NULL && edit_widget_is_editor (CONST_WIDGET (edit))
+        && keybind_lookup_keymap_command (editor_map, key) == CK_UserMenu)
+    {
+        query_user_menu (q, EDIT (edit));
+        return MC_EPR_OK;
+    }
     return query_run_command (q, cmd, edit, TRUE) ? MC_EPR_OK : MC_EPR_NOT_SUPPORTED;
 }
 
@@ -2456,6 +2855,13 @@ query_handle_action (void *data, long command, void *edit)
 {
     query_t *q = (query_t *) data;
 
+    // the menu of the user from the menu Command: that of the queries in coole -Q
+    if (q->on && command == CK_UserMenu && edit != NULL
+        && edit_widget_is_editor (CONST_WIDGET (edit)))
+    {
+        query_user_menu (q, EDIT (edit));
+        return MC_EPR_OK;
+    }
     return query_run_command (q, query_command (q, command), edit, FALSE) ? MC_EPR_OK
                                                                           : MC_EPR_NOT_SUPPORTED;
 }
